@@ -389,12 +389,23 @@ class OpenAIStreamingInterface:
                                                 yield tool_call_msg
                                                 self.function_id_buffer = None
         except asyncio.CancelledError as e:
-            logger.info("Cancelled stream %s", e)
-            yield LettaStopReason(stop_reason=StopReasonType.cancelled)
-            raise
+            import traceback
+
+            logger.error("Cancelled stream %s: %s", e, traceback.format_exc())
+            ttft_span.add_event(
+                name="stop_reason",
+                attributes={"stop_reason": StopReasonType.cancelled.value, "error": str(e), "stacktrace": traceback.format_exc()},
+            )
+            raise e
         except Exception as e:
-            logger.error("Error processing stream: %s", e)
+            import traceback
+
+            logger.error("Error processing stream: %s", e, traceback.format_exc())
+            ttft_span.add_event(
+                name="stop_reason",
+                attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
+            )
             yield LettaStopReason(stop_reason=StopReasonType.error)
-            raise
+            raise e
         finally:
             logger.info("OpenAIStreamingInterface: Stream processing complete.")
