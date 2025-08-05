@@ -414,7 +414,7 @@ export function Messages(props: MessagesProps) {
     injectSpaceForHeader,
     renderAgentsLink,
     mode,
-    isPanelActive: _isPanelActive,
+    isPanelActive,
     agentId,
   } = props;
 
@@ -1186,6 +1186,27 @@ export function Messages(props: MessagesProps) {
     hasScrolledInitially.current = true;
     setInitialized(true); // Reveal after positioning
   }, [messageGroups.length]);
+
+  useEffect(() => {
+    if (ref.current) {
+      if (messageGroups.length > 0) {
+        setTimeout(() => {
+          if (!ref.current) {
+            return;
+          }
+
+          if (!hasScrolledInitially.current) {
+            ref.current.scrollTop = ref.current.scrollHeight;
+            hasScrolledInitially.current = true;
+          }
+        }, 10);
+      }
+
+      if (isSendingMessage) {
+        ref.current.scrollTop = ref.current.scrollHeight;
+      }
+    }
+  }, [messageGroups, isPanelActive, isSendingMessage]);
 
   const AutoLoadIndicator = useMemo(() => {
     const isLoading = (getIsAutoLoading() || isFetching) && !getHasReachedEnd();
