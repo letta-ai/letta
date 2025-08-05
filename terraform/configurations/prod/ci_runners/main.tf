@@ -25,6 +25,7 @@ module medium_runners {
   project_id = "memgpt-428419"
   region = "us-central1"
   zones = ["us-central1-a", "us-central1-b", "us-central1-c", "us-central1-f"]
+  distribution_policy_target_shape = "ANY"
 
   # pool-level config
   pool_name_prefix = "ci-runners-medium"
@@ -55,7 +56,8 @@ module small_runners {
   env = "dev"
   project_id = "memgpt-428419"
   region = "us-central1"
-  zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
+  zones = ["us-central1-a", "us-central1-b", "us-central1-c", "us-central1-f"]
+  distribution_policy_target_shape = "ANY"
 
   # pool-level config
   pool_name_prefix = "ci-runners-small"
@@ -88,6 +90,7 @@ module ollama_gpu_runners {
   region = "us-central1"
   zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
   distribution_policy_target_shape = "ANY"
+
   # pool-level config
   # gpu runners use the same image but have different startup commands
   pool_name_prefix = "ci-runners-gpu-ollama"
@@ -122,6 +125,7 @@ module lmstudio_gpu_runners {
   project_id = "memgpt-428419"
   region = "us-central1"
   zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
+  distribution_policy_target_shape = "ANY"
 
   # pool-level config
   pool_name_prefix = "ci-runners-gpu-lmstudio"
@@ -155,6 +159,7 @@ module vllm_gpu_runners {
   project_id = "memgpt-428419"
   region = "us-central1"
   zones = ["us-central1-a", "us-central1-b", "us-central1-c"]
+  distribution_policy_target_shape = "ANY"
 
   # pool-level config
   pool_name_prefix = "ci-runners-gpu-vllm"
