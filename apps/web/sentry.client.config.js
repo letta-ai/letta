@@ -35,5 +35,11 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  ignoreErrors: ['NEXT_REDIRECT', 'NEXT_NOT_FOUND', 'User not found'],
+  ignoreErrors: [
+    'NEXT_REDIRECT',
+    'NEXT_NOT_FOUND',
+    'User not found',
+    // this is an unavoidable echarts error, but does not cause any failure on the page itself
+    "Cannot read properties of undefined (reading 'getRawIndex')",
+  ],
 });
