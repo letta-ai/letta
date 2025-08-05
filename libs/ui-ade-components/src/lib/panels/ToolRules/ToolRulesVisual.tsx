@@ -95,32 +95,32 @@ function getRuleTypeIcons(
   const iconConfigs = [
     {
       type: 'run_first',
-      icon: <StartIcon />,
+      icon: <StartIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.RUN_FIRST,
     },
     {
       type: 'constrain_child_tools',
-      icon: <ConstrainChildToolsIcon />,
+      icon: <ConstrainChildToolsIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.CONSTRAIN,
     },
     {
       type: 'max_count_per_step',
-      icon: <MaxCountPerStepIcon />,
+      icon: <MaxCountPerStepIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.MAX_COUNT,
     },
     {
       type: 'continue_loop',
-      icon: <ContinueLoopIcon />,
+      icon: <ContinueLoopIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.CONTINUE,
     },
     {
       type: 'exit_loop',
-      icon: <EndIcon />,
+      icon: <EndIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.EXIT,
     },
     {
       type: 'required_before_exit',
-      icon: <EndIcon />,
+      icon: <EndIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.REQUIRED_BEFORE_EXIT,
     },
   ];
@@ -528,37 +528,37 @@ function Legend({
           <div className="tool-rules-legend__grid">
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.RUN_FIRST }}>
-                <StartIcon />
+                <StartIcon size="small" color="inherit" />
               </div>
               <span>{t('runFirst')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.CONSTRAIN }}>
-                <ConstrainChildToolsIcon />
+                <ConstrainChildToolsIcon size="small" color="inherit" />
               </div>
               <span>{t('constrain')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.MAX_COUNT }}>
-                <MaxCountPerStepIcon />
+                <MaxCountPerStepIcon size="small" color="inherit" />
               </div>
               <span>{t('maxCount')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.CONTINUE }}>
-                <ContinueLoopIcon />
+                <ContinueLoopIcon size="small" color="inherit" />
               </div>
               <span>{t('continueLoop')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.EXIT }}>
-                <EndIcon />
+                <EndIcon size="small" color="inherit" />
               </div>
               <span>{t('exitLoop')}</span>
             </div>
             <div className="tool-rules-legend__item">
               <div style={{ color: COLORS.RULE_ICONS.REQUIRED_BEFORE_EXIT }}>
-                <EndIcon />
+                <EndIcon size="small" color="inherit" />
               </div>
               <span>{t('RequiredBeforeExit')}</span>
             </div>
