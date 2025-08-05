@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
 from letta.errors import AgentFileExportError, AgentFileImportError
@@ -419,7 +419,13 @@ class AgentSerializationManager:
             logger.error(f"Failed to export agent file: {e}")
             raise AgentFileExportError(f"Export failed: {e}") from e
 
-    async def import_file(self, schema: AgentFileSchema, actor: User, dry_run: bool = False) -> ImportResult:
+    async def import_file(
+        self,
+        schema: AgentFileSchema,
+        actor: User,
+        dry_run: bool = False,
+        env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ImportResult:
         """
         Import AgentFileSchema into the database.
 
@@ -585,6 +591,10 @@ class AgentSerializationManager:
                 # Remap block_ids from file IDs to database IDs
                 if agent_data.get("block_ids"):
                     agent_data["block_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["block_ids"]]
+
+                if env_vars:
+                    for var in agent_data["tool_exec_environment_variables"]:
+                        var["value"] = env_vars.get(var["key"], "")
 
                 agent_create = CreateAgent(**agent_data)
                 created_agent = await self.agent_manager.create_agent_async(agent_create, actor, _init_with_no_messages=True)
