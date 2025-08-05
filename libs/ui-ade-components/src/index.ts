@@ -28,6 +28,7 @@ export * from './lib/panels/ToolManager/routes/LettaTools/LettaTools';
 export * from './lib/panels/ToolManager/routes/MCPServers/MCPServers';
 export * from './lib/panels/ToolManager/routes/MCPServerExplorer/MCPServerExplorer';
 export * from './lib/panels/ToolManager/ToolManager';
+export * from './lib/panels/ToolManager/components/ToolsEditor/ToolsEditor';
 
 export * from './lib/panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 export * from './lib/panels/ToolManager/hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';

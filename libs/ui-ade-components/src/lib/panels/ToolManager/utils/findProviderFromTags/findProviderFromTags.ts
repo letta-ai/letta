@@ -7,7 +7,7 @@ export function findProviderFromTags(tool: Tool) {
     return 'composio';
   }
 
-  if (isLettaTool(tool)) {
+  if (isLettaTool(tool.tool_type)) {
     return 'letta';
   }
 

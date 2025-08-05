@@ -153,7 +153,7 @@ function ToolsList(props: ToolsListProps) {
         return a.name?.localeCompare(b.name || '') || 0;
       })
       .map((tool) => {
-        const isCoreTool = isLettaTool(tool);
+        const isCoreTool = isLettaTool(tool.tool_type);
 
         return {
           name: tool.name || '',

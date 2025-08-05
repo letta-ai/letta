@@ -218,7 +218,14 @@
       "agents": "Agents",
       "identities": "Identities",
       "integrations": "Integrations",
-      "serverStatus": "Server logs"
+      "serverStatus": "Server logs",
+      "globalTools": "Tools"
     }
+  },
+  "GlobalTools": {
+    "title": "Tools",
+    "subtitle": "View and manage all available tools in your system.",
+    "loading": "Loading tools...",
+    "error": "Failed to load tools"
   }
 }

@@ -20,6 +20,7 @@ import { ToolSearchInput } from '../ToolSearchInput/ToolSearchInput';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { LettaToolViewer } from '../LettaToolViewer/LettaToolViewer';
 import { MCPToolViewer } from '../MCPToolViewer/MCPToolViewer';
+import { isLettaTool } from '@letta-cloud/sdk-core';
 
 interface ToolButtonProps {
   tool: Tool;
@@ -129,6 +130,10 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
     return null;
   }
 
+  if (isLettaTool(selectedTool.tool_type)) {
+    return <LettaToolViewer tool={selectedTool} />;
+  }
+
   switch (selectedTool.tool_type) {
     case 'external_composio':
       if (!selectedTool.name) {
@@ -153,13 +158,6 @@ function SelectedToolViewer(props: SelectedToolViewerProps) {
           description={selectedTool.description || ''}
         />
       );
-    case 'letta_memory_core':
-    case 'letta_core':
-    case 'letta_multi_agent_core':
-    case 'letta_sleeptime_core':
-    case 'letta_builtin':
-    case 'letta_files_core':
-      return <LettaToolViewer tool={selectedTool} />;
     case 'custom':
       return <LocalToolViewer tool={selectedTool} />;
     default:

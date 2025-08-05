@@ -114,7 +114,12 @@ export function ServerStatus() {
       >
         {logs.map((log, index) => (
           <HStack key={index} style={{ flexWrap: 'wrap' }}>
-            <Typography color="muted" font="mono" variant="body2" style={{ flexShrink: 0 }}>
+            <Typography
+              color="muted"
+              font="mono"
+              variant="body2"
+              style={{ flexShrink: 0 }}
+            >
               [{log.timestamp}]
             </Typography>
             <Typography

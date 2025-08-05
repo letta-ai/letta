@@ -17,10 +17,12 @@ import {
   LettaInvaderIcon,
   TerminalIcon,
   Toaster,
+  ToolsIcon,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { ADE } from './pages/ADE/ADE';
+import { GlobalTools } from './pages/GlobalTools/GlobalTools';
 import { Homepage } from './pages/Homepage/Homepage';
 import { useEffect } from 'react';
 import { Integrations } from './pages/Integrations/Integrations';
@@ -46,6 +48,15 @@ function Sidebar() {
           color="tertiary"
           label={t('Sidebar.agents')}
           tooltipPlacement="right"
+        ></Button>
+      </Link>
+      <Link to="/dashboard/global-tools">
+        <Button
+          hideLabel
+          active={location.pathname === '/dashboard/global-tools'}
+          preIcon={<ToolsIcon />}
+          color="tertiary"
+          label={t('Sidebar.globalTools')}
         ></Button>
       </Link>
       <Link to="/dashboard/identities">
@@ -161,6 +172,14 @@ export function App() {
 
           <Route path="/dashboard/integrations" element={<Integrations />} />
           <Route path="/dashboard/settings" element={<Settings />} />
+          <Route
+            path="/dashboard/global-tools"
+            element={
+              <NotConnectedOverlay>
+                <GlobalTools />
+              </NotConnectedOverlay>
+            }
+          />
         </Route>
       </Routes>
       <Toaster />
