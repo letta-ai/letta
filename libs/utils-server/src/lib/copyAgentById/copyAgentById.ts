@@ -65,7 +65,6 @@ export async function copyAgentById(
     {
       requestBody: {
         ...lodash.omit(baseAgent, omittedFieldsOnCopy),
-        // TEMP FIX THIS IN ONE WEEEK SHUB - https://linear.app/letta/issue/LET-3511/fix-in-one-week
         project_id: projectId,
         template_id: templateVersionId,
         identity_ids: identityIds,
