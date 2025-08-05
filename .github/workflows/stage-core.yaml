@@ -131,6 +131,8 @@ jobs:
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
           LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317

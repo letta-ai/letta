@@ -210,6 +210,8 @@ describe-web:
         --set secrets.GEMINI_API_KEY=${GEMINI_API_KEY} \
         --set secrets.SENTRY_DSN=${SENTRY_DSN} \
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
+        --set secrets.MODAL_TOKEN_ID=${MODAL_TOKEN_ID} \
+        --set secrets.MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET} \
         --set secrets.E2B_SANDBOX_TEMPLATE_ID=${E2B_SANDBOX_TEMPLATE_ID} \
         --set secrets.TAVILY_API_KEY=${TAVILY_API_KEY} \
         --set secrets.LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS=True \
