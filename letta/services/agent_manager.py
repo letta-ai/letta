@@ -19,6 +19,7 @@ from letta.constants import (
     DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
     DEPRECATED_LETTA_TOOLS,
+    EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
 )
 from letta.helpers import ToolRulesSolver
@@ -331,11 +332,19 @@ class AgentManager:
                 tool_names = set(name_to_id.keys())  # now canonical
 
                 tool_rules = list(agent_create.tool_rules or [])
-                if agent_create.include_base_tool_rules:
+
+                # Override include_base_tool_rules to True if provider is not in excluded set
+                if agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES:
+                    agent_create.include_base_tool_rules = False
+                    logger.info(f"Overriding include_base_tool_rules to True for provider: {agent_create.llm_config.model_endpoint_type}")
+
+                should_add_base_tool_rules = agent_create.include_base_tool_rules
+
+                if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
-                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
                 if tool_rules:
@@ -523,7 +532,15 @@ class AgentManager:
                 tool_names = set(name_to_id.keys())  # now canonical
 
                 tool_rules = list(agent_create.tool_rules or [])
-                if agent_create.include_base_tool_rules:
+
+                # Override include_base_tool_rules to True if provider is not in excluded set
+                if agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES:
+                    agent_create.include_base_tool_rules = False
+                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+
+                should_add_base_tool_rules = agent_create.include_base_tool_rules
+
+                if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
