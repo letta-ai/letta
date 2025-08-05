@@ -802,6 +802,68 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
     assert sorted(tool_names) == sorted(expected_tools)
 
 
+@pytest.mark.asyncio
+async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServer, default_user, event_loop):
+    """Test that include_base_tool_rules is overridden to False for excluded providers"""
+    # Upsert base tools
+    server.tool_manager.upsert_base_tools(actor=default_user)
+
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    # Test with excluded provider (openai)
+    create_agent_request = CreateAgent(
+        name="test_excluded_provider_agent",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig.default_config("gpt-4o-mini"),  # This has model_endpoint_type="openai"
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        include_base_tool_rules=True,  # Should be overridden to False
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Assert that no base tool rules were added (since include_base_tool_rules was overridden to False)
+    assert created_agent.tool_rules is None or len(created_agent.tool_rules) == 0
+
+
+@pytest.mark.asyncio
+async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncServer, default_user, event_loop):
+    """Test that include_base_tool_rules is NOT overridden for non-excluded providers"""
+    # Upsert base tools
+    server.tool_manager.upsert_base_tools(actor=default_user)
+
+    memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
+
+    # Test with non-excluded provider (together)
+    create_agent_request = CreateAgent(
+        name="test_non_excluded_provider_agent",
+        system="test system",
+        memory_blocks=memory_blocks,
+        llm_config=LLMConfig(
+            model="llama-3.1-8b-instruct",
+            model_endpoint_type="together",  # Not in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+            model_endpoint="https://api.together.xyz",
+            context_window=8192,
+        ),
+        embedding_config=EmbeddingConfig.default_config(provider="openai"),
+        include_base_tool_rules=True,  # Should remain True
+    )
+
+    # Create the agent
+    created_agent = await server.agent_manager.create_agent_async(
+        create_agent_request,
+        actor=default_user,
+    )
+
+    # Assert that base tool rules were added (since include_base_tool_rules remained True)
+    assert created_agent.tool_rules is not None
+    assert len(created_agent.tool_rules) > 0
+
+
 def test_calculate_multi_agent_tools(set_letta_environment):
     """Test that calculate_multi_agent_tools excludes local-only tools in production."""
     result = calculate_multi_agent_tools()
@@ -5526,6 +5588,35 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
 
 
 @pytest.mark.asyncio
+async def test_upsert_properties(server: SyncServer, default_user, event_loop):
+    identity_create = IdentityCreate(
+        identifier_key="1234",
+        name="caren",
+        identity_type=IdentityType.user,
+        properties=[
+            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
+            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
+        ],
+    )
+
+    identity = await server.identity_manager.create_identity_async(identity_create, actor=default_user)
+    properties = [
+        IdentityProperty(key="email", value="caren@gmail.com", type=IdentityPropertyType.string),
+        IdentityProperty(key="age", value="28", type=IdentityPropertyType.string),
+        IdentityProperty(key="test", value=123, type=IdentityPropertyType.number),
+    ]
+
+    updated_identity = await server.identity_manager.upsert_identity_properties_async(
+        identity_id=identity.id,
+        properties=properties,
+        actor=default_user,
+    )
+    assert updated_identity.properties == properties
+
+    await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
+
+
+@pytest.mark.asyncio
 async def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user, event_loop):
     # Create an identity
     identity = await server.identity_manager.create_identity_async(
@@ -5594,35 +5685,6 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     assert default_block.id in block_ids
     assert not block_with_identity.id in block_ids
     assert not block_without_identity.id in block_ids
-
-    await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
-
-
-@pytest.mark.asyncio
-async def test_upsert_properties(server: SyncServer, default_user, event_loop):
-    identity_create = IdentityCreate(
-        identifier_key="1234",
-        name="caren",
-        identity_type=IdentityType.user,
-        properties=[
-            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
-            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
-        ],
-    )
-
-    identity = await server.identity_manager.create_identity_async(identity_create, actor=default_user)
-    properties = [
-        IdentityProperty(key="email", value="caren@gmail.com", type=IdentityPropertyType.string),
-        IdentityProperty(key="age", value="28", type=IdentityPropertyType.string),
-        IdentityProperty(key="test", value=123, type=IdentityPropertyType.number),
-    ]
-
-    updated_identity = await server.identity_manager.upsert_identity_properties_async(
-        identity_id=identity.id,
-        properties=properties,
-        actor=default_user,
-    )
-    assert updated_identity.properties == properties
 
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 

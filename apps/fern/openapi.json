@@ -17315,7 +17315,7 @@
             ],
             "title": "Prompt Template",
             "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>"
+            "default": "<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>"
           },
           "max_count_limit": {
             "type": "integer",

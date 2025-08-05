@@ -7504,7 +7504,7 @@ export const $MaxCountPerStepToolRule = {
       description:
         'Optional Jinja2 template for generating agent prompt about this tool rule.',
       default: `<tool_rule>
-{{ tool_name }}: max {{ max_count_limit }} use(s) per response
+{{ tool_name }}: at most {{ max_count_limit }} use(s) per response
 </tool_rule>`,
     },
     max_count_limit: {
