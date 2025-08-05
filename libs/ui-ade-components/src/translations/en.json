@@ -66,6 +66,7 @@
     "title": "Network Inspector",
     "request": "Payload",
     "copyCurl": "Copy cURL request",
+    "pending": "Pending",
     "viewInDocs": "View in docs",
     "response": "Response",
     "copyText": "Copy {type} to clipboard",

@@ -7,7 +7,7 @@ export interface NetworkRequest {
   date: Date;
   url: string;
   method: string;
-  status: number;
+  status?: number;
   payload: any;
   response: any;
 }

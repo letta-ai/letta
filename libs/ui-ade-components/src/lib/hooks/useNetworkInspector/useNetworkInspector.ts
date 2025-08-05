@@ -21,7 +21,9 @@ export function useNetworkInspector() {
     if (mostRecentErrorRequestId) {
       openNetworkInspectorWithRequest(mostRecentErrorRequestId);
     } else {
-      const mostRecentError = networkRequests.find((req) => req.status >= 400);
+      const mostRecentError = networkRequests.find(
+        (req) => req.status && req.status >= 400,
+      );
       if (mostRecentError?.id) {
         openNetworkInspectorWithRequest(mostRecentError.id);
       } else {
@@ -44,7 +46,7 @@ export function useNetworkInspector() {
         openNetworkInspectorWithRequest(mostRecentErrorRequestId);
       } else {
         const mostRecentError = networkRequests.find(
-          (req) => req.status >= 400,
+          (req) => req.status && req.status >= 400,
         );
         if (mostRecentError?.id) {
           openNetworkInspectorWithRequest(mostRecentError.id);

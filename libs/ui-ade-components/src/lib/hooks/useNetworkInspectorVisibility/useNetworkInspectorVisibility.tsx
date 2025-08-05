@@ -46,6 +46,7 @@ export function OpenInNetworkInspectorButton(
   return (
     <button
       className="items-center flex"
+      type="button"
       onClick={() => {
         setNetworkInspectorState({
           isOpen: true,
@@ -66,7 +67,10 @@ export function useGlobalNetworkInterceptor() {
   useEffect(() => {
     function interceptor(response: AxiosResponse) {
       // filter out GET requests
-      if (response.config.method?.toLowerCase() === 'get') {
+      if (
+        response.config.method?.toLowerCase() === 'get' &&
+        response.status === 200
+      ) {
         return response;
       }
 

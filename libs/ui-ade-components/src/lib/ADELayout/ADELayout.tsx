@@ -62,12 +62,7 @@ import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import {
-  useNetworkInspectorVisibility,
-  useGlobalNetworkInterceptor,
-} from '../hooks';
-import { useHotkeys } from '@mantine/hooks';
-import { adeKeyMap } from '../adeKeyMap';
+import { useGlobalNetworkInterceptor } from '../hooks';
 import {
   useSetOnboardingStep,
   useUnpauseOnboarding,
@@ -126,20 +121,6 @@ function DesktopLayout() {
   const leftSidebarRef = useRef<ImperativePanelHandle>(null);
   const rightSidebarRef = useRef<ImperativePanelHandle>(null);
 
-  const [networkInspectorOpen, setNetworkInspectorOpen] =
-    useNetworkInspectorVisibility();
-  useHotkeys([
-    [
-      adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
-      () => {
-        setNetworkInspectorOpen((prev) => ({
-          ...prev,
-          isOpen: !prev.isOpen,
-        }));
-      },
-    ],
-  ]);
-
   const onLayout = useCallback(
     (panelLayout: number[]) => {
       setLayoutConfig({ panelLayout });
@@ -183,6 +164,7 @@ function DesktopLayout() {
       fullWidth
       fullHeight
     >
+      <NetworkInspector />
       <div
         className="w-[1px] h-[1px] opacity-0 fixed bg-transparent top-0 left-0"
         onClick={toggleLeftPanel}
@@ -310,19 +292,6 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
-        {networkInspectorOpen.isOpen && (
-          <>
-            <PanelResizeHandle className="w-[1px]" />
-            <Panel
-              defaultSize={20}
-              defaultValue={20}
-              className="h-full"
-              minSize={10}
-            >
-              <NetworkInspector />
-            </Panel>
-          </>
-        )}
       </PanelGroup>
     </HStack>
   );

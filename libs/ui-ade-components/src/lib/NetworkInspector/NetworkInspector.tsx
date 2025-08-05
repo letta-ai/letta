@@ -1,7 +1,6 @@
 'use client';
 import { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { ADEGroup } from '../shared/ADEGroup/ADEGroup';
 import {
   Alert,
   Badge,
@@ -12,10 +11,8 @@ import {
   JSONViewer,
   MiddleTruncate,
   Typography,
-  Button,
   VStack,
-  CloseIcon,
-  InfoTooltip,
+  DynamicApp,
 } from '@letta-cloud/ui-component-library';
 import {
   useCurrentAPIHostConfig,
@@ -30,6 +27,8 @@ import {
 } from '../hooks/useNetworkRequest/useNetworkRequest';
 import { atom, useAtom } from 'jotai';
 import React from 'react';
+import { useHotkeys } from '@mantine/hooks';
+import { adeKeyMap } from '../adeKeyMap';
 
 interface RequestItemProps {
   request: NetworkRequest;
@@ -115,6 +114,16 @@ function RequestItem(props: RequestItemProps) {
     attachApiKey: true,
   });
 
+  const statusColor = useMemo(() => {
+    if (!request.status) {
+      return 'info';
+    }
+
+    return request.status >= 200 && request.status < 300
+      ? 'success'
+      : 'destructive';
+  }, [request.status]);
+
   return (
     <VStack border={expanded} gap={false}>
       <HStack
@@ -152,12 +161,8 @@ function RequestItem(props: RequestItemProps) {
         </Typography>
         <Badge
           size="small"
-          content={request.status}
-          variant={
-            request.status >= 200 && request.status < 300
-              ? 'success'
-              : 'destructive'
-          }
+          content={request.status || t('pending')}
+          variant={statusColor}
         />
       </HStack>
       {expanded && (
@@ -247,6 +252,20 @@ function RequestList(props: RequestListProps) {
 export function NetworkInspector() {
   const { networkRequests } = useNetworkRequest();
 
+  const [networkInspectorOpen, setNetworkInspectorOpen] =
+    useNetworkInspectorVisibility();
+  useHotkeys([
+    [
+      adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
+      () => {
+        setNetworkInspectorOpen((prev) => ({
+          ...prev,
+          isOpen: !prev.isOpen,
+        }));
+      },
+    ],
+  ]);
+
   const t = useTranslations('ADE/NetworkInspector');
 
   const [networkInspectorState, setNetworkInspectorState] =
@@ -291,36 +310,27 @@ export function NetworkInspector() {
   ]);
 
   return (
-    <ADEGroup
-      items={[
-        {
-          id: 'network-inspector',
-          title: (
-            <HStack as="span" align="center">
-              {t('title')}
-              <InfoTooltip text={t('description')} />
-            </HStack>
-          ),
-          badge: (
-            <HStack>
-              <Button
-                size="xsmall"
-                hideLabel
-                label={t('close')}
-                preIcon={<CloseIcon />}
-                color="tertiary"
-                onClick={() => {
-                  setNetworkInspectorState({
-                    isOpen: false,
-                    expandRequestId: null,
-                  });
-                }}
-              />
-            </HStack>
-          ),
-          content: <RequestList networkLogs={networkRequests} />,
-        },
-      ]}
-    />
+    <DynamicApp
+      isOpen={networkInspectorOpen.isOpen}
+      onOpenChange={(status) => {
+        setNetworkInspectorOpen((prev) => ({
+          ...prev,
+          isOpen: status,
+        }));
+        if (!status) {
+          setExpandedRequestId(null);
+        }
+      }}
+      name={t('title')}
+      windowConfiguration={{
+        defaultHeight: 600,
+        defaultWidth: 400,
+        minHeight: 400,
+        minWidth: 300,
+      }}
+      defaultView="windowed"
+    >
+      <RequestList networkLogs={networkRequests} />
+    </DynamicApp>
   );
 }
