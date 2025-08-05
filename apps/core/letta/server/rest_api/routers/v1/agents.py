@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
@@ -169,16 +169,17 @@ def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
-    append_copy_suffix: bool = Query(True, description='If set to True, appends "_copy" to the end of the agent name.'),
-    override_existing_tools: bool = Query(
+    append_copy_suffix: bool = Form(True, description='If set to True, appends "_copy" to the end of the agent name.'),
+    override_existing_tools: bool = Form(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
     ),
-    project_id: str | None = Query(None, description="The project ID to associate the uploaded agent with."),
-    strip_messages: bool = Query(
+    project_id: str | None = Form(None, description="The project ID to associate the uploaded agent with."),
+    strip_messages: bool = Form(
         False,
         description="If set to True, strips all messages from the agent before importing.",
     ),
+    env_vars: Optional[Dict[str, Any]] = Form(None, description="Environment variables to pass to the agent for tool execution."),
 ):
     """
     Import a serialized agent file and recreate the agent in the system.
@@ -199,6 +200,7 @@ def import_agent_serialized(
             override_existing_tools=override_existing_tools,
             project_id=project_id,
             strip_messages=strip_messages,
+            env_vars=env_vars,
         )
         return new_agent
 

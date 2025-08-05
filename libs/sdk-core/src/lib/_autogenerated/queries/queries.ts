@@ -4004,10 +4004,6 @@ export const useAgentsServiceCreateAgent = <
  * Import a serialized agent file and recreate the agent in the system.
  * @param data The data for the request.
  * @param data.formData
- * @param data.appendCopySuffix If set to True, appends "_copy" to the end of the agent name.
- * @param data.overrideExistingTools If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
- * @param data.projectId The project ID to associate the uploaded agent with.
- * @param data.stripMessages If set to True, strips all messages from the agent before importing.
  * @param data.userId
  * @returns AgentState Successful Response
  * @throws ApiError
@@ -4022,11 +4018,7 @@ export const useAgentsServiceImportAgentSerialized = <
       TData,
       TError,
       {
-        appendCopySuffix?: boolean;
         formData: Body_import_agent_serialized;
-        overrideExistingTools?: boolean;
-        projectId?: string;
-        stripMessages?: boolean;
         userId?: string;
       },
       TContext
@@ -4038,29 +4030,14 @@ export const useAgentsServiceImportAgentSerialized = <
     TData,
     TError,
     {
-      appendCopySuffix?: boolean;
       formData: Body_import_agent_serialized;
-      overrideExistingTools?: boolean;
-      projectId?: string;
-      stripMessages?: boolean;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({
-      appendCopySuffix,
-      formData,
-      overrideExistingTools,
-      projectId,
-      stripMessages,
-      userId,
-    }) =>
+    mutationFn: ({ formData, userId }) =>
       AgentsService.importAgentSerialized({
-        appendCopySuffix,
         formData,
-        overrideExistingTools,
-        projectId,
-        stripMessages,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

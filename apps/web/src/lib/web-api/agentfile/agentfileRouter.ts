@@ -120,8 +120,10 @@ export async function cloneAgentfile(
 
   const agent = await AgentsService.importAgentSerialized(
     {
-      formData: formattedAgentfile,
-      projectId: project.id,
+      formData: {
+        ...formattedAgentfile,
+        project_id: project.id,
+      },
     },
     {
       user_id: user.lettaAgentsId,

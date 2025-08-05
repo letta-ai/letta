@@ -1851,6 +1851,53 @@ export const $Body_import_agent_serialized = {
       format: 'binary',
       title: 'File',
     },
+    append_copy_suffix: {
+      type: 'boolean',
+      title: 'Append Copy Suffix',
+      description:
+        'If set to True, appends "_copy" to the end of the agent name.',
+      default: true,
+    },
+    override_existing_tools: {
+      type: 'boolean',
+      title: 'Override Existing Tools',
+      description:
+        'If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.',
+      default: true,
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The project ID to associate the uploaded agent with.',
+    },
+    strip_messages: {
+      type: 'boolean',
+      title: 'Strip Messages',
+      description:
+        'If set to True, strips all messages from the agent before importing.',
+      default: false,
+    },
+    env_vars: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Env Vars',
+      description:
+        'Environment variables to pass to the agent for tool execution.',
+    },
   },
   type: 'object',
   required: ['file'],

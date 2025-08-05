@@ -1,7 +1,7 @@
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import sqlalchemy as sa
 from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
@@ -1442,6 +1442,7 @@ class AgentManager:
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
         strip_messages: Optional[bool] = False,
+        env_vars: Optional[dict[str, Any]] = None,
     ) -> PydanticAgentState:
         serialized_agent_dict = serialized_agent.model_dump()
         tool_data_list = serialized_agent_dict.pop("tools", [])
@@ -1472,6 +1473,11 @@ class AgentManager:
             if strip_messages:
                 # we want to strip all but the first (system) message
                 agent.message_ids = [agent.message_ids[0]]
+
+            if env_vars:
+                for var in agent.tool_exec_environment_variables:
+                    var.value = env_vars.get(var.key, "")
+
             agent = agent.create(session, actor=actor)
 
             pydantic_agent = agent.to_pydantic()

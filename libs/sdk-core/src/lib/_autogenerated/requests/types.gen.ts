@@ -625,6 +625,28 @@ export type BlockUpdate = {
 
 export type Body_import_agent_serialized = {
   file: Blob | File;
+  /**
+   * If set to True, appends "_copy" to the end of the agent name.
+   */
+  append_copy_suffix?: boolean;
+  /**
+   * If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
+   */
+  override_existing_tools?: boolean;
+  /**
+   * The project ID to associate the uploaded agent with.
+   */
+  project_id?: string | null;
+  /**
+   * If set to True, strips all messages from the agent before importing.
+   */
+  strip_messages?: boolean;
+  /**
+   * Environment variables to pass to the agent for tool execution.
+   */
+  env_vars?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type Body_upload_file_to_folder = {
@@ -5506,23 +5528,7 @@ export type ExportAgentSerializedData = {
 export type ExportAgentSerializedResponse = string;
 
 export type ImportAgentSerializedData = {
-  /**
-   * If set to True, appends "_copy" to the end of the agent name.
-   */
-  appendCopySuffix?: boolean;
   formData: Body_import_agent_serialized;
-  /**
-   * If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.
-   */
-  overrideExistingTools?: boolean;
-  /**
-   * The project ID to associate the uploaded agent with.
-   */
-  projectId?: string | null;
-  /**
-   * If set to True, strips all messages from the agent before importing.
-   */
-  stripMessages?: boolean;
   userId?: string | null;
 };
 

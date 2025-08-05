@@ -235,8 +235,12 @@ const importAgentFileAsTemplateContract = c.mutation({
   path: '/agent-template/import',
   body: c.type<{
     file: File;
+    append_copy_suffix?: boolean;
+    override_existing_tools?: boolean;
+    project_id?: string | null;
+    strip_messages?: boolean;
+    env_vars?: Record<string, string> | null;
   }>(),
-  query: zodTypes.post_Import_agent_serialized.parameters.shape.query,
   responses: {
     201: z.object({
       name: z.string(),

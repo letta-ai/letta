@@ -511,8 +511,6 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         importTemplate({
           body: {
             file: file,
-          },
-          query: {
             append_copy_suffix: values.appendCopySuffix,
             override_existing_tools: values.overrideExistingTools,
             ...(projectId ? { project_id: projectId } : {}),
@@ -524,10 +522,10 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       importAgent({
         formData: {
           file: file,
+          ...(projectId ? { projectId } : {}),
+          append_copy_suffix: values.appendCopySuffix,
+          override_existing_tools: values.overrideExistingTools,
         },
-        ...(projectId ? { projectId } : {}),
-        appendCopySuffix: values.appendCopySuffix,
-        overrideExistingTools: values.overrideExistingTools,
       });
     },
     [importAgent, file, importTemplate, projectId],

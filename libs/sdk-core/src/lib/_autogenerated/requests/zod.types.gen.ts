@@ -1843,6 +1843,25 @@ export type Body_import_agent_serialized = z.infer<
 >;
 export const Body_import_agent_serialized = z.object({
   file: z.string(),
+  append_copy_suffix: z.union([z.boolean(), z.undefined()]).optional(),
+  override_existing_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  strip_messages: z.union([z.boolean(), z.undefined()]).optional(),
+  env_vars: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type Body_upload_file_to_folder = z.infer<
@@ -7637,14 +7656,6 @@ export const post_Import_agent_serialized = {
   path: z.literal('/v1/agents/import'),
   requestFormat: z.literal('form-data'),
   parameters: z.object({
-    query: z.object({
-      append_copy_suffix: z.boolean().optional(),
-      override_existing_tools: z.boolean().optional(),
-      project_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      strip_messages: z.boolean().optional(),
-    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])

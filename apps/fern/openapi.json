@@ -2952,62 +2952,7 @@
         "summary": "Import Agent Serialized",
         "description": "Import a serialized agent file and recreate the agent in the system.",
         "operationId": "import_agent_serialized",
-        "parameters": [
-          {
-            "name": "append_copy_suffix",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If set to True, appends \"_copy\" to the end of the agent name.",
-              "default": true,
-              "title": "Append Copy Suffix"
-            },
-            "description": "If set to True, appends \"_copy\" to the end of the agent name."
-          },
-          {
-            "name": "override_existing_tools",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
-              "default": true,
-              "title": "Override Existing Tools"
-            },
-            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally."
-          },
-          {
-            "name": "project_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "The project ID to associate the uploaded agent with.",
-              "title": "Project Id"
-            },
-            "description": "The project ID to associate the uploaded agent with."
-          },
-          {
-            "name": "strip_messages",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "If set to True, strips all messages from the agent before importing.",
-              "default": false,
-              "title": "Strip Messages"
-            },
-            "description": "If set to True, strips all messages from the agent before importing."
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -11943,6 +11888,49 @@
             "type": "string",
             "format": "binary",
             "title": "File"
+          },
+          "append_copy_suffix": {
+            "type": "boolean",
+            "title": "Append Copy Suffix",
+            "description": "If set to True, appends \"_copy\" to the end of the agent name.",
+            "default": true
+          },
+          "override_existing_tools": {
+            "type": "boolean",
+            "title": "Override Existing Tools",
+            "description": "If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+            "default": true
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The project ID to associate the uploaded agent with."
+          },
+          "strip_messages": {
+            "type": "boolean",
+            "title": "Strip Messages",
+            "description": "If set to True, strips all messages from the agent before importing.",
+            "default": false
+          },
+          "env_vars": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Env Vars",
+            "description": "Environment variables to pass to the agent for tool execution."
           }
         },
         "type": "object",

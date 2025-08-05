@@ -508,7 +508,7 @@ async function importAgentFileAsTemplate(
     lettaAgentsId,
   } = await getUserWithActiveOrganizationIdOrThrow();
 
-  const { append_copy_suffix, override_existing_tools, project_id } = req.query;
+  const { append_copy_suffix, override_existing_tools, project_id } = req.body;
 
   if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
     return {
@@ -542,11 +542,11 @@ async function importAgentFileAsTemplate(
   const agent = await AgentsService.importAgentSerialized({
     formData: {
       file: file as Blob,
+      project_id: getTemplateProjectId(project_id),
+      append_copy_suffix: append_copy_suffix,
+      strip_messages: true,
+      override_existing_tools: override_existing_tools,
     },
-    projectId: getTemplateProjectId(project_id),
-    appendCopySuffix: append_copy_suffix,
-    stripMessages: true,
-    overrideExistingTools: override_existing_tools,
   });
 
   const response = await createTemplate({
