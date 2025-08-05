@@ -1254,42 +1254,53 @@ export function Messages(props: MessagesProps) {
   }, [handleScroll, cleanup]);
 
   return (
-    <VStack
-      data-testid="messages-list"
-      ref={ref}
-      fullWidth
-      collapseHeight
-      overflowY="auto"
-      className={cn(
-        'relative scroll-smooth',
-        !initialized && 'pointer-events-none',
-        initialized ? 'visible' : 'invisible',
-      )}
-      gap="small"
-      padding="small"
-    >
-      {AutoLoadIndicator}
-      {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
-      {messageGroups.map((group, index) => (
-        <MessageGroup
-          key={group.id}
-          group={group}
-          dataAnchor={index === 0 ? 'old-first' : undefined}
-        />
-      ))}
-      {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
-        <Alert variant="info" title={t('noParsableMessages')} />
-      )}
-      {data &&
-        !hasNextPage &&
-        messageGroups.length === 0 &&
-        mode !== 'simple' && (
-          <LoadingEmptyStatusComponent
-            loaderVariant="spinner"
-            loaderFillColor="background-grey"
-            emptyMessage={t('noMessages')}
-          />
+    <VStack collapseHeight flex overflow="hidden">
+      <VStack
+        data-testid="messages-list"
+        ref={ref}
+        fullWidth
+        fullHeight
+        overflowY="auto"
+        className={cn(
+          'relative scroll-smooth',
+          !initialized && 'pointer-events-none',
+          initialized ? 'visible' : 'invisible',
         )}
+        gap="small"
+        padding="small"
+      >
+        {AutoLoadIndicator}
+        {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
+        {messageGroups.map((group, index) => (
+          <MessageGroup
+            key={group.id}
+            group={group}
+            dataAnchor={index === 0 ? 'old-first' : undefined}
+          />
+        ))}
+        {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
+          <Alert variant="info" title={t('noParsableMessages')} />
+        )}
+      </VStack>
+      <div
+        className={cn(
+          'absolute w-full overflow-hidden h-full top-0 left-0 items-center justify-center transition-opacity duration-500',
+          !(
+            data &&
+            !hasNextPage &&
+            messageGroups.length === 0 &&
+            mode !== 'simple'
+          )
+            ? 'opacity-0 pointer-events-none'
+            : '',
+        )}
+      >
+        <LoadingEmptyStatusComponent
+          loaderVariant="spinner"
+          loaderFillColor="background-grey"
+          emptyMessage={t('noMessages')}
+        />
+      </div>
       <div
         className={cn(
           'absolute w-full overflow-hidden h-full top-0 left-0 items-center justify-center transition-opacity duration-500',
