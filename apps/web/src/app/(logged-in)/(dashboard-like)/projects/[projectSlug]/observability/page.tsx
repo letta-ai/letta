@@ -11,7 +11,6 @@ import { ObservabilityOverview } from './_components/ObservabilityOverview/Obser
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
-import { ToolUsageFrequencyChart } from './_components/charts/ToolUsageFrequencyChart/ToolUsageFrequencyChart';
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
 import { ToolLatencyChart } from './_components/charts/ToolLatencyChart/ToolLatencyChart';
 import { ToolLatencyByToolNameChart } from './_components/charts/ToolLatencyByToolNameChart/ToolLatencyByToolNameChart';
@@ -39,7 +38,6 @@ const allCharts = [
   <TotalResponseTimeChart key="total-response-time-chart" />,
   <APIErrorsChart key="api-errors-chart" />,
   <ToolErrorRateChart key="tool-error-rate-chart" />,
-  <ToolUsageFrequencyChart key="tool-usage-frequency-chart" />,
   <LLMLatencyChart key="llm-latency-chart" />,
   <ToolLatencyChart key="tool-latency-chart" />,
 ];
@@ -47,7 +45,6 @@ const allCharts = [
 const activityCharts = [
   <ActiveAgentChart key="active-agent-chart" />,
   <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
-  <ToolUsageFrequencyChart key="tool-usage-frequency-chart" />,
 ];
 
 const performanceCharts = [
