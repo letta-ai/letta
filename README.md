@@ -181,7 +181,7 @@ In the CLI tool, you'll be able to create new agents, or load existing agents:
 ```
 🧬 Creating new agent...
 ? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
-? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.memgpt.ai]
+? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.letta.com]
 ->  🤖 Using persona profile: 'sam_pov'
 ->  🧑 Using human profile: 'basic'
 ->  🛠️  8 tools: send_message, pause_heartbeats, conversation_search, conversation_search_date, archival_memory_insert, archival_memory_search, core_memory_append, core_memory_replace
@@ -247,7 +247,7 @@ letta run
 ```
 🧬 Creating new agent...
 ? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
-? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.memgpt.ai]
+? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.letta.com]
 ->  🤖 Using persona profile: 'sam_pov'
 ->  🧑 Using human profile: 'basic'
 ->  🛠️  8 tools: send_message, pause_heartbeats, conversation_search, conversation_search_date, archival_memory_insert, archival_memory_search, core_memory_append, core_memory_replace
