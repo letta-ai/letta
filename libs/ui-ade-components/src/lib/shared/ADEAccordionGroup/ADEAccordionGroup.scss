@@ -22,3 +22,48 @@
   }
 }
 
+
+.sticky-button {
+
+
+}
+
+.sticky-button-fade-in-and-appear {
+  animation: sticky-button-fade-in-and-appear 0.3s ease-in-out forwards;
+}
+
+@keyframes sticky-button-fade-in-and-appear {
+  from {
+    opacity: 0;
+    width: 0;
+  }
+  to {
+    opacity: 1;
+    width: auto;
+    transform: translateY(0);
+  }
+}
+
+.sticky-button-fade-out-and-disappear {
+  animation: sticky-button-fade-out-and-disappear 0.3s ease-in-out forwards;
+}
+
+@keyframes sticky-button-fade-out-and-disappear {
+  0% {
+    opacity: 1;
+    width: auto;
+    transform: translateY(0);
+  }
+
+
+  99% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    width: 0;
+    max-width: 0;
+  }
+}

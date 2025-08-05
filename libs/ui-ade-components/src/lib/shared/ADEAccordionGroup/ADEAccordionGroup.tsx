@@ -2,8 +2,10 @@
 
 import { useRef, useState, useEffect, useMemo, Fragment } from 'react';
 import {
+  Button,
+  CaretDownIcon,
   ChevronDownIcon,
-  StickyPanels,
+  HStack,
   Typography,
 } from '@letta-cloud/ui-component-library';
 import type { ReactNode } from 'react';
@@ -173,14 +175,25 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
     [panels],
   );
 
-  const topStickyPanels = useMemo(
-    () => visibleTopPanelHeaderIds.map((id) => panelsById[id]).filter(Boolean),
-    [visibleTopPanelHeaderIds, panelsById],
-  );
-  const bottomStickyPanels = useMemo(
+  const bottomHiddenPanels = useMemo(
     () =>
-      visibleBottomPanelHeaderIds.map((id) => panelsById[id]).filter(Boolean),
+      new Set(
+        visibleBottomPanelHeaderIds
+          .map((id) => panelsById[id])
+          .filter(Boolean)
+          .map((panel) => panel.id),
+      ),
     [visibleBottomPanelHeaderIds, panelsById],
+  );
+
+  const [openStates, setOpenStates] = useState<boolean[]>(
+    panels.map((panel) => {
+      if (typeof panel.defaultOpen === 'boolean') {
+        return panel.defaultOpen;
+      }
+
+      return true;
+    }),
   );
 
   function handleScrollToAnchor(targetSection: string) {
@@ -195,65 +208,103 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
         top: targetTop - topOffset - diff - STICKY_HEADER_HEIGHT, // adjust for sticky headers
         behavior: 'smooth',
       });
+
+      // also open the panel if it's not already open
+      setOpenStates((prev) => {
+        const newStates = [...prev];
+        if (!newStates[targetIndex]) {
+          newStates[targetIndex] = true;
+        }
+        return newStates;
+      });
     }
   }
-
-  const [openStates, setOpenStates] = useState<boolean[]>(
-    panels.map((panel) => {
-      if (typeof panel.defaultOpen === 'boolean') {
-        return panel.defaultOpen;
-      }
-
-      return true;
-    }),
-  );
 
   const lastOpenIndex = useMemo(() => {
     return openStates.lastIndexOf(true);
   }, [openStates]);
 
+  const allPanels = useMemo(() => {
+    return panels.map((panel) => panel.id);
+  }, [panels]);
+
   return (
-    <div
-      ref={containerRef}
-      className="overflow-auto stabilize-scrollbar ade-accordion-group flex flex-col h-full"
-    >
-      {topStickyPanels.length > 0 && (
-        <StickyPanels
-          panels={topStickyPanels}
-          onClick={handleScrollToAnchor}
-          position="top"
-        />
-      )}
-      {panels.map((panel, idx) => (
-        <Fragment key={panel.id}>
-          <ADEAccordionItem
-            key={panel.id}
-            item={panel}
-            idx={idx}
-            open={openStates[idx]}
-            onOpenChange={() => {
-              setOpenStates((prev) => {
-                const newStates = [...prev];
-                newStates[idx] = !newStates[idx];
-                return newStates;
-              });
-            }}
-            lastOpen={idx === lastOpenIndex}
-            panelLength={panels.length}
-            panelRefs={panelRefs}
-          />
-          {idx < panels.length - 1 && (
-            <div className="h-[1px] min-h-[1px] bg-border w-fullplusscollbar" />
-          )}
-        </Fragment>
-      ))}
-      {bottomStickyPanels.length > 0 && (
-        <StickyPanels
-          panels={bottomStickyPanels}
-          onClick={handleScrollToAnchor}
-          position="bottom"
-        />
-      )}
+    <div className="flex flex-col h-full overflow-hidden ">
+      <div
+        ref={containerRef}
+        className="overflow-auto stabilize-scrollbar ade-accordion-group transition-[height] flex flex-col flex-1"
+      >
+        {panels.map((panel, idx) => (
+          <Fragment key={panel.id}>
+            <ADEAccordionItem
+              key={panel.id}
+              item={panel}
+              idx={idx}
+              open={openStates[idx]}
+              onOpenChange={() => {
+                setOpenStates((prev) => {
+                  const newStates = [...prev];
+                  newStates[idx] = !newStates[idx];
+                  return newStates;
+                });
+              }}
+              lastOpen={idx === lastOpenIndex}
+              panelLength={panels.length}
+              panelRefs={panelRefs}
+            />
+            {idx < panels.length - 1 && (
+              <div className="h-[1px] min-h-[1px] bg-border w-fullplusscollbar" />
+            )}
+          </Fragment>
+        ))}
+      </div>
+      <div
+        style={{ height: bottomHiddenPanels.size ? '40px' : '0px' }}
+        className="transition-[height] flex-shrink-0"
+      >
+        <HStack
+          as="nav"
+          padding="small"
+          overflowX="hidden"
+          overflowY="hidden"
+          className="stabilize-scrollbar"
+          gap={false}
+          borderTop
+          align="center"
+          fullHeight
+        >
+          {allPanels.map((panelId) => {
+            const isVisible = bottomHiddenPanels.has(panelId);
+            const panel = panelsById[panelId];
+
+            if (!panel) {
+              return null;
+            }
+
+            return (
+              <div
+                key={panelId}
+                className={cn(
+                  'sticky-button',
+                  isVisible
+                    ? 'sticky-button-fade-in-and-appear'
+                    : 'sticky-button-fade-out-and-disappear',
+                )}
+              >
+                <Button
+                  preIcon={<CaretDownIcon />}
+                  label={panel.label}
+                  size="xsmall"
+                  color="tertiary"
+                  onClick={() => {
+                    handleScrollToAnchor(panelId);
+                  }}
+                ></Button>
+              </div>
+            );
+          })}
+        </HStack>
+      </div>
     </div>
   );
 }
