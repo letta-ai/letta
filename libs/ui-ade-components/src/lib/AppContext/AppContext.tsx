@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import type { webApiContracts } from '@letta-cloud/sdk-web';
 import type { ServerInferResponseBody } from '@ts-rest/core';
