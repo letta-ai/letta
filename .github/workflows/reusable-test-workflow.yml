@@ -158,9 +158,14 @@ jobs:
             if [ -n "$check_info" ]; then
               echo "Check state: $check_info"
 
-              if [ "$check_info" = "SUCCESS" ] || [ "$check_info" = "FAILURE" ] || [ "$check_info" = "SKIPPED" ] || [ "$check_info" = "CANCELLED" ]; then
+              if [ "$check_info" = "SUCCESS" ] || [ "$check_info" = "SKIPPED" ]; then
                 echo "Check completed with state: $check_info"
                 exit 0
+              elif [ "$check_info" = "FAILURE" ] || [ "$check_info" = "CANCELLED" ]; then
+                echo "❌ Preview Python SDK build failed with state: $check_info"
+                echo "🚫 Blocking dependent test jobs to prevent extraneous failures"
+                echo "📋 To fix: Check the 'preview-python-sdk' job logs for build errors"
+                exit 1
               fi
             else
               echo "Check 'preview-python-sdk' not found yet"
@@ -223,12 +228,25 @@ jobs:
       - name: Restore SDK cache
         # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
         if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        id: restore-sdk-cache
         uses: actions/cache/restore@v4
         with:
           path: |
             apps/fern/.preview/fern-python-sdk/
           key: ${{ steps.cache-key.outputs.key }}
-          fail-on-cache-miss: true
+          fail-on-cache-miss: false
+
+      - name: Check SDK cache availability
+        if: (inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))) && steps.restore-sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "❌ Preview Python SDK cache expired or missing!"
+          echo "📦 Cache key: ${{ steps.cache-key.outputs.key }}"
+          echo "🔄 To fix: Re-run the 'preview-python-sdk' workflow job to regenerate the SDK"
+          echo "💡 This can happen when:"
+          echo "   - The cache entry has expired"
+          echo "   - Dependencies in apps/fern/* or apps/core/pyproject.toml have changed"
+          echo "   - The preview-python-sdk job hasn't run successfully for this branch/commit"
+          exit 1
 
       - name: Install dependencies
         shell: bash
