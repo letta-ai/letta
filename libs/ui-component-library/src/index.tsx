@@ -183,8 +183,6 @@ export * from './lib/onboarding/OnboardingCheckbox/OnboardingCheckbox';
 
 export * from './lib/onboarding/OnboardingRewardElement/OnboardingRewardElement';
 
-export * from './lib/onboarding/OnboardingAsideFocus/OnboardingAsideFocus';
-
 export * from './lib/onboarding/OnboardingSteps/OnboardingSteps';
 
 export * from './lib/onboarding/OnboardingMiniMenu/OnboardingMiniMenu';
@@ -211,7 +209,6 @@ export * from './lib/reusable/VersionHistory/VersionHistory';
 export * from './lib/core/RadioDot/RadioDot';
 
 export * from './lib/reusable/InteractiveSystemMessage/InteractiveSystemMessage';
-export * from './lib/onboarding/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 
 export * from './lib/core/VirtualizedCodeViewer/VirtualizedCodeViewer';
 

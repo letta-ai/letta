@@ -3,9 +3,10 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   Button,
   DashboardPageLayout,
-  OnboardingAsideFocus,
   TemplateIcon,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
+
 import React, { useCallback } from 'react';
 import { LettaManagedModels } from './_components/LettaManagedModels/LettaManagedModels';
 import { BYOKModels } from './_components/BYOKModels/BYOKModels';

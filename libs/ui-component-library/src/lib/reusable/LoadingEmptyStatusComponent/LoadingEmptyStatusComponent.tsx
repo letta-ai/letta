@@ -7,7 +7,7 @@ import type { LogoBaseProps } from '../../marketing/Logo/Logo';
 import { cn } from '@letta-cloud/ui-styles';
 
 interface LoadingEmptyStatusComponentProps {
-  loadingMessage?: string;
+  loadingMessage?: string[] | string;
   emptyMessage?: React.ReactNode;
   emptyAction?: React.ReactNode;
   errorMessage?: string;
@@ -20,6 +20,184 @@ interface LoadingEmptyStatusComponentProps {
   isLoading?: boolean;
   isError?: boolean;
   iconOverride?: React.ReactNode;
+}
+
+interface ManyMessagesVerticalComponentProps {
+  messages: string[];
+}
+
+const loadingStrings = [
+  'Adding Hidden Agendas',
+  'Adjusting Bell Curves',
+  'Aesthesizing Industrial Areas',
+  'Aligning Covariance Matrices',
+  'Applying Feng Shui Shaders',
+  'Applying Theatre Soda Layer',
+  'Asserting Packed Exemplars',
+  'Attempting to Lock Back-Buffer',
+  'Binding Sapling Root System',
+  'Breeding Fauna',
+  'Building Data Trees',
+  'Bureacritizing Bureaucracies',
+  'Calculating Inverse Probability',
+  'Calculating Llama Expectoration',
+  'Calibrating Blue Skies',
+  'Charging Ozone Layer',
+  'Coalescing Cloud Formations',
+  'Cohorting Exemplars',
+  'Collecting Meteor Particles',
+  'Compounding Inert Tessellations',
+  'Compressing Fish Files',
+  'Computing Optimal Bin Packing',
+  'Concatenating Sub-Contractors',
+  'Containing Existential Buffer',
+  'Debarking Ark Ramp',
+  'Debunching Unionized Commercials',
+  'Deciding What Message to Display Next',
+  'Decomposing Singular Values',
+  'Decrementing Tectonic Plates',
+  'Deleting Ferry Routes',
+  'Depixelating Inner Mountain ',
+  'Depositing Slush Funds',
+  'Destabilizing Economic Indicators',
+  'Determining Width of Blast Fronts',
+  'Deunionizing Bulldozers',
+  'Dicing Models',
+  'Diluting Livestock Nutrition Variables',
+  'Downloading Satellite Terrain Data',
+  'Exposing Flash Variables to Streak System',
+  'Extracting Resources',
+  'Factoring Pay Scale',
+  'Fixing Election Outcome Matrix',
+  'Flood-Filling Ground Water',
+  'Flushing Pipe Network',
+  'Gathering Particle Sources',
+  'Generating Jobs',
+  'Gesticulating Mimes',
+  'Graphing Whale Migration',
+  'Hiding Willio Webnet Mask',
+  'Implementing Impeachment Routine',
+  'Increasing Magmafacation',
+  'Initializing Robotic Click-Path AI',
+  'Inserting Sublimated Messages',
+  'Integrating Curves',
+  'Integrating Illumination Form Factors',
+  'Integrating Population Graphs',
+  'Iterating Cellular Automata',
+  'Lecturing Errant Subsystems',
+  'Mixing Genetic Pool',
+  'Modeling Object Components',
+  'Mopping Occupant Leaks',
+  'Normalizing Power',
+  'Obfuscating Quigley Matrix',
+  'Overconstraining Dirty Industry Calculations',
+  'Partitioning City Grid Singularities',
+  'Perturbing Matrices',
+  'Pixalating Nude Patch',
+  'Polishing Water Highlights',
+  'Populating Lot Templates',
+  'Preparing Sprites for Random Walks',
+  'Prioritizing Landmarks',
+  'Projecting Law Enforcement Pastry Intake',
+  'Realigning Alternate Time Frames',
+  'Reconfiguring User Mental Processes',
+  'Relaxing Splines',
+  'Removing Road Network Speed Bumps',
+  'Removing Texture Gradients',
+  'Removing Vehicle Avoidance Behavior',
+  'Resolving GUID Conflict',
+  'Reticulating Splines',
+  'Retracting Phong Shader',
+  'Retrieving from Back Store',
+  'Reverse Engineering Image Consultant',
+  'Routing Neural Network Infanstructure',
+  'Scrubbing Terrain',
+  'Searching for Llamas',
+  'Seeding Architecture Simulation Parameters',
+  'Sequencing Particles',
+  'Setting Advisor Moods',
+  'Setting Inner Deity Indicators',
+  'Setting Universal Physical Constants',
+  'Sonically Enhancing Occupant-Free Timber',
+  'Speculating Stock Market Indices',
+  'Splatting Transforms',
+  'Stratifying Ground Layers',
+  'Sub-Sampling Water Data',
+  'Synthesizing Gravity',
+  'Synthesizing Wavelets',
+  'Time-Compressing Simulator Clock',
+  'Unable to Reveal Current Activity',
+  'Weathering Buildings',
+];
+
+function ManyMessagesVerticalComponent(
+  props: ManyMessagesVerticalComponentProps,
+) {
+  const { messages } = props;
+
+  // messages should be a vertical stack of messages
+  // it should only show one message at a time, it should transition between messages via translation
+  // to accomplish this create a max-height container with overflow hidden
+  // then have a state that tracks the current message index
+  // then every 2s change the current message index
+
+  const [messageIndex, setMessageIndex] = React.useState(0);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prevIndex) => (prevIndex + 1) % messages.length);
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [messages.length]);
+
+  return (
+    <VStack
+      fullHeight
+      fullWidth
+      className="max-h-[25px] h-[25px] w-[300px] relative leading-[25px] overflow-hidden transition-all duration-500"
+      align="center"
+      justify="center"
+    >
+      <div
+        className="transition-transform duration-500 absolute top-0"
+        style={{
+          transform: `translateY(-${messageIndex * 25}px)`,
+        }}
+      >
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className="leading-[25px] text-sm text-lighter whitespace-pre overflow-ellipsis text-center"
+          >
+            {message}
+          </div>
+        ))}
+      </div>
+    </VStack>
+  );
+}
+
+interface MessageRenderAreaProps {
+  messages: React.ReactNode | string[];
+}
+
+function MessageRenderArea(props: MessageRenderAreaProps) {
+  const { messages } = props;
+
+  if (Array.isArray(messages)) {
+    return <ManyMessagesVerticalComponent messages={messages} />;
+  }
+
+  return (
+    <div
+      style={{ whiteSpace: 'normal' }}
+      className="max-w-[400px] text-sm text-lighter whitespace-normal	text-wrap text-center"
+    >
+      {messages}
+    </div>
+  );
 }
 
 export function LoadingEmptyStatusComponent(
@@ -41,7 +219,7 @@ export function LoadingEmptyStatusComponent(
     iconOverride,
   } = props;
 
-  const message = useMemo(() => {
+  const message: React.ReactNode | string[] = useMemo(() => {
     if (isLoading) {
       return loadingMessage;
     }
@@ -111,12 +289,7 @@ export function LoadingEmptyStatusComponent(
           />
         )}
         {!hideText && (
-          <div
-            style={{ whiteSpace: 'normal' }}
-            className="max-w-[400px] text-sm text-lighter whitespace-normal	text-wrap text-center"
-          >
-            {message || 'Reticulating splines...'}
-          </div>
+          <MessageRenderArea messages={message || loadingStrings} />
         )}
         <div className="absolute top-[100%] mt-4">{action}</div>
       </VStack>

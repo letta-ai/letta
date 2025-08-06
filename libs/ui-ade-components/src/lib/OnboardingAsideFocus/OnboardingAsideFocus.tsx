@@ -1,11 +1,11 @@
 'use client';
 import * as React from 'react';
-import { VStack } from '../../framing/VStack/VStack';
-import { Typography } from '../../core/Typography/Typography';
+import { VStack } from '@letta-cloud/ui-component-library';
+import { Typography } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useEffect, useId } from 'react';
-import { Button } from '../../core/Button/Button';
-import { OnboardingSteps } from '../OnboardingSteps/OnboardingSteps';
+import { Button } from '@letta-cloud/ui-component-library';
+import { OnboardingSteps } from '@letta-cloud/ui-component-library';
 import {
   autoUpdate,
   FloatingPortal,
@@ -14,7 +14,9 @@ import {
 } from '@floating-ui/react';
 import { offset } from '@floating-ui/react';
 import { cn } from '@letta-cloud/ui-styles';
-import { ConfirmPauseOnboardingDialog } from '../ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
+import { CloseIcon } from '@letta-cloud/ui-component-library';
+import { HStack } from '@letta-cloud/ui-component-library';
+import { ConfirmPauseOnboardingDialog } from './ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 
 interface OnboardingAsideFocusProps {
   children: React.ReactNode;
@@ -127,6 +129,7 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
       <FloatingPortal>
         <VStack
           ref={refs.setFloating}
+          /* eslint-disable-next-line react/forbid-component-props */
           style={floatingStyles}
           gap="large"
           padding
@@ -136,24 +139,25 @@ export function OnboardingAsideFocus(props: OnboardingAsideFocusProps) {
             panelClassName,
           )}
         >
-          <Typography variant="heading5">{title}</Typography>
-          <Typography className="whitespace-pre-wrap" variant="large">
-            {description}
-          </Typography>
-          <OnboardingSteps currentStep={currentStep} totalSteps={totalSteps} />
-          <VStack align="center">
-            {nextStep}
+          <HStack justify="spaceBetween" align="center" fullWidth>
+            <Typography variant="heading5">{title}</Typography>
             <ConfirmPauseOnboardingDialog
               trigger={
                 <Button
                   label={t('tryLater')}
+                  hideLabel
+                  preIcon={<CloseIcon />}
                   color="tertiary"
                   bold
-                  fullWidth
                 ></Button>
               }
             />
-          </VStack>
+          </HStack>
+          <Typography className="whitespace-pre-wrap" variant="large">
+            {description}
+          </Typography>
+          <OnboardingSteps currentStep={currentStep} totalSteps={totalSteps} />
+          <VStack align="center">{nextStep}</VStack>
         </VStack>
       </FloatingPortal>
     </>

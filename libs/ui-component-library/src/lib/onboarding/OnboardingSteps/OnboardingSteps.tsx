@@ -38,7 +38,7 @@ export function OnboardingSteps(props: OnboardingStepsProps) {
               <div className="w-full h-full bg-brand"></div>
             )}
             {index === currentStep - 1 && (
-              <div className="w-[50%] make100WidthCycle h-full bg-brand"></div>
+              <div className="w-full h-full bg-brand"></div>
             )}
           </div>
         ))}

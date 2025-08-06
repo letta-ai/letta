@@ -9,9 +9,10 @@ import {
   RawInput,
   Typography,
   VStack,
-  OnboardingAsideFocus,
   TokenIcon,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+
 import {
   useAgentBaseTypeName,
   useCurrentAgent,

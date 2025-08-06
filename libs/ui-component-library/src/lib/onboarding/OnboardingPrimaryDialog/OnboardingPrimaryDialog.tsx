@@ -46,7 +46,7 @@ export function OnboardingPrimaryDialog(props: OnboardingPrimaryDialogProps) {
   return (
     <DialogPrimitive.Root open={isOpen}>
       <DialogOverlay />
-      <div className="fixed w-[100dvw] flex items-center justify-center h-[100dvh] z-dialog pointer-events-none">
+      <div className="fixed w-[100dvw] flex items-center top-0 left-0 justify-center h-[100dvh] z-dialog pointer-events-none">
         <DialogPrimitive.Content className="max-h-[100dvh] overflow-y-auto flex flex-col max-w-[468px] pointer-events-auto text-base  w-full bg-background gap-0   shadow-lg duration-200 ">
           <Image width={468} height={250} src={imageUrl} alt="" />
           <VStack gap="xlarge" padding color="background-grey">

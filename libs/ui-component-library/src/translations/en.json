@@ -9,6 +9,9 @@
     "explore": "Explore",
     "noData": "This chart has no data, this usually means that this date range has had no active agents or data has not been collected yet"
   },
+  "components/GoingToADEView": {
+    "loading": "Booting Agent Development Environment..."
+  },
   "components/MessageReplay/EventDurationsBadge": {
     "total": "Total",
     "ttft": "TFTT",

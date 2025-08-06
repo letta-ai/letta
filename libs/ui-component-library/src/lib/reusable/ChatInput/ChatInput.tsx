@@ -119,6 +119,7 @@ export interface ChatInputProps {
     role: RoleOption,
     content: LettaUserMessageContentUnion[] | string,
   ) => void;
+  shine?: boolean;
   onStopMessage?: () => void;
   isSendingMessage: boolean;
   disabled?: boolean;
@@ -231,6 +232,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     const {
       onSendMessage,
       onStopMessage,
+      shine,
       disabled,
       roles,
       errorActionButton: errorButton,
@@ -396,6 +398,11 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       if (text || images.length > 0) {
         setText('');
         setImages([]);
+
+        // clear the query param
+        const url = new URL(window.location.href);
+        url.searchParams.delete('message');
+        window.history.replaceState({}, '', url.toString());
         onSendMessage(role, createContentFromChatInput(text, images));
       }
     }, [isSendingMessage, disabled, text, onSendMessage, role, images]);
@@ -605,6 +612,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         data-testid="chat-simulator-send"
                         type="submit"
                         color="primary"
+                        _use_rarely_className={shine ? 'shine' : ''}
                         preIcon={<SendIcon />}
                         disabled={
                           disabled ||

@@ -8,7 +8,6 @@ import {
   BillingLink,
   Dialog,
   LoadingEmptyStatusComponent,
-  OnboardingAsideFocus,
   Section,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -24,6 +23,7 @@ import {
   useADETourStep,
 } from '@letta-cloud/ui-ade-components';
 import { isAPIError } from '@letta-cloud/sdk-core';
+import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;

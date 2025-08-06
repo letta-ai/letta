@@ -7,7 +7,6 @@ import {
   EyeOpenIcon,
   HStack,
   LinkOffIcon,
-  OnboardingAsideFocus,
   RawInput,
   RuleIcon,
   SearchIcon,
@@ -15,6 +14,8 @@ import {
   Typography,
   VariableIcon,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+
 import { VStack } from '@letta-cloud/ui-component-library';
 import { Dialog } from '@letta-cloud/ui-component-library';
 import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
@@ -357,7 +358,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
             label={t('ToolsOnboarding.quickNext')}
           />
         }
-        currentStep={3}
+        currentStep={4}
       >
         <div className="h-full w-full">{children}</div>
       </OnboardingAsideFocus>

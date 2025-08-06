@@ -32,6 +32,7 @@ function ArchitectureSelector(props: ArchitectureSelectorProps) {
       () => ({
         memgpt: t('memgpt'),
         sleeptime: t('sleepTime'),
+        memgpt_v2_agent: t('memgpt'),
       }),
       [t],
     );

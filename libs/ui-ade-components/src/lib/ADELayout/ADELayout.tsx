@@ -5,7 +5,6 @@ import {
   CloseIcon,
   CodeIcon,
   CogIcon,
-  ConfirmPauseOnboardingDialog,
   ContextWindowIcon,
   DatabaseIcon,
   EditIcon,
@@ -19,6 +18,7 @@ import {
   OnboardingPrimaryHeading,
   OnboardingSteps,
   SettingsApplicationsIcon,
+  TemplateIcon,
   ToolsIcon,
   Typography,
   VisibleOnMobile,
@@ -63,19 +63,15 @@ import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
 import { useGlobalNetworkInterceptor } from '../hooks';
-import {
-  useSetOnboardingStep,
-  useUnpauseOnboarding,
-} from '@letta-cloud/sdk-web';
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
 import { LLMConfigPanel } from '../panels/LLMConfigPanel/LLMConfigPanel';
 import { EmbeddingConfigPanel } from '../panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
 import { MetadataPanel } from '../panels/MetadataPanel/MetadataPanel';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
-import { useRouter } from 'next/navigation';
 import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
 import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -503,22 +499,7 @@ function MobileLayout() {
 
 function QuickADEOnboarding() {
   const t = useTranslations('ADELayout.QuickADEOnboarding');
-  const { unpauseOnboarding } = useUnpauseOnboarding();
-
-  const { setOnboardingStep, isPending, isSuccess } = useSetOnboardingStep();
-  const { push } = useRouter();
   const { currentStep, setStep, resetTour } = useQuickADETour();
-
-  const handleStart = useCallback(() => {
-    setOnboardingStep({
-      onboardingStep: 'about_credits',
-      onSuccess: () => {
-        unpauseOnboarding();
-        resetTour();
-        push('/models');
-      },
-    });
-  }, [unpauseOnboarding, setOnboardingStep, resetTour, push]);
 
   if (currentStep === 'welcome') {
     return (
@@ -557,7 +538,6 @@ function QuickADEOnboarding() {
             onClick={() => {
               resetTour();
             }}
-            disabled={isPending || isSuccess}
             label={t('complete')}
             color="primary"
           />
@@ -568,26 +548,30 @@ function QuickADEOnboarding() {
             title={t('done.label')}
           ></OnboardingPrimaryHeading>
           <VStack gap="xlarge">
-            <VStack>
+            <VStack fullWidth>
               <Typography variant="large">{t('done.part1')}</Typography>
-              <HStack>
-                <Button
-                  target="_blank"
-                  href="https://docs.letta.com"
-                  label={t('done.part2')}
-                  color="secondary"
-                />
-              </HStack>
-            </VStack>
-            <VStack>
-              <Typography variant="large">{t('done.part3')}</Typography>
-              <HStack>
-                <Button
-                  onClick={handleStart}
-                  label={t('done.part4')}
-                  color="secondary"
-                  busy={isPending || isSuccess}
-                />
+              <Typography variant="large">{t('done.part2')}</Typography>
+              <HStack fullWidth paddingY="small">
+                <VStack fullWidth>
+                  <Button
+                    fullWidth
+                    align="left"
+                    preIcon={<TemplateIcon />}
+                    target="_blank"
+                    href="https://docs.letta.com/guides/templates/overview"
+                    label={t('done.versioningTemplates')}
+                    color="tertiary"
+                  />
+                  <Button
+                    fullWidth
+                    align="left"
+                    preIcon={<CodeIcon />}
+                    target="_blank"
+                    href="https://docs.letta.com/quickstart"
+                    label={t('done.sdkQuickstart')}
+                    color="tertiary"
+                  />
+                </VStack>
               </HStack>
             </VStack>
           </VStack>

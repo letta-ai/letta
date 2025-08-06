@@ -41,12 +41,19 @@
     "resetDate": "Your limits will reset on {date}"
   },
   "onboarding/StartOnboardingDialog": {
+    "loadingMessages": {
+      "creatingAgent": "Creating your first agent...",
+      "goingToAde": "Booting Agent Development Environment...",
+      "sorry": "Loading onboarding..."
+    },
     "skip": "Skip onboarding",
     "time": "~15 minutes",
     "startModels": "Explore models",
+    "start": "Let's build our first agent!",
     "title": "Welcome to Letta Cloud",
     "descriptionOld": "Start your onboarding to learn how to use the platform and get your agents ready for deployment.",
-    "description": "Choose how you want to start your onboarding experience. You can always come back to do a different onboarding.",
+    "description": "Letta Cloud is the best way to build, deploy and manage AI agents.",
+    "description2": "We've created a super quick tutorial for you to get started with the platform!",
     "reward": "Reward: <lettacoin></lettacoin> {credits} credits",
     "deepDive": {
       "title": "Full onboarding",
@@ -1344,8 +1351,8 @@
       "button": "Restart onboarding"
     },
     "UnpauseOnboarding": {
-      "title": "You've paused the onboarding process!",
-      "button": "Unpause onboarding"
+      "title": "Press the button below to do onboarding again!",
+      "button": "Retry onboarding"
     },
     "InOnboarding": {
       "title": "You're currently onboarding!",

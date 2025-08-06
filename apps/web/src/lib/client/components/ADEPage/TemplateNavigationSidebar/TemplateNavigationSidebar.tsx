@@ -1,7 +1,9 @@
-import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import {
+  useCurrentAgentMetaData,
+  OnboardingAsideFocus,
+} from '@letta-cloud/ui-ade-components';
 import {
   Button,
-  OnboardingAsideFocus,
   RocketIcon,
   ConveyorBeltIcon,
   VStack,

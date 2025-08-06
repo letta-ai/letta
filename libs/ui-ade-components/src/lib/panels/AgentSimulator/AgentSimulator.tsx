@@ -7,9 +7,10 @@ import {
   Typography,
   WarningIcon,
   Link,
-  OnboardingAsideFocus,
   Avatar,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+
 import type {
   ChatInputRef,
   RoleOption,
@@ -26,6 +27,7 @@ import type {
   SystemMessage,
   UserMessage,
 } from '@letta-cloud/sdk-core';
+import { AgentsService } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
 import { IdentitiesService } from '@letta-cloud/sdk-core';
 import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
@@ -39,11 +41,7 @@ import { get } from 'lodash-es';
 import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useLocalStorage } from '@mantine/hooks';
-import {
-  useSetOnboardingStep,
-  webApi,
-  webApiQueryKeys,
-} from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
@@ -56,7 +54,6 @@ import {
   useLettaAgentsAPI,
 } from '@letta-cloud/utils-client';
 import { isSendingMessageAtom } from './atoms';
-import { useADETour } from '../../hooks/useADETour/useADETour';
 import type { InfiniteData } from '@tanstack/query-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useNetworkRequest } from '../../hooks/useNetworkRequest/useNetworkRequest';
@@ -563,11 +560,9 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
   const t = useTranslations('ADE/AgentSimulator');
   const { children } = props;
 
-  const { currentStep } = useADETour();
+  const { currentStep, setStep } = useQuickADETour();
 
-  const { setOnboardingStep } = useSetOnboardingStep();
-
-  if (currentStep !== 'chat') {
+  if (currentStep !== 'simulator') {
     return <>{children}</>;
   }
 
@@ -585,15 +580,12 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
           size="large"
           bold
           onClick={() => {
-            setOnboardingStep({
-              onboardingStep: 'save_version',
-              stepToClaim: 'explore_ade',
-            });
+            setStep('memory');
           }}
           label={t('AgentSimulatorOnboarding.next')}
         />
       }
-      currentStep={4}
+      currentStep={2}
     >
       {children}
     </OnboardingAsideFocus>
@@ -834,6 +826,37 @@ export function AgentSimulator() {
   const { currentStep, setStep } = useQuickADETour();
   const agentState = useCurrentAgent();
 
+  const handleOnboardingStepChange = useCallback(
+    function handleOnboardingStepChange() {
+      if (currentStep === 'message') {
+        setStep('simulator');
+
+        if (
+          'tool_rules' in agentState &&
+          Array.isArray(agentState.tool_rules) &&
+          agentState.tool_rules.length > 0
+        ) {
+          console.log(
+            'b',
+            agentState.tool_rules.filter(
+              (rule) => rule.tool_name !== 'memory_rethink',
+            ),
+          );
+          AgentsService.modifyAgent({
+            agentId: agentIdToUse || '',
+            requestBody: {
+              // remove the memory_rethink tool rule
+              tool_rules: agentState.tool_rules.filter(
+                (rule) => rule.tool_name !== 'memory_rethink',
+              ),
+            },
+          });
+        }
+      }
+    },
+    [agentIdToUse, agentState, currentStep, setStep],
+  );
+
   return (
     <AgentSimulatorOnboarding>
       <ChatroomContext.Provider value={{ renderMode, setRenderMode }}>
@@ -855,6 +878,7 @@ export function AgentSimulator() {
               </VStack>
               <QuickAgentSimulatorOnboarding>
                 <ChatInput
+                  shine={currentStep === 'message'}
                   errorActionButton={<OpenInNetworkInspectorButton />}
                   disabled={!agentIdToUse}
                   roles={[
@@ -891,9 +915,7 @@ export function AgentSimulator() {
                   ) => {
                     sendMessage({ role, content, agentId: agentIdToUse || '' });
 
-                    if (currentStep === 'message') {
-                      setStep('memory');
-                    }
+                    handleOnboardingStepChange();
                   }}
                   onStopMessage={stopMessage}
                   isSendingMessage={isPending}

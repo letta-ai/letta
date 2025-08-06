@@ -10,7 +10,6 @@ import {
   LettaInvaderIcon,
   LoadingEmptyStatusComponent,
   MaskIcon,
-  OnboardingAsideFocus,
   PanelBar,
   PythonIcon,
   type QueryBuilderQuery,
@@ -24,6 +23,8 @@ import {
   useCopyToClipboard,
   VStack,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
+
 import React, { useMemo, useRef, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';

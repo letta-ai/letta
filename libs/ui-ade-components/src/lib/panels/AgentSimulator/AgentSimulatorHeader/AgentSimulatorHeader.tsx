@@ -18,10 +18,11 @@ import {
 import { getIsAgentState } from '@letta-cloud/sdk-core';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../hooks';
-import { ControlChatroomRenderMode } from '../ChatroomContext/ChatroomContext';
-import { AgentSimulatorOptionsMenu } from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
 import { useTranslations } from '@letta-cloud/translations';
 import { FlushSimulationSessionDialog } from '../FlushAgentSimulationDialog/FlushAgentSimulationDialog';
+import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
+import { ControlChatroomRenderMode } from '../ChatroomContext/ChatroomContext';
+import { AgentSimulatorOptionsMenu } from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
 
 function AgentVariablesContainer() {
   const agentState = useCurrentAgent();
@@ -154,6 +155,13 @@ function AgentSimulatedStatusWrapper() {
 }
 
 export function AgentSimulatorHeader() {
+  const { isTourActive, currentStep } = useQuickADETour();
+
+  if (isTourActive && currentStep !== 'simulator') {
+    /* Hides the header during the tour  because it pops up over the tour steps */
+    return null;
+  }
+
   return (
     <HStack
       padding="small"

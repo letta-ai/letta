@@ -3,9 +3,9 @@ import { useCallback, useMemo } from 'react';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useLocalStorage } from '@mantine/hooks';
-import { QUICK_ADE_TOUR_STEP } from '@letta-cloud/ui-component-library';
+export const QUICK_ADE_TOUR_STEP = 'quick_ade_tour_step';
 
-type Steps = 'done' | 'memory' | 'message' | 'tools' | 'welcome';
+type Steps = 'done' | 'memory' | 'message' | 'simulator' | 'tools' | 'welcome';
 
 interface Config {
   step: Steps;
@@ -22,12 +22,23 @@ function useQuickADETourStep() {
   });
 }
 
+export function useResetQuickADETour() {
+  const [, setTourStepData] = useQuickADETourStep();
+
+  return () => {
+    setTourStepData({
+      step: 'welcome',
+      agentId: '',
+    });
+  };
+}
+
 export function useStartQuickADETour() {
   const [, setTourStepData] = useQuickADETourStep();
 
   return (agentId: string) => {
     setTourStepData({
-      step: 'welcome',
+      step: 'message',
       agentId,
     });
   };
@@ -50,6 +61,11 @@ export function useQuickADETour() {
     return stepDetails.step;
   }, [agentId, stepDetails, user]);
 
+  const isTourActive = useMemo(() => {
+    // if agent is set, tour is active
+    return agentId === stepDetails.agentId && stepDetails.step !== 'welcome';
+  }, [agentId, stepDetails]);
+
   const resetTour = useCallback(() => {
     setTourStepData({
       step: 'welcome',
@@ -68,6 +84,7 @@ export function useQuickADETour() {
   );
 
   return {
+    isTourActive,
     currentStep,
     setStep,
     resetTour,

@@ -39,3 +39,5 @@ export * from './lib/panels/DataSourcesV2/_components/DeleteDatasourceDialog/Del
 export * from './lib/panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
 export * from './lib/panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
 export * from './lib/hooks/useQueryIdenities/useQueryIdentities';
+export * from './lib/OnboardingAsideFocus/OnboardingAsideFocus';
+export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';

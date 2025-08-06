@@ -14,19 +14,26 @@ import { TEMPLATE_SIDEBAR_CLASSNAME } from '$web/client/components/ADEPage/Templ
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@letta-cloud/ui-styles';
+import { useTranslations } from '@letta-cloud/translations';
 
 export type GoingToADEViewType = 'agent' | 'template';
 
 interface GoingToADEViewProps {
   mode?: GoingToADEViewType;
   noFadeIn?: boolean;
+  messages?: string[];
 }
 
 export function GoingToADEView(props: GoingToADEViewProps) {
   const pathname = usePathname();
-  const { noFadeIn, mode = pathname.includes('agent') ? 'agent' : 'template' } =
-    props;
+  const {
+    noFadeIn,
+    messages,
+    mode = pathname.includes('agent') ? 'agent' : 'template',
+  } = props;
   const { layoutConfig } = useADELayoutConfig();
+
+  const t = useTranslations('components/GoingToADEView');
 
   return (
     <div
@@ -76,7 +83,7 @@ export function GoingToADEView(props: GoingToADEViewProps) {
           }}
         >
           <LoadingEmptyStatusComponent
-            loadingMessage=" "
+            loadingMessage={messages || t('loading')}
             isLoading
             loaderFillColor="background-grey"
             loaderVariant="spinner"

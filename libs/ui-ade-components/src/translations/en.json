@@ -859,11 +859,11 @@
       "continue": "Continue",
       "complete": "Finish",
       "done": {
-        "label": "Tutorial Complete",
-        "part1": "Now you know the basics of using the ADE. To connect your agents to your applications, use the Letta Agents API:",
-        "part2": "View Python / TypeScript SDK",
-        "part3": "Interested in the full tutorial? Press the button below to start the deep-dive tutorial.",
-        "part4": "Start deep dive tutorial"
+        "label": "Congratulations",
+        "part1": "You just created your first agent with Letta  \uD83D\uDC7E",
+        "part2": "To integrate agents into your end application, see additional resources for:",
+        "versioningTemplates": "Versioning agents with templates",
+        "sdkQuickstart": "SDK Quickstart (Python/TS)"
       }
     },
     "apps": "All apps",
@@ -912,9 +912,9 @@
       "viewPage": "View elements as seperate tabs"
     },
     "QuickOnboarding": {
-      "title": "Inspect your agent's memory",
-      "description": "Your agent long-term memory is divided into blocks, which can be updated by you (the developer) and the agent itself.",
-      "next": "Next"
+      "title": "Understanding memory",
+      "description": "Your agent can learn over time by rewriting parts of the context window, organized into memory blocks. \n\nThis memory block is dedicated to storing what the agent learns about the human (you)! \n",
+      "next": "Next: Tools"
     },
     "MemoryWrapper": {
       "addMemory": "Create block",
@@ -1304,7 +1304,7 @@
     },
     "QuickOnboarding": {
       "title": "Message your agent",
-      "description": "The agent simulator allows you to test your agent in real-time, before deploying it. You can chat with your agent, see how it uses tools, and verify that memory edits are working correctly.\n\nSend a message to your agent to get started."
+      "description": "You can chat with the agent in the chat view, or through the Letta API. \n\nTry telling the agent something about yourself!"
     },
     "FeedbackButtons": {
       "positive": "This was valid",
@@ -1316,9 +1316,9 @@
       "description": "This is usually caused by an LLM returning bad data or an improper configuration of your LLM config, you can read the unprocessed response in your server logs or browser inspect element."
     },
     "AgentSimulatorOnboarding": {
-      "title": "Agent Simulator",
-      "description": "Test your agent in real-time before deployment. The simulator lets you chat with your agent, observe how it uses tools, and verify that memory edits are working correctly.\n\nYou've now seen all the core parts of the ADE! Save your template and deploy your first agent to get started.",
-      "next": "Save template and deploy"
+      "title": "Viewing agent execution",
+      "description": "You can view the agent’s execution in the ADE, which shows reasoning, tool calls, and messages. \n\nFor more details, you can select the dropdown.",
+      "next": "Next: memory"
     },
     "ShareAgentDialog": {
       "launchLinkDescription": "This agent is managed by a launch link, and cannot be shared.",
@@ -2071,8 +2071,8 @@
   "ADE/Tools": {
     "allTools": "Attached tools",
     "ToolsOnboarding": {
-      "title": "Connect Agents to Tools",
-      "description": "Tools allow your agent to take actions in the real world. Configure custom tools, use built-in Letta tools, or connect to external services via MCP servers.\n\nWith tools, your agent can search the web, access external databases, help users complete tasks, and connect with other applications.",
+      "title": "Connecting Tools & MCP",
+      "description": "You can extend your agent’s capabilities by connecting them to MCP servers of custom tools which you define.",
       "next": "Next: Agent Simulator",
       "quickNext": "Next"
     },

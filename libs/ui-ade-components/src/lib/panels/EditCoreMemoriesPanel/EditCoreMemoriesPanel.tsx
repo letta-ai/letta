@@ -5,7 +5,6 @@ import {
   LinkIcon,
   MemoryBlocksIcon,
   type MemoryType,
-  OnboardingAsideFocus,
   PlusIcon,
   SplitscreenRightIcon,
   TabGroup,
@@ -13,6 +12,8 @@ import {
   useVisibleMemoryTypeContext,
   VisibleMemoryTypeProvider,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+
 import { InfoTooltip } from '@letta-cloud/ui-component-library';
 import { LettaLoaderPanel } from '@letta-cloud/ui-component-library';
 import { HStack } from '@letta-cloud/ui-component-library';
@@ -317,7 +318,7 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
           label={t('next')}
         />
       }
-      currentStep={2}
+      currentStep={3}
     >
       {children}
     </OnboardingAsideFocus>

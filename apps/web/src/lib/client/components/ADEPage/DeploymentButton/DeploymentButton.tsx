@@ -11,7 +11,6 @@ import {
   FormProvider,
   HStack,
   MiniApp,
-  OnboardingAsideFocus,
   Popover,
   TemplateIcon,
   TextArea,
@@ -25,6 +24,8 @@ import {
   VisibleOnMobile,
   RocketIcon,
 } from '@letta-cloud/ui-component-library';
+import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
+
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useMemo, useState } from 'react';
