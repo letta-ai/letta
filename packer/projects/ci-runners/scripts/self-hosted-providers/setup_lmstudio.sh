@@ -13,14 +13,14 @@ sudo chown -R ${RUNNER_USER:-ci-runner}:${RUNNER_USER:-ci-runner} $LLM_DIR/lmstu
 
 # Pull LMStudio Docker image and pre-download model
 echo "Pulling LMStudio Docker image..."
-sudo docker pull lmstudioai/llmster-preview:cpu
+sudo docker pull lmstudio/llmster-preview:cpu
 
 echo "Setting up LMStudio Docker Compose configuration..."
 sudo tee $LLM_DIR/lmstudio/docker-compose.yml > /dev/null << EOF
 version: '3.8'
 services:
   lmstudio:
-    image: lmstudioai/llmster-preview:cpu
+    image: lmstudio/llmster-preview:cpu
     ports:
       - "1234:1234"
     volumes:

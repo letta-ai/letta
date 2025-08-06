@@ -172,9 +172,13 @@ async def test_ollama():
 @pytest.mark.skipif(model_settings.vllm_api_base is None, reason="Only run if VLLM_API_BASE is set.")
 @pytest.mark.asyncio
 async def test_vllm():
-    provider = VLLMProvider(base_url=model_settings.vllm_api_base)
+    provider = VLLMProvider(name="vllm", base_url=model_settings.vllm_api_base)
     models = await provider.list_llm_models_async()
-    print(models)
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+    embedding_models = await provider.list_embedding_models_async()
+    assert len(embedding_models) == 0  # embedding models currently not supported by vLLM
 
 
 # TODO: Add back in, difficulty adding this to CI properly, need boto credentials

@@ -47,11 +47,12 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-Type=oneshot
+Type=simple
 User=${RUNNER_USER:-ci-runner}
 WorkingDirectory=$LLM_DIR/vllm
-ExecStart=/usr/bin/docker-compose up -d
-RemainAfterExit=yes
+ExecStart=docker compose up
+ExecStop=docker compose down
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
