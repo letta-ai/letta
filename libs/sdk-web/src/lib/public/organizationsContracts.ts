@@ -575,6 +575,7 @@ const FullOrganizationQuota = z.object({
   premiumInferencesPerMonth: z.number(),
   freeInferencesPerMonth: z.number(),
   storage: z.number(),
+  memoryBlocks: z.number(),
 });
 
 const getFullOrganizationQuotasContract = c.query({

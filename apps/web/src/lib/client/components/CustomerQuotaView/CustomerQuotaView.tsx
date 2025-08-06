@@ -119,6 +119,16 @@ function ViewAllQuotas(props: ViewAllQuotasProps) {
           value={allQuotasData?.body.projects}
           max={limits.projects}
         />
+        <QuotaRow
+          label={t('ViewAllQuotas.projects')}
+          value={allQuotasData?.body.projects}
+          max={limits.projects}
+        />
+        <QuotaRow
+          label={t('ViewAllQuotas.memoryBlocks')}
+          value={allQuotasData?.body.memoryBlocks}
+          max={limits.blocks}
+        />
       </VStack>
       {!allQuotasData && (
         <HStack padding="xsmall" borderTop>

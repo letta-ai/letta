@@ -51,6 +51,7 @@ import { sendEmail } from '@letta-cloud/service-email';
 import { upgradeCustomer } from '@letta-cloud/service-payments';
 import { getRedisModelTransactions } from '@letta-cloud/utils-server';
 import {
+  BlocksService,
   EmbeddingsService,
   IdentitiesService,
   SourcesService,
@@ -1488,6 +1489,7 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
     dataSources,
     storage,
     [templatesData],
+    memoryBlocks,
   ] = await Promise.all([
     getActiveBillableAgentsCount(activeOrganizationId),
     getRedisModelTransactions('free', activeOrganizationId),
@@ -1522,6 +1524,14 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
       })
       .from(agentTemplates)
       .where(eq(agentTemplates.organizationId, activeOrganizationId)),
+    BlocksService.countBlocks(
+      {
+        userId: lettaAgentsId,
+      },
+      {
+        user_id: lettaAgentsId,
+      },
+    ),
   ]);
 
   return {
@@ -1535,6 +1545,7 @@ async function getFullOrganizationQuotas(): Promise<GetFullOrganizationQuotasRes
       identities,
       dataSources,
       storage,
+      memoryBlocks,
     },
   };
 }

@@ -21,7 +21,8 @@
       "dataSources": "Filesystem",
       "templates": "Templates",
       "projects": "Projects",
-      "storage": "Storage"
+      "storage": "Storage",
+      "memoryBlocks": "Memory blocks"
     },
     "QuotaRow": {
       "limit": "<value></value> used of {max}"
