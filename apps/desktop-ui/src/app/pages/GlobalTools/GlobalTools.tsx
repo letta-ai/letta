@@ -2,7 +2,12 @@
 import { ToolsEditor } from '@letta-cloud/ui-ade-components';
 import { useMemo, useState } from 'react';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
-import { LoadingEmptyStatusComponent, DesktopPageLayout, VStack, ToolsIcon } from '@letta-cloud/ui-component-library';
+import {
+  LoadingEmptyStatusComponent,
+  DesktopPageLayout,
+  VStack,
+  ToolsIcon,
+} from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function GlobalTools() {

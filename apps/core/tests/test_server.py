@@ -983,6 +983,7 @@ def test_default_tool_rules(server: SyncServer, user_id: str, base_tools, base_m
             model="openai/gpt-4o-mini",
             embedding="openai/text-embedding-3-small",
             include_base_tools=False,
+            include_base_tool_rules=True,
         ),
         actor=actor,
     )

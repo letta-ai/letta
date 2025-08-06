@@ -151,6 +151,8 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     assert set(agent.tags) == set(request.tags), f"Tags mismatch: {set(agent.tags)} != {set(request.tags)}"
 
     # Assert tool rules
+    print("TOOLRULES", request.tool_rules)
+    print("AGENTTOOLRULES", agent.tool_rules)
     if request.tool_rules:
         assert len(agent.tool_rules) == len(
             request.tool_rules

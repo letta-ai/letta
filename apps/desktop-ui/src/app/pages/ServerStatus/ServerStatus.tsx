@@ -28,7 +28,9 @@ export function ServerStatus() {
   ]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isEmbedded = desktopConfig?.databaseConfig.type === 'embedded' || desktopConfig?.databaseConfig.type === 'external';
+  const isEmbedded =
+    desktopConfig?.databaseConfig.type === 'embedded' ||
+    desktopConfig?.databaseConfig.type === 'external';
 
   function handleRestart() {
     if (!Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
@@ -39,7 +41,10 @@ export function ServerStatus() {
   }
 
   useEffect(() => {
-    if (!isEmbedded || !Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
+    if (
+      !isEmbedded ||
+      !Object.prototype.hasOwnProperty.call(window, 'lettaServer')
+    ) {
       return;
     }
 
@@ -124,7 +129,12 @@ export function ServerStatus() {
         >
           {logs.map((log, index) => (
             <HStack key={index} style={{ flexWrap: 'wrap' }}>
-              <Typography color="muted" font="mono" variant="body2" style={{ flexShrink: 0 }}>
+              <Typography
+                color="muted"
+                font="mono"
+                variant="body2"
+                style={{ flexShrink: 0 }}
+              >
                 [{log.timestamp}]
               </Typography>
               <Typography
@@ -142,14 +152,14 @@ export function ServerStatus() {
         <LoadingEmptyStatusComponent
           isLoading={false}
           emptyMessage={t('noLogsAvailable', {
-            serverType: desktopConfig?.databaseConfig.type === 'cloud' ? 'Letta Cloud' : 'a self-hosted server'
+            serverType:
+              desktopConfig?.databaseConfig.type === 'cloud'
+                ? 'Letta Cloud'
+                : 'a self-hosted server',
           })}
           emptyAction={
             <Link to="/dashboard/settings">
-              <Button
-                label={t('goToSettings')}
-                color="primary"
-              />
+              <Button label={t('goToSettings')} color="primary" />
             </Link>
           }
         />

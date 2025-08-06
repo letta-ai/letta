@@ -1256,7 +1256,7 @@ export type CreateAgentRequest = {
   /**
    * If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).
    */
-  include_base_tool_rules?: boolean;
+  include_base_tool_rules?: boolean | null;
   /**
    * If true, automatically creates and attaches a default data source for this agent.
    */

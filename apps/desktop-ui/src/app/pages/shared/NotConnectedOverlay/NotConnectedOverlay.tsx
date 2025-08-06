@@ -19,9 +19,10 @@ export function NotConnectedOverlay({ children }: NotConnectedOverlayProps) {
   const { desktopConfig } = useDesktopConfig();
 
   const isSelfHosted = desktopConfig?.databaseConfig.type === 'local';
-  const serverUrl = isSelfHosted && desktopConfig?.databaseConfig.type === 'local'
-    ? desktopConfig.databaseConfig.url
-    : null;
+  const serverUrl =
+    isSelfHosted && desktopConfig?.databaseConfig.type === 'local'
+      ? desktopConfig.databaseConfig.url
+      : null;
 
   return (
     <>
@@ -37,11 +38,19 @@ export function NotConnectedOverlay({ children }: NotConnectedOverlayProps) {
                 </Typography>
                 <Typography>
                   {isSelfHosted
-                    ? t('detailsSelfHosted', { serverUrl: serverUrl || 'your server' })
+                    ? t('detailsSelfHosted', {
+                        serverUrl: serverUrl || 'your server',
+                      })
                     : t('details')}
                 </Typography>
                 <VStack paddingTop>
-                  <Link to={isSelfHosted ? "/dashboard/settings" : "/dashboard/server-status"}>
+                  <Link
+                    to={
+                      isSelfHosted
+                        ? '/dashboard/settings'
+                        : '/dashboard/server-status'
+                    }
+                  >
                     <Button
                       label={isSelfHosted ? t('actionSelfHosted') : t('action')}
                       color="primary"

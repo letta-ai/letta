@@ -192,6 +192,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
             model="anthropic/claude-3-5-sonnet-20240620",
             embedding="openai/text-embedding-3-small",
             enable_sleeptime=True,
+            include_base_tool_rules=True,
         ),
         actor=actor,
     )

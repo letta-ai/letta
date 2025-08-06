@@ -1022,7 +1022,6 @@ def test_preview_payload(client: LettaSDKClient):
         assert system_message["role"] == "system"
         assert "base_instructions" in system_message["content"]
         assert "memory_blocks" in system_message["content"]
-        assert "tool_usage_rules" in system_message["content"]
         assert "Letta" in system_message["content"]
 
         assert isinstance(payload["tools"], list)

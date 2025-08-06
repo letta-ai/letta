@@ -299,10 +299,15 @@ export function Integrations() {
     string | null
   >(null);
 
-  const isEmbedded = desktopConfig?.databaseConfig.type === 'embedded' || desktopConfig?.databaseConfig.type === 'external';
+  const isEmbedded =
+    desktopConfig?.databaseConfig.type === 'embedded' ||
+    desktopConfig?.databaseConfig.type === 'external';
 
   useEffect(() => {
-    if (!isEmbedded || !Object.prototype.hasOwnProperty.call(window, 'lettaConfig')) {
+    if (
+      !isEmbedded ||
+      !Object.prototype.hasOwnProperty.call(window, 'lettaConfig')
+    ) {
       return;
     }
 
@@ -362,14 +367,14 @@ export function Integrations() {
           <LoadingEmptyStatusComponent
             isLoading={false}
             emptyMessage={t('notAvailable', {
-              serverType: desktopConfig?.databaseConfig.type === 'cloud' ? 'Letta Cloud' : 'a self-hosted server'
+              serverType:
+                desktopConfig?.databaseConfig.type === 'cloud'
+                  ? 'Letta Cloud'
+                  : 'a self-hosted server',
             })}
             emptyAction={
               <RouterLink to="/dashboard/settings">
-                <Button
-                  label={t('goToSettings')}
-                  color="primary"
-                />
+                <Button label={t('goToSettings')} color="primary" />
               </RouterLink>
             }
           />

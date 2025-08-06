@@ -186,8 +186,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
-    include_base_tool_rules: bool = Field(
-        True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+    include_base_tool_rules: Optional[bool] = Field(
+        None, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
     )
     include_default_source: bool = Field(
         False, description="If true, automatically creates and attaches a default data source for this agent."

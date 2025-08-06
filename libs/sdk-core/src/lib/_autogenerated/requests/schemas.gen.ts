@@ -3900,11 +3900,17 @@ export const $CreateAgentRequest = {
       default: false,
     },
     include_base_tool_rules: {
-      type: 'boolean',
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Include Base Tool Rules',
       description:
         'If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).',
-      default: true,
     },
     include_default_source: {
       type: 'boolean',

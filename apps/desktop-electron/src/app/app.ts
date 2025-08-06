@@ -154,7 +154,7 @@ function copyLettaServerToLettaDir() {
   } else if (process.platform === 'linux') {
     fileName = 'letta.elf';
   } else {
-    fileName = 'letta';  // macOS
+    fileName = 'letta'; // macOS
   }
 
   let lettaServerPath = path.join(
@@ -168,7 +168,12 @@ function copyLettaServerToLettaDir() {
 
   if (App.application.isPackaged) {
     // First try the unpacked location (for asar unpacked files)
-    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', fileName);
+    const unpackedPath = path.join(
+      process.resourcesPath,
+      'app.asar.unpacked',
+      'dist',
+      fileName,
+    );
     if (fs.existsSync(unpackedPath)) {
       lettaServerPath = unpackedPath;
     } else {
@@ -327,10 +332,15 @@ export default class App {
     } else if (process.platform === 'linux') {
       binaryName = 'letta.elf';
     } else {
-      binaryName = 'letta';  // macOS
+      binaryName = 'letta'; // macOS
     }
 
-    let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', binaryName);
+    let lettaServerPath = path.join(
+      homeDir || '/',
+      '.letta',
+      'bin',
+      binaryName,
+    );
     lettaServer = null;
     const serverId = Math.random().toString(36).substring(7);
     setServerId(serverId);

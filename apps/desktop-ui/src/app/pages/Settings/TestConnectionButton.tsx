@@ -15,7 +15,10 @@ interface TestConnectionButtonProps {
   token?: string;
 }
 
-export function TestConnectionButton({ url, token }: TestConnectionButtonProps) {
+export function TestConnectionButton({
+  url,
+  token,
+}: TestConnectionButtonProps) {
   const [isTesting, setIsTesting] = useState(false);
   const [testingStatus, setTestingStatus] = useState<
     'auth_failed' | 'failed' | 'success' | null
@@ -36,7 +39,7 @@ export function TestConnectionButton({ url, token }: TestConnectionButtonProps) 
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
       });
 
@@ -46,7 +49,7 @@ export function TestConnectionButton({ url, token }: TestConnectionButtonProps) 
 
       // Wait for remaining time if needed
       if (remainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        await new Promise((resolve) => setTimeout(resolve, remainingTime));
       }
 
       if (response.status === 401) {
@@ -63,7 +66,7 @@ export function TestConnectionButton({ url, token }: TestConnectionButtonProps) 
       const remainingTime = Math.max(0, 500 - elapsedTime);
 
       if (remainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        await new Promise((resolve) => setTimeout(resolve, remainingTime));
       }
 
       setTestingStatus('failed');
