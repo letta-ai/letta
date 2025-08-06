@@ -7,12 +7,9 @@ from openai import AsyncStream
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
-from letta.otel.context import get_ctx_attributes
-from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
@@ -35,7 +32,6 @@ class OpenAIStreamingInterface:
     def __init__(
         self,
         use_assistant_message: bool = False,
-        put_inner_thoughts_in_kwarg: bool = False,
         is_openai_proxy: bool = False,
         messages: Optional[list] = None,
         tools: Optional[list] = None,
@@ -107,7 +103,6 @@ class OpenAIStreamingInterface:
         self,
         stream: AsyncStream[ChatCompletionChunk],
         ttft_span: Optional["Span"] = None,
-        provider_request_start_timestamp_ns: int | None = None,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         """
         Iterates over the OpenAI stream, yielding SSE events.
@@ -125,29 +120,11 @@ class OpenAIStreamingInterface:
                 tool_dicts = [tool["function"] if isinstance(tool, dict) and "function" in tool else tool for tool in self.tools]
                 self.fallback_input_tokens += num_tokens_from_functions(tool_dicts)
 
-        first_chunk = True
         try:
             async with stream:
                 prev_message_type = None
                 message_index = 0
                 async for chunk in stream:
-                    # TODO (cliandy): reconsider in stream cancellations
-                    # await cancellation_token.check_and_raise_if_cancelled()
-                    if first_chunk and ttft_span is not None and provider_request_start_timestamp_ns is not None:
-                        now = get_utc_timestamp_ns()
-                        ttft_ns = now - provider_request_start_timestamp_ns
-                        ttft_span.add_event(
-                            name="openai_time_to_first_token_ms", attributes={"openai_time_to_first_token_ms": ns_to_ms(ttft_ns)}
-                        )
-                        metric_attributes = get_ctx_attributes()
-                        metric_attributes["model.name"] = chunk.model
-                        MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
-
-                        if self.is_openai_proxy:
-                            self.fallback_output_tokens += count_tokens(chunk.model_dump_json())
-
-                        first_chunk = False
-
                     if not self.model or not self.message_id:
                         self.model = chunk.model
                         self.message_id = chunk.id

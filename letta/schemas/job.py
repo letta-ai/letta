@@ -21,6 +21,10 @@ class JobBase(OrmMetadataBase):
     callback_status_code: Optional[int] = Field(None, description="HTTP status code returned by the callback endpoint.")
     callback_error: Optional[str] = Field(None, description="Optional error message from attempting to POST the callback endpoint.")
 
+    # Timing metrics (in nanoseconds for precision)
+    ttft_ns: int | None = Field(None, description="Time to first token for a run in nanoseconds")
+    total_duration_ns: int | None = Field(None, description="Total run duration in nanoseconds")
+
 
 class Job(JobBase):
     """

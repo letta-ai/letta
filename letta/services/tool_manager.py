@@ -364,9 +364,13 @@ class ToolManager:
                     results.append(pydantic_tool)
                 except (ValueError, ModuleNotFoundError, AttributeError) as e:
                     tools_to_delete.append(tool)
-                    logger.warning(f"Deleting malformed tool with id={tool.id} and name={tool.name}, error was:\n{e}")
-                    logger.warning("Deleted tool: ")
-                    logger.warning(tool.pretty_print_columns())
+                    logger.warning(
+                        "Deleting malformed tool with id=%s and name=%s. Error was:\n%s\nDeleted tool:%s",
+                        tool.id,
+                        tool.name,
+                        e,
+                        tool.pretty_print_columns(),
+                    )
 
         for tool in tools_to_delete:
             await self.delete_tool_by_id_async(tool.id, actor=actor)

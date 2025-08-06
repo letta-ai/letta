@@ -361,8 +361,16 @@ class LettaAgent(BaseAgent):
                 if settings.track_stop_reason:
                     if step_progression == StepProgression.FINISHED and should_continue:
                         continue
+
+                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
+                        if step_progression == StepProgression.FINISHED and not should_continue:
+                            if stop_reason is None:
+                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                            break
+
                         if step_progression < StepProgression.STEP_LOGGED:
                             await self.step_manager.log_step_async(
                                 actor=self.actor,
@@ -391,12 +399,11 @@ class LettaAgent(BaseAgent):
                                 self.logger.error("Error in step after logging step")
                                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        elif step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
                         else:
                             self.logger.error("Invalid StepProgression value")
+
+                        await self._log_request(request_start_timestamp_ns, request_span)
+
                     except Exception as e:
                         self.logger.error("Failed to update step: %s", e)
 
@@ -413,17 +420,7 @@ class LettaAgent(BaseAgent):
                 force=False,
             )
 
-        # log request time
-        if request_start_timestamp_ns:
-            now = get_utc_timestamp_ns()
-            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
-            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": duration_ms})
-
-            # update agent's last run metrics
-            now_datetime = get_utc_time()
-            await self._update_agent_last_run_metrics(now_datetime, duration_ms)
-
-        request_span.end()
+        await self._log_request(request_start_timestamp_ns, request_span)
 
         # Return back usage
         for finish_chunk in self.get_finish_chunks_for_stream(usage, stop_reason):
@@ -590,8 +587,16 @@ class LettaAgent(BaseAgent):
                 if settings.track_stop_reason:
                     if step_progression == StepProgression.FINISHED and should_continue:
                         continue
+
+                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
+                        if step_progression == StepProgression.FINISHED and not should_continue:
+                            if stop_reason is None:
+                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                            break
+
                         if step_progression < StepProgression.STEP_LOGGED:
                             await self.step_manager.log_step_async(
                                 actor=self.actor,
@@ -620,29 +625,16 @@ class LettaAgent(BaseAgent):
                                 self.logger.error("Error in step after logging step")
                                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        elif step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
                         else:
                             self.logger.error("Invalid StepProgression value")
+
+                        await self._log_request(request_start_timestamp_ns, request_span)
+
                     except Exception as e:
                         self.logger.error("Failed to update step: %s", e)
 
             if not should_continue:
                 break
-
-        # log request time
-        if request_start_timestamp_ns:
-            now = get_utc_timestamp_ns()
-            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
-            request_span.add_event(name="request_ms", attributes={"duration_ms": duration_ms})
-
-            # update agent's last run metrics
-            now_datetime = get_utc_time()
-            await self._update_agent_last_run_metrics(now_datetime, duration_ms)
-
-        request_span.end()
 
         # Extend the in context message ids
         if not agent_state.message_buffer_autoclear:
@@ -653,6 +645,8 @@ class LettaAgent(BaseAgent):
                 total_tokens=usage.total_tokens,
                 force=False,
             )
+
+        await self._log_request(request_start_timestamp_ns, request_span)
 
         return current_in_context_messages, new_in_context_messages, stop_reason, usage
 
@@ -755,7 +749,6 @@ class LettaAgent(BaseAgent):
                 elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
                     interface = OpenAIStreamingInterface(
                         use_assistant_message=use_assistant_message,
-                        put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                         is_openai_proxy=agent_state.llm_config.provider_name == "lmstudio_openai",
                         messages=current_in_context_messages + new_in_context_messages,
                         tools=request_data.get("tools", []),
@@ -766,16 +759,20 @@ class LettaAgent(BaseAgent):
                 async for chunk in interface.process(
                     stream,
                     ttft_span=request_span,
-                    provider_request_start_timestamp_ns=provider_request_start_timestamp_ns,
                 ):
-                    # Measure time to first token
+                    # Measure TTFT (trace, metric, and db). This should be consolidated.
                     if first_chunk and request_span is not None:
                         now = get_utc_timestamp_ns()
                         ttft_ns = now - request_start_timestamp_ns
+
                         request_span.add_event(name="time_to_first_token_ms", attributes={"ttft_ms": ns_to_ms(ttft_ns)})
                         metric_attributes = get_ctx_attributes()
                         metric_attributes["model.name"] = agent_state.llm_config.model
                         MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
+
+                        if self.current_run_id and self.job_manager:
+                            await self.job_manager.record_ttft(self.current_run_id, ttft_ns, self.actor)
+
                         first_chunk = False
 
                     if include_return_message_types is None or chunk.message_type in include_return_message_types:
@@ -913,8 +910,16 @@ class LettaAgent(BaseAgent):
                 if settings.track_stop_reason:
                     if step_progression == StepProgression.FINISHED and should_continue:
                         continue
+
+                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
                     self.logger.info("Running final update. Step Progression: %s", step_progression)
                     try:
+                        if step_progression == StepProgression.FINISHED and not should_continue:
+                            if stop_reason is None:
+                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                            break
+
                         if step_progression < StepProgression.STEP_LOGGED:
                             await self.step_manager.log_step_async(
                                 actor=self.actor,
@@ -942,12 +947,12 @@ class LettaAgent(BaseAgent):
                                 self.logger.error("Error in step after logging step")
                                 stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        elif step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
                         else:
                             self.logger.error("Invalid StepProgression value")
+
+                        # Do tracking for failure cases. Can consolidate with success conditions later.
+                        await self._log_request(request_start_timestamp_ns, request_span)
+
                     except Exception as e:
                         self.logger.error("Failed to update step: %s", e)
 
@@ -963,20 +968,22 @@ class LettaAgent(BaseAgent):
                 force=False,
             )
 
-        # log time of entire request
-        if request_start_timestamp_ns:
-            now = get_utc_timestamp_ns()
-            duration_ms = ns_to_ms(now - request_start_timestamp_ns)
-            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": duration_ms})
-
-            # update agent's last run metrics
-            completion_time = get_utc_time()
-            await self._update_agent_last_run_metrics(completion_time, duration_ms)
-
-        request_span.end()
+        await self._log_request(request_start_timestamp_ns, request_span)
 
         for finish_chunk in self.get_finish_chunks_for_stream(usage, stop_reason):
             yield f"data: {finish_chunk}\n\n"
+
+    async def _log_request(self, request_start_timestamp_ns: int, request_span: "Span | None"):
+        if request_start_timestamp_ns:
+            now_ns, now = get_utc_timestamp_ns(), get_utc_time()
+            duration_ns = now_ns - request_start_timestamp_ns
+            if request_span:
+                request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(duration_ns)})
+            await self._update_agent_last_run_metrics(now, ns_to_ms(duration_ns))
+            if self.current_run_id:
+                await self.job_manager.record_response_duration(self.current_run_id, duration_ns, self.actor)
+        if request_span:
+            request_span.end()
 
     # noinspection PyInconsistentReturns
     async def _build_and_request_from_llm(
@@ -1427,6 +1434,8 @@ class LettaAgent(BaseAgent):
                 func_return=f"Tool {tool_name} not found",
                 status="error",
             )
+
+        print(target_tool)
 
         # TODO: This temp. Move this logic and code to executors
 
