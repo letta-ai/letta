@@ -104,39 +104,43 @@ function copyAlembicToLettaDir() {
   }
 
   const migrationsPath = path.join(homeDir || '/', '.letta', 'migrations');
+  const alembicPath = path.join(migrationsPath, 'alembic');
+  const versionsPath = path.join(alembicPath, 'versions');
 
-  if (!fs.existsSync(migrationsPath)) {
-    fs.mkdirSync(migrationsPath, { recursive: true });
-  }
+  // Ensure all directories exist
+  fs.mkdirSync(migrationsPath, { recursive: true });
+  fs.mkdirSync(alembicPath, { recursive: true });
+  fs.mkdirSync(versionsPath, { recursive: true });
 
+  // Copy alembic.ini
   fs.copyFileSync(alembicInitPath, path.join(migrationsPath, 'alembic.ini'));
 
-  if (!fs.existsSync(migrationsPath)) {
-    fs.mkdirSync(path.join(migrationsPath), { recursive: true });
-  }
-
-  if (!fs.existsSync(path.join(migrationsPath, 'alembic'))) {
-    fs.mkdirSync(path.join(migrationsPath, 'alembic'), { recursive: true });
-  }
-
-  if (!fs.existsSync(path.join(migrationsPath, 'alembic', 'versions'))) {
-    fs.mkdirSync(path.join(migrationsPath, 'alembic', 'versions'), {
-      recursive: true,
-    });
-  }
-
+  // Copy env.py
   fs.copyFileSync(
     path.join(alembicFolderPath, 'env.py'),
-    path.join(migrationsPath, 'alembic', 'env.py'),
+    path.join(alembicPath, 'env.py'),
   );
 
+  // Copy all version files
   const alembicFiles = fs.readdirSync(path.join(alembicFolderPath, 'versions'));
   for (const file of alembicFiles) {
     if (file.endsWith('.py')) {
       fs.copyFileSync(
         path.join(alembicFolderPath, 'versions', file),
-        path.join(migrationsPath, 'alembic', 'versions', file),
+        path.join(versionsPath, file),
       );
+    }
+  }
+
+  // Verify the critical files exist before proceeding
+  const criticalFiles = [
+    path.join(migrationsPath, 'alembic.ini'),
+    path.join(alembicPath, 'env.py'),
+  ];
+
+  for (const filePath of criticalFiles) {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Critical migration file missing: ${filePath}`);
     }
   }
 
@@ -292,10 +296,24 @@ export default class App {
       return;
     }
 
-    // Copy alembic files for both embedded Postgres and SQLite
+    // Always ensure migrations directory exists for both embedded Postgres and SQLite
     if (getIsEmbeddedPostgres(config) || getIsSQLLiteConfig(config)) {
-      if (copyFiles) {
-        copyAlembicToLettaDir();
+      try {
+        // Always verify migrations exist, copy if needed
+        const migrationsPath = path.join(homeDir || '/', '.letta', 'migrations');
+        const alembicPath = path.join(migrationsPath, 'alembic');
+        const alembicIniPath = path.join(migrationsPath, 'alembic.ini');
+        const envPyPath = path.join(alembicPath, 'env.py');
+
+        if (copyFiles || !fs.existsSync(alembicIniPath) || !fs.existsSync(envPyPath)) {
+          console.log('Copying migration files...');
+          copyAlembicToLettaDir();
+        } else {
+          console.log('Migration files already exist');
+        }
+      } catch (error) {
+        console.error('Failed to set up migration files:', error);
+        throw error;
       }
     }
 
