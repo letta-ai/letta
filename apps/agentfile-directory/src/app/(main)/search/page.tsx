@@ -151,6 +151,10 @@ export default function SearchResults() {
                       onPageChange={(pageNumber: number) => {
                         setPage(pageNumber - 1);
 
+                        if (!data?.pages) {
+                          return;
+                        }
+
                         if (pageNumber > data?.pages?.length) {
                           void fetchNextPage();
                         }
