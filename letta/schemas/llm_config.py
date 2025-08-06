@@ -63,7 +63,8 @@ class LLMConfig(BaseModel):
         description="The reasoning effort to use when generating text reasoning models",
     )
     max_reasoning_tokens: int = Field(
-        0, description="Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024."
+        0,
+        description="Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.",
     )
     frequency_penalty: Optional[float] = Field(
         None,  # Can also deafult to 0.0?

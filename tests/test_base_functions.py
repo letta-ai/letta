@@ -151,6 +151,7 @@ def test_archival(agent_obj):
 def test_recall(server, agent_obj, default_user):
     """Test that an agent can recall messages using a keyword via conversation search."""
     keyword = "banana"
+    "".join(reversed(keyword))
 
     # Send messages
     for msg in ["hello", keyword, "tell me a fun fact"]:
