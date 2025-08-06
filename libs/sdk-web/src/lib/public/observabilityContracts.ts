@@ -566,13 +566,20 @@ const SearchResponsesByTemplateFamily = z.object({
   value: z.string(),
 });
 
-export const SearchTypesSchema = z.union([
+export const SearchResponsesByAgentSteps = z.object({
+  field: z.literal('agentSteps'),
+  operator: z.enum(['eq', 'gte', 'lte']),
+  value: z.string(),
+});
+
+const SearchTypesSchema = z.union([
   SearchResponsesByAgentId,
   SearchResponsesByDuration,
   SearchResponsesByStatusCode,
   SearchResponsesByDateRange,
   SearchResponsesByFunctionName,
   SearchResponsesByTemplateFamily,
+  SearchResponsesByAgentSteps,
 ]);
 
 export const GetTracesByProjectIdQuery = z.object({

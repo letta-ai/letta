@@ -28,6 +28,9 @@ type GetToolErrorMessagesResponse = ServerInferResponses<
   typeof contracts.observability.getTracesByProjectId
 >;
 
+// 30-day lookback period for performance optimization
+const LOOKBACK_DAYS = 30;
+
 interface Conditions {
   durationQuery?: string;
   timestampQuery?: string;
@@ -35,6 +38,7 @@ interface Conditions {
   agentIdQuery?: string;
   apiErrorQuery?: string;
   templateFamilyQuery?: string;
+  agentStepsHaving?: string;
 }
 
 function conditionBuilder(search: SearchTypesType[]): Conditions {
@@ -49,6 +53,7 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
     agentIdQuery: '',
     apiErrorQuery: '',
     templateFamilyQuery: '',
+    agentStepsHaving: '',
   };
 
   search.forEach((item) => {
@@ -125,6 +130,22 @@ function conditionBuilder(search: SearchTypesType[]): Conditions {
         conditions.templateFamilyQuery += ` AND SpanAttributes['base_template.id'] = '${item.value}' `;
       }
     }
+
+    if (item.field === 'agentSteps') {
+      const stepCount = Number(item.value);
+
+      if (!isNaN(stepCount)) {
+        if (item.operator === 'eq') {
+          conditions.agentStepsHaving += ` AND count() = ${stepCount} `;
+        }
+        if (item.operator === 'gte') {
+          conditions.agentStepsHaving += ` AND count() >= ${stepCount} `;
+        }
+        if (item.operator === 'lte') {
+          conditions.agentStepsHaving += ` AND count() <= ${stepCount} `;
+        }
+      }
+    }
   });
 
   return conditions;
@@ -199,6 +220,7 @@ export async function getTracesByProjectId(
                SpanName = 'POST /v1/agents/{agent_id}/messages' OR
                SpanName = 'POST /v1/agents/{agent_id}/messages/async')
           AND ParentSpanId = ''
+          AND Timestamp >= now() - INTERVAL ${LOOKBACK_DAYS} DAY
             AND SpanAttributes['project.id'] = {projectId: String}
             AND SpanAttributes['organization.id'] = {organizationId: String}
             ${conditions.durationQuery || ''}
@@ -229,6 +251,7 @@ export async function getTracesByProjectId(
       WHERE a.SpanName = 'agent_step'
       ${conditions.toolErrorQuery || ''}
       GROUP BY a.TraceId, p.StatusMessage, p.Duration, p.StatusCode, p.SpanAttributes
+      ${conditions.agentStepsHaving ? `HAVING 1=1 ${conditions.agentStepsHaving}` : ''}
       ORDER BY latest_agent_step DESC
         LIMIT {limit: UInt32}
       OFFSET {offset: UInt32}

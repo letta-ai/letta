@@ -305,6 +305,50 @@ function useQueryDefinition() {
           },
         ],
       },
+      agentSteps: {
+        id: 'agentSteps',
+        name: t('useQueryDefinition.agentSteps.name'),
+        queries: [
+          {
+            key: 'operator',
+            label: t('useQueryDefinition.agentSteps.operator.label'),
+            display: 'select',
+            options: {
+              styleConfig: {
+                containerWidth: 200,
+              },
+              options: [
+                {
+                  label: t(
+                    'useQueryDefinition.agentSteps.operator.operators.eq',
+                  ),
+                  value: 'eq',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.agentSteps.operator.operators.gte',
+                  ),
+                  value: 'gte',
+                },
+                {
+                  label: t(
+                    'useQueryDefinition.agentSteps.operator.operators.lte',
+                  ),
+                  value: 'lte',
+                },
+              ],
+            },
+          },
+          {
+            key: 'value',
+            label: t('useQueryDefinition.agentSteps.value.label'),
+            display: 'input',
+            options: {
+              placeholder: t('useQueryDefinition.agentSteps.value.placeholder'),
+            },
+          },
+        ],
+      },
     } as const satisfies FieldDefinitions;
 
     const initialQuery =
@@ -322,6 +366,7 @@ function useQueryDefinition() {
                   label: '',
                   value: '0',
                 },
+                unit: fieldDefinitions.duration.queries[2].options.options[0],
               },
             },
           ],
@@ -367,33 +412,47 @@ export default function ResponsesPage() {
   }, [query]);
 
   const compiledQuery: GetTracesByProjectIdQueryType = useMemo(() => {
-    const val = {
-      search: query.root.items.map((item) => {
+    const searchItems = query.root.items
+      .map((item) => {
         if (isGenericQueryCondition(item) || !item.queryData) {
           return null;
         }
 
-        return {
+        const baseItem: any = {
           field: item.field,
-          ...Object.entries(item.queryData).reduce((acc, [key, value]) => {
-            if (!value) {
-              return acc;
-            }
-
-            if (isMultiValue(value)) {
-              return {
-                ...acc,
-                [key]: value.map((val) => val.value),
-              };
-            }
-
-            return {
-              ...acc,
-              [key]: value?.value || '',
-            };
-          }, {}),
         };
-      }),
+
+        // Process each query data entry
+        Object.entries(item.queryData).forEach(([key, value]) => {
+          if (!value) {
+            return;
+          }
+
+          if (isMultiValue(value)) {
+            baseItem[key] = value.map((val) => val.value);
+          } else {
+            baseItem[key] = value?.value || value;
+          }
+        });
+
+        // Special handling for duration field - ensure unit exists with fallback
+        if (item.field === 'duration') {
+          if (!baseItem.unit) {
+            baseItem.unit = 'ms'; // Default to milliseconds
+          }
+        }
+
+        // Validate required fields exist
+        if (!baseItem.operator || (!baseItem.value && baseItem.value !== '')) {
+          return null;
+        }
+
+        return baseItem;
+      })
+      .filter(Boolean); // Remove null items
+
+    const val = {
+      search: searchItems,
       limit,
       offset,
       projectId,

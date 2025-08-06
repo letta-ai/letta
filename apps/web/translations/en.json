@@ -1782,6 +1782,21 @@
           "label": "Value",
           "placeholder": "e.g. 50"
         }
+      },
+      "agentSteps": {
+        "name": "Agent Steps",
+        "operator": {
+          "label": "Operator",
+          "operators": {
+            "eq": "equals",
+            "gte": "greater than or equal to",
+            "lte": "less than or equal to"
+          }
+        },
+        "value": {
+          "label": "Value",
+          "placeholder": "e.g. 5"
+        }
       }
     },
     "title": "Responses",
