@@ -2779,6 +2779,7 @@ opentelemetry-instrumentation-sqlalchemy = "0.51b0"
 opentelemetry-sdk = "1.30.0"
 orjson = "^3.11.1"
 pathvalidate = "^3.2.1"
+pgvector = {version = "^0.2.3", optional = true}
 prettytable = "^3.9.0"
 pydantic = "^2.10.6"
 pydantic-settings = "^2.2.1"
@@ -2808,7 +2809,7 @@ wikipedia = {version = "^1.4.0", optional = true}
 all = ["autoflake (>=2.3.0,<3.0.0)", "black[jupyter] (>=24.2.0,<25.0.0)", "docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "google-cloud-profiler (>=4.1.0,<5.0.0)", "granian[reload] (>=2.3.2,<3.0.0)", "isort (>=5.13.2,<6.0.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pexpect (>=4.9.0,<5.0.0)", "pg8000 (>=1.30.3,<2.0.0)", "pgvector (>=0.2.3,<0.3.0)", "pinecone[asyncio] (>=7.3.0,<8.0.0)", "pre-commit (>=3.5.0,<4.0.0)", "psycopg2 (>=2.9.10,<3.0.0)", "psycopg2-binary (>=2.9.10,<3.0.0)", "pyright (>=1.1.347,<2.0.0)", "pytest-asyncio (>=0.24.0,<0.25.0)", "pytest-order (>=1.2.0,<2.0.0)", "redis (>=6.2.0,<7.0.0)", "turbopuffer (>=0.5.17,<0.6.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "uvloop (>=0.21.0,<0.22.0)", "wikipedia (>=1.4.0,<2.0.0)"]
 bedrock = ["aioboto3 (>=14.3.0,<15.0.0)", "boto3 (>=1.36.24,<2.0.0)"]
 cloud-tool-sandbox = ["e2b-code-interpreter (>=1.0.3,<2.0.0)", "modal (>=1.1.0,<2.0.0)"]
-desktop = ["docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pyright (>=1.1.347,<2.0.0)", "sqlite-vec (>=0.1.7a2,<0.2.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "wikipedia (>=1.4.0,<2.0.0)"]
+desktop = ["docker (>=7.1.0,<8.0.0)", "fastapi (>=0.115.6,<0.116.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "locust (>=2.31.5,<3.0.0)", "pgvector (>=0.2.3,<0.3.0)", "pyright (>=1.1.347,<2.0.0)", "sqlite-vec (>=0.1.7a2,<0.2.0)", "uvicorn (>=0.24.0.post1,<0.25.0)", "wikipedia (>=1.4.0,<2.0.0)"]
 dev = ["autoflake (>=2.3.0,<3.0.0)", "black[jupyter] (>=24.2.0,<25.0.0)", "isort (>=5.13.2,<6.0.0)", "locust (>=2.31.5,<3.0.0)", "pexpect (>=4.9.0,<5.0.0)", "pre-commit (>=3.5.0,<4.0.0)", "pyright (>=1.1.347,<2.0.0)", "pytest-asyncio (>=0.24.0,<0.25.0)", "pytest-order (>=1.2.0,<2.0.0)"]
 experimental = ["google-cloud-profiler (>=4.1.0,<5.0.0)", "granian[reload] (>=2.3.2,<3.0.0)", "uvloop (>=0.21.0,<0.22.0)"]
 external-tools = ["docker (>=7.1.0,<8.0.0)", "firecrawl-py (>=2.8.0,<3.0.0)", "langchain (>=0.3.7,<0.4.0)", "langchain-community (>=0.3.7,<0.4.0)", "wikipedia (>=1.4.0,<2.0.0)"]
@@ -4576,6 +4577,19 @@ psutil = ">=5.9.0"
 [package.extras]
 dev = ["sysv-ipc"]
 test = ["psycopg2-binary", "pytest", "sqlalchemy (>=2)", "sqlalchemy-utils"]
+
+[[package]]
+name = "pgvector"
+version = "0.2.5"
+description = "pgvector support for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pgvector-0.2.5-py2.py3-none-any.whl", hash = "sha256:5e5e93ec4d3c45ab1fa388729d56c602f6966296e19deee8878928c6d567e41b"},
+]
+
+[package.dependencies]
+numpy = "*"
 
 [[package]]
 name = "pillow"

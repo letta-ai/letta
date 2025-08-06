@@ -7,6 +7,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { Link } from 'react-router-dom';
+import { useDesktopConfig } from '../../../hooks/useDesktopConfig/useDesktopConfig';
 
 interface NotConnectedOverlayProps {
   children: React.ReactNode;
@@ -15,6 +16,12 @@ interface NotConnectedOverlayProps {
 export function NotConnectedOverlay({ children }: NotConnectedOverlayProps) {
   const isConnected = useServerStatus();
   const t = useTranslations('NotConnectedOverlay');
+  const { desktopConfig } = useDesktopConfig();
+
+  const isSelfHosted = desktopConfig?.databaseConfig.type === 'local';
+  const serverUrl = isSelfHosted && desktopConfig?.databaseConfig.type === 'local'
+    ? desktopConfig.databaseConfig.url
+    : null;
 
   return (
     <>
@@ -25,11 +32,20 @@ export function NotConnectedOverlay({ children }: NotConnectedOverlayProps) {
             <div className="border max-w-[350px] w-full flex items-center justify-center py-8 bg-background">
               <VStack className="max-w-[300px]" align="center" padding>
                 <LettaLoader size="xlarge" />
-                <Typography bold>{t('connecting')}</Typography>
-                <Typography>{t('details')}</Typography>
+                <Typography bold>
+                  {isSelfHosted ? t('connectingSelfHosted') : t('connecting')}
+                </Typography>
+                <Typography>
+                  {isSelfHosted
+                    ? t('detailsSelfHosted', { serverUrl: serverUrl || 'your server' })
+                    : t('details')}
+                </Typography>
                 <VStack paddingTop>
-                  <Link to="/dashboard/server-status">
-                    <Button label={t('action')} color="primary" />
+                  <Link to={isSelfHosted ? "/dashboard/settings" : "/dashboard/server-status"}>
+                    <Button
+                      label={isSelfHosted ? t('actionSelfHosted') : t('action')}
+                      color="primary"
+                    />
                   </Link>
                 </VStack>
               </VStack>

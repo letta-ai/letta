@@ -86,11 +86,11 @@ export function Alert(props: AlertProps) {
       role="alert"
       className={cn(alertVariants({ fullWidth, variant }), className)}
     >
-      <div className="flex flex-col w-full text-base gap-2">
+      <div className="flex flex-col w-full text-sm gap-2">
         <HStack fullWidth gap="small" justify="spaceBetween" align="center">
           <HStack gap="medium" align="center">
             <Slot className="min-w-5 min-h-5">{icon || defaultIcon}</Slot>
-            <h5 className="text-left font-medium">{title}</h5>
+            <h5 className="text-left font-medium text-sm">{title}</h5>
           </HStack>
           {action}
           {onDismiss && (

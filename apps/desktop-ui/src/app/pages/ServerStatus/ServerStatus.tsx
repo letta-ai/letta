@@ -1,18 +1,24 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
+  Alert,
   Button,
   DesktopPageLayout,
   HStack,
   LettaLoader,
+  LoadingEmptyStatusComponent,
   RefreshIcon,
+  TerminalIcon,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
+import { Link } from 'react-router-dom';
 import type { ServerLogType } from '@letta-cloud/types';
 import { useEffect, useRef, useState } from 'react';
+import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
 
 export function ServerStatus() {
   const t = useTranslations('ServerStatus');
+  const { desktopConfig } = useDesktopConfig();
   const [logs, setLogs] = useState<ServerLogType[]>([
     {
       message: 'Connecting to server...',
@@ -22,6 +28,7 @@ export function ServerStatus() {
   ]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isEmbedded = desktopConfig?.databaseConfig.type === 'embedded' || desktopConfig?.databaseConfig.type === 'external';
 
   function handleRestart() {
     if (!Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
@@ -32,7 +39,7 @@ export function ServerStatus() {
   }
 
   useEffect(() => {
-    if (!Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
+    if (!isEmbedded || !Object.prototype.hasOwnProperty.call(window, 'lettaServer')) {
       return;
     }
 
@@ -54,7 +61,7 @@ export function ServerStatus() {
         return;
       });
     };
-  }, []);
+  }, [isEmbedded]);
 
   const prevLogTimestamp = useRef<string | null>(null);
 
@@ -91,48 +98,62 @@ export function ServerStatus() {
 
   return (
     <DesktopPageLayout
-      icon={<LettaLoader size="small" variant="flipper" />}
+      icon={<LettaLoader size="medium" variant="spinner3d" />}
       subtitle={t('subtitle')}
       title={t('title')}
       actions={
-        <Button
-          preIcon={<RefreshIcon />}
-          color="tertiary"
-          size="small"
-          onClick={handleRestart}
-          label={t('restart')}
-        />
+        isEmbedded && (
+          <Button
+            preIcon={<RefreshIcon />}
+            color="tertiary"
+            size="small"
+            onClick={handleRestart}
+            label={t('restart')}
+          />
+        )
       }
     >
-      <VStack
-        ref={scrollRef}
-        overflow="auto"
-        padding="small"
-        color="background-grey2"
-        fullHeight
-        style={{ overflowX: 'hidden' }}
-      >
-        {logs.map((log, index) => (
-          <HStack key={index} style={{ flexWrap: 'wrap' }}>
-            <Typography
-              color="muted"
-              font="mono"
-              variant="body2"
-              style={{ flexShrink: 0 }}
-            >
-              [{log.timestamp}]
-            </Typography>
-            <Typography
-              color={log.type === 'error' ? 'destructive' : 'default'}
-              font="mono"
-              variant="body2"
-              style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-            >
-              {log.message}
-            </Typography>
-          </HStack>
-        ))}
-      </VStack>
+      {isEmbedded ? (
+        <VStack
+          ref={scrollRef}
+          overflow="auto"
+          padding="small"
+          color="background-grey2"
+          fullHeight
+          style={{ overflowX: 'hidden' }}
+        >
+          {logs.map((log, index) => (
+            <HStack key={index} style={{ flexWrap: 'wrap' }}>
+              <Typography color="muted" font="mono" variant="body2" style={{ flexShrink: 0 }}>
+                [{log.timestamp}]
+              </Typography>
+              <Typography
+                color={log.type === 'error' ? 'destructive' : 'default'}
+                font="mono"
+                variant="body2"
+                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+              >
+                {log.message}
+              </Typography>
+            </HStack>
+          ))}
+        </VStack>
+      ) : (
+        <LoadingEmptyStatusComponent
+          isLoading={false}
+          emptyMessage={t('noLogsAvailable', {
+            serverType: desktopConfig?.databaseConfig.type === 'cloud' ? 'Letta Cloud' : 'a self-hosted server'
+          })}
+          emptyAction={
+            <Link to="/dashboard/settings">
+              <Button
+                label={t('goToSettings')}
+                color="primary"
+              />
+            </Link>
+          }
+        />
+      )}
     </DesktopPageLayout>
   );
 }

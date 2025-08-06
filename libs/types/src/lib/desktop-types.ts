@@ -13,12 +13,19 @@ export const DesktopExternalDatabaseSchema = z.object({
 export const LocalServerSchema = z.object({
   type: z.literal('local'),
   url: z.string().url(),
+  token: z.string().optional(),
+});
+
+export const CloudServerSchema = z.object({
+  type: z.literal('cloud'),
+  token: z.string(),
 });
 
 const DesktopDiscriminatedUnionDatabaseSchema = z.discriminatedUnion('type', [
   DesktopEmbeddedDatabaseSchema,
   DesktopExternalDatabaseSchema,
   LocalServerSchema,
+  CloudServerSchema,
 ]);
 
 export const DesktopConfigSchema = z.object({

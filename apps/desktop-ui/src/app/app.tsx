@@ -69,18 +69,16 @@ function Sidebar() {
           tooltipPlacement="right"
         ></Button>
       </Link>
-      {desktopConfig && desktopConfig.databaseConfig.type !== 'local' && (
-        <Link to="/dashboard/server-status">
-          <Button
-            hideLabel
-            active={location.pathname === '/dashboard/server-status'}
-            preIcon={<TerminalIcon />}
-            color="tertiary"
-            label={t('Sidebar.serverStatus')}
-            tooltipPlacement="right"
-          ></Button>
-        </Link>
-      )}
+      <Link to="/dashboard/server-status">
+        <Button
+          hideLabel
+          active={location.pathname === '/dashboard/server-status'}
+          preIcon={<TerminalIcon />}
+          color="tertiary"
+          label={t('Sidebar.serverStatus')}
+          tooltipPlacement="right"
+        ></Button>
+      </Link>
       <Link to="/dashboard/integrations">
         <Button
           hideLabel

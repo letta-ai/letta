@@ -13,19 +13,45 @@ import {
   en as componentTranslations,
   Toaster,
 } from '@letta-cloud/ui-component-library';
+import { useDesktopConfig } from './app/hooks/useDesktopConfig/useDesktopConfig';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 const queryClient = new QueryClient();
 
 function LettaCoreInterceptor() {
+  const { desktopConfig } = useDesktopConfig();
+
   useEffect(() => {
     OpenAPI.interceptors.request.use((config) => {
-      config.baseURL = 'http://localhost:8283';
+      // Use the configured URL based on server type
+      if (desktopConfig?.databaseConfig.type === 'cloud') {
+        config.baseURL = 'https://api.letta.com';
+        // Token is required for cloud
+        if (desktopConfig.databaseConfig.token) {
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${desktopConfig.databaseConfig.token}`,
+          };
+        }
+      } else if (desktopConfig?.databaseConfig.type === 'local') {
+        config.baseURL =
+          desktopConfig.databaseConfig.url || 'http://localhost:8283';
+        // Add token to headers if provided
+        if (desktopConfig.databaseConfig.token) {
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${desktopConfig.databaseConfig.token}`,
+          };
+        }
+      } else {
+        // Default for embedded servers
+        config.baseURL = 'http://localhost:8283';
+      }
 
       return config;
     });
-  }, []);
+  }, [desktopConfig]);
 
   return null;
 }
@@ -41,9 +67,9 @@ root.render(
           ...componentTranslations,
         }}
       >
-        <LettaCoreInterceptor />
         <HashRouter>
           <Toaster />
+          <LettaCoreInterceptor />
           <ServerStatusProvider>
             <App />
           </ServerStatusProvider>

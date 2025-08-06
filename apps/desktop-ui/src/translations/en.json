@@ -1,6 +1,6 @@
 {
   "Integrations": {
-    "title": "Integrations (local server only)",
+    "title": "Integrations",
     "loading": "Loading...",
     "learnMore": "Learn more",
     "subtitle": "Update the different environment variables on your Letta server",
@@ -8,6 +8,8 @@
     "save": "Update environment",
     "configure": "Configure",
     "saveSuccess": "Environment variables updated successfully, restarting the ADE server",
+    "notAvailable": "This page is only available when using the embedded Letta server (you are configured to use {serverType})",
+    "goToSettings": "Modify server settings",
     "IntegrationConfigurationDialog": {
       "title": "Update connection with {integrationName}",
       "alertTitle": "Learn more",
@@ -56,8 +58,8 @@
         "description": "Add your DeepSeek API key to use DeepSeek models in the ADE"
       },
       "other": {
-        "name": "Don't see an integration that's supported in the docs?",
-        "description": "You can update the environment variables in `[your-root-directory]/.letta/env` to connect to any other API"
+        "name": "Don't see an integration here that's supported in the Letta docs?",
+        "description": "You can directly edit the environment variables in `[your-root-directory]/.letta/env` to set up other integrations"
       }
     }
   },
@@ -89,9 +91,12 @@
     }
   },
   "NotConnectedOverlay": {
-    "connecting": "Booting up your Letta Server...",
-    "details": "This should only take 10-20 seconds. Once the server is running, you will be able to access the ADE.",
-    "action": "View server logs"
+    "connecting": "Booting up your Letta server...",
+    "connectingSelfHosted": "Establishing connection...",
+    "details": "This should only take 10-30 seconds. Once the server is running, you will be able to access the ADE.",
+    "detailsSelfHosted": "Attempting to connect to your Letta server. Make sure the server is running and accessible at {serverUrl}.",
+    "action": "View server logs",
+    "actionSelfHosted": "View server settings"
   },
   "CreateLocalAgentDialog": {
     "serverOffline": "Your server is offline, please start it to create a new agent.",
@@ -116,7 +121,9 @@
   "ServerStatus": {
     "restart": "Restart",
     "title": "Letta server logs",
-    "subtitle": "View the status of your server"
+    "subtitle": "View the status of your server",
+    "noLogsAvailable": "Logs viewer only available when using the embedded Letta server (you are configured to use {serverType})",
+    "goToSettings": "Modify server settings"
   },
   "Settings": {
     "title": "Letta Desktop settings",
@@ -126,14 +133,17 @@
       "title": "Server settings",
       "type": "Letta server type",
       "types": {
-        "external": "Local server (external Database)",
-        "embedded": "Local server",
-        "local": "Remote server"
+        "external": "Embedded server (external Postgres)",
+        "embedded": "Embedded server",
+        "local": "Self-hosted server",
+        "cloud": "Letta Cloud"
       },
-      "connectionString": "Connection String"
+      "connectionString": "Connection String",
+      "url": "Server URL"
     },
     "EditDatabaseSettingsDialog": {
       "title": "Update server connection",
+      "description": "Choose how Letta Desktop connects to a Letta server. The embedded server runs locally inside Letta Desktop, and self-hosted allows you to connect to a separate Letta deployment (running locally or remotely).",
       "externalOnly": "External data",
       "connectionString": {
         "label": "Connection String",
@@ -145,6 +155,41 @@
         "placeholderNone": "N/A",
         "description": "Enter the connection string for your external database",
         "descriptionNone": "Embedded database does not have a connection string"
+      },
+      "url": {
+        "label": "Server URL",
+        "error": {
+          "missing": "Server URL is required"
+        },
+        "description": "URL of your remote Letta server"
+      },
+      "token": {
+        "label": "Authentication Token (optional)",
+        "placeholder": "Enter token if required",
+        "description": "Token for authenticating with your Letta server",
+        "labelCloud": "Letta Cloud API Key",
+        "placeholderCloud": "sk-...",
+        "descriptionCloud": "Your API key from app.letta.com",
+        "error": {
+          "missingCloud": "API key is required for Letta Cloud"
+        }
+      }
+    },
+    "TestConnectionButton": {
+      "label": "Test Connection",
+      "pending": "Testing...",
+      "unconnected": "Not tested",
+      "success": {
+        "label": "Connected",
+        "tooltip": "Successfully connected to the server"
+      },
+      "authFailed": {
+        "label": "Auth Failed",
+        "tooltip": "Authentication failed. Please check your token."
+      },
+      "failed": {
+        "label": "Failed",
+        "tooltip": "Could not connect to the server. Please check the URL and ensure the server is running."
       }
     }
   },
@@ -184,14 +229,14 @@
     "ConfigureDatabaseTypeStep": {
       "description": "Select the database type you would like to use to store your agents:",
       "bringYourOwn": {
-        "label": "Bring your own Letta",
-        "description": "Connect to your local docker instance of Letta to manage your agents. This is the best option for scalability.",
+        "label": "Bring your own Letta server",
+        "description": "Connect Letta Desktop to a self-hosted instance of Letta. Note: this requires running a Letta server separately from Letta Desktop.",
         "badge": "Recommended"
       },
       "embedded": {
         "noSetup": "No setup required",
-        "label": "Use an embedded database",
-        "description": "This is the easiest option to get started with, all your data is stored on an embedded letta instance powered by sqlite",
+        "label": "Use an embedded Letta server",
+        "description": "This is the easiest option to get started with, all your data is stored on an embedded Letta server instance powered by SQLite.",
         "badge": "Experimental"
       }
     }

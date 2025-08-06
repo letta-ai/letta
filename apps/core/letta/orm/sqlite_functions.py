@@ -152,7 +152,7 @@ def register_functions(dbapi_connection, connection_record):
             if is_aiosqlite_connection:
                 # For aiosqlite connections, we cannot use async operations in sync event handlers
                 # The extension will need to be loaded per-connection when actually used
-                logger.info("Detected aiosqlite connection - sqlite-vec will be loaded per-query")
+                logger.debug("Detected aiosqlite connection - sqlite-vec will be loaded per-query")
             else:
                 # For sync connections
                 # dbapi_connection.enable_load_extension(True)
@@ -173,7 +173,7 @@ def register_functions(dbapi_connection, connection_record):
                 raw_conn = getattr(actual_connection, "_connection", actual_connection)
                 if hasattr(raw_conn, "create_function"):
                     raw_conn.create_function("cosine_distance", 2, cosine_distance)
-                    logger.info("Successfully registered cosine_distance for aiosqlite")
+                    logger.debug("Successfully registered cosine_distance for aiosqlite")
             else:
                 dbapi_connection.create_function("cosine_distance", 2, cosine_distance)
                 logger.info("Successfully registered cosine_distance for sync connection")

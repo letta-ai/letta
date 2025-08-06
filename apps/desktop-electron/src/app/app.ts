@@ -144,7 +144,14 @@ function copyAlembicToLettaDir() {
 }
 
 function copyLettaServerToLettaDir() {
-  let fileName = process.platform === 'win32' ? 'letta.exe' : 'letta';
+  let fileName;
+  if (process.platform === 'win32') {
+    fileName = 'letta.exe';
+  } else if (process.platform === 'linux') {
+    fileName = 'letta.elf';
+  } else {
+    fileName = 'letta';  // macOS
+  }
 
   let lettaServerPath = path.join(
     __dirname,
@@ -156,13 +163,29 @@ function copyLettaServerToLettaDir() {
   );
 
   if (App.application.isPackaged) {
-    lettaServerPath = path.join(__dirname, '..', 'dist', fileName);
+    // First try the unpacked location (for asar unpacked files)
+    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', fileName);
+    if (fs.existsSync(unpackedPath)) {
+      lettaServerPath = unpackedPath;
+    } else {
+      // Fallback to the regular location
+      lettaServerPath = path.join(__dirname, '..', 'dist', fileName);
+    }
   }
 
   const lettaPath = path.join(homeDir || '/', '.letta', 'bin');
 
   if (!fs.existsSync(lettaPath)) {
     fs.mkdirSync(lettaPath, { recursive: true });
+  }
+
+  // Check if source file exists before copying
+  if (!fs.existsSync(lettaServerPath)) {
+    console.error(`Letta binary not found at: ${lettaServerPath}`);
+    console.error(`Current directory: ${__dirname}`);
+    console.error(`Process resourcesPath: ${process.resourcesPath}`);
+    console.error(`Is packaged: ${App.application.isPackaged}`);
+    throw new Error(`Letta binary not found at: ${lettaServerPath}`);
   }
 
   fs.copyFileSync(lettaServerPath, path.join(lettaPath, fileName));
@@ -269,7 +292,8 @@ export default class App {
       return;
     }
 
-    if (getIsEmbeddedPostgres(config)) {
+    // Copy alembic files for both embedded Postgres and SQLite
+    if (getIsEmbeddedPostgres(config) || getIsSQLLiteConfig(config)) {
       if (copyFiles) {
         copyAlembicToLettaDir();
       }
@@ -279,14 +303,23 @@ export default class App {
 
     console.log('Starting Letta Server...');
 
-    let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', 'letta');
+    let binaryName;
+    if (process.platform === 'win32') {
+      binaryName = 'letta.exe';
+    } else if (process.platform === 'linux') {
+      binaryName = 'letta.elf';
+    } else {
+      binaryName = 'letta';  // macOS
+    }
+
+    let lettaServerPath = path.join(homeDir || '/', '.letta', 'bin', binaryName);
     lettaServer = null;
     const serverId = Math.random().toString(36).substring(7);
     setServerId(serverId);
     lettaServer = execFile(
       lettaServerPath,
       [
-        ...(getIsSQLLiteConfig(config) ? '' : '--use-file-pg-uri'),
+        ...(getIsSQLLiteConfig(config) ? [] : ['--use-file-pg-uri']),
         `--look-for-server-id=${serverId}`,
         '--no-generation',
       ],
@@ -531,7 +564,7 @@ export default class App {
       });
 
       const uriPath = join(os.homedir(), '.letta', 'pg_uri');
-      const uri = `postgresql://postgres@localhost:${pgPort}/postgres`;
+      const uri = `postgresql+pg8000://postgres@localhost:${pgPort}/postgres`;
       fs.writeFileSync(uriPath, uri);
 
       // Write the PID to a file (e.g., ~/.letta/postgres_pid)

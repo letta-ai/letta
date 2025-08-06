@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   ChipSelect,
   CogIcon,
@@ -20,13 +21,16 @@ import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig'
 import { z } from 'zod';
 import { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { TestConnectionButton } from './TestConnectionButton';
 
 const POSTGRESCONNECTION_STRING_REGEX =
   /^postgres(?:ql)?:\/\/(?:[^:]+:[^@]+@)?[^:]+:\d+\/[^?]+(?:\?.+)?$/;
 
 const EditDatabaseSettingsConfigSchema = z.object({
-  type: z.enum(['embedded', 'external', 'local']),
+  type: z.enum(['embedded', 'external', 'local', 'cloud']),
   connectionString: z.string().optional(),
+  url: z.string().optional(),
+  token: z.string().optional(),
 });
 
 type EditDatabaseSettingsPayload = z.infer<
@@ -70,6 +74,28 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         }
       }
 
+      if (data.type === 'local') {
+        if (!data.url) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('EditDatabaseSettingsDialog.url.error.missing'),
+            path: ['url'],
+          });
+          return false;
+        }
+      }
+
+      if (data.type === 'cloud') {
+        if (!data.token) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('EditDatabaseSettingsDialog.token.error.missingCloud'),
+            path: ['token'],
+          });
+          return false;
+        }
+      }
+
       return true;
     });
   }, [t]);
@@ -88,6 +114,10 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
       {
         label: t('DatabaseSettings.types.local'),
         value: 'local',
+      },
+      {
+        label: t('DatabaseSettings.types.cloud'),
+        value: 'cloud',
       },
     ];
   }, [t]);
@@ -113,7 +143,19 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         version: '1',
         databaseConfig: {
           type: values.type,
-          url: 'http://localhost:8283',
+          url: values.url || 'http://localhost:8283',
+          ...(values.token && { token: values.token }),
+        },
+      });
+      return;
+    }
+
+    if (values.type === 'cloud') {
+      void handleSetDesktopConfig({
+        version: '1',
+        databaseConfig: {
+          type: values.type,
+          token: values.token || '',
         },
       });
       return;
@@ -147,69 +189,137 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
           />
         }
       >
-        <FormField
-          name="type"
-          render={({ field }) => {
-            const selectedOption = options.find(
-              (option) => option.value === field.value,
-            );
-
-            return (
-              <ChipSelect
-                label={t('DatabaseSettings.type')}
-                isMultiSelect={false}
-                onChange={(value) => {
-                  field.onChange(value[0].value);
-                }}
-                value={selectedOption ? [selectedOption] : []}
-                options={[
-                  {
-                    label: t('DatabaseSettings.types.embedded'),
-                    value: 'embedded',
-                  },
-                  {
-                    label: t('DatabaseSettings.types.local'),
-                    value: 'local',
-                  },
-                ]}
-              />
-            );
-          }}
-        />
-        {type === 'external' && (
+        <VStack gap="large">
+          <Alert
+            variant="brand"
+            title={t('EditDatabaseSettingsDialog.description')}
+          />
           <FormField
-            name="connectionString"
+            name="type"
             render={({ field }) => {
+              const selectedOption = options.find(
+                (option) => option.value === field.value,
+              );
+
               return (
-                <Input
-                  disabled={type !== 'external'}
-                  fullWidth
-                  label={t('EditDatabaseSettingsDialog.connectionString.label')}
-                  {...field}
-                  value={type === 'external' ? field.value : ''}
-                  description={
-                    type !== 'external'
-                      ? t(
-                          'EditDatabaseSettingsDialog.connectionString.descriptionNone',
-                        )
-                      : t(
-                          'EditDatabaseSettingsDialog.connectionString.description',
-                        )
-                  }
-                  placeholder={
-                    type !== 'external'
-                      ? t(
-                          'EditDatabaseSettingsDialog.connectionString.placeholderNone',
-                        )
-                      : t(
-                          'EditDatabaseSettingsDialog.connectionString.placeholder',
-                        )
-                  }
+                <ChipSelect
+                  label={t('DatabaseSettings.type')}
+                  isMultiSelect={false}
+                  onChange={(value) => {
+                    field.onChange(value[0].value);
+                  }}
+                  value={selectedOption ? [selectedOption] : []}
+                  options={[
+                    {
+                      label: t('DatabaseSettings.types.embedded'),
+                      value: 'embedded',
+                    },
+                    {
+                      label: t('DatabaseSettings.types.local'),
+                      value: 'local',
+                    },
+                    // Temporarily disabled
+                    // {
+                    //   label: t('DatabaseSettings.types.cloud'),
+                    //   value: 'cloud',
+                    // },
+                  ]}
                 />
               );
             }}
           />
-        )}
+          {type === 'local' && (
+            <>
+              <FormField
+                name="url"
+                render={({ field }) => {
+                  return (
+                    <Input
+                      fullWidth
+                      label={t('EditDatabaseSettingsDialog.url.label')}
+                      {...field}
+                      placeholder="http://localhost:8283"
+                    />
+                  );
+                }}
+              />
+              <FormField
+                name="token"
+                render={({ field }) => {
+                  return (
+                    <Input
+                      fullWidth
+                      label={t('EditDatabaseSettingsDialog.token.label')}
+                      {...field}
+                      placeholder={t(
+                        'EditDatabaseSettingsDialog.token.placeholder',
+                      )}
+                      type="password"
+                    />
+                  );
+                }}
+              />
+              <TestConnectionButton
+                url={form.watch('url') || 'http://localhost:8283'}
+                token={form.watch('token')}
+              />
+            </>
+          )}
+          {type === 'cloud' && (
+            <FormField
+              name="token"
+              render={({ field }) => {
+                return (
+                  <Input
+                    fullWidth
+                    label={t('EditDatabaseSettingsDialog.token.labelCloud')}
+                    {...field}
+                    placeholder={t(
+                      'EditDatabaseSettingsDialog.token.placeholderCloud',
+                    )}
+                    type="password"
+                  />
+                );
+              }}
+            />
+          )}
+          {type === 'external' && (
+            <FormField
+              name="connectionString"
+              render={({ field }) => {
+                return (
+                  <Input
+                    disabled={type !== 'external'}
+                    fullWidth
+                    label={t(
+                      'EditDatabaseSettingsDialog.connectionString.label',
+                    )}
+                    {...field}
+                    value={type === 'external' ? field.value : ''}
+                    description={
+                      type !== 'external'
+                        ? t(
+                            'EditDatabaseSettingsDialog.connectionString.descriptionNone',
+                          )
+                        : t(
+                            'EditDatabaseSettingsDialog.connectionString.description',
+                          )
+                    }
+                    placeholder={
+                      type !== 'external'
+                        ? t(
+                            'EditDatabaseSettingsDialog.connectionString.placeholderNone',
+                          )
+                        : t(
+                            'EditDatabaseSettingsDialog.connectionString.placeholder',
+                          )
+                    }
+                  />
+                );
+              }}
+            />
+          )}
+        </VStack>
       </Dialog>
     </FormProvider>
   );
@@ -233,6 +343,15 @@ function DatabaseSettings() {
                   desktopConfig.databaseConfig.type === 'external'
                     ? desktopConfig.databaseConfig.connectionString
                     : '',
+                url:
+                  desktopConfig.databaseConfig.type === 'local'
+                    ? desktopConfig.databaseConfig.url
+                    : 'http://localhost:8283',
+                token:
+                  desktopConfig.databaseConfig.type === 'local' ||
+                  desktopConfig.databaseConfig.type === 'cloud'
+                    ? desktopConfig.databaseConfig.token || ''
+                    : '',
               }}
             />
           )
@@ -251,6 +370,8 @@ function DatabaseSettings() {
                   t('DatabaseSettings.types.embedded')}
                 {desktopConfig?.databaseConfig.type === 'local' &&
                   t('DatabaseSettings.types.local')}
+                {desktopConfig?.databaseConfig.type === 'cloud' &&
+                  t('DatabaseSettings.types.cloud')}
               </Typography>
             </HStack>
           </VStack>
@@ -262,6 +383,18 @@ function DatabaseSettings() {
               <HStack>
                 <Typography variant="body3">
                   {desktopConfig?.databaseConfig.connectionString}
+                </Typography>
+              </HStack>
+            </VStack>
+          )}
+          {desktopConfig?.databaseConfig.type === 'local' && (
+            <VStack>
+              <Typography bold variant="body3">
+                {t('DatabaseSettings.url')}
+              </Typography>
+              <HStack>
+                <Typography variant="body3">
+                  {desktopConfig?.databaseConfig.url}
                 </Typography>
               </HStack>
             </VStack>

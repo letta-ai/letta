@@ -42,11 +42,18 @@ body {
     @include dark;
   }
 }
-//
-//.linear-gradient-background {
-//  background: hsl(var(--background-grey));
-//}
-//
-//.linear-gradient-background:before {
-//  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, hsl(var(--background-grey)) 10%, hsl(var(--background-grey)) 100%);
-//}
+.linear-gradient-background {
+  background: hsl(var(--background));
+  border-top: 1px solid hsl(var(--border)); /* Ensure top border is visible */
+  border-right: 1px solid hsl(var(--border)); /* Ensure right border is visible */
+}
+
+.linear-gradient-background:before {
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--background)) 10%, hsl(var(--background)) 100%);
+}
+
+
+/* Remove hover effect from table header rows */
+thead tr:hover {
+  background-color: transparent !important;
+}

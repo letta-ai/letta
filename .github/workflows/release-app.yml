@@ -89,6 +89,9 @@ jobs:
       - name: Build elf
         run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js
 
+      - name: Rename Linux binary to letta.elf before upload
+        run: mv apps/desktop-core/dist/letta apps/desktop-core/dist/letta.elf
+
       - name: Check disk usage
         run: du -sh apps/desktop-electron/resources/* || true
 
@@ -98,7 +101,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: letta.elf
-          path: apps/desktop-core/dist/letta
+          path: apps/desktop-core/dist/letta.elf
           overwrite: true
 
   build-exe:
@@ -273,6 +276,9 @@ jobs:
 
       - name: Prepare desktop (rebuild deps)
         run: just prepare-desktop
+
+      - name: Build macOS binary
+        run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js
 
       - name: Build electron
         run: just build-desktop

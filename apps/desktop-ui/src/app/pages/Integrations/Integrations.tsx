@@ -20,6 +20,8 @@ import {
 import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Slot } from '@radix-ui/react-slot';
+import { useDesktopConfig } from '../../hooks/useDesktopConfig/useDesktopConfig';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface ConfigSchemaItem {
   key: string;
@@ -291,13 +293,16 @@ type SettingsConfig = Record<string, string>;
 
 export function Integrations() {
   const t = useTranslations('Integrations');
+  const { desktopConfig } = useDesktopConfig();
   const [settings, setSettings] = useState<SettingsConfig | null>(null);
   const [unserializedSettings, setUnserializedSettings] = useState<
     string | null
   >(null);
 
+  const isEmbedded = desktopConfig?.databaseConfig.type === 'embedded' || desktopConfig?.databaseConfig.type === 'external';
+
   useEffect(() => {
-    if (!Object.prototype.hasOwnProperty.call(window, 'lettaConfig')) {
+    if (!isEmbedded || !Object.prototype.hasOwnProperty.call(window, 'lettaConfig')) {
       return;
     }
 
@@ -323,7 +328,7 @@ export function Integrations() {
         return;
       });
     };
-  }, []);
+  }, [isEmbedded]);
 
   const handleSave = useCallback(() => {
     if (settings === null) {
@@ -353,7 +358,22 @@ export function Integrations() {
       title={t('title')}
     >
       <VStack fullWidth fullHeight overflowY="auto" padding="small">
-        {settings === null ? (
+        {!isEmbedded ? (
+          <LoadingEmptyStatusComponent
+            isLoading={false}
+            emptyMessage={t('notAvailable', {
+              serverType: desktopConfig?.databaseConfig.type === 'cloud' ? 'Letta Cloud' : 'a self-hosted server'
+            })}
+            emptyAction={
+              <RouterLink to="/dashboard/settings">
+                <Button
+                  label={t('goToSettings')}
+                  color="primary"
+                />
+              </RouterLink>
+            }
+          />
+        ) : settings === null ? (
           <LoadingEmptyStatusComponent
             isLoading
             loadingMessage={t('loading')}

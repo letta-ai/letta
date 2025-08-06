@@ -18,10 +18,10 @@ a = Analysis(
         ('DEP_PATH/letta/prompts/system', 'letta/prompts/system'),
         ('DEP_PATH/letta/functions/function_sets', 'letta/functions/function_sets'),
         ('letta_desktop', 'letta_desktop'),
-    ] + collect_data_files('blib2to3') + collect_data_files('datamodel_code_generator.model.template.pydantic_v2'),
+    ] + collect_data_files('blib2to3') + collect_data_files('datamodel_code_generator.model.template.pydantic_v2') + collect_data_files('magika') + collect_data_files('markitdown'),
     hiddenimports=[
         'tiktoken_ext',
-        'tiktoken_ext.openai_public'
+        'tiktoken_ext.openai_public',
         'datamodel_code_generator',
         '30fcd23745efe32ce681__mypyc',
         'pathspec',
@@ -40,16 +40,22 @@ a = Analysis(
         'blib2to3.pgen2.token',
         'blib2to3.pgen2.driver',
         'blib2to3.pygram',
-        'blib2to3.pgen2.tokenize'
+        'blib2to3.pgen2.tokenize',
         'blib2to3.pgen2.parse',
         'blib2to3.pgen2.pgen',
-        'mcp'
-    ] + collect_submodules('black') + collect_submodules('blib2to3'),
+        'mcp',
+        'markitdown',
+        'magika',
+        'pgvector',
+        'pgvector.sqlalchemy'
+    ] + collect_submodules('black') + collect_submodules('blib2to3') + collect_submodules('markitdown') + collect_submodules('magika'),
 
     collect_submodules=True,
     collect_data_files=[
-        'black'
-        'blib2to3'
+        'black',
+        'blib2to3',
+        'markitdown',
+        'magika'
     ],
     hookspath=[],
     hooksconfig={},
