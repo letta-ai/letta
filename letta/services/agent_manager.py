@@ -334,13 +334,20 @@ class AgentManager:
 
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to True if provider is not in excluded set
-                if agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES:
+                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                if (
+                    (
+                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        and agent_create.include_base_tool_rules is None
+                    )
+                    and agent_create.agent_type != AgentType.sleeptime_agent
+                ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
-                    logger.info(f"Overriding include_base_tool_rules to True for provider: {agent_create.llm_config.model_endpoint_type}")
+                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                else:
+                    agent_create.include_base_tool_rules = True
 
                 should_add_base_tool_rules = agent_create.include_base_tool_rules
-
                 if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
@@ -534,16 +541,22 @@ class AgentManager:
 
                 tool_ids = set(name_to_id.values()) | set(id_to_name.keys())
                 tool_names = set(name_to_id.keys())  # now canonical
-
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to True if provider is not in excluded set
-                if agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES:
+                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                if (
+                    (
+                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        and agent_create.include_base_tool_rules is None
+                    )
+                    and agent_create.agent_type != AgentType.sleeptime_agent
+                ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
                     logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                else:
+                    agent_create.include_base_tool_rules = True
 
                 should_add_base_tool_rules = agent_create.include_base_tool_rules
-
                 if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:

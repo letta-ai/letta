@@ -1288,6 +1288,8 @@ class TestAgentFileRoundTrip:
         result = await agent_serialization_manager.import_file(original_export, other_user)
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         second_export = await agent_serialization_manager.export([imported_agent_id], other_user)
+        print(original_export.agents[0].tool_rules)
+        print(second_export.agents[0].tool_rules)
         assert compare_agent_files(original_export, second_export)
 
     async def test_multiple_roundtrips(self, server, agent_serialization_manager, test_agent, default_user, other_user):

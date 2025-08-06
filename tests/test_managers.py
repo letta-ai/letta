@@ -817,7 +817,7 @@ async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServe
         memory_blocks=memory_blocks,
         llm_config=LLMConfig.default_config("gpt-4o-mini"),  # This has model_endpoint_type="openai"
         embedding_config=EmbeddingConfig.default_config(provider="openai"),
-        include_base_tool_rules=True,  # Should be overridden to False
+        include_base_tool_rules=False,
     )
 
     # Create the agent
@@ -827,6 +827,7 @@ async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServe
     )
 
     # Assert that no base tool rules were added (since include_base_tool_rules was overridden to False)
+    print(created_agent.tool_rules)
     assert created_agent.tool_rules is None or len(created_agent.tool_rules) == 0
 
 
