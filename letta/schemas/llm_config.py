@@ -183,3 +183,30 @@ class LLMConfig(BaseModel):
             + (f" [type={self.model_endpoint_type}]" if self.model_endpoint_type else "")
             + (f" [ip={self.model_endpoint}]" if self.model_endpoint else "")
         )
+
+    @classmethod
+    def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
+        if reasoning:
+            if (
+                config.model_endpoint_type == "anthropic"
+                and ("claude-opus-4" in config.model or "claude-sonnet-4" in config.model or "claude-3-7-sonnet" in config.model)
+            ) or (
+                config.model_endpoint_type == "google_vertex" and ("gemini-2.5-flash" in config.model or "gemini-2.0-pro" in config.model)
+            ):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            elif config.model_endpoint_type == "openai" and (
+                config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
+            ):
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = True
+                if config.reasoning_effort is None:
+                    config.reasoning_effort = "medium"
+            else:
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = False
+        else:
+            config.put_inner_thoughts_in_kwargs = False
+            config.enable_reasoner = False
