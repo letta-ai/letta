@@ -8719,7 +8719,7 @@ cffi = ["cffi (>=1.11)"]
 all = ["autoflake", "black", "docker", "fastapi", "google-cloud-profiler", "granian", "isort", "langchain", "langchain-community", "locust", "pexpect", "pg8000", "pgvector", "pinecone", "pre-commit", "psycopg2", "psycopg2-binary", "pyright", "pytest-asyncio", "pytest-order", "redis", "turbopuffer", "uvicorn", "uvloop", "wikipedia"]
 bedrock = ["aioboto3", "boto3"]
 cloud-tool-sandbox = ["e2b-code-interpreter", "modal"]
-desktop = ["docker", "fastapi", "langchain", "langchain-community", "locust", "pyright", "sqlite-vec", "uvicorn", "wikipedia"]
+desktop = ["docker", "fastapi", "langchain", "langchain-community", "locust", "pgvector", "pyright", "sqlite-vec", "uvicorn", "wikipedia"]
 dev = ["autoflake", "black", "isort", "locust", "pexpect", "pre-commit", "pyright", "pytest-asyncio", "pytest-order"]
 experimental = ["google-cloud-profiler", "granian", "uvloop"]
 external-tools = ["docker", "firecrawl-py", "langchain", "langchain-community", "wikipedia"]
@@ -8733,4 +8733,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.11"
-content-hash = "349c668d93463b0f4e4526311fd32aad465e139148dd597d1411c17ffcd43c89"
+content-hash = "157ecc4bb05492f7b8c7758e2af195d635e42ba7e8cb17e6be276844b1dbd4b4"

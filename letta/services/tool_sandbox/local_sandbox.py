@@ -120,6 +120,10 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             else:
                 # If not using venv, use whatever Python we are running on
                 python_executable = sys.executable
+                # For embedded/desktop environments, preserve Python paths
+                # This ensures the subprocess can find bundled modules
+                if "PYTHONPATH" in os.environ:
+                    exec_env["PYTHONPATH"] = os.environ["PYTHONPATH"]
 
             # handle unwanted terminal behavior
             exec_env.update(
@@ -202,7 +206,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
                     except asyncio.TimeoutError:
                         process.kill()
 
-                raise TimeoutError(f"Executing tool {self.tool_name} timed out after 60 seconds.")
+                raise TimeoutError(f"Executing tool {self.tool_name} timed out after {tool_settings.tool_sandbox_timeout} seconds.")
 
             stderr = stderr_bytes.decode("utf-8") if stderr_bytes else ""
             log_event(name="finish subprocess")
