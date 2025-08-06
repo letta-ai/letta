@@ -87,8 +87,8 @@ from letta.services.helpers.agent_manager_helper import (
     calculate_multi_agent_tools,
     check_supports_structured_output,
     compile_system_message,
-    compile_system_message_async,
     derive_system_message,
+    get_system_message_from_compiled_memory,
     initialize_message_sequence,
     initialize_message_sequence_async,
     package_initial_message_sequence,
@@ -1750,16 +1750,13 @@ class AgentManager:
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
-        new_system_message_str = await compile_system_message_async(
+        new_system_message_str = get_system_message_from_compiled_memory(
             system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
+            memory_with_sources=curr_memory_str,
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
-            tool_rules_solver=tool_rules_solver,
-            sources=agent_state.sources,
-            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
