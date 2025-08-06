@@ -6,21 +6,7 @@ from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 
 
 class EmbeddingConfig(BaseModel):
-    """
-
-    Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.
-
-    Attributes:
-        embedding_endpoint_type (str): The endpoint type for the model.
-        embedding_endpoint (str): The endpoint for the model.
-        embedding_model (str): The model for the embedding.
-        embedding_dim (int): The dimension of the embedding.
-        embedding_chunk_size (int): The chunk size of the embedding.
-        azure_endpoint (:obj:`str`, optional): The Azure endpoint for the model (Azure only).
-        azure_version (str): The Azure version for the model (Azure only).
-        azure_deployment (str): The Azure deployment for the model (Azure only).
-
-    """
+    """Configuration for embedding model connection and processing parameters."""
 
     embedding_endpoint_type: Literal[
         "openai",
@@ -77,7 +63,7 @@ class EmbeddingConfig(BaseModel):
             )
         elif model_name == "letta":
             return cls(
-                embedding_endpoint="https://embeddings.memgpt.ai",
+                embedding_endpoint="https://bun-function-production-e310.up.railway.app/v1",
                 embedding_model="BAAI/bge-large-en-v1.5",
                 embedding_dim=1024,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,

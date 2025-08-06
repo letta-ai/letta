@@ -24,6 +24,7 @@ from letta.utils import calculate_file_defaults_based_on_context_window
 
 if TYPE_CHECKING:
     from letta.orm.agents_tags import AgentsTags
+    from letta.orm.archives_agents import ArchivesAgents
     from letta.orm.files_agents import FileAgent
     from letta.orm.identity import Identity
     from letta.orm.organization import Organization
@@ -155,6 +156,13 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, AsyncAttrs):
         back_populates="agent",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+    archives_agents: Mapped[List["ArchivesAgents"]] = relationship(
+        "ArchivesAgents",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="noload",
+        doc="Archives accessible by this agent.",
     )
 
     def _get_per_file_view_window_char_limit(self) -> int:

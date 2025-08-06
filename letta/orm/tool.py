@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-# TODO everything in functions should live in this model
-from letta.orm.enums import ToolType
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.enums import ToolSourceType
+
+# TODO everything in functions should live in this model
+from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.tool import Tool as PydanticTool
 
 if TYPE_CHECKING:
@@ -43,11 +43,12 @@ class Tool(SqlalchemyBase, OrganizationMixin):
     tags: Mapped[List] = mapped_column(JSON, doc="Metadata tags used to filter tools.")
     source_type: Mapped[ToolSourceType] = mapped_column(String, doc="The type of the source code.", default=ToolSourceType.json)
     source_code: Mapped[Optional[str]] = mapped_column(String, doc="The source code of the function.")
-    json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The OAI compatable JSON schema of the function.")
+    json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The OAI compatible JSON schema of the function.")
     args_json_schema: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="The JSON schema of the function arguments.")
     pip_requirements: Mapped[Optional[List]] = mapped_column(
         JSON, nullable=True, doc="Optional list of pip packages required by this tool."
     )
+    npm_requirements: Mapped[list | None] = mapped_column(JSON, doc="Optional list of npm packages required by this tool.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, default=lambda: {}, doc="A dictionary of additional metadata for the tool.")
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="tools", lazy="selectin")

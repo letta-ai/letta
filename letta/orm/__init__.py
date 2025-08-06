@@ -1,5 +1,7 @@
 from letta.orm.agent import Agent
 from letta.orm.agents_tags import AgentsTags
+from letta.orm.archive import Archive
+from letta.orm.archives_agents import ArchivesAgents
 from letta.orm.base import Base
 from letta.orm.block import Block
 from letta.orm.block_history import BlockHistory
@@ -19,7 +21,7 @@ from letta.orm.llm_batch_job import LLMBatchJob
 from letta.orm.mcp_server import MCPServer
 from letta.orm.message import Message
 from letta.orm.organization import Organization
-from letta.orm.passage import AgentPassage, BasePassage, SourcePassage
+from letta.orm.passage import ArchivalPassage, BasePassage, SourcePassage
 from letta.orm.prompt import Prompt
 from letta.orm.provider import Provider
 from letta.orm.provider_trace import ProviderTrace

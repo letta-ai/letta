@@ -9,14 +9,16 @@ from sqlalchemy import select
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import embedding_model, parse_and_chunk_text
 from letta.helpers.decorators import async_redis_cache
+from letta.orm import ArchivesAgents
 from letta.orm.errors import NoResultFound
-from letta.orm.passage import AgentPassage, SourcePassage
+from letta.orm.passage import ArchivalPassage, SourcePassage
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.archive_manager import ArchiveManager
 from letta.utils import enforce_types
 
 
@@ -42,6 +44,9 @@ async def get_openai_embedding_async(text: str, model: str, endpoint: str) -> li
 class PassageManager:
     """Manager class to handle business logic related to Passages."""
 
+    def __init__(self):
+        self.archive_manager = ArchiveManager()
+
     # AGENT PASSAGE METHODS
     @enforce_types
     @trace_method
@@ -49,7 +54,7 @@ class PassageManager:
         """Fetch an agent passage by ID."""
         with db_registry.session() as session:
             try:
-                passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                passage = ArchivalPassage.read(db_session=session, identifier=passage_id, actor=actor)
                 return passage.to_pydantic()
             except NoResultFound:
                 raise NoResultFound(f"Agent passage with id {passage_id} not found in database.")
@@ -60,7 +65,7 @@ class PassageManager:
         """Fetch an agent passage by ID."""
         async with db_registry.async_session() as session:
             try:
-                passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                passage = await ArchivalPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
                 return passage.to_pydantic()
             except NoResultFound:
                 raise NoResultFound(f"Agent passage with id {passage_id} not found in database.")
@@ -109,7 +114,7 @@ class PassageManager:
             except NoResultFound:
                 # Try archival passages
                 try:
-                    passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                    passage = ArchivalPassage.read(db_session=session, identifier=passage_id, actor=actor)
                     return passage.to_pydantic()
                 except NoResultFound:
                     raise NoResultFound(f"Passage with id {passage_id} not found in database.")
@@ -134,7 +139,7 @@ class PassageManager:
             except NoResultFound:
                 # Try archival passages
                 try:
-                    passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                    passage = await ArchivalPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
                     return passage.to_pydantic()
                 except NoResultFound:
                     raise NoResultFound(f"Passage with id {passage_id} not found in database.")
@@ -143,8 +148,8 @@ class PassageManager:
     @trace_method
     def create_agent_passage(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new agent passage."""
-        if not pydantic_passage.agent_id:
-            raise ValueError("Agent passage must have agent_id")
+        if not pydantic_passage.archive_id:
+            raise ValueError("Agent passage must have archive_id")
         if pydantic_passage.source_id:
             raise ValueError("Agent passage cannot have source_id")
 
@@ -159,8 +164,8 @@ class PassageManager:
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
-        agent_fields = {"agent_id": data["agent_id"]}
-        passage = AgentPassage(**common_fields, **agent_fields)
+        agent_fields = {"archive_id": data["archive_id"]}
+        passage = ArchivalPassage(**common_fields, **agent_fields)
 
         with db_registry.session() as session:
             passage.create(session, actor=actor)
@@ -170,8 +175,8 @@ class PassageManager:
     @trace_method
     async def create_agent_passage_async(self, pydantic_passage: PydanticPassage, actor: PydanticUser) -> PydanticPassage:
         """Create a new agent passage."""
-        if not pydantic_passage.agent_id:
-            raise ValueError("Agent passage must have agent_id")
+        if not pydantic_passage.archive_id:
+            raise ValueError("Agent passage must have archive_id")
         if pydantic_passage.source_id:
             raise ValueError("Agent passage cannot have source_id")
 
@@ -186,8 +191,8 @@ class PassageManager:
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
-        agent_fields = {"agent_id": data["agent_id"]}
-        passage = AgentPassage(**common_fields, **agent_fields)
+        agent_fields = {"archive_id": data["archive_id"]}
+        passage = ArchivalPassage(**common_fields, **agent_fields)
 
         async with db_registry.async_session() as session:
             passage = await passage.create_async(session, actor=actor)
@@ -201,8 +206,8 @@ class PassageManager:
         """Create a new source passage."""
         if not pydantic_passage.source_id:
             raise ValueError("Source passage must have source_id")
-        if pydantic_passage.agent_id:
-            raise ValueError("Source passage cannot have agent_id")
+        if pydantic_passage.archive_id:
+            raise ValueError("Source passage cannot have archive_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
@@ -234,8 +239,8 @@ class PassageManager:
         """Create a new source passage."""
         if not pydantic_passage.source_id:
             raise ValueError("Source passage must have source_id")
-        if pydantic_passage.agent_id:
-            raise ValueError("Source passage cannot have agent_id")
+        if pydantic_passage.archive_id:
+            raise ValueError("Source passage cannot have archive_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
         common_fields = {
@@ -308,21 +313,21 @@ class PassageManager:
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
 
-        if "agent_id" in data and data["agent_id"]:
-            assert not data.get("source_id"), "Passage cannot have both agent_id and source_id"
+        if "archive_id" in data and data["archive_id"]:
+            assert not data.get("source_id"), "Passage cannot have both archive_id and source_id"
             agent_fields = {
-                "agent_id": data["agent_id"],
+                "archive_id": data["archive_id"],
             }
-            passage = AgentPassage(**common_fields, **agent_fields)
+            passage = ArchivalPassage(**common_fields, **agent_fields)
         elif "source_id" in data and data["source_id"]:
-            assert not data.get("agent_id"), "Passage cannot have both agent_id and source_id"
+            assert not data.get("archive_id"), "Passage cannot have both archive_id and source_id"
             source_fields = {
                 "source_id": data["source_id"],
                 "file_id": data.get("file_id"),
             }
             passage = SourcePassage(**common_fields, **source_fields)
         else:
-            raise ValueError("Passage must have either agent_id or source_id")
+            raise ValueError("Passage must have either archive_id or source_id")
 
         return passage
 
@@ -334,14 +339,14 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    async def create_many_agent_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
-        """Create multiple agent passages."""
-        agent_passages = []
+    async def create_many_archival_passages_async(self, passages: List[PydanticPassage], actor: PydanticUser) -> List[PydanticPassage]:
+        """Create multiple archival passages."""
+        archival_passages = []
         for p in passages:
-            if not p.agent_id:
-                raise ValueError("Agent passage must have agent_id")
+            if not p.archive_id:
+                raise ValueError("Archival passage must have archive_id")
             if p.source_id:
-                raise ValueError("Agent passage cannot have source_id")
+                raise ValueError("Archival passage cannot have source_id")
 
             data = p.model_dump(to_orm=True)
             common_fields = {
@@ -354,12 +359,12 @@ class PassageManager:
                 "is_deleted": data.get("is_deleted", False),
                 "created_at": data.get("created_at", datetime.now(timezone.utc)),
             }
-            agent_fields = {"agent_id": data["agent_id"]}
-            agent_passages.append(AgentPassage(**common_fields, **agent_fields))
+            archival_fields = {"archive_id": data["archive_id"]}
+            archival_passages.append(ArchivalPassage(**common_fields, **archival_fields))
 
         async with db_registry.async_session() as session:
-            agent_created = await AgentPassage.batch_create_async(items=agent_passages, db_session=session, actor=actor)
-            return [p.to_pydantic() for p in agent_created]
+            archival_created = await ArchivalPassage.batch_create_async(items=archival_passages, db_session=session, actor=actor)
+            return [p.to_pydantic() for p in archival_created]
 
     @enforce_types
     @trace_method
@@ -379,8 +384,8 @@ class PassageManager:
         for p in passages:
             if not p.source_id:
                 raise ValueError("Source passage must have source_id")
-            if p.agent_id:
-                raise ValueError("Source passage cannot have agent_id")
+            if p.archive_id:
+                raise ValueError("Source passage cannot have archive_id")
 
             data = p.model_dump(to_orm=True)
             common_fields = {
@@ -436,7 +441,7 @@ class PassageManager:
 
             for p in passages:
                 model = self._preprocess_passage_for_creation(p)
-                if isinstance(model, AgentPassage):
+                if isinstance(model, ArchivalPassage):
                     agent_passages.append(model)
                 elif isinstance(model, SourcePassage):
                     source_passages.append(model)
@@ -445,7 +450,7 @@ class PassageManager:
 
             results = []
             if agent_passages:
-                agent_created = await AgentPassage.batch_create_async(items=agent_passages, db_session=session, actor=actor)
+                agent_created = await ArchivalPassage.batch_create_async(items=agent_passages, db_session=session, actor=actor)
                 results.extend(agent_created)
             if source_passages:
                 source_created = await SourcePassage.batch_create_async(items=source_passages, db_session=session, actor=actor)
@@ -458,7 +463,6 @@ class PassageManager:
     def insert_passage(
         self,
         agent_state: AgentState,
-        agent_id: str,
         text: str,
         actor: PydanticUser,
     ) -> List[PydanticPassage]:
@@ -494,10 +498,15 @@ class PassageManager:
                         raise TypeError(
                             f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
                         )
+                # Get or create the default archive for the agent
+                archive = self.archive_manager.get_or_create_default_archive_for_agent(
+                    agent_id=agent_state.id, agent_name=agent_state.name, actor=actor
+                )
+
                 passage = self.create_agent_passage(
                     PydanticPassage(
                         organization_id=actor.organization_id,
-                        agent_id=agent_id,
+                        archive_id=archive.id,
                         text=text,
                         embedding=embedding,
                         embedding_config=agent_state.embedding_config,
@@ -516,12 +525,18 @@ class PassageManager:
     async def insert_passage_async(
         self,
         agent_state: AgentState,
-        agent_id: str,
         text: str,
         actor: PydanticUser,
         image_ids: Optional[List[str]] = None,
     ) -> List[PydanticPassage]:
         """Insert passage(s) into archival memory"""
+        # Get or create default archive for the agent
+        archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(
+            agent_id=agent_state.id,
+            agent_name=agent_state.name,
+            actor=actor,
+        )
+        archive_id = archive.id
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
         text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
@@ -535,7 +550,7 @@ class PassageManager:
             passages = [
                 PydanticPassage(
                     organization_id=actor.organization_id,
-                    agent_id=agent_id,
+                    archive_id=archive_id,
                     text=chunk_text,
                     embedding=embedding,
                     embedding_config=agent_state.embedding_config,
@@ -543,7 +558,7 @@ class PassageManager:
                 for chunk_text, embedding in zip(text_chunks, embeddings)
             ]
 
-            passages = await self.create_many_agent_passages_async(passages=passages, actor=actor)
+            passages = await self.create_many_archival_passages_async(passages=passages, actor=actor)
 
             return passages
 
@@ -595,7 +610,7 @@ class PassageManager:
 
         with db_registry.session() as session:
             try:
-                curr_passage = AgentPassage.read(
+                curr_passage = ArchivalPassage.read(
                     db_session=session,
                     identifier=passage_id,
                     actor=actor,
@@ -623,7 +638,7 @@ class PassageManager:
 
         async with db_registry.async_session() as session:
             try:
-                curr_passage = await AgentPassage.read_async(
+                curr_passage = await ArchivalPassage.read_async(
                     db_session=session,
                     identifier=passage_id,
                     actor=actor,
@@ -705,7 +720,7 @@ class PassageManager:
 
         with db_registry.session() as session:
             try:
-                passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                passage = ArchivalPassage.read(db_session=session, identifier=passage_id, actor=actor)
                 passage.hard_delete(session, actor=actor)
                 return True
             except NoResultFound:
@@ -720,7 +735,7 @@ class PassageManager:
 
         async with db_registry.async_session() as session:
             try:
-                passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                passage = await ArchivalPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
                 await passage.hard_delete_async(session, actor=actor)
                 return True
             except NoResultFound:
@@ -783,7 +798,7 @@ class PassageManager:
             except NoResultFound:
                 # Try agent passages
                 try:
-                    curr_passage = AgentPassage.read(
+                    curr_passage = ArchivalPassage.read(
                         db_session=session,
                         identifier=passage_id,
                         actor=actor,
@@ -824,7 +839,7 @@ class PassageManager:
             except NoResultFound:
                 # Try archival passages
                 try:
-                    passage = AgentPassage.read(db_session=session, identifier=passage_id, actor=actor)
+                    passage = ArchivalPassage.read(db_session=session, identifier=passage_id, actor=actor)
                     passage.hard_delete(session, actor=actor)
                     return True
                 except NoResultFound:
@@ -854,7 +869,7 @@ class PassageManager:
             except NoResultFound:
                 # Try archival passages
                 try:
-                    passage = await AgentPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                    passage = await ArchivalPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
                     await passage.hard_delete_async(session, actor=actor)
                     return True
                 except NoResultFound:
@@ -883,7 +898,7 @@ class PassageManager:
     ) -> bool:
         """Delete multiple agent passages."""
         async with db_registry.async_session() as session:
-            await AgentPassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
+            await ArchivalPassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
             return True
 
     @enforce_types
@@ -947,7 +962,21 @@ class PassageManager:
             agent_id: The agent ID of the messages
         """
         with db_registry.session() as session:
-            return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
+            if agent_id:
+                # Count passages through the archives relationship
+                return (
+                    session.query(ArchivalPassage)
+                    .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
+                    .filter(
+                        ArchivesAgents.agent_id == agent_id,
+                        ArchivalPassage.organization_id == actor.organization_id,
+                        ArchivalPassage.is_deleted == False,
+                    )
+                    .count()
+                )
+            else:
+                # Count all archival passages in the organization
+                return ArchivalPassage.size(db_session=session, actor=actor)
 
     # DEPRECATED - Use agent_passage_size() instead since this only counted agent passages anyway
     @enforce_types
@@ -961,8 +990,7 @@ class PassageManager:
         import warnings
 
         warnings.warn("size is deprecated. Use agent_passage_size() instead.", DeprecationWarning, stacklevel=2)
-        with db_registry.session() as session:
-            return AgentPassage.size(db_session=session, actor=actor, agent_id=agent_id)
+        return self.agent_passage_size(actor=actor, agent_id=agent_id)
 
     @enforce_types
     @trace_method
@@ -977,7 +1005,23 @@ class PassageManager:
             agent_id: The agent ID of the messages
         """
         async with db_registry.async_session() as session:
-            return await AgentPassage.size_async(db_session=session, actor=actor, agent_id=agent_id)
+            if agent_id:
+                # Count passages through the archives relationship
+                from sqlalchemy import func, select
+
+                result = await session.execute(
+                    select(func.count(ArchivalPassage.id))
+                    .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
+                    .where(
+                        ArchivesAgents.agent_id == agent_id,
+                        ArchivalPassage.organization_id == actor.organization_id,
+                        ArchivalPassage.is_deleted == False,
+                    )
+                )
+                return result.scalar() or 0
+            else:
+                # Count all archival passages in the organization
+                return await ArchivalPassage.size_async(db_session=session, actor=actor)
 
     @enforce_types
     @trace_method

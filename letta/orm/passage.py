@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from letta.config import LettaConfig
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.orm.custom_columns import CommonVector, EmbeddingConfigColumn
-from letta.orm.mixins import AgentMixin, FileMixin, OrganizationMixin, SourceMixin
+from letta.orm.mixins import ArchiveMixin, FileMixin, OrganizationMixin, SourceMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.settings import DatabaseChoice, settings
@@ -70,26 +70,28 @@ class SourcePassage(BasePassage, FileMixin, SourceMixin):
         )
 
 
-class AgentPassage(BasePassage, AgentMixin):
-    """Passages created by agents as archival memories"""
+class ArchivalPassage(BasePassage, ArchiveMixin):
+    """Passages stored in archives as archival memories"""
 
-    __tablename__ = "agent_passages"
+    __tablename__ = "archival_passages"
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", back_populates="agent_passages", lazy="selectin")
+        return relationship("Organization", back_populates="archival_passages", lazy="selectin")
 
     @declared_attr
     def __table_args__(cls):
         if settings.database_engine is DatabaseChoice.POSTGRES:
             return (
-                Index("agent_passages_org_idx", "organization_id"),
-                Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
-                Index("agent_passages_created_at_id_idx", "created_at", "id"),
+                Index("archival_passages_org_idx", "organization_id"),
+                Index("ix_archival_passages_org_archive", "organization_id", "archive_id"),
+                Index("archival_passages_created_at_id_idx", "created_at", "id"),
+                Index("ix_archival_passages_archive_id", "archive_id"),
                 {"extend_existing": True},
             )
         return (
-            Index("ix_agent_passages_org_agent", "organization_id", "agent_id"),
-            Index("agent_passages_created_at_id_idx", "created_at", "id"),
+            Index("ix_archival_passages_org_archive", "organization_id", "archive_id"),
+            Index("archival_passages_created_at_id_idx", "created_at", "id"),
+            Index("ix_archival_passages_archive_id", "archive_id"),
             {"extend_existing": True},
         )

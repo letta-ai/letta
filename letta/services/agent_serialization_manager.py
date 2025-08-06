@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
 from letta.errors import AgentFileExportError, AgentFileImportError
@@ -22,6 +22,7 @@ from letta.schemas.agent_file import (
 from letta.schemas.block import Block
 from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
+from letta.schemas.group import Group, GroupCreate
 from letta.schemas.mcp import MCPServer
 from letta.schemas.message import Message
 from letta.schemas.source import Source
@@ -230,6 +231,9 @@ class AgentSerializationManager:
                 file_agent.source_id = self._map_db_to_file_id(file_agent.source_id, SourceSchema.__id_prefix__)
                 file_agent.agent_id = agent_file_id
 
+        if agent_schema.group_ids:
+            agent_schema.group_ids = [self._map_db_to_file_id(group_id, GroupSchema.__id_prefix__) for group_id in agent_schema.group_ids]
+
         return agent_schema
 
     def _convert_tool_to_schema(self, tool) -> ToolSchema:
@@ -308,6 +312,24 @@ class AgentSerializationManager:
             logger.error(f"Failed to convert MCP server {mcp_server.id}: {e}")
             raise
 
+    def _convert_group_to_schema(self, group: Group) -> GroupSchema:
+        """Convert Group to GroupSchema with ID remapping"""
+        try:
+            group_file_id = self._map_db_to_file_id(group.id, GroupSchema.__id_prefix__, allow_new=False)
+            group_schema = GroupSchema.from_group(group)
+            group_schema.id = group_file_id
+            group_schema.agent_ids = [
+                self._map_db_to_file_id(agent_id, AgentSchema.__id_prefix__, allow_new=False) for agent_id in group_schema.agent_ids
+            ]
+            if hasattr(group_schema.manager_config, "manager_agent_id"):
+                group_schema.manager_config.manager_agent_id = self._map_db_to_file_id(
+                    group_schema.manager_config.manager_agent_id, AgentSchema.__id_prefix__, allow_new=False
+                )
+            return group_schema
+        except Exception as e:
+            logger.error(f"Failed to convert group {group.id}: {e}")
+            raise
+
     async def export(self, agent_ids: List[str], actor: User) -> AgentFileSchema:
         """
         Export agents and their related entities to AgentFileSchema format.
@@ -331,6 +353,23 @@ class AgentSerializationManager:
                 found_ids = {agent.id for agent in agent_states}
                 missing_ids = [agent_id for agent_id in agent_ids if agent_id not in found_ids]
                 raise AgentFileExportError(f"The following agent IDs were not found: {missing_ids}")
+
+            groups = []
+            group_agent_ids = []
+            for agent_state in agent_states:
+                if agent_state.multi_agent_group != None:
+                    groups.append(agent_state.multi_agent_group)
+                    group_agent_ids.extend(agent_state.multi_agent_group.agent_ids)
+
+            group_agent_ids = list(set(group_agent_ids) - set(agent_ids))
+            if group_agent_ids:
+                group_agent_states = await self.agent_manager.get_agents_by_ids_async(agent_ids=group_agent_ids, actor=actor)
+                if len(group_agent_states) != len(group_agent_ids):
+                    found_ids = {agent.id for agent in group_agent_states}
+                    missing_ids = [agent_id for agent_id in group_agent_ids if agent_id not in found_ids]
+                    raise AgentFileExportError(f"The following agent IDs were not found: {missing_ids}")
+                agent_ids.extend(group_agent_ids)
+                agent_states.extend(group_agent_states)
 
             # cache for file-agent relationships to avoid duplicate queries
             files_agents_cache = {}  # Maps agent_id to list of file_agent relationships
@@ -359,13 +398,14 @@ class AgentSerializationManager:
             source_schemas = [self._convert_source_to_schema(source) for source in source_set]
             file_schemas = [self._convert_file_to_schema(file_metadata) for file_metadata in file_set]
             mcp_server_schemas = [self._convert_mcp_server_to_schema(mcp_server) for mcp_server in mcp_server_set]
+            group_schemas = [self._convert_group_to_schema(group) for group in groups]
 
             logger.info(f"Exporting {len(agent_ids)} agents to agent file format")
 
             # Return AgentFileSchema with converted entities
             return AgentFileSchema(
                 agents=agent_schemas,
-                groups=[],  # TODO: Extract and convert groups
+                groups=group_schemas,
                 blocks=block_schemas,
                 files=file_schemas,
                 sources=source_schemas,
@@ -379,7 +419,13 @@ class AgentSerializationManager:
             logger.error(f"Failed to export agent file: {e}")
             raise AgentFileExportError(f"Export failed: {e}") from e
 
-    async def import_file(self, schema: AgentFileSchema, actor: User, dry_run: bool = False) -> ImportResult:
+    async def import_file(
+        self,
+        schema: AgentFileSchema,
+        actor: User,
+        dry_run: bool = False,
+        env_vars: Optional[Dict[str, Any]] = None,
+    ) -> ImportResult:
         """
         Import AgentFileSchema into the database.
 
@@ -546,6 +592,10 @@ class AgentSerializationManager:
                 if agent_data.get("block_ids"):
                     agent_data["block_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["block_ids"]]
 
+                if env_vars:
+                    for var in agent_data["tool_exec_environment_variables"]:
+                        var["value"] = env_vars.get(var["key"], "")
+
                 agent_create = CreateAgent(**agent_data)
                 created_agent = await self.agent_manager.create_agent_async(agent_create, actor, _init_with_no_messages=True)
                 file_to_db_ids[agent_schema.id] = created_agent.id
@@ -606,6 +656,15 @@ class AgentSerializationManager:
                         max_files_open=agent_schema.max_files_open,
                     )
                     imported_count += len(files_for_agent)
+
+            for group in schema.groups:
+                group_data = group.model_dump(exclude={"id"})
+                group_data["agent_ids"] = [file_to_db_ids[agent_id] for agent_id in group_data["agent_ids"]]
+                if "manager_agent_id" in group_data["manager_config"]:
+                    group_data["manager_config"]["manager_agent_id"] = file_to_db_ids[group_data["manager_config"]["manager_agent_id"]]
+                created_group = await self.group_manager.create_group_async(GroupCreate(**group_data), actor)
+                file_to_db_ids[group.id] = created_group.id
+                imported_count += 1
 
             return ImportResult(
                 success=True,

@@ -9,7 +9,7 @@
     "tags": [
       "letta_core"
     ],
-    "source_code": "def archival_memory_insert(self: \"Agent\", content: str) -> Optional[str]:\n    \"\"\"\n    Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.\n\n    Args:\n        content (str): Content to write to the memory. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    self.passage_manager.insert_passage(\n        agent_state=self.agent_state,\n        agent_id=self.agent_state.id,\n        text=content,\n        actor=self.user,\n    )\n    return None\n",
+    "source_code": "def archival_memory_insert(self: \"Agent\", content: str) -> Optional[str]:\n    \"\"\"\n    Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.\n\n    Args:\n        content (str): Content to write to the memory. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    self.passage_manager.insert_passage(\n        agent_state=self.agent_state,\n        text=content,\n        actor=self.user,\n    )\n    return None\n",
     "json_schema": {
       "name": "archival_memory_insert",
       "description": "Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.",

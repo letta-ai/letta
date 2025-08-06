@@ -208,7 +208,7 @@ class MaxCountPerStepToolRule(BaseToolRule):
     type: Literal[ToolRuleType.max_count_per_step] = ToolRuleType.max_count_per_step
     max_count_limit: int = Field(..., description="The max limit for the total number of times this tool can be invoked in a single step.")
     prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>",
+        default="<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>",
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
 
@@ -223,7 +223,7 @@ class MaxCountPerStepToolRule(BaseToolRule):
         return available_tools
 
     def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\n{{ tool_name }}: max {{ max_count_limit }} use(s) per response\n</tool_rule>"
+        return "<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>"
 
 
 ToolRule = Annotated[

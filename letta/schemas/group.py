@@ -15,6 +15,10 @@ class ManagerType(str, Enum):
     swarm = "swarm"
 
 
+class ManagerConfig(BaseModel):
+    manager_type: ManagerType = Field(..., description="")
+
+
 class GroupBase(LettaBase):
     __id_prefix__ = "group"
 
@@ -42,9 +46,30 @@ class Group(GroupBase):
         description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
     )
 
-
-class ManagerConfig(BaseModel):
-    manager_type: ManagerType = Field(..., description="")
+    @property
+    def manager_config(self) -> ManagerConfig:
+        match self.manager_type:
+            case ManagerType.round_robin:
+                return RoundRobinManager(max_turns=self.max_turns)
+            case ManagerType.supervisor:
+                return SupervisorManager(manager_agent_id=self.manager_agent_id)
+            case ManagerType.dynamic:
+                return DynamicManager(
+                    manager_agent_id=self.manager_agent_id,
+                    termination_token=self.termination_token,
+                    max_turns=self.max_turns,
+                )
+            case ManagerType.sleeptime:
+                return SleeptimeManager(
+                    manager_agent_id=self.manager_agent_id,
+                    sleeptime_agent_frequency=self.sleeptime_agent_frequency,
+                )
+            case ManagerType.voice_sleeptime:
+                return VoiceSleeptimeManager(
+                    manager_agent_id=self.manager_agent_id,
+                    max_message_buffer_length=self.max_message_buffer_length,
+                    min_message_buffer_length=self.min_message_buffer_length,
+                )
 
 
 class RoundRobinManager(ManagerConfig):

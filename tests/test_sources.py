@@ -13,8 +13,7 @@ from letta_client import MessageCreate as ClientMessageCreate
 from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
-from letta.orm.enums import ToolType
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import FileProcessingStatus, ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 from letta.settings import settings

@@ -313,60 +313,6 @@ def test_composio_tool_schema_generation(openai_model: str, structured_output: b
     print(f"Total execution time: {end_time - start_time:.2f} seconds")
 
 
-@pytest.mark.parametrize("openai_model", ["gpt-4o-mini"])
-@pytest.mark.parametrize("structured_output", [True])
-def test_langchain_tool_schema_generation(openai_model: str, structured_output: bool):
-    """Test that we can generate the schemas for some Langchain tools."""
-    from langchain_community.tools import WikipediaQueryRun
-    from langchain_community.utilities import WikipediaAPIWrapper
-
-    api_wrapper = WikipediaAPIWrapper(top_k_results=1, doc_content_chars_max=500)
-    langchain_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
-
-    tool_create = ToolCreate.from_langchain(
-        langchain_tool=langchain_tool,
-        additional_imports_module_attr_map={"langchain_community.utilities": "WikipediaAPIWrapper"},
-    )
-
-    assert tool_create.json_schema
-    schema = tool_create.json_schema
-    print(f"The schema for {langchain_tool.name}: {json.dumps(schema, indent=4)}\n\n")
-
-    try:
-        if structured_output:
-            tool_schema = convert_to_structured_output(schema)
-        else:
-            tool_schema = schema
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        assert api_key is not None, "OPENAI_API_KEY must be set"
-
-        system_prompt = "You job is to test the tool that you've been provided. Don't ask for any clarification on the args, just come up with some dummy data and try executing the tool."
-
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-        data = {
-            "model": openai_model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-            ],
-            "tools": [
-                {
-                    "type": "function",
-                    "function": tool_schema,
-                }
-            ],
-            "tool_choice": "auto",
-            "parallel_tool_calls": False,
-        }
-
-        make_post_request(url, headers, data)
-        print(f"Successfully called OpenAI using schema generated from {langchain_tool.name}\n\n")
-    except Exception:
-        print(f"Failed to call OpenAI using schema generated from {langchain_tool.name}\n\n")
-        raise
-
-
 # Helper function for pydantic args schema test
 def _run_pydantic_args_test(filename, openai_model, structured_output):
     """Run a single pydantic args schema test case"""

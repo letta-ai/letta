@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 from letta.constants import BASE_MEMORY_TOOLS, BASE_TOOLS
-from letta.orm.enums import ToolType
+from letta.schemas.enums import ToolType
 from letta.settings import settings
 
 # revision identifiers, used by Alembic.

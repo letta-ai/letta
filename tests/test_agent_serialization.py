@@ -15,11 +15,10 @@ from rich.syntax import Syntax
 
 from letta.config import LettaConfig
 from letta.orm import Base
-from letta.orm.enums import ToolType
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ToolType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
@@ -637,15 +636,20 @@ def test_agent_download_upload_flow(server, server_url, serialize_test_agent, de
     # Step 2: Upload the serialized agent as a copy
     agent_bytes = BytesIO(json.dumps(agent_json).encode("utf-8"))
     files = {"file": ("agent.json", agent_bytes, "application/json")}
+
+    # Send parameters as form data instead of query parameters
+    form_data = {
+        "append_copy_suffix": str(append_copy_suffix).lower(),  # Convert bool to string 'true'/'false'
+        "override_existing_tools": "false",
+    }
+    if project_id:
+        form_data["project_id"] = project_id
+
     upload_response = requests.post(
         f"{server_url}/v1/agents/import",
         headers={"user_id": other_user.id},
-        params={
-            "append_copy_suffix": append_copy_suffix,
-            "override_existing_tools": False,
-            "project_id": project_id,
-        },
         files=files,
+        data=form_data,  # Send as form data
     )
     assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
 
@@ -682,11 +686,18 @@ def test_upload_agentfile_from_disk(server, server_url, disable_e2b_api_key, oth
 
     with open(file_path, "rb") as f:
         files = {"file": (filename, f, "application/json")}
+
+        # Send parameters as form data instead of query parameters
+        form_data = {
+            "append_copy_suffix": "true",
+            "override_existing_tools": "false",
+        }
+
         response = requests.post(
             f"{server_url}/v1/agents/import",
             headers={"user_id": other_user.id},
-            params={"append_copy_suffix": True, "override_existing_tools": False},
             files=files,
+            data=form_data,  # Send as form data
         )
 
     assert response.status_code == 200, f"Failed to upload {filename}: {response.text}"

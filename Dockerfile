@@ -64,6 +64,7 @@ RUN apt-get update && \
 # Add OpenTelemetry Collector configs
 COPY otel/otel-collector-config-file.yaml /etc/otel/config-file.yaml
 COPY otel/otel-collector-config-clickhouse.yaml /etc/otel/config-clickhouse.yaml
+COPY otel/otel-collector-config-signoz.yaml /etc/otel/config-signoz.yaml
 
 ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \

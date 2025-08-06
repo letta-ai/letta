@@ -81,7 +81,9 @@ class E2BSandboxConfig(BaseModel):
 
 class ModalSandboxConfig(BaseModel):
     timeout: int = Field(5 * 60, description="Time limit for the sandbox (in seconds).")
-    pip_requirements: Optional[List[str]] = Field(None, description="A list of pip packages to install in the Modal sandbox")
+    pip_requirements: list[str] | None = Field(None, description="A list of pip packages to install in the Modal sandbox")
+    npm_requirements: list[str] | None = Field(None, description="A list of npm packages to install in the Modal sandbox")
+    language: Literal["python", "typescript"] = "python"
 
     @property
     def type(self) -> "SandboxType":
