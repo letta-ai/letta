@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import requests
 
-from letta.constants import CLI_WARNING_PREFIX, LETTA_MODEL_ENDPOINT
+from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.anthropic import (
     anthropic_bedrock_chat_completions_request,
@@ -193,8 +193,8 @@ def create(
             # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
             # TODO(matt) move into LLMConfig
             # TODO: This vllm checking is very brittle and is a patch at most
-            if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT or (llm_config.handle and "vllm" in llm_config.handle):
-                function_call = "auto"  # TODO change to "required" once proxy supports it
+            if llm_config.handle and "vllm" in llm_config.handle:
+                function_call = "auto"
             else:
                 function_call = "required"
 
