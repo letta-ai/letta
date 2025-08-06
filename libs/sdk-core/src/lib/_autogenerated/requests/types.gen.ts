@@ -1292,6 +1292,10 @@ export type CreateAgentRequest = {
    */
   enable_reasoner?: boolean | null;
   /**
+   * Whether to enable reasoning for this agent.
+   */
+  reasoning?: boolean | null;
+  /**
    * The template id used to configure the agent
    */
   from_template?: string | null;
@@ -4636,6 +4640,10 @@ export type UpdateAgent = {
    * The embedding configuration handle used by the agent, specified in the format provider/model-name.
    */
   embedding?: string | null;
+  /**
+   * Whether to enable reasoning for this agent.
+   */
+  reasoning?: boolean | null;
   /**
    * If set to True, memory management will move to a background agent thread.
    */

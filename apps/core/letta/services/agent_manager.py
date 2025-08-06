@@ -51,6 +51,7 @@ from letta.schemas.enums import ProviderType, ToolType
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
 from letta.schemas.message import Message as PydanticMessage
@@ -451,6 +452,9 @@ class AgentManager:
         # validate required configs
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
+
+        if agent_create.reasoning is not None:
+            agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(agent_create.llm_config, agent_create.reasoning)
 
         # blocks
         block_ids = list(agent_create.block_ids or [])
@@ -876,6 +880,10 @@ class AgentManager:
             agent: AgentModel = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id
+
+            if agent_update.reasoning is not None:
+                llm_config = agent_update.llm_config or agent.llm_config
+                agent_update.llm_config = LLMConfig.apply_reasoning_setting_to_config(llm_config, agent_update.reasoning)
 
             scalar_updates = {
                 "name": agent_update.name,

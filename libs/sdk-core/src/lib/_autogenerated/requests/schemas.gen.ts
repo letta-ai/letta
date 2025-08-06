@@ -4005,6 +4005,18 @@ export const $CreateAgentRequest = {
         'Whether to enable internal extended thinking step for a reasoner model.',
       default: false,
     },
+    reasoning: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Reasoning',
+      description: 'Whether to enable reasoning for this agent.',
+    },
     from_template: {
       anyOf: [
         {
@@ -12598,6 +12610,18 @@ export const $UpdateAgent = {
       title: 'Embedding',
       description:
         'The embedding configuration handle used by the agent, specified in the format provider/model-name.',
+    },
+    reasoning: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Reasoning',
+      description: 'Whether to enable reasoning for this agent.',
     },
     enable_sleeptime: {
       anyOf: [

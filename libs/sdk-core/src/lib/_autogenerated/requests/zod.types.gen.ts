@@ -3635,6 +3635,9 @@ export const CreateAgentRequest = z.object({
   enable_reasoner: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
+  reasoning: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
   from_template: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -6285,6 +6288,9 @@ export const UpdateAgent = z.object({
     .optional(),
   embedding: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  reasoning: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
   enable_sleeptime: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
