@@ -330,6 +330,74 @@ def compile_system_message(
 
 
 @trace_method
+def get_system_message_from_compiled_memory(
+    system_prompt: str,
+    memory_with_sources: str,
+    in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
+    timezone: str,
+    user_defined_variables: Optional[dict] = None,
+    append_icm_if_missing: bool = True,
+    template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+) -> str:
+    """Prepare the final/full system message that will be fed into the LLM API
+
+    The base system message may be templated, in which case we need to render the variables.
+
+    The following are reserved variables:
+      - CORE_MEMORY: the in-context memory of the LLM
+    """
+    if user_defined_variables is not None:
+        # TODO eventually support the user defining their own variables to inject
+        raise NotImplementedError
+    else:
+        variables = {}
+
+    # Add the protected memory variable
+    if IN_CONTEXT_MEMORY_KEYWORD in variables:
+        raise ValueError(f"Found protected variable '{IN_CONTEXT_MEMORY_KEYWORD}' in user-defined vars: {str(user_defined_variables)}")
+    else:
+        # TODO should this all put into the memory.__repr__ function?
+        memory_metadata_string = compile_memory_metadata_block(
+            memory_edit_timestamp=in_context_memory_last_edit,
+            previous_message_count=previous_message_count,
+            archival_memory_size=archival_memory_size,
+            timezone=timezone,
+        )
+
+        full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
+
+        # Add to the variables list to inject
+        variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
+
+    if template_format == "f-string":
+        memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
+
+        # Catch the special case where the system prompt is unformatted
+        if append_icm_if_missing:
+            if memory_variable_string not in system_prompt:
+                # In this case, append it to the end to make sure memory is still injected
+                # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
+                system_prompt += "\n\n" + memory_variable_string
+
+        # render the variables using the built-in templater
+        try:
+            if user_defined_variables:
+                formatted_prompt = safe_format(system_prompt, variables)
+            else:
+                formatted_prompt = system_prompt.replace(memory_variable_string, full_memory_string)
+        except Exception as e:
+            raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
+
+    else:
+        # TODO support for mustache and jinja2
+        raise NotImplementedError(template_format)
+
+    return formatted_prompt
+
+
+@trace_method
 async def compile_system_message_async(
     system_prompt: str,
     in_context_memory: Memory,
