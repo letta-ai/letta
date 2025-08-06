@@ -211,68 +211,68 @@ function useQueryDefinition() {
           },
         ],
       },
-      duration: {
-        id: 'duration',
-        name: t('useQueryDefinition.duration.name'),
-        queries: [
-          {
-            key: 'operator',
-            label: t('useQueryDefinition.duration.operator.label'),
-            display: 'select',
-            options: {
-              styleConfig: {
-                containerWidth: 200,
-              },
-              options: [
-                {
-                  label: t(
-                    'useQueryDefinition.duration.operator.operators.gte',
-                  ),
-                  value: 'gte',
-                },
-                {
-                  label: t(
-                    'useQueryDefinition.duration.operator.operators.lte',
-                  ),
-                  value: 'lte',
-                },
-              ],
-            },
-          },
-          {
-            key: 'value',
-            label: t('useQueryDefinition.duration.value.label'),
-            display: 'input',
-            options: {
-              placeholder: t('useQueryDefinition.duration.value.placeholder'),
-            },
-          },
-          {
-            key: 'unit',
-            label: t('useQueryDefinition.duration.unit.label'),
-            display: 'select',
-            options: {
-              styleConfig: {
-                containerWidth: 150,
-              },
-              options: [
-                {
-                  label: t('useQueryDefinition.duration.unit.options.s'),
-                  value: 's',
-                },
-                {
-                  label: t('useQueryDefinition.duration.unit.options.ms'),
-                  value: 'ms',
-                },
-                {
-                  label: t('useQueryDefinition.duration.unit.options.m'),
-                  value: 'm',
-                },
-              ],
-            },
-          },
-        ],
-      },
+      // duration: {
+      //   id: 'duration',
+      //   name: t('useQueryDefinition.duration.name'),
+      //   queries: [
+      //     {
+      //       key: 'operator',
+      //       label: t('useQueryDefinition.duration.operator.label'),
+      //       display: 'select',
+      //       options: {
+      //         styleConfig: {
+      //           containerWidth: 200,
+      //         },
+      //         options: [
+      //           {
+      //             label: t(
+      //               'useQueryDefinition.duration.operator.operators.gte',
+      //             ),
+      //             value: 'gte',
+      //           },
+      //           {
+      //             label: t(
+      //               'useQueryDefinition.duration.operator.operators.lte',
+      //             ),
+      //             value: 'lte',
+      //           },
+      //         ],
+      //       },
+      //     },
+      //     {
+      //       key: 'value',
+      //       label: t('useQueryDefinition.duration.value.label'),
+      //       display: 'input',
+      //       options: {
+      //         placeholder: t('useQueryDefinition.duration.value.placeholder'),
+      //       },
+      //     },
+      //     {
+      //       key: 'unit',
+      //       label: t('useQueryDefinition.duration.unit.label'),
+      //       display: 'select',
+      //       options: {
+      //         styleConfig: {
+      //           containerWidth: 150,
+      //         },
+      //         options: [
+      //           {
+      //             label: t('useQueryDefinition.duration.unit.options.s'),
+      //             value: 's',
+      //           },
+      //           {
+      //             label: t('useQueryDefinition.duration.unit.options.ms'),
+      //             value: 'ms',
+      //           },
+      //           {
+      //             label: t('useQueryDefinition.duration.unit.options.m'),
+      //             value: 'm',
+      //           },
+      //         ],
+      //       },
+      //     },
+      //   ],
+      // },
       templateFamily: {
         id: 'templateFamily',
         name: 'Template Family',
@@ -357,18 +357,18 @@ function useQueryDefinition() {
         root: {
           combinator: 'AND',
           items: [
-            {
-              field: fieldDefinitions.duration.id,
-              queryData: {
-                operator:
-                  fieldDefinitions.duration.queries[0].options.options[0],
-                value: {
-                  label: '',
-                  value: '0',
-                },
-                unit: fieldDefinitions.duration.queries[2].options.options[0],
-              },
-            },
+            // {
+            //   field: fieldDefinitions.duration.id,
+            //   queryData: {
+            //     operator:
+            //       fieldDefinitions.duration.queries[0].options.options[0],
+            //     value: {
+            //       label: '',
+            //       value: '0',
+            //     },
+            //     unit: fieldDefinitions.duration.queries[2].options.options[0],
+            //   },
+            // },
           ],
         },
       } satisfies QueryBuilderQuery);

@@ -15,6 +15,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { RawAgentTraceRecord } from '$web/web-api/observability/handlers/getTracesByProjectId/types';
 import { safeTransformToParentSpanResponses } from '$web/web-api/observability/handlers/getTracesByProjectId/safeTransformToParentSpanResponses';
+
 import {
   getObservabilityCache,
   setObservabilityCache,
@@ -207,7 +208,6 @@ export async function getTracesByProjectId(
 
   const result = await client.query({
     query: `
-
       WITH parent_traces AS (
         SELECT
           TraceId,
