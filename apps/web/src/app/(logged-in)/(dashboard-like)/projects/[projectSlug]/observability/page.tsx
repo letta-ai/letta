@@ -20,6 +20,8 @@ import { LLMLatencyChart } from './_components/charts/LLMLatencyChart/LLMLatency
 import { LLMLatencyByModelNameChart } from './_components/charts/LLMLatencyByModelNameChart/LLMLatencyByModelNameChart';
 import { TimeToFirstTokenChart } from './_components/charts/TimeToFirstTokenChart/TimeToFirstTokenChart';
 import { StepDurationByNameChart } from './_components/charts/StepDurationByNameChart';
+import { StepsMetricsChart } from './_components/charts/StepsMetricsChart';
+import { TotalRequestsPerDayChart } from './_components/charts/TotalRequestsPerDayChart';
 
 interface ChartRowProps {
   children: React.ReactNode;
@@ -32,7 +34,6 @@ function ChartRow(props: ChartRowProps) {
 }
 
 const allCharts = [
-  <ActiveAgentChart key="active-agent-chart" />,
   <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
   // <ToolErrorsChart key="tool-errors-chart" />,
   <TotalResponseTimeChart key="total-response-time-chart" />,
@@ -40,11 +41,17 @@ const allCharts = [
   <ToolErrorRateChart key="tool-error-rate-chart" />,
   <LLMLatencyChart key="llm-latency-chart" />,
   <ToolLatencyChart key="tool-latency-chart" />,
+  <ActiveAgentChart key="active-agent-chart" />,
 ];
 
 const activityCharts = [
-  <ActiveAgentChart key="active-agent-chart" />,
   <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
+  <TotalRequestsPerDayChart key="total-requests-per-day-chart" />,
+  <StepsMetricsChart type="total" key="steps-total-chart" />,
+  <StepsMetricsChart type="p50" key="steps-p50-chart" />,
+  <StepsMetricsChart type="p99" key="steps-p99-chart" />,
+  <StepsMetricsChart type="avg" key="steps-avg-chart" />,
+  <ActiveAgentChart key="active-agent-chart" />,
 ];
 
 const performanceCharts = [

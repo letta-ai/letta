@@ -22,7 +22,8 @@ type GetActiveAgentsPerDayResponse = ServerInferResponses<
 export async function getActiveAgentsPerDay(
   request: GetActiveAgentsPerDayRequest,
 ): Promise<GetActiveAgentsPerDayResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   // Check cache first
   try {
@@ -36,6 +37,7 @@ export async function getActiveAgentsPerDay(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
     });
     if (cachedBody) {
       return {
@@ -109,7 +111,7 @@ export async function getActiveAgentsPerDay(
   try {
     await setObservabilityCache(
       'active_agents_per_day',
-      { projectId, startDate, endDate, baseTemplateId },
+      { projectId, startDate, endDate, baseTemplateId, timeRange },
       responseBody,
     );
   } catch (error) {

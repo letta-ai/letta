@@ -5,6 +5,7 @@ import {
   Chart,
   DashboardChartWrapper,
   makeFormattedTooltip,
+  Alert,
   Button,
   ExternalLinkIcon,
 } from '@letta-cloud/ui-component-library';
@@ -17,9 +18,13 @@ import { useMemo } from 'react';
 
 export function ActiveAgentChart() {
   const { id: projectId, slug } = useCurrentProject();
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
 
   const t = useTranslations('pages/projects/observability/ActiveAgentChart');
+
+  // Check if time range is sub-daily
+  const isSubDaily = timeRange && ['1h', '4h', '12h'].includes(timeRange);
 
   // Get template details if baseTemplateId is set
   const { data: templateData } =
@@ -37,17 +42,19 @@ export function ActiveAgentChart() {
 
   const { data } = webApi.observability.getActiveAgentsPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getActiveAgentsPerDay({
-      projectId,
+      projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        projectId,
+        baseTemplateId: baseTemplateId?.value,
+        projectId: projectId,
         startDate,
         endDate,
-        baseTemplateId: baseTemplateId?.value,
+        timeRange,
       },
     },
   });
@@ -119,6 +126,28 @@ export function ActiveAgentChart() {
 
     return `${baseUrl}?query=${encodeURIComponent(JSON.stringify(query))}`;
   }, [slug, baseTemplateId?.value, templateData?.body]);
+
+  if (isSubDaily) {
+    return (
+      <DashboardChartWrapper
+        title={t('title')}
+        isLoading={!data}
+        headerActions={
+          <Button
+            label="View Agents"
+            color="tertiary"
+            size="xsmall"
+            href={agentsUrl}
+            target="_blank"
+            postIcon={<ExternalLinkIcon />}
+            hideLabel
+          />
+        }
+      >
+        <Alert title="Active agent metrics not available for time ranges under one day" />
+      </DashboardChartWrapper>
+    );
+  }
 
   return (
     <DashboardChartWrapper

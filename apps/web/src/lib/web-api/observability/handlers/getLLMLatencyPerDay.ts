@@ -11,6 +11,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetLLMLatencyPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getLLMLatencyPerDay
@@ -23,9 +24,13 @@ type GetLLMLatencyPerDayResponse = ServerInferResponses<
 export async function getLLMLatencyPerDay(
   request: GetLLMLatencyPerDayRequest,
 ): Promise<GetLLMLatencyPerDayResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getLLMLatencyPerDay(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -69,37 +75,33 @@ export async function getLLMLatencyPerDay(
 
   const result = await client.query({
     query: `
+        WITH parent_traces AS (
+            SELECT TraceId
+            FROM otel_traces
+            PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+            WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+              AND ParentSpanId = ''
+              AND SpanAttributes['project.id'] = {projectId: String}
+              AND SpanAttributes['organization.id'] = {organizationId: String}
+              ${attachFilterByBaseTemplateIdToOtels(request.query)}
+        )
         SELECT
-            toDate(Timestamp) as date,
-  quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms,
-  quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms
+            ${granularity.clickhouseDateFormat} as time_interval,
+            quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms,
+            quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms
         FROM (
             SELECT
-            Timestamp,
-            arrayFirst(event -> event.Name = 'llm_request_ms', Events).Attributes['duration_ms'] AS duration_ms
+                Timestamp,
+                arrayFirst(event -> event.Name = 'llm_request_ms', Events).Attributes['duration_ms'] AS duration_ms
             FROM otel_traces
+            PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
             WHERE SpanName = 'agent_step'
-            AND TraceId IN (
-            SELECT DISTINCT TraceId
-            FROM otel_traces
-            WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
-            SpanName = 'POST /v1/agents/{agent_id}/messages' OR
-            SpanName = 'POST /v1/agents/{agent_id}/messages/async')
-            AND SpanAttributes['project.id'] = {projectId: String}
-            AND SpanAttributes['organization.id'] = {organizationId: String}
-            AND ParentSpanId = ''
-            AND Timestamp >= {startDate: DateTime}
-            AND Timestamp <= {endDate: DateTime}
-            ${attachFilterByBaseTemplateIdToOtels(request.query)}
-          )
-            AND arrayExists(
-            event -> event.Name = 'llm_request_ms',
-            Events
-            )
-            )
+              AND TraceId IN (SELECT TraceId FROM parent_traces)
+              AND arrayExists(event -> event.Name = 'llm_request_ms', Events)
+        )
         WHERE duration_ms IS NOT NULL
-        GROUP BY toDate(Timestamp)
-        ORDER BY date
+        GROUP BY time_interval
+        ORDER BY time_interval DESC
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -113,9 +115,7 @@ export async function getLLMLatencyPerDay(
 
   const response = await getClickhouseData<
     Array<{
-      date: string;
-      count: string;
-      avg_latency_ms: string;
+      time_interval: string;
       p50_latency_ms: string;
       p99_latency_ms: string;
     }>
@@ -123,9 +123,9 @@ export async function getLLMLatencyPerDay(
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.date,
-      count: parseInt(item.count, 10),
-      avgLatencyMs: parseFloat(item.avg_latency_ms),
+      date: item.time_interval,
+      count: 0,
+      avgLatencyMs: 0,
       p50LatencyMs: parseFloat(item.p50_latency_ms),
       p99LatencyMs: parseFloat(item.p99_latency_ms),
     })),
@@ -140,6 +140,7 @@ export async function getLLMLatencyPerDay(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

@@ -9,8 +9,9 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetApiErrorCountRequest = ServerInferRequest<
   typeof contracts.observability.getApiErrorCount
@@ -23,9 +24,13 @@ type GetApiErrorCountResponse = ServerInferResponses<
 export async function getApiErrorCount(
   request: GetApiErrorCountRequest,
 ): Promise<GetApiErrorCountResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getApiErrorCount(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -70,17 +76,17 @@ export async function getApiErrorCount(
   const result = await client.query({
     query: `
       SELECT
-        toDate(time_window) as date,
-        SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as error_count
+        ${granularity.clickhouseDateFormat.replace('Timestamp', 'time_window')} as time_interval,
+        SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as api_error_count
       FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_endpoint_requests'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
-      GROUP BY toDate(time_window)
-      ORDER BY date DESC
+        AND organization_id = {organizationId: String}
+        AND project_id = {projectId: String}
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      GROUP BY time_interval
+      ORDER BY time_interval DESC
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -94,15 +100,15 @@ export async function getApiErrorCount(
 
   const response = await getClickhouseData<
     Array<{
-      date: string;
-      error_count: string;
+      time_interval: string;
+      api_error_count: string;
     }>
   >(result);
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.date,
-      errorCount: parseInt(item.error_count, 10),
+      date: item.time_interval,
+      apiErrorCount: parseInt(item.api_error_count, 10),
     })),
   };
 
@@ -115,6 +121,7 @@ export async function getApiErrorCount(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

@@ -11,6 +11,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetTotalMessagesPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getTotalMessagesPerDay
@@ -23,9 +24,13 @@ type GetTotalMessagesPerDayResponse = ServerInferResponses<
 export async function getTotalMessagesPerDay(
   request: GetTotalMessagesPerDayRequest,
 ): Promise<GetTotalMessagesPerDayResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getTotalMessagesPerDay(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -70,20 +76,17 @@ export async function getTotalMessagesPerDay(
   const result = await client.query({
     query: `
       SELECT
-        toDate(Timestamp) as date,
+        ${granularity.clickhouseDateFormat} as time_interval,
         count() as total_messages
       FROM otel_traces
-      WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
-        SpanName = 'POST /v1/agents/{agent_id}/messages' OR
-        SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+        AND ParentSpanId = ''
         AND SpanAttributes['project.id'] = {projectId: String}
         AND SpanAttributes['organization.id'] = {organizationId: String}
-        AND ParentSpanId = ''
-        AND Timestamp >= {startDate: DateTime}
-        AND Timestamp <= {endDate: DateTime}
         ${attachFilterByBaseTemplateIdToOtels(request.query)}
-      GROUP BY toDate(Timestamp)
-      ORDER BY date DESC
+      GROUP BY time_interval
+      ORDER BY time_interval DESC
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -97,14 +100,14 @@ export async function getTotalMessagesPerDay(
 
   const response = await getClickhouseData<
     Array<{
-      date: string;
+      time_interval: string;
       total_messages: string;
     }>
   >(result);
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.date,
+      date: item.time_interval,
       totalMessages: parseInt(item.total_messages, 10),
     })),
   };
@@ -118,6 +121,7 @@ export async function getTotalMessagesPerDay(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

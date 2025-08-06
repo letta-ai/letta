@@ -17,7 +17,8 @@ interface ToolLatencyChartProps {
 }
 
 export function ToolLatencyChart(props: ToolLatencyChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -25,17 +26,19 @@ export function ToolLatencyChart(props: ToolLatencyChartProps) {
 
   const { data } = webApi.observability.getToolLatencyPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getToolLatencyPerDay({
-      projectId,
+      projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        projectId,
-        startDate,
         baseTemplateId: baseTemplateId?.value,
+        projectId: projectId,
+        startDate,
         endDate,
+        timeRange,
       },
     },
   });

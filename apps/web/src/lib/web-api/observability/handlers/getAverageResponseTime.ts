@@ -11,6 +11,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 const DEFAULT_SPAN_SEARCH = `(SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
                    SpanName = 'POST /v1/agents/{agent_id}/messages' OR
@@ -27,9 +28,13 @@ type GetAverageResponseTimeResponse = ServerInferResponses<
 export async function getAverageResponseTime(
   request: GetAverageResponseTimeRequest,
 ): Promise<GetAverageResponseTimeResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -43,6 +48,7 @@ export async function getAverageResponseTime(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -73,24 +79,26 @@ export async function getAverageResponseTime(
 
   const response = await client.query({
     query: `
-      SELECT toDate(Timestamp) as date,
-      avg(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p50ResponseTimeNs,
-      quantile(0.99)(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p99ResponseTimeNs,
-      count() as sample_count
-      FROM otel_traces
-      WHERE TraceId IN (
+      WITH parent_traces AS (
         SELECT TraceId
         FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
         WHERE ParentSpanId = ''
           AND (${DEFAULT_SPAN_SEARCH})
           AND SpanAttributes['project.id'] = {projectId: String}
           AND SpanAttributes['organization.id'] = {organizationId: String}
-          AND Timestamp >= {startDate: DateTime}
-          AND Timestamp <= {endDate: DateTime}
           ${attachFilterByBaseTemplateIdToOtels(request.query)}
-        )
-      GROUP BY toDate(Timestamp)
-      ORDER BY date;
+      )
+      SELECT
+        ${granularity.clickhouseDateFormat} as time_interval,
+        avg(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p50ResponseTimeNs,
+        quantile(0.99)(toInt64OrNull(Events.Attributes[2]['duration_ms'])) * 1000000 as p99ResponseTimeNs,
+        count() as sample_count
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE TraceId IN (SELECT TraceId FROM parent_traces)
+      GROUP BY time_interval
+      ORDER BY time_interval;
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -104,7 +112,7 @@ export async function getAverageResponseTime(
 
   const result = await getClickhouseData<
     Array<{
-      date: string;
+      time_interval: string;
       p50ResponseTimeNs: number;
       p99ResponseTimeNs: number;
       sample_count: number;
@@ -113,7 +121,7 @@ export async function getAverageResponseTime(
 
   const responseBody = {
     items: result.map((item) => ({
-      date: item.date,
+      date: item.time_interval,
       p50ResponseTimeNs: item.p50ResponseTimeNs,
       p99ResponseTimeNs: item.p99ResponseTimeNs,
       sampleCount: item.sample_count,
@@ -129,6 +137,7 @@ export async function getAverageResponseTime(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

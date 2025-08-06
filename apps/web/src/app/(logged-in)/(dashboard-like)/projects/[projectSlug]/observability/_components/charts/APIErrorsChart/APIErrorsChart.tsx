@@ -20,7 +20,8 @@ interface TimeToFirstTokenChartProps {
 }
 
 export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
   const { projectSlug } = useParams<{ projectSlug: string }>();
@@ -43,17 +44,19 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
 
   const { data } = webApi.observability.getApiErrorCount.useQuery({
     queryKey: webApiQueryKeys.observability.getApiErrorCount({
-      projectId,
+      projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        projectId,
+        baseTemplateId: baseTemplateId?.value,
+        projectId: projectId,
         startDate,
         endDate,
-        baseTemplateId: baseTemplateId?.value,
+        timeRange,
       },
     },
   });
@@ -107,7 +110,7 @@ export function APIErrorsChart(props: TimeToFirstTokenChartProps) {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.errorCount || 0,
+        getterFn: (item) => item.apiErrorCount || 0,
         defaultValue: 0,
       },
     ],

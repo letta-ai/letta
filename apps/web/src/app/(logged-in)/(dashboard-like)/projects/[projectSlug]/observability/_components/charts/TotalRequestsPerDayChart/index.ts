@@ -1,0 +1,1 @@
+export { TotalRequestsPerDayChart } from './TotalRequestsPerDayChart';

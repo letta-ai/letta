@@ -7,23 +7,24 @@ import {
   makeFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { useTranslations } from '@letta-cloud/translations';
+
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
 
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 
-export function TotalMessagesPerDayChart() {
+interface StepsMetricsChartProps {
+  type: 'avg' | 'p50' | 'p99' | 'total';
+}
+
+export function StepsMetricsChart({ type }: StepsMetricsChartProps) {
   const { id: projectId } = useCurrentProject();
   const { startDate, endDate, baseTemplateId, timeRange } =
     useObservabilityContext();
-  const t = useTranslations(
-    'pages/projects/observability/TotalMessagesPerDayChart',
-  );
 
-  const { data } = webApi.observability.getTotalMessagesPerDay.useQuery({
-    queryKey: webApiQueryKeys.observability.getTotalMessagesPerDay({
-      projectId: projectId, // Replace with actual project slug
+  const { data } = webApi.observability.getStepsMetrics.useQuery({
+    queryKey: webApiQueryKeys.observability.getStepsMetrics({
+      projectId: projectId,
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
@@ -40,11 +41,31 @@ export function TotalMessagesPerDayChart() {
     },
   });
 
+  function getValueFromItem(item: {
+    totalStepsCount?: number;
+    p50StepsCount?: number;
+    p99StepsCount?: number;
+    avgStepsCount?: number;
+  }) {
+    switch (type) {
+      case 'total':
+        return item.totalStepsCount || 0;
+      case 'p50':
+        return item.p50StepsCount || 0;
+      case 'p99':
+        return item.p99StepsCount || 0;
+      case 'avg':
+        return item.avgStepsCount || 0;
+      default:
+        return 0;
+    }
+  }
+
   const tableOptions = useObservabilitySeriesData({
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.totalMessages || 0,
+        getterFn: getValueFromItem,
         defaultValue: 0,
       },
     ],
@@ -54,8 +75,48 @@ export function TotalMessagesPerDayChart() {
 
   const { formatNumber } = useFormatters();
 
+  function getTimeDescription(): string {
+    switch (timeRange) {
+      case '1h':
+        return 'per 5 minutes';
+      case '4h':
+        return 'per 20 minutes';
+      case '12h':
+        return 'per hour';
+      case '1d':
+        return 'per hour';
+      case '7d':
+        return 'per day';
+      case '30d':
+        return 'per day';
+      default:
+        return '';
+    }
+  }
+
+  function getTitle(): string {
+    const timeDesc = getTimeDescription();
+
+    switch (type) {
+      case 'total':
+        return `Total steps ${timeDesc}`;
+      case 'p50':
+        return `Steps per request (P50) ${timeDesc}`;
+      case 'p99':
+        return `Steps per request (P99) ${timeDesc}`;
+      case 'avg':
+        return `Steps per request (Average) ${timeDesc}`;
+      default:
+        return 'Steps metrics';
+    }
+  }
+
+  function formatValue(value: number): string {
+    return formatNumber(value);
+  }
+
   return (
-    <DashboardChartWrapper title={t('title')} isLoading={!data}>
+    <DashboardChartWrapper title={getTitle()} isLoading={!data}>
       <Chart
         options={{
           ...tableOptions,
@@ -72,14 +133,14 @@ export function TotalMessagesPerDayChart() {
 
               if (typeof value !== 'number') {
                 return makeFormattedTooltip({
-                  label: t('tooltip.noData'),
+                  label: 'No data was recorded for this date',
                   date,
                 });
               }
 
               return makeFormattedTooltip({
-                label: t('tooltip.withValue'),
-                value: formatNumber(value),
+                label: 'Steps',
+                value: formatValue(value),
                 date,
               });
             },

@@ -20,9 +20,12 @@ interface StepDurationByNameChartProps {
   type: 'p50' | 'p99';
 }
 
-export function StepDurationByNameChart(props: StepDurationByNameChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
-  const { analysisLink, type = 'p50' } = props;
+export function StepDurationByNameChart({
+  type,
+  analysisLink,
+}: StepDurationByNameChartProps) {
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { id: projectId } = useCurrentProject();
 
   const t = useTranslations(
@@ -35,13 +38,15 @@ export function StepDurationByNameChart(props: StepDurationByNameChartProps) {
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        baseTemplateId: baseTemplateId?.value,
         projectId,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
+        timeRange,
       },
     },
   });

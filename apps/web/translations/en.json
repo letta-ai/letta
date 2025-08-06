@@ -1558,6 +1558,7 @@
   },
   "pages/projects/observability/ActiveAgentChart": {
     "title": "Active agents",
+    "alert": "This chart is currently unavailable for date ranges smaller than 7 days",
     "info": "This chart shows the number of agents that were active on a given day. It is segemented on new agents (first time active) and returning agents (active after their first time).",
     "tooltip": "{newAgents} new agents, {returningAgents} returning agents",
     "viewAgents": "View agents"
@@ -1587,8 +1588,20 @@
       "label": "99th Time to First Token"
     }
   },
+  "pages/projects/observability/StepsMetricsChart": {
+    "title": {
+      "p50": "Steps per request (P50)",
+      "p99": "Steps per request (P99)",
+      "avg": "Steps per request (Average)",
+      "default": "Steps metrics"
+    },
+    "tooltip": {
+      "withValue": "Steps",
+      "noData": "No data was recorded for this date"
+    }
+  },
   "pages/projects/observability/TotalMessagesPerDayChart": {
-    "title": "Total messages per day",
+    "title": "Total messages",
     "tooltip": {
       "withValue": "Messages",
       "noData": "No data was recorded for this date"

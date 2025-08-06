@@ -17,7 +17,8 @@ interface LLMLatencyChartProps {
 }
 
 export function LLMLatencyChart(props: LLMLatencyChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -25,17 +26,19 @@ export function LLMLatencyChart(props: LLMLatencyChartProps) {
 
   const { data } = webApi.observability.getLLMLatencyPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getLLMLatencyPerDay({
-      projectId,
+      projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
         baseTemplateId: baseTemplateId?.value,
-        projectId,
+        projectId: projectId,
         startDate,
         endDate,
+        timeRange,
       },
     },
   });

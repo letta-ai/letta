@@ -8,104 +8,37 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import type { ChartType } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
-import { useCallback, useMemo } from 'react';
-import { differenceInDays } from 'date-fns';
+import type { TimeRange } from '$web/client/hooks/useObservabilityContext/timeConfig';
+import { useCallback } from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import AdvancedObservabilityFilter from './AdvancedObservabilityFilter/AdvancedObservabilityFilter';
 
-type DateTypes =
-  | '7Days'
-  | '30Days'
-  | '60Days'
-  | '90Days'
-  | '365Days'
-  | 'Custom';
+const TIME_RANGE_OPTIONS = [
+  { label: '1 hour', value: '1h' as const },
+  { label: '4 hours', value: '4h' as const },
+  { label: '12 hours', value: '12h' as const },
+  { label: '1 day', value: '1d' as const },
+  { label: '7 days', value: '7d' as const },
+  { label: '30 days', value: '30d' as const },
+];
 
-function DateRangeSelector() {
-  const { startDate, endDate, setDateRange } = useObservabilityContext();
+function TimeRangeSelector() {
+  const { timeRange, setTimeRange } = useObservabilityContext();
 
-  const t = useTranslations('pages/projects/observability/ObservabilityHeader');
-  const dateType = useMemo(() => {
-    if (!startDate || !endDate) return 'Custom';
-    const days = differenceInDays(endDate, startDate);
-
-    switch (days) {
-      case 30:
-        return '30Days';
-      case 7:
-        return '7Days';
-      case 60:
-        return '60Days';
-      case 90:
-        return '90Days';
-      case 365:
-        return '365Days';
-      default:
-        return 'Custom';
-    }
-  }, [startDate, endDate]);
-
-  const setSpecificDateRange = useCallback(
-    (value: DateTypes) => {
-      const now = new Date();
-      let start: Date;
-      const end: Date = now;
-
-      switch (value) {
-        case '30Days':
-          start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '7Days':
-          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '60Days':
-          start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-          break;
-        case '90Days':
-          start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case '365Days':
-          start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          return; // Custom date range, do nothing
-      }
-
-      setDateRange(start, end);
+  const handleTimeRangeChange = useCallback(
+    (value: string) => {
+      setTimeRange(value as TimeRange);
     },
-    [setDateRange],
+    [setTimeRange],
   );
 
   return (
     <TabGroup
       variant="chips"
       size="xxsmall"
-      onValueChange={(value) => {
-        setSpecificDateRange(value as DateTypes);
-      }}
-      value={dateType}
-      items={[
-        {
-          label: t('DateRangeSelector.7Days'),
-          value: '7Days',
-        },
-        {
-          label: t('DateRangeSelector.30Days'),
-          value: '30Days',
-        },
-        {
-          label: t('DateRangeSelector.60Days'),
-          value: '60Days',
-        },
-        {
-          label: t('DateRangeSelector.90Days'),
-          value: '90Days',
-        },
-        // {
-        //   label: t('DateRangeSelector.365Days'),
-        //   value: '365Days',
-        // },
-      ]}
+      onValueChange={handleTimeRangeChange}
+      value={timeRange}
+      items={TIME_RANGE_OPTIONS}
     />
   );
 }
@@ -190,7 +123,7 @@ export function ObservabilityHeader(props: ObservabilityHeaderProps) {
           ]}
         />
         <HStack>
-          <DateRangeSelector />
+          <TimeRangeSelector />
           {!noTemplateFilter && <AdvancedObservabilityFilter />}
         </HStack>
       </HStack>

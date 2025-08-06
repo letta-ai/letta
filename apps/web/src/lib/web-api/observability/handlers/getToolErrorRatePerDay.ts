@@ -9,8 +9,9 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetToolErrorRatePerDayRequest = ServerInferRequest<
   typeof contracts.observability.getToolErrorRatePerDay
@@ -23,9 +24,13 @@ type GetToolErrorRatePerDayResponse = ServerInferResponses<
 export async function getToolErrorRatePerDay(
   request: GetToolErrorRatePerDayRequest,
 ): Promise<GetToolErrorRatePerDayResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getToolErrorRatePerDay(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -69,9 +75,9 @@ export async function getToolErrorRatePerDay(
   const result = await client.query({
     query: `
       SELECT
-        toDate(time_window) as date,
+        ${granularity.clickhouseDateFormat.replace('Timestamp', 'time_window')} as time_interval,
         SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as error_count,
-        SUM(value) as total_count,
+        SUM(value) as total_tool_calls,
         CASE
           WHEN SUM(value) > 0
           THEN (SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) / SUM(value)) * 100
@@ -79,14 +85,14 @@ export async function getToolErrorRatePerDay(
         END as error_rate
       FROM otel.letta_metrics_counters_1hour_view
       WHERE metric_name = 'count_tool_execution'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
         AND time_window >= toDateTime({startDate: UInt32})
         AND time_window <= toDateTime({endDate: UInt32})
+        AND organization_id = {organizationId: String}
+        AND project_id = {projectId: String}
         AND tool_name != 'send_message'
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
-      GROUP BY toDate(time_window)
-      ORDER BY date DESC
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      GROUP BY time_interval
+      ORDER BY time_interval DESC
     `,
     query_params: {
       baseTemplateId,
@@ -100,18 +106,18 @@ export async function getToolErrorRatePerDay(
 
   const response = await getClickhouseData<
     Array<{
-      date: string;
+      time_interval: string;
+      total_tool_calls: string;
       error_count: string;
-      total_count: string;
       error_rate: string;
     }>
   >(result);
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.date,
+      date: item.time_interval,
+      totalToolCalls: parseInt(item.total_tool_calls, 10),
       errorCount: parseInt(item.error_count, 10),
-      totalCount: parseInt(item.total_count, 10),
       errorRate: parseFloat(item.error_rate),
     })),
   };
@@ -125,6 +131,7 @@ export async function getToolErrorRatePerDay(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

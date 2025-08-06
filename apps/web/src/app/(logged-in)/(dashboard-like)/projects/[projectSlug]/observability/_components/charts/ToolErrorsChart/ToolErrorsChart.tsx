@@ -15,12 +15,13 @@ import { useObservabilityContext } from '$web/client/hooks/useObservabilityConte
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 
-interface TimeToFirstTokenChartProps {
+interface ToolErrorsChartProps {
   analysisLink?: string;
 }
 
-export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+export function ToolErrorsChart(props: ToolErrorsChartProps) {
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
   const { projectSlug } = useParams<{ projectSlug: string }>();
@@ -45,15 +46,17 @@ export function ToolErrorsChart(props: TimeToFirstTokenChartProps) {
     queryKey: webApiQueryKeys.observability.getToolErrorsMetrics({
       projectId,
       startDate,
-      baseTemplateId: baseTemplateId?.value,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
         projectId,
-        baseTemplateId: baseTemplateId?.value,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
+        timeRange,
       },
     },
   });

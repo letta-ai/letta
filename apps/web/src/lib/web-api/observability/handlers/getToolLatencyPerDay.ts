@@ -11,6 +11,7 @@ import {
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetToolLatencyPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getToolLatencyPerDay
@@ -23,9 +24,13 @@ type GetToolLatencyPerDayResponse = ServerInferResponses<
 export async function getToolLatencyPerDay(
   request: GetToolLatencyPerDayRequest,
 ): Promise<GetToolLatencyPerDayResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getToolLatencyPerDay(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -68,44 +74,36 @@ export async function getToolLatencyPerDay(
 
   const result = await client.query({
     query: `
+      WITH parent_traces AS (
+        SELECT TraceId
+        FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+        WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+          AND ParentSpanId = ''
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      )
       SELECT
-        toDate(Timestamp) as date,
-  quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms,
-  quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms
+        ${granularity.clickhouseDateFormat} as time_interval,
+        quantile(0.50)(CAST(duration_ms AS Float64)) AS p50_latency_ms,
+        quantile(0.99)(CAST(duration_ms AS Float64)) AS p99_latency_ms
       FROM (
         SELECT
-        Timestamp,
-        arrayFirst(
-        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
-        Events
-        ).Attributes['duration_ms'] AS duration_ms
+          Timestamp,
+          arrayFirst(
+            event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
+            Events
+          ).Attributes['duration_ms'] AS duration_ms
         FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
         WHERE SpanName = 'agent_step'
-        AND arrayExists(
-        event -> event.Attributes['tool_name'] != 'send_message',
-        Events
-        )
-        AND TraceId IN (
-        SELECT DISTINCT TraceId
-        FROM otel_traces
-        WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
-        SpanName = 'POST /v1/agents/{agent_id}/messages' OR
-        SpanName = 'POST /v1/agents/{agent_id}/messages/async')
-        AND SpanAttributes['project.id'] = {projectId: String}
-        AND SpanAttributes['organization.id'] = {organizationId: String}
-        AND ParentSpanId = ''
-        ${attachFilterByBaseTemplateIdToOtels(request.query)}
-        AND Timestamp >= {startDate: DateTime}
-        AND Timestamp <= {endDate: DateTime}
-        )
-        AND arrayExists(
-        event -> has(event.Attributes, 'tool_name') AND has(event.Attributes, 'duration_ms'),
-        Events
-        )
-        )
+          AND TraceId IN (SELECT TraceId FROM parent_traces)
+          AND arrayExists(event -> event.Attributes['tool_name'] != 'send_message', Events)
+      )
       WHERE duration_ms IS NOT NULL
-      GROUP BY toDate(Timestamp)
-      ORDER BY date
+      GROUP BY time_interval
+      ORDER BY time_interval DESC
     `,
     query_params: {
       baseTemplateId,
@@ -119,9 +117,7 @@ export async function getToolLatencyPerDay(
 
   const response = await getClickhouseData<
     Array<{
-      date: string;
-      count: string;
-      avg_latency_ms: string;
+      time_interval: string;
       p50_latency_ms: string;
       p99_latency_ms: string;
     }>
@@ -129,9 +125,9 @@ export async function getToolLatencyPerDay(
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.date,
-      count: parseInt(item.count, 10),
-      avgLatencyMs: parseFloat(item.avg_latency_ms),
+      date: item.time_interval,
+      avgLatencyMs: 0,
+      count: 0, // Count is not calculated in the query, set to 0
       p50LatencyMs: parseFloat(item.p50_latency_ms),
       p99LatencyMs: parseFloat(item.p99_latency_ms),
     })),
@@ -146,6 +142,7 @@ export async function getToolLatencyPerDay(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

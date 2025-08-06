@@ -13,17 +13,17 @@ import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
-type GetTimeToFirstTokenPerDayRequest = ServerInferRequest<
-  typeof contracts.observability.getTimeToFirstTokenPerDay
+type GetTotalRequestsPerDayRequest = ServerInferRequest<
+  typeof contracts.observability.getTotalRequestsPerDay
 >;
 
-type GetTimeToFirstTokenPerDayResponse = ServerInferResponses<
-  typeof contracts.observability.getTimeToFirstTokenPerDay
+type GetTotalRequestsPerDayResponse = ServerInferResponses<
+  typeof contracts.observability.getTotalRequestsPerDay
 >;
 
-export async function getTimeToFirstTokenPerDay(
-  request: GetTimeToFirstTokenPerDayRequest,
-): Promise<GetTimeToFirstTokenPerDayResponse> {
+export async function getTotalRequestsPerDay(
+  request: GetTotalRequestsPerDayRequest,
+): Promise<GetTotalRequestsPerDayResponse> {
   const { projectId, startDate, endDate, baseTemplateId, timeRange } =
     request.query;
 
@@ -36,10 +36,10 @@ export async function getTimeToFirstTokenPerDay(
   try {
     const cachedBody = await getObservabilityCache<
       ServerInferResponseBody<
-        typeof contracts.observability.getTimeToFirstTokenPerDay,
+        typeof contracts.observability.getTotalRequestsPerDay,
         200
       >
-    >('time_to_first_token_per_day', {
+    >('total_requests_per_day', {
       projectId,
       startDate,
       endDate,
@@ -75,37 +75,25 @@ export async function getTimeToFirstTokenPerDay(
 
   const result = await client.query({
     query: `
-      WITH aggregated AS (
-        SELECT
-          ${granularity.clickhouseDateFormat.replace('Timestamp', 'time_window')} as time_interval,
-          sum(count) as total_count,
-          sum(sum) as total_sum,
-          arrayReduce('sumForEach', groupArray(bucket_counts)) as total_bucket_counts,
-          any(explicit_bounds) as bounds
-        FROM otel.letta_metrics_histograms_5min
-        WHERE metric_name = 'hist_ttft_ms'
-          AND time_window >= toDateTime({startDate: UInt32})
-          AND time_window <= toDateTime({endDate: UInt32})
-          AND organization_id = {organizationId: String}
-          AND project_id = {projectId: String}
-          ${attachFilterByBaseTemplateIdToOtels(request.query)}
-        GROUP BY time_interval
-      )
       SELECT
-        time_interval,
-        total_count as count,
-        CASE WHEN total_count > 0 THEN total_sum / total_count ELSE 0 END as avg_ttft_ms,
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.5 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p50_ttft_ms,
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.99 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p99_ttft_ms
-      FROM aggregated
+        ${granularity.clickhouseDateFormat} as time_interval,
+        count() as total_requests
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+        AND ParentSpanId = ''
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND SpanAttributes['project.id'] = {projectId: String}
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      GROUP BY time_interval
       ORDER BY time_interval DESC
     `,
     query_params: {
-      baseTemplateId,
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
       organizationId: user.activeOrganizationId,
       projectId,
+      baseTemplateId,
     },
     format: 'JSONEachRow',
   });
@@ -113,27 +101,21 @@ export async function getTimeToFirstTokenPerDay(
   const response = await getClickhouseData<
     Array<{
       time_interval: string;
-      count: string;
-      avg_ttft_ms: string;
-      p50_ttft_ms: string;
-      p99_ttft_ms: string;
+      total_requests: string;
     }>
   >(result);
 
   const responseBody = {
     items: response.map((item) => ({
       date: item.time_interval,
-      count: parseInt(item.count, 10),
-      avgTtftMs: parseFloat(item.avg_ttft_ms),
-      p50TtftMs: parseFloat(item.p50_ttft_ms),
-      p99TtftMs: parseFloat(item.p99_ttft_ms),
+      totalRequests: parseInt(item.total_requests, 10),
     })),
   };
 
   // Cache the result
   try {
     await setObservabilityCache(
-      'time_to_first_token_per_day',
+      'total_requests_per_day',
       {
         projectId,
         startDate,
@@ -146,7 +128,7 @@ export async function getTimeToFirstTokenPerDay(
     );
   } catch (error) {
     // If caching fails, still return the result
-    console.error('Failed to cache time to first token per day:', error);
+    console.error('Failed to cache total requests per day:', error);
   }
 
   return {

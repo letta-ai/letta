@@ -19,7 +19,8 @@ interface ToolErrorsByNameChartProps {
 }
 
 export function ToolErrorsByNameChart(props: ToolErrorsByNameChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -30,16 +31,18 @@ export function ToolErrorsByNameChart(props: ToolErrorsByNameChartProps) {
   const { data } = webApi.observability.getToolErrorRateByName.useQuery({
     queryKey: webApiQueryKeys.observability.getToolErrorRateByName({
       projectId,
-      baseTemplateId: baseTemplateId?.value,
       startDate,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        baseTemplateId: baseTemplateId?.value,
         projectId,
         startDate,
         endDate,
+        baseTemplateId: baseTemplateId?.value,
+        timeRange,
       },
     },
   });

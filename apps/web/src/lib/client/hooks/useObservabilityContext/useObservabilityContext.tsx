@@ -1,15 +1,20 @@
 'use client';
 import { createContext, useContext, useMemo, useState } from 'react';
-import { endOfDay, startOfDay, subDays } from 'date-fns';
+import { endOfDay, startOfDay } from 'date-fns';
 import { useSessionStorage } from '@mantine/hooks';
 import type { OptionType } from '@letta-cloud/ui-component-library';
 import { useEmptyBaseTemplateValue } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/observability/_components/hooks/useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
+import type { TimeRange, TimeGranularity } from './timeConfig';
+import { getTimeConfig, computeStartEndDates } from './timeConfig';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
 interface ObservabilityContextType {
   startDate: string;
   endDate: string;
+  timeRange: TimeRange;
+  granularity: TimeGranularity;
+  setTimeRange: (timeRange: TimeRange) => void;
   setDateRange: (startDate: Date, endDate: Date) => void;
   chartType: ChartType;
   setChartType: (type: ChartType) => void;
@@ -20,9 +25,14 @@ interface ObservabilityContextType {
 
 const ObservabilityContext = createContext<ObservabilityContextType>({
   startDate: new Date().toISOString(),
+  endDate: new Date().toISOString(),
+  timeRange: '30d',
+  granularity: getTimeConfig('30d'),
   noTemplateFilter: false,
   chartType: 'all',
-  endDate: new Date().toISOString(),
+  setTimeRange: () => {
+    return;
+  },
   setDateRange: () => {
     return;
   },
@@ -53,10 +63,23 @@ export function ObservabilityProvider({
   baseTemplate,
   noTemplateFilter,
 }: ObservabilityProviderProps) {
-  const [endDate, setEndDate] = useState(endOfDay(new Date()));
-  const [startDate, setStartTime] = useState(
-    startOfDay(subDays(new Date(), 30)),
-  );
+  const [timeRange, setTimeRangeState] = useSessionStorage<TimeRange>({
+    key: 'observability-time-range',
+    defaultValue: '30d',
+  });
+
+  // Compute dates based on time range
+  const { startDate: computedStartDate, endDate: computedEndDate } =
+    computeStartEndDates(timeRange);
+  const [customStartDate, setCustomStartDate] = useState(computedStartDate);
+  const [customEndDate, setCustomEndDate] = useState(computedEndDate);
+
+  // Use custom dates if timeRange is 'custom', otherwise use computed dates
+  const startDate =
+    timeRange === 'custom' ? customStartDate : computedStartDate;
+  const endDate = timeRange === 'custom' ? customEndDate : computedEndDate;
+
+  const granularity = useMemo(() => getTimeConfig(timeRange), [timeRange]);
 
   const emptyValue = useEmptyBaseTemplateValue();
   const [baseTemplateId, setBaseTemplateId] = useState<OptionType>(
@@ -70,27 +93,43 @@ export function ObservabilityProvider({
 
   const value = useMemo(
     () => ({
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      timeRange,
+      granularity,
+      setTimeRange: (newTimeRange: TimeRange) => {
+        setTimeRangeState(newTimeRange);
+        if (newTimeRange !== 'custom') {
+          // Reset custom dates when switching away from custom
+          const { startDate: newStart, endDate: newEnd } =
+            computeStartEndDates(newTimeRange);
+          setCustomStartDate(newStart);
+          setCustomEndDate(newEnd);
+        }
+      },
+      setDateRange: (startDate: Date, endDate: Date) => {
+        setCustomStartDate(startOfDay(startDate));
+        setCustomEndDate(endOfDay(endDate));
+        setTimeRangeState('custom');
+      },
       setBaseTemplateId,
       noTemplateFilter: noTemplateFilter || false,
       baseTemplateId,
       chartType,
-      setDateRange: (startDate: Date, endDate: Date) => {
-        setStartTime(startOfDay(startDate));
-        setEndDate(endOfDay(endDate));
-      },
       setChartType: (type: ChartType) => {
         setChartType(type);
       },
     }),
     [
       startDate,
-      noTemplateFilter,
       endDate,
+      timeRange,
+      granularity,
+      noTemplateFilter,
       baseTemplateId,
       chartType,
       setChartType,
+      setTimeRangeState,
     ],
   );
 

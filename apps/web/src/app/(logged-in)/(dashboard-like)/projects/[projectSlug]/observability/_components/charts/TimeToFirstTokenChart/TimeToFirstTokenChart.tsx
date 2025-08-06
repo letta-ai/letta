@@ -17,7 +17,8 @@ interface TimeToFirstTokenChartProps {
 }
 
 export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
   const { analysisLink } = props;
   const { id: projectId } = useCurrentProject();
 
@@ -25,19 +26,21 @@ export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
     'pages/projects/observability/TimeToFirstTokenChart',
   );
 
-  const { data } = webApi.observability.getTimeToFirstTokenMetrics.useQuery({
-    queryKey: webApiQueryKeys.observability.getTimeToFirstTokenMetrics({
-      projectId,
+  const { data } = webApi.observability.getTimeToFirstTokenPerDay.useQuery({
+    queryKey: webApiQueryKeys.observability.getTimeToFirstTokenPerDay({
+      projectId: projectId, // Replace with actual project slug
       startDate,
       endDate,
       baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
-        projectId,
         baseTemplateId: baseTemplateId?.value,
+        projectId: projectId,
         startDate,
         endDate,
+        timeRange,
       },
     },
   });
@@ -46,11 +49,11 @@ export function TimeToFirstTokenChart(props: TimeToFirstTokenChartProps) {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.p50LatencyMs,
+        getterFn: (item) => item.p50TtftMs,
       },
       {
         data: data?.body.items,
-        getterFn: (item) => item.p99LatencyMs,
+        getterFn: (item) => item.p99TtftMs,
       },
     ],
     formatter: function (value) {

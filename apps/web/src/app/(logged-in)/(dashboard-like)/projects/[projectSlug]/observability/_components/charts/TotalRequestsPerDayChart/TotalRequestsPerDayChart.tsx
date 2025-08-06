@@ -7,25 +7,18 @@ import {
   makeFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { useTranslations } from '@letta-cloud/translations';
 import { get } from 'lodash-es';
 import { useObservabilitySeriesData } from '../../hooks/useObservabilitySeriesData/useObservabilitySeriesData';
+
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 
-interface ToolErrorRateChartProps {
-  analysisLink?: string;
-}
-
-export function ToolErrorRateChart(props: ToolErrorRateChartProps) {
+export function TotalRequestsPerDayChart() {
+  const { id: projectId } = useCurrentProject();
   const { startDate, endDate, baseTemplateId, timeRange } =
     useObservabilityContext();
-  const { analysisLink } = props;
-  const { id: projectId } = useCurrentProject();
 
-  const t = useTranslations('pages/projects/observability/ToolErrorRateChart');
-
-  const { data } = webApi.observability.getToolErrorRatePerDay.useQuery({
-    queryKey: webApiQueryKeys.observability.getToolErrorRatePerDay({
+  const { data } = webApi.observability.getTotalRequestsPerDay.useQuery({
+    queryKey: webApiQueryKeys.observability.getTotalRequestsPerDay({
       projectId: projectId,
       startDate,
       endDate,
@@ -47,54 +40,62 @@ export function ToolErrorRateChart(props: ToolErrorRateChartProps) {
     seriesData: [
       {
         data: data?.body.items,
-        getterFn: (item) => item.errorRate,
+        getterFn: (item) => item.totalRequests || 0,
         defaultValue: 0,
       },
     ],
-    formatter: (value) => {
-      return `${value}%`;
-    },
     startDate,
     endDate,
   });
 
   const { formatNumber } = useFormatters();
 
+  function getTitle(): string {
+    switch (timeRange) {
+      case '1h':
+        return 'Total requests per 5 minutes';
+      case '4h':
+        return 'Total requests per 20 minutes';
+      case '12h':
+        return 'Total requests per hour';
+      case '1d':
+        return 'Total requests per hour';
+      case '7d':
+        return 'Total requests per day';
+      case '30d':
+        return 'Total requests per day';
+      default:
+        return 'Total requests';
+    }
+  }
+
   return (
-    <DashboardChartWrapper
-      analysisLink={analysisLink}
-      title={t('title')}
-      isLoading={!data}
-    >
+    <DashboardChartWrapper title={getTitle()} isLoading={!data}>
       <Chart
         options={{
           ...tableOptions,
           yAxis: {
             ...tableOptions.yAxis,
-            startValue: 0,
-            max: 100,
+            minInterval: 1,
+            type: 'value',
           },
           tooltip: {
             trigger: 'axis',
             formatter: (e) => {
               const value = get(e, '0.data.value', null);
-              const date = get(e, '0.axisValue', '') as string;
+              const date = get(e, '0.axisValue', '');
 
               if (typeof value !== 'number') {
                 return makeFormattedTooltip({
-                  label: t('tooltip.noData'),
+                  label: 'No data was recorded for this date',
+                  date,
                 });
               }
 
               return makeFormattedTooltip({
-                label: t('tooltip.withValue'),
-                date: date,
-                value:
-                  formatNumber(value / 100, {
-                    style: 'percent',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }) || '0%',
+                label: 'Requests',
+                value: formatNumber(value),
+                date,
               });
             },
           },

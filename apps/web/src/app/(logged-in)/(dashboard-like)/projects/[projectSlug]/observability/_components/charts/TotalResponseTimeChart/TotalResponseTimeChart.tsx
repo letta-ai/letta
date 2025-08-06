@@ -14,7 +14,8 @@ import { useObservabilityContext } from '$web/client/hooks/useObservabilityConte
 
 export function TotalResponseTimeChart() {
   const { id: projectId } = useCurrentProject();
-  const { startDate, endDate, baseTemplateId } = useObservabilityContext();
+  const { startDate, endDate, baseTemplateId, timeRange } =
+    useObservabilityContext();
 
   const t = useTranslations(
     'pages/projects/observability/TotalResponseTimeChart',
@@ -24,8 +25,9 @@ export function TotalResponseTimeChart() {
     queryKey: webApiQueryKeys.observability.getAverageResponseTime({
       projectId: projectId, // Replace with actual project slug
       startDate,
-      baseTemplateId: baseTemplateId?.value,
       endDate,
+      baseTemplateId: baseTemplateId?.value,
+      timeRange,
     }),
     queryData: {
       query: {
@@ -33,6 +35,7 @@ export function TotalResponseTimeChart() {
         projectId: projectId,
         startDate,
         endDate,
+        timeRange,
       },
     },
   });

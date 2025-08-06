@@ -48,6 +48,9 @@ export const DefaultMetricsQuery = applyRefine(
     projectId: z.string(),
     startDate: z.string(),
     endDate: z.string(),
+    timeRange: z
+      .enum(['1h', '4h', '12h', '1d', '7d', '30d', 'custom'])
+      .optional(),
   }),
 );
 
@@ -57,6 +60,9 @@ const DefaultPagedMetricsQuery = applyRefine(
     projectId: z.string(),
     startDate: z.string(),
     endDate: z.string(),
+    timeRange: z
+      .enum(['1h', '4h', '12h', '1d', '7d', '30d', 'custom'])
+      .optional(),
     offset: z.number(),
     limit: z.number().max(25),
   }),
@@ -229,7 +235,7 @@ const getObservabilityOverviewContract = c.query({
 
 const APIErrorCountItem = z.object({
   date: z.string(), // ISO date string
-  errorCount: z.number(), // Number of API errors for the date
+  apiErrorCount: z.number(), // Number of API errors for the date
 });
 
 const APIErrorCountResponseSchema = z.object({
@@ -249,7 +255,7 @@ const getApiErrorCountContract = c.query({
 const ToolErrorRateItem = z.object({
   date: z.string(),
   errorCount: z.number(),
-  totalCount: z.number(),
+  totalToolCalls: z.number(),
   errorRate: z.number(),
 });
 
@@ -438,6 +444,45 @@ const getStepDurationMetricsContract = c.query({
   },
 });
 
+const StepsMetricsItem = z.object({
+  date: z.string(),
+  totalStepsCount: z.number(),
+  p50StepsCount: z.number(),
+  p99StepsCount: z.number(),
+  avgStepsCount: z.number(),
+});
+
+const StepsMetricsResponseSchema = z.object({
+  items: z.array(StepsMetricsItem),
+});
+
+const getStepsMetricsContract = c.query({
+  path: '/observability/metrics/steps-metrics',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: StepsMetricsResponseSchema,
+  },
+});
+
+const TotalRequestsPerDayItem = z.object({
+  date: z.string(),
+  totalRequests: z.number(),
+});
+
+const TotalRequestsPerDayResponseSchema = z.object({
+  items: z.array(TotalRequestsPerDayItem),
+});
+
+const getTotalRequestsPerDayContract = c.query({
+  path: '/observability/metrics/total-requests-per-day',
+  method: 'GET',
+  query: DefaultMetricsQuery,
+  responses: {
+    200: TotalRequestsPerDayResponseSchema,
+  },
+});
+
 export const StepDetail = z.object({
   stepId: z.string(),
   toolName: z.string(),
@@ -568,6 +613,8 @@ export const observabilityContracts = c.router({
   getTimeToFirstTokenPerDay: getTimeToFirstTokenPerDayContract,
   getLLMLatencyByModel: getLLMLatencyByModelContract,
   getStepDurationMetrics: getStepDurationMetricsContract,
+  getStepsMetrics: getStepsMetricsContract,
+  getTotalRequestsPerDay: getTotalRequestsPerDayContract,
   // Existing endpoints
   getTracesByProjectId: getTracesByProjectIdContract,
   getTimeToFirstTokenMetrics: timeToFirstTokenMetricsContract,
@@ -621,6 +668,16 @@ export const observabilityQueryKeys = {
   getStepDurationMetrics: (query: z.infer<typeof DefaultMetricsQuery>) => [
     'observability',
     'getStepDurationMetrics',
+    query,
+  ],
+  getStepsMetrics: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getStepsMetrics',
+    query,
+  ],
+  getTotalRequestsPerDay: (query: z.infer<typeof DefaultMetricsQuery>) => [
+    'observability',
+    'getTotalRequestsPerDay',
     query,
   ],
   // Existing query keys
