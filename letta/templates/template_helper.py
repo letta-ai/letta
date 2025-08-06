@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, Template
@@ -36,6 +37,13 @@ async def render_template_async(template_name: str, **kwargs):
     """Asynchronous template rendering function that doesn't block the event loop"""
     template = jinja_async_env.get_template(template_name)
     return await template.render_async(**kwargs)
+
+
+@trace_method
+async def render_template_in_thread(template_name: str, **kwargs):
+    """Asynchronously render a template from a string"""
+    template = jinja_env.get_template(template_name)
+    return await asyncio.to_thread(template.render, **kwargs)
 
 
 @trace_method

@@ -122,7 +122,7 @@ class BaseAgent(ABC):
             curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
             # generate just the memory string with current state for comparison
-            curr_memory_str = await agent_state.memory.compile_async(
+            curr_memory_str = await agent_state.memory.compile_in_thread_async(
                 tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
             )
             new_dynamic_section = extract_dynamic_section(curr_memory_str)

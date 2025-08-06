@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import TYPE_CHECKING, List, Optional
 
@@ -142,11 +143,11 @@ class Memory(BaseModel, validate_assignment=True):
         """
         try:
             # Validate Jinja2 syntax with async enabled
-            Template(prompt_template, enable_async=True)
+            Template(prompt_template)
 
             # Validate compatibility with current memory structure - use async rendering
-            template = Template(prompt_template, enable_async=True)
-            await template.render_async(blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
+            template = Template(prompt_template)
+            await asyncio.to_thread(template.render, blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
 
             # If we get here, the template is valid and compatible
             self.prompt_template = prompt_template
@@ -188,6 +189,11 @@ class Memory(BaseModel, validate_assignment=True):
             raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
         except Exception as e:
             raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
+
+    @trace_method
+    async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
+        """Compile the memory in a thread"""
+        return await asyncio.to_thread(self.compile, tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open)
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""

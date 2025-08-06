@@ -443,7 +443,7 @@ async def compile_system_message_async(
             timezone=timezone,
         )
 
-        memory_with_sources = await in_context_memory.compile_async(
+        memory_with_sources = await in_context_memory.compile_in_thread_async(
             tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
         )
         full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
