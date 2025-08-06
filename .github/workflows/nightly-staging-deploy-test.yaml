@@ -1,0 +1,338 @@
+name: 🌙 Nightly Staging Deploy & Test
+
+on:
+  # TODO: set this to run every day
+  # schedule:
+  #   - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      git_hash:
+        description: 'Git hash to deploy (defaults to latest main)'
+        required: false
+        type: string
+      skip_tests:
+        description: 'Skip test execution'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PROJECT_ID: memgpt-428419
+  REGION: us-central1
+  REGISTRY_NAME: letta-dev-us-central1
+
+jobs:
+  stage-core-deploy:
+    name: 🚀 Deploy Core to Staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    outputs:
+      deployment_tag: ${{ steps.set-tag.outputs.tag }}
+      deployment_commit: ${{ steps.set-tag.outputs.commit }}
+      deployment_message: ${{ steps.set-tag.outputs.message }}
+
+    steps:
+      - name: Set deployment tag and metadata
+        id: set-tag
+        run: |
+          TAG=${{ github.event.inputs.git_hash || github.sha }}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "commit=$TAG" >> $GITHUB_OUTPUT
+          echo "message=Nightly staging deployment $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.set-tag.outputs.tag }}
+          submodules: recursive
+
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Install required package
+          poetry run pip install google-cloud-secret-manager
+
+          # Get 'ci' secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+
+          # Get 'e2b' secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s e2b)
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          # Add Google Cloud SDK repository and install GKE authentication plugin
+          sudo apt-get install apt-transport-https ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
+      - name: Install Just
+        run: sudo apt install -y just
+
+      - name: Install Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Configure kubectl
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: just configure-kubectl letta-dev-us-central1
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and Deploy to Staging
+        env:
+          TAG: ${{ steps.set-tag.outputs.tag }}
+          DEPLOY_MESSAGE: ${{ steps.set-tag.outputs.message }}
+          MEMGPT_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          TOGETHER_API_KEY: ${{ env.TOGETHER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          GROK_API_KEY: ${{ env.GROK_API_KEY }}
+          LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
+          LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
+          LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
+          LETTA_PG_HOST: 10.119.0.3
+          LETTA_PG_PORT: ${{ vars.LETTA_PG_PORT }}
+          LETTA_DISABLE_SQLALCHEMY_POOLING: true
+          E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
+          LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317
+          LETTA_ENVIRONMENT: dev
+          CLICKHOUSE_ENDPOINT: https://qbcxouckj0.us-central1.gcp.clickhouse.cloud:8443
+          CLICKHOUSE_DATABASE: otel
+          CLICKHOUSE_USERNAME: default
+          CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD_DEV }}
+          ENV_NAME: dev
+          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+          LETTA_UVICORN_WORKERS: 3
+          LETTA_DEFAULT_LLM_HANDLE: ${{ secrets.LETTA_DEFAULT_LLM_HANDLE }}
+          LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
+          MCP_READ_FROM_CONFIG: false
+          MCP_DISABLE_STDIO: true
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
+          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+        run: just build-core deploy-core "${DEPLOY_MESSAGE}"
+
+      - name: Wait for deployment to stabilize
+        run: |
+          echo "Waiting 60 seconds for deployment to stabilize..."
+          sleep 60
+
+  staging-tests:
+    name: 🧪 Run Staging Tests
+    needs: stage-core-deploy
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ["self-hosted", "small"]
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        test_suite: [
+          "integration_test_summarizer.py",
+          "integration_test_tool_execution_sandbox.py",
+          "integration_test_async_tool_sandbox.py",
+          "integration_test_sleeptime_agent.py",
+          "integration_test_agent_tool_graph.py",
+          "integration_test_composio.py",
+          "integration_test_chat_completions.py",
+          "integration_test_multi_agent.py",
+          "integration_test_batch_api_cron_jobs.py",
+          "integration_test_batch_sdk.py",
+          "integration_test_builtin_tools.py"
+        ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.stage-core-deploy.outputs.deployment_commit }}
+
+      - name: Set up python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        working-directory: apps/core
+        run: |
+          poetry install --no-interaction --no-root -E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Run staging integration tests
+        working-directory: apps/core
+        env:
+          # Point tests to staging environment
+          LETTA_SERVER_URL: "https://api-dev.letta.com"
+          LETTA_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
+
+          # LLM Provider API Keys
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
+          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+          LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
+
+          # External service API Keys
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
+          PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
+
+          # Google Cloud
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+
+          # Feature flags
+          LETTA_ENABLE_BATCH_JOB_POLLING: true
+          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
+          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+        run: |
+          poetry run pip install letta
+          poetry run pytest -svv tests/${{ matrix.test_suite }} --maxfail=1 --durations=10
+
+  publish-artifacts:
+    name: 📦 Publish Test Results & Artifacts
+    needs: [stage-core-deploy, staging-tests]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.stage-core-deploy.outputs.deployment_commit }}
+
+      - name: Create deployment manifest
+        run: |
+          mkdir -p artifacts
+          cat > artifacts/deployment-manifest.json << EOF
+          {
+            "deployment_timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+            "git_commit": "${{ needs.stage-core-deploy.outputs.deployment_commit }}",
+            "deployment_tag": "${{ needs.stage-core-deploy.outputs.deployment_tag }}",
+            "deployment_message": "${{ needs.stage-core-deploy.outputs.deployment_message }}",
+            "environment": "staging",
+            "tests_executed": ${{ !inputs.skip_tests }},
+            "tests_status": "${{ needs.staging-tests.result }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "workflow_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Create deployment configuration
+        run: |
+          cat > artifacts/deployment-config.yaml << EOF
+          # Nightly Staging Deployment Configuration
+          # Generated on: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          # Commit: ${{ needs.stage-core-deploy.outputs.deployment_commit }}
+          # Tag: ${{ needs.stage-core-deploy.outputs.deployment_tag }}
+
+          configuration:
+            environment: staging
+            region: ${{ env.REGION }}
+            project_id: ${{ env.PROJECT_ID }}
+            registry: ${{ env.REGISTRY_NAME }}
+            image_tag: ${{ needs.stage-core-deploy.outputs.deployment_tag }}
+            experimental: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+            pinecone_enabled: ${{ secrets.LETTA_ENABLE_PINECONE }}
+            batch_job_polling: true
+            uvicorn_workers: ${{ vars.LETTA_UVICORN_WORKERS }}
+            e2b_template_id: "${{ secrets.E2B_SANDBOX_TEMPLATE_ID }}"
+            sentry_enabled: true
+            otel_endpoint: "localhost:4317"
+          EOF
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-staging-deployment-${{ needs.stage-core-deploy.outputs.deployment_tag }}
+          path: artifacts/
+          retention-days: 30
+
+      - name: Create deployment summary
+        run: |
+          echo "## 🌙 Nightly Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Git Commit:** \`${{ needs.stage-core-deploy.outputs.deployment_commit }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container Tag:** \`${{ needs.stage-core-deploy.outputs.deployment_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests Executed:** ${{ !inputs.skip_tests && '✅ Yes' || '⏭️ Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Results:** ${{ needs.staging-tests.result == 'success' && '✅ Passed' || needs.staging-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment manifest and configuration available in workflow artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Pre-built container ready for manual deployments: \`${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/letta-core:${{ needs.stage-core-deploy.outputs.deployment_tag }}\`" >> $GITHUB_STEP_SUMMARY
