@@ -806,6 +806,30 @@ class JobManager:
             request_config = job.request_config or LettaRequestConfig()
         return request_config
 
+    @enforce_types
+    async def record_ttft(self, job_id: str, ttft_ns: int, actor: PydanticUser) -> None:
+        """Record time to first token for a run"""
+        try:
+            async with db_registry.async_session() as session:
+                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job.ttft_ns = ttft_ns
+                await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+                await session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to record TTFT for job {job_id}: {e}")
+
+    @enforce_types
+    async def record_response_duration(self, job_id: str, total_duration_ns: int, actor: PydanticUser) -> None:
+        """Record total response duration for a run"""
+        try:
+            async with db_registry.async_session() as session:
+                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job.total_duration_ns = total_duration_ns
+                await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
+                await session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to record response duration for job {job_id}: {e}")
+
     @trace_method
     def _dispatch_callback_sync(self, callback_info: dict) -> dict:
         """

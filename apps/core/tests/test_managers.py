@@ -8043,6 +8043,77 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
         job_manager.get_job_usage(job_id="nonexistent_job", actor=default_user)
 
 
+@pytest.mark.asyncio
+async def test_record_ttft(server: SyncServer, default_user, event_loop):
+    """Test recording time to first token for a job."""
+    # Create a job
+    job_data = PydanticJob(
+        status=JobStatus.created,
+        metadata={"type": "test_timing"},
+    )
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
+
+    # Record TTFT
+    ttft_ns = 1_500_000_000  # 1.5 seconds in nanoseconds
+    await server.job_manager.record_ttft(created_job.id, ttft_ns, default_user)
+
+    # Fetch the job and verify TTFT was recorded
+    updated_job = await server.job_manager.get_job_by_id_async(created_job.id, default_user)
+    assert updated_job.ttft_ns == ttft_ns
+
+
+@pytest.mark.asyncio
+async def test_record_response_duration(server: SyncServer, default_user, event_loop):
+    """Test recording total response duration for a job."""
+    # Create a job
+    job_data = PydanticJob(
+        status=JobStatus.created,
+        metadata={"type": "test_timing"},
+    )
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
+
+    # Record response duration
+    duration_ns = 5_000_000_000  # 5 seconds in nanoseconds
+    await server.job_manager.record_response_duration(created_job.id, duration_ns, default_user)
+
+    # Fetch the job and verify duration was recorded
+    updated_job = await server.job_manager.get_job_by_id_async(created_job.id, default_user)
+    assert updated_job.total_duration_ns == duration_ns
+
+
+@pytest.mark.asyncio
+async def test_record_timing_metrics_together(server: SyncServer, default_user, event_loop):
+    """Test recording both TTFT and response duration for a job."""
+    # Create a job
+    job_data = PydanticJob(
+        status=JobStatus.created,
+        metadata={"type": "test_timing_combined"},
+    )
+    created_job = await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
+
+    # Record both metrics
+    ttft_ns = 2_000_000_000  # 2 seconds in nanoseconds
+    duration_ns = 8_500_000_000  # 8.5 seconds in nanoseconds
+
+    await server.job_manager.record_ttft(created_job.id, ttft_ns, default_user)
+    await server.job_manager.record_response_duration(created_job.id, duration_ns, default_user)
+
+    # Fetch the job and verify both metrics were recorded
+    updated_job = await server.job_manager.get_job_by_id_async(created_job.id, default_user)
+    assert updated_job.ttft_ns == ttft_ns
+    assert updated_job.total_duration_ns == duration_ns
+
+
+@pytest.mark.asyncio
+async def test_record_timing_invalid_job(server: SyncServer, default_user, event_loop):
+    """Test recording timing metrics for non-existent job fails gracefully."""
+    # Try to record TTFT for non-existent job - should not raise exception but log warning
+    await server.job_manager.record_ttft("nonexistent_job_id", 1_000_000_000, default_user)
+
+    # Try to record response duration for non-existent job - should not raise exception but log warning
+    await server.job_manager.record_response_duration("nonexistent_job_id", 2_000_000_000, default_user)
+
+
 def test_list_tags(server: SyncServer, default_user, default_organization):
     """Test listing tags functionality."""
     # Create multiple agents with different tags

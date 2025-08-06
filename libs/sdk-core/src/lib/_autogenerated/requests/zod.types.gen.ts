@@ -1802,6 +1802,12 @@ export const BatchJob = z.object({
   callback_error: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  ttft_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  total_duration_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -4507,6 +4513,12 @@ export const Job = z.object({
   callback_error: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  ttft_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  total_duration_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
   id: z.string().optional(),
   user_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -5546,6 +5558,12 @@ export const Run = z.object({
     .optional(),
   callback_error: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  ttft_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  total_duration_ns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
     .optional(),
   id: z.string().optional(),
   user_id: z

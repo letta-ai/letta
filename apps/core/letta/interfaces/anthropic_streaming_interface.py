@@ -25,11 +25,8 @@ from anthropic.types.beta import (
 )
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
-from letta.helpers.datetime_helpers import get_utc_timestamp_ns, ns_to_ms
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
-from letta.otel.context import get_ctx_attributes
-from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.letta_message import (
     AssistantMessage,
     HiddenReasoningMessage,
@@ -133,28 +130,12 @@ class AnthropicStreamingInterface:
         self,
         stream: AsyncStream[BetaRawMessageStreamEvent],
         ttft_span: Optional["Span"] = None,
-        provider_request_start_timestamp_ns: int | None = None,
     ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
         prev_message_type = None
         message_index = 0
-        first_chunk = True
         try:
             async with stream:
                 async for event in stream:
-                    # TODO (cliandy): reconsider in stream cancellations
-                    # await cancellation_token.check_and_raise_if_cancelled()
-                    if first_chunk and ttft_span is not None and provider_request_start_timestamp_ns is not None:
-                        now = get_utc_timestamp_ns()
-                        ttft_ns = now - provider_request_start_timestamp_ns
-                        ttft_span.add_event(
-                            name="anthropic_time_to_first_token_ms", attributes={"anthropic_time_to_first_token_ms": ns_to_ms(ttft_ns)}
-                        )
-                        metric_attributes = get_ctx_attributes()
-                        if isinstance(event, BetaRawMessageStartEvent):
-                            metric_attributes["model.name"] = event.message.model
-                        MetricRegistry().ttft_ms_histogram.record(ns_to_ms(ttft_ns), metric_attributes)
-                        first_chunk = False
-
                     # TODO: Support BetaThinkingBlock, BetaRedactedThinkingBlock
                     if isinstance(event, BetaRawContentBlockStartEvent):
                         content = event.content_block

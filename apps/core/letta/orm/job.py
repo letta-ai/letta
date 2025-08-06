@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Index, String
+from sqlalchemy import JSON, BigInteger, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import UserMixin
@@ -45,6 +45,10 @@ class Job(SqlalchemyBase, UserMixin):
     callback_error: Mapped[Optional[str]] = mapped_column(
         nullable=True, doc="Optional error message from attempting to POST the callback endpoint."
     )
+
+    # timing metrics (in nanoseconds for precision)
+    ttft_ns: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, doc="Time to first token in nanoseconds")
+    total_duration_ns: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, doc="Total run duration in nanoseconds")
 
     # relationships
     user: Mapped["User"] = relationship("User", back_populates="jobs")

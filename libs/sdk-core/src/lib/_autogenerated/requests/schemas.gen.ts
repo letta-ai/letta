@@ -1547,6 +1547,30 @@ export const $BatchJob = {
       description:
         'Optional error message from attempting to POST the callback endpoint.',
     },
+    ttft_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Ttft Ns',
+      description: 'Time to first token for a run in nanoseconds',
+    },
+    total_duration_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Total Duration Ns',
+      description: 'Total run duration in nanoseconds',
+    },
     id: {
       type: 'string',
       pattern: '^(job|run)-[a-fA-F0-9]{8}',
@@ -6571,6 +6595,30 @@ export const $Job = {
       description:
         'Optional error message from attempting to POST the callback endpoint.',
     },
+    ttft_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Ttft Ns',
+      description: 'Time to first token for a run in nanoseconds',
+    },
+    total_duration_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Total Duration Ns',
+      description: 'Total run duration in nanoseconds',
+    },
     id: {
       type: 'string',
       pattern: '^(job|run)-[a-fA-F0-9]{8}',
@@ -9659,6 +9707,30 @@ export const $Run = {
       title: 'Callback Error',
       description:
         'Optional error message from attempting to POST the callback endpoint.',
+    },
+    ttft_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Ttft Ns',
+      description: 'Time to first token for a run in nanoseconds',
+    },
+    total_duration_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Total Duration Ns',
+      description: 'Total run duration in nanoseconds',
     },
     id: {
       type: 'string',

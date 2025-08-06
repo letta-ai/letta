@@ -495,6 +495,14 @@ export type BatchJob = {
    */
   callback_error?: string | null;
   /**
+   * Time to first token for a run in nanoseconds
+   */
+  ttft_ns?: number | null;
+  /**
+   * Total run duration in nanoseconds
+   */
+  total_duration_ns?: number | null;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -2257,6 +2265,14 @@ export type Job = {
    */
   callback_error?: string | null;
   /**
+   * Time to first token for a run in nanoseconds
+   */
+  ttft_ns?: number | null;
+  /**
+   * Total run duration in nanoseconds
+   */
+  total_duration_ns?: number | null;
+  /**
    * The human-friendly ID of the Job
    */
   id?: string;
@@ -3563,6 +3579,14 @@ export type Run = {
    * Optional error message from attempting to POST the callback endpoint.
    */
   callback_error?: string | null;
+  /**
+   * Time to first token for a run in nanoseconds
+   */
+  ttft_ns?: number | null;
+  /**
+   * Total run duration in nanoseconds
+   */
+  total_duration_ns?: number | null;
   /**
    * The human-friendly ID of the Run
    */
