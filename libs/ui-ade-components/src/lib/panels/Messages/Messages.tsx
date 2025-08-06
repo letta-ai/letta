@@ -1231,6 +1231,7 @@ export function Messages(props: MessagesProps) {
   useEffect(() => {
     resetFlags();
     setInitialized(false);
+    hasScrolledInitially.current = false;
   }, [agentId, resetFlags]);
 
   // When the topmost rendered group changes (after a prepend), compensate scroll
@@ -1264,7 +1265,8 @@ export function Messages(props: MessagesProps) {
         className={cn(
           'relative scroll-smooth',
           !initialized && 'pointer-events-none',
-          initialized ? 'visible' : 'invisible',
+          // Simple visibility: show if we have messages or if initialized
+          messageGroups.length > 0 || initialized ? 'visible' : 'invisible',
         )}
         gap="small"
         padding="small"
