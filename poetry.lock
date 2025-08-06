@@ -4156,8 +4156,8 @@ files = [
 click = ">=8.1.7"
 numpy = [
     {version = ">=1.26", markers = "python_version == \"3.12\""},
-    {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
     {version = ">=1.24", markers = "python_version < \"3.12\""},
+    {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
 ]
 onnxruntime = {version = ">=1.17.0", markers = "python_version > \"3.9\""}
 python-dotenv = ">=1.0.1"
