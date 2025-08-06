@@ -1788,9 +1788,7 @@
     "code": "Code",
     "SchemaChangeWarning": {
       "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",
-      "error": "Schema issues",
-      "nameRestriction": "You cannot change the name of your function, please create a new function instead.",
-      "nameRestrictionTitle": "Name error"
+      "error": "Schema issues"
     },
     "buildError": "Compile Error",
     "docstringExample": {

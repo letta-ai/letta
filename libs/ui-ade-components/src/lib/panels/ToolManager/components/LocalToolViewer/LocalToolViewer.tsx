@@ -53,7 +53,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { get, isEqual } from 'lodash-es';
-import { pythonCodeParser } from '@letta-cloud/utils-shared';
 import { atom, useAtom } from 'jotai';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
@@ -703,7 +702,6 @@ function SaveToolButton(props: SaveToolButtonProps) {
       });
     }
   }, [isDirty, mutate, stagedTool, tool.id]);
-  const hasNameChanged = useHasNameChanged();
 
   return (
     <Button
@@ -711,7 +709,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
       color="primary"
       busy={isPending}
       onClick={handleSubmit}
-      disabled={!isDirty || hasNameChanged}
+      disabled={!isDirty}
     />
   );
 }
@@ -766,21 +764,6 @@ function ToolContent() {
     default:
       return null;
   }
-}
-
-function useHasNameChanged() {
-  const tool = useCurrentTool();
-  const { stagedTool } = useStagedCode(tool);
-  const pythonMetadata = useMemo(() => {
-    return pythonCodeParser(stagedTool.source_code || '');
-  }, [stagedTool.source_code]);
-
-  const lastFunction = useMemo(() => {
-    // the last function is the main function in our code
-    return pythonMetadata[pythonMetadata.length - 1];
-  }, [pythonMetadata]);
-
-  return tool?.name !== lastFunction?.name;
 }
 
 function useIsCodeAndSchemaDifferent() {
@@ -839,25 +822,11 @@ function SchemaChangeWarning() {
 
   const { isDifferent } = useIsCodeAndSchemaDifferent();
 
-  const hasNameChanged = useHasNameChanged();
   const { setMode } = useEditMode();
 
   const navigateToJSONViewer = useCallback(() => {
     setMode('json');
   }, [setMode]);
-
-  if (hasNameChanged) {
-    return (
-      <Tooltip asChild content={t('SchemaChangeWarning.nameRestriction')}>
-        <Badge
-          size="large"
-          preIcon={<WarningIcon />}
-          content={t('SchemaChangeWarning.nameRestrictionTitle')}
-          variant="destructive"
-        />
-      </Tooltip>
-    );
-  }
 
   if (!isDifferent) {
     return null;
