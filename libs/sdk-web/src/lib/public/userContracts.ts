@@ -24,6 +24,7 @@ export const PublicUserSchema = z.object({
   activeOrganizationId: z.string(),
   isVerified: z.boolean(),
   hasOnboarded: z.boolean(),
+  createdAt: z.string(),
   hasCloudAccess: z.boolean(),
   onboardingStatus: OnboardingStepSchema.nullable(),
   id: z.string(),

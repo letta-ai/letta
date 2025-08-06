@@ -150,6 +150,7 @@ async function getCurrentUser(): Promise<ResponseShapes['getCurrentUser']> {
       locale: user.locale,
       imageUrl: user.imageUrl,
       isVerified: user.isVerified,
+      createdAt: user.createdAt,
       permissions: Array.from(user.permissions),
       hasCloudAccess: user.hasCloudAccess,
       hasOnboarded: user.hasOnboarded,
@@ -194,20 +195,22 @@ async function updateCurrentUser(
     ...payload.body,
   };
 
-  await db
+  const [ret] = await db
     .update(users)
     .set({
       name: updatedUser.name,
       theme: updatedUser.theme,
       locale: updatedUser.locale,
     })
-    .where(eq(users.id, user.id));
+    .where(eq(users.id, user.id))
+    .returning();
 
   return {
     status: 200,
     body: {
       theme: updatedUser.theme,
       name: updatedUser.name,
+      createdAt: ret.createdAt.toISOString(),
       hasOnboarded: updatedUser.hasOnboarded,
       locale: updatedUser.locale,
       isVerified: updatedUser.isVerified,

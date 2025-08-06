@@ -19,6 +19,7 @@ export interface GetUserDataResponse {
   isVerified: boolean;
   theme: string;
   locale: string;
+  createdAt: string;
   hasOnboarded: boolean;
   onboardingStatus: OnboardingStepSchemaType | null;
   name: string;
@@ -53,6 +54,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
       locale: true,
       name: true,
       bannedAt: true,
+      createdAt: true,
     },
     with: {
       organizationUsers: {
@@ -113,6 +115,7 @@ export async function getUser(): Promise<GetUserDataResponse | null> {
     id: userFromDb.id,
     hasOnboarded: !!userFromDb.submittedOnboardingAt,
     locale: userFromDb.locale || 'en',
+    createdAt: userFromDb.createdAt.toISOString(),
     lettaAgentsId: userFromDb.lettaAgentsId,
     email: userFromDb.email,
     imageUrl: userFromDb.imageUrl,

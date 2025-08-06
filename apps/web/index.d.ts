@@ -36,3 +36,14 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
   interface IntlMessages extends Messages {}
 }
+
+declare global {
+  interface Window {
+    Appcues: any;
+  }
+}
+declare global {
+  interface Window {
+    AppcuesSettings: any;
+  }
+}

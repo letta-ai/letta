@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { LoggedInLayout } from '$web/server/components';
 import { headers } from 'next/headers';
 import { CURRENT_PATH_HEADER } from '$web/constants';
+import { AppCues } from '$web/client/components/AppCues/AppCues';
+import { ErrorBoundary } from 'react-error-boundary';
 
 interface InAppProps {
   children: ReactNode;
@@ -25,6 +27,9 @@ export default async function Layout({ children }: InAppProps) {
         return '';
       }}
     >
+      <ErrorBoundary fallback={null}>
+        <AppCues />
+      </ErrorBoundary>
       {children}
     </LoggedInLayout>
   );
