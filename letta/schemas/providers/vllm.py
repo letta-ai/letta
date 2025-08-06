@@ -27,12 +27,12 @@ class VLLMProvider(Provider):
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
 
-        # TODO (cliandy): previously unsupported with vLLM; confirm if this is still the case or not
-        response = await openai_get_model_list_async(self.base_url, api_key=self.api_key)
-
+        base_url = self.base_url.rstrip("/") + "/v1" if not self.base_url.endswith("/v1") else self.base_url
+        response = await openai_get_model_list_async(base_url, api_key=self.api_key)
         data = response.get("data", response)
 
         configs = []
+
         for model in data:
             model_name = model["id"]
 
@@ -40,7 +40,7 @@ class VLLMProvider(Provider):
                 LLMConfig(
                     model=model_name,
                     model_endpoint_type="openai",  # TODO (cliandy): this was previous vllm for the completions provider, why?
-                    model_endpoint=self.base_url,
+                    model_endpoint=base_url,
                     model_wrapper=self.default_prompt_formatter,
                     context_window=model["max_model_len"],
                     handle=self.get_handle(model_name),

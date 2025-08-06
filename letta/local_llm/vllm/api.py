@@ -32,6 +32,9 @@ def get_vllm_completion(endpoint, auth_type, auth_key, model, prompt, context_wi
     if not endpoint.startswith(("http://", "https://")):
         raise ValueError(f"Endpoint ({endpoint}) must begin with http:// or https://")
 
+    if not endpoint.endswith("/v1"):
+        endpoint = endpoint.rstrip("/") + "/v1"
+
     try:
         URI = urljoin(endpoint.strip("/") + "/", WEBUI_API_SUFFIX.strip("/"))
         response = post_json_auth_request(uri=URI, json_payload=request, auth_type=auth_type, auth_key=auth_key)

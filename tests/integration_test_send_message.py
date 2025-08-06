@@ -113,6 +113,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 limited_configs = [
     "ollama.json",
     "together-qwen-2.5-72b-instruct.json",
+    "vllm.json",
 ]
 
 all_configs = [
