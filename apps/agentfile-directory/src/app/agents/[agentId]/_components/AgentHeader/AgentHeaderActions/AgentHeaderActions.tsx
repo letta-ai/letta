@@ -59,8 +59,9 @@ export function AgentHeaderActions(props: AgentHeaderActionsProps) {
         label={t('useInCloud')}
         align="center"
         fullWidth
-        href={`${environment.NEXT_PUBLIC_CURRENT_HOST}/agentfiles/${agentId}/clone`}
+        href={`${environment.NEXT_PUBLIC_CURRENT_HOST}/projects?import-agent=${agentId}`}
         bold
+        target="_blank"
         size="large"
       />
     </HStack>

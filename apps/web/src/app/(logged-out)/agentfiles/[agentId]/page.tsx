@@ -1,5 +1,5 @@
 'use client';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { LoggedOutWrapper } from '../../_components/LoggedOutWrapper/LoggedOutWrapper';
 import {
@@ -14,9 +14,8 @@ import {
 } from '@letta-cloud/ui-component-library';
 import agentfileIcon from './agentfile-icon.png';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { Fragment, useCallback, useEffect } from 'react';
+import { Fragment, useCallback } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { isFetchError } from '@ts-rest/react-query/v5';
 import axios from 'axios';
 
 function useAgentId() {
@@ -67,42 +66,6 @@ function AgentfileContentContainer({ children }: AgentfileContentContainer) {
 function AgentfileViewer() {
   const agent = useCurrentAgent();
   const agentId = useAgentId();
-
-  const searchParams = useSearchParams();
-
-  const { mutate, isPending, isSuccess } =
-    webApi.agentfile.cloneAgentfile.useMutation({
-      onError: (res) => {
-        if (isFetchError(res)) {
-          return;
-        }
-
-        if (res.status === 401) {
-          window.location.href = `/login?redirect=${window.location.pathname}?startUse=true`;
-        }
-      },
-      onSuccess: (data) => {
-        window.location.href = data.body.redirectUrl;
-      },
-    });
-
-  const handleAgentfileClone = useCallback(() => {
-    mutate({
-      params: {
-        agentId: agentId || '',
-      },
-    });
-  }, [agentId, mutate]);
-
-  useEffect(() => {
-    if (isSuccess || isPending) {
-      return;
-    }
-
-    if (searchParams.get('startUse') === 'true' && agent) {
-      handleAgentfileClone();
-    }
-  }, [isPending, isSuccess, searchParams, agent, handleAgentfileClone]);
 
   const t = useTranslations('agentfiles/page');
 
@@ -233,6 +196,8 @@ function AgentfileViewer() {
         <VStack fullWidth>
           <Button
             label={t('useInLettaCloud')}
+            href={agentId ? `/projects?import-agent=${agentId}` : undefined}
+            target="_blank"
             align="center"
             fullWidth
             bold

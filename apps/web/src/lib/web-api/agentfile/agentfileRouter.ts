@@ -4,13 +4,10 @@ import type { ServerInferResponses, ServerInferRequest } from '@ts-rest/core';
 import {
   userHasAgentfileAccess,
   getAgentfilePermissions,
-  formatSerializedAgentfile,
-  getAgentUrl,
   SERVER_CODE,
 } from './helpers';
 import { getUser } from '$web/server/auth';
 import { getOrganizationLettaServiceAccountId } from '$web/server/lib/getOrganizationLettaServiceAccountId/getOrganizationLettaServiceAccountId';
-import { getDefaultProject } from '@letta-cloud/utils-server';
 import {
   db,
   agentfilePermissions,
@@ -96,47 +93,6 @@ export async function getAgentfile(
       name: permissions.name || '',
       description: permissions.description || '',
     }),
-  };
-}
-
-export async function cloneAgentfile(
-  request: AgentfileRequest,
-): Promise<AgentfileResponse> {
-  const { agentId } = request.params;
-  const user = await getUser();
-  if (!user) {
-    return {
-      status: SERVER_CODE.UNAUTHORIZED,
-      body: 'Must be logged in to use agent in Letta Cloud',
-    };
-  }
-
-  const response = await getAgentfile({ params: { agentId } });
-  const formattedAgentfile = await formatSerializedAgentfile(response.body);
-
-  const project = await getDefaultProject({
-    organizationId: user.activeOrganizationId || '',
-  });
-
-  const agent = await AgentsService.importAgentSerialized(
-    {
-      formData: {
-        ...formattedAgentfile,
-        project_id: project.id,
-      },
-    },
-    {
-      user_id: user.lettaAgentsId,
-    },
-  );
-
-  const redirectUrl = getAgentUrl(project.slug, agent.id);
-
-  return {
-    status: SERVER_CODE.OK,
-    body: {
-      redirectUrl,
-    },
   };
 }
 
@@ -522,7 +478,6 @@ export async function listAgentfiles(
 
 export const agentfileRouter = {
   getAgentfile,
-  cloneAgentfile,
   createAgentfileMetadata,
   getAgentfileMetadata,
   getAgentfileSummary,

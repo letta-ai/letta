@@ -81,20 +81,6 @@ const getAgentfileSummaryContract = c.query({
   },
 });
 
-const cloneAgentfileContract = c.mutation({
-  method: 'POST',
-  path: '/agentfiles/:agentId/clone',
-  pathParams: z.object({
-    agentId: z.string(),
-  }),
-  body: z.undefined(),
-  responses: {
-    200: z.object({
-      redirectUrl: z.string(),
-    }),
-  },
-});
-
 const createAgentfileMetadataContract = c.mutation({
   method: 'POST',
   path: '/agentfiles/:agentId',
@@ -204,7 +190,6 @@ const listAgentfilesContract = c.query({
 export const agentfileContracts = c.router({
   getAgentfile: getAgentfileContract,
   getAgentfileSummary: getAgentfileSummaryContract,
-  cloneAgentfile: cloneAgentfileContract,
   createAgentfileMetadata: createAgentfileMetadataContract,
   updateAgentfileAccessLevel: updateAgentfileAccessLevelContract,
   getAgentfileDetails: getAgentfileDetailsContract,
@@ -217,5 +202,4 @@ export const agentfileQueryClientKeys = {
   getAgentfileMetadata: (agentId: string) => ['agentfileMetadata', agentId],
   getAgentfileDetails: (agentId: string) => ['agentfileDetails', agentId],
   getAgentfile: (agentId: string) => ['agentId', agentId],
-  cloneAgentfile: (agentId: string) => ['agentId', agentId],
 };

@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   Avatar,
   Button,
@@ -18,11 +18,10 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { webApi, webApiContracts, webApiQueryKeys } from '$web/client';
 import { useDebouncedValue } from '@mantine/hooks';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import {
@@ -33,6 +32,9 @@ import Link from 'next/link';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { BillingLink } from '@letta-cloud/ui-component-library';
+import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
+
+import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 interface ProjectsListProps {
   search: string;
@@ -235,17 +237,77 @@ function ProjectsList(props: ProjectsListProps) {
 function ProjectsPage() {
   const [search, setSearch] = React.useState('');
   const t = useTranslations('projects/page');
+  const searchParams = useSearchParams();
+  const importDialogTriggerRef = React.useRef<HTMLButtonElement>(null);
+
+  const targetAgentId = searchParams.get('import-agent');
+
+  const {
+    data: targetAgentfile,
+    isError,
+    isLoading,
+  } = webApi.agentfile.getAgentfile.useQuery({
+    queryData: {
+      params: {
+        agentId: targetAgentId!,
+      },
+    },
+    queryKey: webApiQueryKeys.agentfile.getAgentfile(targetAgentId!),
+    enabled: !!targetAgentId,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (targetAgentId && targetAgentfile?.body) {
+      console.log(
+        'Import agent ID found, opening import dialog:',
+        targetAgentId,
+      );
+      // Programmatically trigger the dialog
+      importDialogTriggerRef.current?.click();
+    }
+  }, [targetAgentId, targetAgentfile]);
+
+  if (isLoading) {
+    return (
+      <LoadingEmptyStatusComponent isLoading loadingMessage={t('loading')} />
+    );
+  }
+
+  if (isError) {
+    return (
+      <LoadingEmptyStatusComponent
+        isError
+        errorMessage={t('errorLoadingAgentfile')}
+      />
+    );
+  }
 
   return (
-    <DashboardPageLayout title={t('title')} actions={<CreateProjectDialog />}>
-      <DashboardPageSection
-        searchPlaceholder={t('searchInput.placeholder')}
-        searchValue={search}
-        onSearch={setSearch}
-      >
-        <ProjectsList search={search} />
-      </DashboardPageSection>
-    </DashboardPageLayout>
+    <>
+      {targetAgentfile && (
+        <ImportAgentsDialog
+          supportTemplateUploading
+          trigger={
+            <button
+              ref={importDialogTriggerRef}
+              style={{ display: 'none' }}
+              aria-hidden="true"
+            />
+          }
+          agentfileData={targetAgentfile.body}
+        />
+      )}
+      <DashboardPageLayout title={t('title')} actions={<CreateProjectDialog />}>
+        <DashboardPageSection
+          searchPlaceholder={t('searchInput.placeholder')}
+          searchValue={search}
+          onSearch={setSearch}
+        >
+          <ProjectsList search={search} />
+        </DashboardPageSection>
+      </DashboardPageLayout>
+    </>
   );
 }
 

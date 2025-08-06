@@ -24,6 +24,7 @@ import {
   LettaInvaderIcon,
   MiniApp,
   RawCodeEditor,
+  Select,
   Switch,
   toast,
   Typography,
@@ -34,7 +35,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
-import { webApi } from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { environment } from '@letta-cloud/config-environment-variables';
 
 interface ImportAgentsDialogProps {
   trigger: React.ReactNode;
@@ -42,16 +45,36 @@ interface ImportAgentsDialogProps {
   defaultTemplateImport?: boolean;
   projectId?: string;
   onSuccess?: (redirectId: string, template?: boolean) => void;
+  agentfileData?: AgentSchema;
 }
 
 interface AgentsDialogSidebarProps {
   isImporting: boolean;
-  supportTemplateUploading: boolean;
+  supportTemplateUploading?: boolean;
   onReset: () => void;
+  secondaryButton?: React.ReactNode;
+  showProjectSelector?: boolean;
+}
+
+function getProjects() {
+  const { data, isLoading } = webApi.projects.getProjects.useQuery({
+    queryKey: webApiQueryKeys.projects.getProjectsWithSearch({}),
+    queryData: {
+      query: {},
+    },
+  });
+
+  return { data, isLoading };
 }
 
 function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
-  const { isImporting, supportTemplateUploading, onReset } = props;
+  const {
+    isImporting,
+    supportTemplateUploading = false,
+    onReset,
+    secondaryButton,
+    showProjectSelector = false,
+  } = props;
   const t = useTranslations('ImportAgentsDialog');
 
   return (
@@ -76,6 +99,50 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
           <Typography bold variant="body" align="left">
             {t('importOptions')}
           </Typography>
+          {showProjectSelector && (
+            <FormField
+              render={({ field }) => {
+                const { data: projectsData, isLoading: isLoadingProjects } =
+                  getProjects();
+
+                const projectOptions = (projectsData?.body?.projects || []).map(
+                  (project) => ({
+                    value: project.id,
+                    label: project.name,
+                  }),
+                );
+
+                // Set default value to first project if no value is selected
+                if (
+                  !field.value &&
+                  projectOptions.length > 0 &&
+                  !isLoadingProjects
+                ) {
+                  field.onChange(projectOptions[0].value);
+                }
+
+                const selectedValue = projectOptions.find(
+                  (option) => option.value === field.value,
+                );
+
+                return (
+                  <Select
+                    label={'Select project'}
+                    options={projectOptions}
+                    value={selectedValue}
+                    onSelect={(selectedOption) => {
+                      if (selectedOption && 'value' in selectedOption) {
+                        field.onChange(selectedOption?.value || '');
+                      }
+                    }}
+                    isLoading={isLoadingProjects}
+                    fullWidth
+                  />
+                );
+              }}
+              name="projectId"
+            />
+          )}
           <FormField
             render={({ field }) => (
               <Switch
@@ -128,14 +195,18 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
           fullWidth
           label={t('AgentsDialogSidebar.importButton')}
         />
-        <Button
-          color="tertiary"
-          disabled={isImporting}
-          onClick={onReset}
-          type="button"
-          fullWidth
-          label={t('AgentsDialogSidebar.reset')}
-        />
+        {secondaryButton ? (
+          secondaryButton
+        ) : (
+          <Button
+            color="tertiary"
+            disabled={isImporting}
+            onClick={onReset}
+            type="button"
+            fullWidth
+            label={t('AgentsDialogSidebar.reset')}
+          />
+        )}
       </VStack>
     </VStack>
   );
@@ -411,11 +482,14 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     trigger,
     projectId,
     onSuccess,
-    supportTemplateUploading = false,
     defaultTemplateImport = false,
+    agentfileData,
   } = props;
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { push } = useRouter();
+  const searchParams = useSearchParams();
+  const [forcePendingState, setForcePendingState] = useState<boolean>(false);
 
   const t = useTranslations('ImportAgentsDialog');
 
@@ -427,6 +501,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
             message: t('errors.fileIsRequired'),
           })
           .nullable(),
+        projectId: z.string().optional(),
         overrideExistingTools: z.boolean(),
         appendCopySuffix: z.boolean(),
         importAsTemplate: z.boolean().optional(),
@@ -435,6 +510,8 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   );
 
   type UploadToFormValues = z.infer<typeof UploadToFormValuesSchema>;
+
+  const { data: projectsData } = getProjects();
 
   const {
     mutate: importAgent,
@@ -445,6 +522,17 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       toast.error(t('errors.failedToImport'));
     },
     onSuccess: async (res) => {
+      // Get the selected project ID and find corresponding slug
+      const selectedProjectId = form.getValues('projectId') || projectId;
+      const selectedProject = projectsData?.body?.projects?.find(
+        (project) => project.id === selectedProjectId,
+      );
+      const selectedProjectSlug = selectedProject?.slug;
+
+      if (selectedProjectSlug) {
+        push(`/projects/${selectedProjectSlug}/agents/${res.id}`);
+      }
+
       await queryClient.refetchQueries({
         queryKey: ['infinite', ...UseAgentsServiceListAgentsKeyFn()].slice(
           0,
@@ -457,7 +545,13 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         onSuccess(res.id, false);
       }
 
-      handleDialogOpenChange(false);
+      if (!agentfileData) {
+        handleDialogOpenChange(false);
+      }
+
+      setForcePendingState(true);
+
+      toast.success('Import agent successful! Redirecting...');
     },
   });
 
@@ -482,6 +576,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     mode: 'onChange',
     defaultValues: {
       file: null,
+      projectId: projectId || '',
       overrideExistingTools: false,
       appendCopySuffix: false,
       importAsTemplate: defaultTemplateImport,
@@ -498,37 +593,66 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   const [draggedOver, setDraggedOver] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const [fileData, setFileData] = useState<Partial<AgentSchema> | null>(null);
+  const [fileData, setFileData] = useState<Partial<AgentSchema> | null>(
+    agentfileData || null,
+  );
   const [fileReadError, setFileReadError] = useState<string | null>(null);
+
+  const convertAgentDataToFile = useCallback((agentData: AgentSchema): File => {
+    const jsonString = JSON.stringify(agentData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const fileName = `${agentData.name || 'agent'}.json`;
+    return new File([blob], fileName, { type: 'application/json' });
+  }, []);
 
   const onSubmit = useCallback(
     (values: UploadToFormValues) => {
-      if (!file) {
+      // Early return if no data source available
+      if (!file && !agentfileData) {
         return;
       }
 
+      // Determine the file to use (uploaded file or converted agent data)
+      const fileToImport =
+        file || (agentfileData ? convertAgentDataToFile(agentfileData) : null);
+
+      if (!fileToImport) {
+        return;
+      }
+
+      const selectedProjectId = values.projectId || projectId;
+
+      // Handle template import
       if (values.importAsTemplate) {
         importTemplate({
           body: {
-            file: file,
+            file: fileToImport,
             append_copy_suffix: values.appendCopySuffix,
             override_existing_tools: values.overrideExistingTools,
-            ...(projectId ? { project_id: projectId } : {}),
+            ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
           },
         });
         return;
       }
 
+      // Handle regular agent import
       importAgent({
         formData: {
-          file: file,
-          ...(projectId ? { projectId } : {}),
+          file: fileToImport,
+          ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
           append_copy_suffix: values.appendCopySuffix,
           override_existing_tools: values.overrideExistingTools,
         },
       });
     },
-    [importAgent, file, importTemplate, projectId],
+    [
+      importAgent,
+      file,
+      importTemplate,
+      projectId,
+      agentfileData,
+      convertAgentDataToFile,
+    ],
   );
 
   useEffect(() => {
@@ -692,9 +816,35 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
             </VStack>
             {fileData && (
               <AgentsDialogSidebar
-                supportTemplateUploading={supportTemplateUploading}
+                supportTemplateUploading={false}
                 onReset={handleReset}
-                isImporting={isImportAgentPending || isImportTemplatePending}
+                isImporting={
+                  isImportAgentPending ||
+                  isImportTemplatePending ||
+                  forcePendingState
+                }
+                showProjectSelector={!!agentfileData}
+                secondaryButton={
+                  agentfileData && (
+                    <Button
+                      color="tertiary"
+                      disabled={
+                        isImportAgentPending ||
+                        isImportTemplatePending ||
+                        forcePendingState
+                      }
+                      onClick={() => {
+                        const agentId = searchParams.get('import-agent');
+                        push(
+                          `${environment.NEXT_PUBLIC_AGENTFILES_SITE}/agents/${agentId}`,
+                        );
+                      }}
+                      type="button"
+                      fullWidth
+                      label={t('AgentsDialogSidebar.backToAgentfileDirectory')}
+                    />
+                  )
+                }
               />
             )}
           </HStack>

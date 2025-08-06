@@ -831,10 +831,6 @@
   "agentfile/download": {
     "downloadTitle": "Your agentfile download is starting soon, you can close this window after the download starts"
   },
-  "agentfile/confirm": {
-    "title": "Please confirm you want to add {agentName}.af to your default project",
-    "confirm": "Clone Agentfile"
-  },
   "create-organization": {
     "error": "There was an error creating the organization, please try again or contact support.",
     "title": "Create a new Organization",
@@ -1400,6 +1396,8 @@
   },
   "projects/page": {
     "title": "Projects",
+    "loading": "Loading agentfile...",
+    "errorLoadingAgentfile": "Error loading agentfile",
     "createProjectDialog": {
       "title": "Create a new project",
       "nameInput": {
