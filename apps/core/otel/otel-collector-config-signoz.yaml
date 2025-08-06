@@ -9,14 +9,11 @@ receivers:
 processors:
   memory_limiter:
     check_interval: 1s
-    limit_mib: 500
-    spike_limit_mib: 128
+    limit_mib: 1024
+    spike_limit_mib: 256
   batch:
     timeout: 10s
     send_batch_size: 8192
-    max_queue_size: 4096
-    max_batch_size: 1024
-    throttle: true
 
 exporters:
   otlp:
