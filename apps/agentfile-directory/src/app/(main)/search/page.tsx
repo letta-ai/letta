@@ -121,9 +121,7 @@ export default function SearchResults() {
       <MainCenterView>
         <SearchContainer
           totalCount={totalCount}
-          isSearching={isLoadingPage && page === 0}
           search={search}
-          noResults={filteredData.length === 0}
           setSearch={setSearch}
         />
       </MainCenterView>
