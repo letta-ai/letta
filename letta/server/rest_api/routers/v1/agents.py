@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, LETTA_MODEL_ENDPOINT, REDIS_RUN_ID_PREFIX
+from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -1019,7 +1019,6 @@ async def send_message_streaming(
         "ollama",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
-    not_letta_endpoint = agent.llm_config.model_endpoint != LETTA_MODEL_ENDPOINT
 
     # Create a new job for execution tracking
     if settings.track_agent_run:
@@ -1087,7 +1086,7 @@ async def send_message_streaming(
                 )
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
-            if request.stream_tokens and model_compatible_token_streaming and not_letta_endpoint:
+            if request.stream_tokens and model_compatible_token_streaming:
                 raw_stream = agent_loop.step_stream(
                     input_messages=request.messages,
                     max_steps=request.max_steps,

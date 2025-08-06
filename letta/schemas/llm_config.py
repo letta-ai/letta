@@ -172,7 +172,7 @@ class LLMConfig(BaseModel):
                 model="memgpt-openai",
                 model_endpoint_type="openai",
                 model_endpoint=LETTA_MODEL_ENDPOINT,
-                context_window=8192,
+                context_window=30000,
             )
         else:
             raise ValueError(f"Model {model_name} not supported.")
