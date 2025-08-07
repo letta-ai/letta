@@ -209,7 +209,10 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         logger.info(f"[DEBUG] Starting Firecrawl search for query: '{task.query}' with limit={limit}")
 
         # Perform the search for this task
-        search_result = await app.search(task.query, limit=limit, scrape_options=ScrapeOptions(formats=["markdown"]))
+        scrape_options = ScrapeOptions(
+            formats=["markdown"], excludeTags=["#ad", "#footer"], onlyMainContent=True, parsePDF=True, removeBase64Images=True
+        )
+        search_result = await app.search(task.query, limit=limit, scrape_options=scrape_options)
 
         logger.info(
             f"[DEBUG] Firecrawl search completed for '{task.query}': {len(search_result.get('data', [])) if search_result else 0} results"

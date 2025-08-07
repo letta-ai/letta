@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import StepStatus
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.step import Step as PydanticStep
 
@@ -54,6 +55,13 @@ class Step(SqlalchemyBase, ProjectMixin):
     feedback: Mapped[Optional[str]] = mapped_column(
         None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
     )
+
+    # error handling
+    error_type: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The type/class of the error that occurred")
+    error_data: Mapped[Optional[Dict]] = mapped_column(
+        JSON, nullable=True, doc="Error details including message, traceback, and additional context"
+    )
+    status: Mapped[Optional[StepStatus]] = mapped_column(None, nullable=True, doc="Step status: pending, success, or failed")
 
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")

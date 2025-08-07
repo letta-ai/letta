@@ -3,6 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import Field
 
+from letta.schemas.enums import StepStatus
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message
@@ -39,6 +40,11 @@ class Step(StepBase):
         None, description="The feedback for this step. Must be either 'positive' or 'negative'."
     )
     project_id: Optional[str] = Field(None, description="The project that the agent that executed this step belongs to (cloud only).")
+
+    # error tracking fields
+    error_type: Optional[str] = Field(None, description="The type/class of the error that occurred")
+    error_data: Optional[Dict] = Field(None, description="Error details including message, traceback, and additional context")
+    status: Optional[StepStatus] = Field(StepStatus.PENDING, description="Step status: pending, success, or failed")
 
 
 class StepProgression(int, Enum):

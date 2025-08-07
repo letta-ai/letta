@@ -5847,6 +5847,14 @@ export const StdioServerConfig = z.object({
     .optional(),
 });
 
+export type StepStatus = z.infer<typeof StepStatus>;
+export const StepStatus = z.union([
+  z.literal('pending'),
+  z.literal('success'),
+  z.literal('failed'),
+  z.literal('cancelled'),
+]);
+
 export type Step = z.infer<typeof Step>;
 export const Step = z.object({
   id: z.string(),
@@ -6004,6 +6012,30 @@ export const Step = z.object({
       z.string(),
       z.null(),
       z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  error_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  error_data: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  status: z
+    .union([
+      StepStatus,
+      z.null(),
+      z.array(z.union([StepStatus, z.null()])),
       z.undefined(),
     ])
     .optional(),

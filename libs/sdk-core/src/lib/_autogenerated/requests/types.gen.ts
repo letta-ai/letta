@@ -4041,7 +4041,26 @@ export type Step = {
    * The project that the agent that executed this step belongs to (cloud only).
    */
   project_id?: string | null;
+  /**
+   * The type/class of the error that occurred
+   */
+  error_type?: string | null;
+  /**
+   * Error details including message, traceback, and additional context
+   */
+  error_data?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Step status: pending, success, or failed
+   */
+  status?: StepStatus | null;
 };
+
+/**
+ * Status of a step execution
+ */
+export type StepStatus = 'pending' | 'success' | 'failed' | 'cancelled';
 
 export type StopReasonType =
   | 'end_turn'

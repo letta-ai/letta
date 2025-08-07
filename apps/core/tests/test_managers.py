@@ -62,6 +62,7 @@ from letta.schemas.enums import (
     MessageRole,
     ProviderType,
     SandboxType,
+    StepStatus,
     ToolType,
 )
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
@@ -74,6 +75,7 @@ from letta.schemas.job import Job as PydanticJob
 from letta.schemas.job import JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
@@ -8034,6 +8036,308 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
 
     steps_without_feedback = await step_manager.list_steps_async(agent_id=sarah_agent.id, actor=default_user)
     assert len(steps_without_feedback) == 2
+
+
+@pytest.mark.asyncio
+async def test_step_manager_error_tracking(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+    """Test step manager error tracking functionality."""
+    step_manager = server.step_manager
+
+    # Create a step with pending status
+    step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    assert step.status == StepStatus.PENDING
+    assert step.error_type is None
+    assert step.error_data is None
+
+    # Test update_step_error_async
+    error_details = {"step_progression": "RESPONSE_RECEIVED", "context": "Test error context"}
+
+    updated_step = await step_manager.update_step_error_async(
+        actor=default_user,
+        step_id=step.id,
+        error_type="ValueError",
+        error_message="Test error message",
+        error_traceback="Traceback (most recent call last):\n  File test.py, line 1\n    raise ValueError('Test error')",
+        error_details=error_details,
+        stop_reason=LettaStopReason(stop_reason=StopReasonType.error.value),
+    )
+
+    assert updated_step.status == StepStatus.FAILED
+    assert updated_step.error_type == "ValueError"
+    assert updated_step.error_data["message"] == "Test error message"
+    assert updated_step.error_data["traceback"].startswith("Traceback")
+    assert updated_step.error_data["details"] == error_details
+    assert updated_step.stop_reason == StopReasonType.error
+
+    # Create another step to test success update
+    success_step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    # Test update_step_success_async
+    final_usage = UsageStatistics(
+        completion_tokens=150,
+        prompt_tokens=100,
+        total_tokens=250,
+    )
+
+    updated_success_step = await step_manager.update_step_success_async(
+        actor=default_user,
+        step_id=success_step.id,
+        usage=final_usage,
+        stop_reason=LettaStopReason(stop_reason=StopReasonType.end_turn.value),
+    )
+
+    assert updated_success_step.status == StepStatus.SUCCESS
+    assert updated_success_step.completion_tokens == 150
+    assert updated_success_step.prompt_tokens == 100
+    assert updated_success_step.total_tokens == 250
+    assert updated_success_step.stop_reason == StopReasonType.end_turn
+    assert updated_success_step.error_type is None
+    assert updated_success_step.error_data is None
+
+    # Create a step to test cancellation
+    cancelled_step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    # Test update_step_cancelled_async
+    updated_cancelled_step = await step_manager.update_step_cancelled_async(
+        actor=default_user,
+        step_id=cancelled_step.id,
+        stop_reason=LettaStopReason(stop_reason=StopReasonType.cancelled.value),
+    )
+
+    assert updated_cancelled_step.status == StepStatus.CANCELLED
+    assert updated_cancelled_step.stop_reason == StopReasonType.cancelled
+    assert updated_cancelled_step.error_type is None
+    assert updated_cancelled_step.error_data is None
+
+
+@pytest.mark.asyncio
+async def test_step_manager_error_tracking_edge_cases(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+    """Test edge cases for step manager error tracking."""
+    step_manager = server.step_manager
+
+    # Test 1: Attempt to update non-existent step
+    with pytest.raises(NoResultFound):
+        await step_manager.update_step_error_async(
+            actor=default_user,
+            step_id="non-existent-step-id",
+            error_type="TestError",
+            error_message="Test",
+            error_traceback="Test traceback",
+        )
+
+    # Test 2: Create step with initial error information
+    step_with_error = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.FAILED,
+        error_type="InitialError",
+        error_data={"message": "Step failed at creation", "traceback": "Initial traceback", "details": {"initial": True}},
+    )
+
+    assert step_with_error.status == StepStatus.FAILED
+    assert step_with_error.error_type == "InitialError"
+    assert step_with_error.error_data["message"] == "Step failed at creation"
+    assert step_with_error.error_data["details"] == {"initial": True}
+
+    # Test 3: Update from failed to success (recovery scenario)
+    recovered_step = await step_manager.update_step_success_async(
+        actor=default_user,
+        step_id=step_with_error.id,
+        usage=UsageStatistics(
+            completion_tokens=50,
+            prompt_tokens=30,
+            total_tokens=80,
+        ),
+    )
+
+    # Verify error fields are still present but status changed
+    assert recovered_step.status == StepStatus.SUCCESS
+    assert recovered_step.error_type == "InitialError"  # Should retain error info
+    assert recovered_step.completion_tokens == 50
+
+    # Test 4: Very long error messages and tracebacks
+    long_error_step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    very_long_traceback = "Traceback (most recent call last):\n" + "\n".join([f"  File 'test{i}.py', line {i}" for i in range(100)])
+    complex_error_details = {
+        "nested": {"data": {"arrays": [1, 2, 3, 4, 5], "strings": ["error1", "error2", "error3"], "booleans": [True, False, True]}},
+        "timestamp": "2024-01-01T00:00:00Z",
+        "context": "Complex nested error details",
+    }
+
+    updated_long_error = await step_manager.update_step_error_async(
+        actor=default_user,
+        step_id=long_error_step.id,
+        error_type="VeryLongError",
+        error_message="A" * 500,  # Very long error message
+        error_traceback=very_long_traceback,
+        error_details=complex_error_details,
+    )
+
+    assert updated_long_error.status == StepStatus.FAILED
+    assert len(updated_long_error.error_data["message"]) == 500
+    assert "test99.py" in updated_long_error.error_data["traceback"]
+    assert updated_long_error.error_data["details"]["nested"]["data"]["arrays"] == [1, 2, 3, 4, 5]
+
+    # Test 5: Multiple status updates on same step
+    multi_update_step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=0,
+            prompt_tokens=0,
+            total_tokens=0,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    # First update to cancelled
+    step1 = await step_manager.update_step_cancelled_async(
+        actor=default_user,
+        step_id=multi_update_step.id,
+    )
+    assert step1.status == StepStatus.CANCELLED
+
+    # Then update to error (simulating race condition or retry)
+    step2 = await step_manager.update_step_error_async(
+        actor=default_user,
+        step_id=multi_update_step.id,
+        error_type="PostCancellationError",
+        error_message="Error after cancellation",
+        error_traceback="Traceback after cancel",
+    )
+    assert step2.status == StepStatus.FAILED
+    assert step2.error_type == "PostCancellationError"
+
+
+@pytest.mark.asyncio
+async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+    """Test listing steps with status filters."""
+    step_manager = server.step_manager
+
+    # Create steps with different statuses
+    statuses = [StepStatus.PENDING, StepStatus.SUCCESS, StepStatus.FAILED, StepStatus.CANCELLED]
+    created_steps = []
+
+    for status in statuses:
+        step = await step_manager.log_step_async(
+            agent_id=sarah_agent.id,
+            provider_name="openai",
+            provider_category="base",
+            model="gpt-4o-mini",
+            model_endpoint="https://api.openai.com/v1",
+            context_window_limit=8192,
+            job_id=default_job.id,
+            usage=UsageStatistics(
+                completion_tokens=10,
+                prompt_tokens=20,
+                total_tokens=30,
+            ),
+            actor=default_user,
+            project_id=sarah_agent.project_id,
+            status=status,
+        )
+        created_steps.append(step)
+
+    # List all steps for the agent
+    all_steps = await step_manager.list_steps_async(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+    )
+
+    # Verify we can find steps with each status
+    status_counts = {status: 0 for status in statuses}
+    for step in all_steps:
+        if step.status in status_counts:
+            status_counts[step.status] += 1
+
+    # Each status should have at least one step
+    for status in statuses:
+        assert status_counts[status] >= 1, f"No steps found with status {status}"
 
 
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):

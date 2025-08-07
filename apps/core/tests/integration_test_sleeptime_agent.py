@@ -257,6 +257,7 @@ async def test_sleeptime_group_chat_v2(server, actor):
             job_manager=server.job_manager,
             actor=actor,
             group=main_agent.multi_agent_group,
+            step_manager=server.step_manager,
         )
 
         response = await agent.step(

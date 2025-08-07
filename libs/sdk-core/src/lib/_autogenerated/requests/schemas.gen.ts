@@ -10885,11 +10885,56 @@ export const $Step = {
       description:
         'The project that the agent that executed this step belongs to (cloud only).',
     },
+    error_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Error Type',
+      description: 'The type/class of the error that occurred',
+    },
+    error_data: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Error Data',
+      description:
+        'Error details including message, traceback, and additional context',
+    },
+    status: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StepStatus',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Step status: pending, success, or failed',
+      default: 'pending',
+    },
   },
   additionalProperties: false,
   type: 'object',
   required: ['id'],
   title: 'Step',
+} as const;
+
+export const $StepStatus = {
+  type: 'string',
+  enum: ['pending', 'success', 'failed', 'cancelled'],
+  title: 'StepStatus',
+  description: 'Status of a step execution',
 } as const;
 
 export const $StopReasonType = {
