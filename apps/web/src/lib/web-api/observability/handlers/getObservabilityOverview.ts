@@ -10,6 +10,7 @@ import {
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { attachFilterByBaseTemplateIdToOtels } from '../utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 type GetObservabilityOverviewRequest = ServerInferRequest<
   typeof contracts.observability.getObservabilityOverview
 >;
@@ -84,19 +85,24 @@ export async function getObservabilityOverview(
       ?.query({
         query: `
       SELECT
-        SUM(value) as total_message_count
-      FROM otel.letta_metrics_counters_5min_view
-      WHERE metric_name = 'count_user_message'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
+        count() as total_message_count
+      FROM otel_traces
+      WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+             SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+             SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND ParentSpanId = ''
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND SpanAttributes['project.id'] = {projectId: String}
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        ${attachFilterByBaseTemplateIdToOtels(request.query)}
     `,
         query_params: {
           projectId,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -116,19 +122,35 @@ export async function getObservabilityOverview(
       ?.query({
         query: `
       SELECT
-        SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as tool_error_count
-      FROM otel.letta_metrics_counters_5min_view
-      WHERE metric_name = 'count_tool_execution'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
+        count() as tool_error_count
+      FROM otel_traces
+      WHERE SpanName = 'agent_step'
+        AND arrayExists(
+          event -> event.Attributes['success'] = 'false',
+          Events
+        )
+        AND Timestamp >= {startDate: DateTime}
+        AND Timestamp <= {endDate: DateTime}
+        AND TraceId IN (
+          SELECT DISTINCT TraceId
+          FROM otel_traces
+          WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+                 SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+                 SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+            AND ParentSpanId = ''
+            AND SpanAttributes['organization.id'] = {organizationId: String}
+            AND SpanAttributes['project.id'] = {projectId: String}
+            AND Timestamp >= {startDate: DateTime}
+            AND Timestamp <= {endDate: DateTime}
+            ${attachFilterByBaseTemplateIdToOtels(request.query)}
+        )
     `,
         query_params: {
           projectId,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })
@@ -142,31 +164,42 @@ export async function getObservabilityOverview(
     return client
       ?.query({
         query: `
-      WITH aggregated AS (
-        SELECT
-          sum(count) as total_count,
-          sum(sum) as total_sum,
-          arrayReduce('sumForEach', groupArray(bucket_counts)) as total_bucket_counts,
-          any(explicit_bounds) as bounds
-        FROM otel.letta_metrics_histograms_5min
-        WHERE metric_name = 'hist_ttft_ms'
-          AND organization_id = {organizationId: String}
-          AND project_id = {projectId: String}
-          AND time_window >= toDateTime({startDate: UInt32})
-          AND time_window <= toDateTime({endDate: UInt32})
-      )
       SELECT
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.5 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p50_time_to_first_token_ms,
-        arrayElement(bounds, arrayFirstIndex(x -> x >= 0.99 * arraySum(total_bucket_counts), arrayCumSum(total_bucket_counts))) as p99_time_to_first_token_ms,
+        quantile(0.50)(toFloat64OrNull(duration_ms)) AS p50_time_to_first_token_ms,
+        quantile(0.99)(toFloat64OrNull(duration_ms)) AS p99_time_to_first_token_ms,
         0 as p50_response_time_ms,
         0 as p99_response_time_ms
-      FROM aggregated
+      FROM (
+        SELECT
+          arrayFirst(event -> event.Name = 'time_to_first_token_ms', Events).Attributes['ttft_ms'] AS duration_ms
+        FROM otel_traces
+        WHERE SpanName = 'time_to_first_token'
+          AND TraceId IN (
+            SELECT DISTINCT TraceId
+            FROM otel_traces
+            WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+                   SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+                   SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+              AND SpanAttributes['project.id'] = {projectId: String}
+              AND SpanAttributes['organization.id'] = {organizationId: String}
+              AND ParentSpanId = ''
+              AND Timestamp >= {startDate: DateTime}
+              AND Timestamp <= {endDate: DateTime}
+              ${attachFilterByBaseTemplateIdToOtels(request.query)}
+          )
+          AND arrayExists(
+            event -> event.Name = 'time_to_first_token_ms',
+            Events
+          )
+      )
+      WHERE duration_ms IS NOT NULL
     `,
         query_params: {
           projectId,
           organizationId: user.activeOrganizationId,
           startDate: Math.round(new Date(startDate).getTime() / 1000),
           endDate: Math.round(new Date(endDate).getTime() / 1000),
+          baseTemplateId,
         },
         format: 'JSONEachRow',
       })

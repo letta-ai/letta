@@ -29,28 +29,28 @@ export function useObservabilitySeriesData<T extends BaseType>(
 
   const { formatDate } = useFormatters();
 
-  // Helper functions to simulate ClickHouse time bucketing
+  // Helper functions to simulate ClickHouse time bucketing in UTC
   const simulateClickHouseTimeBucketing = useCallback(
     (date: Date): Date => {
       const d = new Date(date);
 
       switch (granularity.intervalMinutes) {
         case 5: // toStartOfFiveMinutes
-          d.setMinutes(Math.floor(d.getMinutes() / 5) * 5, 0, 0);
+          d.setUTCMinutes(Math.floor(d.getUTCMinutes() / 5) * 5, 0, 0);
           return d;
         case 20: // toStartOfInterval(Timestamp, INTERVAL 20 MINUTE)
-          d.setMinutes(Math.floor(d.getMinutes() / 20) * 20, 0, 0);
+          d.setUTCMinutes(Math.floor(d.getUTCMinutes() / 20) * 20, 0, 0);
           return d;
         case 60: // toStartOfHour
-          d.setMinutes(0, 0, 0);
+          d.setUTCMinutes(0, 0, 0);
           return d;
         case 1440: // toDate (daily)
-          d.setHours(0, 0, 0, 0);
+          d.setUTCHours(0, 0, 0, 0);
           return d;
         default:
           // Generic interval rounding
-          d.setMinutes(
-            Math.floor(d.getMinutes() / granularity.intervalMinutes) *
+          d.setUTCMinutes(
+            Math.floor(d.getUTCMinutes() / granularity.intervalMinutes) *
               granularity.intervalMinutes,
             0,
             0,
@@ -61,28 +61,58 @@ export function useObservabilitySeriesData<T extends BaseType>(
     [granularity.intervalMinutes],
   );
 
-  const { labels: xAxis } = useMemo(() => {
+  const { labels: xAxis, utcDates } = useMemo(() => {
     // Generate x-axis labels that match ClickHouse time bucketing exactly
     const labels = [];
     const dates = [];
+    const utcDates = [];
 
+    // Parse startDate and endDate as UTC (they come as ISO strings from useObservabilityContext)
     const start = new Date(startDate);
     const end = new Date(endDate);
+
     const intervalMinutes = granularity.intervalMinutes;
 
     // Start from the first ClickHouse interval boundary at or before start time
     let current = simulateClickHouseTimeBucketing(start);
 
-    while (current < end) {
+    // For daily granularity, be more precise about end date to avoid extra intervals
+    function shouldIncludeInterval(intervalDate: Date): boolean {
+      if (granularity.intervalMinutes >= 1440) {
+        // For daily intervals, only include if within the actual duration range
+        const maxAllowedDate = new Date(
+          start.getTime() + granularity.durationMs,
+        );
+        return intervalDate < maxAllowedDate;
+      }
+      return intervalDate < end;
+    }
+
+    while (shouldIncludeInterval(current)) {
       const formatOptions =
         granularity.displayFormat === 'HH:mm'
-          ? { hour: '2-digit' as const, minute: '2-digit' as const }
-          : { month: 'short' as const, day: 'numeric' as const };
+          ? {
+              hour: '2-digit' as const,
+              minute: '2-digit' as const,
+              // Use local timezone for hourly display
+            }
+          : {
+              month: 'short' as const,
+              day: 'numeric' as const,
+              timeZone: 'UTC',
+            };
+
+      // Create a UTC date key for matching with backend data
+      const utcDateKey =
+        granularity.intervalMinutes >= 1440
+          ? current.toISOString().split('T')[0] // YYYY-MM-DD for daily
+          : current.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm for hourly/minute
 
       labels.push(formatDate(current, formatOptions));
       dates.push(new Date(current));
+      utcDates.push(utcDateKey);
 
-      // Increment based on interval
+      // Increment based on interval - use original approach
       if (intervalMinutes >= 1440) {
         // Daily intervals
         current = addDays(current, 1);
@@ -98,6 +128,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
     return {
       labels: labels,
       dates: dates,
+      utcDates: utcDates,
     };
   }, [
     startDate,
@@ -127,20 +158,24 @@ export function useObservabilitySeriesData<T extends BaseType>(
         (acc, item) => {
           const value = getterFn(item);
 
-          // Parse the date from the item (backend returns UTC timestamps in format "YYYY-MM-DD HH:mm:ss")
-          // Force UTC interpretation by appending 'Z'
-          const itemDate = new Date(item.date + 'Z');
-
-          // Apply same ClickHouse bucketing simulation to ensure exact matching
+          // Parse the date from the item ensuring UTC interpretation
+          let itemDate: Date;
+          if (item.date.includes(':')) {
+            // DateTime string - ensure it's treated as UTC
+            itemDate = new Date(
+              item.date.endsWith('Z') ? item.date : item.date + 'Z',
+            );
+          } else {
+            // Date-only string like "2025-08-06" - parse as UTC midnight
+            itemDate = new Date(item.date + 'T00:00:00.000Z');
+          }
           const bucketedDate = simulateClickHouseTimeBucketing(itemDate);
 
-          // Format based on granularity (will convert UTC to local time)
-          const formatOptions =
-            granularity.displayFormat === 'HH:mm'
-              ? { hour: '2-digit' as const, minute: '2-digit' as const }
-              : { month: 'short' as const, day: 'numeric' as const };
-
-          const dateKey = formatDate(bucketedDate, formatOptions);
+          // Create same format key as x-axis generation
+          const dateKey =
+            granularity.intervalMinutes >= 1440
+              ? bucketedDate.toISOString().split('T')[0] // YYYY-MM-DD for daily
+              : bucketedDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm for hourly/minute
 
           acc[dateKey] = {
             value: typeof value === 'number' ? value : undefined,
@@ -152,10 +187,9 @@ export function useObservabilitySeriesData<T extends BaseType>(
         {} as Record<string, { name?: string; value: number | undefined }>,
       );
 
-      // Map the data to the format required by the chart
-      return xAxis.map((date) => {
-        const dateKey = date; // Assuming date is in YYYY-MM-DD format
-        const item = mappedData[dateKey];
+      // Map the data to the format required by the chart using UTC date keys
+      return utcDates.map((utcDateKey) => {
+        const item = mappedData[utcDateKey];
 
         if (typeof item?.value === 'undefined') {
           if (typeof defaultValue === 'number') {
@@ -168,12 +202,7 @@ export function useObservabilitySeriesData<T extends BaseType>(
         return item;
       });
     },
-    [
-      xAxis,
-      simulateClickHouseTimeBucketing,
-      granularity.displayFormat,
-      formatDate,
-    ],
+    [utcDates, granularity.intervalMinutes, simulateClickHouseTimeBucketing],
   );
 
   const series: SeriesOption[] = useMemo(() => {

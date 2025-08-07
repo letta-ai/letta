@@ -9,8 +9,9 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetToolErrorRateByNameRequest = ServerInferRequest<
   typeof contracts.observability.getToolErrorRateByName
@@ -23,9 +24,13 @@ type GetToolErrorRateByNameResponse = ServerInferResponses<
 export async function getToolErrorRateByName(
   request: GetToolErrorRateByNameRequest,
 ): Promise<GetToolErrorRateByNameResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -69,25 +74,32 @@ export async function getToolErrorRateByName(
 
   const result = await client.query({
     query: `
+      WITH parent_traces AS (
+        SELECT TraceId
+        FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+        WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+          AND ParentSpanId = ''
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      )
       SELECT
-        toDate(time_window) as date,
-        tool_name,
-        SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as error_count,
-        SUM(value) as total_count,
+        ${granularity.clickhouseDateFormat} as date,
+        arrayFirst(event -> has(event.Attributes, 'tool_name'), Events).Attributes['tool_name'] as tool_name,
+        SUM(CASE WHEN arrayExists(event -> event.Attributes['success'] = 'false', Events) THEN 1 ELSE 0 END) as error_count,
+        count() as total_count,
         CASE
-          WHEN SUM(value) > 0
-          THEN (SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) / SUM(value)) * 100
+          WHEN count() > 0
+          THEN (SUM(CASE WHEN arrayExists(event -> event.Attributes['success'] = 'false', Events) THEN 1 ELSE 0 END) / count()) * 100
           ELSE 0
         END as error_rate
-      FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_tool_execution'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-        AND tool_name != ''
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
-      GROUP BY toDate(time_window), tool_name
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE SpanName = 'agent_step'
+        AND TraceId IN (SELECT TraceId FROM parent_traces)
+        AND arrayExists(event -> has(event.Attributes, 'tool_name') AND event.Attributes['tool_name'] != 'send_message' AND event.Attributes['tool_name'] != '', Events)
+      GROUP BY date, tool_name
       ORDER BY date DESC, tool_name
     `,
     query_params: {
@@ -129,6 +141,7 @@ export async function getToolErrorRateByName(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,

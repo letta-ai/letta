@@ -12,6 +12,7 @@ import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
 import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
+import { getClickhouseStepInterval } from '../utils/getClickhouseStepInterval';
 
 type GetTotalMessagesPerDayRequest = ServerInferRequest<
   typeof contracts.observability.getTotalMessagesPerDay
@@ -73,6 +74,27 @@ export async function getTotalMessagesPerDay(
     };
   }
 
+  const stepInterval = getClickhouseStepInterval(granularity);
+
+  // Handle ClickHouse WITH FILL type compatibility:
+  // - Date columns (from toDate()) require 'YYYY-MM-DD' string literals
+  // - DateTime columns (from toDateTime(), toStartOfHour(), etc.) require toDateTime(timestamp)
+  // This prevents "Incompatible types of WITH FILL expression values" errors
+  const isDateColumn = granularity.clickhouseDateFormat.includes('toDate(');
+
+  let fromValue, toValue;
+  if (isDateColumn) {
+    // For Date columns: use numeric date values (days since epoch)
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    fromValue = Math.floor(startDateObj.getTime() / (1000 * 60 * 60 * 24));
+    toValue = Math.floor(endDateObj.getTime() / (1000 * 60 * 60 * 24));
+  } else {
+    // For DateTime columns: use unix timestamps
+    fromValue = Math.round(new Date(startDate).getTime() / 1000);
+    toValue = Math.round(new Date(endDate).getTime() / 1000);
+  }
+
   const result = await client.query({
     query: `
       SELECT
@@ -86,11 +108,17 @@ export async function getTotalMessagesPerDay(
         AND SpanAttributes['organization.id'] = {organizationId: String}
         ${attachFilterByBaseTemplateIdToOtels(request.query)}
       GROUP BY time_interval
-      ORDER BY time_interval DESC
+      ORDER BY time_interval ASC
+      WITH FILL
+        FROM {fromValue: ${isDateColumn ? 'UInt32' : 'UInt32'}}
+        TO {toValue: ${isDateColumn ? 'UInt32' : 'UInt32'}}
+        STEP INTERVAL ${stepInterval}
     `,
     query_params: {
       startDate: Math.round(new Date(startDate).getTime() / 1000),
       endDate: Math.round(new Date(endDate).getTime() / 1000),
+      fromValue,
+      toValue,
       baseTemplateId,
       projectId,
       organizationId: user.activeOrganizationId,
@@ -106,10 +134,12 @@ export async function getTotalMessagesPerDay(
   >(result);
 
   const responseBody = {
-    items: response.map((item) => ({
-      date: item.time_interval,
-      totalMessages: parseInt(item.total_messages, 10),
-    })),
+    items: response
+      .map((item) => ({
+        date: item.time_interval,
+        totalMessages: parseInt(item.total_messages, 10),
+      }))
+      .reverse(), // Reverse to maintain DESC order for frontend compatibility
   };
 
   // Cache the result

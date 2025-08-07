@@ -74,23 +74,29 @@ export async function getToolErrorRatePerDay(
 
   const result = await client.query({
     query: `
+      WITH parent_traces AS (
+        SELECT TraceId
+        FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+        WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+          AND ParentSpanId = ''
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      )
       SELECT
-        ${granularity.clickhouseDateFormat.replace('Timestamp', 'time_window')} as time_interval,
-        SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as error_count,
-        SUM(value) as total_tool_calls,
+        ${granularity.clickhouseDateFormat} as time_interval,
+        SUM(CASE WHEN arrayExists(event -> event.Attributes['success'] = 'false' AND event.Attributes['tool_name'] != 'send_message', Events) THEN 1 ELSE 0 END) as error_count,
+        SUM(CASE WHEN arrayExists(event -> has(event.Attributes, 'tool_name') AND event.Attributes['tool_name'] != 'send_message', Events) THEN 1 ELSE 0 END) as total_tool_calls,
         CASE
-          WHEN SUM(value) > 0
-          THEN (SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) / SUM(value)) * 100
+          WHEN SUM(CASE WHEN arrayExists(event -> has(event.Attributes, 'tool_name') AND event.Attributes['tool_name'] != 'send_message', Events) THEN 1 ELSE 0 END) > 0
+          THEN (SUM(CASE WHEN arrayExists(event -> event.Attributes['success'] = 'false' AND event.Attributes['tool_name'] != 'send_message', Events) THEN 1 ELSE 0 END) / SUM(CASE WHEN arrayExists(event -> has(event.Attributes, 'tool_name') AND event.Attributes['tool_name'] != 'send_message', Events) THEN 1 ELSE 0 END)) * 100
           ELSE 0
         END as error_rate
-      FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_tool_execution'
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND tool_name != 'send_message'
-        ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE SpanName = 'agent_step'
+        AND TraceId IN (SELECT TraceId FROM parent_traces)
       GROUP BY time_interval
       ORDER BY time_interval DESC
     `,

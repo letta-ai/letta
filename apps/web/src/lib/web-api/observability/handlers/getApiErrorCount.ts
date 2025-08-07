@@ -76,14 +76,16 @@ export async function getApiErrorCount(
   const result = await client.query({
     query: `
       SELECT
-        ${granularity.clickhouseDateFormat.replace('Timestamp', 'time_window')} as time_interval,
-        SUM(CASE WHEN status_code != '200' THEN value ELSE 0 END) as api_error_count
-      FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_endpoint_requests'
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
+        ${granularity.clickhouseDateFormat} as time_interval,
+        SUM(CASE WHEN StatusCode != 'STATUS_CODE_OK' THEN 1 ELSE 0 END) as api_error_count
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE (SpanName = 'POST /v1/agents/{agent_id}/messages/stream' OR
+             SpanName = 'POST /v1/agents/{agent_id}/messages' OR
+             SpanName = 'POST /v1/agents/{agent_id}/messages/async')
+        AND ParentSpanId = ''
+        AND SpanAttributes['organization.id'] = {organizationId: String}
+        AND SpanAttributes['project.id'] = {projectId: String}
         ${attachFilterByBaseTemplateIdToOtels(request.query)}
       GROUP BY time_interval
       ORDER BY time_interval DESC

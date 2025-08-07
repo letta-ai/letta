@@ -7,7 +7,6 @@ import './observability.scss';
 import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAgentChart';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
-import { ObservabilityOverview } from './_components/ObservabilityOverview/ObservabilityOverview';
 import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
@@ -139,8 +138,6 @@ function ProjectObservabilityPage() {
             </VStack>
           </VStack>
         </VStack>
-        <VR />
-        <ObservabilityOverview />
       </HStack>
     </ObservabilityPageWrapper>
   );

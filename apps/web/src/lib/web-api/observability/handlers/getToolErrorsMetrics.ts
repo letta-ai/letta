@@ -9,8 +9,9 @@ import {
   getClickhouseData,
 } from '@letta-cloud/service-clickhouse';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
-import { attachFilterByBaseTemplateIdToMetricsCounters } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToMetricsCounters/attachFilterByBaseTemplateIdToMetricsCounters';
+import { attachFilterByBaseTemplateIdToOtels } from '$web/web-api/observability/utils/attachFilterByBaseTemplateIdToOtels/attachFilterByBaseTemplateIdToOtels';
 import { getObservabilityCache, setObservabilityCache } from '../cacheHelpers';
+import { getTimeConfig } from '$web/client/hooks/useObservabilityContext/timeConfig';
 
 type GetToolErrorsMetricsRequest = ServerInferRequest<
   typeof contracts.observability.getToolErrorsMetrics
@@ -23,9 +24,13 @@ type GetToolErrorsMetricsResponse = ServerInferResponses<
 export async function getToolErrorsMetrics(
   request: GetToolErrorsMetricsRequest,
 ): Promise<GetToolErrorsMetricsResponse> {
-  const { projectId, startDate, endDate, baseTemplateId } = request.query;
+  const { projectId, startDate, endDate, baseTemplateId, timeRange } =
+    request.query;
 
   const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  // Get time granularity configuration
+  const granularity = getTimeConfig(timeRange || '30d');
 
   // Check cache first
   try {
@@ -39,6 +44,7 @@ export async function getToolErrorsMetrics(
       startDate,
       endDate,
       baseTemplateId,
+      timeRange,
       organizationId: user.activeOrganizationId,
     });
     if (cachedBody) {
@@ -68,20 +74,29 @@ export async function getToolErrorsMetrics(
 
   const result = await client.query({
     query: `
+      WITH parent_traces AS (
+        SELECT TraceId
+        FROM otel_traces
+        PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+        WHERE SpanName IN ('POST /v1/agents/{agent_id}/messages/stream', 'POST /v1/agents/{agent_id}/messages', 'POST /v1/agents/{agent_id}/messages/async')
+          AND ParentSpanId = ''
+          AND SpanAttributes['project.id'] = {projectId: String}
+          AND SpanAttributes['organization.id'] = {organizationId: String}
+          ${attachFilterByBaseTemplateIdToOtels(request.query)}
+      )
       SELECT
-        toDate(time_window) as error_date,
-        SUM(CASE WHEN tool_execution_success = 'false' THEN value ELSE 0 END) as error_count
-      FROM otel.letta_metrics_counters_1hour_view
-      WHERE metric_name = 'count_tool_execution'
-        AND organization_id = {organizationId: String}
-        AND project_id = {projectId: String}
-        AND time_window >= toDateTime({startDate: UInt32})
-        AND time_window <= toDateTime({endDate: UInt32})
-        AND tool_execution_success = 'false'
-        AND tool_name != 'send_message'
-        ${attachFilterByBaseTemplateIdToMetricsCounters(request.query)}
-      GROUP BY toDate(time_window)
-      ORDER BY error_date DESC
+        ${granularity.clickhouseDateFormat} as time_interval,
+        count() as error_count
+      FROM otel_traces
+      PREWHERE Timestamp >= {startDate: DateTime} AND Timestamp <= {endDate: DateTime}
+      WHERE SpanName = 'agent_step'
+        AND TraceId IN (SELECT TraceId FROM parent_traces)
+        AND arrayExists(
+          event -> event.Attributes['success'] = 'false' AND event.Attributes['tool_name'] != 'send_message',
+          Events
+        )
+      GROUP BY time_interval
+      ORDER BY time_interval DESC
     `,
     query_params: {
       baseTemplateId,
@@ -95,14 +110,14 @@ export async function getToolErrorsMetrics(
 
   const response = await getClickhouseData<
     Array<{
-      error_date: string;
+      time_interval: string;
       error_count: string;
     }>
   >(result);
 
   const responseBody = {
     items: response.map((item) => ({
-      date: item.error_date,
+      date: item.time_interval,
       errorCount: parseInt(item.error_count, 10),
     })),
   };
@@ -116,6 +131,7 @@ export async function getToolErrorsMetrics(
         startDate,
         endDate,
         baseTemplateId,
+        timeRange,
         organizationId: user.activeOrganizationId,
       },
       responseBody,
