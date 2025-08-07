@@ -142,7 +142,6 @@ function useSelectComponents(selectProps: BaseSelectProps) {
             align="center"
             gap="small"
             border
-            /* eslint-disable-next-line react/forbid-component-props */
             style={{ borderColor: 'hsl(var(--muted))' }}
           >
             {props.data.icon && (

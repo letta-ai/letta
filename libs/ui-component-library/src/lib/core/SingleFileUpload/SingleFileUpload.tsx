@@ -105,28 +105,26 @@ function SingleFileUploadPrimitive(props: SingleFileUploadProps) {
       justify="center"
     >
       {!value ? (
-        <>
-          <VStack align="center">
-            <Slot className="w-8">{fileIcon}</Slot>
-            <VStack>
-              <Typography
-                variant="body"
-                className={cn(
-                  'text-center',
-                  isMultipleFiles && 'text-destructive',
-                )}
-              >
-                {getDropText()}
-              </Typography>
-              <Button
-                type="button"
-                onClick={triggerChooseFile}
-                color="secondary"
-                label={chooseFileText}
-              ></Button>
-            </VStack>
+        <VStack align="center">
+          <Slot className="w-8">{fileIcon}</Slot>
+          <VStack>
+            <Typography
+              variant="body"
+              className={cn(
+                'text-center',
+                isMultipleFiles && 'text-destructive',
+              )}
+            >
+              {getDropText()}
+            </Typography>
+            <Button
+              type="button"
+              onClick={triggerChooseFile}
+              color="secondary"
+              label={chooseFileText}
+            ></Button>
           </VStack>
-        </>
+        </VStack>
       ) : (
         <VStack align="center">
           <HStack

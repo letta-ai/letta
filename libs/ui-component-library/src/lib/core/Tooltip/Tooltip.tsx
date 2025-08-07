@@ -94,7 +94,6 @@ export function useTooltip({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type ContextType = ReturnType<typeof useTooltip> | null;
 
 const TooltipContext = React.createContext<ContextType>(null);

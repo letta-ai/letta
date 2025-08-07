@@ -17,7 +17,6 @@ export function StarterKitItems(props: StarterKitItemProps) {
 
   return (
     <ImageCard
-      /* eslint-disable-next-line react/forbid-component-props */
       className="h-[270px]"
       onClick={() => {
         onSelectStarterKit(name, starterKit);
