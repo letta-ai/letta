@@ -160,3 +160,12 @@ class SandboxType(str, Enum):
     E2B = "e2b"
     MODAL = "modal"
     LOCAL = "local"
+
+
+class StepStatus(str, Enum):
+    """Status of a step execution"""
+
+    PENDING = "pending"
+    SUCCESS = "success"
+    FAILED = "failed"
+    CANCELLED = "cancelled"

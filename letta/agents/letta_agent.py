@@ -34,7 +34,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import JobStatus, MessageRole, ProviderType, ToolType
+from letta.schemas.enums import JobStatus, MessageRole, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -241,6 +241,26 @@ class LettaAgent(BaseAgent):
 
             step_progression = StepProgression.START
             should_continue = False
+
+            # Create step early with PENDING status
+            logged_step = await self.step_manager.log_step_async(
+                actor=self.actor,
+                agent_id=agent_state.id,
+                provider_name=agent_state.llm_config.model_endpoint_type,
+                provider_category=agent_state.llm_config.provider_category or "base",
+                model=agent_state.llm_config.model,
+                model_endpoint=agent_state.llm_config.model_endpoint,
+                context_window_limit=agent_state.llm_config.context_window,
+                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
+                provider_id=None,
+                job_id=self.current_run_id if self.current_run_id else None,
+                step_id=step_id,
+                project_id=agent_state.project_id,
+                status=StepStatus.PENDING,
+            )
+            # Only use step_id in messages if step was actually created
+            effective_step_id = step_id if logged_step else None
+
             try:
                 request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
                     await self._build_and_request_from_llm(
@@ -295,12 +315,16 @@ class LettaAgent(BaseAgent):
                     tool_rules_solver,
                     response.usage,
                     reasoning_content=reasoning,
-                    step_id=step_id,
+                    step_id=effective_step_id,
                     initial_messages=initial_messages,
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
                 )
                 step_progression = StepProgression.STEP_LOGGED
+
+                # Update step with actual usage now that we have it (if step was created)
+                if logged_step:
+                    await self.step_manager.update_step_success_async(self.actor, step_id, response.usage, stop_reason)
 
                 # TODO (cliandy): handle message contexts with larger refactor and dedupe logic
                 new_message_idx = len(initial_messages) if initial_messages else 0
@@ -321,7 +345,7 @@ class LettaAgent(BaseAgent):
                     provider_trace_create=ProviderTraceCreate(
                         request_json=request_data,
                         response_json=response_data,
-                        step_id=step_id,
+                        step_id=step_id,  # Use original step_id for telemetry
                         organization_id=self.actor.organization_id,
                     ),
                 )
@@ -358,54 +382,57 @@ class LettaAgent(BaseAgent):
 
             # Update step if it needs to be updated
             finally:
-                if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
+                if step_progression == StepProgression.FINISHED and should_continue:
+                    continue
 
-                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
-                    self.logger.info("Running final update. Step Progression: %s", step_progression)
-                    try:
-                        if step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
+                self.logger.info("Running final update. Step Progression: %s", step_progression)
+                try:
+                    if step_progression == StepProgression.FINISHED and not should_continue:
+                        # Successfully completed - update with final usage and stop reason
+                        if stop_reason is None:
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                        # Note: step already updated with success status after _handle_ai_response
+                        if logged_step:
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                            break
+                        break
 
-                        if step_progression < StepProgression.STEP_LOGGED:
-                            await self.step_manager.log_step_async(
+                    # Handle error cases
+                    if step_progression < StepProgression.STEP_LOGGED:
+                        # Error occurred before step was fully logged
+                        import traceback
+
+                        if logged_step:
+                            await self.step_manager.update_step_error_async(
                                 actor=self.actor,
-                                agent_id=agent_state.id,
-                                provider_name=agent_state.llm_config.model_endpoint_type,
-                                provider_category=agent_state.llm_config.provider_category or "base",
-                                model=agent_state.llm_config.model,
-                                model_endpoint=agent_state.llm_config.model_endpoint,
-                                context_window_limit=agent_state.llm_config.context_window,
-                                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                                provider_id=None,
-                                job_id=self.current_run_id if self.current_run_id else None,
-                                step_id=step_id,
-                                project_id=agent_state.project_id,
+                                step_id=step_id,  # Use original step_id for telemetry
+                                error_type=type(e).__name__ if "e" in locals() else "Unknown",
+                                error_message=str(e) if "e" in locals() else "Unknown error",
+                                error_traceback=traceback.format_exc(),
                                 stop_reason=stop_reason,
                             )
-                        if step_progression <= StepProgression.RESPONSE_RECEIVED:
-                            # TODO (cliandy): persist response if we get it back
-                            if settings.track_errored_messages:
-                                for message in initial_messages:
-                                    message.is_err = True
-                                    message.step_id = step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
-                        elif step_progression <= StepProgression.LOGGED_TRACE:
-                            if stop_reason is None:
-                                self.logger.error("Error in step after logging step")
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        else:
-                            self.logger.error("Invalid StepProgression value")
 
+                    if step_progression <= StepProgression.RESPONSE_RECEIVED:
+                        # TODO (cliandy): persist response if we get it back
+                        if settings.track_errored_messages:
+                            for message in initial_messages:
+                                message.is_err = True
+                                message.step_id = effective_step_id
+                            await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                    elif step_progression <= StepProgression.LOGGED_TRACE:
+                        if stop_reason is None:
+                            self.logger.error("Error in step after logging step")
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+                        if logged_step:
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                    else:
+                        self.logger.error("Invalid StepProgression value")
+
+                    if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span)
 
-                    except Exception as e:
-                        self.logger.error("Failed to update step: %s", e)
+                except Exception as e:
+                    self.logger.error("Failed to update step: %s", e)
 
             if not should_continue:
                 break
@@ -484,6 +511,25 @@ class LettaAgent(BaseAgent):
             step_progression = StepProgression.START
             should_continue = False
 
+            # Create step early with PENDING status
+            logged_step = await self.step_manager.log_step_async(
+                actor=self.actor,
+                agent_id=agent_state.id,
+                provider_name=agent_state.llm_config.model_endpoint_type,
+                provider_category=agent_state.llm_config.provider_category or "base",
+                model=agent_state.llm_config.model,
+                model_endpoint=agent_state.llm_config.model_endpoint,
+                context_window_limit=agent_state.llm_config.context_window,
+                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
+                provider_id=None,
+                job_id=run_id if run_id else self.current_run_id,
+                step_id=step_id,
+                project_id=agent_state.project_id,
+                status=StepStatus.PENDING,
+            )
+            # Only use step_id in messages if step was actually created
+            effective_step_id = step_id if logged_step else None
+
             try:
                 request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
                     await self._build_and_request_from_llm(
@@ -533,13 +579,17 @@ class LettaAgent(BaseAgent):
                     tool_rules_solver,
                     response.usage,
                     reasoning_content=reasoning,
-                    step_id=step_id,
+                    step_id=effective_step_id,
                     initial_messages=initial_messages,
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
                     run_id=run_id,
                 )
                 step_progression = StepProgression.STEP_LOGGED
+
+                # Update step with actual usage now that we have it (if step was created)
+                if logged_step:
+                    await self.step_manager.update_step_success_async(self.actor, step_id, response.usage, stop_reason)
 
                 new_message_idx = len(initial_messages) if initial_messages else 0
                 self.response_messages.extend(persisted_messages[new_message_idx:])
@@ -560,7 +610,7 @@ class LettaAgent(BaseAgent):
                     provider_trace_create=ProviderTraceCreate(
                         request_json=request_data,
                         response_json=response_data,
-                        step_id=step_id,
+                        step_id=step_id,  # Use original step_id for telemetry
                         organization_id=self.actor.organization_id,
                     ),
                 )
@@ -584,54 +634,56 @@ class LettaAgent(BaseAgent):
 
                 # Update step if it needs to be updated
             finally:
-                if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
+                if step_progression == StepProgression.FINISHED and should_continue:
+                    continue
 
-                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
-                    self.logger.info("Running final update. Step Progression: %s", step_progression)
-                    try:
-                        if step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                            break
+                self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
+                self.logger.info("Running final update. Step Progression: %s", step_progression)
+                try:
+                    if step_progression == StepProgression.FINISHED and not should_continue:
+                        # Successfully completed - update with final usage and stop reason
+                        if stop_reason is None:
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                        if logged_step:
+                            await self.step_manager.update_step_success_async(self.actor, step_id, usage, stop_reason)
+                        break
 
-                        if step_progression < StepProgression.STEP_LOGGED:
-                            await self.step_manager.log_step_async(
+                    # Handle error cases
+                    if step_progression < StepProgression.STEP_LOGGED:
+                        # Error occurred before step was fully logged
+                        import traceback
+
+                        if logged_step:
+                            await self.step_manager.update_step_error_async(
                                 actor=self.actor,
-                                agent_id=agent_state.id,
-                                provider_name=agent_state.llm_config.model_endpoint_type,
-                                provider_category=agent_state.llm_config.provider_category or "base",
-                                model=agent_state.llm_config.model,
-                                model_endpoint=agent_state.llm_config.model_endpoint,
-                                context_window_limit=agent_state.llm_config.context_window,
-                                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                                provider_id=None,
-                                job_id=self.current_run_id if self.current_run_id else None,
-                                step_id=step_id,
-                                project_id=agent_state.project_id,
+                                step_id=step_id,  # Use original step_id for telemetry
+                                error_type=type(e).__name__ if "e" in locals() else "Unknown",
+                                error_message=str(e) if "e" in locals() else "Unknown error",
+                                error_traceback=traceback.format_exc(),
                                 stop_reason=stop_reason,
                             )
-                        if step_progression <= StepProgression.RESPONSE_RECEIVED:
-                            # TODO (cliandy): persist response if we get it back
-                            if settings.track_errored_messages:
-                                for message in initial_messages:
-                                    message.is_err = True
-                                    message.step_id = step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
-                        elif step_progression <= StepProgression.LOGGED_TRACE:
-                            if stop_reason is None:
-                                self.logger.error("Error in step after logging step")
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        else:
-                            self.logger.error("Invalid StepProgression value")
 
+                    if step_progression <= StepProgression.RESPONSE_RECEIVED:
+                        # TODO (cliandy): persist response if we get it back
+                        if settings.track_errored_messages:
+                            for message in initial_messages:
+                                message.is_err = True
+                                message.step_id = effective_step_id
+                            await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                    elif step_progression <= StepProgression.LOGGED_TRACE:
+                        if stop_reason is None:
+                            self.logger.error("Error in step after logging step")
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+                        if logged_step:
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                    else:
+                        self.logger.error("Invalid StepProgression value")
+
+                    if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span)
 
-                    except Exception as e:
-                        self.logger.error("Failed to update step: %s", e)
+                except Exception as e:
+                    self.logger.error("Failed to update step: %s", e)
 
             if not should_continue:
                 break
@@ -717,6 +769,26 @@ class LettaAgent(BaseAgent):
 
             step_progression = StepProgression.START
             should_continue = False
+
+            # Create step early with PENDING status
+            logged_step = await self.step_manager.log_step_async(
+                actor=self.actor,
+                agent_id=agent_state.id,
+                provider_name=agent_state.llm_config.model_endpoint_type,
+                provider_category=agent_state.llm_config.provider_category or "base",
+                model=agent_state.llm_config.model,
+                model_endpoint=agent_state.llm_config.model_endpoint,
+                context_window_limit=agent_state.llm_config.context_window,
+                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
+                provider_id=None,
+                job_id=self.current_run_id if self.current_run_id else None,
+                step_id=step_id,
+                project_id=agent_state.project_id,
+                status=StepStatus.PENDING,
+            )
+            # Only use step_id in messages if step was actually created
+            effective_step_id = step_id if logged_step else None
+
             try:
                 (
                     request_data,
@@ -827,12 +899,25 @@ class LettaAgent(BaseAgent):
                     ),
                     reasoning_content=reasoning_content,
                     pre_computed_assistant_message_id=interface.letta_message_id,
-                    step_id=step_id,
+                    step_id=effective_step_id,
                     initial_messages=initial_messages,
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
                 )
                 step_progression = StepProgression.STEP_LOGGED
+
+                # Update step with actual usage now that we have it (if step was created)
+                if logged_step:
+                    await self.step_manager.update_step_success_async(
+                        self.actor,
+                        step_id,
+                        UsageStatistics(
+                            completion_tokens=usage.completion_tokens,
+                            prompt_tokens=usage.prompt_tokens,
+                            total_tokens=usage.total_tokens,
+                        ),
+                        stop_reason,
+                    )
 
                 new_message_idx = len(initial_messages) if initial_messages else 0
                 self.response_messages.extend(persisted_messages[new_message_idx:])
@@ -872,7 +957,7 @@ class LettaAgent(BaseAgent):
                                 "output_tokens": usage.completion_tokens,
                             },
                         },
-                        step_id=step_id,
+                        step_id=step_id,  # Use original step_id for telemetry
                         organization_id=self.actor.organization_id,
                     ),
                 )
@@ -907,54 +992,57 @@ class LettaAgent(BaseAgent):
 
             # Update step if it needs to be updated
             finally:
-                if settings.track_stop_reason:
-                    if step_progression == StepProgression.FINISHED and should_continue:
-                        continue
+                if step_progression == StepProgression.FINISHED and should_continue:
+                    continue
 
-                    self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
-                    self.logger.info("Running final update. Step Progression: %s", step_progression)
-                    try:
-                        if step_progression == StepProgression.FINISHED and not should_continue:
-                            if stop_reason is None:
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                self.logger.debug("Running cleanup for agent loop run: %s", self.current_run_id)
+                self.logger.info("Running final update. Step Progression: %s", step_progression)
+                try:
+                    if step_progression == StepProgression.FINISHED and not should_continue:
+                        # Successfully completed - update with final usage and stop reason
+                        if stop_reason is None:
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                        # Note: step already updated with success status after _handle_ai_response
+                        if logged_step:
                             await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                            break
+                        break
 
-                        if step_progression < StepProgression.STEP_LOGGED:
-                            await self.step_manager.log_step_async(
+                    # Handle error cases
+                    if step_progression < StepProgression.STEP_LOGGED:
+                        # Error occurred before step was fully logged
+                        import traceback
+
+                        if logged_step:
+                            await self.step_manager.update_step_error_async(
                                 actor=self.actor,
-                                agent_id=agent_state.id,
-                                provider_name=agent_state.llm_config.model_endpoint_type,
-                                provider_category=agent_state.llm_config.provider_category or "base",
-                                model=agent_state.llm_config.model,
-                                model_endpoint=agent_state.llm_config.model_endpoint,
-                                context_window_limit=agent_state.llm_config.context_window,
-                                usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                                provider_id=None,
-                                job_id=self.current_run_id if self.current_run_id else None,
-                                step_id=step_id,
-                                project_id=agent_state.project_id,
+                                step_id=step_id,  # Use original step_id for telemetry
+                                error_type=type(e).__name__ if "e" in locals() else "Unknown",
+                                error_message=str(e) if "e" in locals() else "Unknown error",
+                                error_traceback=traceback.format_exc(),
                                 stop_reason=stop_reason,
                             )
-                        if step_progression <= StepProgression.STREAM_RECEIVED:
-                            if first_chunk and settings.track_errored_messages:
-                                for message in initial_messages:
-                                    message.is_err = True
-                                    message.step_id = step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
-                        elif step_progression <= StepProgression.LOGGED_TRACE:
-                            if stop_reason is None:
-                                self.logger.error("Error in step after logging step")
-                                stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
-                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
-                        else:
-                            self.logger.error("Invalid StepProgression value")
 
-                        # Do tracking for failure cases. Can consolidate with success conditions later.
+                    if step_progression <= StepProgression.STREAM_RECEIVED:
+                        if first_chunk and settings.track_errored_messages:
+                            for message in initial_messages:
+                                message.is_err = True
+                                message.step_id = effective_step_id
+                            await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                    elif step_progression <= StepProgression.LOGGED_TRACE:
+                        if stop_reason is None:
+                            self.logger.error("Error in step after logging step")
+                            stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
+                        if logged_step:
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, stop_reason.stop_reason)
+                    else:
+                        self.logger.error("Invalid StepProgression value")
+
+                    # Do tracking for failure cases. Can consolidate with success conditions later.
+                    if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span)
 
-                    except Exception as e:
-                        self.logger.error("Failed to update step: %s", e)
+                except Exception as e:
+                    self.logger.error("Failed to update step: %s", e)
 
             if not should_continue:
                 break
@@ -1315,23 +1403,7 @@ class LettaAgent(BaseAgent):
             is_final_step=is_final_step,
         )
 
-        # 5.  Persist step + messages and propagate to jobs
-        logged_step = await self.step_manager.log_step_async(
-            actor=self.actor,
-            agent_id=agent_state.id,
-            provider_name=agent_state.llm_config.model_endpoint_type,
-            provider_category=agent_state.llm_config.provider_category or "base",
-            model=agent_state.llm_config.model,
-            model_endpoint=agent_state.llm_config.model_endpoint,
-            context_window_limit=agent_state.llm_config.context_window,
-            usage=usage,
-            provider_id=None,
-            job_id=run_id if run_id else self.current_run_id,
-            step_id=step_id,
-            project_id=agent_state.project_id,
-            stop_reason=stop_reason,
-        )
-
+        # 5.  Create messages (step was already created at the beginning)
         tool_call_messages = create_letta_messages_from_llm_response(
             agent_id=agent_state.id,
             model=agent_state.llm_config.model,
@@ -1347,7 +1419,7 @@ class LettaAgent(BaseAgent):
             heartbeat_reason=heartbeat_reason,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            step_id=logged_step.id if logged_step else None,
+            step_id=step_id,
         )
 
         persisted_messages = await self.message_manager.create_many_messages_async(
