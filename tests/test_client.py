@@ -679,7 +679,9 @@ def test_timezone(client: Letta):
         "America/Los_Angeles" in response.messages[1].content
         or "PDT" in response.messages[1].content
         or "PST" in response.messages[1].content
-    )
+        or "Pacific Daylight Time" in response.messages[1].content
+        or "Pacific Standard Time" in response.messages[1].content
+    ), f"Response content: {response.messages[1].content} does not contain expected timezone"
 
     # test updating the timezone
     client.agents.modify(agent_id=agent.id, timezone="America/New_York")
