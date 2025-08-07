@@ -49,6 +49,11 @@ def is_openai_reasoning_model(model: str) -> bool:
     return is_reasoning
 
 
+def is_openai_5_model(model: str) -> bool:
+    """Utility function to check if the model is a '5' model"""
+    return model.startswith("gpt-5")
+
+
 def accepts_developer_role(model: str) -> bool:
     """Checks if the model accepts the 'developer' role. Note that not all reasoning models accept this role.
 
@@ -65,7 +70,7 @@ def supports_temperature_param(model: str) -> bool:
 
     Example error: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'param': 'temperature', 'code': 'unsupported_parameter'}}
     """
-    if is_openai_reasoning_model(model):
+    if is_openai_reasoning_model(model) or is_openai_5_model(model):
         return False
     else:
         return True
