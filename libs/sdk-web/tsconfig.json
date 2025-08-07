@@ -1,7 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "commonjs"
+    "module": "commonjs",
+    "tsBuildInfoFile": ".tsbuildinfo/tsconfig.json.tsbuildinfo"
   },
   "files": [],
   "include": [],

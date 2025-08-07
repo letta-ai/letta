@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
+    "tsBuildInfoFile": ".tsbuildinfo/tsconfig.lib.json.tsbuildinfo",
     "types": [
       "node",
       "@nx/react/typings/cssmodule.d.ts",

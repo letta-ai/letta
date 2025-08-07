@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
+    "tsBuildInfoFile": "../../dist/out-tsc/ui-component-library-lib.tsbuildinfo",
     "types": [
       "node",
       "@nx/react/typings/cssmodule.d.ts",

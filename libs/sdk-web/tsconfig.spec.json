@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
+    "tsBuildInfoFile": ".tsbuildinfo/tsconfig.spec.json.tsbuildinfo",
     "module": "commonjs",
     "types": ["jest", "node"]
   },
