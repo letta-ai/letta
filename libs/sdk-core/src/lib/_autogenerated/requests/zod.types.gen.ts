@@ -2608,6 +2608,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
       z.undefined(),
     ])
     .optional(),
+  prompt_cache_key: z.union([z.string(), z.undefined()]).optional(),
   reasoning_effort: z
     .union([
       z.literal('low'),
@@ -2640,6 +2641,7 @@ export const CompletionCreateParamsNonStreaming = z.object({
       z.undefined(),
     ])
     .optional(),
+  safety_identifier: z.union([z.string(), z.undefined()]).optional(),
   seed: z
     .union([
       z.number(),
@@ -3005,6 +3007,7 @@ export const CompletionCreateParamsStreaming = z.object({
       z.undefined(),
     ])
     .optional(),
+  prompt_cache_key: z.union([z.string(), z.undefined()]).optional(),
   reasoning_effort: z
     .union([
       z.literal('low'),
@@ -3037,6 +3040,7 @@ export const CompletionCreateParamsStreaming = z.object({
       z.undefined(),
     ])
     .optional(),
+  safety_identifier: z.union([z.string(), z.undefined()]).optional(),
   seed: z
     .union([
       z.number(),

@@ -55,6 +55,11 @@ BASE_URL = "https://api.anthropic.com/v1"
 # https://docs.anthropic.com/claude/docs/models-overview
 # Sadly hardcoded
 MODEL_LIST = [
+    ## Opus 4.1
+    {
+        "name": "claude-opus-4-1-20250805",
+        "context_window": 200000,
+    },
     ## Opus 3
     {
         "name": "claude-3-opus-20240229",
