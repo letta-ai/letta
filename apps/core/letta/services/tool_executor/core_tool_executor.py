@@ -239,7 +239,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             label (str): Section of the memory to be edited, identified by its label.
             old_str (str): The text to replace (must match exactly, including whitespace
                 and indentation). Do not include line number prefixes.
-            new_str (str): The new text to insert in place of the old text.
+            new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
 
         Returns:
             str: The success message
