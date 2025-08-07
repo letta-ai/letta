@@ -191,14 +191,14 @@ SNIPPET_LINES: int = 4
 
 
 # Based off of: https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/tools/edit.py?ref=musings.yasyf.com#L154
-def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str: Optional[str] = None) -> str:  # type: ignore
+def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str: str) -> str:  # type: ignore
     """
     The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.
 
     Args:
         label (str): Section of the memory to be edited, identified by its label.
         old_str (str): The text to replace (must match exactly, including whitespace and indentation).
-        new_str (Optional[str]): The new text to insert in place of the old text. Omit this argument to delete the old_str.
+        new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
 
     Returns:
         str: The success message
