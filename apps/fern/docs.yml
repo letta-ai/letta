@@ -674,3 +674,5 @@ redirects:
     destination: "/guides/agents/architectures/sleeptime"
   - source: "/guides/agents/sources"
     destination: "/guides/agents/filesystem"
+  - source: "/guides/desktop/install"
+    destination: "/guides/ade/desktop"
