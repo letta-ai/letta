@@ -32,10 +32,12 @@ class LettaFileToolExecutor(ToolExecutor):
     MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50MB limit per file
     MAX_TOTAL_CONTENT_SIZE = 200 * 1024 * 1024  # 200MB total across all files
     MAX_REGEX_COMPLEXITY = 1000  # Prevent catastrophic backtracking
-    MAX_MATCHES_PER_FILE = 20  # Limit matches per file
-    MAX_TOTAL_MATCHES = 50  # Global match limit
+    MAX_MATCHES_PER_FILE = 20  # Limit matches per file (legacy, not used with new pagination)
+    MAX_TOTAL_MATCHES = 50  # Keep original value for semantic search
+    GREP_PAGE_SIZE = 20  # Number of grep matches to show per page
     GREP_TIMEOUT_SECONDS = 30  # Max time for grep_files operation
     MAX_CONTEXT_LINES = 1  # Lines of context around matches
+    MAX_TOTAL_COLLECTED = 1000  # Reasonable upper limit to prevent memory issues
 
     def __init__(
         self,
@@ -298,7 +300,12 @@ class LettaFileToolExecutor(ToolExecutor):
 
     @trace_method
     async def grep_files(
-        self, agent_state: AgentState, pattern: str, include: Optional[str] = None, context_lines: Optional[int] = 3
+        self,
+        agent_state: AgentState,
+        pattern: str,
+        include: Optional[str] = None,
+        context_lines: Optional[int] = 1,
+        offset: Optional[int] = None,
     ) -> str:
         """
         Search for pattern in all attached files and return matches with context.
@@ -308,7 +315,9 @@ class LettaFileToolExecutor(ToolExecutor):
             pattern: Regular expression pattern to search for
             include: Optional pattern to filter filenames to include in the search
             context_lines (Optional[int]): Number of lines of context to show before and after each match.
-                                       Equivalent to `-C` in grep_files. Defaults to 3.
+                                       Equivalent to `-C` in grep_files. Defaults to 1.
+            offset (Optional[int]): Number of matches to skip before showing results. Used for pagination.
+                                   Defaults to 0 (show from first match).
 
         Returns:
             Formatted string with search results, file names, line numbers, and context
@@ -350,14 +359,18 @@ class LettaFileToolExecutor(ToolExecutor):
             if not file_agents:
                 return f"No files match the filename pattern '{include}' (filtered {original_count} files)"
 
+        # Validate offset parameter
+        if offset is not None and offset < 0:
+            offset = 0  # Treat negative offsets as 0
+
         # Compile regex pattern with appropriate flags
         regex_flags = re.MULTILINE
         regex_flags |= re.IGNORECASE
 
         pattern_regex = re.compile(pattern, regex_flags)
 
-        results = []
-        total_matches = 0
+        # Collect all matches first (up to a reasonable limit)
+        all_matches = []  # List of tuples: (file_name, line_num, context_lines)
         total_content_size = 0
         files_processed = 0
         files_skipped = 0
@@ -365,7 +378,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
         # Use asyncio timeout to prevent hanging
         async def _search_files():
-            nonlocal results, total_matches, total_content_size, files_processed, files_skipped, files_with_matches
+            nonlocal all_matches, total_content_size, files_processed, files_skipped, files_with_matches
 
             for file_agent in file_agents:
                 # Load file content
@@ -383,7 +396,6 @@ class LettaFileToolExecutor(ToolExecutor):
                     self.logger.warning(
                         f"Grep: Skipping file {file.file_name} - too large ({content_size:,} bytes > {self.MAX_FILE_SIZE_BYTES:,} limit)"
                     )
-                    results.append(f"[SKIPPED] {file.file_name}: File too large ({content_size:,} bytes)")
                     continue
 
                 # Check total content size across all files
@@ -393,11 +405,9 @@ class LettaFileToolExecutor(ToolExecutor):
                     self.logger.warning(
                         f"Grep: Skipping file {file.file_name} - total content size limit exceeded ({total_content_size:,} bytes > {self.MAX_TOTAL_CONTENT_SIZE:,} limit)"
                     )
-                    results.append(f"[SKIPPED] {file.file_name}: Total content size limit exceeded")
                     break
 
                 files_processed += 1
-                file_matches = 0
 
                 # Use LineChunker to get all lines with proper formatting
                 chunker = LineChunker()
@@ -407,16 +417,10 @@ class LettaFileToolExecutor(ToolExecutor):
                 if formatted_lines and formatted_lines[0].startswith("[Viewing"):
                     formatted_lines = formatted_lines[1:]
 
-                # LineChunker now returns 1-indexed line numbers, so no conversion needed
-
                 # Search for matches in formatted lines
                 for formatted_line in formatted_lines:
-                    if total_matches >= self.MAX_TOTAL_MATCHES:
-                        results.append(f"[TRUNCATED] Maximum total matches ({self.MAX_TOTAL_MATCHES}) reached")
-                        return
-
-                    if file_matches >= self.MAX_MATCHES_PER_FILE:
-                        results.append(f"[TRUNCATED] {file.file_name}: Maximum matches per file ({self.MAX_MATCHES_PER_FILE}) reached")
+                    if len(all_matches) >= self.MAX_TOTAL_COLLECTED:
+                        # Stop collecting if we hit the upper limit
                         break
 
                     # Extract line number and content from formatted line
@@ -433,16 +437,11 @@ class LettaFileToolExecutor(ToolExecutor):
                             files_with_matches.add(file.file_name)
                             context = self._get_context_lines(formatted_lines, match_line_num=line_num, context_lines=context_lines or 0)
 
-                            # Format the match result
-                            match_header = f"\n=== {file.file_name}:{line_num} ==="
-                            match_content = "\n".join(context)
-                            results.append(f"{match_header}\n{match_content}")
+                            # Store match data for later pagination
+                            all_matches.append((file.file_name, line_num, context))
 
-                            file_matches += 1
-                            total_matches += 1
-
-                # Break if global limits reached
-                if total_matches >= self.MAX_TOTAL_MATCHES:
+                # Break if we've collected enough matches
+                if len(all_matches) >= self.MAX_TOTAL_COLLECTED:
                     break
 
         # Execute with timeout
@@ -452,8 +451,9 @@ class LettaFileToolExecutor(ToolExecutor):
         if files_with_matches:
             await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=list(files_with_matches), actor=self.actor)
 
-        # Format final results
-        if not results or total_matches == 0:
+        # Handle no matches case
+        total_matches = len(all_matches)
+        if total_matches == 0:
             summary = f"No matches found for pattern: '{pattern}'"
             if include:
                 summary += f" in files matching '{include}'"
@@ -461,21 +461,70 @@ class LettaFileToolExecutor(ToolExecutor):
                 summary += f" (searched {files_processed} files, skipped {files_skipped})"
             return summary
 
-        # Add summary header
-        summary_parts = [f"Found {total_matches} matches"]
-        if files_processed > 0:
-            summary_parts.append(f"in {files_processed} files")
+        # Apply pagination
+        start_idx = offset if offset else 0
+        end_idx = start_idx + self.GREP_PAGE_SIZE
+        paginated_matches = all_matches[start_idx:end_idx]
+
+        # Check if we hit the collection limit
+        hit_collection_limit = len(all_matches) >= self.MAX_TOTAL_COLLECTED
+
+        # Format the paginated results
+        results = []
+
+        # Build summary showing the range of matches displayed
+        if hit_collection_limit:
+            # We collected MAX_TOTAL_COLLECTED but there might be more
+            summary = f"Found {self.MAX_TOTAL_COLLECTED}+ total matches across {len(files_with_matches)} files (showing matches {start_idx + 1}-{min(end_idx, total_matches)} of {self.MAX_TOTAL_COLLECTED}+)"
+        else:
+            # We found all matches
+            summary = f"Found {total_matches} total matches across {len(files_with_matches)} files (showing matches {start_idx + 1}-{min(end_idx, total_matches)} of {total_matches})"
+
         if files_skipped > 0:
-            summary_parts.append(f"({files_skipped} files skipped)")
+            summary += f"\nNote: Skipped {files_skipped} files due to size limits"
 
-        summary = " ".join(summary_parts) + f" for pattern: '{pattern}'"
-        if include:
-            summary += f" in files matching '{include}'"
+        results.append(summary)
+        results.append("=" * 80)
 
-        # Combine all results
-        formatted_results = [summary, "=" * len(summary)] + results
+        # Add file summary - count matches per file
+        file_match_counts = {}
+        for file_name, _, _ in all_matches:
+            file_match_counts[file_name] = file_match_counts.get(file_name, 0) + 1
 
-        return "\n".join(formatted_results)
+        # Sort files by match count (descending) for better overview
+        sorted_files = sorted(file_match_counts.items(), key=lambda x: x[1], reverse=True)
+
+        results.append("\nFiles with matches:")
+        for file_name, count in sorted_files:
+            if hit_collection_limit and count >= self.MAX_TOTAL_COLLECTED:
+                results.append(f"  - {file_name}: {count}+ matches")
+            else:
+                results.append(f"  - {file_name}: {count} matches")
+        results.append("")  # blank line before matches
+
+        # Format each match in the current page
+        for file_name, line_num, context_lines in paginated_matches:
+            match_header = f"\n=== {file_name}:{line_num} ==="
+            match_content = "\n".join(context_lines)
+            results.append(f"{match_header}\n{match_content}")
+
+        # Add navigation hint
+        results.append("")  # blank line
+        if end_idx < total_matches:
+            if hit_collection_limit:
+                results.append(f'To see more matches, call: grep_files(pattern="{pattern}", offset={end_idx})')
+                results.append(
+                    f"Note: Only the first {self.MAX_TOTAL_COLLECTED} matches were collected. There may be more matches beyond this limit."
+                )
+            else:
+                results.append(f'To see more matches, call: grep_files(pattern="{pattern}", offset={end_idx})')
+        else:
+            if hit_collection_limit:
+                results.append("Showing last page of collected matches. There may be more matches beyond the collection limit.")
+            else:
+                results.append("No more matches to show.")
+
+        return "\n".join(results)
 
     @trace_method
     async def semantic_search_files(self, agent_state: AgentState, query: str, limit: int = 5) -> str:
