@@ -16,6 +16,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "strictNullChecks": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".nx/cache/tsbuildinfo.json",
     "paths": {
       "$afd/*": ["apps/agentfile-directory/src/lib/*"],
       "$web/*": ["apps/web/src/lib/*"],

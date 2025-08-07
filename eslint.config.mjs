@@ -14,6 +14,19 @@ export default [
   {
     ignores: ['**/dist', '**/*.config.js', '**/*.config.mjs', '**/*.d.ts', '**/node_modules/**', '**/*.json', "**/*.js", "**/.preview/**"],
   },
+  {
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: 'tsconfig.base.json',
+        },
+      },
+    },
+    linterOptions: {
+      reportUnusedDisableDirectives: true,
+    },
+  },
   { plugins: { '@nx': nxEslintPlugin } },
   {
     languageOptions: {

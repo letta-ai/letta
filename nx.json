@@ -91,7 +91,8 @@
       "cache": true
     },
     "lint": {
-      "cache": true
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/eslint.config.mjs"]
     },
     "test": {
       "cache": true
