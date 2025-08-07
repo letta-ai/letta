@@ -17,7 +17,7 @@ from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
-from letta.services.helpers.agent_manager_helper import compile_system_message_async
+from letta.services.helpers.agent_manager_helper import get_system_message_from_compiled_memory
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.utils import united_diff
@@ -122,7 +122,7 @@ class BaseAgent(ABC):
             curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
             # generate just the memory string with current state for comparison
-            curr_memory_str = await agent_state.memory.compile_async(
+            curr_memory_str = await agent_state.memory.compile_in_thread_async(
                 tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
             )
             new_dynamic_section = extract_dynamic_section(curr_memory_str)
@@ -142,16 +142,13 @@ class BaseAgent(ABC):
             if num_archival_memories is None:
                 num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
 
-            new_system_message_str = await compile_system_message_async(
+            new_system_message_str = get_system_message_from_compiled_memory(
                 system_prompt=agent_state.system,
-                in_context_memory=agent_state.memory,
+                memory_with_sources=curr_memory_str,
                 in_context_memory_last_edit=memory_edit_timestamp,
                 timezone=agent_state.timezone,
                 previous_message_count=num_messages - len(in_context_messages),
                 archival_memory_size=num_archival_memories,
-                tool_rules_solver=tool_rules_solver,
-                sources=agent_state.sources,
-                max_files_open=agent_state.max_files_open,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)

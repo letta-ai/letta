@@ -25,9 +25,10 @@ from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
+from letta.orm.archives_agents import ArchivesAgents
 from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
-from letta.orm.passage import AgentPassage, SourcePassage
+from letta.orm.passage import ArchivalPassage, SourcePassage
 from letta.orm.sources_agents import SourcesAgents
 from letta.orm.sqlite_functions import adapt_array
 from letta.otel.tracing import trace_method
@@ -329,6 +330,74 @@ def compile_system_message(
 
 
 @trace_method
+def get_system_message_from_compiled_memory(
+    system_prompt: str,
+    memory_with_sources: str,
+    in_context_memory_last_edit: datetime,  # TODO move this inside of BaseMemory?
+    timezone: str,
+    user_defined_variables: Optional[dict] = None,
+    append_icm_if_missing: bool = True,
+    template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+    previous_message_count: int = 0,
+    archival_memory_size: int = 0,
+) -> str:
+    """Prepare the final/full system message that will be fed into the LLM API
+
+    The base system message may be templated, in which case we need to render the variables.
+
+    The following are reserved variables:
+      - CORE_MEMORY: the in-context memory of the LLM
+    """
+    if user_defined_variables is not None:
+        # TODO eventually support the user defining their own variables to inject
+        raise NotImplementedError
+    else:
+        variables = {}
+
+    # Add the protected memory variable
+    if IN_CONTEXT_MEMORY_KEYWORD in variables:
+        raise ValueError(f"Found protected variable '{IN_CONTEXT_MEMORY_KEYWORD}' in user-defined vars: {str(user_defined_variables)}")
+    else:
+        # TODO should this all put into the memory.__repr__ function?
+        memory_metadata_string = compile_memory_metadata_block(
+            memory_edit_timestamp=in_context_memory_last_edit,
+            previous_message_count=previous_message_count,
+            archival_memory_size=archival_memory_size,
+            timezone=timezone,
+        )
+
+        full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
+
+        # Add to the variables list to inject
+        variables[IN_CONTEXT_MEMORY_KEYWORD] = full_memory_string
+
+    if template_format == "f-string":
+        memory_variable_string = "{" + IN_CONTEXT_MEMORY_KEYWORD + "}"
+
+        # Catch the special case where the system prompt is unformatted
+        if append_icm_if_missing:
+            if memory_variable_string not in system_prompt:
+                # In this case, append it to the end to make sure memory is still injected
+                # warnings.warn(f"{IN_CONTEXT_MEMORY_KEYWORD} variable was missing from system prompt, appending instead")
+                system_prompt += "\n\n" + memory_variable_string
+
+        # render the variables using the built-in templater
+        try:
+            if user_defined_variables:
+                formatted_prompt = safe_format(system_prompt, variables)
+            else:
+                formatted_prompt = system_prompt.replace(memory_variable_string, full_memory_string)
+        except Exception as e:
+            raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
+
+    else:
+        # TODO support for mustache and jinja2
+        raise NotImplementedError(template_format)
+
+    return formatted_prompt
+
+
+@trace_method
 async def compile_system_message_async(
     system_prompt: str,
     in_context_memory: Memory,
@@ -374,7 +443,7 @@ async def compile_system_message_async(
             timezone=timezone,
         )
 
-        memory_with_sources = await in_context_memory.compile_async(
+        memory_with_sources = await in_context_memory.compile_in_thread_async(
             tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
         )
         full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string
@@ -918,7 +987,7 @@ def build_passage_query(
                     SourcePassage.organization_id,
                     SourcePassage.file_id,
                     SourcePassage.source_id,
-                    literal(None).label("agent_id"),
+                    literal(None).label("archive_id"),
                 )
                 .join(SourcesAgents, SourcesAgents.source_id == SourcePassage.source_id)
                 .where(SourcesAgents.agent_id == agent_id)
@@ -940,7 +1009,7 @@ def build_passage_query(
                 SourcePassage.organization_id,
                 SourcePassage.file_id,
                 SourcePassage.source_id,
-                literal(None).label("agent_id"),
+                literal(None).label("archive_id"),
             ).where(SourcePassage.organization_id == actor.organization_id)
 
         if source_id:
@@ -954,23 +1023,24 @@ def build_passage_query(
         agent_passages = (
             select(
                 literal(None).label("file_name"),
-                AgentPassage.id,
-                AgentPassage.text,
-                AgentPassage.embedding_config,
-                AgentPassage.metadata_,
-                AgentPassage.embedding,
-                AgentPassage.created_at,
-                AgentPassage.updated_at,
-                AgentPassage.is_deleted,
-                AgentPassage._created_by_id,
-                AgentPassage._last_updated_by_id,
-                AgentPassage.organization_id,
+                ArchivalPassage.id,
+                ArchivalPassage.text,
+                ArchivalPassage.embedding_config,
+                ArchivalPassage.metadata_,
+                ArchivalPassage.embedding,
+                ArchivalPassage.created_at,
+                ArchivalPassage.updated_at,
+                ArchivalPassage.is_deleted,
+                ArchivalPassage._created_by_id,
+                ArchivalPassage._last_updated_by_id,
+                ArchivalPassage.organization_id,
                 literal(None).label("file_id"),
                 literal(None).label("source_id"),
-                AgentPassage.agent_id,
+                ArchivalPassage.archive_id,
             )
-            .where(AgentPassage.agent_id == agent_id)
-            .where(AgentPassage.organization_id == actor.organization_id)
+            .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
+            .where(ArchivesAgents.agent_id == agent_id)
+            .where(ArchivalPassage.organization_id == actor.organization_id)
         )
 
     # Combine queries
@@ -1201,56 +1271,60 @@ def build_agent_passage_query(
         embedded_text = np.array(embedded_text)
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
-    # Base query for agent passages
-    query = select(AgentPassage).where(AgentPassage.agent_id == agent_id, AgentPassage.organization_id == actor.organization_id)
+    # Base query for agent passages - join through archives_agents
+    query = (
+        select(ArchivalPassage)
+        .join(ArchivesAgents, ArchivalPassage.archive_id == ArchivesAgents.archive_id)
+        .where(ArchivesAgents.agent_id == agent_id, ArchivalPassage.organization_id == actor.organization_id)
+    )
 
     # Apply filters
     if start_date:
-        query = query.where(AgentPassage.created_at >= start_date)
+        query = query.where(ArchivalPassage.created_at >= start_date)
     if end_date:
-        query = query.where(AgentPassage.created_at <= end_date)
+        query = query.where(ArchivalPassage.created_at <= end_date)
 
     # Handle text search or vector search
     if embedded_text:
         if settings.database_engine is DatabaseChoice.POSTGRES:
             # PostgreSQL with pgvector
-            query = query.order_by(AgentPassage.embedding.cosine_distance(embedded_text).asc())
+            query = query.order_by(ArchivalPassage.embedding.cosine_distance(embedded_text).asc())
         else:
             # SQLite with custom vector type
             query_embedding_binary = adapt_array(embedded_text)
             query = query.order_by(
-                func.cosine_distance(AgentPassage.embedding, query_embedding_binary).asc(),
-                AgentPassage.created_at.asc() if ascending else AgentPassage.created_at.desc(),
-                AgentPassage.id.asc(),
+                func.cosine_distance(ArchivalPassage.embedding, query_embedding_binary).asc(),
+                ArchivalPassage.created_at.asc() if ascending else ArchivalPassage.created_at.desc(),
+                ArchivalPassage.id.asc(),
             )
     else:
         if query_text:
-            query = query.where(func.lower(AgentPassage.text).contains(func.lower(query_text)))
+            query = query.where(func.lower(ArchivalPassage.text).contains(func.lower(query_text)))
 
     # Handle pagination
     if before or after:
         if before:
             # Get the reference record
-            before_subq = select(AgentPassage.created_at, AgentPassage.id).where(AgentPassage.id == before).subquery()
+            before_subq = select(ArchivalPassage.created_at, ArchivalPassage.id).where(ArchivalPassage.id == before).subquery()
             query = query.where(
                 or_(
-                    AgentPassage.created_at < before_subq.c.created_at,
+                    ArchivalPassage.created_at < before_subq.c.created_at,
                     and_(
-                        AgentPassage.created_at == before_subq.c.created_at,
-                        AgentPassage.id < before_subq.c.id,
+                        ArchivalPassage.created_at == before_subq.c.created_at,
+                        ArchivalPassage.id < before_subq.c.id,
                     ),
                 )
             )
 
         if after:
             # Get the reference record
-            after_subq = select(AgentPassage.created_at, AgentPassage.id).where(AgentPassage.id == after).subquery()
+            after_subq = select(ArchivalPassage.created_at, ArchivalPassage.id).where(ArchivalPassage.id == after).subquery()
             query = query.where(
                 or_(
-                    AgentPassage.created_at > after_subq.c.created_at,
+                    ArchivalPassage.created_at > after_subq.c.created_at,
                     and_(
-                        AgentPassage.created_at == after_subq.c.created_at,
-                        AgentPassage.id > after_subq.c.id,
+                        ArchivalPassage.created_at == after_subq.c.created_at,
+                        ArchivalPassage.id > after_subq.c.id,
                     ),
                 )
             )
@@ -1258,9 +1332,9 @@ def build_agent_passage_query(
     # Apply ordering if not already ordered by similarity
     if not embed_query:
         if ascending:
-            query = query.order_by(AgentPassage.created_at.asc(), AgentPassage.id.asc())
+            query = query.order_by(ArchivalPassage.created_at.asc(), ArchivalPassage.id.asc())
         else:
-            query = query.order_by(AgentPassage.created_at.desc(), AgentPassage.id.asc())
+            query = query.order_by(ArchivalPassage.created_at.desc(), ArchivalPassage.id.asc())
 
     return query
 

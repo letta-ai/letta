@@ -186,8 +186,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     include_multi_agent_tools: bool = Field(
         False, description="If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent)."
     )
-    include_base_tool_rules: bool = Field(
-        True, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+    include_base_tool_rules: Optional[bool] = Field(
+        None, description="If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
     )
     include_default_source: bool = Field(
         False, description="If true, automatically creates and attaches a default data source for this agent."
@@ -212,6 +212,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         None, description="The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
     )
     enable_reasoner: Optional[bool] = Field(False, description="Whether to enable internal extended thinking step for a reasoner model.")
+    reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
     project: Optional[str] = Field(
@@ -335,6 +336,7 @@ class UpdateAgent(BaseModel):
     embedding: Optional[str] = Field(
         None, description="The embedding configuration handle used by the agent, specified in the format provider/model-name."
     )
+    reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
     enable_sleeptime: Optional[bool] = Field(None, description="If set to True, memory management will move to a background agent thread.")
     response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the agent.")
     last_run_completion: Optional[datetime] = Field(None, description="The timestamp when the agent last completed a run.")

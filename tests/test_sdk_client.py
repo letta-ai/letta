@@ -1022,7 +1022,6 @@ def test_preview_payload(client: LettaSDKClient):
         assert system_message["role"] == "system"
         assert "base_instructions" in system_message["content"]
         assert "memory_blocks" in system_message["content"]
-        assert "tool_usage_rules" in system_message["content"]
         assert "Letta" in system_message["content"]
 
         assert isinstance(payload["tools"], list)
@@ -1436,6 +1435,88 @@ def test_tool_name_auto_update_with_multiple_functions(client: LettaSDKClient):
         assert final_tool.name == "calculate_total"
         assert final_tool.source_code == single_function_code
         assert final_tool.json_schema["description"] == "Calculate total with tax"
+
+    finally:
+        # Clean up
+        client.tools.delete(tool_id=tool.id)
+
+
+def test_tool_rename_with_json_schema_and_source_code(client: LettaSDKClient):
+    """Test that passing both new JSON schema AND source code still renames the tool based on source code"""
+    import textwrap
+
+    # Create initial tool
+    def initial_tool(x: int) -> int:
+        """
+        Multiply a number by 2
+
+        Args:
+            x: The input number
+
+        Returns:
+            The input multiplied by 2
+        """
+        return x * 2
+
+    # Create the tool
+    tool = client.tools.upsert_from_function(func=initial_tool)
+    assert tool.name == "initial_tool"
+
+    try:
+        # Define new function source code with different name
+        new_source_code = textwrap.dedent(
+            """
+            def renamed_function(value: float, multiplier: float = 2.0) -> float:
+                '''
+                Multiply a value by a multiplier
+
+                Args:
+                    value: The input value
+                    multiplier: The multiplier to use (default 2.0)
+
+                Returns:
+                    The value multiplied by the multiplier
+                '''
+                return value * multiplier
+            """
+        ).strip()
+
+        # Create a custom JSON schema that has a different name
+        custom_json_schema = {
+            "name": "custom_schema_name",
+            "description": "Custom description from JSON schema",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "value": {"type": "number", "description": "Input value from JSON schema"},
+                    "multiplier": {"type": "number", "description": "Multiplier from JSON schema", "default": 2.0},
+                },
+                "required": ["value"],
+            },
+        }
+
+        # Modify the tool with both new source code AND JSON schema
+        modified_tool = client.tools.modify(tool_id=tool.id, source_code=new_source_code, json_schema=custom_json_schema)
+
+        # Verify the name comes from the source code function name, not the JSON schema
+        assert modified_tool.name == "renamed_function"
+        assert modified_tool.source_code == new_source_code
+
+        # Verify the JSON schema was updated to match the function name from source code
+        assert modified_tool.json_schema is not None
+        assert modified_tool.json_schema["name"] == "renamed_function"
+
+        # The description should come from the source code docstring, not the JSON schema
+        assert modified_tool.json_schema["description"] == "Multiply a value by a multiplier"
+
+        # Verify parameters are from the source code, not the custom JSON schema
+        params = modified_tool.json_schema.get("parameters", {})
+        properties = params.get("properties", {})
+        assert "value" in properties
+        assert "multiplier" in properties
+        assert properties["value"]["type"] == "number"
+        assert properties["multiplier"]["type"] == "number"
+        assert params["required"] == ["value"]
 
     finally:
         # Clean up

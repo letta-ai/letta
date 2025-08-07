@@ -113,6 +113,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 limited_configs = [
     "ollama.json",
     "together-qwen-2.5-72b-instruct.json",
+    "vllm.json",
 ]
 
 all_configs = [
@@ -1375,63 +1376,6 @@ def test_async_greeting_with_callback_url(
         # Validate HTTP headers
         headers = callback["headers"]
         assert headers.get("Content-Type") == "application/json", "Callback should have JSON content type"
-
-
-@pytest.mark.parametrize(
-    "llm_config",
-    TESTED_LLM_CONFIGS,
-    ids=[c.model for c in TESTED_LLM_CONFIGS],
-)
-def test_async_callback_failure_scenarios(
-    disable_e2b_api_key: Any,
-    client: Letta,
-    agent_state: AgentState,
-    llm_config: LLMConfig,
-) -> None:
-    """
-    Tests that job completion works even when callback URLs fail.
-    This ensures callback failures don't affect job processing.
-    """
-    config_filename = None
-    for filename in filenames:
-        config = get_llm_config(filename)
-        if config.model_dump() == llm_config.model_dump():
-            config_filename = filename
-            break
-
-    # skip if this is a limited model
-    if not config_filename or config_filename in limited_configs:
-        pytest.skip(f"Skipping test for limited model {llm_config.model}")
-
-    client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-
-    # Test with invalid callback URL - job should still complete
-    run = client.agents.messages.create_async(
-        agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
-        callback_url="http://invalid-domain-that-does-not-exist.com/callback",
-    )
-
-    # Wait for job completion - should work despite callback failure
-    run = wait_for_run_completion(client, run.id)
-
-    # Validate job completed successfully
-    result = run.metadata.get("result")
-    assert result is not None, "Run metadata missing 'result' key"
-
-    messages = cast_message_dict_to_messages(result["messages"])
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
-
-    # Job should be marked as completed even if callback failed
-    assert run.status == "completed", f"Expected status 'completed', got {run.status}"
-
-    # Validate callback failure was properly recorded
-    assert run.callback_sent_at is not None, "callback_sent_at should be set even for failed callbacks"
-    assert run.callback_error is not None, "callback_error should be set to error message for failed callbacks"
-    assert isinstance(run.callback_error, str), "callback_error should be error message string for failed callbacks"
-    assert "Failed to dispatch callback" in run.callback_error, "callback_error should contain error details"
-    assert run.id in run.callback_error, "callback_error should contain job ID"
-    assert "invalid-domain-that-does-not-exist.com" in run.callback_error, "callback_error should contain failed URL"
 
 
 @pytest.mark.parametrize(

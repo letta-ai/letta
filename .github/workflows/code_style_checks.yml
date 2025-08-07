@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12"]  # Adjust Python version matrix if needed
+        python-version: ["3.11", "3.12", "3.13"]  # Adjust Python version matrix if needed
 
     steps:
     - name: Checkout code

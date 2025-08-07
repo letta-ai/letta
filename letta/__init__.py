@@ -5,13 +5,10 @@ try:
     __version__ = version("letta")
 except PackageNotFoundError:
     # Fallback for development installations
-    __version__ = "0.10.0"
+    __version__ = "0.11.0"
 
 if os.environ.get("LETTA_VERSION"):
     __version__ = os.environ["LETTA_VERSION"]
-
-# import clients
-from letta.client.client import RESTClient
 
 # Import sqlite_functions early to ensure event handlers are registered
 from letta.orm import sqlite_functions

@@ -10,19 +10,7 @@ logger = get_logger(__name__)
 
 
 class LLMConfig(BaseModel):
-    """
-    Configuration for a Language Model (LLM) model. This object specifies all the information necessary to access an LLM model to usage with Letta, except for secret keys.
-
-    Attributes:
-        model (str): The name of the LLM model.
-        model_endpoint_type (str): The endpoint type for the model.
-        model_endpoint (str): The endpoint for the model.
-        model_wrapper (str): The wrapper for the model. This is used to wrap additional text around the input/output of the model. This is useful for text-to-text completions, such as the Completions API in OpenAI.
-        context_window (int): The context window size for the model.
-        put_inner_thoughts_in_kwargs (bool): Puts `inner_thoughts` as a kwarg in the function call if this is set to True. This helps with function calling performance and also the generation of inner thoughts.
-        temperature (float): The temperature to use when generating text with the model. A higher temperature will result in more random text.
-        max_tokens (int): The maximum number of tokens to generate.
-    """
+    """Configuration for Language Model (LLM) connection and generation parameters."""
 
     model: str = Field(..., description="LLM model name. ")
     model_endpoint_type: Literal[
@@ -185,7 +173,7 @@ class LLMConfig(BaseModel):
                 model="memgpt-openai",
                 model_endpoint_type="openai",
                 model_endpoint=LETTA_MODEL_ENDPOINT,
-                context_window=8192,
+                context_window=30000,
             )
         else:
             raise ValueError(f"Model {model_name} not supported.")
@@ -196,3 +184,30 @@ class LLMConfig(BaseModel):
             + (f" [type={self.model_endpoint_type}]" if self.model_endpoint_type else "")
             + (f" [ip={self.model_endpoint}]" if self.model_endpoint else "")
         )
+
+    @classmethod
+    def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
+        if reasoning:
+            if (
+                config.model_endpoint_type == "anthropic"
+                and ("claude-opus-4" in config.model or "claude-sonnet-4" in config.model or "claude-3-7-sonnet" in config.model)
+            ) or (
+                config.model_endpoint_type == "google_vertex" and ("gemini-2.5-flash" in config.model or "gemini-2.0-pro" in config.model)
+            ):
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            elif config.model_endpoint_type == "openai" and (
+                config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
+            ):
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = True
+                if config.reasoning_effort is None:
+                    config.reasoning_effort = "medium"
+            else:
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = False
+        else:
+            config.put_inner_thoughts_in_kwargs = False
+            config.enable_reasoner = False

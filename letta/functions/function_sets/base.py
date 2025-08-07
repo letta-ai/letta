@@ -75,7 +75,6 @@ def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
     """
     self.passage_manager.insert_passage(
         agent_state=self.agent_state,
-        agent_id=self.agent_state.id,
         text=content,
         actor=self.user,
     )

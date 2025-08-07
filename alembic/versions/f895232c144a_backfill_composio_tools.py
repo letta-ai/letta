@@ -9,7 +9,7 @@ Create Date: 2025-01-16 14:21:33.764332
 from typing import Sequence, Union
 
 from alembic import op
-from letta.orm.enums import ToolType
+from letta.schemas.enums import ToolType
 from letta.settings import settings
 
 # revision identifiers, used by Alembic.

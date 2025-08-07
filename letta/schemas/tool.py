@@ -22,8 +22,9 @@ from letta.functions.schema_generator import (
     generate_tool_schema_for_mcp,
 )
 from letta.log import get_logger
-from letta.orm.enums import ToolType
+from letta.schemas.enums import ToolType
 from letta.schemas.letta_base import LettaBase
+from letta.schemas.npm_requirement import NpmRequirement
 from letta.schemas.pip_requirement import PipRequirement
 
 logger = get_logger(__name__)
@@ -60,7 +61,8 @@ class Tool(BaseTool):
 
     # tool configuration
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
-    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
+    pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
+    npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
 
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
@@ -144,7 +146,8 @@ class ToolCreate(LettaBase):
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
-    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
+    pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
+    npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
 
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
@@ -206,39 +209,6 @@ class ToolCreate(LettaBase):
             json_schema=json_schema,
         )
 
-    @classmethod
-    def from_langchain(
-        cls,
-        langchain_tool: "LangChainBaseTool",
-        additional_imports_module_attr_map: dict[str, str] = None,
-    ) -> "ToolCreate":
-        """
-        Class method to create an instance of Tool from a Langchain tool (must be from langchain_community.tools).
-
-        Args:
-            langchain_tool (LangChainBaseTool): An instance of a LangChain BaseTool (BaseTool from LangChain)
-            additional_imports_module_attr_map (dict[str, str]): A mapping of module names to attribute name. This is used internally to import all the required classes for the langchain tool. For example, you would pass in `{"langchain_community.utilities": "WikipediaAPIWrapper"}` for `from langchain_community.tools import WikipediaQueryRun`. NOTE: You do NOT need to specify the tool import here, that is done automatically for you.
-
-        Returns:
-            Tool: A Letta Tool initialized with attributes derived from the provided LangChain BaseTool object.
-        """
-        from letta.functions.helpers import generate_langchain_tool_wrapper
-
-        description = langchain_tool.description
-        source_type = "python"
-        tags = ["langchain"]
-        # NOTE: langchain tools may come from different packages
-        wrapper_func_name, wrapper_function_str = generate_langchain_tool_wrapper(langchain_tool, additional_imports_module_attr_map)
-        json_schema = generate_schema_from_args_schema_v2(langchain_tool.args_schema, name=wrapper_func_name, description=description)
-
-        return cls(
-            description=description,
-            source_type=source_type,
-            tags=tags,
-            source_code=wrapper_function_str,
-            json_schema=json_schema,
-        )
-
 
 class ToolUpdate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
@@ -250,7 +220,8 @@ class ToolUpdate(LettaBase):
     )
     args_json_schema: Optional[Dict] = Field(None, description="The args JSON schema of the function.")
     return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
-    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
+    pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
+    npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
 
     class Config:
         extra = "ignore"  # Allows extra fields without validation errors
@@ -267,4 +238,5 @@ class ToolRunFromSource(LettaBase):
     json_schema: Optional[Dict] = Field(
         None, description="The JSON schema of the function (auto-generated from source_code if not provided)"
     )
-    pip_requirements: Optional[List[PipRequirement]] = Field(None, description="Optional list of pip packages required by this tool.")
+    pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
+    npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")

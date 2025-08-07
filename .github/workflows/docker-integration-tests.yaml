@@ -16,7 +16,7 @@ jobs:
     - name: Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.11'
 
     - name: Set permissions for log directory
       run: |
@@ -37,7 +37,7 @@ jobs:
     #- name: "Setup Python, Poetry and Dependencies"
     #  uses: packetcoders/action-setup-cache-python-poetry@v1.2.0
     #  with:
-    #    python-version: "3.12"
+    #    python-version: "3.11"
     #    poetry-version: "1.8.2"
     #    install-args: "--all-extras"
 
@@ -58,7 +58,6 @@ jobs:
         pipx install poetry==2.1.3
         poetry install -E dev -E postgres
         poetry run pytest -s tests/test_client.py
-#        poetry run pytest -s tests/test_client_legacy.py
 
     - name: Print docker logs if tests fail
       if: failure()

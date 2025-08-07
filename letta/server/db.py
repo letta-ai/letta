@@ -226,7 +226,12 @@ class DatabaseRegistry:
 
     def _build_sqlalchemy_engine_args(self, *, is_async: bool) -> dict:
         """Prepare keyword arguments for create_engine / create_async_engine."""
-        use_null_pool = settings.disable_sqlalchemy_pooling
+        # For async SQLite, always use NullPool to avoid cleanup issues during cancellation
+        if is_async and settings.database_engine is DatabaseChoice.SQLITE:
+            use_null_pool = True
+            logger.info("Forcing NullPool for async SQLite to avoid cancellation cleanup issues")
+        else:
+            use_null_pool = settings.disable_sqlalchemy_pooling
 
         if use_null_pool:
             logger.info("Disabling pooling on SqlAlchemy")
@@ -262,7 +267,8 @@ class DatabaseRegistry:
                     }
                 )
 
-        elif is_async:
+        elif is_async and settings.database_engine is DatabaseChoice.POSTGRES:
+            # Invalid for SQLite, results in [0] TypeError: 'prepared_statement_name_func' is an invalid keyword argument for Connection()
             # For asyncpg, statement_cache_size should be in connect_args
             base_args.update(
                 {

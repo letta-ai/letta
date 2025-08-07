@@ -562,6 +562,7 @@ async def test_continue_tool_rule(server, default_user):
         include_base_tools=False,
         include_base_tool_rules=False,
     )
+    print(agent_state)
 
     response = await run_agent_step(
         server=server,
@@ -569,6 +570,7 @@ async def test_continue_tool_rule(server, default_user):
         input_messages=[MessageCreate(role="user", content="Send me some messages, and then call core_memory_append to end your turn.")],
         actor=default_user,
     )
+    print(response)
 
     assert_invoked_function_call(response.messages, "send_message")
     assert_invoked_function_call(response.messages, "core_memory_append")

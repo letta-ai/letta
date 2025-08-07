@@ -7,7 +7,7 @@ from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
 from letta.interface import AgentInterface
 from letta.orm import User
-from letta.orm.enums import ToolType
+from letta.schemas.enums import ToolType
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.message import MessageCreate
 from letta.schemas.tool import Tool

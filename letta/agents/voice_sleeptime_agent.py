@@ -3,11 +3,10 @@ from typing import AsyncGenerator, List, Optional, Tuple, Union
 from letta.agents.helpers import _create_letta_response, serialize_message_history
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import DEFAULT_MAX_STEPS
-from letta.orm.enums import ToolType
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.block import BlockUpdate
-from letta.schemas.enums import MessageStreamStatus
+from letta.schemas.enums import MessageStreamStatus, ToolType
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
@@ -166,7 +165,6 @@ class VoiceSleeptimeAgent(LettaAgent):
             memory = serialize_message_history(messages, context)
             self.agent_manager.passage_manager.insert_passage(
                 agent_state=agent_state,
-                agent_id=agent_state.id,
                 text=memory,
                 actor=self.actor,
             )

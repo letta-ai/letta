@@ -1,7 +1,7 @@
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import sqlalchemy as sa
 from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
@@ -19,6 +19,7 @@ from letta.constants import (
     DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
     DEPRECATED_LETTA_TOOLS,
+    EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
 )
 from letta.helpers import ToolRulesSolver
@@ -26,7 +27,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
 from letta.orm import Agent as AgentModel
-from letta.orm import AgentPassage, AgentsTags
+from letta.orm import AgentsTags, ArchivalPassage
 from letta.orm import Block as BlockModel
 from letta.orm import BlocksAgents
 from letta.orm import Group as GroupModel
@@ -35,7 +36,6 @@ from letta.orm import Source as SourceModel
 from letta.orm import SourcePassage, SourcesAgents
 from letta.orm import Tool as ToolModel
 from letta.orm import ToolsAgents
-from letta.orm.enums import ToolType
 from letta.orm.errors import NoResultFound
 from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
@@ -47,10 +47,11 @@ from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType
+from letta.schemas.enums import ProviderType, ToolType
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message
 from letta.schemas.message import Message as PydanticMessage
@@ -86,8 +87,8 @@ from letta.services.helpers.agent_manager_helper import (
     calculate_multi_agent_tools,
     check_supports_structured_output,
     compile_system_message,
-    compile_system_message_async,
     derive_system_message,
+    get_system_message_from_compiled_memory,
     initialize_message_sequence,
     initialize_message_sequence_async,
     package_initial_message_sequence,
@@ -332,11 +333,26 @@ class AgentManager:
                 tool_names = set(name_to_id.keys())  # now canonical
 
                 tool_rules = list(agent_create.tool_rules or [])
-                if agent_create.include_base_tool_rules:
+
+                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                if (
+                    (
+                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        and agent_create.include_base_tool_rules is None
+                    )
+                    and agent_create.agent_type != AgentType.sleeptime_agent
+                ) or agent_create.include_base_tool_rules is False:
+                    agent_create.include_base_tool_rules = False
+                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                else:
+                    agent_create.include_base_tool_rules = True
+
+                should_add_base_tool_rules = agent_create.include_base_tool_rules
+                if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
-                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_SLEEPTIME_TOOLS):
+                        elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
                 if tool_rules:
@@ -349,6 +365,7 @@ class AgentManager:
                         enable_sleeptime=agent_create.enable_sleeptime,
                         system=agent_create.system,
                     ),
+                    hidden=agent_create.hidden,
                     agent_type=agent_create.agent_type,
                     llm_config=agent_create.llm_config,
                     embedding_config=agent_create.embedding_config,
@@ -443,6 +460,9 @@ class AgentManager:
         if not agent_create.llm_config or not agent_create.embedding_config:
             raise ValueError("llm_config and embedding_config are required")
 
+        if agent_create.reasoning is not None:
+            agent_create.llm_config = LLMConfig.apply_reasoning_setting_to_config(agent_create.llm_config, agent_create.reasoning)
+
         # blocks
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
@@ -521,9 +541,23 @@ class AgentManager:
 
                 tool_ids = set(name_to_id.values()) | set(id_to_name.keys())
                 tool_names = set(name_to_id.keys())  # now canonical
-
                 tool_rules = list(agent_create.tool_rules or [])
-                if agent_create.include_base_tool_rules:
+
+                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                if (
+                    (
+                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        and agent_create.include_base_tool_rules is None
+                    )
+                    and agent_create.agent_type != AgentType.sleeptime_agent
+                ) or agent_create.include_base_tool_rules is False:
+                    agent_create.include_base_tool_rules = False
+                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                else:
+                    agent_create.include_base_tool_rules = True
+
+                should_add_base_tool_rules = agent_create.include_base_tool_rules
+                if should_add_base_tool_rules:
                     for tn in tool_names:
                         if tn in {"send_message", "send_message_to_agent_async", "memory_finish_edits"}:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
@@ -547,6 +581,7 @@ class AgentManager:
                     description=agent_create.description,
                     metadata_=agent_create.metadata,
                     tool_rules=tool_rules,
+                    hidden=agent_create.hidden,
                     project_id=agent_create.project_id,
                     template_id=agent_create.template_id,
                     base_template_id=agent_create.base_template_id,
@@ -858,6 +893,10 @@ class AgentManager:
             agent: AgentModel = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id
+
+            if agent_update.reasoning is not None:
+                llm_config = agent_update.llm_config or agent.llm_config
+                agent_update.llm_config = LLMConfig.apply_reasoning_setting_to_config(llm_config, agent_update.reasoning)
 
             scalar_updates = {
                 "name": agent_update.name,
@@ -1296,6 +1335,19 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def get_agent_archive_ids_async(self, agent_id: str, actor: PydanticUser) -> List[str]:
+        """Get all archive IDs associated with an agent."""
+        from letta.orm import ArchivesAgents
+
+        async with db_registry.async_session() as session:
+            # Direct query to archives_agents table for performance
+            query = select(ArchivesAgents.archive_id).where(ArchivesAgents.agent_id == agent_id)
+            result = await session.execute(query)
+            archive_ids = [row[0] for row in result.fetchall()]
+            return archive_ids
+
+    @enforce_types
+    @trace_method
     def delete_agent(self, agent_id: str, actor: PydanticUser) -> None:
         """
         Deletes an agent and its associated relationships.
@@ -1411,6 +1463,7 @@ class AgentManager:
         override_existing_tools: bool = True,
         project_id: Optional[str] = None,
         strip_messages: Optional[bool] = False,
+        env_vars: Optional[dict[str, Any]] = None,
     ) -> PydanticAgentState:
         serialized_agent_dict = serialized_agent.model_dump()
         tool_data_list = serialized_agent_dict.pop("tools", [])
@@ -1441,6 +1494,11 @@ class AgentManager:
             if strip_messages:
                 # we want to strip all but the first (system) message
                 agent.message_ids = [agent.message_ids[0]]
+
+            if env_vars:
+                for var in agent.tool_exec_environment_variables:
+                    var.value = env_vars.get(var.key, "")
+
             agent = agent.create(session, actor=actor)
 
             pydantic_agent = agent.to_pydantic()
@@ -1465,7 +1523,7 @@ class AgentManager:
             ):
                 pydantic_tool = existing_pydantic_tool
             else:
-                pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor)
+                pydantic_tool = self.tool_manager.create_or_update_tool(pydantic_tool, actor=actor, bypass_name_check=True)
 
             pydantic_agent = self.attach_tool(agent_id=pydantic_agent.id, tool_id=pydantic_tool.id, actor=actor)
 
@@ -1683,7 +1741,7 @@ class AgentManager:
 
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = await agent_state.memory.compile_async(
+        curr_memory_str = await agent_state.memory.compile_in_thread_async(
             sources=agent_state.sources,
             tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -1705,16 +1763,13 @@ class AgentManager:
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
-        new_system_message_str = await compile_system_message_async(
+        new_system_message_str = get_system_message_from_compiled_memory(
             system_prompt=agent_state.system,
-            in_context_memory=agent_state.memory,
+            memory_with_sources=curr_memory_str,
             in_context_memory_last_edit=memory_edit_timestamp,
             timezone=agent_state.timezone,
             previous_message_count=num_messages - len(agent_state.message_ids),
             archival_memory_size=num_archival_memories,
-            tool_rules_solver=tool_rules_solver,
-            sources=agent_state.sources,
-            max_files_open=agent_state.max_files_open,
         )
 
         diff = united_diff(curr_system_message_openai["content"], new_system_message_str)
@@ -1873,7 +1928,7 @@ class AgentManager:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor, include_relationships=["memory", "sources"])
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
-        new_memory_str = await new_memory.compile_async(
+        new_memory_str = await new_memory.compile_in_thread_async(
             sources=agent_state.sources,
             tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -2340,21 +2395,24 @@ class AgentManager:
                 main_query = main_query.limit(limit)
 
             # Execute query
-            results = list(session.execute(main_query))
+            result = session.execute(main_query)
 
             passages = []
-            for row in results:
+            for row in result:
                 data = dict(row._mapping)
-                if data["agent_id"] is not None:
-                    # This is an AgentPassage - remove source fields
+                if data.get("archive_id", None):
+                    # This is an ArchivalPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
                     data.pop("file_name", None)
-                    passage = AgentPassage(**data)
-                else:
-                    # This is a SourcePassage - remove agent field
-                    data.pop("agent_id", None)
+                    passage = ArchivalPassage(**data)
+                elif data.get("source_id", None):
+                    # This is a SourcePassage - remove archive field
+                    data.pop("archive_id", None)
+                    data.pop("agent_id", None)  # For backward compatibility
                     passage = SourcePassage(**data)
+                else:
+                    raise ValueError(f"Passage data is malformed, is neither ArchivalPassage nor SourcePassage {data}")
                 passages.append(passage)
 
             return [p.to_pydantic() for p in passages]
@@ -2406,16 +2464,19 @@ class AgentManager:
             passages = []
             for row in result:
                 data = dict(row._mapping)
-                if data["agent_id"] is not None:
-                    # This is an AgentPassage - remove source fields
+                if data.get("archive_id", None):
+                    # This is an ArchivalPassage - remove source fields
                     data.pop("source_id", None)
                     data.pop("file_id", None)
                     data.pop("file_name", None)
-                    passage = AgentPassage(**data)
-                else:
-                    # This is a SourcePassage - remove agent field
-                    data.pop("agent_id", None)
+                    passage = ArchivalPassage(**data)
+                elif data.get("source_id", None):
+                    # This is a SourcePassage - remove archive field
+                    data.pop("archive_id", None)
+                    data.pop("agent_id", None)  # For backward compatibility
                     passage = SourcePassage(**data)
+                else:
+                    raise ValueError(f"Passage data is malformed, is neither ArchivalPassage nor SourcePassage {data}")
                 passages.append(passage)
 
             return [p.to_pydantic() for p in passages]

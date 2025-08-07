@@ -6,12 +6,16 @@ from typing import Dict, List, Optional
 from mcp import Tool
 from pydantic import BaseModel, Field
 
+from letta.utils import get_logger
+
 # MCP Authentication Constants
 MCP_AUTH_HEADER_AUTHORIZATION = "Authorization"
 MCP_AUTH_TOKEN_BEARER_PREFIX = "Bearer"
 TEMPLATED_VARIABLE_REGEX = (
     r"\{\{\s*([A-Z_][A-Z0-9_]*)\s*(?:\|\s*([^}]+?)\s*)?\}\}"  # Allows for optional whitespace around the variable name and default value
 )
+
+logger = get_logger(__name__)
 
 
 class MCPTool(Tool):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letta"
-version = "0.10.0"
+version = "0.11.0"
 packages = [
     {include = "letta"},
 ]
@@ -15,7 +15,7 @@ readme = "README.md"
 letta = "letta.main:app"
 
 [tool.poetry.dependencies]
-python = "<3.14,>=3.10"
+python = "<3.14,>=3.11"
 typer = "^0.15.2"
 questionary = "^2.0.1"
 pytz = "^2023.3.post1"
@@ -120,7 +120,7 @@ external-tools = ["docker", "langchain", "wikipedia", "langchain-community", "fi
 tests = ["wikipedia"]
 bedrock = ["boto3", "aioboto3"]
 google = ["google-genai"]
-desktop = ["pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "sqlite-vec"]
+desktop = ["pyright", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "sqlite-vec", "pgvector"]
 all = ["pgvector", "turbopuffer", "pg8000", "psycopg2-binary", "psycopg2", "pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "pyright", "pytest-order", "autoflake", "isort", "websockets", "fastapi", "uvicorn", "docker", "langchain", "wikipedia", "langchain-community", "locust", "uvloop", "granian", "redis", "pinecone", "google-cloud-profiler"]
 
 [tool.poetry.group.dev.dependencies]

@@ -41,12 +41,11 @@ from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_mes
 from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
-from letta.orm.enums import ToolType
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole, ProviderType
+from letta.schemas.enums import MessageRole, ProviderType, ToolType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn

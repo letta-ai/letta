@@ -21,6 +21,7 @@ from letta.schemas.agent_file import (
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
+from letta.schemas.group import ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import MessageCreate
 from letta.schemas.organization import Organization
@@ -615,13 +616,20 @@ def _compare_groups(orig: GroupSchema, imp: GroupSchema, index: int) -> List[str
     """Compare two GroupSchema objects for logical equivalence."""
     errors = []
 
-    if orig.name != imp.name:
-        errors.append(f"Group {index}: name mismatch: '{orig.name}' vs '{imp.name}'")
+    orig_agent_ids = sorted(orig.agent_ids)
+    imp_agent_ids = sorted(imp.agent_ids)
+    if orig_agent_ids != imp_agent_ids:
+        errors.append(f"Group {index}: agent_ids mismatch: '{orig_agent_ids}' vs '{imp_agent_ids}'")
 
     if orig.description != imp.description:
         errors.append(f"Group {index}: description mismatch")
 
-    if orig.metadata != imp.metadata:
+    if orig.manager_config != imp.manager_config:
+        errors.append(f"Group {index}: manager config mismatch")
+
+    orig_shared_block_ids = sorted(orig.shared_block_ids)
+    imp_shared_block_ids = sorted(imp.shared_block_ids)
+    if orig_shared_block_ids != imp_shared_block_ids:
         errors.append(f"Group {index}: metadata mismatch")
 
     return errors
@@ -1001,6 +1009,43 @@ class TestAgentFileExport:
         assert len(agent_file.metadata.get("revision_id")) == 12
         assert all(c in "0123456789abcdef" for c in agent_file.metadata.get("revision_id"))
 
+    async def test_export_sleeptime_enabled_agent(self, server, agent_serialization_manager, default_user, weather_tool):
+        """Test exporting sleeptime enabled agent."""
+        create_agent_request = CreateAgent(
+            name="sleeptime-enabled-test-agent",
+            system="Sleeptime enabled test agent",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            tool_ids=[weather_tool.id],
+            initial_message_sequence=[
+                MessageCreate(role=MessageRole.user, content="Second agent message"),
+            ],
+            enable_sleeptime=True,
+        )
+
+        sleeptime_enabled_agent = await server.create_agent_async(
+            request=create_agent_request,
+            actor=default_user,
+        )
+
+        agent_file = await agent_serialization_manager.export([sleeptime_enabled_agent.id], default_user)
+
+        assert sleeptime_enabled_agent.multi_agent_group != None
+        assert len(agent_file.agents) == 2
+        assert validate_id_format(agent_file)
+
+        agent_ids = {agent.id for agent in agent_file.agents}
+        assert len(agent_ids) == 2
+
+        assert len(agent_file.groups) == 1
+        sleeptime_group = agent_file.groups[0]
+        assert len(sleeptime_group.agent_ids) == 1
+        assert sleeptime_group.agent_ids[0] in agent_ids
+        assert sleeptime_group.manager_config.manager_type == ManagerType.sleeptime
+        assert sleeptime_group.manager_config.manager_agent_id in agent_ids
+
+        await server.agent_manager.delete_agent_async(agent_id=sleeptime_enabled_agent.id, actor=default_user)
+
 
 class TestAgentFileImport:
     """Tests for agent file import functionality."""
@@ -1097,6 +1142,42 @@ class TestAgentFileImport:
 
         with pytest.raises(AgentFileImportError):
             await agent_serialization_manager.import_file(invalid_agent_file, other_user)
+
+    async def test_import_sleeptime_enabled_agent(self, server, agent_serialization_manager, default_user, other_user, weather_tool):
+        """Test basic agent import functionality."""
+        create_agent_request = CreateAgent(
+            name="sleeptime-enabled-test-agent",
+            system="Sleeptime enabled test agent",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            tool_ids=[weather_tool.id],
+            initial_message_sequence=[
+                MessageCreate(role=MessageRole.user, content="Second agent message"),
+            ],
+            enable_sleeptime=True,
+        )
+
+        sleeptime_enabled_agent = await server.create_agent_async(
+            request=create_agent_request,
+            actor=default_user,
+        )
+
+        sleeptime_enabled_agent.multi_agent_group.id
+        sleeptime_enabled_agent.multi_agent_group.agent_ids[0]
+
+        agent_file = await agent_serialization_manager.export([sleeptime_enabled_agent.id], default_user)
+
+        result = await agent_serialization_manager.import_file(agent_file, other_user)
+        assert result.success
+        assert result.imported_count > 0
+        assert len(result.id_mappings) > 0
+
+        exported_agent_ids = [file_id for file_id in list(result.id_mappings.values()) if file_id.startswith("agent-")]
+        assert len(exported_agent_ids) == 2
+        exported_group_ids = [file_id for file_id in list(result.id_mappings.keys()) if file_id.startswith("group-")]
+        assert len(exported_group_ids) == 1
+
+        await server.agent_manager.delete_agent_async(agent_id=sleeptime_enabled_agent.id, actor=default_user)
 
 
 class TestAgentFileImportWithProcessing:
@@ -1207,6 +1288,8 @@ class TestAgentFileRoundTrip:
         result = await agent_serialization_manager.import_file(original_export, other_user)
         imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
         second_export = await agent_serialization_manager.export([imported_agent_id], other_user)
+        print(original_export.agents[0].tool_rules)
+        print(second_export.agents[0].tool_rules)
         assert compare_agent_files(original_export, second_export)
 
     async def test_multiple_roundtrips(self, server, agent_serialization_manager, test_agent, default_user, other_user):

@@ -80,6 +80,7 @@ from letta.server.rest_api.interface import StreamingServerInterface
 from letta.server.rest_api.utils import sse_async_generator
 from letta.services.agent_manager import AgentManager
 from letta.services.agent_serialization_manager import AgentSerializationManager
+from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
 from letta.services.file_manager import FileManager
 from letta.services.files_agents_manager import FileAgentManager
@@ -215,6 +216,7 @@ class SyncServer(Server):
         self.message_manager = MessageManager()
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
+        self.archive_manager = ArchiveManager()
         self.provider_manager = ProviderManager()
         self.step_manager = StepManager()
         self.identity_manager = IdentityManager()
@@ -1146,29 +1148,12 @@ class SyncServer(Server):
         )
         return records
 
-    def insert_archival_memory(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
-        # Get the agent object (loaded in memory)
-        agent_state = self.agent_manager.get_agent_by_id(agent_id=agent_id, actor=actor)
-        # Insert into archival memory
-        # TODO: @mindy look at moving this to agent_manager to avoid above extra call
-        passages = self.passage_manager.insert_passage(agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor)
-
-        # rebuild agent system prompt - force since no archival change
-        self.agent_manager.rebuild_system_prompt(agent_id=agent_id, actor=actor, force=True)
-
-        return passages
-
     async def insert_archival_memory_async(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
         # Get the agent object (loaded in memory)
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        # Insert into archival memory
-        # TODO: @mindy look at moving this to agent_manager to avoid above extra call
-        passages = await self.passage_manager.insert_passage_async(
-            agent_state=agent_state, agent_id=agent_id, text=memory_contents, actor=actor
-        )
 
-        # rebuild agent system prompt - force since no archival change
-        await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_id, actor=actor, force=True)
+        # Insert passages into the archive
+        passages = await self.passage_manager.insert_passage_async(agent_state=agent_state, text=memory_contents, actor=actor)
 
         return passages
 
@@ -1177,17 +1162,6 @@ class SyncServer(Server):
         passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
         return passages
 
-    def delete_archival_memory(self, memory_id: str, actor: User):
-        # TODO check if it exists first, and throw error if not
-        # TODO: need to also rebuild the prompt here
-        passage = self.passage_manager.get_passage_by_id(passage_id=memory_id, actor=actor)
-
-        # delete the passage
-        self.passage_manager.delete_passage_by_id(passage_id=memory_id, actor=actor)
-
-        # rebuild system prompt and force
-        self.agent_manager.rebuild_system_prompt(agent_id=passage.agent_id, actor=actor, force=True)
-
     async def delete_archival_memory_async(self, memory_id: str, actor: User):
         # TODO check if it exists first, and throw error if not
         # TODO: need to also rebuild the prompt here
@@ -1195,9 +1169,6 @@ class SyncServer(Server):
 
         # delete the passage
         await self.passage_manager.delete_passage_by_id_async(passage_id=memory_id, actor=actor)
-
-        # rebuild system prompt and force
-        await self.agent_manager.rebuild_system_prompt_async(agent_id=passage.agent_id, actor=actor, force=True)
 
     def get_agent_recall(
         self,
@@ -2258,10 +2229,7 @@ class SyncServer(Server):
             llm_config = letta_agent.agent_state.llm_config
             # supports_token_streaming = ["openai", "anthropic", "xai", "deepseek"]
             supports_token_streaming = ["openai", "anthropic", "deepseek"]  # TODO re-enable xAI once streaming is patched
-            if stream_tokens and (
-                llm_config.model_endpoint_type not in supports_token_streaming
-                or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
-            ):
+            if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
                 warnings.warn(
                     f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
                 )
@@ -2393,9 +2361,7 @@ class SyncServer(Server):
 
         llm_config = letta_multi_agent.agent_state.llm_config
         supports_token_streaming = ["openai", "anthropic", "deepseek"]
-        if stream_tokens and (
-            llm_config.model_endpoint_type not in supports_token_streaming or llm_config.model_endpoint == constants.LETTA_MODEL_ENDPOINT
-        ):
+        if stream_tokens and (llm_config.model_endpoint_type not in supports_token_streaming):
             warnings.warn(
                 f"Token streaming is only supported for models with type {' or '.join(supports_token_streaming)} in the model_endpoint: agent has endpoint type {llm_config.model_endpoint_type} and {llm_config.model_endpoint}. Setting stream_tokens to False."
             )

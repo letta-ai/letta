@@ -5,7 +5,7 @@ from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
 LETTA_DIR = os.path.join(os.path.expanduser("~"), ".letta")
 LETTA_TOOL_EXECUTION_DIR = os.path.join(LETTA_DIR, "tool_execution_dir")
 
-LETTA_MODEL_ENDPOINT = "https://inference.letta.com"
+LETTA_MODEL_ENDPOINT = "https://inference.letta.com/v1/"
 DEFAULT_TIMEZONE = "UTC"
 
 ADMIN_PREFIX = "/v1/admin"
@@ -385,3 +385,6 @@ PINECONE_THROTTLE_DELAY = 0.75  # seconds base delay between batches
 # builtin web search
 WEB_SEARCH_MODEL_ENV_VAR_NAME = "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME"
 WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE = "gpt-4.1-mini-2025-04-14"
+
+# Excluded providers from base tool rules
+EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES = {"anthropic", "openai", "google_ai", "google_vertex"}

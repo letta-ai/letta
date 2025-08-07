@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional, Type
 from letta.constants import FUNCTION_RETURN_VALUE_TRUNCATED
 from letta.helpers.datetime_helpers import AsyncTimer
 from letta.log import get_logger
-from letta.orm.enums import ToolType
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import ToolType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult

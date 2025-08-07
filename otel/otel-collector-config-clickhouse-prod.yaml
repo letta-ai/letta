@@ -19,9 +19,14 @@ receivers:
         layout: '%Y-%m-%d %H:%M:%S,%L'
 
 processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1024
+    spike_limit_mib: 256
   batch:
-    timeout: 1s
-    send_batch_size: 1024
+    timeout: 10s
+    send_batch_size: 8192
+
 
 exporters:
   clickhouse:
@@ -53,13 +58,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [clickhouse]
     logs:
       receivers: [filelog]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [clickhouse]
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, batch]
       exporters: [clickhouse]
