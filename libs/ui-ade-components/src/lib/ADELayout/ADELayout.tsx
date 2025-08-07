@@ -243,7 +243,7 @@ function DesktopLayout() {
             />
           </VStack>
         </Panel>
-        <PanelResizeHandle className="w-[1px]" />
+        <PanelResizeHandle className="min-w-[1px] w-[1px] bg-border" />
         <Panel
           defaultSize={layoutConfig?.panelLayout[1] || 40}
           className="h-full ade-panel"
@@ -251,7 +251,7 @@ function DesktopLayout() {
         >
           <AgentSimulator />
         </Panel>
-        <PanelResizeHandle className="w-[1px] bg-border" />
+        <PanelResizeHandle className="min-w-[1px] w-[1px] bg-border" />
         <Panel
           ref={rightSidebarRef}
           collapsible

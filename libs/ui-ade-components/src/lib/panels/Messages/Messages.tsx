@@ -1227,8 +1227,16 @@ export function Messages(props: MessagesProps) {
     );
   }, [isFetching, hasNextPage, getIsAutoLoading, getHasReachedEnd]);
 
+  const lastAgentId = useRef(agentId);
+
   // Reset flags when agentId changes
   useEffect(() => {
+    if (lastAgentId.current === agentId) {
+      return;
+    }
+
+    lastAgentId.current = agentId;
+
     resetFlags();
     setInitialized(false);
     hasScrolledInitially.current = false;
