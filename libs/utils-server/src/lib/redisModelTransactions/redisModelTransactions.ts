@@ -9,6 +9,7 @@ import {
 } from '@letta-cloud/service-database';
 import { and, count, eq, gt } from 'drizzle-orm';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
+import * as Sentry from '@sentry/node';
 
 export async function getRedisModelTransactions(
   type: ModelTiersType,
@@ -50,17 +51,43 @@ export async function getRedisModelTransactions(
     );
   }
 
-  // should expire every day or when the subscription ends
-  const expireTime = Math.min(
-    new Date(subscription.billingPeriodEnd).getTime() - new Date().getTime(),
-    24 * 60 * 60 * 1000, // at least one day
-  );
+  let roundedExpireTime = 0;
+  try {
+    // should expire every day or when the subscription ends
+    const expireTime = Math.min(
+      new Date(subscription.billingPeriodEnd).getTime() - new Date().getTime(),
+      24 * 60 * 60 * 1000, // at least one day
+    );
 
-  await redis.setex(
-    getRedisModelTransactionsKey(type, organizationId),
-    Math.round(expireTime),
-    res[0].count,
-  );
+    roundedExpireTime = Math.round(expireTime / 1000);
+
+    // check if time is valid for expiration
+    if (roundedExpireTime <= 0) {
+      roundedExpireTime = 24 * 60 * 60 * 1000; // set to 1 second if the time is less than or equal to 0
+    }
+
+    await redis.setex(
+      getRedisModelTransactionsKey(type, organizationId),
+      roundedExpireTime,
+      res[0].count,
+    );
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: {
+        type,
+        organizationId,
+        subscription,
+        roundedExpireTime,
+        res,
+      },
+    });
+
+    await redis.setex(
+      getRedisModelTransactionsKey(type, organizationId),
+      24 * 60 * 60 * 1000, // at least one day
+      res[0].count,
+    );
+  }
 
   return res[0].count;
 }
