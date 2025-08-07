@@ -252,7 +252,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.poetry-core-directory }}
         run: |
-          poetry install --no-interaction --no-root ${{ inputs.install-args }}
+          poetry install --no-interaction --no-root -vv ${{ inputs.install-args }}
 
       - name: Install custom SDK
         if: inputs.skip-fern-generation != true
