@@ -55,5 +55,17 @@
       "rating": "Rating",
       "noRating": "Not rated yet"
     }
+  },
+  "components/DirectoryFooter": {
+    "links": {
+      "product": "Product",
+      "customers": "Customers",
+      "aboutUs": "About Us",
+      "documentation": "Documentation",
+      "apiReference": "API Reference",
+      "developers": "Developers",
+      "social": "Social"
+    },
+    "copyright": "© 2024 Letta Directory. All rights reserved."
   }
 }

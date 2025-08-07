@@ -9,8 +9,6 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-// import BannerLight from './banner_light.png';
-// import BannerDark from './banner_dark.png';
 import { useTranslations } from '@letta-cloud/translations';
 import { Section } from '$afd/client/components/Section/Section';
 import { useAgentsList } from '../hooks/useAgentsList/useAgentsList';
