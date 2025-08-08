@@ -132,7 +132,7 @@ export function DirectoryFooter() {
                   label: 'GitHub',
                   ariaLabel:
                     'Visit Letta on GitHub to view our open source code and contribute',
-                  preIcon: <GithubLogoMarkDynamic size="small" />,
+                  preIcon: <GithubLogoMarkDynamic size="xsmall" />,
                 },
                 {
                   key: 'discord',
