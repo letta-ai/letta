@@ -2751,6 +2751,10 @@ export const $CompletionCreateParamsNonStreaming = {
       ],
       title: 'Presence Penalty',
     },
+    prompt_cache_key: {
+      type: 'string',
+      title: 'Prompt Cache Key',
+    },
     reasoning_effort: {
       anyOf: [
         {
@@ -2776,6 +2780,10 @@ export const $CompletionCreateParamsNonStreaming = {
         },
       ],
       title: 'Response Format',
+    },
+    safety_identifier: {
+      type: 'string',
+      title: 'Safety Identifier',
     },
     seed: {
       anyOf: [
@@ -3163,6 +3171,10 @@ export const $CompletionCreateParamsStreaming = {
       ],
       title: 'Presence Penalty',
     },
+    prompt_cache_key: {
+      type: 'string',
+      title: 'Prompt Cache Key',
+    },
     reasoning_effort: {
       anyOf: [
         {
@@ -3188,6 +3200,10 @@ export const $CompletionCreateParamsStreaming = {
         },
       ],
       title: 'Response Format',
+    },
+    safety_identifier: {
+      type: 'string',
+      title: 'Safety Identifier',
     },
     seed: {
       anyOf: [

@@ -82,7 +82,13 @@ const createAgentsFromTemplate = c.mutation({
 
 const PublicTemplateDetails = z.object({
   name: z.string(),
+
   id: z.string(),
+  project_id: z.string(),
+  project_slug: z.string(),
+  template_deployment_slug: z.string().openapi({
+    description: 'The full name of the template, including version and project slug',
+  }),
 });
 
 const templatesQuery = z.object({
@@ -107,7 +113,7 @@ const listTemplates = c.query({
   responses: {
     200: z.object({
       templates: PublicTemplateDetails.array(),
-      hasNextPage: z.boolean(),
+      has_next_page: z.boolean(),
     }),
   },
 });

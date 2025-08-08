@@ -138,6 +138,13 @@ async function listTemplates(
         ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
       ],
     ),
+    with: {
+      project: {
+        columns: {
+          slug: true
+        }
+      }
+    },
     offset,
     limit: limit + 1,
   });
@@ -148,8 +155,11 @@ async function listTemplates(
       templates: templatesResponse.slice(0, limit).map((template) => ({
         id: template.id,
         name: template.name,
+        project_slug: template.project.slug,
+        project_id: template.projectId,
+        template_deployment_slug: `${template.project.slug}/${template.name}:latest`,
       })),
-      hasNextPage: templatesResponse.length > limit,
+      has_next_page: templatesResponse.length > limit,
     },
   };
 }

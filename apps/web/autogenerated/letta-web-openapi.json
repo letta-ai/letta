@@ -10218,16 +10218,32 @@
                           },
                           "id": {
                             "type": "string"
+                          },
+                          "project_id": {
+                            "type": "string"
+                          },
+                          "project_slug": {
+                            "type": "string"
+                          },
+                          "template_deployment_slug": {
+                            "type": "string",
+                            "description": "The full name of the template, including version and project slug"
                           }
                         },
-                        "required": ["name", "id"]
+                        "required": [
+                          "name",
+                          "id",
+                          "project_id",
+                          "project_slug",
+                          "template_deployment_slug"
+                        ]
                       }
                     },
-                    "hasNextPage": {
+                    "has_next_page": {
                       "type": "boolean"
                     }
                   },
-                  "required": ["templates", "hasNextPage"]
+                  "required": ["templates", "has_next_page"]
                 }
               }
             }
