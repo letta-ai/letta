@@ -2903,6 +2903,16 @@
               "type": "string",
               "title": "Agent Id"
             }
+          },
+          {
+            "name": "max_steps",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Max Steps"
+            }
           }
         ],
         "requestBody": {
@@ -12757,10 +12767,6 @@
             ],
             "title": "Presence Penalty"
           },
-          "prompt_cache_key": {
-            "type": "string",
-            "title": "Prompt Cache Key"
-          },
           "reasoning_effort": {
             "anyOf": [
               {
@@ -12786,10 +12792,6 @@
               }
             ],
             "title": "Response Format"
-          },
-          "safety_identifier": {
-            "type": "string",
-            "title": "Safety Identifier"
           },
           "seed": {
             "anyOf": [
@@ -13176,10 +13178,6 @@
             ],
             "title": "Presence Penalty"
           },
-          "prompt_cache_key": {
-            "type": "string",
-            "title": "Prompt Cache Key"
-          },
           "reasoning_effort": {
             "anyOf": [
               {
@@ -13205,10 +13203,6 @@
               }
             ],
             "title": "Response Format"
-          },
-          "safety_identifier": {
-            "type": "string",
-            "title": "Safety Identifier"
           },
           "seed": {
             "anyOf": [

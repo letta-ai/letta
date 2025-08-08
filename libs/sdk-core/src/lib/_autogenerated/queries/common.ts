@@ -680,17 +680,19 @@ export const useAgentsServiceExportAgentSerializedKey =
 export const UseAgentsServiceExportAgentSerializedKeyFn = (
   {
     agentId,
+    maxSteps,
     requestBody,
     userId,
   }: {
     agentId: string;
+    maxSteps?: number;
     requestBody?: AgentSchema;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceExportAgentSerializedKey,
-  ...(queryKey ?? [{ agentId, requestBody, userId }]),
+  ...(queryKey ?? [{ agentId, maxSteps, requestBody, userId }]),
 ];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentContextWindow>

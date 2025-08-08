@@ -1825,6 +1825,7 @@ export class AgentsService {
    * Export the serialized JSON representation of an agent, formatted with indentation.
    * @param data The data for the request.
    * @param data.agentId
+   * @param data.maxSteps
    * @param data.userId
    * @param data.requestBody
    * @returns string Successful Response
@@ -1839,6 +1840,9 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/export',
       path: {
         agent_id: data.agentId,
+      },
+      query: {
+        max_steps: data.maxSteps,
       },
       body: data.requestBody,
       mediaType: 'application/json',

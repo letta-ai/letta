@@ -1072,6 +1072,7 @@ export const useAgentsServiceCountAgentsSuspense = <
  * Export the serialized JSON representation of an agent, formatted with indentation.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.maxSteps
  * @param data.userId
  * @param data.requestBody
  * @returns string Successful Response
@@ -1084,10 +1085,12 @@ export const useAgentsServiceExportAgentSerializedSuspense = <
 >(
   {
     agentId,
+    maxSteps,
     requestBody,
     userId,
   }: {
     agentId: string;
+    maxSteps?: number;
     requestBody?: AgentSchema;
     userId?: string;
   },
@@ -1096,12 +1099,13 @@ export const useAgentsServiceExportAgentSerializedSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn(
-      { agentId, requestBody, userId },
+      { agentId, maxSteps, requestBody, userId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.exportAgentSerialized({
         agentId,
+        maxSteps,
         requestBody,
         userId,
       }) as TData,

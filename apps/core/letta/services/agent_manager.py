@@ -1446,10 +1446,10 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    def serialize(self, agent_id: str, actor: PydanticUser) -> AgentSchema:
+    def serialize(self, agent_id: str, actor: PydanticUser, max_steps: Optional[int] = None) -> AgentSchema:
         with db_registry.session() as session:
             agent = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
-            schema = MarshmallowAgentSchema(session=session, actor=actor)
+            schema = MarshmallowAgentSchema(session=session, actor=actor, max_steps=max_steps)
             data = schema.dump(agent)
             return AgentSchema(**data)
 

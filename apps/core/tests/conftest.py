@@ -111,7 +111,7 @@ def weather_tool_func():
         """
         Fetches the current weather for a given location.
 
-        Parameters:
+        Args:
             location (str): The location to get the weather for.
 
         Returns:

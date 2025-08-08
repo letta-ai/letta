@@ -907,6 +907,7 @@ export const prefetchUseAgentsServiceCountAgents = (
  * Export the serialized JSON representation of an agent, formatted with indentation.
  * @param data The data for the request.
  * @param data.agentId
+ * @param data.maxSteps
  * @param data.userId
  * @param data.requestBody
  * @returns string Successful Response
@@ -916,10 +917,12 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
   queryClient: QueryClient,
   {
     agentId,
+    maxSteps,
     requestBody,
     userId,
   }: {
     agentId: string;
+    maxSteps?: number;
     requestBody?: AgentSchema;
     userId?: string;
   },
@@ -927,11 +930,17 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn({
       agentId,
+      maxSteps,
       requestBody,
       userId,
     }),
     queryFn: () =>
-      AgentsService.exportAgentSerialized({ agentId, requestBody, userId }),
+      AgentsService.exportAgentSerialized({
+        agentId,
+        maxSteps,
+        requestBody,
+        userId,
+      }),
   });
 /**
  * Retrieve Agent Context Window

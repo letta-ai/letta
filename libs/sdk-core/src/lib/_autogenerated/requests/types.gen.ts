@@ -906,13 +906,11 @@ export type CompletionCreateParamsNonStreaming = {
   parallel_tool_calls?: boolean;
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
-  prompt_cache_key?: string;
   reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
-  safety_identifier?: string;
   seed?: number | null;
   service_tier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority' | null;
   stop?: string | Array<string> | null;
@@ -1016,13 +1014,11 @@ export type CompletionCreateParamsStreaming = {
   parallel_tool_calls?: boolean;
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
-  prompt_cache_key?: string;
   reasoning_effort?: 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONSchema
     | ResponseFormatJSONObject;
-  safety_identifier?: string;
   seed?: number | null;
   service_tier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority' | null;
   stop?: string | Array<string> | null;
@@ -5576,6 +5572,7 @@ export type CountAgentsResponse = number;
 
 export type ExportAgentSerializedData = {
   agentId: string;
+  maxSteps?: number;
   requestBody?: AgentSchema | null;
   userId?: string | null;
 };
