@@ -711,3 +711,51 @@ def test_upload_agentfile_from_disk(server, server_url, disable_e2b_api_key, oth
         agent_id=copied_agent_id,
         input_messages=[MessageCreate(role=MessageRole.user, content="Hello there!")],
     )
+
+
+def test_serialize_with_max_steps(server, server_url, default_user, other_user):
+    """Test that max_steps parameter correctly limits messages by conversation steps."""
+    # load agent from file with pre-populated messages
+    file_path = os.path.join(os.path.dirname(__file__), "test_agent_files", "max_messages.af")
+
+    with open(file_path, "rb") as f:
+        files = {"file": ("max_messages.af", f, "application/json")}
+
+        form_data = {
+            "append_copy_suffix": "false",
+            "override_existing_tools": "false",
+        }
+
+        response = requests.post(
+            f"{server_url}/v1/agents/import",
+            headers={"user_id": default_user.id},
+            files=files,
+            data=form_data,
+        )
+
+    assert response.status_code == 200, f"Failed to upload agent: {response.text}"
+    agent_data = response.json()
+    agent_id = agent_data["id"]
+
+    # test with default max_steps (should use None, returning all messages)
+    full_result = server.agent_manager.serialize(agent_id=agent_id, actor=default_user)
+    total_messages = len(full_result.messages)
+    assert total_messages == 31, f"Expected 31 messages, got {total_messages}"
+
+    # test with max_steps=2 (should return messages from the last 2 user messages onward)
+    limited_result = server.agent_manager.serialize(agent_id=agent_id, actor=default_user, max_steps=2)
+    limited_user_count = sum(1 for msg in limited_result.messages if msg.role == "user")
+    assert limited_user_count == 2, f"Expected 2 user messages (steps), got {limited_user_count}"
+    assert len(limited_result.messages) == 2 * 3 + 1
+
+    # verify agent can still receive messages after being deserialized with limited steps
+    agent_copy = server.agent_manager.deserialize(limited_result, actor=other_user, append_copy_suffix=True)
+    response = server.send_messages(
+        actor=other_user, agent_id=agent_copy.id, input_messages=[MessageCreate(role=MessageRole.user, content="Hello!")]
+    )
+    assert response is not None and response.step_count > 0, "Agent should be able to receive and respond to messages"
+
+    # test with max_steps=0 (should return only system message)
+    empty_result = server.agent_manager.serialize(agent_id=agent_id, actor=default_user, max_steps=0)
+    assert len(empty_result.messages) == 1, f"Expected 1 message (system), got {len(empty_result.messages)}"
+    assert empty_result.messages[0].role == "system", "The only message should be the system message"

@@ -146,6 +146,7 @@ class IndentedORJSONResponse(Response):
 @router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
 def export_agent_serialized(
     agent_id: str,
+    max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
     # do not remove, used to autogeneration of spec
@@ -158,7 +159,7 @@ def export_agent_serialized(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
-        agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor)
+        agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
         return agent.model_dump()
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")

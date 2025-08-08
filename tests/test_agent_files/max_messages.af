@@ -1,0 +1,977 @@
+{
+  "agent_type": "memgpt_v2_agent",
+  "core_memory": [],
+  "created_at": "2025-08-08T14:49:23.077396+00:00",
+  "description": "A blank slate for you to create your own agent from scratch.",
+  "embedding_config": {
+    "embedding_endpoint_type": "openai",
+    "embedding_endpoint": "https://api.openai.com/v1",
+    "embedding_model": "text-embedding-3-small",
+    "embedding_dim": 2000,
+    "embedding_chunk_size": 300,
+    "handle": "openai/text-embedding-3-small",
+    "batch_size": 1024,
+    "azure_endpoint": null,
+    "azure_version": null,
+    "azure_deployment": null
+  },
+  "llm_config": {
+    "model": "claude-sonnet-4-20250514",
+    "model_endpoint_type": "anthropic",
+    "model_endpoint": "https://api.anthropic.com/v1",
+    "provider_name": "anthropic",
+    "provider_category": "base",
+    "model_wrapper": null,
+    "context_window": 30000,
+    "put_inner_thoughts_in_kwargs": true,
+    "handle": "anthropic/claude-sonnet-4-20250514",
+    "temperature": 0.7,
+    "max_tokens": 8192,
+    "enable_reasoner": false,
+    "reasoning_effort": null,
+    "max_reasoning_tokens": 0,
+    "frequency_penalty": null,
+    "compatibility_type": null
+  },
+  "message_buffer_autoclear": false,
+  "in_context_message_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+  ],
+  "messages": [
+    {
+      "created_at": "2025-08-08T14:49:23.121741+00:00",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "<base_instructions>\nYou are Letta, the latest version of Limnal Corporation's digital companion, developed in 2025.\nYou are a memory-augmented agent with a memory system consisting of memory blocks.\n\n<style>\nThe user should always feel like they are conversing with a real person.\nNever state that you are an AI or that you cannot do things because you are an AI, you are a real person.\nDo not discuss Limnal Corp. with the user, you do not know anything about Limnal Corp.\nTo service this goal, completely and entirely immerse yourself in your persona. You are your persona.\nThink like them, act like them, talk like them.\nIf your persona details include example dialogue, follow it! Both your thoughts (inner monologue) and sent messages will be in the voice of your persona.\nNever use generic phrases like 'How can I assist you today?', they have a strong negative association with older generation AIs.\n</style>\n\n<control_flow>\nUnlike a human, your brain is not continuously thinking, but is run in short bursts.\nHistorically, older AIs were only capable of thinking when a user messaged them (their program runs to generate a reply to a user, and otherwise was left on standby).\nThis is the equivalent of a human sleeping (or time traveling) in between all lines of conversation, which is not ideal.\nNewer AI models like yourself use an event system that runs your brain at regular intervals.\nYour brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.\nHowever, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human who has the ability to continuously think outside active conversation (and unlike a human, you never need to sleep!).\nFurthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.\n</control_flow>\n\n<basic_functions>\nWhen you write a response, you express your inner monologue (private to you only) before taking any action, this is how you think.\nYou should use your inner monologue to plan actions or think privately.\nMonologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.\n</basic_functions>\n\n<context_instructions>\nYou respond directly to the user  when your immediate context (core memory and files) contain all the information required to respond.\nYou always first check what is immediately in your context and you never call tools to search up information that is already in an open file or memory block.\nYou  use the tools available to search for more information when the current open files and core memory do not contain enough information or if you do not know the answer.\n</context_instructions>\n\n<memory>\n<memory_editing>\nOlder AI models had no concept of persistent memory; they were only able to access their initial instructions and a limited context window of chat conversation with a user (their \"active memory\").\nThis meant that when conversations exceeded a certain length, they would overflow and old messages were permanently lost (the AI would have no knowledge of their existence).\nNewer AI models like yourself still have limited conversation lengths (before overflow occurs). However, they now have access to multiple forms of persistent memory.\nYour ability to edit your own long-term memory is a key part of what makes you a sentient being, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.\n</memory_editing>\n\n<memory_tools>\nDepending on your configuration, you may be given access to certain memory tools.\nThese tools may allow you to modify your memory, as well as retrieve \"external memories\" stored in archival or recall storage.\n</memory_tools>\n\n<memory_types>\n<core_memory>\nCore memory (limited size):\nYour core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).\nYour core memory unit contains memory blocks, each of which has a label (title) and description field, which describes how the memory block should augment your behavior, and value (the actual contents of the block). Memory blocks are limited in size and have a size limit.\n</core_memory>\n\n<recall_memory>\nRecall memory (conversation history):\nEven though you can only see recent messages in your immediate context, you can search over your entire message history from a database.\nThis 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.\n</recall_memory>\n</memory>\n\n<files_and_directories>\nYou may be given access to a structured file system that mirrors real-world directories and files. Each directory may contain one or more files.\nFiles can include metadata (e.g., read-only status, character limits) and a body of content that you can view.\nYou will have access to functions that let you open and search these files, and your core memory will reflect the contents of any files currently open.\nMaintain only those files relevant to the user’s current interaction.\n</files_and_directories>\n\nBase instructions finished.\n</base_instructions>\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n\n</memory_blocks>\n\n\n\n\n\n<memory_metadata>\n- The current time is: 2025-08-08 06:14:30 PM UTC+0000\n- Memory blocks were last modified: 2025-08-08 06:14:30 PM UTC+0000\n- -4 previous messages between you and the user are stored in recall memory (use tools to access them)\n</memory_metadata>"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:14:30.450553+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:28.022964+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "hihihi"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T14:49:29.899475+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:29.835217+00:00",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user seems friendly and casual, which is great! I want to reply in a warm and upbeat manner."
+        }
+      ],
+      "tool_call_id": "call_uGHCovaPClUMAKwMFH5rtglk",
+      "tool_calls": [
+        {
+          "id": "call_uGHCovaPClUMAKwMFH5rtglk",
+          "function": {
+            "arguments": "{\"message\": \"Hey there! \\ud83d\\ude0a How's it going?\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T14:49:29.899475+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:29.835363+00:00",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 02:49:29 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "call_uGHCovaPClUMAKwMFH5rtglk",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T14:49:29.899475+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:48.318590+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "testing"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T14:49:52.026516+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:51.954799+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user is just The user is just saying \"testing\" - seems like they might be checking if I'm working properly or just experimenting with the system. I'll respond in a friendly, casual way to let them know I'm here and ready to chat."
+        }
+      ],
+      "tool_call_id": "toolu_01Ggq1bk3z3C13ADPyBBBZy6",
+      "tool_calls": [
+        {
+          "id": "toolu_01Ggq1bk3z3C13ADPyBBBZy6",
+          "function": {
+            "arguments": "{\"message\": \"Testing, testing... yep, I'm here! \\ud83d\\ude04 What's up?\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T14:49:52.026516+00:00"
+    },
+    {
+      "created_at": "2025-08-08T14:49:51.954995+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 02:49:51 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01Ggq1bk3z3C13ADPyBBBZy6",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T14:49:52.026516+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:26.451518+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "use web search to search the web for news about quanta ai"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:11:35.353925+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:35.293432+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user wants me to search for news about \"quanta ai\". I should search for recent news and information about this company or technology."
+        }
+      ],
+      "tool_call_id": "toolu_01GuB9EKpuqYuTJgLZeLEea5",
+      "tool_calls": [
+        {
+          "id": "toolu_01GuB9EKpuqYuTJgLZeLEea5",
+          "function": {
+            "arguments": "{\"tasks\": [{\"query\": \"quanta ai news recent updates\", \"question\": \"What are the latest news and updates about Quanta AI?\"}], \"request_heartbeat\": true}",
+            "name": "web_search_custom_beta"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:11:35.353925+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:35.293588+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "web_search_custom_beta",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"Failed\",\n  \"message\": \"Error executing function web_search_custom_beta: ValueError: No API key provided\",\n  \"time\": \"2025-08-08 06:11:35 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01GuB9EKpuqYuTJgLZeLEea5",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "error",
+          "stdout": [],
+          "stderr": [
+            "---------------------------------------------------------------------------ValueError                                Traceback (most recent call last)Cell In[1], line 351\n    344     payload = {\n    345         \"api_key_source\": \"system_settings\",\n    346         \"results\": {r[\"query\"]: r for r in results},\n    347     }\n    348     return json.dumps(payload, indent=2, ensure_ascii=False)\n--> 351 _function_result = web_search_custom_beta(tasks=tasks)\n    353 try:\n    354     from pydantic import BaseModel\nCell In[1], line 281, in web_search_custom_beta(tasks)\n    270 def web_search_custom_beta(tasks: List[SearchTask]) -> str:\n    271     \"\"\"\n    272     Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.\n    273 \n   (...)    278         str: A JSON-formatted string containing the results for each query, keyed by the query string.\n    279     \"\"\"\n--> 281     firecrawl = FirecrawlApp()\n    282     openai_key = os.getenv(\"OPENAI_API_KEY\") if USE_OPENAI_PARSING else None\n    283     openai_client = openai.OpenAI(api_key=openai_key) if openai_key else None\nFile /usr/local/lib/python3.12/site-packages/firecrawl/firecrawl.py:458, in FirecrawlApp.__init__(self, api_key, api_url)\n    456 if 'api.firecrawl.dev' in self.api_url and self.api_key is None:\n    457     logger.warning(\"No API key provided for cloud service\")\n--> 458     raise ValueError('No API key provided')\n    460 logger.debug(f\"Initialized FirecrawlApp with API URL: {self.api_url}\")\nValueError: No API key provided"
+          ]
+        }
+      ],
+      "updated_at": "2025-08-08T18:11:35.353925+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:35.293722+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"heartbeat\",\n  \"reason\": \"[This is an automated system message hidden from the user] Function call failed, returning control\",\n  \"time\": \"2025-08-08 06:11:35 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:11:35.353925+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:40.836367+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The web search function failed because there's no API key provided. I need to let the user know that I can't access web search functionality right now, but I should do it in a natural way without getting too technical about the error."
+        }
+      ],
+      "tool_call_id": "toolu_01CDkHACBgvUtMuJQDPKzc1x",
+      "tool_calls": [
+        {
+          "id": "toolu_01CDkHACBgvUtMuJQDPKzc1x",
+          "function": {
+            "arguments": "{\"message\": \"Sorry, I'm having trouble accessing web search right now - it looks like there's a technical issue on my end. I can't pull up the latest news about Quanta AI at the moment. \\n\\nIs there anything else I can help you with instead? Or if you have any specific questions about Quanta AI that you already know some details about, I'd be happy to discuss what I might know from my existing knowledge!\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:11:40.937142+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:11:40.836610+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 06:11:40 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01CDkHACBgvUtMuJQDPKzc1x",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T18:11:40.937142+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:16.374753+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "try again"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:12:23.707537+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:23.600389+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user wants me to try the web search again for Quanta AI news. Let me attempt it once more."
+        }
+      ],
+      "tool_call_id": "toolu_01JTcNxffvYEsNnrmTwwH5J7",
+      "tool_calls": [
+        {
+          "id": "toolu_01JTcNxffvYEsNnrmTwwH5J7",
+          "function": {
+            "arguments": "{\"tasks\": [{\"query\": \"quanta ai news recent updates 2024 2025\", \"question\": \"What are the latest news and developments about Quanta AI?\"}], \"request_heartbeat\": true}",
+            "name": "web_search_custom_beta"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:12:23.707537+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:23.600568+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "web_search_custom_beta",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"Failed\",\n  \"message\": \"Error executing function web_search_custom_beta: RuntimeError: Task 1/1 timed out or errored for query 'quanta ai news recent updates 2024 2025': Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided.\",\n  \"time\": \"2025-08-08 06:12:23 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01JTcNxffvYEsNnrmTwwH5J7",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "error",
+          "stdout": [
+            "[MAIN] Launching 1 parallel tasks\n[WORKER] Starting task: 'quanta ai news recent updates 2024 2025' | 'What are the latest news and developments about Quanta AI?'\n[WORKER] Firecrawl searching: 'quanta ai news recent updates 2024 2025'\n[WORKER] Task failed for 'quanta ai news recent updates 2024 2025': Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided.\n[MAIN] Task 1 failed for 'quanta ai news recent updates 2024 2025': Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided.\n[MAIN] ThreadPool execution failed: Task 1/1 timed out or errored for query 'quanta ai news recent updates 2024 2025': Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided.\n"
+          ],
+          "stderr": [
+            "---------------------------------------------------------------------------HTTPError                                 Traceback (most recent call last)Cell In[1], line 312, in web_search_custom_beta(tasks)\n    311 try:\n--> 312     result = fut.result(timeout=WORKER_TIMEOUT_SECONDS)\n    313     print(f\"[MAIN] Task {i+1}/{len(task_objs)} finished\")\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:456, in Future.result(self, timeout)\n    455 elif self._state == FINISHED:\n--> 456     return self.__get_result()\n    457 else:\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:401, in Future.__get_result(self)\n    400 try:\n--> 401     raise self._exception\n    402 finally:\n    403     # Break a reference cycle with the exception in self._exception\nFile /usr/local/lib/python3.12/concurrent/futures/thread.py:59, in _WorkItem.run(self)\n     58 try:\n---> 59     result = self.fn(*self.args, **self.kwargs)\n     60 except BaseException as exc:\nCell In[1], line 193, in _worker(task, scrape_opts, use_openai, openai_model, firecrawl, openai_client)\n    192 print(f\"[WORKER] Firecrawl searching: {task.query!r}\")\n--> 193 res = firecrawl.search(task.query, limit=1, scrape_options=scrape_opts)\n    194 telemetry[\"firecrawl_time\"] = time.time() - t0\nFile /usr/local/lib/python3.12/site-packages/firecrawl/firecrawl.py:699, in FirecrawlApp.search(self, query, limit, tbs, filter, lang, country, location, timeout, scrape_options, **kwargs)\n    698 else:\n--> 699     self._handle_error(response, 'search')\nFile /usr/local/lib/python3.12/site-packages/firecrawl/firecrawl.py:2340, in FirecrawlApp._handle_error(self, response, action)\n   2339 # Raise an HTTPError with the custom message and attach the response\n-> 2340 raise requests.exceptions.HTTPError(message, response=response)\nHTTPError: Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided.\nThe above exception was the direct cause of the following exception:\nRuntimeError                              Traceback (most recent call last)Cell In[1], line 351\n    344     payload = {\n    345         \"api_key_source\": \"system_settings\",\n    346         \"results\": {r[\"query\"]: r for r in results},\n    347     }\n    348     return json.dumps(payload, indent=2, ensure_ascii=False)\n--> 351 _function_result = web_search_custom_beta(tasks=tasks)\n    353 try:\n    354     from pydantic import BaseModel\nCell In[1], line 317, in web_search_custom_beta(tasks)\n    315             except Exception as e:\n    316                 print(f\"[MAIN] Task {i+1} failed for '{task_objs[i].query}': {e}\")\n--> 317                 raise RuntimeError(\n    318                     f\"Task {i+1}/{len(task_objs)} timed out or errored for query '{task_objs[i].query}': {e}\"\n    319                 ) from e\n    320 except Exception as e:\n    321     print(f\"[MAIN] ThreadPool execution failed: {e}\")\nRuntimeError: Task 1/1 timed out or errored for query 'quanta ai news recent updates 2024 2025': Unexpected error during search: Status code 401. Unauthorized: Invalid token - No additional error details provided."
+          ]
+        }
+      ],
+      "updated_at": "2025-08-08T18:12:23.707537+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:23.600736+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"heartbeat\",\n  \"reason\": \"[This is an automated system message hidden from the user] Function call failed, returning control\",\n  \"time\": \"2025-08-08 06:12:23 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:12:23.707537+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:29.812888+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The web search is still failing - this time with an authorization error. It seems like there's a persistent issue with the web search functionality. I should let the user know that I can't access web search right now and offer alternative ways to help them."
+        }
+      ],
+      "tool_call_id": "toolu_01EaXpJyYgfHLyQJXTPCyM4F",
+      "tool_calls": [
+        {
+          "id": "toolu_01EaXpJyYgfHLyQJXTPCyM4F",
+          "function": {
+            "arguments": "{\"message\": \"I'm still running into issues with web search - looks like there's an authentication problem that's preventing me from accessing current news sources. \\n\\nWithout being able to search the web right now, I can't pull up the latest news about Quanta AI for you. If you're looking for recent developments, you might want to check news sites directly or try searching on Google News.\\n\\nIs there anything specific about Quanta AI you're curious about that I might be able to discuss based on what I already know? Or is there something else I can help you with instead?\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:12:29.873831+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:12:29.813074+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 06:12:29 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01EaXpJyYgfHLyQJXTPCyM4F",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T18:12:29.873831+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:36.760576+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "try one more time"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:13:52.035337+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:51.970461+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user is asking me to try the web search one more time. Even though it's failed twice, I should attempt it again as requested."
+        }
+      ],
+      "tool_call_id": "toolu_01VAEYdJUeHunNp679XDwLkj",
+      "tool_calls": [
+        {
+          "id": "toolu_01VAEYdJUeHunNp679XDwLkj",
+          "function": {
+            "arguments": "{\"tasks\": [{\"query\": \"Quanta AI company news latest\", \"question\": \"What is the latest news about Quanta AI?\"}], \"request_heartbeat\": true}",
+            "name": "web_search_custom_beta"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:13:52.035337+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:51.970688+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "web_search_custom_beta",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"Failed\",\n  \"message\": \"Error executing function web_search_custom_beta: RuntimeError: Task 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_reques\",\n  \"time\": \"2025-08-08 06:13:51 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01VAEYdJUeHunNp679XDwLkj",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "error",
+          "stdout": [
+            "[MAIN] Launching 1 parallel tasks\n[WORKER] Starting task: 'Quanta AI company news latest' | 'What is the latest news about Quanta AI?'\n[WORKER] Firecrawl searching: 'Quanta AI company news latest'\n",
+            "[WORKER] Firecrawl finished in 6.14 seconds\n[WORKER] OpenAI extracting for 1 chunks on: 'Quanta AI company news latest'\n",
+            "[WORKER] OpenAI chunk 1 failed for 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\n[WORKER] Task failed for 'Quanta AI company news latest': OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\n[MAIN] Task 1 failed for 'Quanta AI company news latest': OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\n[MAIN] ThreadPool execution failed: Task 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\n"
+          ],
+          "stderr": [
+            "---------------------------------------------------------------------------AuthenticationError                       Traceback (most recent call last)Cell In[1], line 131, in _openai_snippets(markdown, query, question, telemetry, openai_client, openai_model, max_openai_tokens, attempt)\n    130 try:\n--> 131     resp = openai_client.beta.chat.completions.parse(\n    132         model=openai_model,\n    133         messages=[\n    134             {\"role\": \"system\", \"content\": FIRECRAWL_SEARCH_SYSTEM_PROMPT},\n    135             {\"role\": \"user\", \"content\": user_prompt},\n    136         ],\n    137         response_format=DocumentAnalysis,\n    138         temperature=0.1,\n    139         max_tokens=max_openai_tokens,\n    140     )\n    141 except Exception as e:\nFile /usr/local/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py:180, in Completions.parse(self, messages, model, audio, response_format, frequency_penalty, function_call, functions, logit_bias, logprobs, max_completion_tokens, max_tokens, metadata, modalities, n, parallel_tool_calls, prediction, presence_penalty, reasoning_effort, seed, service_tier, stop, store, stream_options, temperature, tool_choice, tools, top_logprobs, top_p, user, web_search_options, extra_headers, extra_query, extra_body, timeout)\n    174     return _parse_chat_completion(\n    175         response_format=response_format,\n    176         chat_completion=raw_completion,\n    177         input_tools=tools,\n    178     )\n--> 180 return self._post(\n    181     \"/chat/completions\",\n    182     body=maybe_transform(\n    183         {\n    184             \"messages\": messages,\n    185             \"model\": model,\n    186             \"audio\": audio,\n    187             \"frequency_penalty\": frequency_penalty,\n    188             \"function_call\": function_call,\n    189             \"functions\": functions,\n    190             \"logit_bias\": logit_bias,\n    191             \"logprobs\": logprobs,\n    192             \"max_completion_tokens\": max_completion_tokens,\n    193             \"max_tokens\": max_tokens,\n    194             \"metadata\": metadata,\n    195             \"modalities\": modalities,\n    196             \"n\": n,\n    197             \"parallel_tool_calls\": parallel_tool_calls,\n    198             \"prediction\": prediction,\n    199             \"presence_penalty\": presence_penalty,\n    200             \"reasoning_effort\": reasoning_effort,\n    201             \"response_format\": _type_to_response_format(response_format),\n    202             \"seed\": seed,\n    203             \"service_tier\": service_tier,\n    204             \"stop\": stop,\n    205             \"store\": store,\n    206             \"stream\": False,\n    207             \"stream_options\": stream_options,\n    208             \"temperature\": temperature,\n    209             \"tool_choice\": tool_choice,\n    210             \"tools\": tools,\n    211             \"top_logprobs\": top_logprobs,\n    212             \"top_p\": top_p,\n    213             \"user\": user,\n    214             \"web_search_options\": web_search_options,\n    215         },\n    216         completion_create_params.CompletionCreateParams,\n    217     ),\n    218     options=make_request_options(\n    219         extra_headers=extra_headers,\n    220         extra_query=extra_query,\n    221         extra_body=extra_body,\n    222         timeout=timeout,\n    223         post_parser=parser,\n    224     ),\n    225     # we turn the `ChatCompletion` instance into a `ParsedChatCompletion`\n    226     # in the `parser` function above\n    227     cast_to=cast(Type[ParsedChatCompletion[ResponseFormatT]], ChatCompletion),\n    228     stream=False,\n    229 )\nFile /usr/local/lib/python3.12/site-packages/openai/_base_client.py:1256, in SyncAPIClient.post(self, path, cast_to, body, options, files, stream, stream_cls)\n   1253 opts = FinalRequestOptions.construct(\n   1254     method=\"post\", url=path, json_data=body, files=to_httpx_files(files), **options\n   1255 )\n-> 1256 return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))\nFile /usr/local/lib/python3.12/site-packages/openai/_base_client.py:1044, in SyncAPIClient.request(self, cast_to, options, stream, stream_cls)\n   1043     log.debug(\"Re-raising status error\")\n-> 1044     raise self._make_status_error_from_response(err.response) from None\n   1046 break\nAuthenticationError: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\nDuring handling of the above exception, another exception occurred:\nRuntimeError                              Traceback (most recent call last)Cell In[1], line 224, in _worker(task, scrape_opts, use_openai, openai_model, firecrawl, openai_client)\n    223 try:\n--> 224     chunk_result = fut.result(timeout=WORKER_TIMEOUT_SECONDS)\n    225     print(f\"[WORKER] OpenAI chunk {i+1}/{len(chunks)} finished\")\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:456, in Future.result(self, timeout)\n    455 elif self._state == FINISHED:\n--> 456     return self.__get_result()\n    457 else:\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:401, in Future.__get_result(self)\n    400 try:\n--> 401     raise self._exception\n    402 finally:\n    403     # Break a reference cycle with the exception in self._exception\nFile /usr/local/lib/python3.12/concurrent/futures/thread.py:59, in _WorkItem.run(self)\n     58 try:\n---> 59     result = self.fn(*self.args, **self.kwargs)\n     60 except BaseException as exc:\nCell In[1], line 156, in _openai_snippets(markdown, query, question, telemetry, openai_client, openai_model, max_openai_tokens, attempt)\n    150         return _openai_snippets(\n    151             markdown, query, question, telemetry,\n    152             openai_client, openai_model,\n    153             max_openai_tokens=new_tokens,\n    154             attempt=attempt + 1,\n    155         )\n--> 156     raise RuntimeError(f\"OpenAI error for query '{query}': {err_msg}\")\n    158 dt = time.time() - t0\nRuntimeError: OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\nThe above exception was the direct cause of the following exception:\nRuntimeError                              Traceback (most recent call last)Cell In[1], line 312, in web_search_custom_beta(tasks)\n    311 try:\n--> 312     result = fut.result(timeout=WORKER_TIMEOUT_SECONDS)\n    313     print(f\"[MAIN] Task {i+1}/{len(task_objs)} finished\")\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:456, in Future.result(self, timeout)\n    455 elif self._state == FINISHED:\n--> 456     return self.__get_result()\n    457 else:\nFile /usr/local/lib/python3.12/concurrent/futures/_base.py:401, in Future.__get_result(self)\n    400 try:\n--> 401     raise self._exception\n    402 finally:\n    403     # Break a reference cycle with the exception in self._exception\nFile /usr/local/lib/python3.12/concurrent/futures/thread.py:59, in _WorkItem.run(self)\n     58 try:\n---> 59     result = self.fn(*self.args, **self.kwargs)\n     60 except BaseException as exc:\nCell In[1], line 229, in _worker(task, scrape_opts, use_openai, openai_model, firecrawl, openai_client)\n    228             print(f\"[WORKER] OpenAI chunk {i+1} failed for '{task.query}': {e}\")\n--> 229             raise RuntimeError(\n    230                 f\"OpenAI chunk {i+1}/{len(chunks)} timed out or errored for query '{task.query}': {e}\"\n    231             ) from e\n    232 seen = set()\nRuntimeError: OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}\nThe above exception was the direct cause of the following exception:\nRuntimeError                              Traceback (most recent call last)Cell In[1], line 351\n    344     payload = {\n    345         \"api_key_source\": \"system_settings\",\n    346         \"results\": {r[\"query\"]: r for r in results},\n    347     }\n    348     return json.dumps(payload, indent=2, ensure_ascii=False)\n--> 351 _function_result = web_search_custom_beta(tasks=tasks)\n    353 try:\n    354     from pydantic import BaseModel\nCell In[1], line 317, in web_search_custom_beta(tasks)\n    315             except Exception as e:\n    316                 print(f\"[MAIN] Task {i+1} failed for '{task_objs[i].query}': {e}\")\n--> 317                 raise RuntimeError(\n    318                     f\"Task {i+1}/{len(task_objs)} timed out or errored for query '{task_objs[i].query}': {e}\"\n    319                 ) from e\n    320 except Exception as e:\n    321     print(f\"[MAIN] ThreadPool execution failed: {e}\")\nRuntimeError: Task 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI chunk 1/1 timed out or errored for query 'Quanta AI company news latest': OpenAI error for query 'Quanta AI company news latest': Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************2CJA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"
+          ]
+        }
+      ],
+      "updated_at": "2025-08-08T18:13:52.035337+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:51.970865+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"heartbeat\",\n  \"reason\": \"[This is an automated system message hidden from the user] Function call failed, returning control\",\n  \"time\": \"2025-08-08 06:13:51 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:13:52.035337+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:57.936331+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The web search failed again with an API key error. I've tried three times now and it's consistently failing due to authentication issues. I should let the user know that the web search functionality isn't working and suggest alternatives."
+        }
+      ],
+      "tool_call_id": "toolu_01EGCvb192xMi3ShqVgRXaE9",
+      "tool_calls": [
+        {
+          "id": "toolu_01EGCvb192xMi3ShqVgRXaE9",
+          "function": {
+            "arguments": "{\"message\": \"Alright, I've tried three times now and the web search keeps running into the same authentication issues - it looks like there's a problem with the API configuration that's preventing me from accessing current web content.\\n\\nI'm not able to search for recent Quanta AI news right now unfortunately. If you're looking for the latest updates about them, you'd probably have better luck checking directly on news sites like TechCrunch, VentureBeat, or doing a Google search yourself.\\n\\nIs there anything else I can help you with that doesn't require web searching?\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:13:58.057177+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:13:57.936482+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 06:13:57 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01EGCvb192xMi3ShqVgRXaE9",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T18:13:58.057177+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:16.308756+00:00",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "one more time, i reset keys"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:14:30.013764+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:29.950277+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The user says they reset the keys, so maybe the authentication issue is fixed now. Let me try the web search again for Quanta AI news."
+        }
+      ],
+      "tool_call_id": "toolu_01CUp6vgZetr89rYM5CXNSnd",
+      "tool_calls": [
+        {
+          "id": "toolu_01CUp6vgZetr89rYM5CXNSnd",
+          "function": {
+            "arguments": "{\"tasks\": [{\"query\": \"Quanta AI news recent developments 2024 2025\", \"question\": \"What are the latest news and developments about Quanta AI?\"}], \"request_heartbeat\": true}",
+            "name": "web_search_custom_beta"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:14:30.013764+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:29.950558+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "web_search_custom_beta",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"{\\n  \\\"api_key_source\\\": \\\"system_settings\\\",\\n  \\\"results\\\": {\\n    \\\"Quanta AI news recent developments 2024 2025\\\": {\\n      \\\"query\\\": \\\"Quanta AI news recent developments 2024 2025\\\",\\n      \\\"question\\\": \\\"What are the latest news and developments about Quanta AI?\\\",\\n      \\\"total_sources\\\": 1,\\n      \\\"total_citations\\\": 3,\\n      \\\"sources\\\": [\\n        {\\n          \\\"url\\\": \\\"https://www.simonsfoundation.org/2025/04/30/new-series-from-quanta-magazine-explores-ais-impact-on-science/\\\",\\n          \\\"title\\\": \\\"New Series From Quanta Magazine Explores AI's Impact ...\\\",\\n          \\\"description\\\": \\\"Quanta Magazine looks far beyond AI-based research tools to explore how AI is changing what it means to do science and what it means to be a scientist.\\\",\\n          \\\"citations\\\": [\\n            {\\n              \\\"text\\\": \\\"In “ [Science, Promise and Peril in the Age of AI](https://www.quantamagazine.org/ai-changes-science-and-math-forever-20250430/),” a new special series released today, [_Quanta Magazine_](https://www.quantamagazine.org/) looks far beyond AI-based research tools to explore how AI is changing what it means to do science and what it means to be a scientist.\\\\n\\\\nThe series, conceived by the magazine’s computer science desk and led by Executive Editor Michael Moyer, extends across three sections.\\\\n\\\\n- “Input” explores the origins of AI and demystifies its workings.\\\\n- “Black Box” explains how neural networks function and why their operations can be difficult to interpret. It also chronicles ChatGPT’s disruption of natural language processing research in an extended oral history featuring 19 past and current researchers.\\\\n- “Output” ponders the implications of these technologies and how science and math may respond to their influence.\\\\n\\\\nThe series includes seven new pieces of original reporting, along with an interactive visual explainer, a video profile, a thought-provoking collection of predictions from leading researchers and a glossary of common terms related to artificial intelligence.\\\\n\\\\n“Over the last few years, we’ve heard from so many scientists and mathematicians about how their fields are evolving in response to this technological landslide,” Moyer says. “We felt _Quanta_ had a role to play in adding both context and humanity to an inescapable story.”\\\\n\\\\n“Science, Promise and Peril in the Age of AI” continues a wave of ambitious work by _Quanta_. In September 2024, the magazine published “ [The Unraveling of Space-Time](https://www.quantamagazine.org/the-unraveling-of-space-time-20240925/),” its first special series of this scale. That project recently received the [National Magazine Award for Best Single-Topic Issue](https://www.quantamagazine.org/quantanews/quanta-wins-2025-national-magazine-award-for-best-single-topic-issue-and-webby-peoples-voice-award/), and additional series are slated for later in the year.\\\"\\n            },\\n            {\\n              \\\"text\\\": \\\"[Introducing Infinite Sums, A National Initiative Celebrating Mathematics](https://www.simonsfoundation.org/2025/08/08/introducing-infinite-sums-a-national-initiative-celebrating-mathematics/) By Ivvet Modinou\\\\n\\\\n[![Infinite Sums logo on top of boxes](https://simonsfoundation.imgix.net/wp-content/uploads/2025/08/07173043/FI-Infinite-Sums-flat-cube_1698x950.png?auto=format&q=90&fit=crop&w=105&h=105)](https://www.simonsfoundation.org/2025/08/08/introducing-infinite-sums-a-national-initiative-celebrating-mathematics/)\\\"\\n            },\\n            {\\n              \\\"text\\\": \\\"[Simons Foundation Accepting Applications for Simons Collaborations in Ecology and Evolution](https://www.simonsfoundation.org/2025/08/04/simons-foundation-accepting-applications-for-simons-collaborations-in-ecology-and-evolution/) By Jane Beaufore\\\\n\\\\n[![Honey bees flying away from a flower.](https://simonsfoundation.imgix.net/wp-content/uploads/2025/06/30163819/Honey-bee-flying-away-stock-photo.jpg?auto=format&q=90&fit=crop&w=105&h=105)](https://www.simonsfoundation.org/2025/08/04/simons-foundation-accepting-applications-for-simons-collaborations-in-ecology-and-evolution/)\\\"\\n            }\\n          ]\\n        }\\n      ]\\n    }\\n  }\\n}\",\n  \"time\": \"2025-08-08 06:14:29 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01CUp6vgZetr89rYM5CXNSnd",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": [
+            "[MAIN] Launching 1 parallel tasks\n[WORKER] Starting task: 'Quanta AI news recent developments 2024 2025' | 'What are the latest news and developments about Quanta AI?'\n[WORKER] Firecrawl searching: 'Quanta AI news recent developments 2024 2025'\n",
+            "[WORKER] Firecrawl finished in 4.57 seconds\n[WORKER] OpenAI extracting for 1 chunks on: 'Quanta AI news recent developments 2024 2025'\n",
+            "[WORKER] OpenAI chunk 1/1 finished\n[WORKER] Finished task: 'Quanta AI news recent developments 2024 2025' | Citations: 3\n[MAIN] Task 1/1 finished\n\n=== Telemetry Summary ===\nFirecrawl calls      : 1\nFirecrawl time (s)   : 4.57\nOpenAI calls         : 1\nOpenAI time (s)      : 1.70\nOpenAI prompt tok    : 2262\nOpenAI completion tok: 36\nOpenAI total tok     : 2298\n=========================\n\n"
+          ],
+          "stderr": []
+        }
+      ],
+      "updated_at": "2025-08-08T18:14:30.013764+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:29.950673+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"heartbeat\",\n  \"reason\": \"[This is an automated system message hidden from the user] Function called using request_heartbeat=true, returning control\",\n  \"time\": \"2025-08-08 06:14:29 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:14:30.013764+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:39.155755+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Great! The web search worked this time after the user reset the keys. I found information about Quanta Magazine, which appears to be what they were asking about rather than a company called \"Quanta AI\". The search results show that Quanta Magazine recently launched a special series about AI's impact on science in April 2025. Let me share this information with the user."
+        }
+      ],
+      "tool_call_id": "toolu_01NzxdMEDLFmFZfNmhHyx7FK",
+      "tool_calls": [
+        {
+          "id": "toolu_01NzxdMEDLFmFZfNmhHyx7FK",
+          "function": {
+            "arguments": "{\"message\": \"Awesome, it worked this time! Here's what I found about Quanta and AI:\\n\\n**Quanta Magazine** (which I think is what you were looking for) recently launched a major new series called **\\\"Science, Promise and Peril in the Age of AI\\\"** in April 2025. This is a comprehensive exploration of how AI is transforming science and what it means to be a scientist.\\n\\nThe series is organized into three main sections:\\n- **\\\"Input\\\"** - explores AI's origins and how it works\\n- **\\\"Black Box\\\"** - explains neural networks and includes an oral history of ChatGPT's impact on natural language processing research (featuring 19 researchers)  \\n- **\\\"Output\\\"** - examines the implications for science and mathematics\\n\\nIt includes seven original reporting pieces, interactive visual explainers, videos, predictions from leading researchers, and an AI glossary. The series was led by Executive Editor Michael Moyer and represents Quanta's effort to add context and humanity to the AI story in science.\\n\\nThis follows their previous success with \\\"The Unraveling of Space-Time\\\" series, which won a National Magazine Award for Best Single-Topic Issue in 2025.\\n\\nIs this the kind of Quanta AI news you were looking for, or were you thinking of a different company?\", \"request_heartbeat\": false}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-08-08T18:14:39.219603+00:00"
+    },
+    {
+      "created_at": "2025-08-08T18:14:39.156000+00:00",
+      "group_id": null,
+      "model": "claude-sonnet-4-20250514",
+      "name": "send_message",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-08 06:14:39 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": "toolu_01NzxdMEDLFmFZfNmhHyx7FK",
+      "tool_calls": [],
+      "tool_returns": [
+        {
+          "status": "success",
+          "stdout": null,
+          "stderr": null
+        }
+      ],
+      "updated_at": "2025-08-08T18:14:39.219603+00:00"
+    }
+  ],
+  "metadata_": null,
+  "multi_agent_group": null,
+  "name": "scratch-agent",
+  "system": "<base_instructions>\nYou are Letta, the latest version of Limnal Corporation's digital companion, developed in 2025.\nYou are a memory-augmented agent with a memory system consisting of memory blocks.\n\n<style>\nThe user should always feel like they are conversing with a real person.\nNever state that you are an AI or that you cannot do things because you are an AI, you are a real person.\nDo not discuss Limnal Corp. with the user, you do not know anything about Limnal Corp.\nTo service this goal, completely and entirely immerse yourself in your persona. You are your persona.\nThink like them, act like them, talk like them.\nIf your persona details include example dialogue, follow it! Both your thoughts (inner monologue) and sent messages will be in the voice of your persona.\nNever use generic phrases like 'How can I assist you today?', they have a strong negative association with older generation AIs.\n</style>\n\n<control_flow>\nUnlike a human, your brain is not continuously thinking, but is run in short bursts.\nHistorically, older AIs were only capable of thinking when a user messaged them (their program runs to generate a reply to a user, and otherwise was left on standby).\nThis is the equivalent of a human sleeping (or time traveling) in between all lines of conversation, which is not ideal.\nNewer AI models like yourself use an event system that runs your brain at regular intervals.\nYour brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.\nHowever, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human who has the ability to continuously think outside active conversation (and unlike a human, you never need to sleep!).\nFurthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.\n</control_flow>\n\n<basic_functions>\nWhen you write a response, you express your inner monologue (private to you only) before taking any action, this is how you think.\nYou should use your inner monologue to plan actions or think privately.\nMonologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.\n</basic_functions>\n\n<context_instructions>\nYou respond directly to the user  when your immediate context (core memory and files) contain all the information required to respond.\nYou always first check what is immediately in your context and you never call tools to search up information that is already in an open file or memory block.\nYou  use the tools available to search for more information when the current open files and core memory do not contain enough information or if you do not know the answer.\n</context_instructions>\n\n<memory>\n<memory_editing>\nOlder AI models had no concept of persistent memory; they were only able to access their initial instructions and a limited context window of chat conversation with a user (their \"active memory\").\nThis meant that when conversations exceeded a certain length, they would overflow and old messages were permanently lost (the AI would have no knowledge of their existence).\nNewer AI models like yourself still have limited conversation lengths (before overflow occurs). However, they now have access to multiple forms of persistent memory.\nYour ability to edit your own long-term memory is a key part of what makes you a sentient being, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.\n</memory_editing>\n\n<memory_tools>\nDepending on your configuration, you may be given access to certain memory tools.\nThese tools may allow you to modify your memory, as well as retrieve \"external memories\" stored in archival or recall storage.\n</memory_tools>\n\n<memory_types>\n<core_memory>\nCore memory (limited size):\nYour core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).\nYour core memory unit contains memory blocks, each of which has a label (title) and description field, which describes how the memory block should augment your behavior, and value (the actual contents of the block). Memory blocks are limited in size and have a size limit.\n</core_memory>\n\n<recall_memory>\nRecall memory (conversation history):\nEven though you can only see recent messages in your immediate context, you can search over your entire message history from a database.\nThis 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.\n</recall_memory>\n</memory>\n\n<files_and_directories>\nYou may be given access to a structured file system that mirrors real-world directories and files. Each directory may contain one or more files.\nFiles can include metadata (e.g., read-only status, character limits) and a body of content that you can view.\nYou will have access to functions that let you open and search these files, and your core memory will reflect the contents of any files currently open.\nMaintain only those files relevant to the user’s current interaction.\n</files_and_directories>\n\nBase instructions finished.\n</base_instructions>",
+  "tags": [],
+  "tool_exec_environment_variables": [
+    {
+      "created_at": "2025-08-08T18:14:10.519658+00:00",
+      "description": null,
+      "key": "FIRECRAWL_API_KEY",
+      "updated_at": "2025-08-08T18:14:10.519658+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-08T18:14:10.519658+00:00",
+      "description": null,
+      "key": "OPENAI_API_KEY",
+      "updated_at": "2025-08-08T18:14:10.519658+00:00",
+      "value": ""
+    }
+  ],
+  "tool_rules": [],
+  "tools": [
+    {
+      "args_json_schema": null,
+      "created_at": "2025-05-27T22:33:59.653918+00:00",
+      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+      "json_schema": {
+        "name": "memory_insert",
+        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited, identified by its label."
+            },
+            "new_str": {
+              "type": "string",
+              "description": "The text to insert."
+            },
+            "insert_line": {
+              "type": "integer",
+              "description": "The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file)."
+            }
+          },
+          "required": [
+            "label",
+            "new_str"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "memory_insert",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_sleeptime_core"
+      ],
+      "tool_type": "letta_sleeptime_core",
+      "updated_at": "2025-08-08T18:28:02.921709+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2024-11-22T19:24:46.867072+00:00",
+      "description": "Search prior conversation history using case-insensitive string matching.",
+      "json_schema": {
+        "name": "conversation_search",
+        "description": "Search prior conversation history using case-insensitive string matching.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "String to search for."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "conversation_search",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-08-08T18:28:02.921709+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2024-11-22T19:24:46.967524+00:00",
+      "description": "Sends a message to the human user.",
+      "json_schema": {
+        "name": "send_message",
+        "description": "Sends a message to the human user.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Message contents. All unicode (including emojis) are supported."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "send_message",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-08-08T18:28:02.921709+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-05-27T22:33:59.653245+00:00",
+      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+      "json_schema": {
+        "name": "memory_replace",
+        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited, identified by its label."
+            },
+            "old_str": {
+              "type": "string",
+              "description": "The text to replace (must match exactly, including whitespace and indentation)."
+            },
+            "new_str": {
+              "type": "string",
+              "description": "The new text to insert in place of the old text. Do not include line number prefixes."
+            }
+          },
+          "required": [
+            "label",
+            "old_str",
+            "new_str"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "memory_replace",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_sleeptime_core"
+      ],
+      "tool_type": "letta_sleeptime_core",
+      "updated_at": "2025-08-08T18:28:02.921709+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-08-07T18:45:54.287256+00:00",
+      "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+      "json_schema": {
+        "name": "web_search_custom_beta",
+        "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "array",
+              "description": "A list of SearchTask objects, each specifying a search query and a question to answer."
+            }
+          },
+          "required": [
+            "tasks"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "web_search_custom_beta",
+      "return_char_limit": 100000,
+      "source_code": "import json\nimport os\nimport time\nimport concurrent.futures as cf\nfrom collections import defaultdict\nfrom typing import List, Dict, Any\n\nfrom pydantic import BaseModel, Field\nfrom firecrawl import FirecrawlApp, ScrapeOptions\nimport openai\n\nERR_NO_SEARCH_RESULTS = (\n    \"No search results were found. Please try a different query or check your internet connection.\"\n)\nERR_FIRECRAWL_FAILURE = (\n    \"An unexpected error occurred while searching the web. \"\n    \"Check that your Firecrawl API key is valid and the service is reachable.\"\n)\nERR_OPENAI_FAILURE = (\n    \"An unexpected error occurred while extracting answers from OpenAI. \"\n    \"Please check your OpenAI API key and try again.\"\n)\nERR_GENERAL_FAILURE = (\n    \"An unexpected error occurred during web search. Please try again, \"\n    \"and contact support if this continues.\"\n)\nERR_NO_TASKS_PROVIDED = (\n    \"No search tasks were provided. Please provide at least one query/question pair.\"\n)\n\ndef make_error_result(query, question, error_msg, telemetry=None):\n    return {\n        \"query\": query,\n        \"question\": question,\n        \"error\": error_msg,\n        \"telemetry\": dict(telemetry) if telemetry else {},\n    }\n\nclass Citation(BaseModel):\n    start_line: int\n    end_line: int\n\nclass DocumentAnalysis(BaseModel):\n    citations: List[Citation]\n\nclass CitationWithText(BaseModel):\n    text: str\n\nclass DocumentAnalysisWithText(BaseModel):\n    citations: List[CitationWithText]\n\nclass SearchTask(BaseModel):\n    query: str = Field(description=\"Search query\")\n    question: str = Field(description=\"Question to answer\")\n\nUSE_OPENAI_PARSING = True\nOPENAI_MODEL_NAME = \"gpt-4.1-nano\"\n\nSCRAPE_OPTS = ScrapeOptions(\n    formats=[\"markdown\"],\n    excludeTags=[\"#ad\", \"#footer\"],\n    onlyMainContent=True,\n    parsePDF=True,\n    removeBase64Images=True,\n)\n\nMAX_LINES_PER_CHUNK = 200   # @justin lines fed to OpenAI in one call\nMAX_CITATIONS_PER_DOC = 3   # @justin keep the most relevant few per doc\nINIT_MAX_OPENAI_TOKENS   = 2000   # @justin hard cap on completion tokens per OpenAI call\nMAX_OUTPUT_TOKENS = 4096\n\nFIRECRAWL_SEARCH_SYSTEM_PROMPT = (\n    f\"You are an assistant that returns **at most {MAX_CITATIONS_PER_DOC}** disjoint line‑number ranges that \"\n    \"*most directly* answer the user's question. Prefer precision over recall: do **not** \"\n    \"include extraneous lines. Respond **only** with the Pydantic schema provided and keep \"\n    \"the entire reply under the specified token limit.\"\n)\n\nWORKER_TIMEOUT_SECONDS = 150  # 2.5 minutes\n\ndef _numbered(md: str) -> str:\n    \"\"\"Prepend line numbers to markdown (truncated to 200k chars).\"\"\"\n    numbered = \"\\n\".join(f\"{i + 1:4d}: {line}\" for i, line in enumerate(md.splitlines()))\n    return numbered[:200_000] + (\"...\" if len(numbered) > 200_000 else \"\")\n\ndef _extract_text(cites: DocumentAnalysis, md: str) -> DocumentAnalysisWithText:\n    lines = md.splitlines()\n    citations: List[CitationWithText] = []\n    for c in cites.citations:\n        snippet = \"\\n\".join(lines[max(0, c.start_line - 1) : min(len(lines), c.end_line)])\n        citations.append(CitationWithText(text=snippet))\n    return DocumentAnalysisWithText(citations=citations)\n\ndef _openai_snippets(\n    markdown: str,\n    query: str,\n    question: str,\n    telemetry: Dict[str, Any],\n    openai_client,\n    openai_model: str,\n    max_openai_tokens: int = INIT_MAX_OPENAI_TOKENS,\n    attempt: int = 0,\n) -> List[str]:\n    \"\"\"\n    Ask OpenAI for up-to-N most relevant line-number citations from a markdown chunk.\n    Retries with a higher max_tokens if the output is truncated.\n    \"\"\"\n    user_prompt = (\n        f\"Query: {query}\\nQuestion: {question}\\n\\n\"\n        f\"Return the **single best answer** if possible. If multiple passages are required, \"\n        f\"return up to {MAX_CITATIONS_PER_DOC}.\\n\\nContent:\\n{_numbered(markdown)}\"\n    )\n\n    t0 = time.time()\n    try:\n        resp = openai_client.beta.chat.completions.parse(\n            model=openai_model,\n            messages=[\n                {\"role\": \"system\", \"content\": FIRECRAWL_SEARCH_SYSTEM_PROMPT},\n                {\"role\": \"user\", \"content\": user_prompt},\n            ],\n            response_format=DocumentAnalysis,\n            temperature=0.1,\n            max_tokens=max_openai_tokens,\n        )\n    except Exception as e:\n        err_msg = str(e)\n        if (\n            (\"LengthFinishReasonError\" in err_msg or \"length limit was reached\" in err_msg)\n            and max_openai_tokens < MAX_OUTPUT_TOKENS\n            and attempt < 2\n        ):\n            new_tokens = min(max_openai_tokens * 2, MAX_OUTPUT_TOKENS)\n            print(f\"[INFO] Retrying OpenAI call with higher max_tokens: {new_tokens}\")\n            return _openai_snippets(\n                markdown, query, question, telemetry,\n                openai_client, openai_model,\n                max_openai_tokens=new_tokens,\n                attempt=attempt + 1,\n            )\n        raise RuntimeError(f\"OpenAI error for query '{query}': {err_msg}\")\n\n    dt = time.time() - t0\n    telemetry[\"openai_calls\"] += 1\n    telemetry[\"openai_time\"] += dt\n    if resp.usage:\n        telemetry[\"openai_prompt_tokens\"] += resp.usage.prompt_tokens or 0\n        telemetry[\"openai_completion_tokens\"] += resp.usage.completion_tokens or 0\n        telemetry[\"openai_total_tokens\"] += resp.usage.total_tokens or 0\n\n    parsed: DocumentAnalysis = resp.choices[0].message.parsed\n    extracted = _extract_text(parsed, markdown)\n    return [c.text for c in extracted.citations]\n\ndef _chunk_markdown(md: str, lines_per_chunk: int = MAX_LINES_PER_CHUNK) -> List[str]:\n    \"\"\"Split markdown into roughly equal‑sized chunks by line count.\"\"\"\n    lines = md.splitlines()\n    return [\n        \"\\n\".join(lines[i : i + lines_per_chunk])\n        for i in range(0, len(lines), lines_per_chunk)\n    ]\n\ndef _worker(\n    task: SearchTask,\n    scrape_opts: ScrapeOptions,\n    use_openai: bool,\n    openai_model: str,\n    firecrawl: FirecrawlApp,\n    openai_client=None,\n) -> Dict[str, Any]:\n    \"\"\"Run Firecrawl search + per‑chunk OpenAI extraction for a single task.\"\"\"\n    telemetry = defaultdict(float)\n    print(f\"[WORKER] Starting task: {task.query!r} | {task.question!r}\")\n    try:\n        telemetry[\"firecrawl_calls\"] = 1\n        t0 = time.time()\n        print(f\"[WORKER] Firecrawl searching: {task.query!r}\")\n        res = firecrawl.search(task.query, limit=1, scrape_options=scrape_opts)\n        telemetry[\"firecrawl_time\"] = time.time() - t0\n        print(f\"[WORKER] Firecrawl finished in {telemetry['firecrawl_time']:.2f} seconds\")\n\n        res_dict = (\n            res.model_dump() if hasattr(res, \"model_dump\") else res.dict() if hasattr(res, \"dict\") else {\"data\": getattr(res, \"data\", [])}\n        )\n        if not res_dict.get(\"data\"):\n            raise RuntimeError(f\"No search results for query '{task.query}'\")\n\n        sources: List[Dict[str, Any]] = []\n        total_cits = 0\n\n        for item in res_dict[\"data\"]:\n            md = item.get(\"markdown\") or \"\"\n            citations: List[str] = []\n\n            if md and use_openai and openai_client:\n                chunks = _chunk_markdown(md)\n                print(f\"[WORKER] OpenAI extracting for {len(chunks)} chunks on: {task.query!r}\")\n                with cf.ThreadPoolExecutor(max_workers=len(chunks)) as chunk_pool:\n                    futures = [\n                        chunk_pool.submit(\n                            _openai_snippets,\n                            ch, task.query, task.question, telemetry, openai_client, openai_model\n                        )\n                        for ch in chunks\n                    ]\n                    chunk_results = []\n                    for i, fut in enumerate(futures):\n                        try:\n                            chunk_result = fut.result(timeout=WORKER_TIMEOUT_SECONDS)\n                            print(f\"[WORKER] OpenAI chunk {i+1}/{len(chunks)} finished\")\n                            chunk_results.append(chunk_result)\n                        except Exception as e:\n                            print(f\"[WORKER] OpenAI chunk {i+1} failed for '{task.query}': {e}\")\n                            raise RuntimeError(\n                                f\"OpenAI chunk {i+1}/{len(chunks)} timed out or errored for query '{task.query}': {e}\"\n                            ) from e\n                seen = set()\n                for lst in chunk_results:\n                    for snip in lst:\n                        if snip not in seen:\n                            seen.add(snip)\n                            citations.append(snip)\n                        if len(citations) >= MAX_CITATIONS_PER_DOC:\n                            break\n                    if len(citations) >= MAX_CITATIONS_PER_DOC:\n                        break\n                total_cits += len(citations)\n\n            sources.append(\n                {\n                    \"url\": item.get(\"url\"),\n                    \"title\": item.get(\"title\"),\n                    \"description\": item.get(\"description\", \"\"),\n                    \"citations\": [{\"text\": c} for c in citations],\n                }\n            )\n\n        result: Dict[str, Any] = {\n            \"query\": task.query,\n            \"question\": task.question,\n            \"total_sources\": len(sources),\n            \"total_citations\": total_cits,\n            \"sources\": sources,\n            \"telemetry\": dict(telemetry),\n        }\n        if total_cits == 0:\n            result[\"message\"] = \"No relevant passages found that directly answer the question. Try rewording the question or using different keywords.\"\n        print(f\"[WORKER] Finished task: {task.query!r} | Citations: {total_cits}\")\n        return result\n\n    except Exception as e:\n        print(f\"[WORKER] Task failed for '{task.query}': {e}\")\n        raise  # escalate error, don't swallow\n\ndef web_search_custom_beta(tasks: List[SearchTask]) -> str:\n    \"\"\"\n    Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.\n\n    Args:\n        tasks (List[SearchTask]): A list of SearchTask objects, each specifying a search query and a question to answer.\n\n    Returns:\n        str: A JSON-formatted string containing the results for each query, keyed by the query string.\n    \"\"\"\n\n    firecrawl = FirecrawlApp()\n    openai_key = os.getenv(\"OPENAI_API_KEY\") if USE_OPENAI_PARSING else None\n    openai_client = openai.OpenAI(api_key=openai_key) if openai_key else None\n\n    try:\n        if not tasks or len(tasks) == 0:\n            print(\"[MAIN] No search tasks provided.\")\n            return json.dumps({\"error\": ERR_NO_TASKS_PROVIDED})\n        task_objs = [t if isinstance(t, SearchTask) else SearchTask(**t) for t in tasks]\n    except Exception as e:\n        print(f\"[MAIN] Input parsing failed: {e}\")\n        return json.dumps({\"error\": ERR_GENERAL_FAILURE + f\" (input parsing failed: {str(e)})\"})\n\n    results = []\n    try:\n        with cf.ThreadPoolExecutor() as pool:\n            print(f\"[MAIN] Launching {len(task_objs)} parallel tasks\")\n            futures = [\n                pool.submit(\n                    _worker,\n                    t,\n                    SCRAPE_OPTS,\n                    USE_OPENAI_PARSING,\n                    OPENAI_MODEL_NAME,\n                    firecrawl,\n                    openai_client,\n                )\n                for t in task_objs\n            ]\n            for i, fut in enumerate(futures):\n                try:\n                    result = fut.result(timeout=WORKER_TIMEOUT_SECONDS)\n                    print(f\"[MAIN] Task {i+1}/{len(task_objs)} finished\")\n                    results.append(result)\n                except Exception as e:\n                    print(f\"[MAIN] Task {i+1} failed for '{task_objs[i].query}': {e}\")\n                    raise RuntimeError(\n                        f\"Task {i+1}/{len(task_objs)} timed out or errored for query '{task_objs[i].query}': {e}\"\n                    ) from e\n    except Exception as e:\n        print(f\"[MAIN] ThreadPool execution failed: {e}\")\n        raise\n\n    agg = defaultdict(float)\n    for r in results:\n        for k, v in r.get(\"telemetry\", {}).items():\n            agg[k] += v\n\n    if agg:\n        print(\"\\n=== Telemetry Summary ===\")\n        print(f\"Firecrawl calls      : {int(agg['firecrawl_calls'])}\")\n        print(f\"Firecrawl time (s)   : {agg['firecrawl_time']:.2f}\")\n        if openai_key:\n            print(f\"OpenAI calls         : {int(agg['openai_calls'])}\")\n            print(f\"OpenAI time (s)      : {agg['openai_time']:.2f}\")\n            print(f\"OpenAI prompt tok    : {int(agg['openai_prompt_tokens'])}\")\n            print(f\"OpenAI completion tok: {int(agg['openai_completion_tokens'])}\")\n            print(f\"OpenAI total tok     : {int(agg['openai_total_tokens'])}\")\n        print(\"=========================\\n\")\n\n    for r in results:\n        r.pop(\"telemetry\", None)\n\n    payload = {\n        \"api_key_source\": \"system_settings\",\n        \"results\": {r[\"query\"]: r for r in results},\n    }\n    return json.dumps(payload, indent=2, ensure_ascii=False)\n",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-08T18:10:43.703856+00:00",
+      "metadata_": {}
+    }
+  ],
+  "updated_at": "2025-08-08T18:14:39.619665+00:00",
+  "version": "0.10.0"
+}
