@@ -23,25 +23,23 @@ class BaseToolRule(LettaBase):
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> set[str]:
         raise NotImplementedError
 
-    def render_prompt(self) -> Optional[str]:
+    def render_prompt(self) -> str | None:
         """Render the prompt template with this rule's attributes."""
-        template_to_use = self.prompt_template or self._get_default_template()
-        if not template_to_use:
+        if not self.prompt_template:
             return None
 
         try:
-            template = Template(template_to_use)
+            template = Template(self.prompt_template)
             return template.render(**self.model_dump())
         except Exception as e:
             logger.warning(
-                f"Failed to render prompt template for tool rule '{self.tool_name}' (type: {self.type}). "
-                f"Template: '{template_to_use}'. Error: {e}"
+                "Failed to render prompt template for tool rule '%s' (type: %s). Template: '%s'. Error: %s",
+                self.tool_name,
+                self.type,
+                self.prompt_template,
+                e,
             )
             return None
-
-    def _get_default_template(self) -> Optional[str]:
-        """Get the default template for this rule type. Override in subclasses."""
-        return None
 
 
 class ChildToolRule(BaseToolRule):
@@ -60,9 +58,6 @@ class ChildToolRule(BaseToolRule):
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools
 
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>"
-
 
 class ParentToolRule(BaseToolRule):
     """
@@ -79,9 +74,6 @@ class ParentToolRule(BaseToolRule):
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools - set(self.children)
-
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>"
 
 
 class ConditionalToolRule(BaseToolRule):
@@ -125,7 +117,8 @@ class ConditionalToolRule(BaseToolRule):
 
         return {self.default_child} if self.default_child else available_tools
 
-    def _matches_key(self, function_output: str, key: Any) -> bool:
+    @staticmethod
+    def _matches_key(function_output: str, key: Any) -> bool:
         """Helper function to determine if function output matches a mapping key."""
         if isinstance(key, bool):
             return function_output.lower() == "true" if key else function_output.lower() == "false"
@@ -141,9 +134,6 @@ class ConditionalToolRule(BaseToolRule):
                 return False
         else:  # Assume string
             return str(function_output) == str(key)
-
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>"
 
 
 class InitToolRule(BaseToolRule):
@@ -164,9 +154,6 @@ class TerminalToolRule(BaseToolRule):
         default="<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>",
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
-
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
 
 
 class ContinueToolRule(BaseToolRule):
@@ -196,9 +183,6 @@ class RequiredBeforeExitToolRule(BaseToolRule):
         """Returns all available tools - the logic for preventing exit is handled elsewhere."""
         return available_tools
 
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
-
 
 class MaxCountPerStepToolRule(BaseToolRule):
     """
@@ -221,9 +205,6 @@ class MaxCountPerStepToolRule(BaseToolRule):
             return available_tools - {self.tool_name}
 
         return available_tools
-
-    def _get_default_template(self) -> Optional[str]:
-        return "<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>"
 
 
 ToolRule = Annotated[
