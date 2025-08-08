@@ -6879,7 +6879,7 @@ export const $LLMConfig = {
       anyOf: [
         {
           type: 'string',
-          enum: ['low', 'medium', 'high'],
+          enum: ['minimal', 'low', 'medium', 'high'],
         },
         {
           type: 'null',

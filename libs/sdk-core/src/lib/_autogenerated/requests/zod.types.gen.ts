@@ -328,12 +328,14 @@ export const LLMConfig = z.object({
   enable_reasoner: z.union([z.boolean(), z.undefined()]).optional(),
   reasoning_effort: z
     .union([
+      z.literal('minimal'),
       z.literal('low'),
       z.literal('medium'),
       z.literal('high'),
       z.null(),
       z.array(
         z.union([
+          z.literal('minimal'),
           z.literal('low'),
           z.literal('medium'),
           z.literal('high'),

@@ -1523,6 +1523,10 @@
                                 "oneOf": [
                                   {
                                     "type": "string",
+                                    "enum": ["minimal"]
+                                  },
+                                  {
+                                    "type": "string",
                                     "enum": ["low"]
                                   },
                                   {
@@ -1542,6 +1546,10 @@
                                     "type": "array",
                                     "items": {
                                       "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["minimal"]
+                                        },
                                         {
                                           "type": "string",
                                           "enum": ["low"]
@@ -6771,6 +6779,10 @@
                                 "oneOf": [
                                   {
                                     "type": "string",
+                                    "enum": ["minimal"]
+                                  },
+                                  {
+                                    "type": "string",
                                     "enum": ["low"]
                                   },
                                   {
@@ -6790,6 +6802,10 @@
                                     "type": "array",
                                     "items": {
                                       "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["minimal"]
+                                        },
                                         {
                                           "type": "string",
                                           "enum": ["low"]

@@ -58,7 +58,7 @@ class LLMConfig(BaseModel):
     enable_reasoner: bool = Field(
         False, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = Field(
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
         None,
         description="The reasoning effort to use when generating text reasoning models",
     )
