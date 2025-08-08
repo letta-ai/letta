@@ -11,13 +11,15 @@ import {
   XTwitterIcon,
   LinkedinIcon,
 } from '@letta-cloud/ui-component-library';
+import { GitHubStarsLabel } from '../../../../app/agents/[agentId]/_components/GitHubStarsLabel/GitHubStarsLabel';
 
 interface FooterBlockLink {
   href: string;
   label: React.ReactNode;
   key: string;
   ariaLabel: string;
-  icon?: React.ReactNode;
+  preIcon?: React.ReactNode;
+  postIcon?: React.ReactNode;
 }
 
 interface FooterBlockProps {
@@ -36,13 +38,14 @@ function FooterBlock(props: FooterBlockProps) {
         </Typography>
       )}
       <VStack gap="medium">
-        {links.map(({ key, href, label, icon, ariaLabel }) => {
+        {links.map(({ key, href, label, preIcon, postIcon, ariaLabel }) => {
           return (
             <HStack key={key} align="center" gap="medium">
-              {icon}
+              {preIcon}
               <a href={href} aria-label={ariaLabel}>
                 <Typography variant="body">{label}</Typography>
               </a>
+              {postIcon}
             </HStack>
           );
         })}
@@ -74,20 +77,20 @@ export function DirectoryFooter() {
               links={[
                 {
                   key: 'product',
-                  href: '/product',
+                  href: 'https://www.letta.com/#product',
                   label: t('product'),
                   ariaLabel:
                     "Learn about Letta's AI agent platform and features",
                 },
                 {
                   key: 'customers',
-                  href: '/customers',
+                  href: 'https://www.letta.com/case-studies',
                   label: t('customers'),
                   ariaLabel: 'View customer success stories and case studies',
                 },
                 {
                   key: 'about',
-                  href: '/about',
+                  href: 'https://www.letta.com/about-us',
                   label: 'About us',
                   ariaLabel:
                     "Learn about Letta's mission, team, and company story",
@@ -99,17 +102,24 @@ export function DirectoryFooter() {
               title="Developers"
               links={[
                 {
+                  key: 'github',
+                  href: 'https://github.com/letta-ai',
+                  label: 'GitHub',
+                  ariaLabel: 'blahla',
+                  postIcon: <GitHubStarsLabel />
+                },
+                {
                   key: 'docs',
-                  href: '/docs',
+                  href: 'https://docs.letta.com/',
                   label: 'Documentation',
                   ariaLabel:
                     'Access technical documentation and developer guides',
                 },
                 {
                   key: 'community',
-                  href: '/community',
+                  href: 'https://discord.com/invite/letta',
                   label: 'Community',
-                  ariaLabel: 'Join the Letta developer community and forums',
+                  ariaLabel: 'Join the Letta developer community on Discord',
                 },
               ]}
             />
@@ -117,12 +127,12 @@ export function DirectoryFooter() {
             <FooterBlock
               links={[
                 {
-                  key: 'github',
+                  key: 'github-community',
                   href: 'https://github.com/letta-ai',
                   label: 'GitHub',
                   ariaLabel:
                     'Visit Letta on GitHub to view our open source code and contribute',
-                  icon: <GithubLogoMarkDynamic size="small" />,
+                  preIcon: <GithubLogoMarkDynamic size="small" />,
                 },
                 {
                   key: 'discord',
@@ -130,7 +140,7 @@ export function DirectoryFooter() {
                   label: 'Discord',
                   ariaLabel:
                     'Join our Discord community to chat with other developers and get support',
-                  icon: <DiscordLogoMarkDynamic size="xsmall" />,
+                  preIcon: <DiscordLogoMarkDynamic size="xsmall" />,
                 },
                 {
                   key: 'x',
@@ -138,7 +148,7 @@ export function DirectoryFooter() {
                   label: 'X',
                   ariaLabel:
                     'Follow Letta on X (formerly Twitter) for updates and announcements',
-                  icon: <XTwitterIcon size="xsmall" />,
+                  preIcon: <XTwitterIcon size="xsmall" />,
                 },
                 {
                   key: 'youtube',
@@ -146,7 +156,7 @@ export function DirectoryFooter() {
                   label: 'YouTube',
                   ariaLabel:
                     'Subscribe to our YouTube channel for tutorials and product demos',
-                  icon: <YoutubeIcon size="xsmall" />,
+                  preIcon: <YoutubeIcon size="xsmall" />,
                 },
                 {
                   key: 'linkedin',
@@ -154,7 +164,7 @@ export function DirectoryFooter() {
                   label: 'LinkedIn',
                   ariaLabel:
                     'Connect with Letta on LinkedIn for company updates and industry insights',
-                  icon: <LinkedinIcon size="xsmall" />,
+                  preIcon: <LinkedinIcon size="xsmall" />,
                 },
               ]}
             />

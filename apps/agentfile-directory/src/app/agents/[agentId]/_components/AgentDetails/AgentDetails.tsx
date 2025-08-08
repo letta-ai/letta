@@ -9,7 +9,7 @@ import {
   TabGroup,
   ToolLanguageIcon,
   Typography,
-  VStack
+  VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { CenterContent } from '../../../../../lib/client/components/CenterContent/CenterContent';
@@ -84,9 +84,7 @@ function AgentOverview(props: AgentOverviewProps) {
   return (
     <>
       <CappedWidth>
-        {description && (
-          <Markdown text={description} />
-        )}
+        {description && <Markdown text={description} />}
       </CappedWidth>
       <CappedWidth>
         <BlockViewer
