@@ -208,6 +208,7 @@ describe-web:
         --set secrets.ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} \
         --set secrets.GROK_API_KEY=${GROK_API_KEY} \
         --set secrets.GEMINI_API_KEY=${GEMINI_API_KEY} \
+        --set secrets.GEMINI_FORCE_MINIMUM_THINKING_BUDGET=true \
         --set secrets.SENTRY_DSN=${SENTRY_DSN} \
         --set secrets.E2B_API_KEY=${E2B_API_KEY} \
         --set secrets.MODAL_TOKEN_ID=${MODAL_TOKEN_ID} \

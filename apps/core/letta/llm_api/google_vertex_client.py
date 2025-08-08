@@ -254,8 +254,11 @@ class GoogleVertexClient(LLMClientBase):
         # If enable_reasoner is False, set thinking_budget to 0
         # Otherwise, use the value from max_reasoning_tokens
         if "flash" in llm_config.model:
+            # Gemini flash models may fail to call tools even with FunctionCallingConfigMode.ANY if thinking is fully disabled, set to minimum to prevent tool call failure
             thinking_config = ThinkingConfig(
-                thinking_budget=llm_config.max_reasoning_tokens if llm_config.enable_reasoner else 0,
+                thinking_budget=(
+                    llm_config.max_reasoning_tokens if llm_config.enable_reasoner else self.get_thinking_budget(llm_config.model)
+                ),
             )
             request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
@@ -292,7 +295,6 @@ class GoogleVertexClient(LLMClientBase):
         }
         }
         """
-        # print(response_data)
 
         response = GenerateContentResponse(**response_data)
         try:
@@ -493,6 +495,14 @@ class GoogleVertexClient(LLMClientBase):
             "propertyOrdering": ["name", "args"],
             "required": ["name", "args"],
         }
+
+    def get_thinking_budget(self, model: str) -> bool:
+        if model_settings.gemini_force_minimum_thinking_budget:
+            if all(substring in model for substring in ["2.5", "flash", "lite"]):
+                return 512
+            elif all(substring in model for substring in ["2.5", "flash"]):
+                return 1
+        return 0
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
