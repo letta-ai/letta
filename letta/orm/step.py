@@ -12,7 +12,10 @@ from letta.schemas.step import Step as PydanticStep
 
 if TYPE_CHECKING:
     from letta.orm.job import Job
+    from letta.orm.message import Message
+    from letta.orm.organization import Organization
     from letta.orm.provider import Provider
+    from letta.orm.step_metrics import StepMetrics
 
 
 class Step(SqlalchemyBase, ProjectMixin):
@@ -70,3 +73,6 @@ class Step(SqlalchemyBase, ProjectMixin):
 
     # Relationships (backrefs)
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="step", cascade="save-update", lazy="noload")
+    metrics: Mapped[Optional["StepMetrics"]] = relationship(
+        "StepMetrics", back_populates="step", cascade="all, delete-orphan", lazy="noload", uselist=False
+    )
