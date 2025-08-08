@@ -1507,8 +1507,6 @@ class LettaAgent(BaseAgent):
                 status="error",
             )
 
-        print(target_tool)
-
         # TODO: This temp. Move this logic and code to executors
 
         if agent_step_span:
