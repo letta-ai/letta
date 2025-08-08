@@ -45,7 +45,7 @@ from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole, ProviderType, ToolType
+from letta.schemas.enums import MessageRole, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
@@ -991,6 +991,7 @@ class Agent(BaseAgent):
                 job_id=job_id,
                 step_id=step_id,
                 project_id=self.agent_state.project_id,
+                status=StepStatus.SUCCESS,  # Set to SUCCESS since we're logging after successful completion
             )
             for message in all_new_messages:
                 message.step_id = step.id

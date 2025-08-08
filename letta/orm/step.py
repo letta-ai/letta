@@ -6,12 +6,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
+from letta.schemas.enums import StepStatus
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.step import Step as PydanticStep
 
 if TYPE_CHECKING:
     from letta.orm.job import Job
+    from letta.orm.message import Message
+    from letta.orm.organization import Organization
     from letta.orm.provider import Provider
+    from letta.orm.step_metrics import StepMetrics
 
 
 class Step(SqlalchemyBase, ProjectMixin):
@@ -55,6 +59,13 @@ class Step(SqlalchemyBase, ProjectMixin):
         None, nullable=True, doc="The feedback for this step. Must be either 'positive' or 'negative'."
     )
 
+    # error handling
+    error_type: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The type/class of the error that occurred")
+    error_data: Mapped[Optional[Dict]] = mapped_column(
+        JSON, nullable=True, doc="Error details including message, traceback, and additional context"
+    )
+    status: Mapped[Optional[StepStatus]] = mapped_column(None, nullable=True, doc="Step status: pending, success, or failed")
+
     # Relationships (foreign keys)
     organization: Mapped[Optional["Organization"]] = relationship("Organization")
     provider: Mapped[Optional["Provider"]] = relationship("Provider")
@@ -62,3 +73,6 @@ class Step(SqlalchemyBase, ProjectMixin):
 
     # Relationships (backrefs)
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="step", cascade="save-update", lazy="noload")
+    metrics: Mapped[Optional["StepMetrics"]] = relationship(
+        "StepMetrics", back_populates="step", cascade="all, delete-orphan", lazy="noload", uselist=False
+    )

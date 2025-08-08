@@ -230,14 +230,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
-    async def memory_replace(
-        self,
-        agent_state: AgentState,
-        actor: User,
-        label: str,
-        old_str: str,
-        new_str: Optional[str] = None,
-    ) -> str:
+    async def memory_replace(self, agent_state: AgentState, actor: User, label: str, old_str: str, new_str: str) -> str:
         """
         The memory_replace command allows you to replace a specific string in a memory
         block with a new string. This is used for making precise edits.
@@ -246,8 +239,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             label (str): Section of the memory to be edited, identified by its label.
             old_str (str): The text to replace (must match exactly, including whitespace
                 and indentation). Do not include line number prefixes.
-            new_str (Optional[str]): The new text to insert in place of the old text.
-                Omit this argument to delete the old_str. Do not include line number prefixes.
+            new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
 
         Returns:
             str: The success message

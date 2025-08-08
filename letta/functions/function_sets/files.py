@@ -43,24 +43,37 @@ async def grep_files(
     agent_state: "AgentState",
     pattern: str,
     include: Optional[str] = None,
-    context_lines: Optional[int] = 3,
+    context_lines: Optional[int] = 1,
+    offset: Optional[int] = None,
 ) -> str:
     """
     Searches file contents for pattern matches with surrounding context.
 
-    Ideal for:
-    - Finding specific code elements (variables, functions, keywords)
-    - Locating error messages or specific text across multiple files
-    - Examining code in context to understand usage patterns
+    Results are paginated - shows 20 matches per call. The response includes:
+    - A summary of total matches and which files contain them
+    - The current page of matches (20 at a time)
+    - Instructions for viewing more matches using the offset parameter
+
+    Example usage:
+        First call: grep_files(pattern="TODO")
+        Next call: grep_files(pattern="TODO", offset=20)  # Shows matches 21-40
+
+    Returns search results containing:
+    - Summary with total match count and file distribution
+    - List of files with match counts per file
+    - Current page of matches (up to 20)
+    - Navigation hint for next page if more matches exist
 
     Args:
         pattern (str): Keyword or regex pattern to search within file contents.
         include (Optional[str]): Optional keyword or regex pattern to filter filenames to include in the search.
         context_lines (Optional[int]): Number of lines of context to show before and after each match.
-                                       Equivalent to `-C` in grep_files. Defaults to 3.
-
-    Returns:
-        str: Matching lines with optional surrounding context or a summary output.
+                                       Equivalent to `-C` in grep_files. Defaults to 1.
+        offset (Optional[int]): Number of matches to skip before showing results. Used for pagination.
+                                For example, offset=20 shows matches starting from the 21st match.
+                                Use offset=0 (or omit) for first page, offset=20 for second page,
+                                offset=40 for third page, etc. The tool will tell you the exact
+                                offset to use for the next page.
     """
     raise NotImplementedError("Tool not implemented. Please contact the Letta team.")
 

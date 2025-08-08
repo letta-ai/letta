@@ -95,7 +95,7 @@ def agent_obj(client):
     )
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    # client.agents.delete(agent_state_instance.id)
 
 
 @pytest.fixture(scope="function")
@@ -111,7 +111,7 @@ def other_agent_obj(client):
 
     yield agent_state_instance
 
-    client.agents.delete(agent_state_instance.id)
+    # client.agents.delete(agent_state_instance.id)
 
 
 @pytest.fixture
@@ -150,7 +150,7 @@ def test_send_message_to_agent(client, server, agent_obj, other_agent_obj):
     actor = server.user_manager.get_user_or_default()
 
     # Encourage the agent to send a message to the other agent_obj with the secret string
-    client.agents.messages.create(
+    response = client.agents.messages.create(
         agent_id=agent_obj.id,
         messages=[
             {

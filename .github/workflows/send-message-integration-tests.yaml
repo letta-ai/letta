@@ -41,7 +41,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       # Ensure secrets don't leak
       - name: Configure git to hide secrets
@@ -56,20 +56,20 @@ jobs:
             if [[ -n "$value" ]]; then
               # Mask the full value
               echo "::add-mask::$value"
-              
+
               # Also mask partial values (first and last several characters)
               # This helps when only parts of keys appear in logs
               if [[ ${#value} -gt 8 ]]; then
                 echo "::add-mask::${value:0:8}"
                 echo "::add-mask::${value:(-8)}"
               fi
-              
+
               # Also mask with common formatting changes
               # Some logs might add quotes or other characters
               echo "::add-mask::\"$value\""
               echo "::add-mask::$value\""
               echo "::add-mask::\"$value"
-              
+
               echo "Masked secret: $var (length: ${#value})"
             fi
           done
@@ -77,13 +77,13 @@ jobs:
       # Check out base repository code, not the PR's code (for security)
       - name: Checkout base repository
         uses: actions/checkout@v4 # No ref specified means it uses base branch
-      
+
       # Only extract relevant files from the PR (for security, specifically prevent modification of workflow files)
       - name: Extract PR schema files
         run: |
           # Fetch PR without checking it out
           git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}
-          
+
           # Extract ONLY the schema files
           git checkout pr-${{ github.event.pull_request.number }} -- letta/
       - name: Set up python 3.12

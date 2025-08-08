@@ -17,8 +17,5 @@
     "test_token_streaming_agent_loop_error",
     "test_token_streaming_tool_call"
   ],
-  "Multimodal": [
-    "test_base64_image_input",
-    "test_url_image_input"
-  ]
+  "Multimodal": ["test_base64_image_input", "test_url_image_input"]
 }

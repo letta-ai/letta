@@ -609,17 +609,13 @@ def test_agent_uses_grep_correctly_advanced(disable_pinecone, client: LettaSDKCl
     # Basic structural integrity checks
     assert tool_return_message.name == "grep_files"
     assert tool_return_message.status == "success"
-    assert "Found 1 matches" in tool_return_message.tool_return
+    assert "Found 1 total matches across 1 files" in tool_return_message.tool_return
     assert "tool-f5b80b08-5a45-4a0a-b2cd-dd8a0177b7ef" in tool_return_message.tool_return
 
     # Context line integrity (3 lines before and after)
-    assert "507:" in tool_return_message.tool_return
-    assert "508:" in tool_return_message.tool_return
     assert "509:" in tool_return_message.tool_return
     assert "> 510:" in tool_return_message.tool_return  # Match line with > prefix
     assert "511:" in tool_return_message.tool_return
-    assert "512:" in tool_return_message.tool_return
-    assert "513:" in tool_return_message.tool_return
 
 
 def test_create_agent_with_source_ids_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient):
@@ -848,6 +844,92 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     expected_length_desc = "Optional number of lines to view from offset (inclusive). If not specified, views to end of file."
     assert length_prop["description"] == expected_length_desc
     assert length_prop["type"] == "integer"
+
+
+def test_grep_files_schema_descriptions(disable_pinecone, client: LettaSDKClient):
+    """Test that grep_files tool schema contains correct descriptions from docstring"""
+
+    # Get the grep_files tool
+    tools = client.tools.list(name="grep_files")
+    assert len(tools) == 1, "Expected exactly one grep_files tool"
+
+    grep_files_tool = tools[0]
+    schema = grep_files_tool.json_schema
+
+    # Check main function description includes the full multiline docstring with examples
+    description = schema["description"]
+
+    # Check main description line
+    assert "Searches file contents for pattern matches with surrounding context." in description
+
+    # Check important details are included
+    assert "Results are paginated - shows 20 matches per call" in description
+    assert "The response includes:" in description
+    assert "A summary of total matches and which files contain them" in description
+    assert "The current page of matches (20 at a time)" in description
+    assert "Instructions for viewing more matches using the offset parameter" in description
+
+    # Check examples are included
+    assert "Example usage:" in description
+    assert 'grep_files(pattern="TODO")' in description
+    assert 'grep_files(pattern="TODO", offset=20)' in description
+    assert "# Shows matches 21-40" in description
+
+    # Check parameters structure
+    assert "parameters" in schema
+    assert "properties" in schema["parameters"]
+    properties = schema["parameters"]["properties"]
+
+    # Check pattern parameter
+    assert "pattern" in properties
+    pattern_prop = properties["pattern"]
+    expected_pattern_desc = "Keyword or regex pattern to search within file contents."
+    assert (
+        pattern_prop["description"] == expected_pattern_desc
+    ), f"Expected pattern description: '{expected_pattern_desc}', got: '{pattern_prop['description']}'"
+    assert pattern_prop["type"] == "string"
+
+    # Check include parameter
+    assert "include" in properties
+    include_prop = properties["include"]
+    expected_include_desc = "Optional keyword or regex pattern to filter filenames to include in the search."
+    assert (
+        include_prop["description"] == expected_include_desc
+    ), f"Expected include description: '{expected_include_desc}', got: '{include_prop['description']}'"
+    assert include_prop["type"] == "string"
+
+    # Check context_lines parameter
+    assert "context_lines" in properties
+    context_lines_prop = properties["context_lines"]
+    expected_context_lines_desc = (
+        "Number of lines of context to show before and after each match.\n" "Equivalent to `-C` in grep_files. Defaults to 1."
+    )
+    assert (
+        context_lines_prop["description"] == expected_context_lines_desc
+    ), f"Expected context_lines description: '{expected_context_lines_desc}', got: '{context_lines_prop['description']}'"
+    assert context_lines_prop["type"] == "integer"
+
+    # Check offset parameter
+    assert "offset" in properties
+    offset_prop = properties["offset"]
+    expected_offset_desc = (
+        "Number of matches to skip before showing results. Used for pagination.\n"
+        "For example, offset=20 shows matches starting from the 21st match.\n"
+        "Use offset=0 (or omit) for first page, offset=20 for second page,\n"
+        "offset=40 for third page, etc. The tool will tell you the exact\n"
+        "offset to use for the next page."
+    )
+    assert (
+        offset_prop["description"] == expected_offset_desc
+    ), f"Expected offset description: '{expected_offset_desc}', got: '{offset_prop['description']}'"
+    assert offset_prop["type"] == "integer"
+
+    # Check return description in main description
+    assert "Returns search results containing:" in description
+    assert "Summary with total match count and file distribution" in description
+    assert "List of files with match counts per file" in description
+    assert "Current page of matches (up to 20)" in description
+    assert "Navigation hint for next page if more matches exist" in description
 
 
 # --- Pinecone Tests ---

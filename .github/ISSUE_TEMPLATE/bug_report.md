@@ -11,11 +11,11 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **Please describe your setup**
-- [ ] How are you running Letta?  
-  - Docker 
-  - pip (legacy) 
-  - From source 
-  - Desktop  
+- [ ] How are you running Letta?
+  - Docker
+  - pip (legacy)
+  - From source
+  - Desktop
 - [ ] Describe your setup
   - What's your OS (Windows/MacOS/Linux)?
   - What is your `docker run ...` command (if applicable)
@@ -25,10 +25,10 @@ If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
-- What model you are using 
+- What model you are using
 
 **Agent File (optional)**
-Please attach your `.af` file, as this helps with reproducing issues. 
+Please attach your `.af` file, as this helps with reproducing issues.
 
 
 ---

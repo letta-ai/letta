@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from letta.orm.job import Job as JobModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.otel.tracing import get_trace_id, trace_method
+from letta.schemas.enums import StepStatus
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
@@ -87,6 +88,10 @@ class StepManager:
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
+        stop_reason: Optional[LettaStopReason] = None,
+        status: Optional[StepStatus] = None,
+        error_type: Optional[str] = None,
+        error_data: Optional[Dict] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -106,9 +111,14 @@ class StepManager:
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
             "project_id": project_id,
+            "status": status if status else StepStatus.PENDING,
+            "error_type": error_type,
+            "error_data": error_data,
         }
         if step_id:
             step_data["id"] = step_id
+        if stop_reason:
+            step_data["stop_reason"] = stop_reason.stop_reason
         with db_registry.session() as session:
             if job_id:
                 self._verify_job_access(session, job_id, actor, access=["write"])
@@ -133,6 +143,9 @@ class StepManager:
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
         stop_reason: Optional[LettaStopReason] = None,
+        status: Optional[StepStatus] = None,
+        error_type: Optional[str] = None,
+        error_data: Optional[Dict] = None,
     ) -> PydanticStep:
         step_data = {
             "origin": None,
@@ -152,6 +165,9 @@ class StepManager:
             "tid": None,
             "trace_id": get_trace_id(),  # Get the current trace ID
             "project_id": project_id,
+            "status": status if status else StepStatus.PENDING,
+            "error_type": error_type,
+            "error_data": error_data,
         }
         if step_id:
             step_data["id"] = step_id
@@ -236,6 +252,126 @@ class StepManager:
             await session.commit()
             return step
 
+    @enforce_types
+    @trace_method
+    async def update_step_error_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        error_type: str,
+        error_message: str,
+        error_traceback: str,
+        error_details: Optional[Dict] = None,
+        stop_reason: Optional[LettaStopReason] = None,
+    ) -> PydanticStep:
+        """Update a step with error information.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            error_type: The type/class of the error
+            error_message: The error message
+            error_traceback: Full error traceback
+            error_details: Additional error context
+            stop_reason: The stop reason to set
+
+        Returns:
+            The updated step
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.status = StepStatus.FAILED
+            step.error_type = error_type
+            step.error_data = {"message": error_message, "traceback": error_traceback, "details": error_details}
+            if stop_reason:
+                step.stop_reason = stop_reason.stop_reason
+
+            await session.commit()
+            return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_step_success_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        usage: UsageStatistics,
+        stop_reason: Optional[LettaStopReason] = None,
+    ) -> PydanticStep:
+        """Update a step with success status and final usage statistics.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            usage: Final usage statistics
+            stop_reason: The stop reason to set
+
+        Returns:
+            The updated step
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.status = StepStatus.SUCCESS
+            step.completion_tokens = usage.completion_tokens
+            step.prompt_tokens = usage.prompt_tokens
+            step.total_tokens = usage.total_tokens
+            if stop_reason:
+                step.stop_reason = stop_reason.stop_reason
+
+            await session.commit()
+            return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def update_step_cancelled_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        stop_reason: Optional[LettaStopReason] = None,
+    ) -> PydanticStep:
+        """Update a step with cancelled status.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to update
+            stop_reason: The stop reason to set
+
+        Returns:
+            The updated step
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            step.status = StepStatus.CANCELLED
+            if stop_reason:
+                step.stop_reason = stop_reason.stop_reason
+
+            await session.commit()
+            return step.to_pydantic()
+
     def _verify_job_access(
         self,
         session: Session,
@@ -319,6 +455,10 @@ class NoopStepManager(StepManager):
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
+        stop_reason: Optional[LettaStopReason] = None,
+        status: Optional[StepStatus] = None,
+        error_type: Optional[str] = None,
+        error_data: Optional[Dict] = None,
     ) -> PydanticStep:
         return
 
@@ -338,6 +478,44 @@ class NoopStepManager(StepManager):
         job_id: Optional[str] = None,
         step_id: Optional[str] = None,
         project_id: Optional[str] = None,
+        stop_reason: Optional[LettaStopReason] = None,
+        status: Optional[StepStatus] = None,
+        error_type: Optional[str] = None,
+        error_data: Optional[Dict] = None,
+    ) -> PydanticStep:
+        return
+
+    @enforce_types
+    @trace_method
+    async def update_step_error_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        error_type: str,
+        error_message: str,
+        error_traceback: str,
+        error_details: Optional[Dict] = None,
+        stop_reason: Optional[LettaStopReason] = None,
+    ) -> PydanticStep:
+        return
+
+    @enforce_types
+    @trace_method
+    async def update_step_success_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        usage: UsageStatistics,
+        stop_reason: Optional[LettaStopReason] = None,
+    ) -> PydanticStep:
+        return
+
+    @enforce_types
+    @trace_method
+    async def update_step_cancelled_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
         stop_reason: Optional[LettaStopReason] = None,
     ) -> PydanticStep:
         return

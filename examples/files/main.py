@@ -3,7 +3,7 @@ Letta Filesystem
 
 This demo shows how to:
 1. Create a folder and upload files (both from disk and from strings)
-2. Create an agent and attach the data folder 
+2. Create an agent and attach the data folder
 3. Stream the agent's responses
 4. Query the agent about the uploaded files
 
@@ -15,10 +15,11 @@ The demo uploads:
 Then asks the agent to summarize the paper and find passwords in the files.
 """
 
+import os
+
+import requests
 from letta_client import Letta
 from letta_client.core.api_error import ApiError
-import os
-import requests
 from rich import print
 
 LETTA_API_KEY = os.getenv("LETTA_API_KEY")
@@ -61,7 +62,6 @@ except Exception as e:
 #
 # 1. From an existing file
 # 2. From a string by encoding it into a base64 string
-# 
 #
 
 # 1. From an existing file
@@ -77,6 +77,7 @@ file = client.folders.files.upload(
 
 # 2. From a string by encoding it into a base64 string
 import io
+
 content = """
 This is an example file. If you can read this,
 the password is 'letta'.
@@ -137,8 +138,8 @@ agent = client.agents.create(
     ]
 )
 
-# Attach the data folder to the agent. 
-# Once the folder is attached, the agent will be able to see all 
+# Attach the data folder to the agent.
+# Once the folder is attached, the agent will be able to see all
 # files in the folder.
 client.agents.folders.attach(
     agent_id=agent.id,
@@ -154,7 +155,7 @@ try:
     print(f"🤖 Connected to agent: {agent.name}")
     print("💡 Type 'quit' or 'exit' to end the conversation")
     print("=" * 50)
-    
+
     while True:
         # Get user input
         try:
@@ -162,14 +163,14 @@ try:
         except (EOFError, KeyboardInterrupt):
             print("\n👋 Goodbye!")
             break
-            
+
         if user_input.lower() in ['quit', 'exit', 'q']:
             print("👋 Goodbye!")
             break
-            
+
         if not user_input:
             continue
-            
+
         # Stream the agent's response
         stream = client.agents.messages.create_stream(
             agent_id=agent.id,
@@ -180,11 +181,9 @@ try:
                 }
             ],
         )
-        
+
         for chunk in stream:
             print(chunk)
 
 finally:
     client.agents.delete(agent.id)
-
-

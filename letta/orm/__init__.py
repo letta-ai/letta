@@ -29,6 +29,7 @@ from letta.orm.sandbox_config import AgentEnvironmentVariable, SandboxConfig, Sa
 from letta.orm.source import Source
 from letta.orm.sources_agents import SourcesAgents
 from letta.orm.step import Step
+from letta.orm.step_metrics import StepMetrics
 from letta.orm.tool import Tool
 from letta.orm.tools_agents import ToolsAgents
 from letta.orm.user import User
