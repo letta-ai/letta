@@ -7,7 +7,9 @@ import {
 } from '@letta-cloud/sdk-core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useSyncUpdateCurrentAgent() {
+export function useSyncUpdateCurrentAgent(options?: {
+  refreshOnSuccess?: boolean
+}) {
   const currentAgent = useCurrentAgent();
   const queryClient = useQueryClient();
   const debouncer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -52,6 +54,7 @@ export function useSyncUpdateCurrentAgent() {
                 requestBody: {
                   id: currentAgent.id,
                   ...updateAgentData,
+                  reasoning: updateAgentData.llm_config?.enable_reasoner,
                   tool_exec_environment_variables:
                     updateAgentData.tool_exec_environment_variables
                       ? Object.fromEntries(
@@ -66,6 +69,14 @@ export function useSyncUpdateCurrentAgent() {
                 onSuccess: () => {
                   setIsUpdating(false);
                   setLastUpdatedAt(new Date().toISOString());
+
+                  if (options?.refreshOnSuccess) {
+                    void queryClient.invalidateQueries({
+                      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                        agentId: currentAgent.id,
+                      }),
+                    });
+                  }
                 },
                 onError: () => {
                   setIsUpdating(false);
@@ -82,7 +93,7 @@ export function useSyncUpdateCurrentAgent() {
         },
       );
     },
-    [currentAgent.id, queryClient, updateAgent],
+    [currentAgent.id, queryClient, updateAgent, options?.refreshOnSuccess],
   );
 
   useEffect(() => {

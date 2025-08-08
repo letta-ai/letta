@@ -301,6 +301,10 @@
         "tooltip": "The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent",
         "placeholder": "Enter limit",
         "invalidInput": "Value must be greater than 1000"
+      },
+      "reasoning": {
+        "label": "Reasoning",
+        "tooltip": "Enable reasoning for this agent"
       }
     }
   },
