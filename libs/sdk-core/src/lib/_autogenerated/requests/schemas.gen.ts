@@ -6893,7 +6893,7 @@ export const $LLMConfig = {
       type: 'integer',
       title: 'Max Reasoning Tokens',
       description:
-        'Configurable thinking budget for extended thinking, only used if enable_reasoner is True. Minimum value is 1024.',
+        'Configurable thinking budget for extended thinking. Used for enable_reasoner and also for Google Vertex models like Gemini 2.5 Flash. Minimum value is 1024 when used with enable_reasoner.',
       default: 0,
     },
     frequency_penalty: {
