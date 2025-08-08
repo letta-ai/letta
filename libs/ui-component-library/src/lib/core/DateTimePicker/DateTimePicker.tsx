@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { cn } from '@letta-cloud/ui-styles';
 import { Popover } from '../Popover/Popover';
 import { CalendarIcon } from '../../icons';
+import { makeInput, makeRawInput } from '../Form/Form';
 
 // Simple Calendar Component
 interface CalendarProps {
@@ -233,26 +234,23 @@ export interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  hideLabel?: boolean;
 }
 
-export function DatePicker({
-  value,
-  onValueChange,
-  placeholder = 'Pick a date',
-  className,
-  disabled,
-}: DatePickerProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+const DatePickerPrimitive = React.forwardRef<HTMLButtonElement, DatePickerProps>(
+  ({ value, onValueChange, placeholder = 'Pick a date', className, disabled }, ref) => {
+    const [isOpen, setIsOpen] = React.useState(false);
 
-  return (
-    <Popover
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      autoWidth
-      trigger={
-        <button
-          type="button"
-          disabled={disabled}
+    return (
+      <Popover
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        autoWidth
+        trigger={
+          <button
+            ref={ref}
+            type="button"
+            disabled={disabled}
           className={cn(
             'flex items-center overflow-hidden border text-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-content focus-visible:outline-none focus-within:ring-1 focus-within:ring-ring',
             'h-inputHeight text-default border-input bg-panel-input-background px-2 gap-2 w-full justify-start text-left font-normal',
@@ -276,7 +274,13 @@ export function DatePicker({
       />
     </Popover>
   );
-}
+  },
+);
+
+DatePickerPrimitive.displayName = 'DatePickerPrimitive';
+
+export const DatePicker = makeInput(DatePickerPrimitive, 'DatePicker');
+export const RawDatePicker = makeRawInput(DatePickerPrimitive, 'RawDatePicker');
 
 // Date Range Picker Component
 export interface DateRangePickerProps {
@@ -285,9 +289,10 @@ export interface DateRangePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  hideLabel?: boolean;
 }
 
-export function DateRangePicker({
+function DateRangePickerPrimitive({
   value,
   onValueChange,
   placeholder = 'Pick a date range',
@@ -336,6 +341,11 @@ export function DateRangePicker({
   );
 }
 
+DateRangePickerPrimitive.displayName = 'DateRangePickerPrimitive';
+
+export const DateRangePicker = makeInput(DateRangePickerPrimitive, 'DateRangePicker');
+export const RawDateRangePicker = makeRawInput(DateRangePickerPrimitive, 'RawDateRangePicker');
+
 // DateTime Picker (12-hour format) Component
 export interface DateTimePickerProps {
   value?: Date;
@@ -343,9 +353,10 @@ export interface DateTimePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  hideLabel?: boolean;
 }
 
-export function DateTimePicker({
+function DateTimePickerPrimitive({
   value,
   onValueChange,
   placeholder = 'Pick a date and time',
@@ -492,8 +503,13 @@ export function DateTimePicker({
   );
 }
 
+DateTimePickerPrimitive.displayName = 'DateTimePickerPrimitive';
+
+export const DateTimePicker = makeInput(DateTimePickerPrimitive, 'DateTimePicker');
+export const RawDateTimePicker = makeRawInput(DateTimePickerPrimitive, 'RawDateTimePicker');
+
 // DateTime Picker (24-hour format) Component
-export function DateTimePicker24h({
+function DateTimePicker24hPrimitive({
   value,
   onValueChange,
   placeholder = 'Pick a date and time',
@@ -609,6 +625,11 @@ export function DateTimePicker24h({
   );
 }
 
+DateTimePicker24hPrimitive.displayName = 'DateTimePicker24hPrimitive';
+
+export const DateTimePicker24h = makeInput(DateTimePicker24hPrimitive, 'DateTimePicker24h');
+export const RawDateTimePicker24h = makeRawInput(DateTimePicker24hPrimitive, 'RawDateTimePicker24h');
+
 // DateTime Range Picker Component
 export interface DateTimeRangePickerProps {
   value?: { from: Date; to?: Date };
@@ -617,9 +638,10 @@ export interface DateTimeRangePickerProps {
   className?: string;
   disabled?: boolean;
   format24h?: boolean;
+  hideLabel?: boolean;
 }
 
-export function DateTimeRangePicker({
+function DateTimeRangePickerPrimitive({
   value,
   onValueChange,
   placeholder = 'Select date and time range',
@@ -834,3 +856,8 @@ export function DateTimeRangePicker({
     </Popover>
   );
 }
+
+DateTimeRangePickerPrimitive.displayName = 'DateTimeRangePickerPrimitive';
+
+export const DateTimeRangePicker = makeInput(DateTimeRangePickerPrimitive, 'DateTimeRangePicker');
+export const RawDateTimeRangePicker = makeRawInput(DateTimeRangePickerPrimitive, 'RawDateTimeRangePicker');

@@ -18,7 +18,14 @@ import { useCallback } from 'react';
 import { get, set } from 'lodash-es';
 import { Button } from '../Button/Button';
 import { useTranslations } from '@letta-cloud/translations';
-import { CloseIcon, PlusIcon, SearchIcon, TrashIcon } from '../../icons';
+import { CloseIcon, PlusIcon, SearchIcon } from '../../icons';
+import {
+  RawDatePicker,
+  RawDateTimePicker,
+  RawDateTimePicker24h,
+  RawDateRangePicker,
+  RawDateTimeRangePicker
+} from '../DateTimePicker/DateTimePicker';
 
 const DISABLE_COMBINATOR = true;
 
@@ -43,8 +50,46 @@ interface AsyncSelectQueryDefinition extends QueryPartDefinitionBase {
   options: AsyncSelectProps;
 }
 
+interface DatePickerQueryDefinition extends QueryPartDefinitionBase {
+  display: 'date-picker';
+  options?: {
+    placeholder?: string;
+    disabled?: boolean;
+  };
+}
+
+interface DateTimePickerQueryDefinition extends QueryPartDefinitionBase {
+  display: 'datetime-picker';
+  options?: {
+    placeholder?: string;
+    disabled?: boolean;
+    format24h?: boolean;
+  };
+}
+
+interface DateRangePickerQueryDefinition extends QueryPartDefinitionBase {
+  display: 'date-range-picker';
+  options?: {
+    placeholder?: string;
+    disabled?: boolean;
+  };
+}
+
+interface DateTimeRangePickerQueryDefinition extends QueryPartDefinitionBase {
+  display: 'datetime-range-picker';
+  options?: {
+    placeholder?: string;
+    disabled?: boolean;
+    format24h?: boolean;
+  };
+}
+
 type QueryDefinition =
   | AsyncSelectQueryDefinition
+  | DatePickerQueryDefinition
+  | DateRangePickerQueryDefinition
+  | DateTimePickerQueryDefinition
+  | DateTimeRangePickerQueryDefinition
   | InputQueryDefinition
   | SelectQueryDefinition;
 
@@ -163,6 +208,165 @@ function InputConstructor(props: InputConstructorProps) {
         />
       );
     }
+
+    case 'date-picker': {
+      if (Array.isArray(value)) {
+        return null;
+      }
+
+      const dateValue = value?.value ? new Date(value.value) : undefined;
+      const options = structure.options || {};
+
+      return (
+        <RawDatePicker
+          hideLabel
+          label={structure.label}
+          className="min-w-[150px]"
+          value={dateValue}
+          onValueChange={(date) => {
+            if (date) {
+              const isoString = date.toISOString();
+              onChange({
+                value: isoString,
+                label: date.toLocaleDateString(),
+              });
+            } else {
+              onChange(undefined);
+            }
+          }}
+          placeholder={options.placeholder}
+          disabled={options.disabled}
+        />
+      );
+    }
+
+    case 'datetime-picker': {
+      if (Array.isArray(value)) {
+        return null;
+      }
+
+      const dateValue = value?.value ? new Date(value.value) : undefined;
+      const options = structure.options || {};
+
+      const DateTimeComponent = options.format24h ? RawDateTimePicker24h : RawDateTimePicker;
+
+      return (
+        <DateTimeComponent
+          hideLabel
+          label={structure.label}
+          className="min-w-[200px]"
+          value={dateValue}
+          onValueChange={(date) => {
+            if (date) {
+              const isoString = date.toISOString();
+              onChange({
+                value: isoString,
+                label: date.toLocaleString(),
+              });
+            } else {
+              onChange(undefined);
+            }
+          }}
+          placeholder={options.placeholder}
+          disabled={options.disabled}
+        />
+      );
+    }
+
+    case 'date-range-picker': {
+      // Allow undefined, empty array, or array with values
+      if (value !== undefined && !Array.isArray(value)) {
+        return null;
+      }
+
+      const rangeValue = Array.isArray(value) && value.length >= 1 && value[0].value
+        ? {
+            from: new Date(value[0].value),
+            to: value.length >= 2 && value[1]?.value ? new Date(value[1].value) : undefined,
+          }
+        : undefined;
+
+      const options = structure.options || {};
+
+      return (
+        <RawDateRangePicker
+          hideLabel
+          label={structure.label}
+          className="min-w-[250px]"
+          value={rangeValue}
+          onValueChange={(range) => {
+            if (range?.from) {
+              const fromOption = {
+                value: range.from.toISOString(),
+                label: range.from.toLocaleDateString(),
+              };
+
+              if (range.to) {
+                const toOption = {
+                  value: range.to.toISOString(),
+                  label: range.to.toLocaleDateString(),
+                };
+                onChange([fromOption, toOption]);
+              } else {
+                onChange([fromOption]);
+              }
+            } else {
+              onChange(undefined);
+            }
+          }}
+          placeholder={options.placeholder}
+          disabled={options.disabled}
+        />
+      );
+    }
+
+    case 'datetime-range-picker': {
+      // Allow undefined, empty array, or array with values
+      if (value !== undefined && !Array.isArray(value)) {
+        return null;
+      }
+
+      const rangeValue = Array.isArray(value) && value.length >= 1 && value[0].value
+        ? {
+            from: new Date(value[0].value),
+            to: value.length >= 2 && value[1]?.value ? new Date(value[1].value) : undefined,
+          }
+        : undefined;
+
+      const options = structure.options || {};
+
+      return (
+        <RawDateTimeRangePicker
+          hideLabel
+          label={structure.label}
+          className="min-w-[300px]"
+          value={rangeValue}
+          onValueChange={(range) => {
+            if (range?.from) {
+              const fromOption = {
+                value: range.from.toISOString(),
+                label: range.from.toLocaleString(),
+              };
+
+              if (range.to) {
+                const toOption = {
+                  value: range.to.toISOString(),
+                  label: range.to.toLocaleString(),
+                };
+                onChange([fromOption, toOption]);
+              } else {
+                onChange([fromOption]);
+              }
+            } else {
+              onChange(undefined);
+            }
+          }}
+          placeholder={options.placeholder}
+          disabled={options.disabled}
+          format24h={options.format24h}
+        />
+      );
+    }
   }
 
   return null;
@@ -272,6 +476,18 @@ function QueryCondition(props: QueryRowProps) {
             } else if (queryDef.display === 'input') {
               // Set empty string for input fields
               defaultQueryData[queryDef.key] = { label: '', value: '' };
+            } else if (
+              queryDef.display === 'date-picker' ||
+              queryDef.display === 'datetime-picker'
+            ) {
+              // Set undefined for single date fields
+              defaultQueryData[queryDef.key] = undefined;
+            } else if (
+              queryDef.display === 'date-range-picker' ||
+              queryDef.display === 'datetime-range-picker'
+            ) {
+              // Set empty array for date range fields
+              defaultQueryData[queryDef.key] = [];
             }
           });
         }
