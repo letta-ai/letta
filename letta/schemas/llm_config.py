@@ -187,9 +187,12 @@ class LLMConfig(BaseModel):
 
     @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
-        if reasoning:
-            config.enable_reasoner = True
+        if not reasoning:
+            config.put_inner_thoughts_in_kwargs = False
+            config.enable_reasoner = False
 
+        else:
+            config.enable_reasoner = True
             if (
                 config.model_endpoint_type == "anthropic"
                 and ("claude-opus-4" in config.model or "claude-sonnet-4" in config.model or "claude-3-7-sonnet" in config.model)
@@ -207,9 +210,6 @@ class LLMConfig(BaseModel):
                     config.reasoning_effort = "medium"
             else:
                 config.put_inner_thoughts_in_kwargs = True
-
-        else:
-            config.enable_reasoner = False
-            config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = False
 
         return config
