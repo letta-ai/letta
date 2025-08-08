@@ -11,20 +11,25 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **Please describe your setup**
-- [ ] How did you install letta?
-  - `pip install letta`? `pip install letta-nightly`? `git clone`?
+- [ ] How are you running Letta?
+  - Docker
+  - pip (legacy)
+  - From source
+  - Desktop
 - [ ] Describe your setup
   - What's your OS (Windows/MacOS/Linux)?
-  - How are you running `letta`? (`cmd.exe`/Powershell/Anaconda Shell/Terminal)
+  - What is your `docker run ...` command (if applicable)
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
+- What model you are using
 
-**Letta Config**
-Please attach your `~/.letta/config` file or copy paste it below.
+**Agent File (optional)**
+Please attach your `.af` file, as this helps with reproducing issues.
+
 
 ---
 
