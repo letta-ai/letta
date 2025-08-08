@@ -61,7 +61,8 @@ export function DirectoryFooter() {
     <footer>
       <div>
         <div className="border-t mb-10" />
-        <div className="max-w-[1296px] mx-auto mt-auto">
+        <div className="largerThanMobile:px-[72px] px-4 w-full">
+          <div className="max-w-[1296px] mx-auto mt-auto">
           <HStack
             gap="large"
             align="start"
@@ -169,6 +170,7 @@ export function DirectoryFooter() {
               ]}
             />
           </HStack>
+        </div>
         </div>
         <div className="border-t mt-24" />
         <div className="mb-52"></div>

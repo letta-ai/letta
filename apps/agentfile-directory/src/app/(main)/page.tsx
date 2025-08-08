@@ -60,7 +60,7 @@ export default function Index() {
       <MainCenterView>
         <VStack
           /* eslint-disable-next-line react/forbid-component-props */
-          className="max-w-[800px] p-6  largerThanMobile:p-[56px]"
+          className="max-w-[800px] p-6 largerThanMobile:p-[56px]"
           fullWidth
           align="center"
         >
