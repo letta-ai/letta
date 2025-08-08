@@ -55,7 +55,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                 LLMConfig(
                     model=model_name,
                     model_endpoint_type="openai",
-                    model_endpoint=self.base_url,
+                    model_endpoint=self.model_endpoint_url,
                     context_window=context_window_size,
                     handle=self.get_handle(model_name),
                     compatibility_type=compatibility_type,
@@ -94,7 +94,7 @@ class LMStudioOpenAIProvider(OpenAIProvider):
                 EmbeddingConfig(
                     embedding_model=model_name,
                     embedding_endpoint_type="openai",
-                    embedding_endpoint=self.base_url,
+                    embedding_endpoint=self.model_endpoint_url,
                     embedding_dim=768,  # Default embedding dimension, not context window
                     embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,  # NOTE: max is 2048
                     handle=self.get_handle(model_name),

@@ -110,11 +110,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 ]
 
 # configs for models that are to dumb to do much other than messaging
-limited_configs = [
-    "ollama.json",
-    "together-qwen-2.5-72b-instruct.json",
-    "vllm.json",
-]
+limited_configs = ["ollama.json", "together-qwen-2.5-72b-instruct.json", "vllm.json", "lmstudio.json"]
 
 all_configs = [
     "openai-gpt-4o-mini.json",
