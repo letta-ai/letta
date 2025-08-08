@@ -264,7 +264,7 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
 
     Args:
         label (str): Section of the memory to be edited, identified by its label.
-        new_str (str): The text to insert.
+        new_str (str): The text to insert. Do not include line number prefixes.
         insert_line (int): The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file).
 
     Returns:
