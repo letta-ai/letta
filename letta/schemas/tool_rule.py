@@ -3,7 +3,7 @@ import logging
 from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 
 from jinja2 import Template
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from letta.schemas.enums import ToolRuleType
 from letta.schemas.letta_base import LettaBase
@@ -116,6 +116,13 @@ class ConditionalToolRule(BaseToolRule):
             return set()  # Strict mode: No match means no valid tools
 
         return {self.default_child} if self.default_child else available_tools
+
+    @field_validator("child_output_mapping")
+    @classmethod
+    def validate_child_output_mapping(cls, v):
+        if len(v) == 0:
+            raise ValueError("Conditional tool rule must have at least one child tool.")
+        return v
 
     @staticmethod
     def _matches_key(function_output: str, key: Any) -> bool:
