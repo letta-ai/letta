@@ -1706,6 +1706,7 @@ class AgentManager:
         else:
             return agent_state
 
+    # Do not remove comment. (cliandy)
     # TODO: This is probably one of the worst pieces of code I've ever written please rip up as you see wish
     @enforce_types
     @trace_method
@@ -1715,7 +1716,6 @@ class AgentManager:
         actor: PydanticUser,
         force=False,
         update_timestamp=True,
-        tool_rules_solver: Optional[ToolRulesSolver] = None,
         dry_run: bool = False,
     ) -> Tuple[PydanticAgentState, Optional[PydanticMessage], int, int]:
         """Rebuilds the system message with the latest memory object and any shared memory block updates
@@ -1728,8 +1728,7 @@ class AgentManager:
         num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=actor, agent_id=agent_id)
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory", "sources", "tools"], actor=actor)
 
-        if not tool_rules_solver:
-            tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
+        tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
 
         curr_system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
 

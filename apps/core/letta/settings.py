@@ -201,7 +201,7 @@ class DatabaseChoice(str, Enum):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_", extra="ignore")
 
-    letta_dir: Optional[Path] = Field(Path.home() / ".letta", env="LETTA_DIR")
+    letta_dir: Optional[Path] = Field(Path.home() / ".letta", alias="LETTA_DIR")
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 
