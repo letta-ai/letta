@@ -100,10 +100,10 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
 
             # Process the result
             if result["error"]:
-                logger.error(
-                    f"Executing tool {self.tool_name} raised a {result['error']['name']} with message: \n{result['error']['value']}"
-                )
-                logger.error(f"Traceback from Modal sandbox: \n{result['error']['traceback']}")
+                # Tool errors are expected behavior - tools can raise exceptions as part of their normal operation
+                # Only log at debug level to avoid triggering Sentry alerts for expected errors
+                logger.debug(f"Tool {self.tool_name} raised a {result['error']['name']}: {result['error']['value']}")
+                logger.debug(f"Traceback from Modal sandbox: \n{result['error']['traceback']}")
                 func_return = get_friendly_error_msg(
                     function_name=self.tool_name, exception_name=result["error"]["name"], exception_message=result["error"]["value"]
                 )
