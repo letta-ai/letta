@@ -224,8 +224,10 @@ class ToolExecutionSandbox:
             with open(temp_file_path, "r") as f:
                 code = f.read()
 
-            logger.error(f"Executing tool {self.tool_name} has process error: {e}")
-            logger.error(f"Logging out tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
+            # Tool errors are expected behavior - tools can raise exceptions as part of their normal operation
+            # Only log at debug level to avoid triggering Sentry alerts for expected errors
+            logger.debug(f"Tool {self.tool_name} process error: {e}")
+            logger.debug(f"Tool {self.tool_name} auto-generated code for debugging: \n\n{code}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name,
                 exception_name=type(e).__name__,
@@ -371,8 +373,10 @@ class ToolExecutionSandbox:
                 },
             )
         elif execution.error:
-            logger.error(f"Executing tool {self.tool_name} raised a {execution.error.name} with message: \n{execution.error.value}")
-            logger.error(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
+            # Tool errors are expected behavior - tools can raise exceptions as part of their normal operation
+            # Only log at debug level to avoid triggering Sentry alerts for expected errors
+            logger.debug(f"Tool {self.tool_name} raised a {execution.error.name}: {execution.error.value}")
+            logger.debug(f"Traceback from e2b sandbox: \n{execution.error.traceback}")
             func_return = get_friendly_error_msg(
                 function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
             )
