@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { CURRENT_PATH_HEADER } from '$web/constants';
 import { isAxiosError } from 'axios';
+import * as Sentry from '@sentry/nextjs';
 
 const cloudAPIUrl = process.env.CLOUD_API_ENDPOINT || 'https://api.letta.com';
 
@@ -24,16 +25,38 @@ async function handleStream(req: NextRequest) {
     if (!response.ok) {
       // check if the response is json
       if (!response.headers.get('content-type')?.includes('application/json')) {
-        return NextResponse.json(
-          {
-            error: 'Error from API',
-            details: 'Server error or unexpected response format',
-            reasons: [],
-          },
-          {
-            status: response.status,
-          },
-        );
+        // try to get the error message
+        try {
+          const errorText = await response.text();
+
+          return NextResponse.json(
+            {
+              error: 'Error from API',
+              details: errorText,
+              reasons: [],
+            },
+            {
+              status: response.status,
+            },
+          );
+        } catch (e) {
+          Sentry.captureException(e, {
+            tags: {
+              type: 'fetch-error',
+            },
+          });
+
+          return NextResponse.json(
+            {
+              error: 'Error from API',
+              details: 'Unknown error',
+              reasons: [],
+            },
+            {
+              status: response.status,
+            },
+          );
+        }
       }
 
       try {
