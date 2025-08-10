@@ -12,6 +12,7 @@ const badgeVariants = cva(
     variants: {
       size: {
         default: 'text-xs h-[18px] max-h-[16px] px-1 py-2.5 rounded-[2px]',
+        xsmall: 'text-[0.5rem] gap-1 rounded-[2px] h-[12px] max-h-[12px] font-semibold px-1',
         small:
           'text-[0.625rem] gap-1 rounded-[2px] h-[16px] max-h-[16px] font-semibold px-1',
         large: 'text-sm h-[24px] max-h-[24px]',
@@ -58,6 +59,7 @@ const iconVariants = cva('', {
       default: 'w-3 h-3',
       small: 'max-w-3 max-h-3 min-w-2 min-w-2',
       large: 'w-4 h-4',
+      xsmall: 'w-2 h-2',
     },
   },
   defaultVariants: {

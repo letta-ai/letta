@@ -1,15 +1,16 @@
 import React, { useMemo } from 'react';
 import {
+  Badge,
   Button,
   ChevronDownIcon,
   ChevronUpIcon,
   DetailedMessageView,
   EventDurationsBadge,
   HStack,
-  StopReason,
   Tooltip,
   Typography,
   VStack,
+  WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import { FeedbackButtons } from '../FeedbackButtons/FeedbackButtons';
 import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
@@ -111,16 +112,39 @@ export function StepDetailBar(props: StepDetailBarProps) {
 
           {stepId && <FeedbackButtons stepId={stepId} />}
         </HStack>
-        <HStack gap="small">
+        <HStack gap="small" align="center">
+          {stepDetails?.stop_reason === 'cancelled' && (
+            <>
+              <Badge
+                size="xsmall"
+                content={t('stepWasCancelled')}
+                variant="warning"
+                preIcon={<WarningIcon size="auto" />}
+              />
+              <Typography variant="body4" color="muted">
+                •
+              </Typography>
+            </>
+          )}
           {stepDetails?.stop_reason &&
-            [
-              'error',
-              'invalid_tool_call',
-              'no_tool_call',
-              'cancelled',
-            ].includes(stepDetails?.stop_reason) && (
+            ['error', 'invalid_tool_call', 'no_tool_call'].includes(
+              stepDetails?.stop_reason,
+            ) &&
+            !showDetails && (
               <>
-                <StopReason stopReason={stepDetails?.stop_reason} />
+                <button
+                  className="contents"
+                  onClick={() => {
+                    setShowDetails(true);
+                  }}
+                >
+                  <Badge
+                    size="xsmall"
+                    variant="destructive"
+                    preIcon={<WarningIcon size="auto" />}
+                    content={t('exploreStopReason')}
+                  />
+                </button>
                 <Typography variant="body4" color="muted">
                   •
                 </Typography>

@@ -1139,6 +1139,8 @@
     "overrides": "Show overrides"
   },
   "components/Messages": {
+    "stepWasCancelled": "Step was cancelled by user",
+    "exploreStopReason": "Click to Debug message",
     "stepDurationTooltip": "The duration of this step",
     "reasoning": "Reasoning",
     "saveToDataset": "Save to Dataset",
