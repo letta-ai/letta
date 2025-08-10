@@ -205,6 +205,13 @@ LLM_MAX_TOKENS = {
     "deepseek-chat": 64000,
     "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
+    # gpt-5
+    "gpt-5": 400000,
+    "gpt-5-2025-08-07": 400000,
+    "gpt-5-mini": 400000,
+    "gpt-5-mini-2025-08-07": 400000,
+    "gpt-5-nano": 400000,
+    "gpt-5-nano-2025-08-07": 400000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
