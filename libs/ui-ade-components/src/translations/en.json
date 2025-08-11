@@ -78,6 +78,19 @@
     },
     "noRequests": "No"
   },
+  "ADE/ModifyToolBehaviorPopover": {
+    "trigger": "View {toolName} behavior",
+    "view": "View all tool rules",
+    "error": "There was an error modifying the tool behavior, please try again or contact support.",
+    "exitLoop": "Agent must stop if this tool is called",
+    "continueLoop": "Agent will never stop at this tool",
+    "requiredBeforeExit": "Agent will always run this tool before exiting",
+    "runFirst": "Agent will run this tool first",
+    "constrainChildTools": "Constrain child tools",
+    "conditional": "Conditional execution",
+    "maxCountPerStep": "Limit executions per step",
+    "viewTool": "View / edit {toolName} tool"
+  },
   "ADE/ToolRules": {
     "appName": "Tool Rules",
     "title": "Tool Rules Editor",
@@ -1308,11 +1321,13 @@
       "title": "Message your agent",
       "description": "You can chat with the agent in the chat view, or through the Letta API. \n\nTry telling the agent something about yourself!"
     },
+    "CopyMessageContentButton": {
+      "copy": "Copy message content",
+      "copied": "Copied"
+    },
     "FeedbackButtons": {
       "positive": "This was valid",
       "negative": "This was invalid",
-      "copy": "Copy",
-      "copied": "Copied",
       "error": "There was an error processing your feedback, please check the network inspector to see the error details or contact support."
     },
     "InvalidMessages": {

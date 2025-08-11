@@ -72,6 +72,7 @@ import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup
 import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
+import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -638,32 +639,34 @@ export function ADELayout(props: ADELayoutProps) {
       projectId={projectId}
     >
       <SimulatedAgentProvider>
-        <Frame
-          overflow="hidden"
-          position="relative"
-          fullWidth
-          fullHeight
-          zIndex="rightAboveZero"
-        >
-          <HiddenOnMobile checkWithJs>
-            <QuickADEOnboarding />
-            <ADEOnboarding />
-            <DesktopLayout />
-          </HiddenOnMobile>
-          <VisibleOnMobile checkWithJs>
-            <MobileLayout />
-          </VisibleOnMobile>
-        </Frame>
-        <VStack
-          className="top-0 left-0 fixed z-[-1]"
-          position="fixed"
-          fullHeight
-          fullWidth
-          align="center"
-          justify="center"
-        >
-          <Logo size="large" color="steel" />
-        </VStack>
+        <ToolManagerProvider>
+          <Frame
+            overflow="hidden"
+            position="relative"
+            fullWidth
+            fullHeight
+            zIndex="rightAboveZero"
+          >
+            <HiddenOnMobile checkWithJs>
+              <QuickADEOnboarding />
+              <ADEOnboarding />
+              <DesktopLayout />
+            </HiddenOnMobile>
+            <VisibleOnMobile checkWithJs>
+              <MobileLayout />
+            </VisibleOnMobile>
+          </Frame>
+          <VStack
+            className="top-0 left-0 fixed z-[-1]"
+            position="fixed"
+            fullHeight
+            fullWidth
+            align="center"
+            justify="center"
+          >
+            <Logo size="large" color="steel" />
+          </VStack>
+        </ToolManagerProvider>
       </SimulatedAgentProvider>
     </AppContextProvider>
   );

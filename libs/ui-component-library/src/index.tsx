@@ -139,7 +139,7 @@ export * from './lib/core/ImageCard/ImageCard';
 
 export * from './lib/reusable/InfoTooltip/InfoTooltip';
 
-export * from './lib/reusable/FunctionCall/FunctionCall';
+export * from './lib/reusable/FunctionCall';
 
 export * from './lib/reusable/MaybeLink/MaybeLink';
 

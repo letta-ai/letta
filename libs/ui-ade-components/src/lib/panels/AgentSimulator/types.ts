@@ -5,6 +5,7 @@ export interface AgentSimulatorMessageType {
   content: React.ReactNode;
   name: string;
   stepId?: string | null;
+  toolName?: string | null;
   timestamp: string;
   raw?: string;
   type: MessageType;

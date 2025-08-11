@@ -11,7 +11,7 @@ interface CopyButtonProps {
   copyButtonText?: string;
   copiedText?: string;
   color?: 'secondary' | 'tertiary';
-  size?: '3xsmall' | 'default' | 'small' | 'xsmall';
+  size?: '2xsmall' | '3xsmall' | 'default' | 'small' | 'xsmall';
   hideLabel?: boolean;
   square?: boolean;
   iconColor?: 'destructive' | 'muted' | 'positive';

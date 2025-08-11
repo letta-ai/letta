@@ -7,7 +7,6 @@ import {
 import React, { useCallback } from 'react';
 import {
   Button,
-  CopyButton,
   HStack,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -15,15 +14,13 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
-import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
 
 interface FeedbackButtonsProps {
   stepId: string;
-  message?: AgentSimulatorMessageType;
 }
 
 export function FeedbackButtons(props: FeedbackButtonsProps) {
-  const { stepId, message } = props;
+  const { stepId } = props;
 
   const t = useTranslations('ADE/AgentSimulator.FeedbackButtons');
 
@@ -98,7 +95,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
   }
 
   return (
-    <HStack gap="small">
+    <HStack gap={false}>
       <Button
         preIcon={
           isPositiveFeedback ? (
@@ -114,7 +111,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
         onClick={() => {
           handleAddFeedback('positive');
         }}
-        _use_rarely_className=" w-4 h-4"
+        _use_rarely_className=" w-4 min-h-4"
         color="tertiary"
       />
       <Button
@@ -132,22 +129,9 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
         size="3xsmall"
         hideLabel
         square
-        _use_rarely_className=" w-4 h-4"
+        _use_rarely_className=" w-4 min-h-4"
         color="tertiary"
       />
-      {message && (
-        <CopyButton
-          textToCopy={message.raw || ''}
-          copyButtonText={t('copy')}
-          copiedText={t('copied')}
-          size="3xsmall"
-          hideLabel
-          square
-          iconColor="muted"
-          _use_rarely_className=" w-4 h-4"
-          color="tertiary"
-        />
-      )}
     </HStack>
   );
 }

@@ -26,6 +26,8 @@ import {
   getLLMDurationFromTrace,
   getToolDurationFromTrace,
 } from '@letta-cloud/utils-shared';
+import { ModifyToolBehaviorPopover } from '../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
+import { CopyMessageContentButton } from '../CopyMessageContentButton/CopyMessageContentButton';
 
 interface StepDetailBarProps {
   message: AgentSimulatorMessageType;
@@ -86,31 +88,40 @@ export function StepDetailBar(props: StepDetailBarProps) {
         )}
       >
         <HStack align="center" gap="small">
-          {stepId && (
-            <HStack paddingRight="xxsmall">
-              <Button
-                preIcon={
-                  !showDetails ? (
-                    <ChevronDownIcon color="muted" size="small" />
-                  ) : (
-                    <ChevronUpIcon color="muted" size="small" />
-                  )
-                }
-                onClick={() => {
-                  setShowDetails(!showDetails);
-                }}
-                size="3xsmall"
-                hideLabel
-                square
-                active={showDetails}
-                _use_rarely_className="w-4 h-4"
-                label={showDetails ? t('details.hide') : t('details.show')}
-                color="tertiary"
-              />
-            </HStack>
-          )}
+          <HStack gap={false} align="center">
+            {stepId && (
+              <HStack paddingRight="xxsmall">
+                <Button
+                  preIcon={
+                    !showDetails ? (
+                      <ChevronDownIcon color="muted" size="small" />
+                    ) : (
+                      <ChevronUpIcon color="muted" size="small" />
+                    )
+                  }
+                  onClick={() => {
+                    setShowDetails(!showDetails);
+                  }}
+                  size="3xsmall"
+                  hideLabel
+                  square
+                  active={showDetails}
+                  _use_rarely_className="w-4 h-4"
+                  label={showDetails ? t('details.hide') : t('details.show')}
+                  color="tertiary"
+                />
+              </HStack>
+            )}
+            <HStack gap="small">
+              {!!message.toolName && (
+                <ModifyToolBehaviorPopover toolName={message.toolName} />
+              )}
+              {message.raw && <CopyMessageContentButton message={message.raw} />}
 
-          {stepId && <FeedbackButtons stepId={stepId} message={message} />}
+            </HStack>
+          </HStack>
+
+          {stepId && <FeedbackButtons stepId={stepId}  />}
         </HStack>
         <HStack gap="small" align="center">
           {stepDetails?.stop_reason === 'cancelled' && (

@@ -81,7 +81,7 @@ function AgentMessagesList(props: AgentMessagesListProps) {
         <Typography>{t('latestMessages')}</Typography>
       </HStack>
       <VStack fullHeight overflow="hidden">
-        <Messages mode="simple" isSendingMessage={false} agentId={agentId} />
+        <Messages mode="interactive" disableInteractivity isSendingMessage={false} agentId={agentId} />
       </VStack>
     </VStack>
   );

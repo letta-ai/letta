@@ -65,6 +65,7 @@ interface FunctionCallProps {
   response?: ToolReturnMessageSchemaType;
   status?: string;
   id: string;
+  actions?: React.ReactNode;
 }
 
 type ResponseViews = 'response' | 'stderr' | 'stdout';
@@ -72,7 +73,7 @@ type ResponseViews = 'response' | 'stderr' | 'stdout';
 const FUNCTION_CALL_LIMIT = 10_000;
 
 export function FunctionCall(props: FunctionCallProps) {
-  const { id, name, inputs, response, status, variant = 'default' } = props;
+  const { id, name, inputs, response, actions, status, variant = 'default' } = props;
   const [openStates, setOpenStates] = useAtom(functionCallOpenStatusAtom);
 
   const open = useMemo(() => {
@@ -169,7 +170,7 @@ export function FunctionCall(props: FunctionCallProps) {
           fullWidth={variant === 'inspector'}
           align="center"
           className={cn(variant === 'default' ? 'h-[24px]' : '')}
-          gap="medium"
+          gap="small"
         >
           <HStack
             gap="large"
@@ -196,25 +197,31 @@ export function FunctionCall(props: FunctionCallProps) {
             </HStack>
             <StatusBadge status={status} toolReturn={toolReturn} />
           </HStack>
-          {typeof requestHeartbeatState === 'boolean' && (
-            <Tooltip
-              asChild
-              content={t(
-                requestHeartbeatState === true
-                  ? 'heartbeatTooltip.requested'
-                  : 'heartbeatTooltip.notRequested',
-              )}
-            >
-              <div>
-                <HeartbeatIcon
-                  color={
-                    requestHeartbeatState === true ? 'destructive' : 'lighter'
-                  }
+          <HStack align="center" gap={false}>
+            {actions}
+
+            {typeof requestHeartbeatState === 'boolean' && (
+              <Tooltip
+                asChild
+                content={requestHeartbeatState ? t('heartbeatTooltip.requested') : t('heartbeatTooltip.notRequested')}
+              >
+               <Button
                   size="xsmall"
+                  color="tertiary"
+                  preIcon={
+                    <HeartbeatIcon
+                      color={
+                        requestHeartbeatState ? 'destructive' : 'lighter'
+                      }
+                      size="xsmall"
+                    />
+                  }
+                  hideLabel
+                  square
                 />
-              </div>
-            </Tooltip>
-          )}
+              </Tooltip>
+            )}
+          </HStack>
         </HStack>
       </HStack>
       {open && (

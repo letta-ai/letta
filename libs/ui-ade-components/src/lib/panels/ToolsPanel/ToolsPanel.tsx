@@ -30,7 +30,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolManager } from '../ToolManager/ToolManager';
 import {
-  ToolManagerProvider,
   useToolManagerState,
 } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { useADETour } from '../../hooks/useADETour/useADETour';
@@ -522,7 +521,6 @@ export function ToolsPanel() {
   const [search, setSearch] = useState('');
 
   return (
-    <ToolManagerProvider>
       <ToolsOnboarding>
         <ToolManager />
 
@@ -532,7 +530,6 @@ export function ToolsPanel() {
           <ToolsList search={search} />
         </VStack>
       </ToolsOnboarding>
-    </ToolManagerProvider>
   );
 }
 

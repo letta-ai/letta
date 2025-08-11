@@ -191,9 +191,10 @@ function ContentPartsRenderer({ contentParts }: ContentPartsRendererProps) {
 
 interface MessageProps {
   message: AgentSimulatorMessageType;
+  disableInteractivity?: boolean;
 }
 
-function Message({ message }: MessageProps) {
+function Message({ message, disableInteractivity }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -201,8 +202,8 @@ function Message({ message }: MessageProps) {
 
   const { projectId } = useADEAppContext();
 
-  const { data: enabledEditing } = useFeatureFlag('EDIT_MESSAGE');
   const { data: isDatasetsEnabled } = useFeatureFlag('DATASETS');
+
 
   return (
     <VStack gap={false} fullWidth>
@@ -246,7 +247,7 @@ function Message({ message }: MessageProps) {
                 onOpenChange={setIsPopoverOpen}
               />
             )}
-            {message.editId && enabledEditing && (
+            {message.editId && !disableInteractivity && (
               <Button
                 preIcon={<EditIcon color="muted" size="small" />}
                 onClick={() => {
@@ -263,11 +264,13 @@ function Message({ message }: MessageProps) {
             )}
           </HStack>
         )}
-        <StepDetailBar
-          showDetails={showDetails}
-          setShowDetails={setShowDetails}
-          message={message}
-        />
+        {!disableInteractivity && (
+          <StepDetailBar
+            showDetails={showDetails}
+            setShowDetails={setShowDetails}
+            message={message}
+          />
+        )}
       </div>
     </VStack>
   );
@@ -276,9 +279,10 @@ function Message({ message }: MessageProps) {
 interface MessageGroupType {
   group: AgentSimulatorMessageGroupType;
   dataAnchor?: string;
+  disableInteractivity?: boolean;
 }
 
-function MessageGroup({ group, dataAnchor }: MessageGroupType) {
+function MessageGroup({ group, dataAnchor, disableInteractivity }: MessageGroupType) {
   const { name, messages } = group;
 
   const sortedMessages = messages.sort(
@@ -344,7 +348,7 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
             ? 'hsl(var(--user-content-background))'
             : 'hsl(var(--agent-content-background))',
       }}
-      className="rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem]"
+      className="rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem] w-full"
       data-testid="message-group"
       {...(dataAnchor && { 'data-anchor': dataAnchor })}
     >
@@ -383,7 +387,9 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
         data-testid={`${name.toLowerCase()}-message-content`}
       >
         {sortedMessages.map((message, index) => (
-          <Message key={`${message.id}_${index}`} message={message} />
+          <Message
+            disableInteractivity={disableInteractivity}
+            key={`${message.id}_${index}`} message={message} />
         ))}
       </VStack>
     </VStack>
@@ -401,6 +407,7 @@ interface MessagesProps {
   isPanelActive?: boolean;
   renderAgentsLink?: boolean;
   injectSpaceForHeader?: boolean;
+  disableInteractivity?: boolean;
 }
 
 interface LastMessageReceived {
@@ -410,6 +417,7 @@ interface LastMessageReceived {
 
 export function Messages(props: MessagesProps) {
   const {
+    disableInteractivity,
     isSendingMessage,
     injectSpaceForHeader,
     renderAgentsLink,
@@ -740,6 +748,7 @@ export function Messages(props: MessagesProps) {
                   type: agentMessage.message_type,
                   raw: out.data.message,
                   name: 'Agent',
+                  toolName: 'send_message',
                   editId: agentMessage.tool_call.tool_call_id || null,
                   timestamp: new Date(agentMessage.date).toISOString(),
                   isError: isErroredMessage,
@@ -749,6 +758,7 @@ export function Messages(props: MessagesProps) {
                   stepId: agentMessage.step_id,
                   id: `${agentMessage.id}-${agentMessage.message_type}`,
                   content: '',
+                  toolName: 'send_message',
                   type: agentMessage.message_type,
                   timestamp: new Date(agentMessage.date).toISOString(),
                   name: 'Agent',
@@ -767,6 +777,7 @@ export function Messages(props: MessagesProps) {
               return {
                 stepId: agentMessage.step_id,
                 type: agentMessage.message_type,
+                toolName: agentMessage.tool_call.name || '',
                 id: `${agentMessage.id}-${agentMessage.message_type}`,
                 content: (
                   <FunctionCall
@@ -791,6 +802,7 @@ export function Messages(props: MessagesProps) {
             stepId: agentMessage.step_id,
             type: agentMessage.message_type,
             id: `${agentMessage.id}-${agentMessage.message_type}`,
+            toolName: agentMessage.tool_call.name || '',
             content: (
               <MessageWrapper
                 type="code"
@@ -1146,6 +1158,7 @@ export function Messages(props: MessagesProps) {
         name: message.name,
         stepId: message.stepId || '',
         timestamp: message.timestamp || '',
+        toolName: message.toolName || '',
         raw: message.raw || '',
         type: message.type || 'user_message',
         editId: message.editId || null,
@@ -1283,6 +1296,7 @@ export function Messages(props: MessagesProps) {
         {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
         {messageGroups.map((group, index) => (
           <MessageGroup
+            disableInteractivity={disableInteractivity}
             key={group.id}
             group={group}
             dataAnchor={index === 0 ? 'old-first' : undefined}

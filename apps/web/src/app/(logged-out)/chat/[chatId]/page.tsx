@@ -89,6 +89,7 @@ export default function ChatPage() {
             <Messages
               mode="interactive"
               isPanelActive
+              disableInteractivity
               isSendingMessage={isPending}
               agentId={agentId}
             />
