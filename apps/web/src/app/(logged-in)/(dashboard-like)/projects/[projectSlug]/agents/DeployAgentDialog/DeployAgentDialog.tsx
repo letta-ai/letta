@@ -25,12 +25,14 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import { useUserHasPermission } from '$web/client/hooks';
+import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 import { isFetchError } from '@ts-rest/react-query/v5';
 import { BillingLink } from '@letta-cloud/ui-component-library';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -156,6 +158,7 @@ function FromStarterKit(props: FromStarterKitProps) {
   );
 
   const { slug, id: projectId } = useCurrentProject();
+  const user = useCurrentUser()
 
   const { push } = useRouter();
 
@@ -178,6 +181,12 @@ function FromStarterKit(props: FromStarterKitProps) {
     (starterKitId: string) => {
       onIsCreating(true);
 
+      trackClientSideEvent(AnalyticsEvent.CREATE_AGENT, {
+        userId: user?.id || '',
+        origin: 'starter_kit:deploy_agent_dialog',
+        starterKitId: starterKitId
+      });
+
       mutate({
         params: {
           starterKitId,
@@ -187,7 +196,7 @@ function FromStarterKit(props: FromStarterKitProps) {
         },
       });
     },
-    [mutate, onIsCreating, projectId],
+    [mutate, onIsCreating, projectId, user],
   );
 
   return (

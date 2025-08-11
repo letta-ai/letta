@@ -8,6 +8,23 @@ import { PostHogProvider } from 'posthog-js/react';
 import { usePostHog } from 'posthog-js/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import mixpanel from 'mixpanel-browser';
+import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+
+function getPlatformType() {
+  if (CURRENT_RUNTIME === 'letta-desktop') {
+    return 'letta-desktop';
+  }
+
+  if (typeof window === 'undefined') {
+    return 'unknown';
+  }
+
+  if (window.location.href.includes('/development-servers')) {
+    return 'self-hosted';
+  }
+
+  return 'cloud';
+}
 
 function LoadMixpanelAnalyticsInner() {
   const mounted = useRef(false);
@@ -129,6 +146,7 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
   try {
     posthog.capture(eventName, {
       distinct_id: 'userId' in properties ? properties.userId : '',
+      platformType: getPlatformType(),
       ...properties,
     });
   } catch (error) {

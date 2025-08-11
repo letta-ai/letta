@@ -23,6 +23,7 @@ export enum AnalyticsEvent {
   UPGRADE_SELECTED_PLAN = 'Selected Plan to Upgrade',
   ADDED_OWN_EXTERNAL_KEY = 'Added Own External Key',
   CREATED_API_KEY = 'Created API Key',
+  CREATE_AGENT = 'agent:create',
 }
 
 export interface BaseProperty {
@@ -56,6 +57,11 @@ interface SubscriptionChangedProperty {
   organizationId: string;
 }
 
+interface CreateAgentProperty extends BaseProperty {
+  origin: string;
+  starterKitId: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
@@ -79,4 +85,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CREATED_API_KEY]: BaseProperty;
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
   [AnalyticsEvent.SUBSCRIPTION_CHANGED]: SubscriptionChangedProperty;
+  [AnalyticsEvent.CREATE_AGENT]: CreateAgentProperty;
 }
