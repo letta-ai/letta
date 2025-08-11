@@ -4,8 +4,10 @@ import {
   Alert,
   Button,
   CogIcon,
+  DataObjectIcon,
   ExternalLinkIcon,
   HStack,
+  RawCodeEditor,
   SegmentIcon,
   TabGroup,
   Typography,
@@ -77,7 +79,7 @@ function MCPToolContent(props: MCPToolContentProps) {
   );
 }
 
-type EditMode = 'details' | 'settings';
+type EditMode = 'details' | 'json' | 'settings';
 
 interface EditModesProps {
   setMode: (mode: EditMode) => void;
@@ -86,7 +88,7 @@ interface EditModesProps {
 
 function EditModes(props: EditModesProps) {
   const { setMode, mode } = props;
-  const t = useTranslations('ToolsEditor/LocalToolsViewer');
+  const t = useTranslations('ToolsEditor/LettaToolViewer');
 
   return (
     <TabGroup
@@ -101,15 +103,48 @@ function EditModes(props: EditModesProps) {
       items={[
         {
           icon: <SegmentIcon />,
-          label: t('EditModes.modes.details'),
+          label: t('ViewToggle.options.details'),
           value: 'details',
         },
         {
+          icon: <DataObjectIcon />,
+          label: t('ViewToggle.options.json'),
+          value: 'json',
+        },
+        {
           icon: <CogIcon />,
-          label: t('EditModes.modes.settings'),
+          label: t('ViewToggle.options.settings'),
           value: 'settings',
         },
       ]}
+    />
+  );
+}
+
+interface MCPJSONSchemaViewerProps {
+  tool: Tool;
+}
+
+function MCPJSONSchemaViewer(props: MCPJSONSchemaViewerProps) {
+  const { tool } = props;
+
+  const jsonSchemaString = useMemo(() => {
+    return JSON.stringify(tool.json_schema || {}, null, 2);
+  }, [tool.json_schema]);
+
+  return (
+    <RawCodeEditor
+      fontSize="small"
+      fullHeight
+      fullWidth
+      flex
+      border={false}
+      variant="minimal"
+      label=""
+      showLineNumbers={false}
+      hideLabel
+      language="javascript"
+      code={jsonSchemaString}
     />
   );
 }
@@ -141,6 +176,8 @@ export function MCPToolViewer(props: MCPToolViewerProps) {
             description={description}
             name={name}
           />
+        ) : editMode === 'json' ? (
+          <MCPJSONSchemaViewer tool={tool} />
         ) : (
           <ToolSettings showDelete={false} showSave tool={tool} />
         )}
