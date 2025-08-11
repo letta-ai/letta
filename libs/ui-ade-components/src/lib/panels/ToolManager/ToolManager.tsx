@@ -25,13 +25,15 @@ import React, { useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { getMatchingRoute } from './toolManagerRoutes';
 import { useToolManagerRouteCopy } from './hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
+import type { ToolType
+} from '@letta-cloud/sdk-core';
 import {
   useToolsServiceCreateTool,
   useToolsServiceListTools,
   type Tool,
   UseToolsServiceListToolsKeyFn,
   UseToolsServiceRetrieveToolKeyFn,
-  isAPIError,
+  isAPIError
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,6 +44,9 @@ import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 import { useCurrentAgent } from '../../hooks';
 import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { useADEAppContext } from '../../AppContext/AppContext';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -84,6 +89,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
   const queryClient = useQueryClient();
   const { setSelectedToolId } = useToolManagerState();
+  const { user } = useADEAppContext()
 
   const { mutate, isPending, error, reset } = useToolsServiceCreateTool({
     onSuccess: (data) => {
@@ -154,13 +160,18 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
   const handleSubmit = useCallback(
     (values: CreateToolType) => {
+      trackClientSideEvent(AnalyticsEvent.CREATE_TOOL, {
+        userId: user?.id || '',
+        toolType: 'custom' as ToolType,
+      })
+
       mutate({
         requestBody: {
           source_code: getCode(values.name),
         },
       });
     },
-    [mutate],
+    [mutate, user],
   );
 
   return (

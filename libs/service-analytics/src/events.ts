@@ -1,4 +1,5 @@
 import type { OnboardingStepsType } from '@letta-cloud/types';
+import type { ToolType } from '@letta-cloud/sdk-core';
 
 export enum AnalyticsEvent {
   USER_CREATED = 'User Created',
@@ -24,6 +25,9 @@ export enum AnalyticsEvent {
   ADDED_OWN_EXTERNAL_KEY = 'Added Own External Key',
   CREATED_API_KEY = 'Created API Key',
   CREATE_AGENT = 'agent:create',
+  CREATE_TOOL = 'tool:create',
+  ATTACH_TOOL = 'tool:attach',
+  DETACH_TOOL = 'tool:detach',
 }
 
 export interface BaseProperty {
@@ -62,6 +66,15 @@ interface CreateAgentProperty extends BaseProperty {
   starterKitId: string;
 }
 
+interface ToolProperty extends BaseProperty {
+  toolType: ToolType;
+}
+
+interface AttachDetachToolProperty extends ToolProperty {
+  toolId: string;
+  agentId: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
@@ -86,4 +99,7 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
   [AnalyticsEvent.SUBSCRIPTION_CHANGED]: SubscriptionChangedProperty;
   [AnalyticsEvent.CREATE_AGENT]: CreateAgentProperty;
+  [AnalyticsEvent.CREATE_TOOL]: ToolProperty;
+  [AnalyticsEvent.ATTACH_TOOL]: AttachDetachToolProperty;
+  [AnalyticsEvent.DETACH_TOOL]: AttachDetachToolProperty;
 }

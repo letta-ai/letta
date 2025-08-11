@@ -24,6 +24,9 @@ import { useCallback, useState } from 'react';
 import { get } from 'lodash-es';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
 import { useQueryClient } from '@tanstack/react-query';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useADEAppContext } from '../../../../AppContext/AppContext';
 
 interface AttachComposioToolProps {
   idToAttach: string;
@@ -201,15 +204,17 @@ function AttachMCPTool(props: AttachMCPToolProps) {
 
 interface AttachLocalToolProps {
   idToAttach: string;
+  toolType: ToolType;
   toolName?: string;
 }
 
 function AttachLocalTool(props: AttachLocalToolProps) {
-  const { idToAttach, toolName } = props;
+  const { idToAttach, toolName, toolType } = props;
   const t = useTranslations('ToolActionsHeader');
   const { id: agentId } = useCurrentAgent();
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
+  const { user } = useADEAppContext()
 
   const { mutate } = useAgentsServiceAttachTool({
     onMutate: () => {
@@ -239,11 +244,18 @@ function AttachLocalTool(props: AttachLocalToolProps) {
   });
 
   const handleAttach = useCallback(async () => {
+    trackClientSideEvent(AnalyticsEvent.ATTACH_TOOL, {
+      userId: user?.id || '',
+      toolType: toolType,
+      agentId,
+      toolId: idToAttach,
+    })
+
     mutate({
       agentId,
       toolId: idToAttach,
     });
-  }, [agentId, mutate, idToAttach]);
+  }, [user?.id, toolType, agentId, idToAttach, mutate]);
 
   return (
     <Button
@@ -274,7 +286,7 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
     case 'letta_memory_core':
     case 'letta_builtin':
     case 'letta_sleeptime_core':
-      return <AttachLocalTool idToAttach={idToAttach} toolName={toolName} />;
+      return <AttachLocalTool toolType={toolType} idToAttach={idToAttach} toolName={toolName} />;
 
     case 'external_mcp':
       return <AttachMCPTool idToAttach={idToAttach} />;
@@ -285,15 +297,17 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
 }
 
 interface DetachToolDialogProps {
+  toolType: ToolType;
   idToDetach: string;
 }
 
 function DetachToolDialog(props: DetachToolDialogProps) {
-  const { idToDetach } = props;
+  const { idToDetach, toolType } = props;
   const { id: agentId } = useCurrentAgent();
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const queryClient = useQueryClient();
+  const { user } = useADEAppContext()
 
   const t = useTranslations('ToolActionsHeader');
 
@@ -338,11 +352,18 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   });
 
   const handleDetach = useCallback(() => {
+    trackClientSideEvent(AnalyticsEvent.DETACH_TOOL, {
+      userId: user?.id || '',
+      toolType,
+      agentId,
+      toolId: idToDetach,
+    })
+
     mutate({
       agentId,
       toolId: idToDetach,
     });
-  }, [idToDetach, agentId, mutate]);
+  }, [user?.id, toolType, agentId, idToDetach, mutate]);
 
   return (
     <Dialog
@@ -384,7 +405,7 @@ export function AttachDetachButton(props: AttachDetachButtonProps) {
   return (
     <HStack>
       {attachedId ? (
-        <DetachToolDialog idToDetach={attachedId} />
+        <DetachToolDialog toolType={toolType} idToDetach={attachedId} />
       ) : (
         <AttachToolToAgentButton
           toolType={toolType}
