@@ -27,10 +27,14 @@ class AsyncBaseMCPClient:
             await self.session.initialize()
             self.initialized = True
         except ConnectionError as e:
-            logger.error(f"MCP connection failed: {str(e)}")
+            # MCP connection failures are often due to user misconfiguration, not system errors
+            # Log at debug level to avoid triggering Sentry alerts for expected configuration issues
+            logger.debug(f"MCP connection failed: {str(e)}")
             raise e
         except Exception as e:
-            logger.error(
+            # MCP connection failures are often due to user misconfiguration, not system errors
+            # Log at info level to help with debugging without triggering Sentry alerts
+            logger.info(
                 f"Connecting to MCP server failed. Please review your server config: {self.server_config.model_dump_json(indent=4)}. Error: {str(e)}"
             )
             if hasattr(self.server_config, "server_url") and self.server_config.server_url:
