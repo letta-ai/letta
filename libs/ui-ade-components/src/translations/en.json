@@ -2072,9 +2072,13 @@
   },
   "ADE/Tools": {
     "allTools": "Attached tools",
+    "TooManyToolsWarning": {
+      "description": "Potential tool overload",
+      "tooltip": "You have {count} tools attached. Agent performance typically degrades with more than {threshold} tools. Having too many tools can make it harder for the agent to select the right tool and may increase response times. Consider removing unused tools, combining tools, or using multiple agents."
+    },
     "ToolsOnboarding": {
       "title": "Connecting Tools & MCP",
-      "description": "You can extend your agent’s capabilities by connecting them to MCP servers of custom tools which you define.",
+      "description": "You can extend your agent's capabilities by connecting them to MCP servers of custom tools which you define.",
       "next": "Next: Agent Simulator",
       "quickNext": "Next"
     },

@@ -11,8 +11,10 @@ import {
   RuleIcon,
   SearchIcon,
   ToolManagerIcon,
+  Tooltip,
   Typography,
   VariableIcon,
+  WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
 
@@ -35,6 +37,7 @@ import { useADETour } from '../../hooks/useADETour/useADETour';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
 import { SpecificToolIcon } from '../ToolManager/components/SpecificToolIcon/SpecificToolIcon';
+import { MAX_TOOLS_THRESHOLD } from './constants';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -487,6 +490,34 @@ function ToolUtilities(props: ToolUtilitiesProps) {
   );
 }
 
+function TooManyToolsWarning() {
+  const { tools } = useCurrentAgent();
+  const t = useTranslations('ADE/Tools');
+
+  const toolCount = tools?.length || 0;
+
+  if (toolCount <= MAX_TOOLS_THRESHOLD) {
+    return null;
+  }
+
+  return (
+    <HStack
+      gap="small"
+      paddingX="medium"
+      paddingY="small"
+      align="center"
+      className="text-warning"
+    >
+      <WarningIcon size="xsmall" color="warning" />
+      <Tooltip content={t('TooManyToolsWarning.tooltip', { count: toolCount, threshold: MAX_TOOLS_THRESHOLD })}>
+        <Typography variant="body3" className="cursor-help">
+          {t('TooManyToolsWarning.description')}
+        </Typography>
+      </Tooltip>
+    </HStack>
+  );
+}
+
 export function ToolsPanel() {
   const [search, setSearch] = useState('');
 
@@ -497,6 +528,7 @@ export function ToolsPanel() {
 
         <VStack gap={false}>
           <ToolUtilities search={search} onSearchChange={setSearch} />
+          <TooManyToolsWarning />
           <ToolsList search={search} />
         </VStack>
       </ToolsOnboarding>
