@@ -131,7 +131,7 @@ const loadingStrings = [
   'Unable to Reveal Current Activity',
   'Weathering Buildings',
   'Yelling Timber!!!'
-].sort(() => Math.random() - 0.5);
+];
 
 function ManyMessagesVerticalComponent(
   props: ManyMessagesVerticalComponentProps,
@@ -152,11 +152,11 @@ function ManyMessagesVerticalComponent(
       setMessageIndex((prevIndex) => {
         if (messages.length <= 1) return prevIndex;
         const direction = Math.random() < 0.5 ? -1 : 1;
-        const magnitude = Math.floor(Math.random() * 8) + 3;
+        const magnitude = Math.floor(Math.random() * 5) + 1;
         const delta = direction * magnitude;
         return Math.abs((prevIndex + delta) % messages.length);
       });
-    }, 1500);
+    }, 2000);
 
     return () => {
       clearInterval(interval);
