@@ -1,5 +1,8 @@
+from typing import Literal, Optional
+
 import pytest
 
+from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers import (
     AnthropicProvider,
     AzureProvider,
@@ -314,3 +317,51 @@ async def test_provider_llm_models_consistency():
         assert model.handle.startswith(f"{provider.name}/")
         assert model.provider_name == provider.name
         assert model.context_window > 0
+
+
+@pytest.mark.parametrize(
+    "handle, expected_enable_reasoner, expected_put_inner_thoughts_in_kwargs, expected_max_reasoning_tokens, expected_reasoning_effort, expected_exception",
+    [
+        ("openai/gpt-4o-mini", True, True, 0, None, None),
+        ("openai/gpt-4o-mini", False, False, 0, None, None),
+        ("openai/o3-mini", True, False, 0, "medium", None),
+        ("openai/o3-mini", False, False, 0, None, ValueError),
+        ("anthropic/claude-3.5-sonnet", True, True, 0, None, None),
+        ("anthropic/claude-3.5-sonnet", False, False, 0, None, None),
+        ("anthropic/claude-3-7-sonnet", True, False, 1024, None, None),
+        ("anthropic/claude-3-7-sonnet", False, False, 0, None, None),
+        ("anthropic/claude-sonnet-4", True, False, 1024, None, None),
+        ("anthropic/claude-sonnet-4", False, False, 0, None, None),
+        ("google_vertex/gemini-2.0-flash", True, True, 0, None, None),
+        ("google_vertex/gemini-2.0-flash", False, False, 0, None, None),
+        ("google_vertex/gemini-2.5-flash", True, True, 1024, None, None),
+        ("google_vertex/gemini-2.5-flash", False, False, 0, None, None),
+        ("google_vertex/gemini-2.5-pro", True, True, 1024, None, None),
+        ("google_vertex/gemini-2.5-pro", False, False, 0, None, ValueError),
+    ],
+)
+def test_reasoning_toggle_by_provider(
+    handle: str,
+    expected_enable_reasoner: bool,
+    expected_put_inner_thoughts_in_kwargs: bool,
+    expected_max_reasoning_tokens: int,
+    expected_reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]],
+    expected_exception: Optional[Exception],
+):
+    model_endpoint_type, model = handle.split("/")
+    config = LLMConfig(
+        model_endpoint_type=model_endpoint_type,
+        model=model,
+        handle=handle,
+        context_window=1024,
+    )
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            LLMConfig.apply_reasoning_setting_to_config(config, reasoning=expected_enable_reasoner)
+    else:
+        new_config = LLMConfig.apply_reasoning_setting_to_config(config, reasoning=expected_enable_reasoner)
+
+        assert new_config.enable_reasoner == expected_enable_reasoner
+        assert new_config.put_inner_thoughts_in_kwargs == expected_put_inner_thoughts_in_kwargs
+        assert new_config.reasoning_effort == expected_reasoning_effort
+        assert new_config.max_reasoning_tokens == expected_max_reasoning_tokens

@@ -186,30 +186,49 @@ class LLMConfig(BaseModel):
         )
 
     @classmethod
+    def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "openai" and (
+            config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
+        )
+
+    @classmethod
+    def is_anthropic_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "anthropic" and (
+            config.model.startswith("claude-opus-4")
+            or config.model.startswith("claude-sonnet-4")
+            or config.model.startswith("claude-3-7-sonnet")
+        )
+
+    @classmethod
+    def is_google_vertex_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "google_vertex" and (
+            config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
+        )
+
+    @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
         if not reasoning:
+            if cls.is_openai_reasoning_model(config) or config.model.startswith("gemini-2.5-pro"):
+                raise ValueError("Reasoning cannot be disabled for OpenAI o1/o3 models")
             config.put_inner_thoughts_in_kwargs = False
             config.enable_reasoner = False
 
         else:
             config.enable_reasoner = True
-            if (
-                config.model_endpoint_type == "anthropic"
-                and ("claude-opus-4" in config.model or "claude-sonnet-4" in config.model or "claude-3-7-sonnet" in config.model)
-            ) or (
-                config.model_endpoint_type == "google_vertex" and ("gemini-2.5-flash" in config.model or "gemini-2.0-pro" in config.model)
-            ):
+            if cls.is_anthropic_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-            elif config.model_endpoint_type == "openai" and (
-                config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
-            ):
+            elif cls.is_google_vertex_reasoning_model(config):
+                # Handle as non-reasoner until we support summary
+                config.put_inner_thoughts_in_kwargs = True
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            elif cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
                     config.reasoning_effort = "medium"
             else:
                 config.put_inner_thoughts_in_kwargs = True
-                config.enable_reasoner = False
 
         return config
