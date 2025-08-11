@@ -410,32 +410,37 @@ class ToolManager:
         new_name = None
         new_schema = None
 
-        # TODO: Consider this behavior...is this what we want?
-        # TODO: I feel like it's bad if json_schema strays from source code so
-        # if source code is provided, always derive the name from it
-        if "source_code" in update_data.keys() and not bypass_name_check:
-            # derive the schema from source code to get the function name
-            derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
-            new_name = derived_schema["name"]
+        # Fetch current tool to allow conditional logic based on tool type
+        current_tool = self.get_tool_by_id(tool_id=tool_id, actor=actor)
 
-            # if json_schema wasn't provided, use the derived schema
-            if "json_schema" not in update_data.keys():
-                new_schema = derived_schema
-            else:
-                # if json_schema was provided, update only its name to match the source code
+        # For MCP tools, do NOT derive schema from Python source. Trust provided JSON schema.
+        if current_tool.tool_type == ToolType.EXTERNAL_MCP:
+            if "json_schema" in update_data:
                 new_schema = update_data["json_schema"].copy()
-                new_schema["name"] = new_name
-                # update the json_schema in update_data so it gets applied in the loop
-                update_data["json_schema"] = new_schema
-
-            # get current tool to check if name is changing
-            current_tool = self.get_tool_by_id(tool_id=tool_id, actor=actor)
-            # check if the name is changing and if so, verify it doesn't conflict
+                new_name = new_schema.get("name", current_tool.name)
+            else:
+                new_schema = current_tool.json_schema
+                new_name = current_tool.name
+            update_data.pop("source_code", None)
             if new_name != current_tool.name:
-                # check if a tool with the new name already exists
                 existing_tool = self.get_tool_by_name(tool_name=new_name, actor=actor)
                 if existing_tool:
                     raise LettaToolNameConflictError(tool_name=new_name)
+        else:
+            # For non-MCP tools, preserve existing behavior
+            if "source_code" in update_data.keys() and not bypass_name_check:
+                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                new_name = derived_schema["name"]
+                if "json_schema" not in update_data.keys():
+                    new_schema = derived_schema
+                else:
+                    new_schema = update_data["json_schema"].copy()
+                    new_schema["name"] = new_name
+                    update_data["json_schema"] = new_schema
+                if new_name != current_tool.name:
+                    existing_tool = self.get_tool_by_name(tool_name=new_name, actor=actor)
+                    if existing_tool:
+                        raise LettaToolNameConflictError(tool_name=new_name)
 
         # Now perform the update within the session
         with db_registry.session() as session:
@@ -473,32 +478,51 @@ class ToolManager:
         new_name = None
         new_schema = None
 
-        # TODO: Consider this behavior...is this what we want?
-        # TODO: I feel like it's bad if json_schema strays from source code so
-        # if source code is provided, always derive the name from it
-        if "source_code" in update_data.keys() and not bypass_name_check:
-            # derive the schema from source code to get the function name
-            derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
-            new_name = derived_schema["name"]
+        # Fetch current tool early to allow conditional logic based on tool type
+        current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
 
-            # if json_schema wasn't provided, use the derived schema
-            if "json_schema" not in update_data.keys():
-                new_schema = derived_schema
-            else:
-                # if json_schema was provided, update only its name to match the source code
+        # For MCP tools, do NOT derive schema from Python source. Trust provided JSON schema.
+        if current_tool.tool_type == ToolType.EXTERNAL_MCP:
+            # Prefer provided json_schema; fall back to current
+            if "json_schema" in update_data:
                 new_schema = update_data["json_schema"].copy()
-                new_schema["name"] = new_name
-                # update the json_schema in update_data so it gets applied in the loop
-                update_data["json_schema"] = new_schema
-
-            # get current tool to check if name is changing
-            current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
-            # check if the name is changing and if so, verify it doesn't conflict
+                new_name = new_schema.get("name", current_tool.name)
+            else:
+                new_schema = current_tool.json_schema
+                new_name = current_tool.name
+            # Ensure we don't trigger derive
+            update_data.pop("source_code", None)
+            # If name changes, enforce uniqueness
             if new_name != current_tool.name:
-                # check if a tool with the new name already exists
                 name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
                 if name_exists:
                     raise LettaToolNameConflictError(tool_name=new_name)
+        else:
+            # For non-MCP tools, preserve existing behavior
+            # TODO: Consider this behavior...is this what we want?
+            # TODO: I feel like it's bad if json_schema strays from source code so
+            # if source code is provided, always derive the name from it
+            if "source_code" in update_data.keys() and not bypass_name_check:
+                # derive the schema from source code to get the function name
+                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                new_name = derived_schema["name"]
+
+                # if json_schema wasn't provided, use the derived schema
+                if "json_schema" not in update_data.keys():
+                    new_schema = derived_schema
+                else:
+                    # if json_schema was provided, update only its name to match the source code
+                    new_schema = update_data["json_schema"].copy()
+                    new_schema["name"] = new_name
+                    # update the json_schema in update_data so it gets applied in the loop
+                    update_data["json_schema"] = new_schema
+
+                # check if the name is changing and if so, verify it doesn't conflict
+                if new_name != current_tool.name:
+                    # check if a tool with the new name already exists
+                    name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
+                    if name_exists:
+                        raise LettaToolNameConflictError(tool_name=new_name)
 
         # Now perform the update within the session
         async with db_registry.async_session() as session:
