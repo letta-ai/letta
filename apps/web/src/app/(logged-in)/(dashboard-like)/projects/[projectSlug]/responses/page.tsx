@@ -357,18 +357,17 @@ function useQueryDefinition() {
         root: {
           combinator: 'AND',
           items: [
-            // {
-            //   field: fieldDefinitions.duration.id,
-            //   queryData: {
-            //     operator:
-            //       fieldDefinitions.duration.queries[0].options.options[0],
-            //     value: {
-            //       label: '',
-            //       value: '0',
-            //     },
-            //     unit: fieldDefinitions.duration.queries[2].options.options[0],
-            //   },
-            // },
+            {
+              field: fieldDefinitions.functionName.id,
+              queryData: {
+                operator:
+                  fieldDefinitions.functionName.queries[0].options.options[0],
+                value: {
+                  label: '',
+                  value: '',
+                },
+              },
+            },
           ],
         },
       } satisfies QueryBuilderQuery);

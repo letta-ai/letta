@@ -427,11 +427,10 @@ export interface GenericQueryItem {
 
 interface QueryRowProps extends GenericQueryItem {
   path: string;
-  isFirstCondition?: boolean;
 }
 
 function QueryCondition(props: QueryRowProps) {
-  const { field = '', isFirstCondition, queryData = {}, path } = props;
+  const { field = '', queryData = {}, path } = props;
 
   const { setQuery, definition } = useQueryBuilder();
 
@@ -545,12 +544,10 @@ function QueryCondition(props: QueryRowProps) {
           />
         );
       })}
-      {!isFirstCondition && (
-        <HStack justify="spaceBetween" fullWidth>
-          <div></div>
-          <RemoveCondition path={path} />
-        </HStack>
-      )}
+      <HStack justify="spaceBetween" fullWidth>
+        <div></div>
+        <RemoveCondition path={path} />
+      </HStack>
     </HStack>
   );
 }
@@ -698,7 +695,6 @@ export function isGenericQueryItem(
 
 interface QueryCombinatorProps extends GenericQueryCondition {
   path: string;
-  isFirstCondition?: boolean;
 }
 
 function QueryCombinator(props: QueryCombinatorProps) {
@@ -771,7 +767,6 @@ function QueryCombinator(props: QueryCombinatorProps) {
               return (
                 <VStack className={borderClass} key={index} padding="xxsmall">
                   <QueryCondition
-                    isFirstCondition={index === 0 && path === 'root'}
                     path={`${path}.items.${index}`}
                     {...item}
                   />
