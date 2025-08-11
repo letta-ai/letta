@@ -10,6 +10,8 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useToolManagerRouteCopy } from '@letta-cloud/ui-ade-components';
 import { CreateToolDialog } from '@letta-cloud/ui-ade-components';
 import { ToolsPageLayout } from './_components/ToolsPageLayout/ToolsPageLayout';
+import { AppContextProvider } from '@letta-cloud/ui-ade-components';
+import { useCurrentUser } from '$web/client/hooks';
 
 interface ToolsLayoutProps {
   children: React.ReactNode;
@@ -21,7 +23,10 @@ export default function ToolsLayout(props: ToolsLayoutProps) {
 
   const copy = useToolManagerRouteCopy();
 
+  const user = useCurrentUser();
+
   return (
+    <AppContextProvider user={user}>
     <DashboardWithSidebarWrapper
       baseUrl="/tools"
       returnOverride="/"
@@ -57,6 +62,7 @@ export default function ToolsLayout(props: ToolsLayoutProps) {
             {
               override: (
                 <HStack>
+                  <AppContextProvider user={user}>
                   <CreateToolDialog
                     trigger={
                       <Button
@@ -69,6 +75,7 @@ export default function ToolsLayout(props: ToolsLayoutProps) {
                       />
                     }
                   />
+                  </AppContextProvider>
                 </HStack>
               ),
             },
@@ -105,5 +112,6 @@ export default function ToolsLayout(props: ToolsLayoutProps) {
     >
       <ToolsPageLayout>{children}</ToolsPageLayout>
     </DashboardWithSidebarWrapper>
+    </AppContextProvider>
   );
 }
