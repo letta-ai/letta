@@ -60,7 +60,9 @@ class MCPManager:
             tools = await mcp_client.list_tools()
             return tools
         except Exception as e:
-            logger.error(f"Error listing tools for MCP server {mcp_server_name}: {e}")
+            # MCP tool listing errors are often due to connection/configuration issues, not system errors
+            # Log at info level to avoid triggering Sentry alerts for expected failures
+            logger.info(f"Error listing tools for MCP server {mcp_server_name}: {e}")
             return []
         finally:
             await mcp_client.cleanup()
@@ -302,7 +304,8 @@ class MCPManager:
                 try:
                     mcp_config = json.load(f)
                 except Exception as e:
-                    logger.error(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
+                    # Config parsing errors are user configuration issues, not system errors
+                    logger.warning(f"Failed to parse MCP config file ({mcp_config_path}) as json: {e}")
                     return mcp_server_list
 
                 # Proper formatting is "mcpServers" key at the top level,
@@ -313,7 +316,8 @@ class MCPManager:
 
                         # No support for duplicate server names
                         if server_name in mcp_server_list:
-                            logger.error(f"Duplicate MCP server name found (skipping): {server_name}")
+                            # Duplicate server names are configuration issues, not system errors
+                            logger.warning(f"Duplicate MCP server name found (skipping): {server_name}")
                             continue
 
                         if "url" in server_params_raw:
@@ -328,7 +332,8 @@ class MCPManager:
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:
-                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                # Config parsing errors are user configuration issues, not system errors
+                                logger.warning(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
                                 continue
                         else:
                             # Attempt to parse the server params as a StdioServerParameters
@@ -341,7 +346,8 @@ class MCPManager:
                                 )
                                 mcp_server_list[server_name] = server_params
                             except Exception as e:
-                                logger.error(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
+                                # Config parsing errors are user configuration issues, not system errors
+                                logger.warning(f"Failed to parse server params for MCP server {server_name} (skipping): {e}")
                                 continue
         return mcp_server_list
 
