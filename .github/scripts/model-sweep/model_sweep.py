@@ -29,7 +29,6 @@ from letta_client.types import (
     UserMessage,
 )
 
-from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
@@ -185,7 +184,7 @@ def assert_greeting_with_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    if is_openai_reasoning_model(llm_config.model):
+    if LLMConfig.is_reasoning_model(llm_config):
         assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         assert isinstance(messages[index], ReasoningMessage)
@@ -231,7 +230,7 @@ def assert_greeting_without_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    if is_openai_reasoning_model(llm_config.model):
+    if LLMConfig.is_reasoning_model(llm_config):
         assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         assert isinstance(messages[index], ReasoningMessage)
@@ -282,7 +281,7 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 1
-    if is_openai_reasoning_model(llm_config.model):
+    if LLMConfig.is_reasoning_model(llm_config):
         assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         assert isinstance(messages[index], ReasoningMessage)
@@ -305,7 +304,7 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 3
-    if is_openai_reasoning_model(llm_config.model):
+    if LLMConfig.is_reasoning_model(llm_config):
         assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         assert isinstance(messages[index], ReasoningMessage)
@@ -348,7 +347,7 @@ def assert_image_input_response(
         index += 1
 
     # Agent Step 1
-    if is_openai_reasoning_model(llm_config.model):
+    if LLMConfig.is_reasoning_model(llm_config):
         assert isinstance(messages[index], HiddenReasoningMessage)
     else:
         assert isinstance(messages[index], ReasoningMessage)

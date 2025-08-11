@@ -29,9 +29,8 @@ jobs:
           "matrix": {
             "config_file": [
               "openai-gpt-4o-mini.json",
-              "claude-4-sonnet.json",
+              "claude-4-sonnet-extended.json",
               "claude-3-5-sonnet.json",
-              "claude-3-7-sonnet.json",
               "claude-3-7-sonnet-extended.json",
               "gemini-1.5-pro.json",
               "gemini-2.5-pro.json",
