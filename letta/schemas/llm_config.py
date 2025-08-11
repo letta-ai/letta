@@ -94,6 +94,9 @@ class LLMConfig(BaseModel):
         """
         model = values.get("model")
 
+        if model is None:
+            return values
+
         # Define models where we want put_inner_thoughts_in_kwargs to be False
         avoid_put_inner_thoughts_in_kwargs = ["gpt-4"]
 
@@ -107,24 +110,12 @@ class LLMConfig(BaseModel):
         if is_openai_reasoning_model(model):
             values["put_inner_thoughts_in_kwargs"] = False
 
-        if values.get("enable_reasoner") and values.get("model_endpoint_type") == "anthropic":
+        if values.get("model_endpoint_type") == "anthropic" and (
+            model.startswith("claude-3-7-sonnet") or model.startswith("claude-sonnet-4") or model.startswith("claude-opus-4")
+        ):
             values["put_inner_thoughts_in_kwargs"] = False
 
         return values
-
-    @model_validator(mode="after")
-    def issue_warning_for_reasoning_constraints(self) -> "LLMConfig":
-        if self.enable_reasoner:
-            if self.max_reasoning_tokens is None:
-                logger.warning("max_reasoning_tokens must be set when enable_reasoner is True")
-            if self.max_tokens is not None and self.max_reasoning_tokens >= self.max_tokens:
-                logger.warning("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
-            if self.put_inner_thoughts_in_kwargs:
-                logger.debug("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
-        elif self.max_reasoning_tokens and not self.enable_reasoner:
-            logger.warning("model will not use reasoning unless enable_reasoner is set to True")
-
-        return self
 
     @classmethod
     def default_config(cls, model_name: str):

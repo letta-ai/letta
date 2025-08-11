@@ -504,6 +504,9 @@ class GoogleVertexClient(LLMClientBase):
                 return 1
         return 0
 
+    def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
+        return llm_config.model.startswith("gemini-2.5-flash") or llm_config.model.startswith("gemini-2.5-pro")
+
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
         # Fallback to base implementation

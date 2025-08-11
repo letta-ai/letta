@@ -96,7 +96,7 @@ all_configs = [
     "openai-gpt-4o-mini.json",
     # "azure-gpt-4o-mini.json", # TODO: Re-enable on new agent loop
     "claude-3-5-sonnet.json",
-    "claude-3-7-sonnet.json",
+    "claude-4-sonnet-extended.json",
     "claude-3-7-sonnet-extended.json",
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",

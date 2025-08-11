@@ -182,7 +182,7 @@ class AnthropicClient(LLMClientBase):
         }
 
         # Extended Thinking
-        if llm_config.enable_reasoner:
+        if self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
             data["thinking"] = {
                 "type": "enabled",
                 "budget_tokens": llm_config.max_reasoning_tokens,
@@ -200,7 +200,7 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
-        elif llm_config.enable_reasoner:
+        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
             # NOTE: reasoning models currently do not allow for `any`
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools]
@@ -295,6 +295,13 @@ class AnthropicClient(LLMClientBase):
         if messages is None:
             token_count -= 8
         return token_count
+
+    def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
+        return (
+            llm_config.model.startswith("claude-3-7-sonnet")
+            or llm_config.model.startswith("claude-sonnet-4")
+            or llm_config.model.startswith("claude-opus-4")
+        )
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
