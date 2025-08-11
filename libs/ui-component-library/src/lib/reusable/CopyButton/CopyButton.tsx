@@ -9,9 +9,13 @@ interface CopyButtonProps {
   testId?: string;
   fullWidth?: boolean;
   copyButtonText?: string;
+  copiedText?: string;
   color?: 'secondary' | 'tertiary';
-  size?: 'default' | 'small' | 'xsmall';
+  size?: '3xsmall' | 'default' | 'small' | 'xsmall';
   hideLabel?: boolean;
+  square?: boolean;
+  iconColor?: 'destructive' | 'muted' | 'positive';
+  _use_rarely_className?: string;
 }
 
 export function CopyButton(props: CopyButtonProps) {
@@ -22,7 +26,11 @@ export function CopyButton(props: CopyButtonProps) {
     fullWidth,
     color = 'tertiary',
     copyButtonText = 'Copy',
+    copiedText = 'Copied',
     hideLabel,
+    square,
+    iconColor,
+    _use_rarely_className,
   } = props;
 
   const { isCopied, copyToClipboard } = useCopyToClipboard({ textToCopy });
@@ -33,10 +41,18 @@ export function CopyButton(props: CopyButtonProps) {
       fullWidth={fullWidth}
       color={color}
       hideLabel={hideLabel}
+      square={square}
       type="button"
       data-testid={testId}
-      preIcon={isCopied ? <CheckIcon /> : <CopyIcon />}
-      label={isCopied ? 'Copied' : copyButtonText}
+      _use_rarely_className={_use_rarely_className}
+      preIcon={
+        isCopied ? (
+          <CheckIcon color={iconColor} size="auto" />
+        ) : (
+          <CopyIcon color={iconColor} size="auto" />
+        )
+      }
+      label={isCopied ? copiedText : copyButtonText}
       onClick={() => {
         void copyToClipboard();
       }}

@@ -7,6 +7,7 @@ import {
 import React, { useCallback } from 'react';
 import {
   Button,
+  CopyButton,
   HStack,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -14,15 +15,18 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
+import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
 
 interface FeedbackButtonsProps {
   stepId: string;
+  message?: AgentSimulatorMessageType;
 }
 
 export function FeedbackButtons(props: FeedbackButtonsProps) {
-  const { stepId } = props;
+  const { stepId, message } = props;
 
   const t = useTranslations('ADE/AgentSimulator.FeedbackButtons');
+
   const { data: step } = useStepsServiceRetrieveStep({
     stepId,
   });
@@ -131,6 +135,19 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
         _use_rarely_className=" w-4 h-4"
         color="tertiary"
       />
+      {message && (
+        <CopyButton
+          textToCopy={message.raw || ''}
+          copyButtonText={t('copy')}
+          copiedText={t('copied')}
+          size="3xsmall"
+          hideLabel
+          square
+          iconColor="muted"
+          _use_rarely_className=" w-4 h-4"
+          color="tertiary"
+        />
+      )}
     </HStack>
   );
 }

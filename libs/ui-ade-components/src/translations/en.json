@@ -1311,6 +1311,8 @@
     "FeedbackButtons": {
       "positive": "This was valid",
       "negative": "This was invalid",
+      "copy": "Copy",
+      "copied": "Copied",
       "error": "There was an error processing your feedback, please check the network inspector to see the error details or contact support."
     },
     "InvalidMessages": {

@@ -110,7 +110,7 @@ export function StepDetailBar(props: StepDetailBarProps) {
             </HStack>
           )}
 
-          {stepId && <FeedbackButtons stepId={stepId} />}
+          {stepId && <FeedbackButtons stepId={stepId} message={message} />}
         </HStack>
         <HStack gap="small" align="center">
           {stepDetails?.stop_reason === 'cancelled' && (
