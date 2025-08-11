@@ -43,6 +43,7 @@ const loadingStrings = [
   'Calculating Llama Expectoration',
   'Calibrating Blue Skies',
   'Charging Ozone Layer',
+  'Chopping Wooders',
   'Coalescing Cloud Formations',
   'Cohorting Exemplars',
   'Collecting Meteor Particles',
@@ -57,7 +58,7 @@ const loadingStrings = [
   'Decomposing Singular Values',
   'Decrementing Tectonic Plates',
   'Deleting Ferry Routes',
-  'Depixelating Inner Mountain ',
+  'Depixelating Inner Mountain',
   'Depositing Slush Funds',
   'Destabilizing Economic Indicators',
   'Determining Width of Blast Fronts',
@@ -91,9 +92,9 @@ const loadingStrings = [
   'Normalizing Power',
   'Obfuscating Quigley Matrix',
   'Overconstraining Dirty Industry Calculations',
+  'Packaging Packers',
   'Partitioning City Grid Singularities',
   'Perturbing Matrices',
-  'Pixalating Nude Patch',
   'Polishing Water Highlights',
   'Populating Lot Templates',
   'Preparing Sprites for Random Walks',
@@ -126,9 +127,11 @@ const loadingStrings = [
   'Synthesizing Gravity',
   'Synthesizing Wavelets',
   'Time-Compressing Simulator Clock',
+  'Translating Jin Dynasty Scrolls',
   'Unable to Reveal Current Activity',
   'Weathering Buildings',
-];
+  'Yelling Timber!!!'
+].sort(() => Math.random() - 0.5);
 
 function ManyMessagesVerticalComponent(
   props: ManyMessagesVerticalComponentProps,
@@ -141,11 +144,19 @@ function ManyMessagesVerticalComponent(
   // then have a state that tracks the current message index
   // then every 2s change the current message index
 
-  const [messageIndex, setMessageIndex] = React.useState(0);
+  const [messageIndex, setMessageIndex] = React.useState(() =>
+    messages.length > 0 ? Math.floor(Math.random() * messages.length) : 0,
+  );
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setMessageIndex((prevIndex) => (prevIndex + 1) % messages.length);
-    }, 2000);
+      setMessageIndex((prevIndex) => {
+        if (messages.length <= 1) return prevIndex;
+        const direction = Math.random() < 0.5 ? -1 : 1;
+        const magnitude = Math.floor(Math.random() * 8) + 3;
+        const delta = direction * magnitude;
+        return Math.abs((prevIndex + delta) % messages.length);
+      });
+    }, 1500);
 
     return () => {
       clearInterval(interval);
@@ -156,7 +167,7 @@ function ManyMessagesVerticalComponent(
     <VStack
       fullHeight
       fullWidth
-      className="max-h-[25px] h-[25px] w-[300px] relative leading-[25px] overflow-hidden transition-all duration-500"
+      className="max-h-[25px] h-[25px] w-[350px] relative leading-[25px] overflow-hidden transition-all duration-500"
       align="center"
       justify="center"
     >
