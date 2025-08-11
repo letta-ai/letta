@@ -24,6 +24,8 @@ import { useADETour } from '../../hooks/useADETour/useADETour';
 import { ModelSelector } from './ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../AdvancedSettingsPanel/components/SystemPromptEditor/SystemPromptEditor';
 import { IdentityViewer } from '../IdentityViewer/IdentityViewer';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { ReasoningSwitch } from '../AdvancedSettingsPanel/components/ReasoningSwitch/ReasoningSwitch';
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
@@ -108,6 +110,7 @@ export function AgentSettingsPanel() {
   const currentAgent = useCurrentAgent();
 
   const t = useTranslations('ADE/AgentSettingsPanel');
+  const { data: isReasoningToggleEnabled } = useFeatureFlag('REASONING_TOGGLE');
 
   const { isLocal } = useCurrentAgentMetaData();
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -160,6 +163,7 @@ export function AgentSettingsPanel() {
         </HStack>
       </VStack>
       <VStack gap="large">
+        {isReasoningToggleEnabled && <ReasoningSwitch />}
         <IdentityViewer />
         <SystemPromptEditor />
       </VStack>

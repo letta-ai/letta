@@ -54,6 +54,7 @@ export function useSyncUpdateCurrentAgent(options?: {
                 requestBody: {
                   id: currentAgent.id,
                   ...updateAgentData,
+                  reasoning: updateAgentData.llm_config?.enable_reasoner || updateAgentData.llm_config?.put_inner_thoughts_in_kwargs,
                   tool_exec_environment_variables:
                     updateAgentData.tool_exec_environment_variables
                       ? Object.fromEntries(
