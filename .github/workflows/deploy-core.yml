@@ -117,6 +117,14 @@ jobs:
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 
+      - name: Wait for deployment rollout to complete
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |
+          echo "Waiting for Kubernetes deployment rollout to complete..."
+          kubectl rollout status deployment/memgpt-server --timeout=800s
+          echo "Deployment rollout completed successfully"
+
       - name: Fire alert
         if: failure()
         run: just alert "${{ github.workflow }} failed!" "${{ github.actor }}"

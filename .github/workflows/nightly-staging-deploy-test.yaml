@@ -123,48 +123,51 @@ jobs:
         env:
           TAG: ${{ steps.set-tag.outputs.tag }}
           DEPLOY_MESSAGE: ${{ steps.set-tag.outputs.message }}
-          MEMGPT_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          TOGETHER_API_KEY: ${{ env.TOGETHER_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          GROK_API_KEY: ${{ env.GROK_API_KEY }}
-          LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
-          LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
-          LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
-          LETTA_PG_HOST: 10.119.0.3
-          LETTA_PG_PORT: ${{ vars.LETTA_PG_PORT }}
-          LETTA_DISABLE_SQLALCHEMY_POOLING: true
-          E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
-          LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317
-          LETTA_ENVIRONMENT: dev
-          CLICKHOUSE_ENDPOINT: https://qbcxouckj0.us-central1.gcp.clickhouse.cloud:8443
-          CLICKHOUSE_DATABASE: otel
-          CLICKHOUSE_USERNAME: default
-          CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD_DEV }}
-          ENV_NAME: dev
-          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
-          LETTA_UVICORN_WORKERS: 3
-          LETTA_DEFAULT_LLM_HANDLE: ${{ secrets.LETTA_DEFAULT_LLM_HANDLE }}
-          LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
-          MCP_READ_FROM_CONFIG: false
-          MCP_DISABLE_STDIO: true
-          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
-          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
-          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+          # MEMGPT_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
+          # OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          # TOGETHER_API_KEY: ${{ env.TOGETHER_API_KEY }}
+          # ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          # COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          # GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          # GROK_API_KEY: ${{ env.GROK_API_KEY }}
+          # LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
+          # LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
+          # LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
+          # LETTA_PG_HOST: 10.119.0.3
+          # LETTA_PG_PORT: ${{ vars.LETTA_PG_PORT }}
+          # LETTA_DISABLE_SQLALCHEMY_POOLING: true
+          # E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          # SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          # E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+          # MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          # MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          # TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          # LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
+          # LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317
+          # LETTA_ENVIRONMENT: dev
+          # CLICKHOUSE_ENDPOINT: https://qbcxouckj0.us-central1.gcp.clickhouse.cloud:8443
+          # CLICKHOUSE_DATABASE: otel
+          # CLICKHOUSE_USERNAME: default
+          # CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD_DEV }}
+          # ENV_NAME: dev
+          # LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+          # LETTA_UVICORN_WORKERS: 3
+          # LETTA_DEFAULT_LLM_HANDLE: ${{ secrets.LETTA_DEFAULT_LLM_HANDLE }}
+          # LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
+          # MCP_READ_FROM_CONFIG: false
+          # MCP_DISABLE_STDIO: true
+          # FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          # LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
+          # LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
 
-      - name: Wait for deployment to stabilize
+      - name: Wait for deployment rollout to complete
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
         run: |
-          echo "Waiting 60 seconds for deployment to stabilize..."
-          sleep 60
+          echo "Waiting for Kubernetes deployment rollout to complete..."
+          kubectl rollout status deployment/memgpt-server --timeout=800s
+          echo "Deployment rollout completed successfully"
 
   staging-tests:
     name: 🧪 Run Staging Tests

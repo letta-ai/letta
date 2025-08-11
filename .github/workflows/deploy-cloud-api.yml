@@ -152,6 +152,14 @@ jobs:
         id: deploy
         run: just deploy-cloud-api
 
+      - name: Wait for deployment rollout to complete
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |
+          echo "Waiting for Kubernetes deployment rollout to complete..."
+          kubectl rollout status deployment/cloud-api --timeout=600s
+          echo "Deployment rollout completed successfully"
+
       - name: Update deployment status to success
         if: success()
         uses: chrnorm/deployment-status@v2

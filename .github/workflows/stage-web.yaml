@@ -181,3 +181,11 @@ jobs:
           COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
         run: just build-web deploy-web "${DEPLOY_MESSAGE}"
+
+      - name: Wait for deployment rollout to complete
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |
+          echo "Waiting for Kubernetes deployment rollout to complete..."
+          kubectl rollout status deployment/letta-web --timeout=600s
+          echo "Deployment rollout completed successfully"

@@ -152,3 +152,11 @@ jobs:
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
+
+      - name: Wait for deployment rollout to complete
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |
+          echo "Waiting for Kubernetes deployment rollout to complete..."
+          kubectl rollout status deployment/memgpt-server --timeout=600s
+          echo "Deployment rollout completed successfully"
