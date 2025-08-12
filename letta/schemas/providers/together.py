@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import Field
 
 from letta.constants import MIN_CONTEXT_WINDOW
+from letta.errors import ErrorCode, LLMAuthenticationError
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
@@ -83,3 +84,12 @@ class TogetherProvider(OpenAIProvider):
             )
 
         return configs
+
+    async def check_api_key(self):
+        if not self.api_key:
+            raise ValueError("No API key provided")
+
+        try:
+            await self.list_llm_models_async()
+        except Exception as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Together: {e}", code=ErrorCode.UNAUTHENTICATED)

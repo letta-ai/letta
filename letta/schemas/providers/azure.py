@@ -3,6 +3,7 @@ from typing import ClassVar, Literal
 from pydantic import Field, field_validator
 
 from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE, LLM_MAX_TOKENS
+from letta.errors import ErrorCode, LLMAuthenticationError
 from letta.llm_api.azure_openai import get_azure_chat_completions_endpoint, get_azure_embeddings_endpoint
 from letta.llm_api.azure_openai_constants import AZURE_MODEL_TO_CONTEXT_LENGTH
 from letta.schemas.embedding_config import EmbeddingConfig
