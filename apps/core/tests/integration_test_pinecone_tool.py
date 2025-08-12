@@ -65,10 +65,12 @@ async def test_pinecone_tool(client: AsyncLetta) -> None:
     Test the Pinecone tool integration with the Letta client.
     """
     with open("../../scripts/test-afs/knowledge-base.af", "rb") as f:
-        agent = await client.agents.import_file(file=f)
+        response = await client.agents.import_file(file=f)
+
+    agent_id = response.agent_ids[0]
 
     agent = await client.agents.modify(
-        agent_id=agent.id,
+        agent_id=agent_id,
         tool_exec_environment_variables={
             "PINECONE_INDEX_HOST": os.getenv("PINECONE_INDEX_HOST"),
             "PINECONE_API_KEY": os.getenv("PINECONE_API_KEY"),

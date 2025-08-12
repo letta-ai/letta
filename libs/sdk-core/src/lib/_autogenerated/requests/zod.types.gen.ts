@@ -132,59 +132,11 @@ export const AgentEnvironmentVariable = z.object({
   agent_id: z.string(),
 });
 
-export type CoreMemoryBlockSchema = z.infer<typeof CoreMemoryBlockSchema>;
-export const CoreMemoryBlockSchema = z.object({
-  created_at: z.string(),
-  description: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  is_template: z.boolean(),
-  label: z.string(),
-  limit: z.number(),
-  metadata_: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  template_name: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  updated_at: z.string(),
+export type CreateBlock = z.infer<typeof CreateBlock>;
+export const CreateBlock = z.object({
   value: z.string(),
-});
-
-export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;
-export const EmbeddingConfig = z.object({
-  embedding_endpoint_type: z.union([
-    z.literal('openai'),
-    z.literal('anthropic'),
-    z.literal('bedrock'),
-    z.literal('cohere'),
-    z.literal('google_ai'),
-    z.literal('google_vertex'),
-    z.literal('azure'),
-    z.literal('groq'),
-    z.literal('ollama'),
-    z.literal('webui'),
-    z.literal('webui-legacy'),
-    z.literal('lmstudio'),
-    z.literal('lmstudio-legacy'),
-    z.literal('llamacpp'),
-    z.literal('koboldcpp'),
-    z.literal('vllm'),
-    z.literal('hugging-face'),
-    z.literal('mistral'),
-    z.literal('together'),
-    z.literal('pinecone'),
-  ]),
-  embedding_endpoint: z
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
     .union([
       z.string(),
       z.null(),
@@ -192,17 +144,7 @@ export const EmbeddingConfig = z.object({
       z.undefined(),
     ])
     .optional(),
-  embedding_model: z.string(),
-  embedding_dim: z.number(),
-  embedding_chunk_size: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  handle: z
+  name: z
     .union([
       z.string(),
       z.null(),
@@ -210,97 +152,8 @@ export const EmbeddingConfig = z.object({
       z.undefined(),
     ])
     .optional(),
-  batch_size: z.union([z.number(), z.undefined()]).optional(),
-  azure_endpoint: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  azure_version: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  azure_deployment: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ProviderCategory = z.infer<typeof ProviderCategory>;
-export const ProviderCategory = z.union([z.literal('base'), z.literal('byok')]);
-
-export type LLMConfig = z.infer<typeof LLMConfig>;
-export const LLMConfig = z.object({
-  model: z.string(),
-  model_endpoint_type: z.union([
-    z.literal('openai'),
-    z.literal('anthropic'),
-    z.literal('cohere'),
-    z.literal('google_ai'),
-    z.literal('google_vertex'),
-    z.literal('azure'),
-    z.literal('groq'),
-    z.literal('ollama'),
-    z.literal('webui'),
-    z.literal('webui-legacy'),
-    z.literal('lmstudio'),
-    z.literal('lmstudio-legacy'),
-    z.literal('lmstudio-chatcompletions'),
-    z.literal('llamacpp'),
-    z.literal('koboldcpp'),
-    z.literal('vllm'),
-    z.literal('hugging-face'),
-    z.literal('mistral'),
-    z.literal('together'),
-    z.literal('bedrock'),
-    z.literal('deepseek'),
-    z.literal('xai'),
-  ]),
-  model_endpoint: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  provider_name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  provider_category: z
-    .union([
-      ProviderCategory,
-      z.null(),
-      z.array(z.union([ProviderCategory, z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  model_wrapper: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  context_window: z.number(),
-  put_inner_thoughts_in_kwargs: z
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  preserve_on_migration: z
     .union([
       z.boolean(),
       z.null(),
@@ -308,267 +161,8 @@ export const LLMConfig = z.object({
       z.undefined(),
     ])
     .optional(),
-  handle: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  temperature: z.union([z.number(), z.undefined()]).optional(),
-  max_tokens: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  enable_reasoner: z.union([z.boolean(), z.undefined()]).optional(),
-  reasoning_effort: z
-    .union([
-      z.literal('minimal'),
-      z.literal('low'),
-      z.literal('medium'),
-      z.literal('high'),
-      z.null(),
-      z.array(
-        z.union([
-          z.literal('minimal'),
-          z.literal('low'),
-          z.literal('medium'),
-          z.literal('high'),
-          z.null(),
-        ]),
-      ),
-      z.undefined(),
-    ])
-    .optional(),
-  max_reasoning_tokens: z.union([z.number(), z.undefined()]).optional(),
-  frequency_penalty: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  compatibility_type: z
-    .union([
-      z.literal('gguf'),
-      z.literal('mlx'),
-      z.null(),
-      z.array(z.union([z.literal('gguf'), z.literal('mlx'), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type TextContent = z.infer<typeof TextContent>;
-export const TextContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  text: z.string(),
-});
-
-export type UrlImage = z.infer<typeof UrlImage>;
-export const UrlImage = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  url: z.string(),
-});
-
-export type Base64Image = z.infer<typeof Base64Image>;
-export const Base64Image = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  media_type: z.string(),
-  data: z.string(),
-  detail: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type LettaImage = z.infer<typeof LettaImage>;
-export const LettaImage = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  file_id: z.string(),
-  media_type: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  data: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  detail: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ImageContent = z.infer<typeof ImageContent>;
-export const ImageContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  source: z.union([UrlImage, Base64Image, LettaImage]),
-});
-
-export type ToolCallContent = z.infer<typeof ToolCallContent>;
-export const ToolCallContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  id: z.string(),
-  name: z.string(),
-  input: z.unknown(),
-});
-
-export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
-export const ToolReturnContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  tool_call_id: z.string(),
-  content: z.string(),
-  is_error: z.boolean(),
-});
-
-export type ReasoningContent = z.infer<typeof ReasoningContent>;
-export const ReasoningContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  is_native: z.boolean(),
-  reasoning: z.string(),
-  signature: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
-export const RedactedReasoningContent = z.object({
-  type: z.union([z.string(), z.undefined()]).optional(),
-  data: z.string(),
-});
-
-export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
-export const OmittedReasoningContent = z.object({
-  type: z.string().optional(),
-});
-
-export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
-export const LettaMessageContentUnion = z.union([
-  TextContent,
-  ImageContent,
-  ToolCallContent,
-  ToolReturnContent,
-  ReasoningContent,
-  RedactedReasoningContent,
-  OmittedReasoningContent,
-]);
-
-export type MessageSchema = z.infer<typeof MessageSchema>;
-export const MessageSchema = z.object({
-  created_at: z.string(),
-  group_id: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  model: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  name: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  role: z.string(),
-  content: z.array(LettaMessageContentUnion),
-  tool_call_id: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  tool_calls: z.array(z.unknown()),
-  tool_returns: z.array(z.unknown()),
-  updated_at: z.string(),
-});
-
-export type TagSchema = z.infer<typeof TagSchema>;
-export const TagSchema = z.object({
-  tag: z.string(),
-});
-
-export type ToolEnvVarSchema = z.infer<typeof ToolEnvVarSchema>;
-export const ToolEnvVarSchema = z.object({
-  created_at: z.string(),
-  description: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  key: z.string(),
-  updated_at: z.string(),
-  value: z.string(),
-});
-
-export type BaseToolRuleSchema = z.infer<typeof BaseToolRuleSchema>;
-export const BaseToolRuleSchema = z.object({
-  tool_name: z.string(),
-  type: z.string(),
-});
-
-export type ChildToolRuleSchema = z.infer<typeof ChildToolRuleSchema>;
-export const ChildToolRuleSchema = z.object({
-  tool_name: z.string(),
-  type: z.string(),
-  children: z.array(z.string()),
-});
-
-export type MaxCountPerStepToolRuleSchema = z.infer<
-  typeof MaxCountPerStepToolRuleSchema
->;
-export const MaxCountPerStepToolRuleSchema = z.object({
-  tool_name: z.string(),
-  type: z.string(),
-  max_count_limit: z.number(),
-});
-
-export type ConditionalToolRuleSchema = z.infer<
-  typeof ConditionalToolRuleSchema
->;
-export const ConditionalToolRuleSchema = z.object({
-  tool_name: z.string(),
-  type: z.string(),
-  default_child: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  child_output_mapping: z.unknown(),
-  require_output_mapping: z.boolean(),
-});
-
-export type ParameterProperties = z.infer<typeof ParameterProperties>;
-export const ParameterProperties = z.object({
-  type: z.string(),
+  label: z.string(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
   description: z
     .union([
       z.string(),
@@ -577,67 +171,7 @@ export const ParameterProperties = z.object({
       z.undefined(),
     ])
     .optional(),
-});
-
-export type ParametersSchema = z.infer<typeof ParametersSchema>;
-export const ParametersSchema = z.object({
-  type: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  properties: z.unknown(),
-  required: z.union([z.array(z.string()), z.undefined()]).optional(),
-});
-
-export type ToolJSONSchema = z.infer<typeof ToolJSONSchema>;
-export const ToolJSONSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  parameters: ParametersSchema,
-  type: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  required: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ToolSchema = z.infer<typeof ToolSchema>;
-export const ToolSchema = z.object({
-  args_json_schema: z.union([
-    z.unknown(),
-    z.null(),
-    z.array(z.union([z.unknown(), z.null()])),
-  ]),
-  created_at: z.string(),
-  description: z.string(),
-  json_schema: ToolJSONSchema,
-  name: z.string(),
-  return_char_limit: z.number(),
-  source_code: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  source_type: z.string(),
-  tags: z.array(z.string()),
-  tool_type: z.string(),
-  updated_at: z.string(),
-  metadata_: z
+  metadata: z
     .union([
       z.unknown(),
       z.null(),
@@ -645,59 +179,6 @@ export const ToolSchema = z.object({
       z.undefined(),
     ])
     .optional(),
-});
-
-export type AgentSchema = z.infer<typeof AgentSchema>;
-export const AgentSchema = z.object({
-  agent_type: z.string(),
-  core_memory: z.array(CoreMemoryBlockSchema),
-  created_at: z.string(),
-  description: z.union([
-    z.string(),
-    z.null(),
-    z.array(z.union([z.string(), z.null()])),
-  ]),
-  embedding_config: EmbeddingConfig,
-  llm_config: LLMConfig,
-  message_buffer_autoclear: z.boolean(),
-  in_context_message_indices: z.array(z.number()),
-  messages: z.array(MessageSchema),
-  metadata_: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  multi_agent_group: z.union([
-    z.unknown(),
-    z.null(),
-    z.array(z.union([z.unknown(), z.null()])),
-  ]),
-  name: z.string(),
-  system: z.string(),
-  tags: z.array(TagSchema),
-  tool_exec_environment_variables: z.array(ToolEnvVarSchema),
-  tool_rules: z.array(
-    z.union([
-      BaseToolRuleSchema,
-      ChildToolRuleSchema,
-      MaxCountPerStepToolRuleSchema,
-      ConditionalToolRuleSchema,
-      z.array(
-        z.union([
-          BaseToolRuleSchema,
-          ChildToolRuleSchema,
-          MaxCountPerStepToolRuleSchema,
-          ConditionalToolRuleSchema,
-        ]),
-      ),
-    ]),
-  ),
-  tools: z.array(ToolSchema),
-  updated_at: z.string(),
-  version: z.string(),
 });
 
 export type ChildToolRule = z.infer<typeof ChildToolRule>;
@@ -839,6 +320,381 @@ export const AgentType = z.union([
   z.literal('voice_sleeptime_agent'),
 ]);
 
+export type ProviderCategory = z.infer<typeof ProviderCategory>;
+export const ProviderCategory = z.union([z.literal('base'), z.literal('byok')]);
+
+export type LLMConfig = z.infer<typeof LLMConfig>;
+export const LLMConfig = z.object({
+  model: z.string(),
+  model_endpoint_type: z.union([
+    z.literal('openai'),
+    z.literal('anthropic'),
+    z.literal('cohere'),
+    z.literal('google_ai'),
+    z.literal('google_vertex'),
+    z.literal('azure'),
+    z.literal('groq'),
+    z.literal('ollama'),
+    z.literal('webui'),
+    z.literal('webui-legacy'),
+    z.literal('lmstudio'),
+    z.literal('lmstudio-legacy'),
+    z.literal('lmstudio-chatcompletions'),
+    z.literal('llamacpp'),
+    z.literal('koboldcpp'),
+    z.literal('vllm'),
+    z.literal('hugging-face'),
+    z.literal('mistral'),
+    z.literal('together'),
+    z.literal('bedrock'),
+    z.literal('deepseek'),
+    z.literal('xai'),
+  ]),
+  model_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_category: z
+    .union([
+      ProviderCategory,
+      z.null(),
+      z.array(z.union([ProviderCategory, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model_wrapper: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window: z.number(),
+  put_inner_thoughts_in_kwargs: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  temperature: z.union([z.number(), z.undefined()]).optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  enable_reasoner: z.union([z.boolean(), z.undefined()]).optional(),
+  reasoning_effort: z
+    .union([
+      z.literal('minimal'),
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('minimal'),
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  max_reasoning_tokens: z.union([z.number(), z.undefined()]).optional(),
+  frequency_penalty: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  compatibility_type: z
+    .union([
+      z.literal('gguf'),
+      z.literal('mlx'),
+      z.null(),
+      z.array(z.union([z.literal('gguf'), z.literal('mlx'), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;
+export const EmbeddingConfig = z.object({
+  embedding_endpoint_type: z.union([
+    z.literal('openai'),
+    z.literal('anthropic'),
+    z.literal('bedrock'),
+    z.literal('cohere'),
+    z.literal('google_ai'),
+    z.literal('google_vertex'),
+    z.literal('azure'),
+    z.literal('groq'),
+    z.literal('ollama'),
+    z.literal('webui'),
+    z.literal('webui-legacy'),
+    z.literal('lmstudio'),
+    z.literal('lmstudio-legacy'),
+    z.literal('llamacpp'),
+    z.literal('koboldcpp'),
+    z.literal('vllm'),
+    z.literal('hugging-face'),
+    z.literal('mistral'),
+    z.literal('together'),
+    z.literal('pinecone'),
+  ]),
+  embedding_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_model: z.string(),
+  embedding_dim: z.number(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  batch_size: z.union([z.number(), z.undefined()]).optional(),
+  azure_endpoint: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  azure_version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  azure_deployment: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type TextContent = z.infer<typeof TextContent>;
+export const TextContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  text: z.string(),
+});
+
+export type UrlImage = z.infer<typeof UrlImage>;
+export const UrlImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  url: z.string(),
+});
+
+export type Base64Image = z.infer<typeof Base64Image>;
+export const Base64Image = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  media_type: z.string(),
+  data: z.string(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type LettaImage = z.infer<typeof LettaImage>;
+export const LettaImage = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  file_id: z.string(),
+  media_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  data: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  detail: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ImageContent = z.infer<typeof ImageContent>;
+export const ImageContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  source: z.union([UrlImage, Base64Image, LettaImage]),
+});
+
+export type ToolCallContent = z.infer<typeof ToolCallContent>;
+export const ToolCallContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  id: z.string(),
+  name: z.string(),
+  input: z.unknown(),
+});
+
+export type ToolReturnContent = z.infer<typeof ToolReturnContent>;
+export const ToolReturnContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  tool_call_id: z.string(),
+  content: z.string(),
+  is_error: z.boolean(),
+});
+
+export type ReasoningContent = z.infer<typeof ReasoningContent>;
+export const ReasoningContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  is_native: z.boolean(),
+  reasoning: z.string(),
+  signature: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type RedactedReasoningContent = z.infer<typeof RedactedReasoningContent>;
+export const RedactedReasoningContent = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  data: z.string(),
+});
+
+export type OmittedReasoningContent = z.infer<typeof OmittedReasoningContent>;
+export const OmittedReasoningContent = z.object({
+  type: z.string().optional(),
+});
+
+export type LettaMessageContentUnion = z.infer<typeof LettaMessageContentUnion>;
+export const LettaMessageContentUnion = z.union([
+  TextContent,
+  ImageContent,
+  ToolCallContent,
+  ToolReturnContent,
+  ReasoningContent,
+  RedactedReasoningContent,
+  OmittedReasoningContent,
+]);
+
+export type MessageCreate = z.infer<typeof MessageCreate>;
+export const MessageCreate = z.object({
+  role: z.union([
+    z.literal('user'),
+    z.literal('system'),
+    z.literal('assistant'),
+  ]),
+  content: z.union([
+    z.array(LettaMessageContentUnion),
+    z.string(),
+    z.array(z.union([z.array(LettaMessageContentUnion), z.string()])),
+  ]),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  batch_item_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  group_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type TextResponseFormat = z.infer<typeof TextResponseFormat>;
 export const TextResponseFormat = z.object({
   type: z.string().optional(),
@@ -853,6 +709,968 @@ export const JsonSchemaResponseFormat = z.object({
 export type JsonObjectResponseFormat = z.infer<typeof JsonObjectResponseFormat>;
 export const JsonObjectResponseFormat = z.object({
   type: z.string().optional(),
+});
+
+export type MessageRole = z.infer<typeof MessageRole>;
+export const MessageRole = z.union([
+  z.literal('assistant'),
+  z.literal('user'),
+  z.literal('tool'),
+  z.literal('function'),
+  z.literal('system'),
+]);
+
+export type letta__schemas__agent_file__MessageSchema = z.infer<
+  typeof letta__schemas__agent_file__MessageSchema
+>;
+export const letta__schemas__agent_file__MessageSchema = z.object({
+  role: MessageRole,
+  content: z.union([
+    z.array(LettaMessageContentUnion),
+    z.string(),
+    z.array(z.union([z.array(LettaMessageContentUnion), z.string()])),
+  ]),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  batch_item_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  group_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type FileAgentSchema = z.infer<typeof FileAgentSchema>;
+export const FileAgentSchema = z.object({
+  agent_id: z.string(),
+  file_id: z.string(),
+  source_id: z.string(),
+  file_name: z.string(),
+  is_open: z.union([z.boolean(), z.undefined()]).optional(),
+  visible_content: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_accessed_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  start_line: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  end_line: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+});
+
+export type letta__schemas__agent_file__AgentSchema = z.infer<
+  typeof letta__schemas__agent_file__AgentSchema
+>;
+export const letta__schemas__agent_file__AgentSchema = z.object({
+  name: z.union([z.string(), z.undefined()]).optional(),
+  memory_blocks: z
+    .union([
+      z.array(CreateBlock),
+      z.null(),
+      z.array(z.union([z.array(CreateBlock), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tools: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_rules: z
+    .union([
+      z.array(
+        z.union([
+          ChildToolRule,
+          InitToolRule,
+          TerminalToolRule,
+          ConditionalToolRule,
+          ContinueToolRule,
+          RequiredBeforeExitToolRule,
+          MaxCountPerStepToolRule,
+          ParentToolRule,
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+              ContinueToolRule,
+              RequiredBeforeExitToolRule,
+              MaxCountPerStepToolRule,
+              ParentToolRule,
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  system: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_type: z.union([AgentType, z.undefined()]).optional(),
+  llm_config: z
+    .union([
+      LLMConfig,
+      z.null(),
+      z.array(z.union([LLMConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  initial_message_sequence: z
+    .union([
+      z.array(MessageCreate),
+      z.null(),
+      z.array(z.union([z.array(MessageCreate), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  include_base_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  include_multi_agent_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  include_base_tool_rules: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  include_default_source: z.union([z.boolean(), z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window_limit: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_reasoning_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  enable_reasoner: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  reasoning: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  from_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template: z.union([z.boolean(), z.undefined()]).optional(),
+  project: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_exec_environment_variables: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  memory_variables: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  identity_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
+  enable_sleeptime: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  response_format: z
+    .union([
+      TextResponseFormat,
+      JsonSchemaResponseFormat,
+      JsonObjectResponseFormat,
+      z.null(),
+      z.array(
+        z.union([
+          TextResponseFormat,
+          JsonSchemaResponseFormat,
+          JsonObjectResponseFormat,
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  timezone: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_files_open: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  per_file_view_window_char_limit: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+  in_context_message_ids: z
+    .union([z.array(z.string()), z.undefined()])
+    .optional(),
+  messages: z
+    .union([z.array(letta__schemas__agent_file__MessageSchema), z.undefined()])
+    .optional(),
+  files_agents: z.union([z.array(FileAgentSchema), z.undefined()]).optional(),
+  group_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+});
+
+export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
+export const RoundRobinManager = z.object({
+  manager_type: z.string().optional(),
+  max_turns: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
+export type SupervisorManager = z.infer<typeof SupervisorManager>;
+export const SupervisorManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+});
+
+export type DynamicManager = z.infer<typeof DynamicManager>;
+export const DynamicManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  termination_token: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_turns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type SleeptimeManager = z.infer<typeof SleeptimeManager>;
+export const SleeptimeManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  sleeptime_agent_frequency: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type VoiceSleeptimeManager = z.infer<typeof VoiceSleeptimeManager>;
+export const VoiceSleeptimeManager = z.object({
+  manager_type: z.union([z.string(), z.undefined()]).optional(),
+  manager_agent_id: z.string(),
+  max_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  min_message_buffer_length: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type GroupSchema = z.infer<typeof GroupSchema>;
+export const GroupSchema = z.object({
+  agent_ids: z.array(z.string()),
+  description: z.string(),
+  manager_config: z
+    .union([
+      RoundRobinManager,
+      SupervisorManager,
+      DynamicManager,
+      SleeptimeManager,
+      VoiceSleeptimeManager,
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+  id: z.string(),
+});
+
+export type BlockSchema = z.infer<typeof BlockSchema>;
+export const BlockSchema = z.object({
+  value: z.string(),
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  preserve_on_migration: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  label: z.string(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+});
+
+export type FileProcessingStatus = z.infer<typeof FileProcessingStatus>;
+export const FileProcessingStatus = z.union([
+  z.literal('pending'),
+  z.literal('parsing'),
+  z.literal('embedding'),
+  z.literal('completed'),
+  z.literal('error'),
+]);
+
+export type FileSchema = z.infer<typeof FileSchema>;
+export const FileSchema = z.object({
+  source_id: z.string(),
+  file_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  original_file_name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_path: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_creation_date: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  file_last_modified_date: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  processing_status: z.union([FileProcessingStatus, z.undefined()]).optional(),
+  error_message: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  total_chunks: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  chunks_embedded: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  content: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+});
+
+export type SourceSchema = z.infer<typeof SourceSchema>;
+export const SourceSchema = z.object({
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  instructions: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.string(),
+});
+
+export type ToolType = z.infer<typeof ToolType>;
+export const ToolType = z.union([
+  z.literal('custom'),
+  z.literal('letta_core'),
+  z.literal('letta_memory_core'),
+  z.literal('letta_multi_agent_core'),
+  z.literal('letta_sleeptime_core'),
+  z.literal('letta_voice_sleeptime_core'),
+  z.literal('letta_builtin'),
+  z.literal('letta_files_core'),
+  z.literal('external_composio'),
+  z.literal('external_langchain'),
+  z.literal('external_mcp'),
+]);
+
+export type PipRequirement = z.infer<typeof PipRequirement>;
+export const PipRequirement = z.object({
+  name: z.string(),
+  version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type NpmRequirement = z.infer<typeof NpmRequirement>;
+export const NpmRequirement = z.object({
+  name: z.string(),
+  version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type letta__schemas__agent_file__ToolSchema = z.infer<
+  typeof letta__schemas__agent_file__ToolSchema
+>;
+export const letta__schemas__agent_file__ToolSchema = z.object({
+  id: z.string(),
+  tool_type: z.union([ToolType, z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tags: z.union([z.array(z.string()), z.undefined()]).optional(),
+  source_code: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  args_json_schema: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  return_char_limit: z.union([z.number(), z.undefined()]).optional(),
+  pip_requirements: z
+    .union([
+      z.array(PipRequirement),
+      z.null(),
+      z.array(z.union([z.array(PipRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  npm_requirements: z
+    .union([
+      z.array(NpmRequirement),
+      z.null(),
+      z.array(z.union([z.array(NpmRequirement), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type MCPServerSchema = z.infer<typeof MCPServerSchema>;
+export const MCPServerSchema = z.object({
+  id: z.string(),
+  server_type: z.string(),
+  server_name: z.string(),
+  server_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stdio_config: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type AgentFileSchema = z.infer<typeof AgentFileSchema>;
+export const AgentFileSchema = z.object({
+  agents: z.array(letta__schemas__agent_file__AgentSchema),
+  groups: z.array(GroupSchema),
+  blocks: z.array(BlockSchema),
+  files: z.array(FileSchema),
+  sources: z.array(SourceSchema),
+  tools: z.array(letta__schemas__agent_file__ToolSchema),
+  mcp_servers: z.array(MCPServerSchema),
+  metadata: z.union([z.unknown(), z.undefined()]).optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type Block = z.infer<typeof Block>;
@@ -1017,47 +1835,6 @@ export const Memory = z.object({
   blocks: z.array(Block),
   file_blocks: z.union([z.array(FileBlock), z.undefined()]).optional(),
   prompt_template: z.union([z.string(), z.undefined()]).optional(),
-});
-
-export type ToolType = z.infer<typeof ToolType>;
-export const ToolType = z.union([
-  z.literal('custom'),
-  z.literal('letta_core'),
-  z.literal('letta_memory_core'),
-  z.literal('letta_multi_agent_core'),
-  z.literal('letta_sleeptime_core'),
-  z.literal('letta_voice_sleeptime_core'),
-  z.literal('letta_builtin'),
-  z.literal('letta_files_core'),
-  z.literal('external_composio'),
-  z.literal('external_langchain'),
-  z.literal('external_mcp'),
-]);
-
-export type PipRequirement = z.infer<typeof PipRequirement>;
-export const PipRequirement = z.object({
-  name: z.string(),
-  version: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type NpmRequirement = z.infer<typeof NpmRequirement>;
-export const NpmRequirement = z.object({
-  name: z.string(),
-  version: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
 });
 
 export type Tool = z.infer<typeof Tool>;
@@ -1752,6 +2529,12 @@ export const AuthResponse = z.object({
     .optional(),
 });
 
+export type BaseToolRuleSchema = z.infer<typeof BaseToolRuleSchema>;
+export const BaseToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+});
+
 export type JobStatus = z.infer<typeof JobStatus>;
 export const JobStatus = z.union([
   z.literal('created'),
@@ -1843,6 +2626,282 @@ export const BlockUpdate = z.object({
     .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+});
+
+export type CoreMemoryBlockSchema = z.infer<typeof CoreMemoryBlockSchema>;
+export const CoreMemoryBlockSchema = z.object({
+  created_at: z.string(),
+  description: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  is_template: z.boolean(),
+  label: z.string(),
+  limit: z.number(),
+  metadata_: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template_name: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  updated_at: z.string(),
+  value: z.string(),
+});
+
+export type letta__serialize_schemas__pydantic_agent_schema__MessageSchema =
+  z.infer<
+    typeof letta__serialize_schemas__pydantic_agent_schema__MessageSchema
+  >;
+export const letta__serialize_schemas__pydantic_agent_schema__MessageSchema =
+  z.object({
+    created_at: z.string(),
+    group_id: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    model: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    name: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    role: z.string(),
+    content: z.array(LettaMessageContentUnion),
+    tool_call_id: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    tool_calls: z.array(z.unknown()),
+    tool_returns: z.array(z.unknown()),
+    updated_at: z.string(),
+  });
+
+export type TagSchema = z.infer<typeof TagSchema>;
+export const TagSchema = z.object({
+  tag: z.string(),
+});
+
+export type ToolEnvVarSchema = z.infer<typeof ToolEnvVarSchema>;
+export const ToolEnvVarSchema = z.object({
+  created_at: z.string(),
+  description: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  key: z.string(),
+  updated_at: z.string(),
+  value: z.string(),
+});
+
+export type ChildToolRuleSchema = z.infer<typeof ChildToolRuleSchema>;
+export const ChildToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  children: z.array(z.string()),
+});
+
+export type MaxCountPerStepToolRuleSchema = z.infer<
+  typeof MaxCountPerStepToolRuleSchema
+>;
+export const MaxCountPerStepToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  max_count_limit: z.number(),
+});
+
+export type ConditionalToolRuleSchema = z.infer<
+  typeof ConditionalToolRuleSchema
+>;
+export const ConditionalToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.string(),
+  default_child: z.union([
+    z.string(),
+    z.null(),
+    z.array(z.union([z.string(), z.null()])),
+  ]),
+  child_output_mapping: z.unknown(),
+  require_output_mapping: z.boolean(),
+});
+
+export type ParameterProperties = z.infer<typeof ParameterProperties>;
+export const ParameterProperties = z.object({
+  type: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ParametersSchema = z.infer<typeof ParametersSchema>;
+export const ParametersSchema = z.object({
+  type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  properties: z.unknown(),
+  required: z.union([z.array(z.string()), z.undefined()]).optional(),
+});
+
+export type ToolJSONSchema = z.infer<typeof ToolJSONSchema>;
+export const ToolJSONSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  parameters: ParametersSchema,
+  type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  required: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type letta__serialize_schemas__pydantic_agent_schema__ToolSchema =
+  z.infer<typeof letta__serialize_schemas__pydantic_agent_schema__ToolSchema>;
+export const letta__serialize_schemas__pydantic_agent_schema__ToolSchema =
+  z.object({
+    args_json_schema: z.union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+    ]),
+    created_at: z.string(),
+    description: z.string(),
+    json_schema: ToolJSONSchema,
+    name: z.string(),
+    return_char_limit: z.number(),
+    source_code: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    source_type: z.string(),
+    tags: z.array(z.string()),
+    tool_type: z.string(),
+    updated_at: z.string(),
+    metadata_: z
+      .union([
+        z.unknown(),
+        z.null(),
+        z.array(z.union([z.unknown(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+  });
+
+export type letta__serialize_schemas__pydantic_agent_schema__AgentSchema =
+  z.infer<typeof letta__serialize_schemas__pydantic_agent_schema__AgentSchema>;
+export const letta__serialize_schemas__pydantic_agent_schema__AgentSchema =
+  z.object({
+    agent_type: z.string(),
+    core_memory: z.array(CoreMemoryBlockSchema),
+    created_at: z.string(),
+    description: z.union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+    ]),
+    embedding_config: EmbeddingConfig,
+    llm_config: LLMConfig,
+    message_buffer_autoclear: z.boolean(),
+    in_context_message_indices: z.array(z.number()),
+    messages: z.array(
+      letta__serialize_schemas__pydantic_agent_schema__MessageSchema,
+    ),
+    metadata_: z
+      .union([
+        z.unknown(),
+        z.null(),
+        z.array(z.union([z.unknown(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    multi_agent_group: z.union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+    ]),
+    name: z.string(),
+    system: z.string(),
+    tags: z.array(TagSchema),
+    tool_exec_environment_variables: z.array(ToolEnvVarSchema),
+    tool_rules: z.array(
+      z.union([
+        BaseToolRuleSchema,
+        ChildToolRuleSchema,
+        MaxCountPerStepToolRuleSchema,
+        ConditionalToolRuleSchema,
+        z.array(
+          z.union([
+            BaseToolRuleSchema,
+            ChildToolRuleSchema,
+            MaxCountPerStepToolRuleSchema,
+            ConditionalToolRuleSchema,
+          ]),
+        ),
+      ]),
+    ),
+    tools: z.array(letta__serialize_schemas__pydantic_agent_schema__ToolSchema),
+    updated_at: z.string(),
+    version: z.string(),
+  });
+
+export type Body_export_agent_serialized = z.infer<
+  typeof Body_export_agent_serialized
+>;
+export const Body_export_agent_serialized = z.object({
+  spec: z
+    .union([
+      AgentFileSchema,
+      z.null(),
+      z.array(z.union([AgentFileSchema, z.null()])),
+    ])
+    .optional(),
+  legacy_spec: z
+    .union([
+      letta__serialize_schemas__pydantic_agent_schema__AgentSchema,
+      z.null(),
+      z.array(
+        z.union([
+          letta__serialize_schemas__pydantic_agent_schema__AgentSchema,
+          z.null(),
+        ]),
+      ),
+    ])
     .optional(),
 });
 
@@ -3191,15 +4250,6 @@ export const FunctionTool = z.intersection(
   }),
 );
 
-export type MessageRole = z.infer<typeof MessageRole>;
-export const MessageRole = z.union([
-  z.literal('assistant'),
-  z.literal('user'),
-  z.literal('tool'),
-  z.literal('function'),
-  z.literal('system'),
-]);
-
 export type ToolReturn = z.infer<typeof ToolReturn>;
 export const ToolReturn = z.object({
   status: z.union([z.literal('success'), z.literal('error')]),
@@ -3411,109 +4461,6 @@ export const ContextWindowOverview = z.object({
   ]),
   num_tokens_messages: z.number(),
   messages: z.array(Message),
-});
-
-export type CreateBlock = z.infer<typeof CreateBlock>;
-export const CreateBlock = z.object({
-  value: z.string(),
-  limit: z.union([z.number(), z.undefined()]).optional(),
-  project_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  is_template: z.union([z.boolean(), z.undefined()]).optional(),
-  preserve_on_migration: z
-    .union([
-      z.boolean(),
-      z.null(),
-      z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  label: z.string(),
-  read_only: z.union([z.boolean(), z.undefined()]).optional(),
-  description: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  metadata: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type MessageCreate = z.infer<typeof MessageCreate>;
-export const MessageCreate = z.object({
-  role: z.union([
-    z.literal('user'),
-    z.literal('system'),
-    z.literal('assistant'),
-  ]),
-  content: z.union([
-    z.array(LettaMessageContentUnion),
-    z.string(),
-    z.array(z.union([z.array(LettaMessageContentUnion), z.string()])),
-  ]),
-  name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  otid: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  sender_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  batch_item_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  group_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
 });
 
 export type CreateAgentRequest = z.infer<typeof CreateAgentRequest>;
@@ -3773,28 +4720,6 @@ export const DuplicateFileHandling = z.union([
   z.literal('suffix'),
 ]);
 
-export type DynamicManager = z.infer<typeof DynamicManager>;
-export const DynamicManager = z.object({
-  manager_type: z.union([z.string(), z.undefined()]).optional(),
-  manager_agent_id: z.string(),
-  termination_token: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  max_turns: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
 export type DynamicManagerUpdate = z.infer<typeof DynamicManagerUpdate>;
 export const DynamicManagerUpdate = z.object({
   manager_type: z.string().optional(),
@@ -3828,15 +4753,6 @@ export type FeedbackType = z.infer<typeof FeedbackType>;
 export const FeedbackType = z.union([
   z.literal('positive'),
   z.literal('negative'),
-]);
-
-export type FileProcessingStatus = z.infer<typeof FileProcessingStatus>;
-export const FileProcessingStatus = z.union([
-  z.literal('pending'),
-  z.literal('parsing'),
-  z.literal('embedding'),
-  z.literal('completed'),
-  z.literal('error'),
 ]);
 
 export type FileMetadata = z.infer<typeof FileMetadata>;
@@ -4071,56 +4987,6 @@ export const GenerateToolOutput = z.object({
   tool: Tool,
   sample_args: z.unknown(),
   response: z.string(),
-});
-
-export type RoundRobinManager = z.infer<typeof RoundRobinManager>;
-export const RoundRobinManager = z.object({
-  manager_type: z.string().optional(),
-  max_turns: z
-    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
-    .optional(),
-});
-
-export type SupervisorManager = z.infer<typeof SupervisorManager>;
-export const SupervisorManager = z.object({
-  manager_type: z.union([z.string(), z.undefined()]).optional(),
-  manager_agent_id: z.string(),
-});
-
-export type SleeptimeManager = z.infer<typeof SleeptimeManager>;
-export const SleeptimeManager = z.object({
-  manager_type: z.union([z.string(), z.undefined()]).optional(),
-  manager_agent_id: z.string(),
-  sleeptime_agent_frequency: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type VoiceSleeptimeManager = z.infer<typeof VoiceSleeptimeManager>;
-export const VoiceSleeptimeManager = z.object({
-  manager_type: z.union([z.string(), z.undefined()]).optional(),
-  manager_agent_id: z.string(),
-  max_message_buffer_length: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  min_message_buffer_length: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
 });
 
 export type GroupCreate = z.infer<typeof GroupCreate>;
@@ -4485,6 +5351,11 @@ export const IdentityUpsert = z.object({
       z.undefined(),
     ])
     .optional(),
+});
+
+export type ImportedAgentsResponse = z.infer<typeof ImportedAgentsResponse>;
+export const ImportedAgentsResponse = z.object({
+  agent_ids: z.array(z.string()),
 });
 
 export type Job = z.infer<typeof Job>;
@@ -7699,6 +8570,7 @@ export const get_Export_agent_serialized = {
   parameters: z.object({
     query: z.object({
       max_steps: z.number().optional(),
+      use_legacy_format: z.boolean().optional(),
     }),
     path: z.object({
       agent_id: z.string(),
@@ -7708,11 +8580,7 @@ export const get_Export_agent_serialized = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: z.union([
-      AgentSchema,
-      z.null(),
-      z.array(z.union([AgentSchema, z.null()])),
-    ]),
+    body: Body_export_agent_serialized,
   }),
   response: z.string(),
 };
@@ -7730,7 +8598,7 @@ export const post_Import_agent_serialized = {
     }),
     body: Body_import_agent_serialized,
   }),
-  response: AgentState,
+  response: ImportedAgentsResponse,
 };
 
 export type get_Retrieve_agent_context_window =

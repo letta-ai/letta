@@ -87,33 +87,48 @@ export type AgentEnvironmentVariable = {
   agent_id: string;
 };
 
-export type AgentSchema = {
-  agent_type: string;
-  core_memory: Array<CoreMemoryBlockSchema>;
-  created_at: string;
-  description: string | null;
-  embedding_config: EmbeddingConfig;
-  llm_config: LLMConfig;
-  message_buffer_autoclear: boolean;
-  in_context_message_indices: Array<number>;
-  messages: Array<MessageSchema>;
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-  multi_agent_group: unknown | null;
-  name: string;
-  system: string;
-  tags: Array<TagSchema>;
-  tool_exec_environment_variables: Array<ToolEnvVarSchema>;
-  tool_rules: Array<
-    | BaseToolRuleSchema
-    | ChildToolRuleSchema
-    | MaxCountPerStepToolRuleSchema
-    | ConditionalToolRuleSchema
-  >;
-  tools: Array<ToolSchema>;
-  updated_at: string;
-  version: string;
+/**
+ * Schema for serialized agent file that can be exported to JSON and imported into agent server.
+ */
+export type AgentFileSchema = {
+  /**
+   * List of agents in this agent file
+   */
+  agents: Array<letta__schemas__agent_file__AgentSchema>;
+  /**
+   * List of groups in this agent file
+   */
+  groups: Array<GroupSchema>;
+  /**
+   * List of memory blocks in this agent file
+   */
+  blocks: Array<BlockSchema>;
+  /**
+   * List of files in this agent file
+   */
+  files: Array<FileSchema>;
+  /**
+   * List of sources in this agent file
+   */
+  sources: Array<SourceSchema>;
+  /**
+   * List of tools in this agent file
+   */
+  tools: Array<letta__schemas__agent_file__ToolSchema>;
+  /**
+   * List of MCP servers in this agent file
+   */
+  mcp_servers: Array<MCPServerSchema>;
+  /**
+   * Metadata for this agent file, including revision_id and other export information.
+   */
+  metadata?: {
+    [key: string]: string;
+  };
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string | null;
 };
 
 /**
@@ -584,6 +599,55 @@ export type Block = {
 };
 
 /**
+ * Block with human-readable ID for agent file
+ */
+export type BlockSchema = {
+  /**
+   * Value of the block.
+   */
+  value: string;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  is_template?: boolean;
+  /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean | null;
+  /**
+   * Label of the block.
+   */
+  label: string;
+  /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Human-readable identifier for this block in the file
+   */
+  id: string;
+};
+
+/**
  * Update a block
  */
 export type BlockUpdate = {
@@ -629,6 +693,11 @@ export type BlockUpdate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+};
+
+export type Body_export_agent_serialized = {
+  spec?: AgentFileSchema | null;
+  legacy_spec?: letta__serialize_schemas__pydantic_agent_schema__AgentSchema | null;
 };
 
 export type Body_import_agent_serialized = {
@@ -1578,6 +1647,52 @@ export type File = {
   type: 'file';
 };
 
+/**
+ * File-Agent relationship with human-readable ID for agent file
+ */
+export type FileAgentSchema = {
+  /**
+   * Unique identifier of the agent.
+   */
+  agent_id: string;
+  /**
+   * Unique identifier of the file.
+   */
+  file_id: string;
+  /**
+   * Unique identifier of the source.
+   */
+  source_id: string;
+  /**
+   * Name of the file.
+   */
+  file_name: string;
+  /**
+   * True if the agent currently has the file open.
+   */
+  is_open?: boolean;
+  /**
+   * Portion of the file the agent is focused on (may be large).
+   */
+  visible_content?: string | null;
+  /**
+   * UTC timestamp of the agent's most recent access to this file.
+   */
+  last_accessed_at?: string | null;
+  /**
+   * Starting line number (1-indexed) when file was opened with line range.
+   */
+  start_line?: number | null;
+  /**
+   * Ending line number (exclusive) when file was opened with line range.
+   */
+  end_line?: number | null;
+  /**
+   * Human-readable identifier for this file-agent relationship in the file
+   */
+  id: string;
+};
+
 export type FileBlock = {
   /**
    * Value of the block.
@@ -1737,6 +1852,68 @@ export type FileProcessingStatus =
   | 'embedding'
   | 'completed'
   | 'error';
+
+/**
+ * File with human-readable ID for agent file
+ */
+export type FileSchema = {
+  /**
+   * The unique identifier of the source associated with the document.
+   */
+  source_id: string;
+  /**
+   * The name of the file.
+   */
+  file_name?: string | null;
+  /**
+   * The original name of the file as uploaded.
+   */
+  original_file_name?: string | null;
+  /**
+   * The path to the file.
+   */
+  file_path?: string | null;
+  /**
+   * The type of the file (MIME type).
+   */
+  file_type?: string | null;
+  /**
+   * The size of the file in bytes.
+   */
+  file_size?: number | null;
+  /**
+   * The creation date of the file.
+   */
+  file_creation_date?: string | null;
+  /**
+   * The last modified date of the file.
+   */
+  file_last_modified_date?: string | null;
+  /**
+   * The current processing status of the file (e.g. pending, parsing, embedding, completed, error).
+   */
+  processing_status?: FileProcessingStatus;
+  /**
+   * Optional error message if the file failed processing.
+   */
+  error_message?: string | null;
+  /**
+   * Total number of chunks for the file.
+   */
+  total_chunks?: number | null;
+  /**
+   * Number of chunks that have been embedded.
+   */
+  chunks_embedded?: number | null;
+  /**
+   * Optional full-text content of the file; only populated on demand due to its size.
+   */
+  content?: string | null;
+  /**
+   * Human-readable identifier for this file in the file
+   */
+  id: string;
+};
 
 /**
  * File statistics for metadata endpoint
@@ -1935,6 +2112,29 @@ export type GroupCreate = {
    */
   project_id?: string | null;
   shared_block_ids?: Array<string>;
+};
+
+/**
+ * Group with human-readable ID for agent file
+ */
+export type GroupSchema = {
+  agent_ids: Array<string>;
+  description: string;
+  manager_config?:
+    | RoundRobinManager
+    | SupervisorManager
+    | DynamicManager
+    | SleeptimeManager
+    | VoiceSleeptimeManager;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  shared_block_ids?: Array<string>;
+  /**
+   * Human-readable identifier for this group in the file
+   */
+  id: string;
 };
 
 export type GroupUpdate = {
@@ -2175,6 +2375,16 @@ export type ImageURL = {
 };
 
 export type detail = 'auto' | 'low' | 'high';
+
+/**
+ * Response model for imported agents
+ */
+export type ImportedAgentsResponse = {
+  /**
+   * List of IDs of the imported agents
+   */
+  agent_ids: Array<string>;
+};
 
 /**
  * Represents the initial tool rule configuration.
@@ -2721,6 +2931,25 @@ export type LocalSandboxConfig = {
   pip_requirements?: Array<PipRequirement>;
 };
 
+/**
+ * MCP server schema for agent files with remapped ID.
+ */
+export type MCPServerSchema = {
+  /**
+   * Human-readable MCP server ID
+   */
+  id: string;
+  server_type: string;
+  server_name: string;
+  server_url?: string | null;
+  stdio_config?: {
+    [key: string]: unknown;
+  } | null;
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+};
+
 export type MCPServerType = 'sse' | 'stdio' | 'streamable_http';
 
 /**
@@ -2942,19 +3171,6 @@ export type MessageCreate = {
 export type role = 'user' | 'system' | 'assistant';
 
 export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
-
-export type MessageSchema = {
-  created_at: string;
-  group_id: string | null;
-  model: string | null;
-  name: string | null;
-  role: string;
-  content: Array<LettaMessageContentUnion>;
-  tool_call_id: string | null;
-  tool_calls: Array<unknown>;
-  tool_returns: Array<unknown>;
-  updated_at: string;
-};
 
 export type MessageType =
   | 'system_message'
@@ -3879,6 +4095,46 @@ export type SourceCreate = {
 };
 
 /**
+ * Source with human-readable ID for agent file
+ */
+export type SourceSchema = {
+  /**
+   * The name of the source.
+   */
+  name: string;
+  /**
+   * The description of the source.
+   */
+  description?: string | null;
+  /**
+   * Instructions for how to use the source.
+   */
+  instructions?: string | null;
+  /**
+   * Metadata associated with the source.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The handle for the embedding config used by the source.
+   */
+  embedding?: string | null;
+  /**
+   * The chunk size of the embedding.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * (Legacy) The embedding configuration used by the source.
+   */
+  embedding_config?: EmbeddingConfig | null;
+  /**
+   * Human-readable identifier for this source in the file
+   */
+  id: string;
+};
+
+/**
  * Aggregated metadata for a source
  */
 export type SourceStats = {
@@ -4520,23 +4776,6 @@ export type ToolRunFromSource = {
   npm_requirements?: Array<NpmRequirement> | null;
 };
 
-export type ToolSchema = {
-  args_json_schema: unknown | null;
-  created_at: string;
-  description: string;
-  json_schema: ToolJSONSchema;
-  name: string;
-  return_char_limit: number;
-  source_code: string | null;
-  source_type: string;
-  tags: Array<string>;
-  tool_type: string;
-  updated_at: string;
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-};
-
 export type ToolType =
   | 'custom'
   | 'letta_core'
@@ -4988,6 +5227,401 @@ export type WebSearchOptionsUserLocationApproximate = {
   country?: string;
   region?: string;
   timezone?: string;
+};
+
+/**
+ * Agent with human-readable ID for agent file
+ */
+export type letta__schemas__agent_file__AgentSchema = {
+  /**
+   * The name of the agent.
+   */
+  name?: string;
+  /**
+   * The blocks to create in the agent's in-context memory.
+   */
+  memory_blocks?: Array<CreateBlock> | null;
+  /**
+   * The tools used by the agent.
+   */
+  tools?: Array<string> | null;
+  /**
+   * The ids of the tools used by the agent.
+   */
+  tool_ids?: Array<string> | null;
+  /**
+   * The ids of the sources used by the agent.
+   */
+  source_ids?: Array<string> | null;
+  /**
+   * The ids of the blocks used by the agent.
+   */
+  block_ids?: Array<string> | null;
+  /**
+   * The tool rules governing the agent.
+   */
+  tool_rules?: Array<
+    | ChildToolRule
+    | InitToolRule
+    | TerminalToolRule
+    | ConditionalToolRule
+    | ContinueToolRule
+    | RequiredBeforeExitToolRule
+    | MaxCountPerStepToolRule
+    | ParentToolRule
+  > | null;
+  /**
+   * The tags associated with the agent.
+   */
+  tags?: Array<string> | null;
+  /**
+   * The system prompt used by the agent.
+   */
+  system?: string | null;
+  /**
+   * The type of agent.
+   */
+  agent_type?: AgentType;
+  /**
+   * The LLM configuration used by the agent.
+   */
+  llm_config?: LLMConfig | null;
+  /**
+   * The embedding configuration used by the agent.
+   */
+  embedding_config?: EmbeddingConfig | null;
+  /**
+   * The initial set of messages to put in the agent's in-context memory.
+   */
+  initial_message_sequence?: Array<MessageCreate> | null;
+  /**
+   * If true, attaches the Letta core tools (e.g. core_memory related functions).
+   */
+  include_base_tools?: boolean;
+  /**
+   * If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).
+   */
+  include_multi_agent_tools?: boolean;
+  /**
+   * If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).
+   */
+  include_base_tool_rules?: boolean | null;
+  /**
+   * If true, automatically creates and attaches a default data source for this agent.
+   */
+  include_default_source?: boolean;
+  /**
+   * The description of the agent.
+   */
+  description?: string | null;
+  /**
+   * The metadata of the agent.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.
+   */
+  model?: string | null;
+  /**
+   * The embedding configuration handle used by the agent, specified in the format provider/model-name.
+   */
+  embedding?: string | null;
+  /**
+   * The context window limit used by the agent.
+   */
+  context_window_limit?: number | null;
+  /**
+   * The embedding chunk size used by the agent.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.
+   */
+  max_tokens?: number | null;
+  /**
+   * The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value.
+   */
+  max_reasoning_tokens?: number | null;
+  /**
+   * Whether to enable internal extended thinking step for a reasoner model.
+   */
+  enable_reasoner?: boolean | null;
+  /**
+   * Whether to enable reasoning for this agent.
+   */
+  reasoning?: boolean | null;
+  /**
+   * The template id used to configure the agent
+   */
+  from_template?: string | null;
+  /**
+   * Whether the agent is a template
+   */
+  template?: boolean;
+  /**
+   * Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.
+   * @deprecated
+   */
+  project?: string | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The variables that should be set for the agent.
+   */
+  memory_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The id of the project the agent belongs to.
+   */
+  project_id?: string | null;
+  /**
+   * The id of the template the agent belongs to.
+   */
+  template_id?: string | null;
+  /**
+   * The base template id of the agent.
+   */
+  base_template_id?: string | null;
+  /**
+   * The ids of the identities associated with this agent.
+   */
+  identity_ids?: Array<string> | null;
+  /**
+   * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
+   */
+  message_buffer_autoclear?: boolean;
+  /**
+   * If set to True, memory management will move to a background agent thread.
+   */
+  enable_sleeptime?: boolean | null;
+  /**
+   * The response format for the agent.
+   */
+  response_format?:
+    | TextResponseFormat
+    | JsonSchemaResponseFormat
+    | JsonObjectResponseFormat
+    | null;
+  /**
+   * The timezone of the agent (IANA format).
+   */
+  timezone?: string | null;
+  /**
+   * Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  max_files_open?: number | null;
+  /**
+   * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  per_file_view_window_char_limit?: number | null;
+  /**
+   * If set to True, the agent will be hidden.
+   */
+  hidden?: boolean | null;
+  /**
+   * Human-readable identifier for this agent in the file
+   */
+  id: string;
+  /**
+   * List of message IDs that are currently in the agent's context
+   */
+  in_context_message_ids?: Array<string>;
+  /**
+   * List of messages in the agent's conversation history
+   */
+  messages?: Array<letta__schemas__agent_file__MessageSchema>;
+  /**
+   * List of file-agent relationships for this agent
+   */
+  files_agents?: Array<FileAgentSchema>;
+  /**
+   * List of groups that the agent manages
+   */
+  group_ids?: Array<string>;
+};
+
+/**
+ * Message with human-readable ID for agent file
+ */
+export type letta__schemas__agent_file__MessageSchema = {
+  /**
+   * The role of the participant.
+   */
+  role: MessageRole;
+  /**
+   * The content of the message.
+   */
+  content: Array<LettaMessageContentUnion> | string;
+  /**
+   * The name of the participant.
+   */
+  name?: string | null;
+  /**
+   * The offline threading id associated with this message
+   */
+  otid?: string | null;
+  /**
+   * The id of the sender of the message, can be an identity id or agent id
+   */
+  sender_id?: string | null;
+  /**
+   * The id of the LLMBatchItem that this message is associated with
+   */
+  batch_item_id?: string | null;
+  /**
+   * The multi-agent group that the message was sent in
+   */
+  group_id?: string | null;
+  /**
+   * Human-readable identifier for this message in the file
+   */
+  id: string;
+  /**
+   * The model used to make the function call
+   */
+  model?: string | null;
+  /**
+   * The unique identifier of the agent
+   */
+  agent_id?: string | null;
+};
+
+/**
+ * Tool with human-readable ID for agent file
+ */
+export type letta__schemas__agent_file__ToolSchema = {
+  /**
+   * Human-readable identifier for this tool in the file
+   */
+  id: string;
+  /**
+   * The type of the tool.
+   */
+  tool_type?: ToolType;
+  /**
+   * The description of the tool.
+   */
+  description?: string | null;
+  /**
+   * The type of the source code.
+   */
+  source_type?: string | null;
+  /**
+   * The name of the function.
+   */
+  name?: string | null;
+  /**
+   * Metadata tags.
+   */
+  tags?: Array<string>;
+  /**
+   * The source code of the function.
+   */
+  source_code?: string | null;
+  /**
+   * The JSON schema of the function.
+   */
+  json_schema?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The args JSON schema of the function.
+   */
+  args_json_schema?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The maximum number of characters in the response.
+   */
+  return_char_limit?: number;
+  /**
+   * Optional list of pip packages required by this tool.
+   */
+  pip_requirements?: Array<PipRequirement> | null;
+  /**
+   * Optional list of npm packages required by this tool.
+   */
+  npm_requirements?: Array<NpmRequirement> | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this Tool.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * A dictionary of additional metadata for the tool.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+export type letta__serialize_schemas__pydantic_agent_schema__AgentSchema = {
+  agent_type: string;
+  core_memory: Array<CoreMemoryBlockSchema>;
+  created_at: string;
+  description: string | null;
+  embedding_config: EmbeddingConfig;
+  llm_config: LLMConfig;
+  message_buffer_autoclear: boolean;
+  in_context_message_indices: Array<number>;
+  messages: Array<letta__serialize_schemas__pydantic_agent_schema__MessageSchema>;
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
+  multi_agent_group: unknown | null;
+  name: string;
+  system: string;
+  tags: Array<TagSchema>;
+  tool_exec_environment_variables: Array<ToolEnvVarSchema>;
+  tool_rules: Array<
+    | BaseToolRuleSchema
+    | ChildToolRuleSchema
+    | MaxCountPerStepToolRuleSchema
+    | ConditionalToolRuleSchema
+  >;
+  tools: Array<letta__serialize_schemas__pydantic_agent_schema__ToolSchema>;
+  updated_at: string;
+  version: string;
+};
+
+export type letta__serialize_schemas__pydantic_agent_schema__MessageSchema = {
+  created_at: string;
+  group_id: string | null;
+  model: string | null;
+  name: string | null;
+  role: string;
+  content: Array<LettaMessageContentUnion>;
+  tool_call_id: string | null;
+  tool_calls: Array<unknown>;
+  tool_returns: Array<unknown>;
+  updated_at: string;
+};
+
+export type letta__serialize_schemas__pydantic_agent_schema__ToolSchema = {
+  args_json_schema: unknown | null;
+  created_at: string;
+  description: string;
+  json_schema: ToolJSONSchema;
+  name: string;
+  return_char_limit: number;
+  source_code: string | null;
+  source_type: string;
+  tags: Array<string>;
+  tool_type: string;
+  updated_at: string;
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type openai__types__chat__chat_completion_message_tool_call_param__Function =
@@ -5577,7 +6211,11 @@ export type CountAgentsResponse = number;
 export type ExportAgentSerializedData = {
   agentId: string;
   maxSteps?: number;
-  requestBody?: AgentSchema | null;
+  requestBody?: Body_export_agent_serialized;
+  /**
+   * If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.
+   */
+  useLegacyFormat?: boolean;
   userId?: string | null;
 };
 
@@ -5588,7 +6226,7 @@ export type ImportAgentSerializedData = {
   userId?: string | null;
 };
 
-export type ImportAgentSerializedResponse = AgentState;
+export type ImportAgentSerializedResponse = ImportedAgentsResponse;
 
 export type RetrieveAgentContextWindowData = {
   agentId: string;
@@ -7651,7 +8289,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: AgentState;
+        200: ImportedAgentsResponse;
         /**
          * Validation Error
          */

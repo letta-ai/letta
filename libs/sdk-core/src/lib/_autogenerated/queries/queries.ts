@@ -33,9 +33,9 @@ import {
   VoiceService,
 } from '../requests/services.gen';
 import {
-  AgentSchema,
   AuthRequest,
   BlockUpdate,
+  Body_export_agent_serialized,
   Body_import_agent_serialized,
   Body_upload_file_to_folder,
   Body_upload_file_to_source,
@@ -1127,9 +1127,14 @@ export const useAgentsServiceCountAgents = <
 /**
  * Export Agent Serialized
  * Export the serialized JSON representation of an agent, formatted with indentation.
+ *
+ * Supports two export formats:
+ * - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
+ * - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.maxSteps
+ * @param data.useLegacyFormat If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.
  * @param data.userId
  * @param data.requestBody
  * @returns string Successful Response
@@ -1144,11 +1149,13 @@ export const useAgentsServiceExportAgentSerialized = <
     agentId,
     maxSteps,
     requestBody,
+    useLegacyFormat,
     userId,
   }: {
     agentId: string;
     maxSteps?: number;
-    requestBody?: AgentSchema;
+    requestBody?: Body_export_agent_serialized;
+    useLegacyFormat?: boolean;
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -1156,7 +1163,7 @@ export const useAgentsServiceExportAgentSerialized = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn(
-      { agentId, maxSteps, requestBody, userId },
+      { agentId, maxSteps, requestBody, useLegacyFormat, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -1164,6 +1171,7 @@ export const useAgentsServiceExportAgentSerialized = <
         agentId,
         maxSteps,
         requestBody,
+        useLegacyFormat,
         userId,
       }) as TData,
     ...options,
@@ -4005,11 +4013,12 @@ export const useAgentsServiceCreateAgent = <
   });
 /**
  * Import Agent Serialized
- * Import a serialized agent file and recreate the agent in the system.
+ * Import a serialized agent file and recreate the agent(s) in the system.
+ * Returns the IDs of all imported agents.
  * @param data The data for the request.
  * @param data.formData
  * @param data.userId
- * @returns AgentState Successful Response
+ * @returns ImportedAgentsResponse Successful Response
  * @throws ApiError
  */
 export const useAgentsServiceImportAgentSerialized = <

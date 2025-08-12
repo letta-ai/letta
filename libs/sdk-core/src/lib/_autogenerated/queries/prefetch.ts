@@ -26,7 +26,7 @@ import {
   UsersService,
 } from '../requests/services.gen';
 import {
-  AgentSchema,
+  Body_export_agent_serialized,
   IdentityType,
   ManagerType,
   MessageRole,
@@ -905,9 +905,14 @@ export const prefetchUseAgentsServiceCountAgents = (
 /**
  * Export Agent Serialized
  * Export the serialized JSON representation of an agent, formatted with indentation.
+ *
+ * Supports two export formats:
+ * - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
+ * - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.maxSteps
+ * @param data.useLegacyFormat If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.
  * @param data.userId
  * @param data.requestBody
  * @returns string Successful Response
@@ -919,11 +924,13 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
     agentId,
     maxSteps,
     requestBody,
+    useLegacyFormat,
     userId,
   }: {
     agentId: string;
     maxSteps?: number;
-    requestBody?: AgentSchema;
+    requestBody?: Body_export_agent_serialized;
+    useLegacyFormat?: boolean;
     userId?: string;
   },
 ) =>
@@ -932,6 +939,7 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
       agentId,
       maxSteps,
       requestBody,
+      useLegacyFormat,
       userId,
     }),
     queryFn: () =>
@@ -939,6 +947,7 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
         agentId,
         maxSteps,
         requestBody,
+        useLegacyFormat,
         userId,
       }),
   });

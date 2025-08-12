@@ -96,6 +96,7 @@ export async function getAgentfile(
   };
 }
 
+
 type UpdateAgentfileAccessLevelRequest = ServerInferRequest<
   typeof contracts.agentfile.updateAgentfileAccessLevel
 >;

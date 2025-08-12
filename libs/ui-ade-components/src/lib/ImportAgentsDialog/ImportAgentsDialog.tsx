@@ -4,26 +4,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   UseAgentsServiceListAgentsKeyFn,
   useAgentsServiceImportAgentSerialized,
-  zodTypes,
 } from '@letta-cloud/sdk-core';
-import type {
-  AgentSchema,
-  ToolSchema,
-  MessageSchema,
-} from '@letta-cloud/sdk-core';
+import type { AgentFileSchema } from '@letta-cloud/sdk-core';
 import {
   Alert,
-  ArrowLeftIcon,
   Button,
-  Dialog,
-  EyeOpenIcon,
   FormField,
   FormProvider,
   HStack,
-  InfoTooltip,
+  JSONViewer,
   LettaInvaderIcon,
   MiniApp,
-  RawCodeEditor,
   Select,
   Switch,
   toast,
@@ -45,7 +36,7 @@ interface ImportAgentsDialogProps {
   defaultTemplateImport?: boolean;
   projectId?: string;
   onSuccess?: (redirectId: string, template?: boolean) => void;
-  agentfileData?: AgentSchema;
+  agentfileData?: AgentFileSchema;
 }
 
 interface AgentsDialogSidebarProps {
@@ -212,271 +203,6 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
   );
 }
 
-interface PreviewBlockProps {
-  title: string;
-  value: string;
-  italic?: boolean;
-  info?: string;
-}
-
-function PreviewBlock(props: PreviewBlockProps) {
-  const { title, italic, info, value } = props;
-
-  return (
-    <VStack paddingX="medium">
-      <HStack gap="small">
-        <Typography variant="body3" bold>
-          {title}
-        </Typography>
-        {info && <InfoTooltip text={info} />}
-      </HStack>
-      <Typography italic={italic} variant="body3">
-        {value}
-      </Typography>
-    </VStack>
-  );
-}
-
-interface SectionBlockProps {
-  title: string;
-  children: React.ReactNode;
-}
-
-function SectionBlock(props: SectionBlockProps) {
-  const { title, children } = props;
-
-  return (
-    <VStack gap="small" borderBottom paddingBottom="large" fullWidth>
-      <VStack padding="small">
-        <Typography uppercase variant="body3" bold>
-          {title}
-        </Typography>
-      </VStack>
-      <VStack gap="large">{children}</VStack>
-    </VStack>
-  );
-}
-
-interface ToolPreviewDialogProps {
-  tool: ToolSchema;
-}
-
-function ToolPreviewDialog(props: ToolPreviewDialogProps) {
-  const { tool } = props;
-  const t = useTranslations('ImportAgentsDialog');
-
-  if (tool.tool_type.includes('letta')) {
-    return (
-      <HStack align="center" padding="xxsmall" border>
-        <Typography font="mono" variant="body3">
-          {tool.name}
-        </Typography>
-      </HStack>
-    );
-  }
-
-  return (
-    <Dialog
-      size="xlarge"
-      hideConfirm
-      cancelText={t('AgentPreview.tools.dialog.close')}
-      title={t('AgentPreview.tools.dialog.title', {
-        name: tool.name,
-      })}
-      trigger={
-        <HStack
-          className="cursor-pointer"
-          align="center"
-          padding="xxsmall"
-          border
-        >
-          <Typography font="mono" variant="body3">
-            {tool.name}
-          </Typography>
-          <EyeOpenIcon size="xsmall" />
-        </HStack>
-      }
-    >
-      <RawCodeEditor
-        label=""
-        fullWidth
-        hideLabel
-        fontSize="small"
-        showLineNumbers={false}
-        language="javascript"
-        code={tool?.source_code || ''}
-      />
-    </Dialog>
-  );
-}
-
-interface MessagesPreviewDialogProps {
-  messages: MessageSchema[];
-}
-
-function MessagesPreviewDialog(props: MessagesPreviewDialogProps) {
-  const { messages } = props;
-  const t = useTranslations('ImportAgentsDialog');
-
-  return (
-    <Dialog
-      hideConfirm
-      size="xlarge"
-      cancelText={t('MessagesPreviewDialog.close')}
-      title={t('MessagesPreviewDialog.title')}
-      trigger={
-        <Button
-          color="secondary"
-          size="small"
-          label={t('MessagesPreviewDialog.trigger')}
-        />
-      }
-    >
-      <RawCodeEditor
-        label=""
-        fullWidth
-        hideLabel
-        fontSize="small"
-        showLineNumbers={false}
-        language="javascript"
-        code={JSON.stringify(messages, null, 2)}
-      />
-    </Dialog>
-  );
-}
-
-interface AgentPreviewProps {
-  schema: Partial<AgentSchema>;
-}
-
-function AgentPreview(props: AgentPreviewProps) {
-  const { schema } = props;
-
-  const t = useTranslations('ImportAgentsDialog');
-
-  return (
-    <VStack overflowY="auto" fullWidth fullHeight>
-      <VStack
-        className="border-[50px] border-background-grey"
-        fullWidth
-        fullHeight
-        color="background"
-      >
-        <VStack color="background" className="shadow-lg">
-          <SectionBlock title={t('AgentPreview.general')}>
-            <PreviewBlock
-              info={t('AgentPreview.name.info')}
-              title={t('AgentPreview.name.label')}
-              value={schema?.name || ''}
-            />
-            <PreviewBlock
-              title={t('AgentPreview.description')}
-              value={schema?.description || ''}
-            />
-            <PreviewBlock
-              title={t('AgentPreview.tags.label')}
-              italic={!schema?.tags || schema?.tags.length === 0}
-              value={
-                Array.isArray(schema?.tags)
-                  ? /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
-                    schema.tags.join(',')
-                  : t('AgentPreview.tags.none')
-              }
-            />
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.coreMemories')}>
-            {(schema?.core_memory || []).map((memory, index) => (
-              <PreviewBlock
-                key={index}
-                title={memory.label}
-                value={memory.value}
-              />
-            ))}
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.embeddingConfig')}>
-            <RawCodeEditor
-              label=""
-              fullWidth
-              variant="minimal"
-              hideLabel
-              fontSize="small"
-              showLineNumbers={false}
-              language="javascript"
-              code={JSON.stringify(schema.embedding_config, null, 2)}
-            />
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.llmConfig')}>
-            <RawCodeEditor
-              label=""
-              fullWidth
-              variant="minimal"
-              hideLabel
-              fontSize="small"
-              showLineNumbers={false}
-              language="javascript"
-              code={JSON.stringify(schema.llm_config, null, 2)}
-            />
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.tools.label')}>
-            <HStack wrap paddingX="small">
-              {(schema?.tools || []).map((tool) => (
-                <ToolPreviewDialog key={tool.name} tool={tool} />
-              ))}
-              {!schema?.tools && (
-                <Typography italic variant="body3">
-                  {t('AgentPreview.tools.none')}
-                </Typography>
-              )}
-            </HStack>
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.toolRules.label')}>
-            <VStack paddingX="medium">
-              {(schema?.tool_rules || []).map((rule, index) => (
-                <HStack key={index} align="center" fullWidth>
-                  <Typography variant="body3" bold>
-                    {rule.type}
-                  </Typography>
-                  <ArrowLeftIcon />
-                  <Typography variant="body3">{rule.tool_name}</Typography>
-                </HStack>
-              ))}
-              {!schema?.tool_rules && (
-                <Typography italic variant="body3">
-                  {t('AgentPreview.toolRules.none')}
-                </Typography>
-              )}
-            </VStack>
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.messages.label')}>
-            <HStack align="center" paddingX="medium" fullWidth>
-              {!Array.isArray(schema?.messages) ? (
-                <Typography italic variant="body3">
-                  {t('AgentPreview.messages.none')}
-                </Typography>
-              ) : (
-                <HStack align="center" justify="spaceBetween" fullWidth>
-                  <Typography variant="body3">
-                    {t('AgentPreview.messages.count', {
-                      count: schema.messages.length,
-                    })}
-                  </Typography>
-                  <MessagesPreviewDialog messages={schema.messages} />
-                </HStack>
-              )}
-            </HStack>
-          </SectionBlock>
-          <SectionBlock title={t('AgentPreview.system')}>
-            <HStack paddingX="medium">
-              <Typography variant="body3">{schema?.system}</Typography>
-            </HStack>
-          </SectionBlock>
-        </VStack>
-        <div className="min-h-[50px] flex w-full"></div>
-      </VStack>
-    </VStack>
-  );
-}
-
 export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   const {
     trigger,
@@ -530,7 +256,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       const selectedProjectSlug = selectedProject?.slug;
 
       if (selectedProjectSlug) {
-        push(`/projects/${selectedProjectSlug}/agents/${res.id}`);
+        push(`/projects/${selectedProjectSlug}/agents/${res.agent_ids[0]}`);
       }
 
       await queryClient.refetchQueries({
@@ -542,7 +268,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       });
 
       if (onSuccess) {
-        onSuccess(res.id, false);
+        onSuccess(res.agent_ids[0], false);
       }
 
       if (!agentfileData) {
@@ -565,6 +291,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     },
     onSuccess: async (res) => {
       handleDialogOpenChange(false);
+
       if (onSuccess) {
         onSuccess(res.body.name, true);
       }
@@ -593,15 +320,15 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   const [draggedOver, setDraggedOver] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const [fileData, setFileData] = useState<Partial<AgentSchema> | null>(
+  const [fileData, setFileData] = useState<Partial<AgentFileSchema> | null>(
     agentfileData || null,
   );
   const [fileReadError, setFileReadError] = useState<string | null>(null);
 
-  const convertAgentDataToFile = useCallback((agentData: AgentSchema): File => {
+  const convertAgentDataToFile = useCallback((agentData: AgentFileSchema): File => {
     const jsonString = JSON.stringify(agentData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
-    const fileName = `${agentData.name || 'agent'}.json`;
+    const fileName = `agent.json`;
     return new File([blob], fileName, { type: 'application/json' });
   }, []);
 
@@ -675,11 +402,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       const content = event.target?.result as string;
 
       try {
-        const response = zodTypes.AgentSchema.partial().parse(
-          JSON.parse(content),
-        );
-
-        setFileData(response as AgentSchema);
+        setFileData(JSON.parse(content));
       } catch (_e) {
         setFile(null);
         setFileReadError(t('errors.invalidFile'));
@@ -811,7 +534,9 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
                   />
                 </VStack>
               ) : (
-                <AgentPreview schema={fileData} />
+                <VStack fullHeight fullWidth overflow="auto" padding>
+                  <JSONViewer data={fileData}></JSONViewer>
+                </VStack>
               )}
             </VStack>
             {fileData && (

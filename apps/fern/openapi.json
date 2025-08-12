@@ -2892,7 +2892,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "Export Agent Serialized",
-        "description": "Export the serialized JSON representation of an agent, formatted with indentation.",
+        "description": "Export the serialized JSON representation of an agent, formatted with indentation.\n\nSupports two export formats:\n- Legacy format (use_legacy_format=true): Single agent with inline tools/blocks\n- New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.",
         "operationId": "export_agent_serialized",
         "parameters": [
           {
@@ -2913,21 +2913,25 @@
               "default": 100,
               "title": "Max Steps"
             }
+          },
+          {
+            "name": "use_legacy_format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.",
+              "default": true,
+              "title": "Use Legacy Format"
+            },
+            "description": "If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format."
           }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/AgentSchema"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Spec"
+                "$ref": "#/components/schemas/Body_export_agent_serialized"
               }
             }
           }
@@ -2960,7 +2964,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Import Agent Serialized",
-        "description": "Import a serialized agent file and recreate the agent in the system.",
+        "description": "Import a serialized agent file and recreate the agent(s) in the system.\nReturns the IDs of all imported agents.",
         "operationId": "import_agent_serialized",
         "parameters": [],
         "requestBody": {
@@ -2979,7 +2983,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentState"
+                  "$ref": "#/components/schemas/ImportedAgentsResponse"
                 }
               }
             }
@@ -10415,159 +10419,98 @@
         "required": ["key", "value", "agent_id"],
         "title": "AgentEnvironmentVariable"
       },
-      "AgentSchema": {
+      "AgentFileSchema": {
         "properties": {
-          "agent_type": {
-            "type": "string",
-            "title": "Agent Type"
-          },
-          "core_memory": {
+          "agents": {
             "items": {
-              "$ref": "#/components/schemas/CoreMemoryBlockSchema"
+              "$ref": "#/components/schemas/letta__schemas__agent_file__AgentSchema"
             },
             "type": "array",
-            "title": "Core Memory"
+            "title": "Agents",
+            "description": "List of agents in this agent file"
           },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "embedding_config": {
-            "$ref": "#/components/schemas/EmbeddingConfig"
-          },
-          "llm_config": {
-            "$ref": "#/components/schemas/LLMConfig"
-          },
-          "message_buffer_autoclear": {
-            "type": "boolean",
-            "title": "Message Buffer Autoclear"
-          },
-          "in_context_message_indices": {
+          "groups": {
             "items": {
-              "type": "integer"
+              "$ref": "#/components/schemas/GroupSchema"
             },
             "type": "array",
-            "title": "In Context Message Indices"
+            "title": "Groups",
+            "description": "List of groups in this agent file"
           },
-          "messages": {
+          "blocks": {
             "items": {
-              "$ref": "#/components/schemas/MessageSchema"
+              "$ref": "#/components/schemas/BlockSchema"
             },
             "type": "array",
-            "title": "Messages"
+            "title": "Blocks",
+            "description": "List of memory blocks in this agent file"
           },
-          "metadata_": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata"
-          },
-          "multi_agent_group": {
-            "anyOf": [
-              {},
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Multi Agent Group"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "system": {
-            "type": "string",
-            "title": "System"
-          },
-          "tags": {
+          "files": {
             "items": {
-              "$ref": "#/components/schemas/TagSchema"
+              "$ref": "#/components/schemas/FileSchema"
             },
             "type": "array",
-            "title": "Tags"
+            "title": "Files",
+            "description": "List of files in this agent file"
           },
-          "tool_exec_environment_variables": {
+          "sources": {
             "items": {
-              "$ref": "#/components/schemas/ToolEnvVarSchema"
+              "$ref": "#/components/schemas/SourceSchema"
             },
             "type": "array",
-            "title": "Tool Exec Environment Variables"
-          },
-          "tool_rules": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/BaseToolRuleSchema"
-                },
-                {
-                  "$ref": "#/components/schemas/ChildToolRuleSchema"
-                },
-                {
-                  "$ref": "#/components/schemas/MaxCountPerStepToolRuleSchema"
-                },
-                {
-                  "$ref": "#/components/schemas/ConditionalToolRuleSchema"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Tool Rules"
+            "title": "Sources",
+            "description": "List of sources in this agent file"
           },
           "tools": {
             "items": {
-              "$ref": "#/components/schemas/ToolSchema"
+              "$ref": "#/components/schemas/letta__schemas__agent_file__ToolSchema"
             },
             "type": "array",
-            "title": "Tools"
+            "title": "Tools",
+            "description": "List of tools in this agent file"
           },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
+          "mcp_servers": {
+            "items": {
+              "$ref": "#/components/schemas/MCPServerSchema"
+            },
+            "type": "array",
+            "title": "Mcp Servers",
+            "description": "List of MCP servers in this agent file"
           },
-          "version": {
-            "type": "string",
-            "title": "Version"
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metadata",
+            "description": "Metadata for this agent file, including revision_id and other export information."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "The timestamp when the object was created."
           }
         },
         "type": "object",
         "required": [
-          "agent_type",
-          "core_memory",
-          "created_at",
-          "description",
-          "embedding_config",
-          "llm_config",
-          "message_buffer_autoclear",
-          "in_context_message_indices",
-          "messages",
-          "multi_agent_group",
-          "name",
-          "system",
-          "tags",
-          "tool_exec_environment_variables",
-          "tool_rules",
+          "agents",
+          "groups",
+          "blocks",
+          "files",
+          "sources",
           "tools",
-          "updated_at",
-          "version"
+          "mcp_servers"
         ],
-        "title": "AgentSchema"
+        "title": "AgentFileSchema",
+        "description": "Schema for serialized agent file that can be exported to JSON and imported into agent server."
       },
       "AgentState": {
         "properties": {
@@ -11814,6 +11757,109 @@
         "title": "Block",
         "description": "A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.\n\nParameters:\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    value (str): The value of the block. This is the string that is represented in the context window.\n    limit (int): The character limit of the block.\n    is_template (bool): Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.\n    label (str): The label of the block (e.g. 'human', 'persona'). This defines a category for the block.\n    template_name (str): The name of the block template (if it is a template).\n    description (str): Description of the block.\n    metadata (Dict): Metadata of the block.\n    user_id (str): The unique identifier of the user associated with the block."
       },
+      "BlockSchema": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "Value of the block."
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Character limit of the block.",
+            "default": 5000
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the block if it is a template."
+          },
+          "is_template": {
+            "type": "boolean",
+            "title": "Is Template",
+            "default": false
+          },
+          "preserve_on_migration": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preserve On Migration",
+            "description": "Preserve the block on template migration.",
+            "default": false
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Label of the block."
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "description": "Whether the agent has read-only access to the block.",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the block."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata of the block.",
+            "default": {}
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this block in the file"
+          }
+        },
+        "type": "object",
+        "required": ["value", "label", "id"],
+        "title": "BlockSchema",
+        "description": "Block with human-readable ID for agent file"
+      },
       "BlockUpdate": {
         "properties": {
           "value": {
@@ -11931,6 +11977,32 @@
         "type": "object",
         "title": "BlockUpdate",
         "description": "Update a block"
+      },
+      "Body_export_agent_serialized": {
+        "properties": {
+          "spec": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentFileSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "legacy_spec": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/letta__serialize_schemas__pydantic_agent_schema__AgentSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "Body_export_agent_serialized"
       },
       "Body_import_agent_serialized": {
         "properties": {
@@ -14700,6 +14772,95 @@
         "required": ["file", "type"],
         "title": "File"
       },
+      "FileAgentSchema": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "Unique identifier of the agent."
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Unique identifier of the file."
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "Unique identifier of the source."
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Name of the file."
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open",
+            "description": "True if the agent currently has the file open.",
+            "default": true
+          },
+          "visible_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible Content",
+            "description": "Portion of the file the agent is focused on (may be large)."
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At",
+            "description": "UTC timestamp of the agent's most recent access to this file."
+          },
+          "start_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Line",
+            "description": "Starting line number (1-indexed) when file was opened with line range."
+          },
+          "end_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Line",
+            "description": "Ending line number (exclusive) when file was opened with line range."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this file-agent relationship in the file"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["agent_id", "file_id", "source_id", "file_name", "id"],
+        "title": "FileAgentSchema",
+        "description": "File-Agent relationship with human-readable ID for agent file"
+      },
       "FileBlock": {
         "properties": {
           "value": {
@@ -15070,6 +15231,162 @@
         "type": "string",
         "enum": ["pending", "parsing", "embedding", "completed", "error"],
         "title": "FileProcessingStatus"
+      },
+      "FileSchema": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The unique identifier of the source associated with the document."
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name",
+            "description": "The name of the file."
+          },
+          "original_file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original File Name",
+            "description": "The original name of the file as uploaded."
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path",
+            "description": "The path to the file."
+          },
+          "file_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Type",
+            "description": "The type of the file (MIME type)."
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size",
+            "description": "The size of the file in bytes."
+          },
+          "file_creation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Creation Date",
+            "description": "The creation date of the file."
+          },
+          "file_last_modified_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Last Modified Date",
+            "description": "The last modified date of the file."
+          },
+          "processing_status": {
+            "$ref": "#/components/schemas/FileProcessingStatus",
+            "description": "The current processing status of the file (e.g. pending, parsing, embedding, completed, error).",
+            "default": "pending"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message",
+            "description": "Optional error message if the file failed processing."
+          },
+          "total_chunks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Chunks",
+            "description": "Total number of chunks for the file."
+          },
+          "chunks_embedded": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunks Embedded",
+            "description": "Number of chunks that have been embedded."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "Optional full-text content of the file; only populated on demand due to its size."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this file in the file"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["source_id", "id"],
+        "title": "FileSchema",
+        "description": "File with human-readable ID for agent file"
       },
       "FileStats": {
         "properties": {
@@ -15630,6 +15947,87 @@
         "type": "object",
         "required": ["agent_ids", "description"],
         "title": "GroupCreate"
+      },
+      "GroupSchema": {
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agent Ids",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": ""
+          },
+          "manager_config": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RoundRobinManager"
+              },
+              {
+                "$ref": "#/components/schemas/SupervisorManager"
+              },
+              {
+                "$ref": "#/components/schemas/DynamicManager"
+              },
+              {
+                "$ref": "#/components/schemas/SleeptimeManager"
+              },
+              {
+                "$ref": "#/components/schemas/VoiceSleeptimeManager"
+              }
+            ],
+            "title": "Manager Config",
+            "description": "",
+            "default": {
+              "manager_type": "round_robin"
+            },
+            "discriminator": {
+              "propertyName": "manager_type",
+              "mapping": {
+                "dynamic": "#/components/schemas/DynamicManager",
+                "round_robin": "#/components/schemas/RoundRobinManager",
+                "sleeptime": "#/components/schemas/SleeptimeManager",
+                "supervisor": "#/components/schemas/SupervisorManager",
+                "voice_sleeptime": "#/components/schemas/VoiceSleeptimeManager"
+              }
+            }
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The associated project id."
+          },
+          "shared_block_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Shared Block Ids",
+            "description": "",
+            "default": []
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this group in the file"
+          }
+        },
+        "type": "object",
+        "required": ["agent_ids", "description", "id"],
+        "title": "GroupSchema",
+        "description": "Group with human-readable ID for agent file"
       },
       "GroupUpdate": {
         "properties": {
@@ -16273,6 +16671,22 @@
         "type": "object",
         "required": ["url"],
         "title": "ImageURL"
+      },
+      "ImportedAgentsResponse": {
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agent Ids",
+            "description": "List of IDs of the imported agents"
+          }
+        },
+        "type": "object",
+        "required": ["agent_ids"],
+        "title": "ImportedAgentsResponse",
+        "description": "Response model for imported agents"
       },
       "InitToolRule": {
         "properties": {
@@ -17296,6 +17710,62 @@
         "type": "object",
         "title": "LocalSandboxConfig"
       },
+      "MCPServerSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable MCP server ID"
+          },
+          "server_type": {
+            "type": "string",
+            "title": "Server Type"
+          },
+          "server_name": {
+            "type": "string",
+            "title": "Server Name"
+          },
+          "server_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Url"
+          },
+          "stdio_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stdio Config"
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": ["id", "server_type", "server_name"],
+        "title": "MCPServerSchema",
+        "description": "MCP server schema for agent files with remapped ID."
+      },
       "MCPServerType": {
         "type": "string",
         "enum": ["sse", "stdio", "streamable_http"],
@@ -17829,97 +18299,6 @@
         "type": "string",
         "enum": ["assistant", "user", "tool", "function", "system"],
         "title": "MessageRole"
-      },
-      "MessageSchema": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "group_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Group Id"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
-          "content": {
-            "items": {
-              "$ref": "#/components/schemas/LettaMessageContentUnion"
-            },
-            "type": "array",
-            "title": "Content"
-          },
-          "tool_call_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tool Call Id"
-          },
-          "tool_calls": {
-            "items": {},
-            "type": "array",
-            "title": "Tool Calls"
-          },
-          "tool_returns": {
-            "items": {},
-            "type": "array",
-            "title": "Tool Returns"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "group_id",
-          "model",
-          "name",
-          "role",
-          "content",
-          "tool_call_id",
-          "tool_calls",
-          "tool_returns",
-          "updated_at"
-        ],
-        "title": "MessageSchema"
       },
       "MessageType": {
         "type": "string",
@@ -20011,6 +20390,97 @@
         "title": "SourceCreate",
         "description": "Schema for creating a new Source."
       },
+      "SourceSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the source."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the source."
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructions",
+            "description": "Instructions for how to use the source."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Metadata associated with the source."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The handle for the embedding config used by the source."
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "The chunk size of the embedding."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "(Legacy) The embedding configuration used by the source."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this source in the file"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["name", "id"],
+        "title": "SourceSchema",
+        "description": "Source with human-readable ID for agent file"
+      },
       "SourceStats": {
         "properties": {
           "source_id": {
@@ -21628,95 +22098,6 @@
         "required": ["source_code", "args"],
         "title": "ToolRunFromSource"
       },
-      "ToolSchema": {
-        "properties": {
-          "args_json_schema": {
-            "anyOf": [
-              {},
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Args Json Schema"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description"
-          },
-          "json_schema": {
-            "$ref": "#/components/schemas/ToolJSONSchema"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "return_char_limit": {
-            "type": "integer",
-            "title": "Return Char Limit"
-          },
-          "source_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Code"
-          },
-          "source_type": {
-            "type": "string",
-            "title": "Source Type"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags"
-          },
-          "tool_type": {
-            "type": "string",
-            "title": "Tool Type"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata"
-          }
-        },
-        "type": "object",
-        "required": [
-          "args_json_schema",
-          "created_at",
-          "description",
-          "json_schema",
-          "name",
-          "return_char_limit",
-          "source_code",
-          "source_type",
-          "tags",
-          "tool_type",
-          "updated_at"
-        ],
-        "title": "ToolSchema"
-      },
       "ToolType": {
         "type": "string",
         "enum": [
@@ -22990,6 +23371,1238 @@
         },
         "type": "object",
         "title": "WebSearchOptionsUserLocationApproximate"
+      },
+      "letta__schemas__agent_file__AgentSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the agent."
+          },
+          "memory_blocks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CreateBlock"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Blocks",
+            "description": "The blocks to create in the agent's in-context memory."
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "The tools used by the agent."
+          },
+          "tool_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Ids",
+            "description": "The ids of the tools used by the agent."
+          },
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids",
+            "description": "The ids of the sources used by the agent."
+          },
+          "block_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Ids",
+            "description": "The ids of the blocks used by the agent."
+          },
+          "tool_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChildToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InitToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TerminalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConditionalToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ContinueToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequiredBeforeExitToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MaxCountPerStepToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ParentToolRule"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "conditional": "#/components/schemas/ConditionalToolRule",
+                      "constrain_child_tools": "#/components/schemas/ChildToolRule",
+                      "continue_loop": "#/components/schemas/ContinueToolRule",
+                      "exit_loop": "#/components/schemas/TerminalToolRule",
+                      "max_count_per_step": "#/components/schemas/MaxCountPerStepToolRule",
+                      "parent_last_tool": "#/components/schemas/ParentToolRule",
+                      "required_before_exit": "#/components/schemas/RequiredBeforeExitToolRule",
+                      "run_first": "#/components/schemas/InitToolRule"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Rules",
+            "description": "The tool rules governing the agent."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "The tags associated with the agent."
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System",
+            "description": "The system prompt used by the agent."
+          },
+          "agent_type": {
+            "$ref": "#/components/schemas/AgentType",
+            "description": "The type of agent."
+          },
+          "llm_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LLMConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The LLM configuration used by the agent."
+          },
+          "embedding_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The embedding configuration used by the agent."
+          },
+          "initial_message_sequence": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Message Sequence",
+            "description": "The initial set of messages to put in the agent's in-context memory."
+          },
+          "include_base_tools": {
+            "type": "boolean",
+            "title": "Include Base Tools",
+            "description": "If true, attaches the Letta core tools (e.g. core_memory related functions).",
+            "default": true
+          },
+          "include_multi_agent_tools": {
+            "type": "boolean",
+            "title": "Include Multi Agent Tools",
+            "description": "If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).",
+            "default": false
+          },
+          "include_base_tool_rules": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Base Tool Rules",
+            "description": "If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed)."
+          },
+          "include_default_source": {
+            "type": "boolean",
+            "title": "Include Default Source",
+            "description": "If true, automatically creates and attaches a default data source for this agent.",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the agent."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "The metadata of the agent."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config."
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "The embedding configuration handle used by the agent, specified in the format provider/model-name."
+          },
+          "context_window_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Limit",
+            "description": "The context window limit used by the agent."
+          },
+          "embedding_chunk_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Chunk Size",
+            "description": "The embedding chunk size used by the agent.",
+            "default": 300
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "description": "The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value."
+          },
+          "max_reasoning_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Reasoning Tokens",
+            "description": "The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
+          },
+          "enable_reasoner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Reasoner",
+            "description": "Whether to enable internal extended thinking step for a reasoner model.",
+            "default": false
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning",
+            "description": "Whether to enable reasoning for this agent."
+          },
+          "from_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Template",
+            "description": "The template id used to configure the agent"
+          },
+          "template": {
+            "type": "boolean",
+            "title": "Template",
+            "description": "Whether the agent is a template",
+            "default": false
+          },
+          "project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project",
+            "description": "Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
+            "deprecated": true
+          },
+          "tool_exec_environment_variables": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Exec Environment Variables",
+            "description": "The environment variables for tool execution specific to this agent."
+          },
+          "memory_variables": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Variables",
+            "description": "The variables that should be set for the agent."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "The id of the project the agent belongs to."
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "The id of the template the agent belongs to."
+          },
+          "base_template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Template Id",
+            "description": "The base template id of the agent."
+          },
+          "identity_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Ids",
+            "description": "The ids of the identities associated with this agent."
+          },
+          "message_buffer_autoclear": {
+            "type": "boolean",
+            "title": "Message Buffer Autoclear",
+            "description": "If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.",
+            "default": false
+          },
+          "enable_sleeptime": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Sleeptime",
+            "description": "If set to True, memory management will move to a background agent thread."
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonSchemaResponseFormat"
+                  },
+                  {
+                    "$ref": "#/components/schemas/JsonObjectResponseFormat"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/JsonObjectResponseFormat",
+                    "json_schema": "#/components/schemas/JsonSchemaResponseFormat",
+                    "text": "#/components/schemas/TextResponseFormat"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format",
+            "description": "The response format for the agent."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone",
+            "description": "The timezone of the agent (IANA format)."
+          },
+          "max_files_open": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Files Open",
+            "description": "Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent."
+          },
+          "per_file_view_window_char_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per File View Window Char Limit",
+            "description": "The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent."
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the agent will be hidden."
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this agent in the file"
+          },
+          "in_context_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "In Context Message Ids",
+            "description": "List of message IDs that are currently in the agent's context"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/letta__schemas__agent_file__MessageSchema"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "List of messages in the agent's conversation history"
+          },
+          "files_agents": {
+            "items": {
+              "$ref": "#/components/schemas/FileAgentSchema"
+            },
+            "type": "array",
+            "title": "Files Agents",
+            "description": "List of file-agent relationships for this agent"
+          },
+          "group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Group Ids",
+            "description": "List of groups that the agent manages"
+          }
+        },
+        "type": "object",
+        "required": ["id"],
+        "title": "AgentSchema",
+        "description": "Agent with human-readable ID for agent file"
+      },
+      "letta__schemas__agent_file__MessageSchema": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/MessageRole",
+            "description": "The role of the participant."
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LettaMessageContentUnion"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Content",
+            "description": "The content of the message."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the participant."
+          },
+          "otid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otid",
+            "description": "The offline threading id associated with this message"
+          },
+          "sender_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Id",
+            "description": "The id of the sender of the message, can be an identity id or agent id"
+          },
+          "batch_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Item Id",
+            "description": "The id of the LLMBatchItem that this message is associated with"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id",
+            "description": "The multi-agent group that the message was sent in"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this message in the file"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The model used to make the function call"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The unique identifier of the agent"
+          }
+        },
+        "type": "object",
+        "required": ["role", "content", "id"],
+        "title": "MessageSchema",
+        "description": "Message with human-readable ID for agent file"
+      },
+      "letta__schemas__agent_file__ToolSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Human-readable identifier for this tool in the file"
+          },
+          "tool_type": {
+            "$ref": "#/components/schemas/ToolType",
+            "description": "The type of the tool.",
+            "default": "custom"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the tool."
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type",
+            "description": "The type of the source code."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the function."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Metadata tags.",
+            "default": []
+          },
+          "source_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Code",
+            "description": "The source code of the function."
+          },
+          "json_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Json Schema",
+            "description": "The JSON schema of the function."
+          },
+          "args_json_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema",
+            "description": "The args JSON schema of the function."
+          },
+          "return_char_limit": {
+            "type": "integer",
+            "title": "Return Char Limit",
+            "description": "The maximum number of characters in the response.",
+            "default": 6000
+          },
+          "pip_requirements": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PipRequirement"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pip Requirements",
+            "description": "Optional list of pip packages required by this tool."
+          },
+          "npm_requirements": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NpmRequirement"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npm Requirements",
+            "description": "Optional list of npm packages required by this tool."
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this Tool."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this Tool."
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "A dictionary of additional metadata for the tool."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id"],
+        "title": "ToolSchema",
+        "description": "Tool with human-readable ID for agent file"
+      },
+      "letta__serialize_schemas__pydantic_agent_schema__AgentSchema": {
+        "properties": {
+          "agent_type": {
+            "type": "string",
+            "title": "Agent Type"
+          },
+          "core_memory": {
+            "items": {
+              "$ref": "#/components/schemas/CoreMemoryBlockSchema"
+            },
+            "type": "array",
+            "title": "Core Memory"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "embedding_config": {
+            "$ref": "#/components/schemas/EmbeddingConfig"
+          },
+          "llm_config": {
+            "$ref": "#/components/schemas/LLMConfig"
+          },
+          "message_buffer_autoclear": {
+            "type": "boolean",
+            "title": "Message Buffer Autoclear"
+          },
+          "in_context_message_indices": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "In Context Message Indices"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/letta__serialize_schemas__pydantic_agent_schema__MessageSchema"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "multi_agent_group": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Multi Agent Group"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "system": {
+            "type": "string",
+            "title": "System"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagSchema"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "tool_exec_environment_variables": {
+            "items": {
+              "$ref": "#/components/schemas/ToolEnvVarSchema"
+            },
+            "type": "array",
+            "title": "Tool Exec Environment Variables"
+          },
+          "tool_rules": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BaseToolRuleSchema"
+                },
+                {
+                  "$ref": "#/components/schemas/ChildToolRuleSchema"
+                },
+                {
+                  "$ref": "#/components/schemas/MaxCountPerStepToolRuleSchema"
+                },
+                {
+                  "$ref": "#/components/schemas/ConditionalToolRuleSchema"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Tool Rules"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/letta__serialize_schemas__pydantic_agent_schema__ToolSchema"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_type",
+          "core_memory",
+          "created_at",
+          "description",
+          "embedding_config",
+          "llm_config",
+          "message_buffer_autoclear",
+          "in_context_message_indices",
+          "messages",
+          "multi_agent_group",
+          "name",
+          "system",
+          "tags",
+          "tool_exec_environment_variables",
+          "tool_rules",
+          "tools",
+          "updated_at",
+          "version"
+        ],
+        "title": "AgentSchema"
+      },
+      "letta__serialize_schemas__pydantic_agent_schema__MessageSchema": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/LettaMessageContentUnion"
+            },
+            "type": "array",
+            "title": "Content"
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Call Id"
+          },
+          "tool_calls": {
+            "items": {},
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "tool_returns": {
+            "items": {},
+            "type": "array",
+            "title": "Tool Returns"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "group_id",
+          "model",
+          "name",
+          "role",
+          "content",
+          "tool_call_id",
+          "tool_calls",
+          "tool_returns",
+          "updated_at"
+        ],
+        "title": "MessageSchema"
+      },
+      "letta__serialize_schemas__pydantic_agent_schema__ToolSchema": {
+        "properties": {
+          "args_json_schema": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Args Json Schema"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "json_schema": {
+            "$ref": "#/components/schemas/ToolJSONSchema"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "return_char_limit": {
+            "type": "integer",
+            "title": "Return Char Limit"
+          },
+          "source_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Code"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "tool_type": {
+            "type": "string",
+            "title": "Tool Type"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "metadata_": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "args_json_schema",
+          "created_at",
+          "description",
+          "json_schema",
+          "name",
+          "return_char_limit",
+          "source_code",
+          "source_type",
+          "tags",
+          "tool_type",
+          "updated_at"
+        ],
+        "title": "ToolSchema"
       },
       "openai__types__chat__chat_completion_message_tool_call_param__Function": {
         "properties": {

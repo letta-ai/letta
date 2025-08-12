@@ -539,15 +539,48 @@ async function importAgentFileAsTemplate(
     };
   }
 
-  const agent = await AgentsService.importAgentSerialized({
-    formData: {
-      file: file as Blob,
-      project_id: getTemplateProjectId(project_id),
-      append_copy_suffix: append_copy_suffix,
-      strip_messages: true,
-      override_existing_tools: override_existing_tools,
+  const serializedResponse = await AgentsService.importAgentSerialized(
+    {
+      formData: {
+        file: file as Blob,
+        project_id: getTemplateProjectId(project_id),
+        append_copy_suffix: append_copy_suffix,
+        strip_messages: true,
+        override_existing_tools: override_existing_tools,
+      }
     },
-  });
+    {
+      user_id: lettaAgentsId,
+    },
+  );
+
+  if (!serializedResponse.agent_ids[0]) {
+    return {
+      status: 400,
+      body: {
+        message: 'Failed to import agent file',
+      },
+    };
+  }
+
+  const agent = await AgentsService.retrieveAgent(
+    {
+      agentId: serializedResponse.agent_ids[0],
+      includeRelationships: [],
+    },
+    {
+      user_id: lettaAgentsId,
+    },
+  );
+
+  if (!agent) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent not found',
+      },
+    };
+  }
 
   const response = await createTemplate({
     projectId: project_id,

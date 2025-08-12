@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
-from letta.errors import AgentFileExportError, AgentFileImportError
+from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
 from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.log import get_logger
 from letta.schemas.agent import AgentState, CreateAgent
@@ -118,10 +118,7 @@ class AgentSerializationManager:
             return self._db_to_file_ids[db_id]
 
         if not allow_new:
-            raise AgentFileExportError(
-                f"Unexpected new {entity_type} ID '{db_id}' encountered during conversion. "
-                f"All IDs should have been mapped during agent processing."
-            )
+            raise AgentExportIdMappingError(db_id, entity_type)
 
         file_id = self._generate_file_id(entity_type)
         self._db_to_file_ids[db_id] = file_id
@@ -352,7 +349,7 @@ class AgentSerializationManager:
             if len(agent_states) != len(agent_ids):
                 found_ids = {agent.id for agent in agent_states}
                 missing_ids = [agent_id for agent_id in agent_ids if agent_id not in found_ids]
-                raise AgentFileExportError(f"The following agent IDs were not found: {missing_ids}")
+                raise AgentNotFoundForExportError(missing_ids)
 
             groups = []
             group_agent_ids = []
@@ -417,7 +414,7 @@ class AgentSerializationManager:
 
         except Exception as e:
             logger.error(f"Failed to export agent file: {e}")
-            raise AgentFileExportError(f"Export failed: {e}") from e
+            raise AgentExportProcessingError(str(e), e) from e
 
     async def import_file(
         self,
@@ -657,6 +654,12 @@ class AgentSerializationManager:
                     )
                     imported_count += len(files_for_agent)
 
+            # Extract the imported agent IDs (database IDs)
+            imported_agent_ids = []
+            for agent_schema in schema.agents:
+                if agent_schema.id in file_to_db_ids:
+                    imported_agent_ids.append(file_to_db_ids[agent_schema.id])
+
             for group in schema.groups:
                 group_data = group.model_dump(exclude={"id"})
                 group_data["agent_ids"] = [file_to_db_ids[agent_id] for agent_id in group_data["agent_ids"]]
@@ -670,6 +673,7 @@ class AgentSerializationManager:
                 success=True,
                 message=f"Import completed successfully. Imported {imported_count} entities.",
                 imported_count=imported_count,
+                imported_agent_ids=imported_agent_ids,
                 id_mappings=file_to_db_ids,
             )
 

@@ -18,7 +18,8 @@ interface ProjectPageWrapperProps {
   children: React.ReactNode;
 }
 
-const { ADELayoutCookieName, ADELayoutQueryKey, deserializeADELayoutConfig } = getADEConfigConstants();
+const { ADELayoutCookieName, ADELayoutQueryKey, deserializeADELayoutConfig } =
+  getADEConfigConstants();
 
 async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   const { projectSlug } = await props.params;
@@ -47,7 +48,9 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
       try {
         const cookie = await cookies();
 
-        return deserializeADELayoutConfig(cookie.get(ADELayoutCookieName)?.value || '');
+        return deserializeADELayoutConfig(
+          cookie.get(ADELayoutCookieName)?.value || '',
+        );
       } catch (_e) {
         return undefined;
       }
