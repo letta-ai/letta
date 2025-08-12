@@ -9399,6 +9399,18 @@ export const $Provider = {
       title: 'Region',
       description: 'Region used for requests to the provider.',
     },
+    api_version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Api Version',
+      description: 'API version used for requests to the provider.',
+    },
     organization_id: {
       anyOf: [
         {
@@ -9472,6 +9484,30 @@ export const $ProviderCheck = {
       title: 'Region',
       description: 'Region used for requests to the provider.',
     },
+    base_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Url',
+      description: 'Base URL used for requests to the provider.',
+    },
+    api_version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Api Version',
+      description: 'API version used for requests to the provider.',
+    },
   },
   type: 'object',
   required: ['provider_type', 'api_key'],
@@ -9517,6 +9553,30 @@ export const $ProviderCreate = {
       ],
       title: 'Region',
       description: 'Region used for requests to the provider.',
+    },
+    base_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Url',
+      description: 'Base URL used for requests to the provider.',
+    },
+    api_version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Api Version',
+      description: 'API version used for requests to the provider.',
     },
   },
   additionalProperties: false,
@@ -9676,6 +9736,30 @@ export const $ProviderUpdate = {
       ],
       title: 'Region',
       description: 'Region used for requests to the provider.',
+    },
+    base_url: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Url',
+      description: 'Base URL used for requests to the provider.',
+    },
+    api_version: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Api Version',
+      description: 'API version used for requests to the provider.',
     },
   },
   additionalProperties: false,

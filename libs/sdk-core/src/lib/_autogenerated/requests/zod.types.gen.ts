@@ -6279,6 +6279,14 @@ export const Provider = z.object({
       z.undefined(),
     ])
     .optional(),
+  api_version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   organization_id: z
     .union([
       z.string(),
@@ -6317,6 +6325,22 @@ export const ProviderCheck = z.object({
       z.undefined(),
     ])
     .optional(),
+  base_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  api_version: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ProviderCreate = z.infer<typeof ProviderCreate>;
@@ -6333,6 +6357,22 @@ export const ProviderCreate = z.object({
     ])
     .optional(),
   region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  api_version: z
     .union([
       z.string(),
       z.null(),
@@ -6395,6 +6435,22 @@ export const ProviderUpdate = z.object({
     ])
     .optional(),
   region: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_url: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  api_version: z
     .union([
       z.string(),
       z.null(),

@@ -78,3 +78,12 @@ class AzureProvider(Provider):
         # Hard coded as there are no API endpoints for this
         llm_default = LLM_MAX_TOKENS.get(model_name, 4096)
         return AZURE_MODEL_TO_CONTEXT_LENGTH.get(model_name, llm_default)
+
+    async def check_api_key(self):
+        if not self.api_key:
+            raise ValueError("No API key provided")
+
+        try:
+            await self.list_llm_models_async()
+        except Exception as e:
+            raise LLMAuthenticationError(message=f"Failed to authenticate with Azure: {e}", code=ErrorCode.UNAUTHENTICATED)

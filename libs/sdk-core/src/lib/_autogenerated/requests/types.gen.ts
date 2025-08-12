@@ -3500,6 +3500,10 @@ export type Provider = {
    */
   region?: string | null;
   /**
+   * API version used for requests to the provider.
+   */
+  api_version?: string | null;
+  /**
    * The organization id of the user
    */
   organization_id?: string | null;
@@ -3528,6 +3532,14 @@ export type ProviderCheck = {
    * Region used for requests to the provider.
    */
   region?: string | null;
+  /**
+   * Base URL used for requests to the provider.
+   */
+  base_url?: string | null;
+  /**
+   * API version used for requests to the provider.
+   */
+  api_version?: string | null;
 };
 
 export type ProviderCreate = {
@@ -3551,6 +3563,14 @@ export type ProviderCreate = {
    * Region used for requests to the provider.
    */
   region?: string | null;
+  /**
+   * Base URL used for requests to the provider.
+   */
+  base_url?: string | null;
+  /**
+   * API version used for requests to the provider.
+   */
+  api_version?: string | null;
 };
 
 /**
@@ -3639,6 +3659,14 @@ export type ProviderUpdate = {
    * Region used for requests to the provider.
    */
   region?: string | null;
+  /**
+   * Base URL used for requests to the provider.
+   */
+  base_url?: string | null;
+  /**
+   * API version used for requests to the provider.
+   */
+  api_version?: string | null;
 };
 
 export type ReasoningContent = {

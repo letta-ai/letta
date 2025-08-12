@@ -31,6 +31,7 @@ class Provider(SqlalchemyBase, OrganizationMixin):
     base_url: Mapped[str] = mapped_column(nullable=True, doc="Base URL for the provider.")
     access_key: Mapped[str] = mapped_column(nullable=True, doc="Access key used for requests to the provider.")
     region: Mapped[str] = mapped_column(nullable=True, doc="Region used for requests to the provider.")
+    api_version: Mapped[str] = mapped_column(nullable=True, doc="API version used for requests to the provider.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="providers")

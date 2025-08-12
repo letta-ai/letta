@@ -19059,6 +19059,18 @@
             "title": "Region",
             "description": "Region used for requests to the provider."
           },
+          "api_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Version",
+            "description": "API version used for requests to the provider."
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -19117,6 +19129,30 @@
             ],
             "title": "Region",
             "description": "Region used for requests to the provider."
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "Base URL used for requests to the provider."
+          },
+          "api_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Version",
+            "description": "API version used for requests to the provider."
           }
         },
         "type": "object",
@@ -19162,6 +19198,30 @@
             ],
             "title": "Region",
             "description": "Region used for requests to the provider."
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "Base URL used for requests to the provider."
+          },
+          "api_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Version",
+            "description": "API version used for requests to the provider."
           }
         },
         "additionalProperties": false,
@@ -19305,6 +19365,30 @@
             ],
             "title": "Region",
             "description": "Region used for requests to the provider."
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url",
+            "description": "Base URL used for requests to the provider."
+          },
+          "api_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Version",
+            "description": "API version used for requests to the provider."
           }
         },
         "additionalProperties": false,
