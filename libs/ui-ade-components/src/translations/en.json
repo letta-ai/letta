@@ -1158,7 +1158,7 @@
   },
   "components/Messages": {
     "stepWasCancelled": "Step was cancelled by user",
-    "exploreStopReason": "Click to Debug message",
+    "exploreStopReason": "Click to view error",
     "stepDurationTooltip": "The duration of this step",
     "reasoning": "Reasoning",
     "saveToDataset": "Save to Dataset",
@@ -1331,8 +1331,8 @@
       "copied": "Copied"
     },
     "FeedbackButtons": {
-      "positive": "This was valid",
-      "negative": "This was invalid",
+      "positive": "Give positive feedback",
+      "negative": "Give negative feedback",
       "error": "There was an error processing your feedback, please check the network inspector to see the error details or contact support."
     },
     "InvalidMessages": {
