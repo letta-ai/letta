@@ -61,6 +61,7 @@ import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { ChatroomContext } from './ChatroomContext/ChatroomContext';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 import { useAtom } from 'jotai';
+import { useADEAppContext } from '../../AppContext/AppContext';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -95,7 +96,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
   const queryClient = useQueryClient();
-  const { isLocal } = useCurrentAgentMetaData();
+  const { user } = useADEAppContext();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
   const { addNetworkRequest, updateNetworkRequest } = useNetworkRequest();
@@ -208,15 +209,14 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         },
       );
 
-      if (isLocal) {
-        trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED, {
-          userId: '',
-        });
-      } else {
-        trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED, {
-          userId: '',
-        });
-      }
+      trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE, {
+        userId: user?.id || '',
+        agentId,
+        messageType:
+          role.value === 'system' ? 'system_message' : 'user_message',
+        messageSendingType: 'streaming',
+        location: 'ade:agent_simulator',
+      });
 
       abortController.current = new AbortController();
 
@@ -496,13 +496,13 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
     },
     [
       baseUrl,
-      isLocal,
       options,
       password,
       queryClient,
       setIsPending,
       addNetworkRequest,
       updateNetworkRequest,
+      user?.id,
     ],
   );
 

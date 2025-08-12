@@ -6,11 +6,9 @@ export enum AnalyticsEvent {
   USER_LOGGED_IN = 'User Logged In',
   LOCAL_AGENT_CREATED = 'Local Agent Created',
   LOCAL_AGENT_VISITED = 'Local Agent Visited',
-  LOCAL_AGENT_MESSAGE_CREATED = 'Local Agent Message Created',
   LOCAL_AGENT_DATA_SOURCE_ATTACHED = 'Local Agent Data Source Attached',
   LOCAL_AGENT_DELETED = 'Local Agent Deleted',
   CLOUD_DATA_SOURCE_ATTACHED = 'Cloud Data Source Attached',
-  CLOUD_AGENT_MESSAGE_CREATED = 'Cloud Agent Message Created',
   CLOUD_AGENT_DELETED = 'Cloud Agent Deleted',
   CLOUD_AGENT_MESSAGE_CREATED_IN_API = 'API Cloud Agent Message Created',
   SUBSCRIPTION_CHANGED = 'Subscription Changed',
@@ -37,6 +35,8 @@ export enum AnalyticsEvent {
   DETACH_BLOCK_FROM_CORE_MEMORY = 'agent:update:core_memory:detach_block',
   UPDATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:update_block',
   DELETE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:delete_block',
+  SEND_MESSAGE = 'agent:message:send',
+  RECEIVED_TOOL_CALL = 'agent:message:received:tool_call',
 }
 
 export interface BaseProperty {
@@ -104,16 +104,21 @@ interface CreateCoreMemoryBlockProperty extends CoreMemoryProperty {
   blockType: string;
 }
 
+interface MessageProperty extends BaseProperty {
+  agentId: string;
+  messageType: string;
+  messageSendingType: string;
+  location: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
   [AnalyticsEvent.LOCAL_AGENT_CREATED]: LocalAgentCreatedProperty;
   [AnalyticsEvent.LOCAL_AGENT_VISITED]: BaseProperty;
-  [AnalyticsEvent.LOCAL_AGENT_MESSAGE_CREATED]: BaseProperty;
   [AnalyticsEvent.LOCAL_AGENT_DATA_SOURCE_ATTACHED]: BaseProperty;
   [AnalyticsEvent.LOCAL_AGENT_DELETED]: BaseProperty;
   [AnalyticsEvent.CLOUD_DATA_SOURCE_ATTACHED]: BaseProperty;
-  [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED]: BaseProperty;
   [AnalyticsEvent.CLOUD_AGENT_DELETED]: BaseProperty;
   [AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY]: AnsweredOnboardingSurveyProperty;
   [AnalyticsEvent.MOVED_ONBOARDING_STEP]: MovedOnboardingStepProperty;
@@ -140,4 +145,6 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY]: CoreMemoryProperty;
   [AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
   [AnalyticsEvent.DELETE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
+  [AnalyticsEvent.SEND_MESSAGE]: MessageProperty;
+  [AnalyticsEvent.RECEIVED_TOOL_CALL]: MessageProperty;
 }
