@@ -3,6 +3,7 @@ import {
   isAPIError,
   type Tool,
   type ToolJSONSchema,
+  type ToolUpdate,
   useToolsServiceGenerateJsonSchema,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
@@ -187,6 +188,7 @@ interface CodeEditorProps {
 function CodeEditor(props: CodeEditorProps) {
   const { tool } = props;
   const { stagedTool, setStagedTool } = useStagedCode(tool);
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
 
   const { validationErrorsToLineNumberMap } = useToolValidation(
     stagedTool.source_code || '',
@@ -197,6 +199,14 @@ function CodeEditor(props: CodeEditorProps) {
   const [localCode, setLocalCode] = useState<string>(
     stagedTool.source_code || '',
   );
+
+  // Determine language based on source_type
+  const language = useMemo(() => {
+    if (!typescriptToolsEnabled) {
+      return 'python';
+    }
+    return stagedTool.source_type === 'typescript' ? 'typescript' : 'python';
+  }, [stagedTool.source_type, typescriptToolsEnabled]);
 
   useEffect(() => {
     function handleResetLocalCode() {
@@ -253,7 +263,7 @@ function CodeEditor(props: CodeEditorProps) {
         onSetCode={handleCodeChange}
         variant="minimal"
         label=""
-        language="python"
+        language={language}
         code={localCode}
       />
     </VStack>
@@ -638,6 +648,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
   const { setError } = useToolErrors();
   const { isDirty, stagedTool, setStagedTool } = useStagedCode(tool);
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
 
   const queryClient = useQueryClient();
   const { mutate, isPending } = useToolsServiceModifyTool({
@@ -690,18 +701,32 @@ function SaveToolButton(props: SaveToolButtonProps) {
 
   const handleSubmit = useCallback(() => {
     if (isDirty) {
+      const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
+      
+      const descriptionValue = get(stagedTool.json_schema, 'description', '');
+      const description = typeof descriptionValue === 'string' ? descriptionValue : '';
+      
+      const requestBody: ToolUpdate = {
+        description,
+        json_schema: stagedTool.json_schema,
+        source_code: stagedTool.source_code || '',
+        source_type: stagedTool.source_type || 'python',
+        return_char_limit: stagedTool.return_char_limit,
+      };
+      
+      // Include appropriate dependencies based on language
+      if (isTypeScript) {
+        requestBody.npm_requirements = stagedTool.npm_requirements || [];
+      } else {
+        requestBody.pip_requirements = stagedTool.pip_requirements || [];
+      }
+      
       mutate({
         toolId: tool.id || '',
-        requestBody: {
-          description: get(stagedTool.json_schema, 'description', '') as string,
-          json_schema: stagedTool.json_schema,
-          source_code: stagedTool.source_code || '',
-          pip_requirements: stagedTool.pip_requirements || [],
-          return_char_limit: stagedTool.return_char_limit,
-        },
+        requestBody,
       });
     }
-  }, [isDirty, mutate, stagedTool, tool.id]);
+  }, [isDirty, mutate, stagedTool, tool.id, typescriptToolsEnabled]);
 
   return (
     <Button
@@ -906,6 +931,7 @@ function CodeButton() {
   );
 }
 
+
 interface LocalToolsViewerProps {
   tool: Tool;
 }
@@ -928,6 +954,7 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
             idToAttach={tool.id || ''}
             attachedId={isAttached ? tool.id : undefined}
             type={tool.tool_type || 'custom'}
+            sourceType={tool.source_type ?? undefined}
             name={tool.name || ''}
             actions={<ToolActions tool={tool} />}
           />

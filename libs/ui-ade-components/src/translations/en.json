@@ -1810,6 +1810,7 @@
   },
   "ToolsEditor/LocalToolsViewer": {
     "code": "Code",
+    "language": "Language",
     "SchemaChangeWarning": {
       "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",
       "error": "Schema issues"
@@ -2061,6 +2062,7 @@
       "trigger": "Create new tool",
       "description": "Create a new tool to use in your agent and other projects.",
       "label": "Tool name",
+      "languageLabel": "Language",
       "placeholder": "My tool",
       "restriction": "Tools must be alphanumeric and underscores only",
       "errors": {

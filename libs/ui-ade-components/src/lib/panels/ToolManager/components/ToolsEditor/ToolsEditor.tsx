@@ -21,6 +21,7 @@ import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { LettaToolViewer } from '../LettaToolViewer/LettaToolViewer';
 import { MCPToolViewer } from '../MCPToolViewer/MCPToolViewer';
 import { isLettaTool } from '@letta-cloud/sdk-core';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface ToolButtonProps {
   tool: Tool;
@@ -31,6 +32,14 @@ interface ToolButtonProps {
 function ToolButton(props: ToolButtonProps) {
   const { tool, selected, onClick } = props;
   const { isDirty } = useStagedCode(tool);
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
+
+  // Determine file extension based on source_type
+  function getFileExtension() {
+    if (tool.tool_type !== 'custom') return '';
+    if (!typescriptToolsEnabled) return '.py';
+    return tool.source_type === 'typescript' ? '.ts' : '.py';
+  }
 
   return (
     <HStack
@@ -46,11 +55,11 @@ function ToolButton(props: ToolButtonProps) {
     >
       <HStack gap="small" align="center" overflow="hidden">
         <div className="min-w-[20px] h-[24px] items-center justify-center">
-          <SpecificToolIcon toolType={tool.tool_type} />
+          <SpecificToolIcon toolType={tool.tool_type} sourceType={tool.source_type} />
         </div>
         <Typography fullWidth overflow="ellipsis" noWrap variant="body2">
           {tool.name || 'unnamed'}
-          {tool.tool_type === 'custom' ? '.py' : ''}
+          {getFileExtension()}
         </Typography>
       </HStack>
       {isDirty && <div className="w-[8px] h-[8px] bg-primary rounded-full" />}
@@ -232,7 +241,7 @@ export function ToolsEditor(props: ToolsEditorProps) {
                     color="tertiary"
                     preIcon={
                       selectedTool?.tool_type && (
-                        <SpecificToolIcon toolType={selectedTool.tool_type} />
+                        <SpecificToolIcon toolType={selectedTool.tool_type} sourceType={selectedTool.source_type} />
                       )
                     }
                     postIcon={<ChevronDownIcon />}

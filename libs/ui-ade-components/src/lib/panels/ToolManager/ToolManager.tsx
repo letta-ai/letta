@@ -13,6 +13,7 @@ import {
   HR,
   HStack,
   Input,
+  Select,
   SmallInvaderOutlineIcon,
   MiniApp,
   PlusIcon,
@@ -47,12 +48,21 @@ import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { useADEAppContext } from '../../AppContext/AppContext';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
 }
 
-function getCode(name: string) {
+function getCode(name: string, language = 'python') {
+  if (language === 'typescript') {
+    return `export function ${name}(): string {
+  /**
+   * This is a simple function that returns a string.
+   */
+  return 'Hello, World!';
+}`;
+  }
   return `def ${name}():
     """
     This is a simple function that returns a string.
@@ -68,12 +78,15 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
   const { setPath } = useToolManagerState();
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
+
   const CreateToolSchema = useMemo(
     () =>
       z.object({
         name: z.string().regex(/^[a-zA-Z0-9_]+$/, {
           message: t('CreateToolDialog.restriction'),
         }),
+        language: z.string().optional(),
       }),
     [t],
   );
@@ -84,6 +97,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
     resolver: zodResolver(CreateToolSchema),
     defaultValues: {
       name: '',
+      language: 'python',
     },
   });
 
@@ -97,6 +111,13 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
         return;
       }
 
+      // Reset form on success before closing
+      form.reset({
+        name: '',
+        language: 'python',
+      });
+      reset();
+      
       setDialogOpen(false);
       setPath('/my-tools');
 
@@ -128,11 +149,22 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
-      setDialogOpen(open);
-      if (!open) {
+      if (open) {
+        // Reset form when opening the dialog
+        form.reset({
+          name: '',
+          language: 'python',
+        });
         reset();
-        form.reset();
+      } else {
+        // Also reset when closing (in case of cancel)
+        form.reset({
+          name: '',
+          language: 'python',
+        });
+        reset();
       }
+      setDialogOpen(open);
     },
     [form, reset],
   );
@@ -160,14 +192,18 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
   const handleSubmit = useCallback(
     (values: CreateToolType) => {
+      const language = values.language || 'python';
+      
       trackClientSideEvent(AnalyticsEvent.CREATE_TOOL, {
         userId: user?.id || '',
         toolType: 'custom' as ToolType,
+        sourceType: language,
       })
 
       mutate({
         requestBody: {
-          source_code: getCode(values.name),
+          source_code: getCode(values.name, language),
+          source_type: language,
         },
       });
     },
@@ -186,20 +222,51 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
         trigger={trigger}
         testId="create-tool-dialog"
       >
-        <FormField
-          name="name"
-          render={({ field }) => (
-            <Input
-              fullWidth
-              {...field}
-              data-testid="create-tool-dialog-name"
-              placeholder={t('CreateToolDialog.placeholder')}
-              description={t('CreateToolDialog.description')}
-              label={t('CreateToolDialog.label')}
-              name="name"
+        <VStack gap="medium" fullWidth>
+          <Typography variant="body2" color="muted">
+            {t('CreateToolDialog.description')}
+          </Typography>
+          <FormField
+            name="name"
+            render={({ field }) => (
+              <Input
+                fullWidth
+                {...field}
+                data-testid="create-tool-dialog-name"
+                placeholder={t('CreateToolDialog.placeholder')}
+                label={t('CreateToolDialog.label')}
+                name="name"
+              />
+            )}
+          />
+          {typescriptToolsEnabled && (
+            <FormField
+              name="language"
+              render={({ field }) => {
+                const options = [
+                  { label: 'Python', value: 'python' },
+                  { label: 'TypeScript', value: 'typescript' },
+                ];
+                const selectedOption = options.find(opt => opt.value === (field.value || 'python'));
+                
+                return (
+                  <Select
+                    fullWidth
+                    value={selectedOption}
+                    onSelect={(option) => {
+                      if (option && 'value' in option) {
+                        field.onChange(option.value);
+                      }
+                    }}
+                    data-testid="create-tool-dialog-language"
+                    label={t('CreateToolDialog.languageLabel')}
+                    options={options}
+                  />
+                );
+              }}
             />
           )}
-        />
+        </VStack>
       </Dialog>
     </FormProvider>
   );

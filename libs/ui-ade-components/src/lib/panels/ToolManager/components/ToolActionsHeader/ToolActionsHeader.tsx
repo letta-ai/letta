@@ -11,14 +11,15 @@ import { AttachDetachButton } from '../AttachDetachButton/AttachDetachButton';
 
 interface ToolNameProps {
   type: ToolType;
+  sourceType?: string;
   name: string;
 }
 
 function ToolName(props: ToolNameProps) {
-  const { type, name } = props;
+  const { type, sourceType, name } = props;
   return (
     <HStack align="center">
-      <SpecificToolIcon toolType={type} />
+      <SpecificToolIcon toolType={type} sourceType={sourceType} />
       <Typography bold>{name}</Typography>
     </HStack>
   );
@@ -26,6 +27,7 @@ function ToolName(props: ToolNameProps) {
 
 interface ToolActionsHeaderProps {
   type: ToolType;
+  sourceType?: string;
   name: string;
   idToAttach: string;
   attachedId?: string;
@@ -33,7 +35,7 @@ interface ToolActionsHeaderProps {
 }
 
 export function ToolActionsHeader(props: ToolActionsHeaderProps) {
-  const { type, name, attachedId, idToAttach, actions } = props;
+  const { type, sourceType, name, attachedId, idToAttach, actions } = props;
 
   const t = useTranslations('ToolActionsHeader');
 
@@ -41,7 +43,7 @@ export function ToolActionsHeader(props: ToolActionsHeaderProps) {
     <HStack align="center" padding justify="spaceBetween" minHeight="header-sm">
       <div>
         <HiddenOnMobile>
-          <ToolName type={type} name={name} />
+          <ToolName type={type} sourceType={sourceType} name={name} />
         </HiddenOnMobile>
         <VisibleOnMobile>
           <HStack paddingLeft="small">

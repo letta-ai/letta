@@ -79,6 +79,10 @@ interface ToolProperty extends BaseProperty {
   toolType: ToolType;
 }
 
+interface CreateToolProperty extends ToolProperty {
+  sourceType: string;
+}
+
 interface AttachDetachToolProperty extends ToolProperty {
   toolId: string;
   agentId: string;
@@ -133,7 +137,7 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
   [AnalyticsEvent.SUBSCRIPTION_CHANGED]: SubscriptionChangedProperty;
   [AnalyticsEvent.CREATE_AGENT]: CreateAgentProperty;
-  [AnalyticsEvent.CREATE_TOOL]: ToolProperty;
+  [AnalyticsEvent.CREATE_TOOL]: CreateToolProperty;
   [AnalyticsEvent.ATTACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.DETACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.ADD_MCP_SERVER]: McpServer;

@@ -165,7 +165,8 @@ function ToolsList(props: ToolsListProps) {
             openToolManager('/current-agent-tools', tool.id);
           },
           type: tool.tool_type || 'custom',
-          icon: <SpecificToolIcon toolType={tool.tool_type} />,
+          sourceType: tool.source_type ?? undefined,
+          icon: <SpecificToolIcon toolType={tool.tool_type} sourceType={tool.source_type} />,
           actionNode: (
             <HStack gap={false}>
               <Button
@@ -243,6 +244,7 @@ interface ParsedTool {
   name: string;
   id: string;
   type: ToolType;
+  sourceType?: string;
   icon: React.ReactNode;
   actionNode?: React.ReactNode;
   onClick?: () => void;
@@ -283,7 +285,7 @@ function ToolAccordion(props: ToolAccordionProps) {
             key={tool.id}
           >
             <HStack collapseWidth flex>
-              <SpecificToolIcon size="xsmall" toolType={tool.type} />
+              <SpecificToolIcon size="xsmall" toolType={tool.type} sourceType={tool.sourceType} />
               <Typography
                 noWrap
                 fullWidth

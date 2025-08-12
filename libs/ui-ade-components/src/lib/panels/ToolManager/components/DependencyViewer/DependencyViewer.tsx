@@ -36,15 +36,26 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
   const { isLocal } = useCurrentAgentMetaData();
 
   const { data: enabledDependencies } = useFeatureFlag('DEPENDENCY_VIEWER');
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
+  
+  // Determine if we're working with TypeScript or Python
+  const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
 
   const addedDependencies = useMemo(() => {
+    if (isTypeScript) {
+      return new Set(stagedTool.npm_requirements?.map((v) => v.name) || []);
+    }
     return new Set(stagedTool.pip_requirements?.map((v) => v.name) || []);
-  }, [stagedTool.pip_requirements]);
+  }, [stagedTool.pip_requirements, stagedTool.npm_requirements, isTypeScript]);
 
   const filteredRequirements = useMemo(() => {
+    const currentRequirements = isTypeScript 
+      ? stagedTool.npm_requirements || []
+      : stagedTool.pip_requirements || [];
+      
     const mergedRequirements = [
-      ...(stagedTool.pip_requirements || []),
-      ...(!isLocal
+      ...currentRequirements,
+      ...(!isLocal && !isTypeScript
         ? CLOUD_INCLUDED_DEPENDENCIES.map((v) => ({ ...v, included: true }))
         : []),
     ];
@@ -69,7 +80,7 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
           return true;
       }
     });
-  }, [stagedTool.pip_requirements, isLocal, searchQuery, filter]);
+  }, [stagedTool.pip_requirements, stagedTool.npm_requirements, isTypeScript, isLocal, searchQuery, filter]);
 
   const filteredPopularDependencies = useMemo(() => {
     return popularDependencies.filter((dependency) => {

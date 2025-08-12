@@ -60,7 +60,11 @@ function ArgumentEditor(props: ArgumentEditorProps) {
     return pythonCodeParser(debouncedStagedTool.source_code || '');
   }, [debouncedStagedTool.source_code]);
 
+  // TODO (cliandy): this needs to be updated to handle multiple functions
   const lastFunction = useMemo(() => {
+    if (!pythonMetadata || pythonMetadata.length === 0) {
+      return null;
+    }
     // the last function is the main function in our code
     return pythonMetadata[pythonMetadata.length - 1];
   }, [pythonMetadata]);
@@ -89,6 +93,9 @@ function ArgumentEditor(props: ArgumentEditorProps) {
   const newToolArgs = useMemo(() => {
     const existingArgNameSet = new Set(stagedArguments.map((arg) => arg.key));
 
+    if (!lastFunction?.args) {
+      return [];
+    }
     return lastFunction.args
       .filter((arg) => {
         return !existingArgNameSet.has(arg.name);
@@ -106,7 +113,7 @@ function ArgumentEditor(props: ArgumentEditorProps) {
           ),
         };
       });
-  }, [lastFunction.args, stagedArguments, t]);
+  }, [lastFunction, stagedArguments, t]);
 
   const definitions = useMemo(() => {
     return [...stagedArguments, ...newToolArgs].filter(
@@ -725,6 +732,7 @@ export function ToolSimulator(props: ToolSimulatorProps) {
           json_schema: jsonSchema,
           source_code: code,
           pip_requirements: pipRequirements,
+          source_type: 'python',
         },
       });
     },

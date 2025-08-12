@@ -1085,6 +1085,7 @@
     "restore": "此变量已更新，将环境变量重置为原始值"
   },
   "ToolsEditor/LocalToolsViewer": {
+    "language": "语言",
     "SchemaChangeWarning": {
       "title": "主要函数{functionName}与您的json架构不匹配，您的工具可能无法按预期工作。",
       "error": "架构问题",
@@ -1309,6 +1310,7 @@
       "trigger": "创建新工具",
       "description": "创建新工具以在您的智能体和其他项目中使用。",
       "label": "工具名称",
+      "languageLabel": "语言",
       "placeholder": "我的工具",
       "restriction": "工具必须只包含字母数字和下划线",
       "errors": {

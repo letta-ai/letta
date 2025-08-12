@@ -122,6 +122,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  TYPESCRIPT_TOOLS: {
+    description: 'Enable TypeScript tools',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
