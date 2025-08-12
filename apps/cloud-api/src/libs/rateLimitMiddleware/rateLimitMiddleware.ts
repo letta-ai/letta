@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import { handleMessageRateLimiting } from '@letta-cloud/utils-server';
 import { type MessageCreate, zodTypes } from '@letta-cloud/sdk-core';
+import { getAgentIdFromMessageRoute } from '../../utils/getIsCreateMessageRoute';
 
-export const EXPLICIT_RATE_LIMIT_ROUTE = new RegExp(
-  '/v1/agents/([A-Za-z0-9-]+)/messages(/stream|/async)($|/$)?',
-);
+
+
 
 export async function rateLimitMiddleware(
   req: Request,
@@ -16,19 +16,21 @@ export async function rateLimitMiddleware(
     return;
   }
 
-  const result = EXPLICIT_RATE_LIMIT_ROUTE.exec(req.path);
+  const agentId = getAgentIdFromMessageRoute(req.path);
 
-  if (!result || req.method !== 'POST') {
+
+  if (!agentId || req.method !== 'POST') {
     next();
     return;
   }
+
+
+  console.log(`Rate limiting for agent ${agentId} in path ${req.path}`);
 
   if (process.env.IS_API_STABILITY_TEST === 'yes') {
     next();
     return;
   }
-
-  const agentId = result[1];
 
   const body = zodTypes.LettaRequest.safeParse(req.body);
 

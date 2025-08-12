@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
-import { EXPLICIT_RATE_LIMIT_ROUTE } from '../rateLimitMiddleware/rateLimitMiddleware';
 import { zodTypes } from '@letta-cloud/sdk-core';
 import { contentModerationCheck } from '@letta-cloud/utils-server';
+import { getIsCreateMessageRoute } from '../../utils/getIsCreateMessageRoute';
 
 export function contentModerationMiddleware(
   req: Request,
@@ -18,7 +18,7 @@ export function contentModerationMiddleware(
     return;
   }
 
-  const result = EXPLICIT_RATE_LIMIT_ROUTE.exec(req.path);
+  const result = getIsCreateMessageRoute(req.path);
 
   if (!result || req.method !== 'POST') {
     next();

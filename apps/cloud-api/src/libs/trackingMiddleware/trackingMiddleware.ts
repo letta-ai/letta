@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
-import { EXPLICIT_RATE_LIMIT_ROUTE } from '../rateLimitMiddleware/rateLimitMiddleware';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { getIsCreateMessageRoute } from '../../utils/getIsCreateMessageRoute';
 
 export async function trackingMiddleware(
   req: Request,
@@ -15,7 +15,7 @@ export async function trackingMiddleware(
       return;
     }
 
-    const result = EXPLICIT_RATE_LIMIT_ROUTE.exec(req.path);
+    const result = getIsCreateMessageRoute(req.path);
 
     if (!result || req.method !== 'POST') {
       next();
