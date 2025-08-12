@@ -94,6 +94,8 @@ interface McpAttachDetachToolProperty extends BaseProperty {
   agentId: string;
   mcpServerName: string;
   mcpToolName: string;
+}
+
 interface CoreMemoryProperty extends BaseProperty {
   agentId: string;
 }
