@@ -1099,33 +1099,6 @@ class SyncServer(Server):
     def get_recall_memory_summary(self, agent_id: str, actor: User) -> RecallMemorySummary:
         return RecallMemorySummary(size=self.message_manager.size(actor=actor, agent_id=agent_id))
 
-    def get_agent_archival(
-        self,
-        user_id: str,
-        agent_id: str,
-        after: Optional[str] = None,
-        before: Optional[str] = None,
-        limit: Optional[int] = 100,
-        order_by: Optional[str] = "created_at",
-        reverse: Optional[bool] = False,
-        query_text: Optional[str] = None,
-        ascending: Optional[bool] = True,
-    ) -> List[Passage]:
-        # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
-        actor = self.user_manager.get_user_or_default(user_id=user_id)
-
-        # iterate over records
-        records = self.agent_manager.list_passages(
-            actor=actor,
-            agent_id=agent_id,
-            after=after,
-            query_text=query_text,
-            before=before,
-            ascending=ascending,
-            limit=limit,
-        )
-        return records
-
     async def get_agent_archival_async(
         self,
         agent_id: str,
@@ -1153,7 +1126,7 @@ class SyncServer(Server):
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Insert passages into the archive
-        passages = await self.passage_manager.insert_passage_async(agent_state=agent_state, text=memory_contents, actor=actor)
+        passages = await self.passage_manager.insert_passage(agent_state=agent_state, text=memory_contents, actor=actor)
 
         return passages
 
@@ -1470,10 +1443,6 @@ class SyncServer(Server):
         # load data into the document store
         passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
         return passage_count, document_count
-
-    def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
-        # TODO: move this query into PassageManager
-        return self.agent_manager.list_passages(actor=self.user_manager.get_user_or_default(user_id=user_id), source_id=source_id)
 
     def list_all_sources(self, actor: User) -> List[Source]:
         # TODO: legacy: remove

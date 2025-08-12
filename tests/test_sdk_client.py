@@ -408,6 +408,28 @@ def test_send_system_message(client: LettaSDKClient, agent: AgentState):
     assert send_system_message_response, "Sending message failed"
 
 
+def test_insert_archival_memory(client: LettaSDKClient, agent: AgentState):
+    passage = client.agents.passages.create(
+        agent_id=agent.id,
+        text="This is a test passage",
+    )
+    assert passage, "Inserting archival memory failed"
+
+    # List archival memory and verify content
+    archival_memory_response = client.agents.passages.list(agent_id=agent.id, limit=1)
+    archival_memories = [memory.text for memory in archival_memory_response]
+    assert "This is a test passage" in archival_memories, f"Retrieving archival memory failed: {archival_memories}"
+
+    # Delete the memory
+    memory_id_to_delete = archival_memory_response[0].id
+    client.agents.passages.delete(agent_id=agent.id, memory_id=memory_id_to_delete)
+
+    # Verify memory is gone (implicitly checks that the list call works)
+    final_passages = client.agents.passages.list(agent_id=agent.id)
+    passage_texts = [p.text for p in final_passages]
+    assert "This is a test passage" not in passage_texts, f"Memory was not deleted: {passage_texts}"
+
+
 def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agent: AgentState):
     """Test to see if the function return limit works"""
 
