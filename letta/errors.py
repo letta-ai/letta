@@ -236,5 +236,33 @@ class AgentFileExportError(Exception):
     """Exception raised during agent file export operations"""
 
 
+class AgentNotFoundForExportError(AgentFileExportError):
+    """Exception raised when requested agents are not found during export"""
+
+    def __init__(self, missing_ids: List[str]):
+        self.missing_ids = missing_ids
+        super().__init__(f"The following agent IDs were not found: {missing_ids}")
+
+
+class AgentExportIdMappingError(AgentFileExportError):
+    """Exception raised when ID mapping fails during export conversion"""
+
+    def __init__(self, db_id: str, entity_type: str):
+        self.db_id = db_id
+        self.entity_type = entity_type
+        super().__init__(
+            f"Unexpected new {entity_type} ID '{db_id}' encountered during conversion. "
+            f"All IDs should have been mapped during agent processing."
+        )
+
+
+class AgentExportProcessingError(AgentFileExportError):
+    """Exception raised when general export processing fails"""
+
+    def __init__(self, message: str, original_error: Optional[Exception] = None):
+        self.original_error = original_error
+        super().__init__(f"Export failed: {message}")
+
+
 class AgentFileImportError(Exception):
     """Exception raised during agent file import operations"""

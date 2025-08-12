@@ -24,12 +24,14 @@ class ImportResult:
         success: bool,
         message: str = "",
         imported_count: int = 0,
+        imported_agent_ids: Optional[List[str]] = None,
         errors: Optional[List[str]] = None,
         id_mappings: Optional[Dict[str, str]] = None,
     ):
         self.success = success
         self.message = message
         self.imported_count = imported_count
+        self.imported_agent_ids = imported_agent_ids or []
         self.errors = errors or []
         self.id_mappings = id_mappings or {}
 
