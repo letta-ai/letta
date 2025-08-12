@@ -31,14 +31,12 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
-from letta.services.provider_manager import ProviderManager
 from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -122,19 +120,17 @@ class AnthropicClient(LLMClientBase):
     def _get_anthropic_client(
         self, llm_config: LLMConfig, async_client: bool = False
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        override_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            override_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = self.get_byok_overrides(llm_config)
 
         if async_client:
             return (
-                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
-                if override_key
+                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+                if api_key
                 else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
             )
         return (
-            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
-            if override_key
+            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+            if api_key
             else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
         )
 
@@ -142,19 +138,17 @@ class AnthropicClient(LLMClientBase):
     async def _get_anthropic_client_async(
         self, llm_config: LLMConfig, async_client: bool = False
     ) -> Union[anthropic.AsyncAnthropic, anthropic.Anthropic]:
-        override_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            override_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
         if async_client:
             return (
-                anthropic.AsyncAnthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
-                if override_key
+                anthropic.AsyncAnthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+                if api_key
                 else anthropic.AsyncAnthropic(max_retries=model_settings.anthropic_max_retries)
             )
         return (
-            anthropic.Anthropic(api_key=override_key, max_retries=model_settings.anthropic_max_retries)
-            if override_key
+            anthropic.Anthropic(api_key=api_key, max_retries=model_settings.anthropic_max_retries)
+            if api_key
             else anthropic.Anthropic(max_retries=model_settings.anthropic_max_retries)
         )
 
