@@ -608,7 +608,7 @@ async def delete_mcp_server_from_config(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Add a new MCP server to the Letta MCP server config
+    Delete a MCP server configuration
     """
     if tool_settings.mcp_read_from_config:
         # write to config file
