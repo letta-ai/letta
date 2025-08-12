@@ -7,7 +7,6 @@ from openai.types.chat.chat_completion import ChatCompletion
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.settings import model_settings
 
@@ -22,11 +21,7 @@ class TogetherClient(OpenAIClient):
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = self.get_byok_overrides(llm_config)
 
         if not api_key:
             api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
@@ -40,11 +35,7 @@ class TogetherClient(OpenAIClient):
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
         """
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
         if not api_key:
             api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")

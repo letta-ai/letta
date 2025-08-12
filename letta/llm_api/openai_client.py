@@ -26,7 +26,6 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderCategory
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
@@ -111,11 +110,7 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
 
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = self.get_byok_overrides(llm_config)
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -133,11 +128,7 @@ class OpenAIClient(LLMClientBase):
         return kwargs
 
     async def _prepare_client_kwargs_async(self, llm_config: LLMConfig) -> dict:
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
