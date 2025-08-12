@@ -7125,7 +7125,7 @@ export const useToolsServiceDeleteTool = <
   });
 /**
  * Delete Mcp Server From Config
- * Add a new MCP server to the Letta MCP server config
+ * Delete a MCP server configuration
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.userId

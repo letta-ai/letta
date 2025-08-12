@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from fastapi import HTTPException
-from sqlalchemy import null
+from sqlalchemy import delete, null
 from starlette.requests import Request
 
 import letta.constants as constants
@@ -169,17 +169,50 @@ class MCPManager:
     async def create_mcp_server(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
         """Create a new MCP server."""
         async with db_registry.async_session() as session:
-            # Set the organization id at the ORM layer
-            pydantic_mcp_server.organization_id = actor.organization_id
-            mcp_server_data = pydantic_mcp_server.model_dump(to_orm=True)
+            try:
+                # Set the organization id at the ORM layer
+                pydantic_mcp_server.organization_id = actor.organization_id
+                mcp_server_data = pydantic_mcp_server.model_dump(to_orm=True)
 
-            # Ensure custom_headers None is stored as SQL NULL, not JSON null
-            if mcp_server_data.get("custom_headers") is None:
-                mcp_server_data.pop("custom_headers", None)
+                # Ensure custom_headers None is stored as SQL NULL, not JSON null
+                if mcp_server_data.get("custom_headers") is None:
+                    mcp_server_data.pop("custom_headers", None)
 
-            mcp_server = MCPServerModel(**mcp_server_data)
-            mcp_server = await mcp_server.create_async(session, actor=actor)
-            return mcp_server.to_pydantic()
+                mcp_server = MCPServerModel(**mcp_server_data)
+                mcp_server = await mcp_server.create_async(session, actor=actor, no_commit=True)
+
+                # Link existing OAuth sessions for the same user and server URL
+                # This ensures OAuth sessions created during testing get linked to the server
+                server_url = getattr(mcp_server, "server_url", None)
+                if server_url:
+                    from sqlalchemy import select
+
+                    result = await session.execute(
+                        select(MCPOAuth).where(
+                            MCPOAuth.server_url == server_url,
+                            MCPOAuth.organization_id == actor.organization_id,
+                            MCPOAuth.user_id == actor.id,  # Only link sessions for the same user
+                            MCPOAuth.server_id.is_(None),  # Only update sessions not already linked
+                        )
+                    )
+                    oauth_sessions = result.scalars().all()
+
+                    # TODO: @jnjpng we should upate sessions in bulk
+                    for oauth_session in oauth_sessions:
+                        oauth_session.server_id = mcp_server.id
+                        await oauth_session.update_async(db_session=session, actor=actor, no_commit=True)
+
+                    if oauth_sessions:
+                        logger.info(
+                            f"Linked {len(oauth_sessions)} OAuth sessions to MCP server {mcp_server.id} (URL: {server_url}) for user {actor.id}"
+                        )
+
+                await session.commit()
+                return mcp_server.to_pydantic()
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"Failed to create MCP server: {e}")
+                raise
 
     @enforce_types
     async def update_mcp_server_by_id(self, mcp_server_id: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
@@ -286,13 +319,48 @@ class MCPManager:
 
     @enforce_types
     async def delete_mcp_server_by_id(self, mcp_server_id: str, actor: PydanticUser) -> None:
-        """Delete a tool by its ID."""
+        """Delete a MCP server by its ID."""
         async with db_registry.async_session() as session:
             try:
                 mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)
-                await mcp_server.hard_delete_async(db_session=session, actor=actor)
+                if not mcp_server:
+                    raise NoResultFound(f"MCP server with id {mcp_server_id} not found.")
+
+                server_url = getattr(mcp_server, "server_url", None)
+
+                # Delete OAuth sessions for the same user and server URL in the same transaction
+                # This handles orphaned sessions that were created during testing/connection
+                oauth_count = 0
+                if server_url:
+                    result = await session.execute(
+                        delete(MCPOAuth).where(
+                            MCPOAuth.server_url == server_url,
+                            MCPOAuth.organization_id == actor.organization_id,
+                            MCPOAuth.user_id == actor.id,  # Only delete sessions for the same user
+                        )
+                    )
+                    oauth_count = result.rowcount
+                    if oauth_count > 0:
+                        logger.info(
+                            f"Deleting {oauth_count} OAuth sessions for MCP server {mcp_server_id} (URL: {server_url}) for user {actor.id}"
+                        )
+
+                # Delete the MCP server, will cascade delete to linked OAuth sessions
+                await session.execute(
+                    delete(MCPServerModel).where(
+                        MCPServerModel.id == mcp_server_id,
+                        MCPServerModel.organization_id == actor.organization_id,
+                    )
+                )
+
+                await session.commit()
             except NoResultFound:
+                await session.rollback()
                 raise ValueError(f"MCP server with id {mcp_server_id} not found.")
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"Failed to delete MCP server {mcp_server_id}: {e}")
+                raise
 
     def read_mcp_config(self) -> dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]]:
         mcp_server_list = {}

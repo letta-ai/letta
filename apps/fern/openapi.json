@@ -872,7 +872,7 @@
       "delete": {
         "tags": ["tools"],
         "summary": "Delete Mcp Server From Config",
-        "description": "Add a new MCP server to the Letta MCP server config",
+        "description": "Delete a MCP server configuration",
         "operationId": "delete_mcp_server",
         "parameters": [
           {
