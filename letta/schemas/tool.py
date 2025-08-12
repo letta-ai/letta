@@ -22,7 +22,7 @@ from letta.functions.schema_generator import (
     generate_tool_schema_for_mcp,
 )
 from letta.log import get_logger
-from letta.schemas.enums import ToolType
+from letta.schemas.enums import ToolSourceType, ToolType
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.npm_requirement import NpmRequirement
 from letta.schemas.pip_requirement import PipRequirement
@@ -76,27 +76,42 @@ class Tool(BaseTool):
         """
         from letta.functions.helpers import generate_model_from_args_json_schema
 
-        if self.tool_type is ToolType.CUSTOM:
+        if self.tool_type == ToolType.CUSTOM:
             if not self.source_code:
                 logger.error("Custom tool with id=%s is missing source_code field", self.id)
                 raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
 
-            # Always derive json_schema for freshest possible json_schema
-            if self.args_json_schema is not None:
-                name, description = get_function_name_and_docstring(self.source_code, self.name)
-                args_schema = generate_model_from_args_json_schema(self.args_json_schema)
-                self.json_schema = generate_schema_from_args_schema_v2(
-                    args_schema=args_schema,
-                    name=name,
-                    description=description,
-                    append_heartbeat=False,
-                )
-            else:  # elif not self.json_schema: # TODO: JSON schema is not being derived correctly the first time?
-                # If there's not a json_schema provided, then we need to re-derive
-                try:
-                    self.json_schema = derive_openai_json_schema(source_code=self.source_code)
-                except Exception as e:
-                    logger.error("Failed to derive json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
+            if self.source_type == ToolSourceType.typescript:
+                # TypeScript tools don't support args_json_schema, only direct schema generation
+                if not self.json_schema:
+                    try:
+                        from letta.functions.typescript_parser import derive_typescript_json_schema
+
+                        self.json_schema = derive_typescript_json_schema(source_code=self.source_code)
+                    except Exception as e:
+                        logger.error("Failed to derive TypeScript json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
+            elif (
+                self.source_type == ToolSourceType.python or self.source_type is None
+            ):  # default to python if not provided for backwards compatability
+                # Python tool handling
+                # Always derive json_schema for freshest possible json_schema
+                if self.args_json_schema is not None:
+                    name, description = get_function_name_and_docstring(self.source_code, self.name)
+                    args_schema = generate_model_from_args_json_schema(self.args_json_schema)
+                    self.json_schema = generate_schema_from_args_schema_v2(
+                        args_schema=args_schema,
+                        name=name,
+                        description=description,
+                        append_heartbeat=False,
+                    )
+                else:  # elif not self.json_schema: # TODO: JSON schema is not being derived correctly the first time?
+                    # If there's not a json_schema provided, then we need to re-derive
+                    try:
+                        self.json_schema = derive_openai_json_schema(source_code=self.source_code)
+                    except Exception as e:
+                        logger.error("Failed to derive json schema for tool with id=%s name=%s: %s", self.id, self.name, e)
+            else:
+                raise ValueError(f"Unknown tool source type: {self.source_type}")
         elif self.tool_type in {ToolType.LETTA_CORE, ToolType.LETTA_MEMORY_CORE, ToolType.LETTA_SLEEPTIME_CORE}:
             # If it's letta core tool, we generate the json_schema on the fly here
             self.json_schema = get_json_schema_from_module(module_name=LETTA_CORE_TOOL_MODULE_NAME, function_name=self.name)
