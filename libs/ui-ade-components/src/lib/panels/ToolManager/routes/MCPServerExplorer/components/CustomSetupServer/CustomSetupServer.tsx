@@ -18,9 +18,12 @@ import { useToolsServiceListMcpServers } from '@letta-cloud/sdk-core';
 import { TestMCPConnectionButton } from '../../../MCPServers/TestMCPConnectionButton';
 import { MCPServerTypes } from '../../../MCPServers/types';
 import { generateServerName } from '../../../MCPServers/AddMCPServerDialog/AddMCPServerDialog';
-import { useMCPServerDialog } from '../../hooks/useMCPServerDialog/useMCPServerDialog';
+import { useMCPServerDialog } from '../../hooks/useMCPServerDialog';
 import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPServers/useRecommendedMCPServers';
 import { SERVER_CONFIGS } from '../../constants';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useADEAppContext } from '../../../../../../AppContext/AppContext';
 
 interface CustomSetupServerProps {
   server: CustomUrlRecommendedServer;
@@ -48,6 +51,8 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
   const { open, mutate, isPending, isError, handleOpenChange } =
     useMCPServerDialog(props.server);
 
+  const { user } = useADEAppContext();
+
   type CustomInputFormValues = z.infer<typeof customInputSchema>;
 
   const { watch } = form;
@@ -56,16 +61,23 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
   const handleSubmit = useCallback(
     (data: CustomInputFormValues) => {
       let baseName = props.server.name;
+      const serverType = config?.type || 'sse';
+
       if (data.input.includes('mcp.pipedream.net')) {
         const urlParts = data.input.split('/');
         const appName = urlParts[urlParts.length - 1];
         baseName = `${appName.charAt(0).toUpperCase() + appName.slice(1)} (Pipedream)`;
       }
+      const serverName = generateServerName(baseName, existingServers);
 
-      const serverType = config?.type || 'sse';
+      trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER, {
+        userId: user?.id || '',
+        mcpServerName: serverName,
+        mcpServerType: serverType,
+      });
 
       const requestBody = {
-        server_name: generateServerName(baseName, existingServers),
+        server_name: serverName,
         type: serverType,
         server_url: data.input,
         auth_header: null,
@@ -75,7 +87,7 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
 
       mutate({ requestBody });
     },
-    [mutate, props.server.name, existingServers, config?.type],
+    [props.server.name, config?.type, existingServers, user?.id, mutate],
   );
 
   return (

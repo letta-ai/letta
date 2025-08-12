@@ -26,8 +26,12 @@ export enum AnalyticsEvent {
   CREATED_API_KEY = 'Created API Key',
   CREATE_AGENT = 'agent:create',
   CREATE_TOOL = 'tool:create',
-  ATTACH_TOOL = 'tool:attach',
-  DETACH_TOOL = 'tool:detach',
+  ATTACH_TOOL = 'agent:tool:attach',
+  DETACH_TOOL = 'agent:tool:detach',
+  ADD_MCP_SERVER = 'tool:mcp_server:add',
+  ADD_MCP_SERVER_TO_AGENT = 'agent:mcp_server:add',
+  ATTACH_MCP_SERVER_TOOL = 'agent:mcp_server:attach_tool',
+  DETACH_MCP_SERVER_TOOL = 'agent:mcp_server:detach_tool',
   CREATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:create_block',
   ATTACH_BLOCK_TO_CORE_MEMORY = 'agent:update:core_memory:attach_block',
   DETACH_BLOCK_FROM_CORE_MEMORY = 'agent:update:core_memory:detach_block',
@@ -80,6 +84,16 @@ interface AttachDetachToolProperty extends ToolProperty {
   agentId: string;
 }
 
+interface McpServer extends BaseProperty {
+  agentId?: string;
+  mcpServerName: string;
+  mcpServerType: string;
+}
+
+interface McpAttachDetachToolProperty extends BaseProperty {
+  agentId: string;
+  mcpServerName: string;
+  mcpToolName: string;
 interface CoreMemoryProperty extends BaseProperty {
   agentId: string;
 }
@@ -115,6 +129,10 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CREATE_TOOL]: ToolProperty;
   [AnalyticsEvent.ATTACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.DETACH_TOOL]: AttachDetachToolProperty;
+  [AnalyticsEvent.ADD_MCP_SERVER]: McpServer;
+  [AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT]: McpServer;
+  [AnalyticsEvent.ATTACH_MCP_SERVER_TOOL]: McpAttachDetachToolProperty;
+  [AnalyticsEvent.DETACH_MCP_SERVER_TOOL]: McpAttachDetachToolProperty;
   [AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY]: CreateCoreMemoryBlockProperty;
   [AnalyticsEvent.ATTACH_BLOCK_TO_CORE_MEMORY]: CoreMemoryProperty;
   [AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY]: CoreMemoryProperty;

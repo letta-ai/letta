@@ -1,6 +1,7 @@
 'use client';
 import { useTranslations } from '@letta-cloud/translations';
 import { useIsComposioConnected } from '../../hooks/useIsComposioConnected/useIsComposioConnected';
+import type { Tool } from '@letta-cloud/sdk-core';
 import {
   type ToolType,
   type AgentState,
@@ -10,6 +11,15 @@ import {
   useToolsServiceAddMcpTool,
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
+
+interface ToolWithMCPMetadata extends Tool {
+  metadata_?: {
+    mcp?: {
+      server_name?: string;
+    };
+    [key: string]: unknown;
+  } | null;
+}
 import {
   AddLinkIcon,
   Button,
@@ -32,6 +42,7 @@ interface AttachComposioToolProps {
   idToAttach: string;
 }
 
+// TODO: DEPRECATING...
 function AttachComposioTool(props: AttachComposioToolProps) {
   const { idToAttach } = props;
   const t = useTranslations('ToolActionsHeader');
@@ -141,6 +152,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool();
+  const { user } = useADEAppContext();
 
   const handleAttach = useCallback(async () => {
     let toolToRollback: {
@@ -148,6 +160,13 @@ function AttachMCPTool(props: AttachMCPToolProps) {
       name: string;
       tool_type: ToolType;
     } | null = null;
+
+    trackClientSideEvent(AnalyticsEvent.ATTACH_MCP_SERVER_TOOL, {
+      userId: user?.id || '',
+      agentId,
+      mcpServerName,
+      mcpToolName,
+    });
 
     try {
       const mcpTool = await addMCPTool({
@@ -188,6 +207,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
     removeOptimisticTool,
     mcpServerName,
     mcpToolName,
+    user?.id,
     t,
   ]);
 
@@ -214,7 +234,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
   const { id: agentId } = useCurrentAgent();
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
-  const { user } = useADEAppContext()
+  const { user } = useADEAppContext();
 
   const { mutate } = useAgentsServiceAttachTool({
     onMutate: () => {
@@ -249,7 +269,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
       toolType: toolType,
       agentId,
       toolId: idToAttach,
-    })
+    });
 
     mutate({
       agentId,
@@ -286,7 +306,13 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
     case 'letta_memory_core':
     case 'letta_builtin':
     case 'letta_sleeptime_core':
-      return <AttachLocalTool toolType={toolType} idToAttach={idToAttach} toolName={toolName} />;
+      return (
+        <AttachLocalTool
+          toolType={toolType}
+          idToAttach={idToAttach}
+          toolName={toolName}
+        />
+      );
 
     case 'external_mcp':
       return <AttachMCPTool idToAttach={idToAttach} />;
@@ -307,20 +333,14 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const queryClient = useQueryClient();
-  const { user } = useADEAppContext()
+  const { user } = useADEAppContext();
 
   const t = useTranslations('ToolActionsHeader');
 
   const [open, setOpen] = useState(false);
 
-  const { mutate, isPending } = useAgentsServiceDetachTool({
-    onError: (_error, _variables, context) => {
-      if (context?.toolToRestore) {
-        addOptimisticTool(context.toolToRestore);
-      }
-      toast.error(t('DetachToolDialog.error'));
-    },
-    onMutate: () => {
+  const getToolToRestore = useCallback(
+    (idToDetach: string): ToolWithMCPMetadata | undefined => {
       const currentAgentState = queryClient.getQueryData<AgentState>(
         UseAgentsServiceRetrieveAgentKeyFn({
           agentId,
@@ -330,6 +350,21 @@ function DetachToolDialog(props: DetachToolDialogProps) {
       const toolToRestore = currentAgentState?.tools?.find(
         (tool) => tool.id === idToDetach,
       );
+
+      return toolToRestore;
+    },
+    [queryClient, agentId],
+  );
+
+  const { mutate, isPending } = useAgentsServiceDetachTool({
+    onError: (_error, _variables, context) => {
+      if (context?.toolToRestore) {
+        addOptimisticTool(context.toolToRestore);
+      }
+      toast.error(t('DetachToolDialog.error'));
+    },
+    onMutate: () => {
+      const toolToRestore = getToolToRestore(idToDetach);
 
       removeOptimisticTool(idToDetach);
 
@@ -352,18 +387,30 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   });
 
   const handleDetach = useCallback(() => {
-    trackClientSideEvent(AnalyticsEvent.DETACH_TOOL, {
-      userId: user?.id || '',
-      toolType,
-      agentId,
-      toolId: idToDetach,
-    })
+    if (toolType !== 'external_mcp') {
+      trackClientSideEvent(AnalyticsEvent.DETACH_TOOL, {
+        userId: user?.id || '',
+        toolType,
+        agentId,
+        toolId: idToDetach,
+      });
+    } else {
+      const tool = getToolToRestore(idToDetach);
+      if (tool) {
+        trackClientSideEvent(AnalyticsEvent.DETACH_MCP_SERVER_TOOL, {
+          userId: user?.id ?? '',
+          agentId,
+          mcpServerName: tool.metadata_?.mcp?.server_name ?? '',
+          mcpToolName: tool.name ?? '',
+        });
+      }
+    }
 
     mutate({
       agentId,
       toolId: idToDetach,
     });
-  }, [user?.id, toolType, agentId, idToDetach, mutate]);
+  }, [toolType, mutate, agentId, idToDetach, user?.id, getToolToRestore]);
 
   return (
     <Dialog
