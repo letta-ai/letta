@@ -395,6 +395,24 @@ def deserialize_agent_step_state(data: Optional[Dict]) -> Optional[AgentStepStat
     if not data:
         return None
 
+    if solver_data := data.get("tool_rules_solver"):
+        # Get existing tool_rules or reconstruct from categorized fields for backwards compatibility
+        tool_rules_data = solver_data.get("tool_rules", [])
+
+        if not tool_rules_data:
+            for field_name in (
+                "init_tool_rules",
+                "continue_tool_rules",
+                "child_based_tool_rules",
+                "parent_tool_rules",
+                "terminal_tool_rules",
+                "required_before_exit_tool_rules",
+            ):
+                if field_data := solver_data.get(field_name):
+                    tool_rules_data.extend(field_data)
+
+        solver_data["tool_rules"] = deserialize_tool_rules(tool_rules_data)
+
     return AgentStepState(**data)
 
 
@@ -418,6 +436,7 @@ def deserialize_response_format(data: Optional[Dict]) -> Optional[ResponseFormat
         return JsonSchemaResponseFormat(**data)
     if data["type"] == ResponseFormatType.json_object:
         return JsonObjectResponseFormat(**data)
+    raise ValueError(f"Unknown Response Format type: {data['type']}")
 
 
 # --------------------------

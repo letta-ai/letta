@@ -175,6 +175,10 @@ class LLMClientBase:
         raise NotImplementedError(f"Streaming is not supported for {llm_config.model_endpoint_type}")
 
     @abstractmethod
+    def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     def handle_llm_error(self, e: Exception) -> Exception:
         """
         Maps provider-specific errors to common LLMError types.

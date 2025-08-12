@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 class ProviderType(str, Enum):
@@ -42,7 +42,7 @@ class OptionState(str, Enum):
     DEFAULT = "default"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """
     Status of the job.
     """
@@ -63,7 +63,8 @@ class JobStatus(str, Enum):
 
 class AgentStepStatus(str, Enum):
     """
-    Status of the job.
+    Status of agent step.
+    TODO (cliandy): consolidate this with job status
     """
 
     paused = "paused"

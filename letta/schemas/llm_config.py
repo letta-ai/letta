@@ -94,6 +94,9 @@ class LLMConfig(BaseModel):
         """
         model = values.get("model")
 
+        if model is None:
+            return values
+
         # Define models where we want put_inner_thoughts_in_kwargs to be False
         avoid_put_inner_thoughts_in_kwargs = ["gpt-4"]
 
@@ -107,24 +110,12 @@ class LLMConfig(BaseModel):
         if is_openai_reasoning_model(model):
             values["put_inner_thoughts_in_kwargs"] = False
 
-        if values.get("enable_reasoner") and values.get("model_endpoint_type") == "anthropic":
+        if values.get("model_endpoint_type") == "anthropic" and (
+            model.startswith("claude-3-7-sonnet") or model.startswith("claude-sonnet-4") or model.startswith("claude-opus-4")
+        ):
             values["put_inner_thoughts_in_kwargs"] = False
 
         return values
-
-    @model_validator(mode="after")
-    def issue_warning_for_reasoning_constraints(self) -> "LLMConfig":
-        if self.enable_reasoner:
-            if self.max_reasoning_tokens is None:
-                logger.warning("max_reasoning_tokens must be set when enable_reasoner is True")
-            if self.max_tokens is not None and self.max_reasoning_tokens >= self.max_tokens:
-                logger.warning("max_tokens must be greater than max_reasoning_tokens (thinking budget)")
-            if self.put_inner_thoughts_in_kwargs:
-                logger.debug("Extended thinking is not compatible with put_inner_thoughts_in_kwargs")
-        elif self.max_reasoning_tokens and not self.enable_reasoner:
-            logger.warning("model will not use reasoning unless enable_reasoner is set to True")
-
-        return self
 
     @classmethod
     def default_config(cls, model_name: str):
@@ -186,30 +177,49 @@ class LLMConfig(BaseModel):
         )
 
     @classmethod
+    def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "openai" and (
+            config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
+        )
+
+    @classmethod
+    def is_anthropic_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "anthropic" and (
+            config.model.startswith("claude-opus-4")
+            or config.model.startswith("claude-sonnet-4")
+            or config.model.startswith("claude-3-7-sonnet")
+        )
+
+    @classmethod
+    def is_google_vertex_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "google_vertex" and (
+            config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
+        )
+
+    @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
         if not reasoning:
+            if cls.is_openai_reasoning_model(config) or config.model.startswith("gemini-2.5-pro"):
+                raise ValueError("Reasoning cannot be disabled for OpenAI o1/o3 models")
             config.put_inner_thoughts_in_kwargs = False
             config.enable_reasoner = False
 
         else:
             config.enable_reasoner = True
-            if (
-                config.model_endpoint_type == "anthropic"
-                and ("claude-opus-4" in config.model or "claude-sonnet-4" in config.model or "claude-3-7-sonnet" in config.model)
-            ) or (
-                config.model_endpoint_type == "google_vertex" and ("gemini-2.5-flash" in config.model or "gemini-2.0-pro" in config.model)
-            ):
+            if cls.is_anthropic_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-            elif config.model_endpoint_type == "openai" and (
-                config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
-            ):
+            elif cls.is_google_vertex_reasoning_model(config):
+                # Handle as non-reasoner until we support summary
+                config.put_inner_thoughts_in_kwargs = True
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            elif cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
                     config.reasoning_effort = "medium"
             else:
                 config.put_inner_thoughts_in_kwargs = True
-                config.enable_reasoner = False
 
         return config

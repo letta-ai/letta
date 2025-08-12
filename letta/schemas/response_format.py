@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated, Any, Dict, Literal, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ResponseFormatType(str, Enum):
@@ -52,13 +52,12 @@ class JsonSchemaResponseFormat(ResponseFormat):
         description="The JSON schema of the response.",
     )
 
-    @validator("json_schema")
-    def validate_json_schema(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+    @field_validator("json_schema")
+    @classmethod
+    def validate_json_schema(cls, v: dict[str, Any]) -> Dict[str, Any]:
         """Validate that the provided schema is a valid JSON schema."""
-        if not isinstance(v, dict):
-            raise ValueError("JSON schema must be a dictionary")
         if "schema" not in v:
-            raise ValueError("JSON schema should include a $schema property")
+            raise ValueError("JSON schema should include a schema property")
         return v
 
 

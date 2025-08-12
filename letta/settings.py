@@ -144,6 +144,7 @@ class ModelSettings(BaseSettings):
     # google ai
     gemini_api_key: Optional[str] = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com/"
+    gemini_force_minimum_thinking_budget: bool = False
 
     # google vertex
     google_cloud_project: Optional[str] = None
@@ -200,7 +201,7 @@ class DatabaseChoice(str, Enum):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="letta_", extra="ignore")
 
-    letta_dir: Optional[Path] = Field(Path.home() / ".letta", env="LETTA_DIR")
+    letta_dir: Optional[Path] = Field(Path.home() / ".letta", alias="LETTA_DIR")
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
 

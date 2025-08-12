@@ -345,6 +345,15 @@ class OpenAIStreamingInterface:
                                         prev_content = self.current_json_parse_result.get(self.assistant_message_tool_kwarg, "")
                                         # TODO: Assumes consistent state and that prev_content is subset of new_content
                                         diff = new_content.replace(prev_content, "", 1)
+
+                                        # quick patch to mitigate double message streaming error
+                                        # TODO: root cause this issue and remove patch
+                                        if diff != "" and "\\n" not in new_content:
+                                            converted_new_content = new_content.replace("\n", "\\n")
+                                            converted_content_diff = converted_new_content.replace(prev_content, "", 1)
+                                            if converted_content_diff == "":
+                                                diff = converted_content_diff
+
                                         self.current_json_parse_result = parsed_args
                                         if prev_message_type and prev_message_type != "assistant_message":
                                             message_index += 1
