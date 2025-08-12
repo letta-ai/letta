@@ -253,7 +253,7 @@ export function EditMessage(props: EditMessageProps) {
                 onChange={(e) => {
                   field.onChange(e);
                 }}
-                className="w-full focus:outline-none text-sm resize-none"
+                className="w-full focus:outline-none text-sm resize-none bg-transparent text-text"
                 placeholder={t('placeholder')}
                 autoFocus
               />

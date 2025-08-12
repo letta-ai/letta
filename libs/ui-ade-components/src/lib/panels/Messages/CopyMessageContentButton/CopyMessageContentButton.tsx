@@ -17,8 +17,8 @@ export function CopyMessageContentButton(props: CopyMessageContentButtonProps) {
       size="2xsmall"
       hideLabel
       square
-      iconColor="muted"
       color="tertiary"
+      _use_rarely_className="text-muted hover:text-brand"
     />
   )
 }

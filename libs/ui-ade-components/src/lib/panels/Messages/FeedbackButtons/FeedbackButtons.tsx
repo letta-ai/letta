@@ -14,6 +14,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '@letta-cloud/ui-styles';
 
 interface FeedbackButtonsProps {
   stepId: string;
@@ -95,13 +96,13 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
   }
 
   return (
-    <HStack gap={false}>
+    <HStack gap="small">
       <Button
         preIcon={
           isPositiveFeedback ? (
             <ThumbsUpIcon color="positive" size="auto" />
           ) : (
-            <ThumbsUpIcon color="muted" size="auto" />
+            <ThumbsUpIcon size="auto" />
           )
         }
         size="3xsmall"
@@ -111,7 +112,10 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
         onClick={() => {
           handleAddFeedback('positive');
         }}
-        _use_rarely_className=" w-4 min-h-4"
+        _use_rarely_className={cn(
+          "w-4 min-h-4",
+          !isPositiveFeedback && "text-muted hover:text-brand"
+        )}
         color="tertiary"
       />
       <Button
@@ -119,7 +123,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
           isNegativeFeedback ? (
             <ThumbsDownIcon color="destructive" size="auto" />
           ) : (
-            <ThumbsDownIcon color="muted" size="auto" />
+            <ThumbsDownIcon size="auto" />
           )
         }
         onClick={() => {
@@ -129,7 +133,10 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
         size="3xsmall"
         hideLabel
         square
-        _use_rarely_className=" w-4 min-h-4"
+        _use_rarely_className={cn(
+          "w-4 min-h-4",
+          !isNegativeFeedback && "text-muted hover:text-brand"
+        )}
         color="tertiary"
       />
     </HStack>

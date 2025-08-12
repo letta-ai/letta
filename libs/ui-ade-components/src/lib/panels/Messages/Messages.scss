@@ -5,12 +5,15 @@
 }
 
 .messages-step-editor {
-  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .messages-step:hover {
   .messages-step-editor {
-    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

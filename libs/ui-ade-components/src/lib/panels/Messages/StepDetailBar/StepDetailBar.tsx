@@ -94,9 +94,9 @@ export function StepDetailBar(props: StepDetailBarProps) {
                 <Button
                   preIcon={
                     !showDetails ? (
-                      <ChevronDownIcon color="muted" size="small" />
+                      <ChevronDownIcon size="small" />
                     ) : (
-                      <ChevronUpIcon color="muted" size="small" />
+                      <ChevronUpIcon size="small" />
                     )
                   }
                   onClick={() => {
@@ -106,7 +106,7 @@ export function StepDetailBar(props: StepDetailBarProps) {
                   hideLabel
                   square
                   active={showDetails}
-                  _use_rarely_className="w-4 h-4"
+                  _use_rarely_className="w-4 h-4 text-muted hover:text-brand"
                   label={showDetails ? t('details.hide') : t('details.show')}
                   color="tertiary"
                 />

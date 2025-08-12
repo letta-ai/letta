@@ -1211,7 +1211,7 @@
       "noContent": "There is no content you entered to edit, please enter some content to save",
       "unknown": "There was an error while saving the message, please try again or contact support."
     },
-    "disclaimer": "Disclaimer",
+    "disclaimer": "Warning",
     "tooltip": "Editing your message will not change the evaluation or metrics behind this message, this can lead to inconsistencies in data reporting",
     "placeholder": "Enter your message here",
     "save": "Save",

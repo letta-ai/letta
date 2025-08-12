@@ -189,6 +189,111 @@ function ContentPartsRenderer({ contentParts }: ContentPartsRendererProps) {
   );
 }
 
+interface MessageContentProps {
+  message: AgentSimulatorMessageType;
+  showEdit: boolean;
+  setShowEdit: (show: boolean) => void;
+  disableInteractivity?: boolean;
+}
+
+function MessageContent({ message, showEdit, setShowEdit, disableInteractivity }: MessageContentProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { projectId } = useADEAppContext();
+  const { data: isDatasetsEnabled } = useFeatureFlag('DATASETS');
+  const t = useTranslations('components/Messages');
+
+  if (showEdit) {
+    return (
+      <EditMessage
+        onClose={() => {
+          setShowEdit(false);
+        }}
+        onSuccess={() => {
+          setShowEdit(false);
+        }}
+        message={message}
+      />
+    );
+  }
+
+  // Special handling for reasoning messages to place edit button inline with text
+  if (message.type === 'reasoning_message' && message.raw) {
+    return (
+      <BlockQuote fullWidth>
+        <VStack gap="small">
+          <HStack align="center" gap="small">
+            <InnerMonologueIcon color="violet" size="small" />
+            <Typography semibold color="violet" variant="body3">
+              {t('reasoning')}
+            </Typography>
+          </HStack>
+          <HStack justify="spaceBetween" align="start">
+            <Typography color="lighter" variant="body3" className="flex-1">
+              {message.raw}
+            </Typography>
+            {message.editId && !disableInteractivity && (
+              <Button
+                preIcon={<EditIcon size="auto" />}
+                onClick={() => {
+                  setShowEdit(!showEdit);
+                }}
+                size="3xsmall"
+                hideLabel
+                square
+                active={showEdit}
+                _use_rarely_className="w-4 min-h-4 messages-step-editor text-muted hover:text-brand hover:bg-transparent"
+                label={showEdit ? t('edit.stop') : t('edit.start')}
+                color="tertiary"
+              />
+            )}
+          </HStack>
+        </VStack>
+      </BlockQuote>
+    );
+  }
+
+  // Default handling for other message types
+  return (
+    <HStack justify="spaceBetween" align="start">
+      <div
+        className="w-full"
+        style={{
+          textDecoration: message.isError
+            ? 'underline wavy hsl(var(--destructive))'
+            : 'none',
+          textUnderlineOffset: '2px',
+        }}
+      >
+        {message.content}
+      </div>
+
+      {isDatasetsEnabled && message.name === 'User' && (
+        <SelectDatasetPopover
+          message={message}
+          projectId={projectId}
+          isOpen={isPopoverOpen}
+          onOpenChange={setIsPopoverOpen}
+        />
+      )}
+      {message.editId && !disableInteractivity && (
+        <Button
+          preIcon={<EditIcon size="auto" />}
+          onClick={() => {
+            setShowEdit(!showEdit);
+          }}
+          size="3xsmall"
+          hideLabel
+          square
+          active={showEdit}
+          _use_rarely_className="w-4 min-h-4 messages-step-editor text-muted hover:text-brand hover:bg-transparent"
+          label={showEdit ? t('edit.stop') : t('edit.start')}
+          color="tertiary"
+        />
+      )}
+    </HStack>
+  );
+}
+
 interface MessageProps {
   message: AgentSimulatorMessageType;
   disableInteractivity?: boolean;
@@ -197,12 +302,6 @@ interface MessageProps {
 function Message({ message, disableInteractivity }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const t = useTranslations('components/Messages');
-
-  const { projectId } = useADEAppContext();
-
-  const { data: isDatasetsEnabled } = useFeatureFlag('DATASETS');
 
 
   return (
@@ -215,55 +314,12 @@ function Message({ message, disableInteractivity }: MessageProps) {
             : '',
         )}
       >
-        {showEdit ? (
-          <EditMessage
-            onClose={() => {
-              setShowEdit(false);
-            }}
-            onSuccess={() => {
-              setShowEdit(false);
-            }}
-            message={message}
-          />
-        ) : (
-          <HStack justify="spaceBetween" align="start">
-            <div
-              className="w-full"
-              style={{
-                textDecoration: message.isError
-                  ? 'underline wavy hsl(var(--destructive))'
-                  : 'none',
-                textUnderlineOffset: '2px',
-              }}
-            >
-              {message.content}
-            </div>
-
-            {isDatasetsEnabled && message.name === 'User' && (
-              <SelectDatasetPopover
-                message={message}
-                projectId={projectId}
-                isOpen={isPopoverOpen}
-                onOpenChange={setIsPopoverOpen}
-              />
-            )}
-            {message.editId && !disableInteractivity && (
-              <Button
-                preIcon={<EditIcon color="muted" size="small" />}
-                onClick={() => {
-                  setShowEdit(!showEdit);
-                }}
-                size="3xsmall"
-                hideLabel
-                square
-                active={showEdit}
-                _use_rarely_className="w-4 h-4 messages-step-editor"
-                label={showDetails ? t('edit.stop') : t('edit.start')}
-                color="tertiary"
-              />
-            )}
-          </HStack>
-        )}
+        <MessageContent
+          message={message}
+          showEdit={showEdit}
+          setShowEdit={setShowEdit}
+          disableInteractivity={disableInteractivity}
+        />
         {!disableInteractivity && (
           <StepDetailBar
             showDetails={showDetails}
