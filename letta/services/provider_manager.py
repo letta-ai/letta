@@ -207,6 +207,28 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    def get_azure_credentials(
+        self, provider_name: Union[str, None], actor: PydanticUser
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        providers = self.list_providers(name=provider_name, actor=actor)
+        api_key = providers[0].api_key if providers else None
+        base_url = providers[0].base_url if providers else None
+        api_version = providers[0].api_version if providers else None
+        return api_key, base_url, api_version
+
+    @enforce_types
+    @trace_method
+    async def get_azure_credentials_async(
+        self, provider_name: Union[str, None], actor: PydanticUser
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        providers = await self.list_providers_async(name=provider_name, actor=actor)
+        api_key = providers[0].api_key if providers else None
+        base_url = providers[0].base_url if providers else None
+        api_version = providers[0].api_version if providers else None
+        return api_key, base_url, api_version
+
+    @enforce_types
+    @trace_method
     async def check_provider_api_key(self, provider_check: ProviderCheck) -> None:
         provider = PydanticProvider(
             name=provider_check.provider_type.value,
@@ -215,6 +237,8 @@ class ProviderManager:
             provider_category=ProviderCategory.byok,
             access_key=provider_check.access_key,  # This contains the access key ID for Bedrock
             region=provider_check.region,
+            base_url=provider_check.base_url,
+            api_version=provider_check.api_version,
         ).cast_to_subtype()
 
         # TODO: add more string sanity checks here before we hit actual endpoints
