@@ -72,5 +72,12 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.azure:
+                from letta.llm_api.azure_client import AzureClient
+
+                return AzureClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case _:
                 return None
