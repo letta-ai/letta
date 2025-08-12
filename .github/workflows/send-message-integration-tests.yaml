@@ -148,6 +148,7 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+          LETTA_GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
         run: |
           poetry run pytest \
             -s -vv \

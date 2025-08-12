@@ -817,6 +817,8 @@ def test_agent_loop_error(
             agent_id=agent_state_no_tools.id,
             messages=USER_MESSAGE_FORCE_REPLY,
         )
+
+    time.sleep(0.5)
     messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
