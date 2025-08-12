@@ -28,6 +28,11 @@ export enum AnalyticsEvent {
   CREATE_TOOL = 'tool:create',
   ATTACH_TOOL = 'tool:attach',
   DETACH_TOOL = 'tool:detach',
+  CREATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:create_block',
+  ATTACH_BLOCK_TO_CORE_MEMORY = 'agent:update:core_memory:attach_block',
+  DETACH_BLOCK_FROM_CORE_MEMORY = 'agent:update:core_memory:detach_block',
+  UPDATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:update_block',
+  DELETE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:delete_block',
 }
 
 export interface BaseProperty {
@@ -75,6 +80,14 @@ interface AttachDetachToolProperty extends ToolProperty {
   agentId: string;
 }
 
+interface CoreMemoryProperty extends BaseProperty {
+  agentId: string;
+}
+
+interface CreateCoreMemoryBlockProperty extends CoreMemoryProperty {
+  blockType: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
@@ -102,4 +115,9 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CREATE_TOOL]: ToolProperty;
   [AnalyticsEvent.ATTACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.DETACH_TOOL]: AttachDetachToolProperty;
+  [AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY]: CreateCoreMemoryBlockProperty;
+  [AnalyticsEvent.ATTACH_BLOCK_TO_CORE_MEMORY]: CoreMemoryProperty;
+  [AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY]: CoreMemoryProperty;
+  [AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
+  [AnalyticsEvent.DELETE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
 }

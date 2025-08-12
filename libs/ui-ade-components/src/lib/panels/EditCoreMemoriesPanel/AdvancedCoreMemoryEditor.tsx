@@ -46,6 +46,9 @@ import { currentAdvancedCoreMemoryAtom } from './currentAdvancedCoreMemoryAtom';
 import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
 import { UseBlocksServiceInfiniteQuery } from '../../SearchMemoryBlocks/SearchMemoryBlocks';
 import { DetachMemoryBlock } from './DetachMemoryBlock/DetachMemoryBlock';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useADEAppContext } from '../../AppContext/AppContext';
 
 interface MemoryWarningProps {
   rootLabel: string;
@@ -103,6 +106,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
   const agent = useCurrentAgent();
+  const { user } = useADEAppContext();
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -162,6 +166,11 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
         if (!memory.label) {
           return;
         }
+
+        trackClientSideEvent(AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY, {
+          userId: user?.id || '',
+          agentId: agent.id,
+        });
 
         await updateAgentMemoryByLabel({
           agentId: agent.id,
@@ -223,6 +232,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       memory.label,
       queryClient,
       updateAgentMemoryByLabel,
+      user?.id,
     ],
   );
 
@@ -382,6 +392,7 @@ interface DeleteMemoryBlockDialogProps {
 function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
   const { id: agentId } = useCurrentAgent();
+  const { user } = useADEAppContext();
   const { blockId } = props;
   const queryClient = useQueryClient();
   const setSelectMemoryBlockLabel = useSetAtom(currentAdvancedCoreMemoryAtom);
@@ -396,6 +407,11 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDeleteBlock = useCallback(() => {
+    trackClientSideEvent(AnalyticsEvent.DELETE_BLOCK_IN_CORE_MEMORY, {
+      userId: user?.id || '',
+      agentId,
+    });
+
     deleteBlock(
       {
         blockId,
@@ -456,6 +472,7 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
     blockId,
     queryClient,
     resetDeleting,
+    user?.id,
   ]);
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);

@@ -34,6 +34,10 @@ import { useSetAtom } from 'jotai/index';
 import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
 import { useADEAppContext } from '../../../AppContext/AppContext';
 import { UseBlocksServiceInfiniteQuery } from '../../../SearchMemoryBlocks/SearchMemoryBlocks';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { CoreMemoryBlock } from '../types';
+import type { CoreMemoryBlockType } from '../types';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -148,6 +152,14 @@ export function CreateNewMemoryBlockDialog(
   const queryClient = useQueryClient();
   const { agentId: currentAgentId } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
+  const { user } = useADEAppContext();
+
+  type TabTypes = 'custom' | 'examples';
+
+  const [tab, setTab] = useState<TabTypes>('custom');
+  const [blockType, setBlockType] = useState<CoreMemoryBlockType>(
+    CoreMemoryBlock.CUSTOM,
+  );
 
   const setIsAdvancedCoreMemoryEditorOpen = useSetAtom(
     currentAdvancedCoreMemoryAtom,
@@ -248,6 +260,12 @@ export function CreateNewMemoryBlockDialog(
         return;
       }
 
+      trackClientSideEvent(AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY, {
+        userId: user?.id || '',
+        agentId: agent.id,
+        blockType,
+      });
+
       createBlock(
         {
           requestBody: {
@@ -313,12 +331,11 @@ export function CreateNewMemoryBlockDialog(
       queryClient,
       setCurrentMemoryBlock,
       handleOpenChange,
+      agent.id,
+      user?.id,
+      blockType,
     ],
   );
-
-  type TabTypes = 'custom' | 'examples';
-
-  const [tab, setTab] = useState<TabTypes>('custom');
 
   const handleExampleSelect = useCallback(
     (payload: ExampleBlockPayload) => {
@@ -364,7 +381,10 @@ export function CreateNewMemoryBlockDialog(
         {tab === 'custom' ? (
           <CustomMemoryBlockForm />
         ) : (
-          <ExampleBlocks onSelect={handleExampleSelect} />
+          <ExampleBlocks
+            onSelect={handleExampleSelect}
+            setBlockType={setBlockType}
+          />
         )}
       </Dialog>
     </FormProvider>

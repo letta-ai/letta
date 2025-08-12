@@ -1,5 +1,6 @@
 import { ActionCard, VStack } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { CoreMemoryBlock } from '../types';
 
 export interface ExampleBlockPayload {
   label: string;
@@ -9,16 +10,18 @@ export interface ExampleBlockPayload {
 
 interface ExampleBlocksProps {
   onSelect: (block: ExampleBlockPayload) => void;
+  setBlockType: (value: string) => void;
 }
 
 export function ExampleBlocks(props: ExampleBlocksProps) {
-  const { onSelect } = props;
+  const { onSelect, setBlockType } = props;
   const t = useTranslations('CreateNewMemoryBlockDialog/ExampleBlocks');
 
   return (
     <VStack>
       <ActionCard
         onClick={() => {
+          setBlockType(CoreMemoryBlock.EXAMPLE);
           onSelect({
             label: 'human',
             description: t('human.description'),
@@ -34,6 +37,7 @@ I should update this memory over time as I interact with the human and learn mor
       ></ActionCard>
       <ActionCard
         onClick={() => {
+          setBlockType(CoreMemoryBlock.EXAMPLE);
           onSelect({
             label: 'persona',
             description: t('persona.description'),
@@ -48,6 +52,7 @@ I should update this memory over time as I develop my personality.
       ></ActionCard>
       <ActionCard
         onClick={() => {
+          setBlockType(CoreMemoryBlock.EXAMPLE);
           onSelect({
             label: 'organization',
             description: t('organization.description'),
