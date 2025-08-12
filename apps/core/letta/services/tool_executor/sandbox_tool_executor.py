@@ -5,7 +5,7 @@ from letta.functions.ast_parsers import coerce_dict_args_by_annotations, get_fun
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import SandboxType
+from letta.schemas.enums import SandboxType, ToolSourceType
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -18,11 +18,6 @@ from letta.types import JsonDict
 from letta.utils import get_friendly_error_msg
 
 logger = get_logger(__name__)
-
-if tool_settings.e2b_api_key:
-    from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
-if tool_settings.modal_api_key:
-    from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal
 
 
 class SandboxToolExecutor(ToolExecutor):
@@ -54,13 +49,35 @@ class SandboxToolExecutor(ToolExecutor):
 
             # Execute in sandbox depending on API key
             if tool_settings.sandbox_type == SandboxType.E2B:
+                from letta.services.tool_sandbox.e2b_sandbox import AsyncToolSandboxE2B
+
                 sandbox = AsyncToolSandboxE2B(
                     function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
                 )
+            # TODO (cliandy): this is just for testing right now, separate this out into it's own subclass and handling logic
             elif tool_settings.sandbox_type == SandboxType.MODAL:
-                sandbox = AsyncToolSandboxModal(
-                    function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
-                )
+                from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal, TypescriptToolSandboxModal
+
+                if tool.source_type == ToolSourceType.typescript:
+                    sandbox = TypescriptToolSandboxModal(
+                        function_name,
+                        function_args,
+                        actor,
+                        tool_object=tool,
+                        sandbox_config=sandbox_config,
+                        sandbox_env_vars=sandbox_env_vars,
+                    )
+                elif tool.source_type == ToolSourceType.python:
+                    sandbox = AsyncToolSandboxModal(
+                        function_name,
+                        function_args,
+                        actor,
+                        tool_object=tool,
+                        sandbox_config=sandbox_config,
+                        sandbox_env_vars=sandbox_env_vars,
+                    )
+                else:
+                    raise ValueError(f"Tool source type was {tool.source_type} but is required to be python or typescript to run in Modal.")
             else:
                 sandbox = AsyncToolSandboxLocal(
                     function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars

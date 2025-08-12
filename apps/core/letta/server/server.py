@@ -40,7 +40,7 @@ from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType
+from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType, ToolSourceType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
@@ -1903,12 +1903,19 @@ class SyncServer(Server):
         pip_requirements: Optional[List[PipRequirement]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
-        if tool_source_type is not None and tool_source_type != "python":
-            raise ValueError("Only Python source code is supported at this time")
+
+        if tool_source_type not in (None, ToolSourceType.python, ToolSourceType.typescript):
+            raise ValueError("Tool source type is not supported at this time. Found {tool_source_type}")
 
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
-            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema, pip_requirements=pip_requirements)
+            tool = Tool(
+                name=tool_name,
+                source_code=tool_source,
+                json_schema=tool_json_schema,
+                pip_requirements=pip_requirements,
+                source_type=tool_source_type,
+            )
         else:
             # NOTE: we're creating a floating Tool object and NOT persisting to DB
             tool = Tool(
@@ -1916,6 +1923,7 @@ class SyncServer(Server):
                 source_code=tool_source,
                 args_json_schema=tool_args_json_schema,
                 pip_requirements=pip_requirements,
+                source_type=tool_source_type,
             )
 
         assert tool.name is not None, "Failed to create tool object"
