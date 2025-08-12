@@ -24,7 +24,7 @@ curl --request POST \
   "messages": [
     {
       "role": "user",
-      "text": "hows it going????"
+      "content": "hows it going????"
     }
   ]
 }'
@@ -36,7 +36,7 @@ stream = client.agents.messages.create_stream(
     messages=[
       {
         "role": "user",
-        "text": "hows it going????"
+        "content": "hows it going????"
       }
     ],
 )
@@ -87,7 +87,7 @@ curl --request POST \
   "messages": [
     {
       "role": "user",
-      "text": "hows it going????"
+      "content": "hows it going????"
     }
   ],
   "stream_tokens": true
@@ -100,7 +100,7 @@ stream = client.agents.messages.create_stream(
     messages=[
       {
         "role": "user",
-        "text": "hows it going????"
+        "content": "hows it going????"
       }
     ],
     stream_tokens=True,
