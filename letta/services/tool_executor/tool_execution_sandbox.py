@@ -31,6 +31,10 @@ from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
 from letta.utils import get_friendly_error_msg
 
+from RestrictedPython import compile_restricted, safe_builtins, limited_builtins, utility_builtins
+from RestrictedPython.Eval import default_guarded_getitem, default_guarded_getiter
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence
+
 logger = get_logger(__name__)
 
 
@@ -46,6 +50,7 @@ class ToolExecutionSandbox:
     # This is the variable name in the auto-generated code that contains the function results
     # We make this a long random string to avoid collisions with any variables in the user's code
     LOCAL_SANDBOX_RESULT_VAR_NAME = "result_ZQqiequkcFwRwwGQMqkt"
+    RESTRICTEDPYTHON_LOCAL_ENABLED = False
 
     def __init__(
         self, tool_name: str, args: dict, user: User, force_recreate=True, force_recreate_venv=False, tool_object: Optional[Tool] = None
@@ -268,25 +273,78 @@ class ToolExecutionSandbox:
 
         try:
             with self.temporary_env_vars(env):
-
                 # Read and compile the Python script
                 with open(temp_file_path, "r", encoding="utf-8") as f:
                     source = f.read()
                 code_obj = compile(source, temp_file_path, "exec")
+                
+                if self.RESTRICTEDPYTHON_LOCAL_ENABLED:
+                    logger.info("Using RestrictedPython to execute tool")
+                    
+                    normal_builtins = __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
+                    restricted_builtins = dict(normal_builtins)
+                    
+                    for dangerous_func in ['exec', 'eval', 'compile', 'open']:
+                        restricted_builtins.pop(dangerous_func, None)
+                    
+                    original_import = restricted_builtins['__import__']
+                    def secure_import(name, *args, **kwargs):
+                        module = original_import(name, *args, **kwargs)
+                        
+                        dangerous_funcs = {
+                            'os': ['system', 'popen', 'spawn', 'exec', 'posix_spawn'],
+                            'subprocess': ['run', 'call', 'check_call', 'check_output', 'Popen']
+                        }
+                        
+                        if name in dangerous_funcs:
+                            for func_name in dangerous_funcs[name]:
+                                if hasattr(module, func_name):
+                                    setattr(module, func_name, None)
+                        
+                        return module
+                    
+                    restricted_builtins['__import__'] = secure_import
+                    
+                    restricted_globals = {
+                        "__builtins__": restricted_builtins,
+                        "_getitem_": default_guarded_getitem,
+                        "_getiter_": default_guarded_getiter,
+                        "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
+                        "_unpack_sequence_": guarded_unpack_sequence,
+                        **env,
+                        "__name__": "__main__",
+                        "__file__": temp_file_path
+                    }
+                    
+                    for key, value in env.items():
+                        restricted_globals[key] = value
+                    
+                    restricted_globals["__name__"] = "__main__"
+                    restricted_globals["__file__"] = temp_file_path
+                    
+                    # Execute the restricted code
+                    log_event(name="start restricted_exec", attributes={"temp_file_path": temp_file_path})
+                    exec(code_obj, restricted_globals)
+                    log_event(name="finish restricted_exec", attributes={"temp_file_path": temp_file_path})
+                    
+                    func_result = restricted_globals.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
 
-                # Provide a dict for globals.
-                globals_dict = dict(env)  # or {}
-                # If you need to mimic `__main__` behavior:
-                globals_dict["__name__"] = "__main__"
-                globals_dict["__file__"] = temp_file_path
+                else:
+                    logger.warning("Running tool in unrestricted environment. This may pose security risks. Consider enabling RESTRICTEDPYTHON_LOCAL_ENABLED.")
+                    # Provide a dict for globals.
+                    globals_dict = dict(env)  # or {}
+                    # If you need to mimic `__main__` behavior:
+                    globals_dict["__name__"] = "__main__"
+                    globals_dict["__file__"] = temp_file_path
 
-                # Execute the compiled code
-                log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
-                exec(code_obj, globals_dict)
-                log_event(name="finish exec", attributes={"temp_file_path": temp_file_path})
+                    # Execute the compiled code
+                    log_event(name="start exec", attributes={"temp_file_path": temp_file_path})
+                    exec(code_obj, globals_dict)
+                    log_event(name="finish exec", attributes={"temp_file_path": temp_file_path})
 
-                # Get result from the global dict
-                func_result = globals_dict.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
+                    # Get result from the global dict
+                    func_result = globals_dict.get(self.LOCAL_SANDBOX_RESULT_VAR_NAME)
+
                 func_return, agent_state = self.parse_best_effort(func_result)
 
         except Exception as e:
