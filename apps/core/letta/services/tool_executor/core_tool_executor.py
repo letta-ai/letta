@@ -174,7 +174,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        await PassageManager().insert_passage_async(
+        await PassageManager().insert_passage(
             agent_state=agent_state,
             text=content,
             actor=actor,

@@ -63,7 +63,7 @@ def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> O
     return results_str
 
 
-def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
+async def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
     """
     Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
 
@@ -73,7 +73,7 @@ def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
     Returns:
         Optional[str]: None is always returned as this function does not produce a response.
     """
-    self.passage_manager.insert_passage(
+    await self.passage_manager.insert_passage(
         agent_state=self.agent_state,
         text=content,
         actor=self.user,
@@ -82,7 +82,7 @@ def archival_memory_insert(self: "Agent", content: str) -> Optional[str]:
     return None
 
 
-def archival_memory_search(self: "Agent", query: str, page: Optional[int] = 0, start: Optional[int] = 0) -> Optional[str]:
+async def archival_memory_search(self: "Agent", query: str, page: Optional[int] = 0, start: Optional[int] = 0) -> Optional[str]:
     """
     Search archival memory using semantic (embedding-based) search.
 
@@ -107,7 +107,7 @@ def archival_memory_search(self: "Agent", query: str, page: Optional[int] = 0, s
 
     try:
         # Get results using passage manager
-        all_results = self.agent_manager.list_passages(
+        all_results = await self.agent_manager.list_passages_async(
             actor=self.user,
             agent_id=self.agent_state.id,
             query_text=query,

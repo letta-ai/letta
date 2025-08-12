@@ -20,9 +20,9 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
     STRUCTURED_OUTPUT_MODELS,
 )
-from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
+from letta.llm_api.llm_client import LLMClient
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.archives_agents import ArchivesAgents
@@ -939,7 +939,7 @@ def _apply_relationship_filters(query, include_relationships: Optional[List[str]
     return query
 
 
-def build_passage_query(
+async def build_passage_query(
     actor: User,
     agent_id: Optional[str] = None,
     file_id: Optional[str] = None,
@@ -963,8 +963,14 @@ def build_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Start with base query for source passages
@@ -1150,7 +1156,7 @@ def build_passage_query(
     return main_query
 
 
-def build_source_passage_query(
+async def build_source_passage_query(
     actor: User,
     agent_id: Optional[str] = None,
     file_id: Optional[str] = None,
@@ -1171,8 +1177,14 @@ def build_source_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Base query for source passages
@@ -1248,7 +1260,7 @@ def build_source_passage_query(
     return query
 
 
-def build_agent_passage_query(
+async def build_agent_passage_query(
     actor: User,
     agent_id: str,  # Required for agent passages
     query_text: Optional[str] = None,
@@ -1267,8 +1279,14 @@ def build_agent_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Base query for agent passages - join through archives_agents

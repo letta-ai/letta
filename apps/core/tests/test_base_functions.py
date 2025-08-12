@@ -1,3 +1,4 @@
+import asyncio
 import os
 import threading
 
@@ -96,53 +97,63 @@ def query_in_search_results(search_results, query):
     return False
 
 
-def test_archival(agent_obj):
+@pytest.mark.asyncio
+async def test_archival(agent_obj):
     """Test archival memory functions comprehensively."""
     # Test 1: Basic insertion and retrieval
-    base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
-    base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
-    base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
+    await base_functions.archival_memory_insert(agent_obj, "The cat sleeps on the mat")
+    await asyncio.sleep(0.1)  # Small delay to ensure session cleanup
+    await base_functions.archival_memory_insert(agent_obj, "The dog plays in the park")
+    await asyncio.sleep(0.1)
+    await base_functions.archival_memory_insert(agent_obj, "Python is a programming language")
+    await asyncio.sleep(0.1)
 
     # Test exact text search
-    results, _ = base_functions.archival_memory_search(agent_obj, "cat")
+    results, _ = await base_functions.archival_memory_search(agent_obj, "cat")
     assert query_in_search_results(results, "cat")
+    await asyncio.sleep(0.1)
 
     # Test semantic search (should return animal-related content)
-    results, _ = base_functions.archival_memory_search(agent_obj, "animal pets")
+    results, _ = await base_functions.archival_memory_search(agent_obj, "animal pets")
     assert query_in_search_results(results, "cat") or query_in_search_results(results, "dog")
+    await asyncio.sleep(0.1)
 
     # Test unrelated search (should not return animal content)
-    results, _ = base_functions.archival_memory_search(agent_obj, "programming computers")
+    results, _ = await base_functions.archival_memory_search(agent_obj, "programming computers")
     assert query_in_search_results(results, "python")
+    await asyncio.sleep(0.1)
 
     # Test 2: Test pagination
     # Insert more items to test pagination
     for i in range(10):
-        base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
+        await base_functions.archival_memory_insert(agent_obj, f"Test passage number {i}")
+        await asyncio.sleep(0.05)  # Shorter delay for bulk operations
 
     # Get first page
-    page0_results, next_page = base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
+    page0_results, next_page = await base_functions.archival_memory_search(agent_obj, "Test passage", page=0)
+    await asyncio.sleep(0.1)
     # Get second page
-    page1_results, _ = base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
+    page1_results, _ = await base_functions.archival_memory_search(agent_obj, "Test passage", page=1, start=next_page)
+    await asyncio.sleep(0.1)
 
     assert page0_results != page1_results
     assert query_in_search_results(page0_results, "Test passage")
     assert query_in_search_results(page1_results, "Test passage")
 
     # Test 3: Test complex text patterns
-    base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
-    base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
-    base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
+    await base_functions.archival_memory_insert(agent_obj, "Important meeting on 2024-01-15 with John")
+    await base_functions.archival_memory_insert(agent_obj, "Follow-up meeting scheduled for next week")
+    await base_functions.archival_memory_insert(agent_obj, "Project deadline is approaching")
 
     # Search for meeting-related content
-    results, _ = base_functions.archival_memory_search(agent_obj, "meeting schedule")
+    results, _ = await base_functions.archival_memory_search(agent_obj, "meeting schedule")
     assert query_in_search_results(results, "meeting")
     assert query_in_search_results(results, "2024-01-15") or query_in_search_results(results, "next week")
 
     # Test 4: Test error handling
     # Test invalid page number
     try:
-        base_functions.archival_memory_search(agent_obj, "test", page="invalid")
+        await base_functions.archival_memory_search(agent_obj, "test", page="invalid")
         assert False, "Should have raised ValueError"
     except ValueError:
         pass

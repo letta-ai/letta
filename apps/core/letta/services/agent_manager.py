@@ -2354,7 +2354,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    def list_passages(
+    async def list_passages(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2372,8 +2372,8 @@ class AgentManager:
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
-        with db_registry.session() as session:
-            main_query = build_passage_query(
+        async with db_registry.async_session() as session:
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2394,7 +2394,7 @@ class AgentManager:
                 main_query = main_query.limit(limit)
 
             # Execute query
-            result = session.execute(main_query)
+            result = await session.execute(main_query)
 
             passages = []
             for row in result:
@@ -2437,7 +2437,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_passage_query(
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2500,7 +2500,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_source_passage_query(
+            main_query = await build_source_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2546,7 +2546,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_agent_passage_query(
+            main_query = await build_agent_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 query_text=query_text,
@@ -2574,7 +2574,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    def passage_size(
+    async def passage_size(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2591,8 +2591,8 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         """Returns the count of passages matching the given criteria."""
-        with db_registry.session() as session:
-            main_query = build_passage_query(
+        async with db_registry.async_session() as session:
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2610,7 +2610,7 @@ class AgentManager:
 
             # Convert to count query
             count_query = select(func.count()).select_from(main_query.subquery())
-            return session.scalar(count_query) or 0
+            return (await session.scalar(count_query)) or 0
 
     @enforce_types
     async def passage_size_async(
@@ -2630,7 +2630,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         async with db_registry.async_session() as session:
-            main_query = build_passage_query(
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
