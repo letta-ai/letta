@@ -17,6 +17,19 @@ logger = get_logger(__name__)
 
 class BedrockClient(AnthropicClient):
 
+    async def get_byok_overrides_async(self, llm_config: LLMConfig) -> tuple[str, str, str]:
+        override_access_key_id, override_secret_access_key, override_default_region = None, None, None
+        if llm_config.provider_category == ProviderCategory.byok:
+            (
+                override_access_key_id,
+                override_secret_access_key,
+                override_default_region,
+            ) = await ProviderManager().get_bedrock_credentials_async(
+                llm_config.provider_name,
+                actor=self.actor,
+            )
+        return override_access_key_id, override_secret_access_key, override_default_regions
+
     @trace_method
     async def _get_anthropic_client_async(
         self, llm_config: LLMConfig, async_client: bool = False
@@ -49,19 +62,6 @@ class BedrockClient(AnthropicClient):
                 aws_region=override_default_region or model_settings.aws_default_region,
                 max_retries=model_settings.anthropic_max_retries,
             )
-
-    async def get_byok_overrides_async(self, llm_config: LLMConfig) -> tuple[str, str, str]:
-        override_access_key_id, override_secret_access_key, override_default_region = None, None, None
-        if llm_config.provider_category == ProviderCategory.byok:
-            (
-                override_access_key_id,
-                override_secret_access_key,
-                override_default_region,
-            ) = await ProviderManager().get_bedrock_credentials_async(
-                llm_config.provider_name,
-                actor=self.actor,
-            )
-        return override_access_key_id, override_secret_access_key, override_default_region
 
     @trace_method
     def build_request_data(
