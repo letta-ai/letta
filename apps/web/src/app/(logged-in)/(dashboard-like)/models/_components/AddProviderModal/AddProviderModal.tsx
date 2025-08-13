@@ -53,11 +53,15 @@ function TestConnectionButton() {
       apiKey,
       accessKey,
       region,
+      baseUrl,
+      apiVersion,
     }: {
       providerType: ProviderType;
       apiKey: string;
       accessKey?: string;
       region?: string;
+      baseUrl?: string;
+      apiVersion?: string;
     }) => {
       try {
         setIsTesting(true);
@@ -73,6 +77,8 @@ function TestConnectionButton() {
             provider_type: providerType,
             access_key: accessKey,
             region: region,
+            base_url: baseUrl,
+            api_version: apiVersion,
           }),
         });
 
@@ -94,6 +100,8 @@ function TestConnectionButton() {
   const providerType = watch('providerType');
   const accessKey = watch('accessKey');
   const region = watch('region');
+  const baseUrl = watch('baseUrl');
+  const apiVersion = watch('apiVersion');
 
   return (
     <HStack
@@ -112,7 +120,7 @@ function TestConnectionButton() {
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          void testConnection({ providerType, apiKey, accessKey, region });
+          void testConnection({ providerType, apiKey, accessKey, region, baseUrl, apiVersion });
         }}
       />
       <HStack>
@@ -189,6 +197,8 @@ export function AddProviderModal(props: CreateProviderModalProps) {
       apiKey: '',
       accessKey: '',
       region: '',
+      baseUrl: '',
+      apiVersion: '',
     },
   });
 
@@ -221,7 +231,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
           icon: brandKeyToLogo('bedrock'),
         },
       ];
-      
+
       if (isAzureEnabled) {
         items.push({
           label: brandKeyToName('azure'),
@@ -229,7 +239,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
           icon: brandKeyToLogo('azure'),
         });
       }
-      
+
       if (isTogetherEnabled) {
         items.push({
           label: brandKeyToName('together'),
@@ -237,7 +247,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
           icon: brandKeyToLogo('together'),
         });
       }
-      
+
       return items;
     },
     [isAzureEnabled, isTogetherEnabled],
