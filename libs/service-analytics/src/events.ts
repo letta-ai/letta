@@ -21,7 +21,6 @@ export enum AnalyticsEvent {
   ATTEMPTED_UPGRADE = 'Upgrade Attempted',
   UPGRADE_SELECTED_PLAN = 'Selected Plan to Upgrade',
   ADDED_OWN_EXTERNAL_KEY = 'Added Own External Key',
-  CREATED_API_KEY = 'Created API Key',
   CREATE_AGENT = 'agent:create',
   CREATE_TOOL = 'tool:create',
   ATTACH_TOOL = 'agent:tool:attach',
@@ -41,11 +40,16 @@ export enum AnalyticsEvent {
   USER_ONBOARDING_STEP_COMPLETED = 'user_onboarding:step_completed',
   USER_ONBOARDING_COMPLETED = 'user_onboarding:completed',
   USER_ONBOARDING_RESOURCE_CLICKED = 'user_onboarding:resource_clicked',
-  SKIPPED_USER_ONBOARDING = 'user_onboarding:skipped',
+  SKIP_USER_ONBOARDING = 'user_onboarding:skip',
+  CREATE_API_KEY = 'user:create_api_key',
 }
 
 export interface BaseProperty {
   userId: string;
+}
+
+export interface OrganizationProperty {
+  activeOrganizationId: string;
 }
 
 interface LocalAgentCreatedProperty {
@@ -154,7 +158,6 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.CREATED_PROJECT]: BaseProperty;
   [AnalyticsEvent.CREATED_TEMPLATE]: BaseProperty;
   [AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY]: BaseProperty;
-  [AnalyticsEvent.CREATED_API_KEY]: BaseProperty;
   [AnalyticsEvent.CLOUD_AGENT_MESSAGE_CREATED_IN_API]: CloutAgentMessageCreatedInApiProperty;
   [AnalyticsEvent.SUBSCRIPTION_CHANGED]: SubscriptionChangedProperty;
   [AnalyticsEvent.CREATE_AGENT]: CreateAgentProperty;
@@ -176,5 +179,6 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED]: OnboardingStepProperty;
   [AnalyticsEvent.USER_ONBOARDING_COMPLETED]: OnboardingStepProperty;
   [AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED]: OnboardingResourceProperty;
-  [AnalyticsEvent.SKIPPED_USER_ONBOARDING]: OnboardingProperty;
+  [AnalyticsEvent.SKIP_USER_ONBOARDING]: OnboardingProperty;
+  [AnalyticsEvent.CREATE_API_KEY]: OrganizationProperty;
 }

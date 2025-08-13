@@ -50,9 +50,10 @@ function CreateAPIKeyDialog() {
   const t = useTranslations('api-keys/page');
   const { mutate, isPending, error } = webApi.apiKeys.createAPIKey.useMutation({
     onSuccess: (response) => {
-      trackClientSideEvent(AnalyticsEvent.CREATED_API_KEY, {
-        userId: user?.id || '',
+      trackClientSideEvent(AnalyticsEvent.CREATE_API_KEY, {
+        activeOrganizationId: user?.activeOrganizationId || '',
       });
+
       setGeneratedKey(response.body.apiKey);
 
       void queryClient.invalidateQueries({

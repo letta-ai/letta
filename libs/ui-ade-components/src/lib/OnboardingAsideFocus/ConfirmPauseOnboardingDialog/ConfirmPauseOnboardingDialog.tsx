@@ -26,7 +26,7 @@ export function ConfirmPauseOnboardingDialog(
       trigger={trigger}
       title={t('title')}
       onConfirm={() => {
-        trackClientSideEvent(AnalyticsEvent.SKIPPED_USER_ONBOARDING, {
+        trackClientSideEvent(AnalyticsEvent.SKIP_USER_ONBOARDING, {
           onboardingType: onboardingType || '',
         });
 
