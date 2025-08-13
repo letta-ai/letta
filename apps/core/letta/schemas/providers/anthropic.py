@@ -1,11 +1,89 @@
 import warnings
 from typing import Literal
 
+import anthropic
 from pydantic import Field
 
 from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.providers.base import Provider
+
+# https://docs.anthropic.com/claude/docs/models-overview
+# Sadly hardcoded
+MODEL_LIST = [
+    ## Opus 4.1
+    {
+        "name": "claude-opus-4-1-20250805",
+        "context_window": 200000,
+    },
+    ## Opus 3
+    {
+        "name": "claude-3-opus-20240229",
+        "context_window": 200000,
+    },
+    # 3 latest
+    {
+        "name": "claude-3-opus-latest",
+        "context_window": 200000,
+    },
+    # 4
+    {
+        "name": "claude-opus-4-20250514",
+        "context_window": 200000,
+    },
+    ## Sonnet
+    # 3.0
+    {
+        "name": "claude-3-sonnet-20240229",
+        "context_window": 200000,
+    },
+    # 3.5
+    {
+        "name": "claude-3-5-sonnet-20240620",
+        "context_window": 200000,
+    },
+    # 3.5 new
+    {
+        "name": "claude-3-5-sonnet-20241022",
+        "context_window": 200000,
+    },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-sonnet-latest",
+        "context_window": 200000,
+    },
+    # 3.7
+    {
+        "name": "claude-3-7-sonnet-20250219",
+        "context_window": 200000,
+    },
+    # 3.7 latest
+    {
+        "name": "claude-3-7-sonnet-latest",
+        "context_window": 200000,
+    },
+    # 4
+    {
+        "name": "claude-sonnet-4-20250514",
+        "context_window": 200000,
+    },
+    ## Haiku
+    # 3.0
+    {
+        "name": "claude-3-haiku-20240307",
+        "context_window": 200000,
+    },
+    # 3.5
+    {
+        "name": "claude-3-5-haiku-20241022",
+        "context_window": 200000,
+    },
+    # 3.5 latest
+    {
+        "name": "claude-3-5-haiku-latest",
+        "context_window": 200000,
+    },
+]
 
 
 class AnthropicProvider(Provider):
@@ -15,19 +93,39 @@ class AnthropicProvider(Provider):
     base_url: str = "https://api.anthropic.com/v1"
 
     async def check_api_key(self):
-        from letta.llm_api.anthropic import anthropic_check_valid_api_key
-
-        anthropic_check_valid_api_key(self.api_key)
+        if self.api_key:
+            anthropic_client = anthropic.Anthropic(api_key=self.api_key)
+            try:
+                # just use a cheap model to count some tokens - as of 5/7/2025 this is faster than fetching the list of models
+                anthropic_client.messages.count_tokens(model=MODEL_LIST[-1]["name"], messages=[{"role": "user", "content": "a"}])
+            except anthropic.AuthenticationError as e:
+                raise LLMAuthenticationError(message=f"Failed to authenticate with Anthropic: {e}", code=ErrorCode.UNAUTHENTICATED)
+            except Exception as e:
+                raise LLMError(message=f"{e}", code=ErrorCode.INTERNAL_SERVER_ERROR)
+        else:
+            raise ValueError("No API key provided")
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
-        from letta.llm_api.anthropic import anthropic_get_model_list_async
+        """
+        https://docs.anthropic.com/claude/docs/models-overview
 
-        models = await anthropic_get_model_list_async(api_key=self.api_key)
-        return self._list_llm_models(models)
+        NOTE: currently there is no GET /models, so we need to hardcode
+        """
+        if self.api_key:
+            anthropic_client = anthropic.AsyncAnthropic(api_key=self.api_key)
+        elif model_settings.anthropic_api_key:
+            anthropic_client = anthropic.AsyncAnthropic()
+        else:
+            raise ValueError("No API key provided")
+
+        models = await anthropic_client.models.list()
+        models_json = models.model_dump()
+        assert "data" in models_json, f"Anthropic model query response missing 'data' field: {models_json}"
+        models_data = models_json["data"]
+
+        return self._list_llm_models(models_data)
 
     def _list_llm_models(self, models) -> list[LLMConfig]:
-        from letta.llm_api.anthropic import MODEL_LIST
-
         configs = []
         for model in models:
             if any((model.get("type") != "model", "id" not in model, model.get("id").startswith("claude-2"))):
