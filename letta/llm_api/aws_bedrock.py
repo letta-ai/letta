@@ -3,7 +3,6 @@ Note that this formally only supports Anthropic Bedrock.
 TODO (cliandy): determine what other providers are supported and what is needed to add support.
 """
 
-import os
 from typing import Any, Optional
 
 from anthropic import AnthropicBedrock
@@ -12,19 +11,6 @@ from letta.log import get_logger
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
-
-
-def has_valid_aws_credentials() -> bool:
-    """
-    Check if AWS credentials are properly configured.
-    """
-    return all(
-        (
-            os.getenv("AWS_ACCESS_KEY_ID"),
-            os.getenv("AWS_SECRET_ACCESS_KEY"),
-            os.getenv("AWS_DEFAULT_REGION"),
-        )
-    )
 
 
 def get_bedrock_client(

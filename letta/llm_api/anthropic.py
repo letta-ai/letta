@@ -1,11 +1,9 @@
 import json
 import re
-import time
 import warnings
-from typing import Generator, List, Optional, Union
+from typing import List, Optional, Union
 
 import anthropic
-from anthropic import PermissionDeniedError
 from anthropic.types.beta import (
     BetaRawContentBlockDeltaEvent,
     BetaRawContentBlockStartEvent,
@@ -19,14 +17,11 @@ from anthropic.types.beta import (
     BetaToolUseBlock,
 )
 
-from letta.errors import BedrockError, BedrockPermissionError, ErrorCode, LLMAuthenticationError, LLMError
+from letta.errors import ErrorCode, LLMAuthenticationError, LLMError
 from letta.helpers.datetime_helpers import get_utc_time_int
-from letta.llm_api.aws_bedrock import get_bedrock_client
 from letta.llm_api.helpers import add_inner_thoughts_to_functions
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
-from letta.otel.tracing import log_event
-from letta.schemas.enums import ProviderCategory
 from letta.schemas.message import Message as _Message
 from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, Tool
 from letta.schemas.openai.chat_completion_response import (
@@ -39,8 +34,6 @@ from letta.schemas.openai.chat_completion_response import (
 )
 from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
 from letta.schemas.openai.chat_completion_response import MessageDelta, ToolCall, ToolCallDelta, UsageStatistics
-from letta.services.provider_manager import ProviderManager
-from letta.services.user_manager import UserManager
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
@@ -780,102 +773,3 @@ def _prepare_anthropic_request(
         data.pop(field, None)
 
     return data
-
-
-def anthropic_bedrock_chat_completions_request(
-    data: ChatCompletionRequest,
-    inner_thoughts_xml_tag: Optional[str] = "thinking",
-    provider_name: Optional[str] = None,
-    provider_category: Optional[ProviderCategory] = None,
-    user_id: Optional[str] = None,
-) -> ChatCompletionResponse:
-    """Make a chat completion request to Anthropic via AWS Bedrock."""
-    data = _prepare_anthropic_request(data, inner_thoughts_xml_tag, bedrock=True)
-
-    # Get the client
-    if provider_category == ProviderCategory.byok:
-        actor = UserManager().get_user_or_default(user_id=user_id)
-        access_key, secret_key, region = ProviderManager().get_bedrock_credentials_async(provider_name, actor=actor)
-        client = get_bedrock_client(access_key, secret_key, region)
-    else:
-        client = get_bedrock_client()
-
-    # Make the request
-    try:
-        # bedrock does not support certain args
-        print("Warning: Tool rules not supported with Anthropic Bedrock")
-        data["tool_choice"] = {"type": "any"}
-        log_event(name="llm_request_sent", attributes=data)
-        response = client.messages.create(**data)
-        log_event(name="llm_response_received", attributes={"response": response.json()})
-        return convert_anthropic_response_to_chatcompletion(response=response, inner_thoughts_xml_tag=inner_thoughts_xml_tag)
-    except PermissionDeniedError:
-        raise BedrockPermissionError(f"User does not have access to the Bedrock model with the specified ID. {data['model']}")
-    except Exception as e:
-        raise BedrockError(f"Bedrock error: {e}")
-
-
-def anthropic_chat_completions_request_stream(
-    data: ChatCompletionRequest,
-    inner_thoughts_xml_tag: Optional[str] = "thinking",
-    put_inner_thoughts_in_kwargs: bool = False,
-    extended_thinking: bool = False,
-    max_reasoning_tokens: Optional[int] = None,
-    provider_name: Optional[str] = None,
-    provider_category: Optional[ProviderCategory] = None,
-    betas: List[str] = ["tools-2024-04-04"],
-    user_id: Optional[str] = None,
-) -> Generator[ChatCompletionChunkResponse, None, None]:
-    """Stream chat completions from Anthropic API.
-
-    Similar to OpenAI's streaming, but using Anthropic's native streaming support.
-    See: https://docs.anthropic.com/claude/reference/messages-streaming
-    """
-    data = _prepare_anthropic_request(
-        data=data,
-        inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-        put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
-        extended_thinking=extended_thinking,
-        max_reasoning_tokens=max_reasoning_tokens,
-    )
-    if provider_category == ProviderCategory.byok:
-        actor = UserManager().get_user_or_default(user_id=user_id)
-        api_key = ProviderManager().get_override_key(provider_name, actor=actor)
-        anthropic_client = anthropic.Anthropic(api_key=api_key)
-    elif model_settings.anthropic_api_key:
-        anthropic_client = anthropic.Anthropic()
-
-    with anthropic_client.beta.messages.stream(
-        **data,
-        betas=betas,
-    ) as stream:
-        # Stream: https://github.com/anthropics/anthropic-sdk-python/blob/d212ec9f6d5e956f13bc0ddc3d86b5888a954383/src/anthropic/lib/streaming/_beta_messages.py#L22
-        message_id = None
-        model = None
-
-        for chunk in stream._raw_stream:
-            time.sleep(0.01)  # Anthropic is really fast, faster than frontend can upload.
-            if isinstance(chunk, BetaRawMessageStartEvent):
-                """
-                BetaRawMessageStartEvent(
-                    message=BetaMessage(
-                        id='MESSAGE ID HERE',
-                        content=[],
-                        model='claude-3-5-sonnet-20241022',
-                        role='assistant',
-                        stop_reason=None,
-                        stop_sequence=None,
-                        type='message',
-                        usage=BetaUsage(
-                            cache_creation_input_tokens=0,
-                            cache_read_input_tokens=0,
-                            input_tokens=30,
-                            output_tokens=4
-                        )
-                    ),
-                    type='message_start'
-                ),
-                """
-                message_id = chunk.message.id
-                model = chunk.message.model
-            yield convert_anthropic_stream_event_to_chatcompletion(chunk, message_id, model, inner_thoughts_xml_tag)
