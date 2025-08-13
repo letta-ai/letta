@@ -3,12 +3,6 @@ from collections import defaultdict
 import requests
 from openai import AzureOpenAI
 
-from letta.llm_api.openai import prepare_openai_payload
-from letta.schemas.llm_config import LLMConfig
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completions import ChatCompletionRequest
-from letta.settings import ModelSettings
-
 
 def get_azure_chat_completions_endpoint(base_url: str, model: str, api_version: str):
     return f"{base_url}/openai/deployments/{model}/chat/completions?api-version={api_version}"
@@ -98,21 +92,3 @@ def azure_openai_get_embeddings_model_list(base_url: str, api_key: str, api_vers
     model_options = [m for m in model_list if valid_embedding_model(m)]
 
     return model_options
-
-
-def azure_openai_chat_completions_request(
-    model_settings: ModelSettings, llm_config: LLMConfig, chat_completion_request: ChatCompletionRequest
-) -> ChatCompletionResponse:
-    """https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions"""
-
-    assert model_settings.azure_api_key is not None, "Missing required api key field when calling Azure OpenAI"
-    assert model_settings.azure_api_version is not None, "Missing required api version field when calling Azure OpenAI"
-    assert model_settings.azure_base_url is not None, "Missing required base url field when calling Azure OpenAI"
-
-    data = prepare_openai_payload(chat_completion_request)
-    client = AzureOpenAI(
-        api_key=model_settings.azure_api_key, api_version=model_settings.azure_api_version, azure_endpoint=model_settings.azure_base_url
-    )
-    chat_completion = client.chat.completions.create(**data)
-
-    return ChatCompletionResponse(**chat_completion.model_dump())
