@@ -4934,6 +4934,10 @@
                   "message": {
                     "type": "string",
                     "maxLength": 140
+                  },
+                  "preserve_tool_variables": {
+                    "type": "boolean",
+                    "description": "If true, preserves the existing agent's tool environment variables when migrating deployed agents"
                   }
                 }
               }
@@ -5016,6 +5020,10 @@
                   },
                   "preserve_core_memories": {
                     "type": "boolean"
+                  },
+                  "preserve_tool_variables": {
+                    "type": "boolean",
+                    "description": "If true, preserves the existing agent's tool environment variables instead of using the template's variables"
                   }
                 },
                 "required": ["to_template", "preserve_core_memories"]

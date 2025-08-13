@@ -64,6 +64,7 @@ export async function migrateAgents(
     organizationId,
     template,
     preserveCoreMemories,
+    preserveToolVariables,
     coreUserId,
   } = payload;
 
@@ -97,6 +98,7 @@ export async function migrateAgents(
         agentToUpdateId: agent.agentId,
         lettaAgentsUserId: coreUserId,
         preserveCoreMemories,
+        preserveToolVariables,
         baseTemplateId: deployedAgentTemplate.agentTemplateId,
         templateId: deployedAgentTemplate.id,
       });

@@ -32,7 +32,8 @@ export async function versionAgentTemplate(
 ): Promise<DeployAgentTemplateResponse> {
   const { agent_id: agentId } = req.params;
   const { returnAgentState } = req.query;
-  const { migrate_deployed_agents, message } = req.body;
+  const { migrate_deployed_agents, message, preserve_tool_variables } =
+    req.body;
 
   const { organizationId, userId, source, lettaAgentsUserId } =
     getContextDataHack(req, context);
@@ -110,6 +111,7 @@ export async function versionAgentTemplate(
 
   const version = `${existingDeployedAgentTemplateCount.length + 1}`;
 
+
   const createdAgent = await copyAgentById(agentId, lettaAgentsUserId, {
     projectId,
     hidden: true,
@@ -161,6 +163,7 @@ export async function versionAgentTemplate(
       await startMigrateAgents({
         template: nextVersion,
         preserveCoreMemories: false,
+        preserveToolVariables: preserve_tool_variables,
         coreUserId: lettaAgentsUserId,
         organizationId: organizationId,
       });
@@ -190,6 +193,7 @@ export async function versionAgentTemplate(
                 to_template: `${agentTemplateName}:${version}`,
                 variables: deployedAgentVariablesItem?.value || {},
                 preserve_core_memories: false,
+                preserve_tool_variables,
               },
               params: {
                 agent_id: deployedAgent.id,

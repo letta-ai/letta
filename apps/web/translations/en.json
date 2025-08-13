@@ -2640,6 +2640,8 @@
       "description": "Versioning an agent creates a new version of the agent that is immutable and can be used to deploy agents. Are you sure you want to proceed?",
       "migrate": "Migrate all deployed agents to this version",
       "migrateDescription": "Selecting this option will migrate all deployed agents to this version, to programmatically migrate agents, visit the <link>API documentation</link>.",
+      "overwriteToolVariables": "Overwrite existing agent tool environment variables",
+      "overwriteToolVariablesDescription": "Replace existing agents' tool environment variables with the template's tool variables during migration.",
       "message": {
         "label": "Version message",
         "placeholder": "What's new in this version?",

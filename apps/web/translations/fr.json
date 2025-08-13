@@ -1412,7 +1412,9 @@
       "confirm": "Agent de versions",
       "description": "La gestion des versions d'un agent crée une nouvelle version de l'agent qui est immuable et peut être utilisée pour déployer des agents. ",
       "migrate": "Migrer tous les agents déployés vers cette version",
-      "migrateDescription": "La sélection de cette option migrera tous les agents déployés vers cette version. Pour migrer les agents par programme, visitez le <link>Documentation API</link>."
+      "migrateDescription": "La sélection de cette option migrera tous les agents déployés vers cette version. Pour migrer les agents par programme, visitez le <link>Documentation API</link>.",
+      "overwriteToolVariables": "Écraser les variables d'environnement d'outils des agents existants",
+      "overwriteToolVariablesDescription": "Remplacer les variables d'environnement d'outils des agents existants par les variables d'outils du modèle lors de la migration."
     },
     "CloudUpsellDeploy": {
       "title": "Déployez, gérez et surveillez vos agents sur Letta Cloud",

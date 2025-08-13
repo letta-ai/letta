@@ -1,6 +1,7 @@
 export interface MigrateAgentsPayload {
   memoryVariables?: Record<string, string>;
   preserveCoreMemories?: boolean;
+  preserveToolVariables?: boolean;
   agentIds?: string[];
   template: string;
   coreUserId: string;

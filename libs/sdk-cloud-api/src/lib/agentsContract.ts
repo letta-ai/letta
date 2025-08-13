@@ -48,6 +48,10 @@ const versionAgentTemplateContract = c.mutation({
   body: z.object({
     migrate_deployed_agents: z.boolean().optional(),
     message: z.string().max(140).optional(),
+    preserve_tool_variables: z.boolean().optional().openapi({
+      description:
+        "If true, preserves the existing agent's tool environment variables when migrating deployed agents",
+    }),
   }),
   query: z.object({
     returnAgentState: z.boolean().or(z.literal('true')).optional(),
@@ -73,6 +77,10 @@ const MigrateAgentToNewVersionedAgentTemplateBodySchema = z.object({
       'If you chose to not preserve core memories, you should provide the new variables for the core memories',
   }),
   preserve_core_memories: z.boolean(),
+  preserve_tool_variables: z.boolean().optional().openapi({
+    description:
+      "If true, preserves the existing agent's tool environment variables instead of using the template's variables",
+  }),
 });
 
 const MigrateAgentToNewVersionedAgentTemplateResponseSchema = z.object({

@@ -1925,6 +1925,8 @@
       "description": "对智能体进行版本控制会创建不可变的新版本，可用于部署智能体。您确定要继续吗？",
       "migrate": "将所有已部署的智能体迁移到此版本",
       "migrateDescription": "选择此选项将把所有已部署的智能体迁移到此版本，要以编程方式迁移智能体，请访问<link>API文档</link>。",
+      "overwriteToolVariables": "覆盖现有智能体工具环境变量",
+      "overwriteToolVariablesDescription": "在迁移期间用模板的工具变量替换现有智能体的工具环境变量。",
       "message": {
         "label": "版本消息",
         "placeholder": "此版本有什么新内容？",

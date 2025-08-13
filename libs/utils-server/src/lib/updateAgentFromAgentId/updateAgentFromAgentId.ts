@@ -5,6 +5,7 @@ import { attachVariablesToTemplates } from '../attachVariablesToTemplates/attach
 
 interface UpdateAgentFromAgentId {
   preserveCoreMemories?: boolean;
+  preserveToolVariables?: boolean;
   memoryVariables: Record<string, string>;
   baseAgentId: string;
   agentToUpdateId: string;
@@ -21,6 +22,7 @@ export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
   'created_at',
   'identity_ids',
   'updated_at',
+  'tool_exec_environment_variables',
   'created_by_id',
   'description',
   'last_updated_by_id',
@@ -33,6 +35,7 @@ export const omittedFieldsOnCopy: Array<Partial<keyof AgentState>> = [
 export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
   const {
     preserveCoreMemories = false,
+    preserveToolVariables = false,
     memoryVariables,
     baseAgentId,
     agentToUpdateId,
@@ -66,7 +69,10 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     tool_ids: agentTemplateData.tools
       .map((tool) => tool.id || '')
       .filter(Boolean),
-    tool_exec_environment_variables:
+  };
+
+  if (!preserveToolVariables) {
+    requestBody.tool_exec_environment_variables =
       agentTemplateData.tool_exec_environment_variables?.reduce(
         (acc, tool) => {
           acc[tool.key] = tool.value;
@@ -74,8 +80,35 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
           return acc;
         },
         {} as Record<string, string>,
-      ) || {},
-  };
+      ) || {};
+  } else {
+    // existing agent tool map
+    const existingToolMap: Record<string, string> = {};
+    existingAgent.tool_exec_environment_variables?.forEach((tool) => {
+      if (typeof tool.key === 'string') {
+        existingToolMap[tool.key] = tool.value;
+      }
+    });
+
+    // only add tool variables that are not already in the agent
+    // as well as removing any tool variables that are not in the template
+    requestBody.tool_exec_environment_variables = agentTemplateData.tool_exec_environment_variables?.reduce(
+      (acc, tool) => {
+        // if existing agent has the tool variable, keep it
+        if (
+          typeof tool.key === 'string' &&
+          existingToolMap[tool.key] !== undefined
+        ) {
+          acc[tool.key] = existingToolMap[tool.key];
+        } else {
+          // otherwise, use the template's tool variable
+          acc[tool.key] = tool.value;
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  }
 
   if (!preserveCoreMemories) {
     const { memory_blocks, tool_ids } = attachVariablesToTemplates(

@@ -145,6 +145,30 @@ function FormFields(props: FormFieldsProps) {
           }}
           name="migrate"
         />
+        <FormField
+          render={({ field }) => {
+            return (
+              <Checkbox
+                data-testid="version-agent-dialog-overwrite-tool-variables-checkbox"
+                size="large"
+                checked={field.value}
+                description={t(
+                  'VersionAgentDialog.overwriteToolVariablesDescription',
+                )}
+                label={t('VersionAgentDialog.overwriteToolVariables')}
+                onCheckedChange={(value) => {
+                  field.onChange({
+                    target: {
+                      value: value,
+                      name: field.name,
+                    },
+                  });
+                }}
+              />
+            );
+          }}
+          name="overwriteToolVariables"
+        />
       </VStack>
       <Button
         data-testid="deploy-agent-dialog-trigger"
@@ -174,6 +198,7 @@ function CreateNewTemplateVersionDialog(
     () =>
       z.object({
         migrate: z.boolean(),
+        overwriteToolVariables: z.boolean(),
         message: z.string().max(140, {
           message: t('VersionAgentDialog.message.maxChars'),
         }),
@@ -193,6 +218,7 @@ function CreateNewTemplateVersionDialog(
     resolver: zodResolver(versionAgentFormSchema),
     defaultValues: {
       migrate: false,
+      overwriteToolVariables: false,
       message: '',
     },
   });
@@ -298,6 +324,7 @@ function CreateNewTemplateVersionDialog(
         },
         body: {
           migrate_deployed_agents: values.migrate,
+          preserve_tool_variables: !values.overwriteToolVariables,
           message: values.message,
         },
         params: { agent_id: agentTemplateId },

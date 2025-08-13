@@ -22,7 +22,8 @@ export async function migrateAgent(
   req: MigrateAgentRequest,
   context: SDKContext,
 ): Promise<MigrateAgentResponse> {
-  const { to_template, preserve_core_memories } = req.body;
+  const { to_template, preserve_core_memories, preserve_tool_variables } =
+    req.body;
   let { variables } = req.body;
   const { agent_id: agentIdToMigrate } = req.params;
 
@@ -64,6 +65,7 @@ export async function migrateAgent(
       template: to_template,
       memoryVariables: variables,
       preserveCoreMemories: preserve_core_memories,
+      preserveToolVariables: preserve_tool_variables,
       coreUserId: lettaAgentsUserId,
       organizationId: organizationId,
     });
@@ -92,6 +94,7 @@ export async function migrateAgent(
       agentToUpdateId: agentIdToMigrate,
       lettaAgentsUserId,
       preserveCoreMemories: preserve_core_memories,
+      preserveToolVariables: preserve_tool_variables,
       baseTemplateId: deployedAgentTemplate.agentTemplateId,
       templateId: deployedAgentTemplate.id,
     });
