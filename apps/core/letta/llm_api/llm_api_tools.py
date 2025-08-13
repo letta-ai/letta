@@ -7,8 +7,6 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
-from letta.llm_api.anthropic import anthropic_bedrock_chat_completions_request
-from letta.llm_api.aws_bedrock import has_valid_aws_credentials
 from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
@@ -25,7 +23,7 @@ from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
@@ -383,37 +381,6 @@ def create(
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
 
         return response
-
-    elif llm_config.model_endpoint_type == "bedrock":
-        """Anthropic endpoint that goes via /embeddings instead of /chat/completions"""
-
-        if stream:
-            raise NotImplementedError("Streaming not yet implemented for Anthropic (via the /embeddings endpoint).")
-        if not use_tool_naming:
-            raise NotImplementedError("Only tool calling supported on Anthropic API requests")
-
-        if not has_valid_aws_credentials():
-            raise LettaConfigurationError(message="Invalid or missing AWS credentials. Please configure valid AWS credentials.")
-
-        tool_call = None
-        if force_tool_call is not None:
-            tool_call = {"type": "function", "function": {"name": force_tool_call}}
-            assert functions is not None
-
-        return anthropic_bedrock_chat_completions_request(
-            data=ChatCompletionRequest(
-                model=llm_config.model,
-                messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-                tools=[{"type": "function", "function": f} for f in functions] if functions else None,
-                tool_choice=tool_call,
-                # user=str(user_id),
-                # NOTE: max_tokens is required for Anthropic API
-                max_tokens=llm_config.max_tokens,
-            ),
-            provider_name=llm_config.provider_name,
-            provider_category=llm_config.provider_category,
-            user_id=user_id,
-        )
 
     elif llm_config.model_endpoint_type == "deepseek":
         if model_settings.deepseek_api_key is None and llm_config.model_endpoint == "":
