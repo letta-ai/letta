@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
+from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
 from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
@@ -672,6 +672,10 @@ async def retrieve_agent(
     """
     Get the state of the agent.
     """
+    # Check if agent_id matches uuid4 format
+    if not AGENT_ID_PATTERN.match(agent_id):
+        raise HTTPException(status_code=400, detail=f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
