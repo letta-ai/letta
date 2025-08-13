@@ -73,6 +73,8 @@ import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConf
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface ADELayoutProps {
   user?: UserContextData['user'];
@@ -537,6 +539,10 @@ function QuickADEOnboarding() {
         primaryAction={
           <Button
             onClick={() => {
+              trackClientSideEvent(AnalyticsEvent.USER_ONBOARDING_COMPLETED, {
+                onboardingType: 'create:new_agent',
+                onboardingStep: 'finish_tour',
+              });
               resetTour();
             }}
             label={t('complete')}
@@ -562,6 +568,15 @@ function QuickADEOnboarding() {
                     href="https://docs.letta.com/guides/templates/overview"
                     label={t('done.versioningTemplates')}
                     color="tertiary"
+                    onClick={() => {
+                      trackClientSideEvent(
+                        AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED,
+                        {
+                          onboardingType: 'create:new_agent',
+                          resourceName: 'versioning_templates',
+                        },
+                      );
+                    }}
                   />
                   <Button
                     fullWidth
@@ -571,6 +586,15 @@ function QuickADEOnboarding() {
                     href="https://docs.letta.com/quickstart"
                     label={t('done.sdkQuickstart')}
                     color="tertiary"
+                    onClick={() => {
+                      trackClientSideEvent(
+                        AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED,
+                        {
+                          onboardingType: 'create:new_agent',
+                          resourceName: 'sdk_quickstart',
+                        },
+                      );
+                    }}
                   />
                 </VStack>
               </HStack>

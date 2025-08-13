@@ -20,6 +20,8 @@ import { AuthModes } from '../../../MCPServers/AuthenticationSection';
 import { formatAuthToken } from '../../../MCPServers/utils';
 import { useMCPServerDialog } from '../../hooks/useMCPServerDialog/useMCPServerDialog';
 import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPServers/useRecommendedMCPServers';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface GitHubSetupServerProps {
   server: CustomUrlRecommendedServer;
@@ -67,6 +69,11 @@ export function GitHubSetupServer(props: GitHubSetupServerProps) {
       const customHeaders = {
         Authorization: authToken,
       };
+
+      trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
+        mcpServerName: serverName,
+        mcpServerType: MCPServerTypes.StreamableHttp,
+      });
 
       const requestBody = {
         server_name: serverName, // Use the generated name

@@ -24,7 +24,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useCurrentUser } from '$web/client/hooks';
 import { ConnectToLocalServerCommand } from '$web/client/components';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 
@@ -59,7 +58,6 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
 
   const developmentServerConfig = useCurrentDevelopmentServerConfig();
   const { push } = useRouter();
-  const user = useCurrentUser();
 
   const handleCreateAgent = useCallback(
     async (title: string, starterKit: StarterKit) => {
@@ -122,7 +120,6 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
         });
 
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
-          userId: user?.id || '',
           starterKitId: starterKit.id,
         });
 
@@ -144,7 +141,6 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
       createAgent,
       llmModels,
       embeddingModels,
-      user?.id,
       push,
       getAllTools,
     ],

@@ -32,12 +32,12 @@ import type { ExampleBlockPayload } from './ExampleBlocks';
 import { ExampleBlocks } from './ExampleBlocks';
 import { useSetAtom } from 'jotai/index';
 import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
-import { useADEAppContext } from '../../../AppContext/AppContext';
 import { UseBlocksServiceInfiniteQuery } from '../../../SearchMemoryBlocks/SearchMemoryBlocks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { CoreMemoryBlock } from '../types';
 import type { CoreMemoryBlockType } from '../types';
+import { useADEAppContext } from '../../../AppContext/AppContext';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -152,7 +152,6 @@ export function CreateNewMemoryBlockDialog(
   const queryClient = useQueryClient();
   const { agentId: currentAgentId } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
-  const { user } = useADEAppContext();
 
   type TabTypes = 'custom' | 'examples';
 
@@ -261,7 +260,6 @@ export function CreateNewMemoryBlockDialog(
       }
 
       trackClientSideEvent(AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY, {
-        userId: user?.id || '',
         agentId: agent.id,
         blockType,
       });
@@ -332,7 +330,6 @@ export function CreateNewMemoryBlockDialog(
       setCurrentMemoryBlock,
       handleOpenChange,
       agent.id,
-      user?.id,
       blockType,
     ],
   );

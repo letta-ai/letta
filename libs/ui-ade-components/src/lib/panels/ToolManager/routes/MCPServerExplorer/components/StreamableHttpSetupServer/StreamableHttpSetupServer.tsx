@@ -20,6 +20,8 @@ import { AuthModes } from '../../../MCPServers/AuthenticationSection';
 import { parseAuthenticationData } from '../../../MCPServers/utils';
 import { useMCPServerDialog } from '../../hooks/useMCPServerDialog/useMCPServerDialog';
 import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPServers/useRecommendedMCPServers';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface StreamableHttpSetupServerProps {
   server: CustomUrlRecommendedServer;
@@ -112,6 +114,11 @@ export function StreamableHttpSetupServer(
         authToken: data.authToken || '', // Handle optional auth token
         customHeaders: data.customHeaders,
         options: { formatToken: true, includeAuthHeader: true },
+      });
+
+      trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
+        mcpServerName: serverName,
+        mcpServerType: MCPServerTypes.StreamableHttp,
       });
 
       const requestBody = {

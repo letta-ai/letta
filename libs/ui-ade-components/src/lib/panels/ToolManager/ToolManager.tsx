@@ -26,15 +26,14 @@ import React, { useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { getMatchingRoute } from './toolManagerRoutes';
 import { useToolManagerRouteCopy } from './hooks/useToolManagerRouteCopy/useToolManagerRouteCopy';
-import type { ToolType
-} from '@letta-cloud/sdk-core';
+import type { ToolType } from '@letta-cloud/sdk-core';
 import {
   useToolsServiceCreateTool,
   useToolsServiceListTools,
   type Tool,
   UseToolsServiceListToolsKeyFn,
   UseToolsServiceRetrieveToolKeyFn,
-  isAPIError
+  isAPIError,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,7 +46,6 @@ import { useCurrentAgent } from '../../hooks';
 import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
-import { useADEAppContext } from '../../AppContext/AppContext';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CreateToolDialogProps {
@@ -103,7 +101,6 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
   const queryClient = useQueryClient();
   const { setSelectedToolId } = useToolManagerState();
-  const { user } = useADEAppContext()
 
   const { mutate, isPending, error, reset } = useToolsServiceCreateTool({
     onSuccess: (data) => {
@@ -195,7 +192,6 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
       const language = values.language || 'python';
       
       trackClientSideEvent(AnalyticsEvent.CREATE_TOOL, {
-        userId: user?.id || '',
         toolType: 'custom' as ToolType,
         sourceType: language,
       })
@@ -207,7 +203,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
         },
       });
     },
-    [mutate, user],
+    [mutate],
   );
 
   return (

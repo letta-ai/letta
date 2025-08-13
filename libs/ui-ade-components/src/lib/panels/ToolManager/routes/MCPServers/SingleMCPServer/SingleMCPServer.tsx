@@ -39,14 +39,17 @@ import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLo
 import { toMCPServerTypeLabel } from '../types';
 import { UpdateMCPServerDialog } from '../UpdateMCPServerDialog/UpdateMCPServerDialog';
 import { MCPToolParameters } from '../MCPToolParameters';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
+  serverType?: string;
   trigger: React.ReactNode;
 }
 
 function RemoveMCPServerDialog(props: RemoveMCPServerDialogProps) {
-  const { serverName, trigger } = props;
+  const { serverName, trigger, serverType } = props;
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -54,6 +57,11 @@ function RemoveMCPServerDialog(props: RemoveMCPServerDialogProps) {
 
   const { mutate, isError, isPending } = useToolsServiceDeleteMcpServer({
     onSuccess: () => {
+      trackClientSideEvent(AnalyticsEvent.DELETE_MCP_SERVER, {
+        mcpServerName: serverName,
+        mcpServerType: serverType,
+      });
+
       setIsOpen(false);
       queryClient.setQueriesData<ListMcpServersResponse | undefined>(
         {
@@ -252,6 +260,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
               />
               <RemoveMCPServerDialog
                 serverName={server.server_name}
+                serverType={server.type}
                 trigger={
                   <DropdownMenuItem
                     preIcon={<TrashIcon />}

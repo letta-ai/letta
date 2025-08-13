@@ -27,7 +27,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useADEAppContext } from '../../AppContext/AppContext';
 
 interface AttachMemoryBlockButtonProps {
   blockId: string;
@@ -35,7 +34,6 @@ interface AttachMemoryBlockButtonProps {
 
 function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
   const agent = useCurrentAgent();
-  const { user } = useADEAppContext();
   const { blockId } = props;
   const t = useTranslations('ADE/MemoryBlock.AttachMemoryBlockButton');
   const isMemoryBlockAttached = useMemo(() => {
@@ -51,7 +49,6 @@ function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
     if (!agent || isMemoryBlockAttached) return;
 
     trackClientSideEvent(AnalyticsEvent.ATTACH_BLOCK_TO_CORE_MEMORY, {
-      userId: user?.id || '',
       agentId: agent.id,
     });
 
@@ -88,7 +85,7 @@ function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
         },
       },
     );
-  }, [t, queryClient, agent, blockId, isMemoryBlockAttached, mutate, user?.id]);
+  }, [t, queryClient, agent, blockId, isMemoryBlockAttached, mutate]);
 
   if (isMemoryBlockAttached) {
     return (

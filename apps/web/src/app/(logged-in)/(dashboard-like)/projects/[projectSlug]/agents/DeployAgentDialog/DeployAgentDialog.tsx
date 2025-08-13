@@ -25,7 +25,7 @@ import { webApi, webApiQueryKeys } from '$web/client';
 import { useRouter } from 'next/navigation';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
+import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
@@ -158,7 +158,6 @@ function FromStarterKit(props: FromStarterKitProps) {
   );
 
   const { slug, id: projectId } = useCurrentProject();
-  const user = useCurrentUser()
 
   const { push } = useRouter();
 
@@ -182,9 +181,8 @@ function FromStarterKit(props: FromStarterKitProps) {
       onIsCreating(true);
 
       trackClientSideEvent(AnalyticsEvent.CREATE_AGENT, {
-        userId: user?.id || '',
         origin: 'starter_kit:deploy_agent_dialog',
-        starterKitId: starterKitId
+        starterKitId: starterKitId,
       });
 
       mutate({
@@ -196,7 +194,7 @@ function FromStarterKit(props: FromStarterKitProps) {
         },
       });
     },
-    [mutate, onIsCreating, projectId, user],
+    [mutate, onIsCreating, projectId],
   );
 
   return (

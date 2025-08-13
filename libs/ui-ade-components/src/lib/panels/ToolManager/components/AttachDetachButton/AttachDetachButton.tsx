@@ -36,7 +36,6 @@ import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/use
 import { useQueryClient } from '@tanstack/react-query';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useADEAppContext } from '../../../../AppContext/AppContext';
 
 interface AttachComposioToolProps {
   idToAttach: string;
@@ -152,7 +151,6 @@ function AttachMCPTool(props: AttachMCPToolProps) {
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const { mutateAsync: attachToolToAgent } = useAgentsServiceAttachTool();
-  const { user } = useADEAppContext();
 
   const handleAttach = useCallback(async () => {
     let toolToRollback: {
@@ -162,7 +160,6 @@ function AttachMCPTool(props: AttachMCPToolProps) {
     } | null = null;
 
     trackClientSideEvent(AnalyticsEvent.ATTACH_MCP_SERVER_TOOL, {
-      userId: user?.id || '',
       agentId,
       mcpServerName,
       mcpToolName,
@@ -207,7 +204,6 @@ function AttachMCPTool(props: AttachMCPToolProps) {
     removeOptimisticTool,
     mcpServerName,
     mcpToolName,
-    user?.id,
     t,
   ]);
 
@@ -234,7 +230,6 @@ function AttachLocalTool(props: AttachLocalToolProps) {
   const { id: agentId } = useCurrentAgent();
   const { addOptimisticTool, updateAgentTools, removeOptimisticTool } =
     useOptimisticAgentTools(agentId);
-  const { user } = useADEAppContext();
 
   const { mutate } = useAgentsServiceAttachTool({
     onMutate: () => {
@@ -265,7 +260,6 @@ function AttachLocalTool(props: AttachLocalToolProps) {
 
   const handleAttach = useCallback(async () => {
     trackClientSideEvent(AnalyticsEvent.ATTACH_TOOL, {
-      userId: user?.id || '',
       toolType: toolType,
       agentId,
       toolId: idToAttach,
@@ -275,7 +269,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
       agentId,
       toolId: idToAttach,
     });
-  }, [user?.id, toolType, agentId, idToAttach, mutate]);
+  }, [toolType, agentId, idToAttach, mutate]);
 
   return (
     <Button
@@ -333,7 +327,6 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const queryClient = useQueryClient();
-  const { user } = useADEAppContext();
 
   const t = useTranslations('ToolActionsHeader');
 
@@ -389,7 +382,6 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   const handleDetach = useCallback(() => {
     if (toolType !== 'external_mcp') {
       trackClientSideEvent(AnalyticsEvent.DETACH_TOOL, {
-        userId: user?.id || '',
         toolType,
         agentId,
         toolId: idToDetach,
@@ -398,7 +390,6 @@ function DetachToolDialog(props: DetachToolDialogProps) {
       const tool = getToolToRestore(idToDetach);
       if (tool) {
         trackClientSideEvent(AnalyticsEvent.DETACH_MCP_SERVER_TOOL, {
-          userId: user?.id ?? '',
           agentId,
           mcpServerName: tool.metadata_?.mcp?.server_name ?? '',
           mcpToolName: tool.name ?? '',
@@ -410,7 +401,7 @@ function DetachToolDialog(props: DetachToolDialogProps) {
       agentId,
       toolId: idToDetach,
     });
-  }, [toolType, mutate, agentId, idToDetach, user?.id, getToolToRestore]);
+  }, [toolType, mutate, agentId, idToDetach, getToolToRestore]);
 
   return (
     <Dialog

@@ -23,7 +23,6 @@ import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPSe
 import { SERVER_CONFIGS } from '../../constants';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useADEAppContext } from '../../../../../../AppContext/AppContext';
 
 interface CustomSetupServerProps {
   server: CustomUrlRecommendedServer;
@@ -51,8 +50,6 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
   const { open, mutate, isPending, isError, handleOpenChange } =
     useMCPServerDialog(props.server);
 
-  const { user } = useADEAppContext();
-
   type CustomInputFormValues = z.infer<typeof customInputSchema>;
 
   const { watch } = form;
@@ -71,7 +68,6 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
       const serverName = generateServerName(baseName, existingServers);
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER, {
-        userId: user?.id || '',
         mcpServerName: serverName,
         mcpServerType: serverType,
       });
@@ -87,7 +83,7 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
 
       mutate({ requestBody });
     },
-    [props.server.name, config?.type, existingServers, user?.id, mutate],
+    [props.server.name, config?.type, existingServers, mutate],
   );
 
   return (

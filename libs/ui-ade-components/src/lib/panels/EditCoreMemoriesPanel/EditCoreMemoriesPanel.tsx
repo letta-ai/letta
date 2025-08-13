@@ -41,6 +41,8 @@ import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
 import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -313,6 +315,14 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
           size="large"
           bold
           onClick={() => {
+            trackClientSideEvent(
+              AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
+              {
+                onboardingStep: 'view_core_memory_panel',
+                onboardingType: 'create:new_agent',
+              },
+            );
+
             setStep('tools');
           }}
           label={t('next')}

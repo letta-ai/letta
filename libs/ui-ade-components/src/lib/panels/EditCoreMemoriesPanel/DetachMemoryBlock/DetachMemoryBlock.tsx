@@ -21,7 +21,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useADEAppContext } from '../../../AppContext/AppContext';
 
 interface DetachMemoryBlockDialogProps {
   blockId: string;
@@ -33,7 +32,6 @@ export function DetachMemoryBlock(props: DetachMemoryBlockDialogProps) {
   const { blockId } = props;
   const queryClient = useQueryClient();
   const setSelectMemoryBlockLabel = useSetAtom(currentAdvancedCoreMemoryAtom);
-  const { user } = useADEAppContext();
 
   const {
     isError: detachError,
@@ -46,7 +44,6 @@ export function DetachMemoryBlock(props: DetachMemoryBlockDialogProps) {
 
   const handleDetachBlock = useCallback(() => {
     trackClientSideEvent(AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY, {
-      userId: user?.id || '',
       agentId,
     });
 
@@ -114,7 +111,6 @@ export function DetachMemoryBlock(props: DetachMemoryBlockDialogProps) {
     blockId,
     queryClient,
     resetDeleting,
-    user?.id,
   ]);
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);

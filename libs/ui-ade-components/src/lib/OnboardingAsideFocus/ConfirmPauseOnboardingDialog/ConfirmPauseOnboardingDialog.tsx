@@ -5,9 +5,12 @@ import {
   QUICK_ADE_TOUR_STEP,
   useResetQuickADETour,
 } from '../../hooks/useQuickADETour/useQuickADETour';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface ConfirmPauseOnboardingDialogProps {
   trigger: React.ReactNode;
+  onboardingType?: string;
 }
 
 export function ConfirmPauseOnboardingDialog(
@@ -16,12 +19,17 @@ export function ConfirmPauseOnboardingDialog(
   const { pauseOnboarding } = usePauseOnboarding();
   const reset = useResetQuickADETour();
   const t = useTranslations('ConfirmPauseOnboardingDialog');
-  const { trigger } = props;
+  const { trigger, onboardingType } = props;
+
   return (
     <Dialog
       trigger={trigger}
       title={t('title')}
       onConfirm={() => {
+        trackClientSideEvent(AnalyticsEvent.SKIPPED_USER_ONBOARDING, {
+          onboardingType: onboardingType || '',
+        });
+
         reset();
         window.localStorage.removeItem(QUICK_ADE_TOUR_STEP);
         pauseOnboarding();

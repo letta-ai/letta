@@ -18,6 +18,9 @@ import { MCPServerTypes } from '../../../MCPServers/types';
 import { AuthModes } from '../../../MCPServers/AuthenticationSection';
 import { useMCPServerDialog } from '../../hooks/useMCPServerDialog/useMCPServerDialog';
 import type { CustomUrlRecommendedServer } from '../../hooks/useRecommendedMCPServers/useRecommendedMCPServers';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useCurrentAgentMetaData } from '../../../../../../../lib/hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 
 interface FreeMCPServerDialogProps {
   server: CustomUrlRecommendedServer;
@@ -25,6 +28,8 @@ interface FreeMCPServerDialogProps {
 
 export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
+
+  const { agentId } = useCurrentAgentMetaData();
 
   // Create a minimal form context for the test button
   const freeServerSchema = z.object({
@@ -51,9 +56,15 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
 
   const handleAddServer = useCallback(
     (formData: z.infer<typeof freeServerSchema>) => {
+      trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
+        agentId,
+        mcpServerName: serverName,
+        mcpServerType: MCPServerTypes.StreamableHttp, // TODO: change this after we expand support for free mcp server
+      });
+
       const requestBody = {
         server_name: serverName,
-        type: 'streamable_http' as const,
+        type: 'streamable_http' as const, // NOTE: this is only for hugging face and deepwiki
         server_url: formData.serverUrl,
         auth_header:
           formData.authMode === AuthModes.NONE ? null : formData.authMode,
@@ -68,7 +79,7 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
 
       mutate({ requestBody });
     },
-    [mutate, serverName],
+    [mutate, serverName, agentId],
   );
 
   const serverUrl = props.server.setup?.baseUrl;

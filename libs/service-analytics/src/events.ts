@@ -28,6 +28,7 @@ export enum AnalyticsEvent {
   DETACH_TOOL = 'agent:tool:detach',
   ADD_MCP_SERVER = 'tool:mcp_server:add',
   ADD_MCP_SERVER_TO_AGENT = 'agent:mcp_server:add',
+  DELETE_MCP_SERVER = 'tool:mcp_server:delete',
   ATTACH_MCP_SERVER_TOOL = 'agent:mcp_server:attach_tool',
   DETACH_MCP_SERVER_TOOL = 'agent:mcp_server:detach_tool',
   CREATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:create_block',
@@ -36,14 +37,18 @@ export enum AnalyticsEvent {
   UPDATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:update_block',
   DELETE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:delete_block',
   SEND_MESSAGE = 'agent:message:send',
-  RECEIVED_TOOL_CALL = 'agent:message:received:tool_call',
+  ONBOARDING_NEW_USER = 'user_onboarding:start',
+  USER_ONBOARDING_STEP_COMPLETED = 'user_onboarding:step_completed',
+  USER_ONBOARDING_COMPLETED = 'user_onboarding:completed',
+  USER_ONBOARDING_RESOURCE_CLICKED = 'user_onboarding:resource_clicked',
+  SKIPPED_USER_ONBOARDING = 'user_onboarding:skipped',
 }
 
 export interface BaseProperty {
   userId: string;
 }
 
-interface LocalAgentCreatedProperty extends BaseProperty {
+interface LocalAgentCreatedProperty {
   starterKitId: string;
 }
 
@@ -70,12 +75,12 @@ interface SubscriptionChangedProperty {
   organizationId: string;
 }
 
-interface CreateAgentProperty extends BaseProperty {
+interface CreateAgentProperty {
   origin: string;
   starterKitId: string;
 }
 
-interface ToolProperty extends BaseProperty {
+interface ToolProperty {
   toolType: ToolType;
 }
 
@@ -88,19 +93,19 @@ interface AttachDetachToolProperty extends ToolProperty {
   agentId: string;
 }
 
-interface McpServer extends BaseProperty {
+interface McpServer {
   agentId?: string;
   mcpServerName: string;
-  mcpServerType: string;
+  mcpServerType?: string;
 }
 
-interface McpAttachDetachToolProperty extends BaseProperty {
+interface McpAttachDetachToolProperty {
   agentId: string;
   mcpServerName: string;
   mcpToolName: string;
 }
 
-interface CoreMemoryProperty extends BaseProperty {
+interface CoreMemoryProperty {
   agentId: string;
 }
 
@@ -108,12 +113,28 @@ interface CreateCoreMemoryBlockProperty extends CoreMemoryProperty {
   blockType: string;
 }
 
-interface MessageProperty extends BaseProperty {
+interface MessageProperty {
   agentId: string;
   messageType: string;
   messageSendingType: string;
   location: string;
 }
+
+interface OnboardingProperty {
+  onboardingType: string;
+}
+
+interface OnboardingStepProperty extends OnboardingProperty {
+  onboardingStep: string;
+}
+
+interface ResourceProperty {
+  resourceName: string;
+}
+
+interface OnboardingResourceProperty
+  extends ResourceProperty,
+    OnboardingProperty {}
 
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
@@ -141,6 +162,7 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.ATTACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.DETACH_TOOL]: AttachDetachToolProperty;
   [AnalyticsEvent.ADD_MCP_SERVER]: McpServer;
+  [AnalyticsEvent.DELETE_MCP_SERVER]: McpServer;
   [AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT]: McpServer;
   [AnalyticsEvent.ATTACH_MCP_SERVER_TOOL]: McpAttachDetachToolProperty;
   [AnalyticsEvent.DETACH_MCP_SERVER_TOOL]: McpAttachDetachToolProperty;
@@ -150,5 +172,9 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
   [AnalyticsEvent.DELETE_BLOCK_IN_CORE_MEMORY]: CoreMemoryProperty;
   [AnalyticsEvent.SEND_MESSAGE]: MessageProperty;
-  [AnalyticsEvent.RECEIVED_TOOL_CALL]: MessageProperty;
+  [AnalyticsEvent.ONBOARDING_NEW_USER]: OnboardingProperty;
+  [AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED]: OnboardingStepProperty;
+  [AnalyticsEvent.USER_ONBOARDING_COMPLETED]: OnboardingStepProperty;
+  [AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED]: OnboardingResourceProperty;
+  [AnalyticsEvent.SKIPPED_USER_ONBOARDING]: OnboardingProperty;
 }

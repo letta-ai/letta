@@ -15,6 +15,8 @@ import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADE
 import * as React from 'react';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 import { ConfirmPauseOnboardingDialog } from '@letta-cloud/ui-ade-components';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 export function StartOnboardingDialog() {
   const t = useTranslations('onboarding/StartOnboardingDialog');
@@ -34,6 +36,10 @@ export function StartOnboardingDialog() {
   const { pauseOnboarding } = usePauseOnboarding();
 
   const handleCreateAgent = useCallback(() => {
+    trackClientSideEvent(AnalyticsEvent.ONBOARDING_NEW_USER, {
+      onboardingType: 'create:new_agent',
+    });
+
     mutate(
       {
         params: {
@@ -54,7 +60,7 @@ export function StartOnboardingDialog() {
         },
       },
     );
-  }, [mutate, pauseOnboarding, push, startQuickADETour, user?.name]);
+  }, [mutate, pauseOnboarding, push, startQuickADETour, user]);
 
   const showLoading = useMemo(() => {
     return createPending || isTransitioning;

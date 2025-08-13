@@ -61,7 +61,6 @@ import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { ChatroomContext } from './ChatroomContext/ChatroomContext';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 import { useAtom } from 'jotai';
-import { useADEAppContext } from '../../AppContext/AppContext';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -96,7 +95,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
   const queryClient = useQueryClient();
-  const { user } = useADEAppContext();
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
   const { addNetworkRequest, updateNetworkRequest } = useNetworkRequest();
@@ -210,7 +208,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       );
 
       trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE, {
-        userId: user?.id || '',
         agentId,
         messageType:
           role.value === 'system' ? 'system_message' : 'user_message',
@@ -502,7 +499,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       setIsPending,
       addNetworkRequest,
       updateNetworkRequest,
-      user?.id,
     ],
   );
 
@@ -580,6 +576,14 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
           size="large"
           bold
           onClick={() => {
+            trackClientSideEvent(
+              AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
+              {
+                onboardingType: 'create:new_agent',
+                onboardingStep: 'view_agent_simulator',
+              },
+            );
+
             setStep('memory');
           }}
           label={t('AgentSimulatorOnboarding.next')}
@@ -829,6 +833,11 @@ export function AgentSimulator() {
   const handleOnboardingStepChange = useCallback(
     function handleOnboardingStepChange() {
       if (currentStep === 'message') {
+        trackClientSideEvent(AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED, {
+          onboardingType: 'create:new_agent',
+          onboardingStep: 'message_agent',
+        });
+
         setStep('simulator');
 
         if (

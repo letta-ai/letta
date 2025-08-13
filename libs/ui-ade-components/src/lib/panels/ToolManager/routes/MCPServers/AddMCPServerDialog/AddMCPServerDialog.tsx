@@ -46,7 +46,6 @@ import {
 } from '../hooks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-import { useADEAppContext } from '../../../../../AppContext/AppContext';
 
 interface AddStdioServerFormProps {
   onCancel: () => void;
@@ -77,8 +76,7 @@ export function generateServerName(
 function AddStdioServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
   const [configValue, setConfigValue] = useState('');
-  const { agentId } = useCurrentAgentMetaData()
-  const { user } = useADEAppContext()
+  const { agentId } = useCurrentAgentMetaData();
 
   const AddStdioServerSchema = useStdioServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -133,11 +131,10 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
       const env = parseEnvironmentArray(values.environment);
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        userId: user?.id || '',
         agentId,
         mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.Stdio
-      })
+        mcpServerType: MCPServerTypes.Stdio,
+      });
 
       mutate({
         requestBody: {
@@ -149,7 +146,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
         },
       });
     },
-    [mutate, user?.id, agentId],
+    [mutate, agentId],
   );
 
   return (
@@ -180,8 +177,7 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
 function AddSSEServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
   const [configValue, setConfigValue] = useState('');
-  const { agentId } = useCurrentAgentMetaData()
-  const { user } = useADEAppContext()
+  const { agentId } = useCurrentAgentMetaData();
 
   const AddSSEServerSchema = useSSEServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -242,11 +238,10 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
       });
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        userId: user?.id || '',
         agentId,
         mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.Sse
-      })
+        mcpServerType: MCPServerTypes.Sse,
+      });
 
       mutate({
         requestBody: {
@@ -259,7 +254,7 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
         },
       });
     },
-    [mutate, agentId, user?.id],
+    [mutate, agentId],
   );
 
   return (
@@ -288,8 +283,7 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
 function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
   const { onCancel, onSuccess } = props;
   const [configValue, setConfigValue] = useState('');
-  const { user } = useADEAppContext()
-  const { agentId } = useCurrentAgentMetaData()
+  const { agentId } = useCurrentAgentMetaData();
 
   const AddStreamableHttpServerSchema = useStreamableHttpServerSchema();
   const getErrorMessage = useMCPErrorMessage();
@@ -352,11 +346,10 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
       });
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        userId: user?.id || '',
         agentId,
         mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.StreamableHttp
-      })
+        mcpServerType: MCPServerTypes.StreamableHttp,
+      });
 
       mutate({
         requestBody: {
@@ -369,7 +362,7 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
         },
       });
     },
-    [agentId, mutate, user?.id],
+    [agentId, mutate],
   );
 
   return (

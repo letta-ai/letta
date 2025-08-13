@@ -29,14 +29,14 @@ import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolManager } from '../ToolManager/ToolManager';
-import {
-  useToolManagerState,
-} from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
+import { useToolManagerState } from '../ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { useNetworkInspector } from '../../hooks/useNetworkInspector/useNetworkInspector';
 import { SpecificToolIcon } from '../ToolManager/components/SpecificToolIcon/SpecificToolIcon';
 import { MAX_TOOLS_THRESHOLD } from './constants';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -330,6 +330,14 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
             size="large"
             bold
             onClick={() => {
+              trackClientSideEvent(
+                AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
+                {
+                  onboardingType: 'create:new_agent',
+                  onboardingStep: 'view_tools_panel',
+                },
+              );
+
               setStep('chat');
             }}
             label={t('ToolsOnboarding.next')}
@@ -357,6 +365,14 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
             size="large"
             bold
             onClick={() => {
+              trackClientSideEvent(
+                AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
+                {
+                  onboardingType: 'create:new_agent',
+                  onboardingStep: 'view_tools_panel',
+                },
+              );
+
               setQuickStep('done');
             }}
             label={t('ToolsOnboarding.quickNext')}
@@ -510,7 +526,12 @@ function TooManyToolsWarning() {
       className="text-warning"
     >
       <WarningIcon size="xsmall" color="warning" />
-      <Tooltip content={t('TooManyToolsWarning.tooltip', { count: toolCount, threshold: MAX_TOOLS_THRESHOLD })}>
+      <Tooltip
+        content={t('TooManyToolsWarning.tooltip', {
+          count: toolCount,
+          threshold: MAX_TOOLS_THRESHOLD,
+        })}
+      >
         <Typography variant="body3" className="cursor-help">
           {t('TooManyToolsWarning.description')}
         </Typography>
@@ -523,15 +544,15 @@ export function ToolsPanel() {
   const [search, setSearch] = useState('');
 
   return (
-      <ToolsOnboarding>
-        <ToolManager />
+    <ToolsOnboarding>
+      <ToolManager />
 
-        <VStack gap={false}>
-          <ToolUtilities search={search} onSearchChange={setSearch} />
-          <TooManyToolsWarning />
-          <ToolsList search={search} />
-        </VStack>
-      </ToolsOnboarding>
+      <VStack gap={false}>
+        <ToolUtilities search={search} onSearchChange={setSearch} />
+        <TooManyToolsWarning />
+        <ToolsList search={search} />
+      </VStack>
+    </ToolsOnboarding>
   );
 }
 
