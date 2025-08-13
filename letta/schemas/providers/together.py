@@ -2,7 +2,7 @@
 Note: this supports completions (deprecated by openai) and chat completions via the OpenAI API.
 """
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field
 
@@ -19,7 +19,9 @@ class TogetherProvider(OpenAIProvider):
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     base_url: str = "https://api.together.xyz/v1"
     api_key: str = Field(..., description="API key for the Together API.")
-    default_prompt_formatter: str = Field(..., description="Default prompt formatter (aka model wrapper) to use on vLLM /completions API.")
+    default_prompt_formatter: Optional[str] = Field(
+        None, description="Default prompt formatter (aka model wrapper) to use on vLLM /completions API."
+    )
 
     async def list_llm_models_async(self) -> list[LLMConfig]:
         from letta.llm_api.openai import openai_get_model_list_async
