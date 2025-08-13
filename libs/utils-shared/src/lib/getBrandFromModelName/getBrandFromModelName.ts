@@ -13,7 +13,7 @@ export function getBrandFromModelName(model: string) {
     snorkel: 'snorkel-ai',
     google: 'google',
     nvidia: 'nvidia',
-    together: 'together-ai',
+    together: 'together',
     anthropic: 'claude',
   };
 

@@ -122,6 +122,16 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  BYOK_AZURE: {
+    description: 'Enable BYOK for Azure',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
+  BYOK_TOGETHER: {
+    description: 'Enable BYOK for Together',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;

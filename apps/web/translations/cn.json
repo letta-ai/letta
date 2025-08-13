@@ -308,6 +308,16 @@
         "label": "默认区域",
         "placeholder": "例如：'us-east-1'"
       }
+    },
+    "azure": {
+      "baseUrl": {
+        "label": "基础URL",
+        "placeholder": "例如：'https://project.openai.azure.com'"
+      },
+      "apiVersion": {
+        "label": "API版本",
+        "placeholder": "例如：'2022-01-01'"
+      }
     }
   },
   "pages/models/DeleteProviderModal": {

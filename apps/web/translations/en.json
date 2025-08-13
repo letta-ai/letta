@@ -350,6 +350,16 @@
         "label": "Default region",
         "placeholder": "Example: 'us-east-1'"
       }
+    },
+    "azure": {
+      "baseUrl": {
+        "label": "Base URL",
+        "placeholder": "Example: 'https://project.openai.azure.com'"
+      },
+      "apiVersion": {
+        "label": "API version",
+        "placeholder": "Example: '2022-01-01'"
+      }
     }
   },
   "pages/models/DeleteProviderModal": {

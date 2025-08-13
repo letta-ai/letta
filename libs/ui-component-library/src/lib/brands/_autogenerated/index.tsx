@@ -20,7 +20,7 @@ export * from './ollama';
 export * from './openai';
 export * from './qwen';
 export * from './snorkel-ai';
-export * from './together-ai';
+export * from './together';
 export * from './xai';
 export * from './zapier';
 export type BrandKeys =
@@ -46,6 +46,6 @@ export type BrandKeys =
   | 'openai'
   | 'qwen'
   | 'snorkel-ai'
-  | 'together-ai'
+  | 'together'
   | 'xai'
   | 'zapier';

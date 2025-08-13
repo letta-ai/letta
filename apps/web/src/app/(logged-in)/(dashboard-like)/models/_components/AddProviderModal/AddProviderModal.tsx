@@ -36,6 +36,7 @@ import { useFormContext } from 'react-hook-form';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useCurrentUser } from '$web/client/hooks';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 function TestConnectionButton() {
   const [isTesting, setIsTesting] = useState(false);
@@ -159,11 +160,13 @@ interface CreateProviderModalProps {
 }
 
 const AddModelProviderSchema = z.object({
-  providerType: z.enum(['anthropic', 'openai', 'google_ai', 'bedrock']),
+  providerType: z.enum(['anthropic', 'openai', 'google_ai', 'bedrock', 'azure', 'together']),
   name: z.string().min(1),
   apiKey: z.string().min(1),
   accessKey: z.string().optional(),
   region: z.string().optional(),
+  baseUrl: z.string().optional(),
+  apiVersion: z.string().optional(),
 });
 
 type AddModelProviderSchema = z.infer<typeof AddModelProviderSchema>;
@@ -191,6 +194,55 @@ export function AddProviderModal(props: CreateProviderModalProps) {
 
   const { watch } = form;
 
+  const { data: isAzureEnabled } = useFeatureFlag('BYOK_AZURE');
+  const { data: isTogetherEnabled } = useFeatureFlag('BYOK_TOGETHER');
+
+  const providerItems = useMemo(
+    () => {
+      const items = [
+        {
+          label: brandKeyToName('openai'),
+          value: 'openai',
+          icon: brandKeyToLogo('openai'),
+        },
+        {
+          label: brandKeyToName('anthropic'),
+          value: 'anthropic',
+          icon: brandKeyToLogo('claude'),
+        },
+        {
+          label: brandKeyToName('google_ai'),
+          value: 'google_ai',
+          icon: brandKeyToLogo('google_ai'),
+        },
+        {
+          label: brandKeyToName('bedrock'),
+          value: 'bedrock',
+          icon: brandKeyToLogo('bedrock'),
+        },
+      ];
+      
+      if (isAzureEnabled) {
+        items.push({
+          label: brandKeyToName('azure'),
+          value: 'azure',
+          icon: brandKeyToLogo('azure'),
+        });
+      }
+      
+      if (isTogetherEnabled) {
+        items.push({
+          label: brandKeyToName('together'),
+          value: 'together',
+          icon: brandKeyToLogo('together'),
+        });
+      }
+      
+      return items;
+    },
+    [isAzureEnabled, isTogetherEnabled],
+  )
+
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       if (!isOpen) {
@@ -211,6 +263,8 @@ export function AddProviderModal(props: CreateProviderModalProps) {
             api_key: data.apiKey,
             access_key: data.accessKey,
             region: data.region,
+            base_url: data.baseUrl,
+            api_version: data.apiVersion,
           },
         },
         {
@@ -272,7 +326,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
         isOpen={open}
         onOpenChange={handleOpenChange}
         onSubmit={form.handleSubmit(handleSubmit)}
-        size="large"
+        size="xlarge"
         isConfirmBusy={isPending}
         errorMessage={errorMessage}
         title={t('title')}
@@ -286,28 +340,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                   variant="chips"
                   size="small"
                   color="dark"
-                  items={[
-                    {
-                      label: brandKeyToName('openai'),
-                      value: 'openai',
-                      icon: brandKeyToLogo('openai'),
-                    },
-                    {
-                      label: brandKeyToName('anthropic'),
-                      value: 'anthropic',
-                      icon: brandKeyToLogo('claude'),
-                    },
-                    {
-                      label: brandKeyToName('gemini'),
-                      value: 'google_ai',
-                      icon: brandKeyToLogo('gemini'),
-                    },
-                    {
-                      label: brandKeyToName('bedrock'),
-                      value: 'bedrock',
-                      icon: brandKeyToLogo('bedrock'),
-                    },
-                  ]}
+                  items={providerItems}
                   onValueChange={(result) => {
                     if (result) {
                       field.onChange(result);
@@ -366,6 +399,32 @@ export function AddProviderModal(props: CreateProviderModalProps) {
                   <Input
                     label={t('bedrock.region.label')}
                     placeholder={t('bedrock.region.placeholder')}
+                    fullWidth
+                    {...field}
+                  />
+                )}
+              ></FormField>
+            </>
+          )}
+          {watch('providerType') === 'azure' && (
+            <>
+              <FormField
+                name="baseUrl"
+                render={({ field }) => (
+                  <Input
+                    label={t('azure.baseUrl.label')}
+                    placeholder={t('azure.baseUrl.placeholder')}
+                    fullWidth
+                    {...field}
+                  />
+                )}
+              ></FormField>
+              <FormField
+                name="apiVersion"
+                render={({ field }) => (
+                  <Input
+                    label={t('azure.apiVersion.label')}
+                    placeholder={t('azure.apiVersion.placeholder')}
                     fullWidth
                     {...field}
                   />
