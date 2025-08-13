@@ -1560,7 +1560,6 @@ export type EmbeddingConfig = {
     | 'openai'
     | 'anthropic'
     | 'bedrock'
-    | 'cohere'
     | 'google_ai'
     | 'google_vertex'
     | 'azure'
@@ -1622,7 +1621,6 @@ export type embedding_endpoint_type =
   | 'openai'
   | 'anthropic'
   | 'bedrock'
-  | 'cohere'
   | 'google_ai'
   | 'google_vertex'
   | 'azure'
@@ -2550,7 +2548,6 @@ export type LLMConfig = {
   model_endpoint_type:
     | 'openai'
     | 'anthropic'
-    | 'cohere'
     | 'google_ai'
     | 'google_vertex'
     | 'azure'
@@ -2634,7 +2631,6 @@ export type LLMConfig = {
 export type model_endpoint_type =
   | 'openai'
   | 'anthropic'
-  | 'cohere'
   | 'google_ai'
   | 'google_vertex'
   | 'azure'
@@ -3643,8 +3639,7 @@ export type ProviderType =
   | 'together'
   | 'azure'
   | 'vllm'
-  | 'bedrock'
-  | 'cohere';
+  | 'bedrock';
 
 export type ProviderUpdate = {
   /**

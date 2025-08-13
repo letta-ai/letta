@@ -16,7 +16,6 @@ class LLMConfig(BaseModel):
     model_endpoint_type: Literal[
         "openai",
         "anthropic",
-        "cohere",
         "google_ai",
         "google_vertex",
         "azure",

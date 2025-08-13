@@ -329,7 +329,6 @@ export const LLMConfig = z.object({
   model_endpoint_type: z.union([
     z.literal('openai'),
     z.literal('anthropic'),
-    z.literal('cohere'),
     z.literal('google_ai'),
     z.literal('google_vertex'),
     z.literal('azure'),
@@ -454,7 +453,6 @@ export const EmbeddingConfig = z.object({
     z.literal('openai'),
     z.literal('anthropic'),
     z.literal('bedrock'),
-    z.literal('cohere'),
     z.literal('google_ai'),
     z.literal('google_vertex'),
     z.literal('azure'),
@@ -6231,7 +6229,6 @@ export const ProviderType = z.union([
   z.literal('azure'),
   z.literal('vllm'),
   z.literal('bedrock'),
-  z.literal('cohere'),
 ]);
 
 export type Provider = z.infer<typeof Provider>;

@@ -14681,7 +14681,6 @@
               "openai",
               "anthropic",
               "bedrock",
-              "cohere",
               "google_ai",
               "google_vertex",
               "azure",
@@ -17056,7 +17055,6 @@
             "enum": [
               "openai",
               "anthropic",
-              "cohere",
               "google_ai",
               "google_vertex",
               "azure",
@@ -19379,8 +19377,7 @@
           "together",
           "azure",
           "vllm",
-          "bedrock",
-          "cohere"
+          "bedrock"
         ],
         "title": "ProviderType"
       },

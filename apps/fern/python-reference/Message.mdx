@@ -86,19 +86,3 @@ def to_google_ai_dict(put_inner_thoughts_in_kwargs: bool = True) -> dict
 ```
 
 Go from Message class to Google AI REST message object
-
-<a id="letta.schemas.message.Message.to_cohere_dict"></a>
-
-#### to\_cohere\_dict
-
-```python
-def to_cohere_dict(
-        function_call_role: Optional[str] = "SYSTEM",
-        function_call_prefix: Optional[str] = "[CHATBOT called function]",
-        function_response_role: Optional[str] = "SYSTEM",
-        function_response_prefix: Optional[
-            str] = "[CHATBOT function returned]",
-        inner_thoughts_as_kwarg: Optional[bool] = False) -> List[dict]
-```
-
-Cohere chat_history dicts only have 'role' and 'message' fields

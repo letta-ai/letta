@@ -4661,7 +4661,6 @@ export const $EmbeddingConfig = {
         'openai',
         'anthropic',
         'bedrock',
-        'cohere',
         'google_ai',
         'google_vertex',
         'azure',
@@ -7170,7 +7169,6 @@ export const $LLMConfig = {
       enum: [
         'openai',
         'anthropic',
-        'cohere',
         'google_ai',
         'google_vertex',
         'azure',
@@ -9701,7 +9699,6 @@ export const $ProviderType = {
     'azure',
     'vllm',
     'bedrock',
-    'cohere',
   ],
   title: 'ProviderType',
 } as const;

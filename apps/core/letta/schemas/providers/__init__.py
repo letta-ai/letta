@@ -5,7 +5,6 @@ from .azure import AzureProvider
 from .base import Provider, ProviderBase, ProviderCheck, ProviderCreate, ProviderUpdate
 from .bedrock import BedrockProvider
 from .cerebras import CerebrasProvider
-from .cohere import CohereProvider
 from .deepseek import DeepSeekProvider
 from .google_gemini import GoogleAIProvider
 from .google_vertex import GoogleVertexProvider
@@ -31,7 +30,6 @@ __all__ = [
     "AzureProvider",
     "BedrockProvider",
     "CerebrasProvider",  # NEW
-    "CohereProvider",
     "DeepSeekProvider",
     "GoogleAIProvider",
     "GoogleVertexProvider",

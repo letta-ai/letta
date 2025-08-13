@@ -30,7 +30,7 @@ from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 
-LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
+LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "local", "groq", "deepseek"]
 
 
 def retry_with_exponential_backoff(
@@ -305,32 +305,6 @@ def create(
 
         return response
 
-    # elif llm_config.model_endpoint_type == "cohere":
-    #     if stream:
-    #         raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-    #     if not use_tool_naming:
-    #         raise NotImplementedError("Only tool calling supported on Cohere API requests")
-    #
-    #     if functions is not None:
-    #         tools = [{"type": "function", "function": f} for f in functions]
-    #         tools = [Tool(**t) for t in tools]
-    #     else:
-    #         tools = None
-    #
-    #     return cohere_chat_completions_request(
-    #         # url=llm_config.model_endpoint,
-    #         url="https://api.cohere.ai/v1",  # TODO
-    #         api_key=os.getenv("COHERE_API_KEY"),  # TODO remove
-    #         chat_completion_request=ChatCompletionRequest(
-    #             model="command-r-plus",  # TODO
-    #             messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-    #             tools=tools,
-    #             tool_choice=function_call,
-    #             # user=str(user_id),
-    #             # NOTE: max_tokens is required for Anthropic API
-    #             # max_tokens=1024,  # TODO make dynamic
-    #         ),
-    #     )
     elif llm_config.model_endpoint_type == "groq":
         if stream:
             raise NotImplementedError("Streaming not yet implemented for Groq.")
