@@ -13,7 +13,6 @@ from letta.llm_api.anthropic import (
     anthropic_chat_completions_request,
 )
 from letta.llm_api.aws_bedrock import has_valid_aws_credentials
-from letta.llm_api.azure_openai import azure_openai_chat_completions_request
 from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
@@ -306,44 +305,6 @@ def create(
             finally:
                 if isinstance(stream_interface, AgentChunkStreamingInterface):
                     stream_interface.stream_end()
-
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-
-        return response
-
-    # azure
-    elif llm_config.model_endpoint_type == "azure":
-        if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-
-        if model_settings.azure_api_key is None:
-            raise LettaConfigurationError(
-                message="Azure API key is missing. Did you set AZURE_API_KEY in your env?", missing_fields=["azure_api_key"]
-            )
-
-        if model_settings.azure_base_url is None:
-            raise LettaConfigurationError(
-                message="Azure base url is missing. Did you set AZURE_BASE_URL in your env?", missing_fields=["azure_base_url"]
-            )
-
-        if model_settings.azure_api_version is None:
-            raise LettaConfigurationError(
-                message="Azure API version is missing. Did you set AZURE_API_VERSION in your env?", missing_fields=["azure_api_version"]
-            )
-
-        # Set the llm config model_endpoint from model_settings
-        # For Azure, this model_endpoint is required to be configured via env variable, so users don't need to provide it in the LLM config
-        llm_config.model_endpoint = model_settings.azure_base_url
-        chat_completion_request = build_openai_chat_completions_request(
-            llm_config, messages, user_id, functions, function_call, use_tool_naming
-        )
-
-        response = azure_openai_chat_completions_request(
-            model_settings=model_settings,
-            llm_config=llm_config,
-            chat_completion_request=chat_completion_request,
-        )
 
         if llm_config.put_inner_thoughts_in_kwargs:
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
