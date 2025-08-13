@@ -111,7 +111,7 @@ const loadingStrings = [
   'Retracting Phong Shader',
   'Retrieving from Back Store',
   'Reverse Engineering Image Consultant',
-  'Routing Neural Network Infanstructure',
+  'Routing Neural Network Infrastructure',
   'Scrubbing Terrain',
   'Searching for Llamas',
   'Seeding Architecture Simulation Parameters',
@@ -142,11 +142,25 @@ function ManyMessagesVerticalComponent(
   // it should only show one message at a time, it should transition between messages via translation
   // to accomplish this create a max-height container with overflow hidden
   // then have a state that tracks the current message index
-  // then every 2s change the current message index
+  // then every 1.5s change the current message index
 
-  const [messageIndex, setMessageIndex] = React.useState(() =>
-    messages.length > 0 ? Math.floor(Math.random() * messages.length) : 0,
-  );
+  // Seed index before paint to avoid animating 0 -> seed on refresh/hydration
+  const [messageIndex, setMessageIndex] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
+  const seededRef = React.useRef(false);
+
+  React.useLayoutEffect(() => {
+    if (!seededRef.current && messages.length > 0) {
+      seededRef.current = true;
+      setMessageIndex(Math.floor(Math.random() * messages.length));
+    }
+  }, [messages.length]);
+
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => {setMounted(true)});
+    return () => {cancelAnimationFrame(raf)};
+  }, []);
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex((prevIndex) => {
@@ -156,7 +170,7 @@ function ManyMessagesVerticalComponent(
         const delta = direction * magnitude;
         return Math.abs((prevIndex + delta) % messages.length);
       });
-    }, 2000);
+    }, 1500);
 
     return () => {
       clearInterval(interval);
@@ -170,9 +184,15 @@ function ManyMessagesVerticalComponent(
       className="max-h-[25px] h-[25px] w-[350px] relative leading-[25px] overflow-hidden transition-all duration-500"
       align="center"
       justify="center"
+      style={{
+        WebkitMaskImage:
+          'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
+        maskImage:
+          'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
+      }}
     >
       <div
-        className="transition-transform duration-500 absolute top-0"
+        className={cn(mounted && 'transition-transform duration-500 ease-in-out', 'absolute top-0')}
         style={{
           transform: `translateY(-${messageIndex * 25}px)`,
         }}
