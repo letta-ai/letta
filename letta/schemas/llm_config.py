@@ -199,8 +199,18 @@ class LLMConfig(BaseModel):
     @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
         if not reasoning:
-            if cls.is_openai_reasoning_model(config) or config.model.startswith("gemini-2.5-pro"):
-                raise ValueError("Reasoning cannot be disabled for OpenAI o1/o3 models")
+            if cls.is_openai_reasoning_model(config):
+                logger.warning("Reasoning cannot be disabled for OpenAI o1/o3 models")
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.reasoning_effort is None:
+                    config.reasoning_effort = "medium"
+            elif config.model.startswith("gemini-2.5-pro"):
+                logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
+                # Handle as non-reasoner until we support summary
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = True
+
             config.put_inner_thoughts_in_kwargs = False
             config.enable_reasoner = False
 
