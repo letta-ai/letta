@@ -630,6 +630,7 @@ class AgentManager:
                     [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
                 )
 
+                env_rows = []
                 if agent_create.tool_exec_environment_variables:
                     env_rows = [
                         {
@@ -640,7 +641,8 @@ class AgentManager:
                         }
                         for key, val in agent_create.tool_exec_environment_variables.items()
                     ]
-                    await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
+                    result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
+                    env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
 
                 include_relationships = []
                 if tool_ids:
@@ -655,6 +657,9 @@ class AgentManager:
                     include_relationships.append("tags")
 
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
+
+                if agent_create.tool_exec_environment_variables and env_rows:
+                    result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
