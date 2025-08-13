@@ -510,36 +510,6 @@ def create(
 
         return response
 
-    elif llm_config.model_endpoint_type == "together":
-        """TogetherAI endpoint that goes via /completions instead of /chat/completions"""
-
-        if stream:
-            raise NotImplementedError("Streaming not yet implemented for TogetherAI (via the /completions endpoint).")
-
-        if model_settings.together_api_key is None and (
-            llm_config.model_endpoint == "https://api.together.ai/v1/completions"
-            or llm_config.model_endpoint == "https://api.together.xyz/v1/completions"
-        ):
-            raise LettaConfigurationError(message="TogetherAI key is missing from letta config file", missing_fields=["together_api_key"])
-
-        return get_chat_completion(
-            model=llm_config.model,
-            messages=messages,
-            functions=functions,
-            functions_python=functions_python,
-            function_call=function_call,
-            context_window=llm_config.context_window,
-            endpoint=llm_config.model_endpoint,
-            endpoint_type="vllm",  # NOTE: use the vLLM path through /completions
-            wrapper=llm_config.model_wrapper,
-            user=str(user_id),
-            # hint
-            first_message=first_message,
-            # auth-related
-            auth_type="bearer_token",  # NOTE: Together expects bearer token auth
-            auth_key=model_settings.together_api_key,
-        )
-
     elif llm_config.model_endpoint_type == "bedrock":
         """Anthropic endpoint that goes via /embeddings instead of /chat/completions"""
 
