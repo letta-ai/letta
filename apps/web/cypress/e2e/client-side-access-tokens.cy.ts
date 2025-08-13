@@ -20,7 +20,7 @@ describe('Allow users to create and manage API keys', () => {
         policy: [
           {
             // we just want to test if we can get past the auth, so if we return a 404, it actually did work properly
-            id: 'agent-123',
+            id: 'agent-caa950d7-cee5-41e4-8d50-cb53af1c0903',
             type: 'agent',
             access: ['read_agent', 'write_agent'],
           },
@@ -37,7 +37,7 @@ describe('Allow users to create and manage API keys', () => {
 
       // agent does not exist
       cy.request({
-        url: '/v1/agents/agent-123',
+        url: '/v1/agents/agent-caa950d7-cee5-41e4-8d50-cb53af1c0903',
         failOnStatusCode: false,
         headers: {
           Authorization: `Bearer ${token}`,

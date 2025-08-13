@@ -35,6 +35,7 @@ LETTA_TOOL_MODULE_NAMES = [
 DEFAULT_ORG_ID = "org-00000000-0000-4000-8000-000000000000"
 DEFAULT_ORG_NAME = "default_org"
 
+AGENT_ID_PATTERN = re.compile(r"^agent-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
 
 # String in the error message for when the context window is too large
 # Example full message:

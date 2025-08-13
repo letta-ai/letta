@@ -158,7 +158,7 @@ client = RESTClient(base_url="http://localhost:8283/v1")
 
 # Update advanced settings not available in the ADE UI
 response = client.agents.modify_agent(
-    agent_id="agent-123abc",
+    agent_id="your_agent_id",
     agent_type="letta_agent",  # Change agent type
     embedding_config={
         "embedding_endpoint_type": "openai",
