@@ -210,9 +210,11 @@ class LLMConfig(BaseModel):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 config.enable_reasoner = True
-
-            config.put_inner_thoughts_in_kwargs = False
-            config.enable_reasoner = False
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            else:
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = False
 
         else:
             config.enable_reasoner = True
