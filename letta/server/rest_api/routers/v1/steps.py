@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.step import Step
+from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.step_manager import FeedbackType
@@ -75,6 +76,22 @@ async def retrieve_step(
         return await server.step_manager.get_step_async(step_id=step_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
+
+
+@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_step_metrics")
+async def retrieve_step_metrics(
+    step_id: str,
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    server: SyncServer = Depends(get_letta_server),
+):
+    """
+    Get step metrics by step ID.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        return await server.step_manager.get_step_metrics_async(step_id=step_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
