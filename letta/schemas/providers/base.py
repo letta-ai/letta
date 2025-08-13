@@ -127,7 +127,6 @@ class Provider(ProviderBase):
             AzureProvider,
             BedrockProvider,
             CerebrasProvider,
-            CohereProvider,
             DeepSeekProvider,
             GoogleAIProvider,
             GoogleVertexProvider,
@@ -175,8 +174,6 @@ class Provider(ProviderBase):
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
                 return BedrockProvider(**self.model_dump(exclude_none=True))
-            case ProviderType.cohere:
-                return CohereProvider(**self.model_dump(exclude_none=True))
             case _:
                 raise ValueError(f"Unknown provider type: {self.provider_type}")
 

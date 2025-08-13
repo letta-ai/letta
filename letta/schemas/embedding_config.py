@@ -12,7 +12,6 @@ class EmbeddingConfig(BaseModel):
         "openai",
         "anthropic",
         "bedrock",
-        "cohere",
         "google_ai",
         "google_vertex",
         "azure",
