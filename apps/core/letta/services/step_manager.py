@@ -191,6 +191,13 @@ class StepManager:
 
     @enforce_types
     @trace_method
+    async def get_step_metrics_async(self, step_id: str, actor: PydanticUser) -> PydanticStepMetrics:
+        async with db_registry.async_session() as session:
+            metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            return metrics.to_pydantic()
+
+    @enforce_types
+    @trace_method
     async def add_feedback_async(self, step_id: str, feedback: Optional[FeedbackType], actor: PydanticUser) -> PydanticStep:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)

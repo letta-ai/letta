@@ -2970,6 +2970,39 @@ export const useStepsServiceRetrieveStep = <
     ...options,
   });
 /**
+ * Retrieve Step Metrics
+ * Get step metrics by step ID.
+ * @param data The data for the request.
+ * @param data.stepId
+ * @param data.userId
+ * @returns StepMetrics Successful Response
+ * @throws ApiError
+ */
+export const useStepsServiceRetrieveStepMetrics = <
+  TData = Common.StepsServiceRetrieveStepMetricsDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseStepsServiceRetrieveStepMetricsKeyFn(
+      { stepId, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      StepsService.retrieveStepMetrics({ stepId, userId }) as TData,
+    ...options,
+  });
+/**
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.

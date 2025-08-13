@@ -6974,6 +6974,91 @@ export const Step = z.object({
     .optional(),
 });
 
+export type StepMetrics = z.infer<typeof StepMetrics>;
+export const StepMetrics = z.object({
+  id: z.string(),
+  organization_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  provider_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  job_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  llm_request_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_execution_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  step_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type StreamableHTTPServerConfig = z.infer<
   typeof StreamableHTTPServerConfig
 >;
@@ -10865,6 +10950,24 @@ export const get_Retrieve_step = {
   response: Step,
 };
 
+export type get_Retrieve_step_metrics = typeof get_Retrieve_step_metrics;
+export const get_Retrieve_step_metrics = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/steps/{step_id}/metrics'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: StepMetrics,
+};
+
 export type patch_Add_feedback = typeof patch_Add_feedback;
 export const patch_Add_feedback = {
   method: z.literal('PATCH'),
@@ -11305,6 +11408,7 @@ export const EndpointByMethod = {
     '/v1/runs/{run_id}/steps': get_List_run_steps,
     '/v1/steps/': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
+    '/v1/steps/{step_id}/metrics': get_Retrieve_step_metrics,
     '/v1/tags/': get_List_tags,
     '/v1/telemetry/{step_id}': get_Retrieve_provider_trace,
     '/v1/messages/batches': get_List_batch_runs,

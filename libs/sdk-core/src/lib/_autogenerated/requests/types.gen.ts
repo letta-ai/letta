@@ -4345,6 +4345,53 @@ export type Step = {
   status?: StepStatus | null;
 };
 
+export type StepMetrics = {
+  /**
+   * The id of the step this metric belongs to (matches steps.id).
+   */
+  id: string;
+  /**
+   * The unique identifier of the organization.
+   */
+  organization_id?: string | null;
+  /**
+   * The unique identifier of the provider.
+   */
+  provider_id?: string | null;
+  /**
+   * The unique identifier of the job.
+   */
+  job_id?: string | null;
+  /**
+   * The unique identifier of the agent.
+   */
+  agent_id?: string | null;
+  /**
+   * Time spent on LLM requests in nanoseconds.
+   */
+  llm_request_ns?: number | null;
+  /**
+   * Time spent on tool execution in nanoseconds.
+   */
+  tool_execution_ns?: number | null;
+  /**
+   * Total time for the step in nanoseconds.
+   */
+  step_ns?: number | null;
+  /**
+   * The base template ID that the step belongs to (cloud only).
+   */
+  base_template_id?: string | null;
+  /**
+   * The template ID that the step belongs to (cloud only).
+   */
+  template_id?: string | null;
+  /**
+   * The project that the step belongs to (cloud only).
+   */
+  project_id?: string | null;
+};
+
 /**
  * Status of a step execution
  */
@@ -7349,6 +7396,13 @@ export type RetrieveStepData = {
 
 export type RetrieveStepResponse = Step;
 
+export type RetrieveStepMetricsData = {
+  stepId: string;
+  userId?: string | null;
+};
+
+export type RetrieveStepMetricsResponse = StepMetrics;
+
 export type AddFeedbackData = {
   feedback: FeedbackType | null;
   stepId: string;
@@ -9721,6 +9775,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Step;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/steps/{step_id}/metrics': {
+    get: {
+      req: RetrieveStepMetricsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: StepMetrics;
         /**
          * Validation Error
          */

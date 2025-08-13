@@ -305,6 +305,8 @@ import type {
   ListStepsResponse,
   RetrieveStepData,
   RetrieveStepResponse,
+  RetrieveStepMetricsData,
+  RetrieveStepMetricsResponse,
   AddFeedbackData,
   AddFeedbackResponse,
   UpdateStepTransactionIdData,
@@ -4730,6 +4732,32 @@ export class StepsService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/steps/{step_id}',
+      path: {
+        step_id: data.stepId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Step Metrics
+   * Get step metrics by step ID.
+   * @param data The data for the request.
+   * @param data.stepId
+   * @param data.userId
+   * @returns StepMetrics Successful Response
+   * @throws ApiError
+   */
+  public static retrieveStepMetrics(
+    data: RetrieveStepMetricsData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveStepMetricsResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/steps/{step_id}/metrics',
       path: {
         step_id: data.stepId,
       },

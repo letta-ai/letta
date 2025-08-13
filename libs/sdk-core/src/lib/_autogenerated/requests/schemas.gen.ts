@@ -11513,6 +11513,142 @@ export const $Step = {
   title: 'Step',
 } as const;
 
+export const $StepMetrics = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description:
+        'The id of the step this metric belongs to (matches steps.id).',
+    },
+    organization_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Organization Id',
+      description: 'The unique identifier of the organization.',
+    },
+    provider_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Provider Id',
+      description: 'The unique identifier of the provider.',
+    },
+    job_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Job Id',
+      description: 'The unique identifier of the job.',
+    },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The unique identifier of the agent.',
+    },
+    llm_request_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Llm Request Ns',
+      description: 'Time spent on LLM requests in nanoseconds.',
+    },
+    tool_execution_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Execution Ns',
+      description: 'Time spent on tool execution in nanoseconds.',
+    },
+    step_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Ns',
+      description: 'Total time for the step in nanoseconds.',
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description:
+        'The base template ID that the step belongs to (cloud only).',
+    },
+    template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Id',
+      description: 'The template ID that the step belongs to (cloud only).',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The project that the step belongs to (cloud only).',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['id'],
+  title: 'StepMetrics',
+} as const;
+
 export const $StepStatus = {
   type: 'string',
   enum: ['pending', 'success', 'failed', 'cancelled'],

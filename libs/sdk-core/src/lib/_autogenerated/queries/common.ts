@@ -1773,6 +1773,28 @@ export const UseStepsServiceRetrieveStepKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useStepsServiceRetrieveStepKey, ...(queryKey ?? [{ stepId, userId }])];
+export type StepsServiceRetrieveStepMetricsDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.retrieveStepMetrics>
+>;
+export type StepsServiceRetrieveStepMetricsQueryResult<
+  TData = StepsServiceRetrieveStepMetricsDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceRetrieveStepMetricsKey =
+  'StepsServiceRetrieveStepMetrics';
+export const UseStepsServiceRetrieveStepMetricsKeyFn = (
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useStepsServiceRetrieveStepMetricsKey,
+  ...(queryKey ?? [{ stepId, userId }]),
+];
 export type TagServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof TagService.listTags>
 >;

@@ -2457,6 +2457,32 @@ export const prefetchUseStepsServiceRetrieveStep = (
     queryFn: () => StepsService.retrieveStep({ stepId, userId }),
   });
 /**
+ * Retrieve Step Metrics
+ * Get step metrics by step ID.
+ * @param data The data for the request.
+ * @param data.stepId
+ * @param data.userId
+ * @returns StepMetrics Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseStepsServiceRetrieveStepMetrics = (
+  queryClient: QueryClient,
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseStepsServiceRetrieveStepMetricsKeyFn({
+      stepId,
+      userId,
+    }),
+    queryFn: () => StepsService.retrieveStepMetrics({ stepId, userId }),
+  });
+/**
  * List Tags
  * Get a list of all tags in the database
  * @param data The data for the request.
