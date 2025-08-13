@@ -44,6 +44,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import StepProgression
+from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -242,6 +243,7 @@ class LettaAgent(BaseAgent):
 
             step_progression = StepProgression.START
             should_continue = False
+            step_metrics = StepMetrics(id=step_id)  # Initialize metrics tracking
 
             # Create step early with PENDING status
             logged_step = await self.step_manager.log_step_async(
@@ -271,6 +273,7 @@ class LettaAgent(BaseAgent):
                         llm_client,
                         tool_rules_solver,
                         agent_step_span,
+                        step_metrics,
                     )
                 )
                 in_context_messages = current_in_context_messages + new_in_context_messages
@@ -320,6 +323,7 @@ class LettaAgent(BaseAgent):
                     initial_messages=initial_messages,
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
+                    step_metrics=step_metrics,
                 )
                 step_progression = StepProgression.STEP_LOGGED
 
@@ -365,6 +369,17 @@ class LettaAgent(BaseAgent):
 
                 MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
                 step_progression = StepProgression.FINISHED
+
+                # Record step metrics for successful completion
+                if logged_step and step_metrics:
+                    # Set the step_ns that was already calculated
+                    step_metrics.step_ns = step_ns
+                    await self._record_step_metrics(
+                        step_id=step_id,
+                        agent_state=agent_state,
+                        step_metrics=step_metrics,
+                    )
+
             except Exception as e:
                 # Handle any unexpected errors during step processing
                 self.logger.error(f"Error during step processing: {e}")
@@ -432,6 +447,17 @@ class LettaAgent(BaseAgent):
 
                     if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=True)
+
+                    # Record partial step metrics on failure (capture whatever timing data we have)
+                    if logged_step and step_metrics and step_progression < StepProgression.FINISHED:
+                        # Calculate total step time up to the failure point
+                        step_metrics.step_ns = get_utc_timestamp_ns() - step_start
+                        await self._record_step_metrics(
+                            step_id=step_id,
+                            agent_state=agent_state,
+                            step_metrics=step_metrics,
+                            job_id=locals().get("run_id", self.current_run_id),
+                        )
 
                 except Exception as e:
                     self.logger.error("Failed to update step: %s", e)
@@ -513,6 +539,7 @@ class LettaAgent(BaseAgent):
 
             step_progression = StepProgression.START
             should_continue = False
+            step_metrics = StepMetrics(id=step_id)  # Initialize metrics tracking
 
             # Create step early with PENDING status
             logged_step = await self.step_manager.log_step_async(
@@ -536,7 +563,13 @@ class LettaAgent(BaseAgent):
             try:
                 request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
                     await self._build_and_request_from_llm(
-                        current_in_context_messages, new_in_context_messages, agent_state, llm_client, tool_rules_solver, agent_step_span
+                        current_in_context_messages,
+                        new_in_context_messages,
+                        agent_state,
+                        llm_client,
+                        tool_rules_solver,
+                        agent_step_span,
+                        step_metrics,
                     )
                 )
                 in_context_messages = current_in_context_messages + new_in_context_messages
@@ -587,6 +620,7 @@ class LettaAgent(BaseAgent):
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
                     run_id=run_id,
+                    step_metrics=step_metrics,
                 )
                 step_progression = StepProgression.STEP_LOGGED
 
@@ -621,6 +655,17 @@ class LettaAgent(BaseAgent):
                 step_progression = StepProgression.LOGGED_TRACE
                 MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
                 step_progression = StepProgression.FINISHED
+
+                # Record step metrics for successful completion
+                if logged_step and step_metrics:
+                    # Set the step_ns that was already calculated
+                    step_metrics.step_ns = step_ns
+                    await self._record_step_metrics(
+                        step_id=step_id,
+                        agent_state=agent_state,
+                        step_metrics=step_metrics,
+                        job_id=run_id if run_id else self.current_run_id,
+                    )
 
             except Exception as e:
                 # Handle any unexpected errors during step processing
@@ -685,6 +730,17 @@ class LettaAgent(BaseAgent):
 
                     if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=True)
+
+                    # Record partial step metrics on failure (capture whatever timing data we have)
+                    if logged_step and step_metrics and step_progression < StepProgression.FINISHED:
+                        # Calculate total step time up to the failure point
+                        step_metrics.step_ns = get_utc_timestamp_ns() - step_start
+                        await self._record_step_metrics(
+                            step_id=step_id,
+                            agent_state=agent_state,
+                            step_metrics=step_metrics,
+                            job_id=locals().get("run_id", self.current_run_id),
+                        )
 
                 except Exception as e:
                     self.logger.error("Failed to update step: %s", e)
@@ -774,6 +830,7 @@ class LettaAgent(BaseAgent):
 
             step_progression = StepProgression.START
             should_continue = False
+            step_metrics = StepMetrics(id=step_id)  # Initialize metrics tracking
 
             # Create step early with PENDING status
             logged_step = await self.step_manager.log_step_async(
@@ -875,7 +932,10 @@ class LettaAgent(BaseAgent):
                 )
 
                 # log LLM request time
-                llm_request_ms = ns_to_ms(stream_end_time_ns - provider_request_start_timestamp_ns)
+                llm_request_ns = stream_end_time_ns - provider_request_start_timestamp_ns
+                step_metrics.llm_request_ns = llm_request_ns
+
+                llm_request_ms = ns_to_ms(llm_request_ns)
                 agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": llm_request_ms})
                 MetricRegistry().llm_execution_time_ms_histogram.record(
                     llm_request_ms,
@@ -908,6 +968,7 @@ class LettaAgent(BaseAgent):
                     initial_messages=initial_messages,
                     agent_step_span=agent_step_span,
                     is_final_step=(i == max_steps - 1),
+                    step_metrics=step_metrics,
                 )
                 step_progression = StepProgression.STEP_LOGGED
 
@@ -979,6 +1040,25 @@ class LettaAgent(BaseAgent):
                 MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
                 step_progression = StepProgression.FINISHED
 
+                # Record step metrics for successful completion
+                if logged_step and step_metrics:
+                    try:
+                        # Set the step_ns that was already calculated
+                        step_metrics.step_ns = step_ns
+
+                        # Get context attributes for project and template IDs
+                        ctx_attrs = get_ctx_attributes()
+
+                        await self._record_step_metrics(
+                            step_id=step_id,
+                            agent_state=agent_state,
+                            step_metrics=step_metrics,
+                            ctx_attrs=ctx_attrs,
+                            job_id=self.current_run_id,
+                        )
+                    except Exception as metrics_error:
+                        self.logger.warning(f"Failed to record step metrics: {metrics_error}")
+
             except Exception as e:
                 # Handle any unexpected errors during step processing
                 self.logger.error(f"Error during step processing: {e}")
@@ -1047,6 +1127,25 @@ class LettaAgent(BaseAgent):
                     if settings.track_stop_reason:
                         await self._log_request(request_start_timestamp_ns, request_span, job_update_metadata, is_error=True)
 
+                    # Record partial step metrics on failure (capture whatever timing data we have)
+                    if logged_step and step_metrics and step_progression < StepProgression.FINISHED:
+                        try:
+                            # Calculate total step time up to the failure point
+                            step_metrics.step_ns = get_utc_timestamp_ns() - step_start
+
+                            # Get context attributes for project and template IDs
+                            ctx_attrs = get_ctx_attributes()
+
+                            await self._record_step_metrics(
+                                step_id=step_id,
+                                agent_state=agent_state,
+                                step_metrics=step_metrics,
+                                ctx_attrs=ctx_attrs,
+                                job_id=locals().get("run_id", self.current_run_id),
+                            )
+                        except Exception as metrics_error:
+                            self.logger.warning(f"Failed to record step metrics: {metrics_error}")
+
                 except Exception as e:
                     self.logger.error("Failed to update step: %s", e)
 
@@ -1087,6 +1186,32 @@ class LettaAgent(BaseAgent):
         if request_span:
             request_span.end()
 
+    async def _record_step_metrics(
+        self,
+        *,
+        step_id: str,
+        agent_state: AgentState,
+        step_metrics: StepMetrics,
+        ctx_attrs: dict | None = None,
+        job_id: str | None = None,
+    ) -> None:
+        try:
+            attrs = ctx_attrs or get_ctx_attributes()
+            await self.step_manager.record_step_metrics_async(
+                actor=self.actor,
+                step_id=step_id,
+                llm_request_ns=step_metrics.llm_request_ns,
+                tool_execution_ns=step_metrics.tool_execution_ns,
+                step_ns=step_metrics.step_ns,
+                agent_id=agent_state.id,
+                job_id=job_id or self.current_run_id,
+                project_id=attrs.get("project.id") or agent_state.project_id,
+                template_id=attrs.get("template.id"),
+                base_template_id=attrs.get("base_template.id"),
+            )
+        except Exception as metrics_error:
+            self.logger.warning(f"Failed to record step metrics: {metrics_error}")
+
     # noinspection PyInconsistentReturns
     async def _build_and_request_from_llm(
         self,
@@ -1096,6 +1221,7 @@ class LettaAgent(BaseAgent):
         llm_client: LLMClientBase,
         tool_rules_solver: ToolRulesSolver,
         agent_step_span: "Span",
+        step_metrics: StepMetrics,
     ) -> tuple[dict, dict, list[Message], list[Message], list[str]] | None:
         for attempt in range(self.max_summarization_retries + 1):
             try:
@@ -1112,6 +1238,10 @@ class LettaAgent(BaseAgent):
                 async with AsyncTimer() as timer:
                     # Attempt LLM request
                     response = await llm_client.request_async(request_data, agent_state.llm_config)
+
+                # Track LLM request time
+                step_metrics.llm_request_ns = int(timer.elapsed_ns)
+
                 MetricRegistry().llm_execution_time_ms_histogram.record(
                     timer.elapsed_ms,
                     dict(get_ctx_attributes(), **{"model.name": agent_state.llm_config.model}),
@@ -1352,6 +1482,7 @@ class LettaAgent(BaseAgent):
         agent_step_span: Optional["Span"] = None,
         is_final_step: bool | None = None,
         run_id: str | None = None,
+        step_metrics: StepMetrics = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate the
@@ -1378,6 +1509,8 @@ class LettaAgent(BaseAgent):
         if tool_rule_violated:
             tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
         else:
+            # Track tool execution time
+            tool_start_time = get_utc_timestamp_ns()
             tool_execution_result = await self._execute_tool(
                 tool_name=tool_call_name,
                 tool_args=tool_args,
@@ -1385,6 +1518,10 @@ class LettaAgent(BaseAgent):
                 agent_step_span=agent_step_span,
                 step_id=step_id,
             )
+            tool_end_time = get_utc_timestamp_ns()
+
+            # Store tool execution time in metrics
+            step_metrics.tool_execution_ns = tool_end_time - tool_start_time
 
         log_telemetry(
             self.logger, "_handle_ai_response execute tool finish", tool_execution_result=tool_execution_result, tool_call_id=tool_call_id
