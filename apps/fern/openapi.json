@@ -7586,7 +7586,7 @@
       }
     },
     "/v1/providers/check": {
-      "get": {
+      "post": {
         "tags": ["providers"],
         "summary": "Check Provider",
         "operationId": "check_provider",

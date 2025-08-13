@@ -4420,7 +4420,7 @@ export class ProvidersService {
     headers?: { user_id: string },
   ): CancelablePromise<CheckProviderResponse> {
     return __request(OpenAPI, {
-      method: 'GET',
+      method: 'POST',
       url: '/v1/providers/check',
       body: data.requestBody,
       mediaType: 'application/json',

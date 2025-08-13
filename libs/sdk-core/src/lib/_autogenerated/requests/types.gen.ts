@@ -9581,7 +9581,7 @@ export type $OpenApiTs = {
     };
   };
   '/v1/providers/check': {
-    get: {
+    post: {
       req: CheckProviderData;
       res: {
         /**

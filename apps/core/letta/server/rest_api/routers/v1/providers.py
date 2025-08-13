@@ -70,7 +70,7 @@ async def modify_provider(
     return await server.provider_manager.update_provider_async(provider_id=provider_id, provider_update=request, actor=actor)
 
 
-@router.get("/check", response_model=None, operation_id="check_provider")
+@router.post("/check", response_model=None, operation_id="check_provider")
 async def check_provider(
     request: ProviderCheck = Body(...),
     server: "SyncServer" = Depends(get_letta_server),

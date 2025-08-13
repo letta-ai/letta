@@ -31,7 +31,6 @@ import {
   ManagerType,
   MessageRole,
   ProviderCategory,
-  ProviderCheck,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -2515,34 +2514,6 @@ export const useProvidersServiceListProvidersSuspense = <
         providerType,
         userId,
       }) as TData,
-    ...options,
-  });
-/**
- * Check Provider
- * @param data The data for the request.
- * @param data.requestBody
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const useProvidersServiceCheckProviderSuspense = <
-  TData = Common.ProvidersServiceCheckProviderDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    requestBody,
-  }: {
-    requestBody: ProviderCheck;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseProvidersServiceCheckProviderKeyFn(
-      { requestBody },
-      queryKey,
-    ),
-    queryFn: () => ProvidersService.checkProvider({ requestBody }) as TData,
     ...options,
   });
 /**

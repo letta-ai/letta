@@ -33,7 +33,6 @@ import {
   ManagerType,
   MessageRole,
   ProviderCategory,
-  ProviderCheck,
   ProviderType,
   SandboxType,
 } from '../requests/types.gen';
@@ -1559,23 +1558,6 @@ export const UseProvidersServiceListProvidersKeyFn = (
   useProvidersServiceListProvidersKey,
   ...(queryKey ?? [{ after, limit, name, providerType, userId }]),
 ];
-export type ProvidersServiceCheckProviderDefaultResponse = Awaited<
-  ReturnType<typeof ProvidersService.checkProvider>
->;
-export type ProvidersServiceCheckProviderQueryResult<
-  TData = ProvidersServiceCheckProviderDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useProvidersServiceCheckProviderKey =
-  'ProvidersServiceCheckProvider';
-export const UseProvidersServiceCheckProviderKeyFn = (
-  {
-    requestBody,
-  }: {
-    requestBody: ProviderCheck;
-  },
-  queryKey?: Array<unknown>,
-) => [useProvidersServiceCheckProviderKey, ...(queryKey ?? [{ requestBody }])];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
 >;
@@ -2147,6 +2129,9 @@ export type SandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxConfigI
   >;
 export type ProvidersServiceCreateProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.createProvider>
+>;
+export type ProvidersServiceCheckProviderMutationResult = Awaited<
+  ReturnType<typeof ProvidersService.checkProvider>
 >;
 export type AdminServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.createUser>

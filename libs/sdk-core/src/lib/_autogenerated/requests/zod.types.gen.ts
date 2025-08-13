@@ -10589,9 +10589,9 @@ export const delete_Delete_provider = {
   response: z.unknown(),
 };
 
-export type get_Check_provider = typeof get_Check_provider;
-export const get_Check_provider = {
-  method: z.literal('GET'),
+export type post_Check_provider = typeof post_Check_provider;
+export const post_Check_provider = {
+  method: z.literal('POST'),
   path: z.literal('/v1/providers/check'),
   requestFormat: z.literal('json'),
   parameters: z.object({
@@ -11297,7 +11297,6 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get,
     '/v1/providers/': get_List_providers,
-    '/v1/providers/check': get_Check_provider,
     '/v1/runs/': get_List_runs,
     '/v1/runs/active': get_List_active_runs,
     '/v1/runs/{run_id}': get_Retrieve_run,
@@ -11402,6 +11401,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
+    '/v1/providers/check': post_Check_provider,
     '/v1/messages/batches': post_Create_messages_batch,
     '/v1/voice-beta/{agent_id}/chat/completions':
       post_Create_voice_chat_completions,

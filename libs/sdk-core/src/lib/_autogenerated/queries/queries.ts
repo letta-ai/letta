@@ -2574,34 +2574,6 @@ export const useProvidersServiceListProviders = <
     ...options,
   });
 /**
- * Check Provider
- * @param data The data for the request.
- * @param data.requestBody
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const useProvidersServiceCheckProvider = <
-  TData = Common.ProvidersServiceCheckProviderDefaultResponse,
-  TError = unknown,
-  TQueryKey extends Array<unknown> = unknown[],
->(
-  {
-    requestBody,
-  }: {
-    requestBody: ProviderCheck;
-  },
-  queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
-) =>
-  useQuery<TData, TError>({
-    queryKey: Common.UseProvidersServiceCheckProviderKeyFn(
-      { requestBody },
-      queryKey,
-    ),
-    queryFn: () => ProvidersService.checkProvider({ requestBody }) as TData,
-    ...options,
-  });
-/**
  * List Runs
  * List all runs.
  * @param data The data for the request.
@@ -4921,6 +4893,44 @@ export const useProvidersServiceCreateProvider = <
       ProvidersService.createProvider({
         requestBody,
         userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Check Provider
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceCheckProvider = <
+  TData = Common.ProvidersServiceCheckProviderMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: ProviderCheck;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: ProviderCheck;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody }) =>
+      ProvidersService.checkProvider({
+        requestBody,
       }) as unknown as Promise<TData>,
     ...options,
   });
