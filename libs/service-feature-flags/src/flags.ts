@@ -77,11 +77,6 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
-  DEPENDENCY_VIEWER: {
-    description: 'Enable dependency viewer in tool manager',
-    expiryDate: '9999-99-99',
-    flagValue: z.boolean(),
-  },
   PUBLIC_AGENTFILE: {
     description: 'Allow users to share an agentfile to the public',
     expiryDate: '9999-99-99',

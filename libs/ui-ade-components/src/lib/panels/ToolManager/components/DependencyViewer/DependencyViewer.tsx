@@ -35,7 +35,6 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
   const { stagedTool } = useStagedCode(tool);
   const { isLocal } = useCurrentAgentMetaData();
 
-  const { data: enabledDependencies } = useFeatureFlag('DEPENDENCY_VIEWER');
   const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
   
   // Determine if we're working with TypeScript or Python
@@ -152,7 +151,6 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
             color="transparent"
           />
         </HStack>
-        {enabledDependencies && (
           <DropdownMenu
             triggerAsChild
             trigger={
@@ -183,10 +181,9 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
               }}
             />
           </DropdownMenu>
-        )}
       </HStack>
       <VStack gap={false} fullWidth overflowY="auto" flex>
-        {enabledDependencies && <CustomDependencyForm />}
+        <CustomDependencyForm />
         {filteredRequirements.length > 0 && (
           <HStack
             align="center"
@@ -211,7 +208,6 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
 
           return <DependencyItem key={dependency.id} dependency={dependency} />;
         })}
-        {enabledDependencies && (
           <>
             <HStack
               align="center"
@@ -231,7 +227,6 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
               );
             })}
           </>
-        )}
       </VStack>
     </VStack>
   );
