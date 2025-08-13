@@ -8340,6 +8340,74 @@ async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sa
         assert status_counts[status] >= 1, f"No steps found with status {status}"
 
 
+async def test_step_manager_record_metrics(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+    """Test recording step metrics functionality."""
+    step_manager = server.step_manager
+
+    # Create a step first
+    step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=10,
+            prompt_tokens=20,
+            total_tokens=30,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    # Record metrics for the step
+    llm_request_ns = 1_500_000_000  # 1.5 seconds
+    tool_execution_ns = 500_000_000  # 0.5 seconds
+    step_ns = 2_100_000_000  # 2.1 seconds
+
+    metrics = await step_manager.record_step_metrics_async(
+        actor=default_user,
+        step_id=step.id,
+        llm_request_ns=llm_request_ns,
+        tool_execution_ns=tool_execution_ns,
+        step_ns=step_ns,
+        agent_id=sarah_agent.id,
+        job_id=default_job.id,
+        project_id=sarah_agent.project_id,
+        template_id="template-id",
+        base_template_id="base-template-id",
+    )
+
+    # Verify the metrics were recorded correctly
+    assert metrics.id == step.id
+    assert metrics.llm_request_ns == llm_request_ns
+    assert metrics.tool_execution_ns == tool_execution_ns
+    assert metrics.step_ns == step_ns
+    assert metrics.agent_id == sarah_agent.id
+    assert metrics.job_id == default_job.id
+    assert metrics.project_id == sarah_agent.project_id
+    assert metrics.template_id == "template-id"
+    assert metrics.base_template_id == "base-template-id"
+
+
+async def test_step_manager_record_metrics_nonexistent_step(server: SyncServer, default_user, event_loop):
+    """Test recording metrics for a nonexistent step."""
+    step_manager = server.step_manager
+
+    # Try to record metrics for a step that doesn't exist
+    with pytest.raises(NoResultFound):
+        await step_manager.record_step_metrics_async(
+            actor=default_user,
+            step_id="nonexistent-step-id",
+            llm_request_ns=1_000_000_000,
+            tool_execution_ns=500_000_000,
+            step_ns=1_600_000_000,
+        )
+
+
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
     """Test getting usage statistics for a nonexistent job."""
     job_manager = server.job_manager
