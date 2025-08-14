@@ -131,6 +131,14 @@ class CreateBlock(BaseBlock):
     is_template: bool = False
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
 
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_value_is_string(cls, data):
+        """Convert None value to empty string"""
+        if data and isinstance(data, dict) and data.get("value") is None:
+            data["value"] = ""
+        return data
+
 
 class CreateHuman(CreateBlock):
     """Create a human block"""
