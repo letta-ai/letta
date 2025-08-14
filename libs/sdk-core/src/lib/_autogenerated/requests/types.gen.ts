@@ -2968,6 +2968,15 @@ export type MCPTool = {
   [key: string]: unknown | string;
 };
 
+export type MCPToolExecuteRequest = {
+  /**
+   * Arguments to pass to the MCP tool
+   */
+  args?: {
+    [key: string]: unknown;
+  };
+};
+
 export type ManagerType =
   | 'round_robin'
   | 'supervisor'
@@ -5914,6 +5923,15 @@ export type GenerateJsonSchemaResponse = {
   [key: string]: unknown;
 };
 
+export type ExecuteMcpToolData = {
+  mcpServerName: string;
+  requestBody: MCPToolExecuteRequest;
+  toolName: string;
+  userId?: string | null;
+};
+
+export type ExecuteMcpToolResponse = unknown;
+
 export type McpOauthCallbackData = {
   /**
    * OAuth authorization code
@@ -7871,6 +7889,21 @@ export type $OpenApiTs = {
         200: {
           [key: string]: unknown;
         };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute': {
+    post: {
+      req: ExecuteMcpToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

@@ -1026,6 +1026,64 @@
         }
       }
     },
+    "/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Execute Mcp Tool",
+        "description": "Execute a specific MCP tool from a configured server.\nReturns the tool execution result.",
+        "operationId": "execute_mcp_tool",
+        "parameters": [
+          {
+            "name": "mcp_server_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Name"
+            }
+          },
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MCPToolExecuteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/mcp/oauth/callback/{session_id}": {
       "get": {
         "tags": ["tools"],
@@ -17891,6 +17949,18 @@
         "required": ["name", "inputSchema"],
         "title": "MCPTool",
         "description": "A simple wrapper around MCP's tool definition (to avoid conflict with our own)"
+      },
+      "MCPToolExecuteRequest": {
+        "properties": {
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args",
+            "description": "Arguments to pass to the MCP tool"
+          }
+        },
+        "type": "object",
+        "title": "MCPToolExecuteRequest"
       },
       "ManagerType": {
         "type": "string",

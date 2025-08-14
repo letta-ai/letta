@@ -140,10 +140,11 @@ function AttachComposioTool(props: AttachComposioToolProps) {
 
 interface AttachMCPToolProps {
   idToAttach: string;
+  size?: 'default' | 'large' | 'small' | 'xsmall';
 }
 
 function AttachMCPTool(props: AttachMCPToolProps) {
-  const { idToAttach } = props;
+  const { idToAttach, size } = props;
   const [mcpServerName, mcpToolName] = idToAttach.split(':');
   const t = useTranslations('ToolActionsHeader');
   const { mutateAsync: addMCPTool, isPending } = useToolsServiceAddMcpTool();
@@ -210,6 +211,7 @@ function AttachMCPTool(props: AttachMCPToolProps) {
   return (
     <Button
       color="secondary"
+      size={size}
       preIcon={<AddLinkIcon />}
       busy={isPending}
       label={t('AttachMCPTool.label')}
@@ -286,10 +288,11 @@ interface AttachToolToAgentButtonProps {
   idToAttach: string;
   toolType: ToolType;
   toolName?: string;
+  size?: 'default' | 'large' | 'small' | 'xsmall';
 }
 
 function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
-  const { idToAttach, toolType, toolName } = props;
+  const { idToAttach, toolType, toolName, size } = props;
 
   switch (toolType) {
     case 'external_composio':
@@ -309,7 +312,7 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
       );
 
     case 'external_mcp':
-      return <AttachMCPTool idToAttach={idToAttach} />;
+      return <AttachMCPTool idToAttach={idToAttach} size={size} />;
 
     default:
       return null;
@@ -319,10 +322,11 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
 interface DetachToolDialogProps {
   toolType: ToolType;
   idToDetach: string;
+  size?: 'default' | 'large' | 'small' | 'xsmall';
 }
 
 function DetachToolDialog(props: DetachToolDialogProps) {
-  const { idToDetach, toolType } = props;
+  const { idToDetach, toolType, size} = props;
   const { id: agentId } = useCurrentAgent();
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
@@ -407,6 +411,7 @@ function DetachToolDialog(props: DetachToolDialogProps) {
     <Dialog
       trigger={
         <Button
+          size={size}
           color="secondary"
           preIcon={<LinkOffIcon />}
           label={t('DetachToolDialog.label')}
@@ -429,10 +434,11 @@ interface AttachDetachButtonProps {
   attachedId?: string;
   toolType: ToolType;
   toolName?: string;
+  size?: 'default' | 'large' | 'small' | 'xsmall';
 }
 
 export function AttachDetachButton(props: AttachDetachButtonProps) {
-  const { idToAttach, toolType, attachedId, toolName } = props;
+  const { idToAttach, toolType, attachedId, toolName, size} = props;
 
   const { agentId } = useCurrentAgentMetaData();
 
@@ -443,12 +449,13 @@ export function AttachDetachButton(props: AttachDetachButtonProps) {
   return (
     <HStack>
       {attachedId ? (
-        <DetachToolDialog toolType={toolType} idToDetach={attachedId} />
+        <DetachToolDialog toolType={toolType} idToDetach={attachedId} size={size} />
       ) : (
         <AttachToolToAgentButton
           toolType={toolType}
           idToAttach={idToAttach}
           toolName={toolName}
+          size={size}
         />
       )}
     </HStack>

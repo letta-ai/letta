@@ -794,6 +794,73 @@ async def generate_json_schema(
         raise HTTPException(status_code=400, detail=f"Failed to generate schema: {str(e)}")
 
 
+# TODO: @jnjpng move this and other models above to appropriate file for schemas
+class MCPToolExecuteRequest(BaseModel):
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+
+
+@router.post("/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute", operation_id="execute_mcp_tool")
+async def execute_mcp_tool(
+    mcp_server_name: str,
+    tool_name: str,
+    request: MCPToolExecuteRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Execute a specific MCP tool from a configured server.
+    Returns the tool execution result.
+    """
+    client = None
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+        # Get the MCP server by name
+        mcp_server = await server.mcp_manager.get_mcp_server(mcp_server_name, actor)
+        if not mcp_server:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "MCPServerNotFound",
+                    "message": f"MCP server '{mcp_server_name}' not found",
+                    "server_name": mcp_server_name,
+                },
+            )
+
+        # Create client and connect
+        server_config = mcp_server.to_config()
+        server_config.resolve_environment_variables()
+        client = await server.mcp_manager.get_mcp_client(server_config, actor)
+        await client.connect_to_server()
+
+        # Execute the tool
+        result, success = await client.execute_tool(tool_name, request.args)
+
+        return {
+            "result": result,
+            "success": success,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Error executing MCP tool: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MCPToolExecutionError",
+                "message": f"Failed to execute MCP tool: {str(e)}",
+                "server_name": mcp_server_name,
+                "tool_name": tool_name,
+            },
+        )
+    finally:
+        if client:
+            try:
+                await client.cleanup()
+            except Exception as cleanup_error:
+                logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
+
+
 # TODO: @jnjpng need to route this through cloud API for production
 @router.get("/mcp/oauth/callback/{session_id}", operation_id="mcp_oauth_callback")
 async def mcp_oauth_callback(

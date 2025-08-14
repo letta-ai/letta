@@ -38,6 +38,7 @@ export interface MCPToolParameter {
   type?: string;
   description?: string;
   enum?: string[];
+  default?: string;
 }
 
 export interface MCPToolInputSchema {

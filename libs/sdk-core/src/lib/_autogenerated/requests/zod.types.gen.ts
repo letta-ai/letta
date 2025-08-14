@@ -5944,6 +5944,11 @@ export const MCPTool = z.intersection(
   }),
 );
 
+export type MCPToolExecuteRequest = z.infer<typeof MCPToolExecuteRequest>;
+export const MCPToolExecuteRequest = z.object({
+  args: z.unknown().optional(),
+});
+
 export type ModalSandboxConfig = z.infer<typeof ModalSandboxConfig>;
 export const ModalSandboxConfig = z.object({
   timeout: z.number().optional(),
@@ -8025,6 +8030,28 @@ export const post_Generate_json_schema = {
         .optional(),
     }),
     body: CodeInput,
+  }),
+  response: z.unknown(),
+};
+
+export type post_Execute_mcp_tool = typeof post_Execute_mcp_tool;
+export const post_Execute_mcp_tool = {
+  method: z.literal('POST'),
+  path: z.literal(
+    '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute',
+  ),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      mcp_server_name: z.string(),
+      tool_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: MCPToolExecuteRequest,
   }),
   response: z.unknown(),
 };
@@ -11470,6 +11497,8 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/test': post_Test_mcp_server,
     '/v1/tools/mcp/servers/connect': post_Connect_mcp_server,
     '/v1/tools/generate-schema': post_Generate_json_schema,
+    '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute':
+      post_Execute_mcp_tool,
     '/v1/tools/generate-tool': post_Generate_tool,
     '/v1/sources/': post_Create_source,
     '/v1/sources/{source_id}/upload': post_Upload_file_to_source,

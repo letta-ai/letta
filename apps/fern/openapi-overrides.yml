@@ -54,6 +54,9 @@ paths:
   /v1/tools/mcp/servers/{mcp_server_name}/tools:
     get:
       summary: "List MCP Tools By Server"
+  /v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute:
+    post:
+      x-fern-ignore: true
   /v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}:
     post:
       summary: "Add MCP Tool"

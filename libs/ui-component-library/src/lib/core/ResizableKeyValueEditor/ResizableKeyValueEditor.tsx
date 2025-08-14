@@ -114,7 +114,7 @@ function DefinitionRow(props: DefinitionRowProps) {
         >
           <TextareaAutosize
             key={definition.key}
-            placeholder={t('placeholder')}
+            placeholder={definition.valuePlaceholder || t('placeholder')}
             disabled={disableValueInput || definition.disableValueInput}
             className={cn(
               'py-2  pt-3 w-full min-w-[100px] resize-none focus:outline-none  focus:outline-0 text-xs font-mono  bg-transparent',
@@ -153,6 +153,7 @@ export interface ResizableKeyValueEditorDefinition {
   value: string;
   keyBadge?: React.ReactNode;
   valueBadge?: React.ReactNode;
+  valuePlaceholder?: string;
   disableKeyInput?: boolean;
   disableValueInput?: boolean;
   disableDelete?: boolean;
@@ -165,6 +166,7 @@ interface ResizableKeyValueEditorProps {
   disableValueInput?: boolean;
   disableNewDefinition?: boolean;
   disableHeader?: boolean;
+  width?: number;
 
   setDefinitions: Dispatch<SetStateAction<ResizableKeyValueEditorDefinition[]>>;
   actions?: React.ReactNode;
@@ -178,6 +180,7 @@ export function ResizableKeyValueEditor(props: ResizableKeyValueEditorProps) {
     disableKeyInput,
     disableHeader,
     disableValueInput,
+    width: initialWidth,
     setDefinitions,
     actions,
   } = props;
@@ -243,7 +246,7 @@ export function ResizableKeyValueEditor(props: ResizableKeyValueEditorProps) {
 
   const t = useTranslations('components/ResizableKeyValueEditor');
 
-  const [width, setWidth] = useState(40);
+  const [width, setWidth] = useState(initialWidth || 40);
 
   const container = useRef<HTMLDivElement>(null);
   const draggingHandle = useRef<HTMLDivElement>(null);

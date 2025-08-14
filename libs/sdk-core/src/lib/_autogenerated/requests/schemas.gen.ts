@@ -8074,6 +8074,19 @@ export const $MCPTool = {
     "A simple wrapper around MCP's tool definition (to avoid conflict with our own)",
 } as const;
 
+export const $MCPToolExecuteRequest = {
+  properties: {
+    args: {
+      additionalProperties: true,
+      type: 'object',
+      title: 'Args',
+      description: 'Arguments to pass to the MCP tool',
+    },
+  },
+  type: 'object',
+  title: 'MCPToolExecuteRequest',
+} as const;
+
 export const $ManagerType = {
   type: 'string',
   enum: [

@@ -1595,6 +1595,18 @@
   "ToolManager/ComposioAppHeader": {
     "open": "View on Composio"
   },
+  "ToolManager/MCPToolSimulator": {
+    "selectTool": "Select a tool",
+    "ToolInput": {
+      "title": "Tool Arguments",
+      "run": "Run Tool",
+      "noParameters": "This tool has no tool arguments"
+    },
+    "ToolOutput": {
+      "title": "Response",
+      "noOutput": "Run tool to see response"
+    }
+  },
   "ToolManager/SingleMCPServer": {
     "ServerToolsList": {
       "loading": "Loading tools...",

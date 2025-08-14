@@ -3,11 +3,11 @@ import {
   useToolsServiceDeleteMcpServer,
   UseToolsServiceListMcpServersKeyFn,
   useToolsServiceListMcpToolsByServer,
+  type MCPTool,
 } from '@letta-cloud/sdk-core';
 import type { MCPServerItemType } from '@letta-cloud/sdk-core';
 import { getIsStreamableOrHttpServer } from '../types';
 import {
-  Accordion,
   Badge,
   Button,
   Dialog,
@@ -27,10 +27,12 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import React, {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from 'react';
+import { cn } from '@letta-cloud/ui-styles';
 import { AttachDetachButton } from '../../../components/AttachDetachButton/AttachDetachButton';
 import { useCurrentAgent } from '../../../../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,9 +40,10 @@ import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
 import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
 import { toMCPServerTypeLabel } from '../types';
 import { UpdateMCPServerDialog } from '../UpdateMCPServerDialog/UpdateMCPServerDialog';
-import { MCPToolParameters } from '../MCPToolParameters';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { MCPToolSimulator } from '../MCPToolSimulator/MCPToolSimulator';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -114,10 +117,12 @@ interface ServerToolsRef {
 interface ServerToolsListProps {
   serverName: string;
   ref?: React.RefObject<ServerToolsRef>;
+  selectedTool: MCPTool | null;
+  onToolSelect: (tool: MCPTool) => void;
 }
 
 function ServerToolsList(props: ServerToolsListProps) {
-  const { serverName, ref } = props;
+  const { serverName, ref, selectedTool, onToolSelect } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
 
   const { tools } = useCurrentAgent();
@@ -142,6 +147,12 @@ function ServerToolsList(props: ServerToolsListProps) {
     [tools],
   );
 
+  useEffect(() => {
+    if (data && data.length > 0 && !selectedTool) {
+      onToolSelect(data[0]);
+    }
+  }, [data, selectedTool, onToolSelect]);
+
   if (isError || !data || data?.length === 0 || isFetching) {
     return (
       <LoadingEmptyStatusComponent
@@ -155,45 +166,84 @@ function ServerToolsList(props: ServerToolsListProps) {
   }
 
   return (
-    <VStack overflowY="auto" collapseHeight padding="small" flex>
-      {data.map((tool) => (
-        <VStack
-          padding="small"
-          gap={false}
-          color="background-grey"
-          key={tool.name}
-          fullWidth
+    <VStack
+      collapseWidth
+      flex
+      fullHeight
+      className="h-full w-full overflow-hidden"
+    >
+      <PanelGroup
+        className="h-full w-full"
+        direction="horizontal"
+        autoSaveId="mcp-tool-playground"
+      >
+        <Panel
+          defaultSize={30}
+          defaultValue={30}
+          className="h-full overflow-y-auto"
+          minSize={20}
         >
-          <HStack padding="xxsmall" justify="spaceBetween" align="center">
-            <ToolsIcon />
-            <Typography fullWidth overflow="ellipsis" bold variant="body2">
-              {tool.name}
-            </Typography>
-            <AttachDetachButton
-              attachedId={getAttachedId(tool.name) || undefined}
-              toolType="external_mcp"
-              idToAttach={`${serverName}:${tool.name}`}
-              toolName={tool.name}
-            />
-          </HStack>
-          {tool.description && (
-            <Accordion
-              id={tool.name}
-              trigger={
-                <VStack paddingX="small">
-                  <Typography variant="body2">{tool.description}</Typography>
-                </VStack>
-              }
-            >
-              {tool.inputSchema && (
-                <VStack gap="text" paddingX="large" paddingY="small">
-                  <MCPToolParameters inputSchema={tool.inputSchema} />
-                </VStack>
-              )}
-            </Accordion>
-          )}
-        </VStack>
-      ))}
+          <VStack
+            gap={false}
+            fullHeight
+            color="background"
+            overflowY="auto"
+          >
+            {data.map((tool) => (
+              <HStack
+                padding="small"
+                gap={false}
+                key={tool.name}
+                justify="spaceBetween"
+                align="center"
+                className={cn(
+                  "w-full",
+                  selectedTool?.name === tool.name
+                    ? "bg-secondary-active"
+                    : ""
+                )}
+              >
+                <button
+                  onClick={() => {
+                    onToolSelect(tool);
+                  }}
+                  className="flex-1 flex items-center gap-2 text-left cursor-pointer p-1"
+                >
+                  <ToolsIcon />
+                  <Typography
+                    fullWidth
+                    overflow="ellipsis"
+                    bold
+                    variant="body2"
+                  >
+                    {tool.name}
+                  </Typography>
+                </button>
+                <AttachDetachButton
+                  attachedId={getAttachedId(tool.name) || undefined}
+                  toolType="external_mcp"
+                  idToAttach={`${serverName}:${tool.name}`}
+                  toolName={tool.name}
+                  size="xsmall"
+                />
+              </HStack>
+            ))}
+          </VStack>
+        </Panel>
+        <PanelResizeHandle
+          className="w-[1px] h-full bg-border"
+          /* eslint-disable-next-line react/forbid-component-props */
+          style={{ cursor: "col-resize" }}
+        />
+        <Panel
+          defaultSize={70}
+          defaultValue={70}
+          className="h-full"
+          minSize={20}
+        >
+          <MCPToolSimulator tool={selectedTool} serverName={serverName} />
+        </Panel>
+      </PanelGroup>
     </VStack>
   );
 }
@@ -207,6 +257,8 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
 
   const t = useTranslations('ToolManager/SingleMCPServer');
 
+  const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
+
   const ref = useRef<ServerToolsRef>({
     reload: () => {
       return;
@@ -215,7 +267,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
 
   return (
     <VStack fullWidth flex fullHeight>
-      <HStack borderBottom padding>
+      <HStack padding>
         <VStack fullWidth>
           <HStack fullWidth paddingBottom="large" justify="spaceBetween">
             <HStack align="center" gap="medium">
@@ -303,7 +355,14 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
           </VStack>
         </VStack>
       </HStack>
-      <ServerToolsList ref={ref} serverName={server.server_name} />
+      <VStack fullWidth flex fullHeight borderTop>
+        <ServerToolsList
+          ref={ref}
+          serverName={server.server_name}
+          selectedTool={selectedTool}
+          onToolSelect={setSelectedTool}
+        />
+      </VStack>
     </VStack>
   );
 }

@@ -46,6 +46,8 @@ import type {
   ConnectMcpServerResponse,
   GenerateJsonSchemaData,
   GenerateJsonSchemaResponse,
+  ExecuteMcpToolData,
+  ExecuteMcpToolResponse,
   McpOauthCallbackData,
   McpOauthCallbackResponse,
   GenerateToolData,
@@ -882,6 +884,38 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/tools/generate-schema',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Execute Mcp Tool
+   * Execute a specific MCP tool from a configured server.
+   * Returns the tool execution result.
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.toolName
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static executeMcpTool(
+    data: ExecuteMcpToolData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ExecuteMcpToolResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute',
+      path: {
+        mcp_server_name: data.mcpServerName,
+        tool_name: data.toolName,
+      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

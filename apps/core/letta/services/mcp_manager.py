@@ -287,7 +287,7 @@ class MCPManager:
 
     @enforce_types
     async def get_mcp_server(self, mcp_server_name: str, actor: PydanticUser) -> PydanticTool:
-        """Get a tool by name."""
+        """Get a MCP server by name."""
         async with db_registry.async_session() as session:
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor)
             mcp_server = await MCPServerModel.read_async(db_session=session, identifier=mcp_server_id, actor=actor)

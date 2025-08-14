@@ -58,6 +58,7 @@ import {
   LettaRequest,
   LettaStreamingRequest,
   LocalSandboxConfig,
+  MCPToolExecuteRequest,
   ManagerType,
   MessageRole,
   OrganizationCreate,
@@ -3734,6 +3735,58 @@ export const useToolsServiceGenerateJsonSchema = <
     mutationFn: ({ requestBody, userId }) =>
       ToolsService.generateJsonSchema({
         requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Execute Mcp Tool
+ * Execute a specific MCP tool from a configured server.
+ * Returns the tool execution result.
+ * @param data The data for the request.
+ * @param data.mcpServerName
+ * @param data.toolName
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useToolsServiceExecuteMcpTool = <
+  TData = Common.ToolsServiceExecuteMcpToolMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        mcpServerName: string;
+        requestBody: MCPToolExecuteRequest;
+        toolName: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      mcpServerName: string;
+      requestBody: MCPToolExecuteRequest;
+      toolName: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ mcpServerName, requestBody, toolName, userId }) =>
+      ToolsService.executeMcpTool({
+        mcpServerName,
+        requestBody,
+        toolName,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
