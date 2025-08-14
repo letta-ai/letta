@@ -6,6 +6,13 @@ export interface MigrateAgentsPayload {
   template: string;
   coreUserId: string;
   organizationId: string;
+  batchConfig?: MigrationBatchConfig;
+}
+
+export interface MigrationBatchConfig {
+  agentFetchBatchSize?: number; // Number of agents to fetch per API call (default: 50)
+  workflowBatchSize?: number; // Number of agents to process concurrently (default: 10)
+  maxRetries?: number; // Maximum retries for failed batches (default: 3)
 }
 
 export interface MigrateAgentPayload {
