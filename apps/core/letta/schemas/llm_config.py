@@ -55,7 +55,7 @@ class LLMConfig(BaseModel):
         description="The maximum number of tokens to generate. If not set, the model will use its default value.",
     )
     enable_reasoner: bool = Field(
-        False, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
+        True, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
         None,

@@ -7297,7 +7297,7 @@ export const $LLMConfig = {
       title: 'Enable Reasoner',
       description:
         "Whether or not the model should use extended thinking if it is a 'reasoning' style model",
-      default: false,
+      default: true,
     },
     reasoning_effort: {
       anyOf: [
