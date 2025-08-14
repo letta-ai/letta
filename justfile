@@ -780,6 +780,7 @@ emails:
             --set env.REDIS_HOST="${REDIS_HOST}" \
             --set env.REDIS_PORT="${REDIS_PORT}" \
             --set env.PORT="${PORT}" \
+            --set env.SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
             --set env.TEMPORAL_LETTUCE_API_HOST="${TEMPORAL_LETTUCE_API_HOST}" \
             --set env.TEMPORAL_LETTUCE_CA_PEM="${TEMPORAL_LETTUCE_CA_PEM}" \
             --set env.TEMPORAL_LETTUCE_CA_KEY="${TEMPORAL_LETTUCE_CA_KEY}" \

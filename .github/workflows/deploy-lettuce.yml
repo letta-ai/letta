@@ -20,6 +20,7 @@ env:
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   PORT: "8080"
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   REGION: us-central1
   GCP_SA_EMAIL: github-actions-service-account@memgpt-428419.iam.gserviceaccount.com
   NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}

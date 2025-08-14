@@ -1,4 +1,4 @@
-import { AgentsService, BlocksService } from '@letta-cloud/sdk-core';
+import { AgentsService, BlocksService, isAPIError } from '@letta-cloud/sdk-core';
 import type { AgentState, UpdateAgent } from '@letta-cloud/sdk-core';
 import * as lodash from 'lodash';
 import { attachVariablesToTemplates } from '../attachVariablesToTemplates/attachVariablesToTemplates';
@@ -53,7 +53,14 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       {
         user_id: lettaAgentsUserId,
       },
-    ),
+    ).catch(res => {
+      if (isAPIError(res)) {
+        console.error('API Error retrieving agent from template:', res.status);
+        console.error('API Error retrieving agent from template:', res.body);
+      }
+
+      throw res;
+    }),
     AgentsService.retrieveAgent(
       {
         agentId: agentToUpdateId,
@@ -61,7 +68,14 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       {
         user_id: lettaAgentsUserId,
       },
-    ),
+    ).catch(res => {
+      if (isAPIError(res)) {
+        console.error('API Error retrieving agent from template:', res.status);
+        console.error('API Error retrieving agent from template:', res.body);
+      }
+
+      throw res;
+    }),
   ]);
 
   let requestBody: UpdateAgent = {
@@ -151,7 +165,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          );
+          ).catch(res => {
+            if (isAPIError(res)) {
+              console.error('API Error deleting agent from template:', res.status);
+              console.error('API Error deleting agent from template:', res.body);
+            }
+            throw res;
+          });
         }),
         ...memoryBlocksToAdd.map(async (block) => {
           if (!block.label) {
@@ -169,7 +189,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          );
+          ).catch(res => {
+            if (isAPIError(res)) {
+              console.error('API Error creating block from template:', res.status);
+              console.error('API Error creating block from template:', res.body);
+            }
+            throw res;
+          });
 
           if (!createdBlock?.id) {
             throw new Error('Failed to create memory block');
@@ -183,7 +209,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          );
+          ).catch(res => {
+            if (isAPIError(res)) {
+              console.error('API Error attaching block from template:', res.status);
+              console.error('API Error attaching block from template:', res.body);
+            }
+            throw res;
+          });
         }),
         ...memoryBlocksToUpdate.map(async (block) => {
           if (!block.label) {
@@ -202,7 +234,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
               {
                 user_id: lettaAgentsUserId,
               },
-            );
+            ).catch(res => {
+              if (isAPIError(res)) {
+                console.error('API Error modifying block from template:', res.status);
+                console.error('API Error modifying block from template:', res.body);
+              }
+              throw res;
+            });
           }
 
           return AgentsService.modifyCoreMemoryBlock(
@@ -220,7 +258,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          );
+          ).catch(res => {
+            if (isAPIError(res)) {
+              console.error('API Error modifying block from template:', res.status);
+              console.error('API Error modifying block from template:', res.body);
+            }
+            throw res;
+          });
         }),
       ]);
     }
@@ -260,7 +304,13 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     {
       user_id: lettaAgentsUserId,
     },
-  );
+  ).catch(res => {
+    if (isAPIError(res)) {
+      console.error('API Error updating agent from template:', res.status);
+      console.error('API Error updating agent from template:', res.body);
+    }
+    throw res;
+  });
 
   return agent;
 }
