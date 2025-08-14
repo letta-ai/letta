@@ -8,6 +8,16 @@ export interface MigrateAgentsPayload {
   organizationId: string;
 }
 
+export interface MigrateAgentPayload {
+  memoryVariables?: Record<string, string>;
+  preserveCoreMemories?: boolean;
+  preserveToolVariables?: boolean;
+  agentId: string;
+  template: string;
+  coreUserId: string;
+  organizationId: string;
+}
+
 export interface DeleteExpiredTokensAndUsersResult {
   expiredTokens: number;
   deletedTokens: number;

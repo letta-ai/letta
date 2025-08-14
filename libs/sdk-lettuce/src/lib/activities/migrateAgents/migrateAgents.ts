@@ -1,14 +1,7 @@
-import {
-  getDeployedTemplateByVersion,
-  updateAgentFromAgentId,
-} from '@letta-cloud/utils-server';
-import {
-  db,
-  deployedAgentVariables,
-} from '@letta-cloud/service-database';
-import type { MigrateAgentsPayload } from '../../types';
+import { agentTemplates, db, deployedAgentVariables } from '@letta-cloud/service-database';
 import { AgentsService, isAPIError } from '@letta-cloud/sdk-core';
 import { inArray } from 'drizzle-orm/sql/expressions/conditions';
+import { and, eq, isNull } from 'drizzle-orm';
 
 interface AgentResponse {
   agentId: string;
@@ -16,24 +9,42 @@ interface AgentResponse {
 }
 
 export async function getAgentsFromTemplate(
-  templateId: string,
+  template: string,
+  organizationId: string,
   coreUserId: string,
 ): Promise<AgentResponse[]> {
+
+  const [baseName] = template.split(':');
+
+  const rootAgentTemplate = await db.query.agentTemplates.findFirst({
+    where: and(
+      ...[
+        eq(agentTemplates.organizationId, organizationId),
+        eq(agentTemplates.name, baseName),
+        isNull(agentTemplates.deletedAt),
+      ],
+    ),
+  });
+
+  if (!rootAgentTemplate) {
+    throw new Error(`Template ${baseName} not found in organization ${organizationId}`);
+  }
+
   const deployedAgentsList = await AgentsService.listAgents(
     {
-      baseTemplateId: templateId,
+      baseTemplateId: rootAgentTemplate.id,
     },
     {
       user_id: coreUserId,
     },
-  ).catch(res => {
+  ).catch((res) => {
     if (isAPIError(res)) {
       console.error('API Error fetching agents from template:', res.status);
       console.error('API Error fetching agents from template:', res.body);
     }
 
     throw res;
-  })
+  });
 
   const variables = await db.query.deployedAgentVariables.findMany({
     where: inArray(
@@ -59,57 +70,4 @@ export async function getAgentsByIds(
     variables: value,
     agentId: deployedAgentId,
   }));
-}
-
-export async function migrateAgents(
-  payload: MigrateAgentsPayload,
-): Promise<boolean> {
-  const {
-    memoryVariables,
-    agentIds: specificAgentIds,
-    organizationId,
-    template,
-    preserveCoreMemories,
-    preserveToolVariables,
-    coreUserId,
-  } = payload;
-
-  const deployedAgentTemplate = await getDeployedTemplateByVersion(
-    template,
-    organizationId,
-  );
-
-  if (!deployedAgentTemplate) {
-    // Template version provided does not exist
-    return false;
-  }
-
-  if (!deployedAgentTemplate?.id) {
-    // Template id not found
-    return false;
-  }
-
-  const agents = specificAgentIds
-    ? await getAgentsByIds(specificAgentIds)
-    : await getAgentsFromTemplate(
-        deployedAgentTemplate.agentTemplateId,
-        coreUserId,
-      );
-
-  await Promise.all(
-    agents.map(async (agent) => {
-      await updateAgentFromAgentId({
-        memoryVariables: memoryVariables || agent.variables,
-        baseAgentId: deployedAgentTemplate.id,
-        agentToUpdateId: agent.agentId,
-        lettaAgentsUserId: coreUserId,
-        preserveCoreMemories,
-        preserveToolVariables,
-        baseTemplateId: deployedAgentTemplate.agentTemplateId,
-        templateId: deployedAgentTemplate.id,
-      });
-    }),
-  );
-
-  return true;
 }
