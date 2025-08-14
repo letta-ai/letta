@@ -61,13 +61,15 @@ DEVELOPMENT_LOGGING = {
     },
 }
 
+# Configure logging once at module initialization to avoid performance overhead
+dictConfig(DEVELOPMENT_LOGGING)
+
 
 def get_logger(name: Optional[str] = None) -> "logging.Logger":
     """returns the project logger, scoped to a child name if provided
     Args:
         name: will define a child logger
     """
-    dictConfig(DEVELOPMENT_LOGGING)
     parent_logger = logging.getLogger("Letta")
     if name:
         return parent_logger.getChild(name)

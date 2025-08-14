@@ -276,6 +276,9 @@ class OpenAIClient(LLMClientBase):
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
+    def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
+        return is_openai_reasoning_model(llm_config.model)
+
     @trace_method
     def convert_response_to_chat_completion(
         self,
@@ -298,7 +301,7 @@ class OpenAIClient(LLMClientBase):
             )
 
         # If we used a reasoning model, create a content part for the ommitted reasoning
-        if is_openai_reasoning_model(llm_config.model):
+        if self.is_reasoning_model(llm_config):
             chat_completion_response.choices[0].message.omitted_reasoning_content = True
 
         return chat_completion_response

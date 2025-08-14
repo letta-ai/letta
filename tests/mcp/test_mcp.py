@@ -7,10 +7,11 @@ import venv
 from pathlib import Path
 
 import pytest
+import requests
 from dotenv import load_dotenv
 from letta_client import Letta, McpTool, ToolCallMessage, ToolReturnMessage
 
-from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig
+from letta.functions.mcp_client.types import SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
@@ -207,3 +208,44 @@ def test_stdio_mcp_server(client, agent_state):
     assert ret.status == "success", f"Unexpected status: {ret.status}"
     # make sure there's at least some payload
     assert len(ret.tool_return.strip()) >= 10, f"Expected at least 10 characters in tool_return, got {len(ret.tool_return.strip())}"
+
+
+@pytest.mark.asyncio
+async def test_streamable_http_mcp_server_update_schema_no_docstring_required(client, agent_state, server_url):
+    """
+    Repro for schema-derivation-on-update error with MCP tools.
+
+    Without the fix, calling add_mcp_tool a second time for the same MCP tool
+    triggers a docstring-based schema derivation on a generated wrapper that has
+    no docstring, causing a 500. With the fix in place, updates should succeed.
+    """
+    mcp_server_name = f"deepwiki_http_{uuid.uuid4().hex[:6]}"
+    mcp_url = "https://mcp.deepwiki.com/mcp"
+
+    http_mcp_config = StreamableHTTPServerConfig(server_name=mcp_server_name, server_url=mcp_url)
+    try:
+        client.tools.add_mcp_server(request=http_mcp_config)
+
+        # Ensure server is registered
+        servers = client.tools.list_mcp_servers()
+        assert mcp_server_name in servers
+
+        # Fetch available tools from server
+        tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+        assert tools, "Expected at least one tool from deepwiki streamable-http MCP server"
+        ask_question_tool = next((t for t in tools if t.name == "ask_question"), None)
+        assert ask_question_tool is not None, f"ask_question tool not found. Available: {[t.name for t in tools]}"
+
+        # Initial create
+        letta_tool_1 = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
+        assert letta_tool_1 is not None
+
+        # Update path (re-register same tool); should not attempt Python docstring schema derivation
+        letta_tool_2 = client.tools.add_mcp_tool(mcp_server_name=mcp_server_name, mcp_tool_name=ask_question_tool.name)
+        assert letta_tool_2 is not None
+    finally:
+        # Best-effort cleanup (DELETE by name)
+        try:
+            requests.delete(f"{server_url}/v1/tools/mcp/servers/{mcp_server_name}")
+        except Exception:
+            pass

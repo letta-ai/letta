@@ -15,7 +15,7 @@ def json_dumps(data, indent=2) -> str:
             try:
                 return obj.decode("utf-8")
             except Exception:
-                print(f"Error decoding bytes as utf-8: {obj}")
+                # TODO: this is to handle Gemini thought signatures, b64 decode this back to bytes when sending back to Gemini
                 return base64.b64encode(obj).decode("utf-8")
         raise TypeError(f"Type {type(obj)} not serializable")
 

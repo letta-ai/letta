@@ -1,7 +1,6 @@
 import pytest
 
 from letta.helpers import ToolRulesSolver
-from letta.helpers.tool_rule_solver import ToolRuleValidationError
 from letta.schemas.tool_rule import (
     ChildToolRule,
     ConditionalToolRule,
@@ -101,12 +100,8 @@ def test_conditional_tool_rule():
 
 
 def test_invalid_conditional_tool_rule():
-    init_rule = InitToolRule(tool_name=START_TOOL)
-    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
-    invalid_rule_1 = ConditionalToolRule(tool_name=START_TOOL, default_child=END_TOOL, child_output_mapping={})
-
-    with pytest.raises(ToolRuleValidationError, match="Conditional tool rule must have at least one child tool."):
-        ToolRulesSolver(tool_rules=[init_rule, invalid_rule_1, terminal_rule])
+    with pytest.raises(ValueError, match="Conditional tool rule must have at least one child tool."):
+        ConditionalToolRule(tool_name=START_TOOL, default_child=END_TOOL, child_output_mapping={})
 
 
 def test_tool_rules_with_invalid_path():
