@@ -36,6 +36,7 @@ export enum AnalyticsEvent {
   UPDATE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:update_block',
   DELETE_BLOCK_IN_CORE_MEMORY = 'agent:update:core_memory:delete_block',
   SEND_MESSAGE = 'agent:message:send',
+  SEND_MESSAGE_FAILED = 'agent:message:failed',
   ONBOARDING_NEW_USER = 'user_onboarding:start',
   USER_ONBOARDING_STEP_COMPLETED = 'user_onboarding:step_completed',
   USER_ONBOARDING_COMPLETED = 'user_onboarding:completed',
@@ -140,6 +141,12 @@ interface OnboardingResourceProperty
   extends ResourceProperty,
     OnboardingProperty {}
 
+
+interface SendMessageFailedProperty extends MessageProperty {
+  errorType: string;
+  errorMessage: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
@@ -181,4 +188,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED]: OnboardingResourceProperty;
   [AnalyticsEvent.SKIP_USER_ONBOARDING]: OnboardingProperty;
   [AnalyticsEvent.CREATE_API_KEY]: OrganizationProperty;
+  [AnalyticsEvent.SEND_MESSAGE_FAILED]: SendMessageFailedProperty;
 }

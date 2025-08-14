@@ -1,41 +1,49 @@
 'use client';
-import {
-  Button,
-  ChatInput,
-  PersonIcon,
-  SystemIcon,
-  Typography,
-  WarningIcon,
-  Link,
-  Avatar,
-} from '@letta-cloud/ui-component-library';
-import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
-
 import type {
   ChatInputRef,
   RoleOption,
 } from '@letta-cloud/ui-component-library';
-import { VStack } from '@letta-cloud/ui-component-library';
-import { useEffect } from 'react';
-import { useMemo } from 'react';
-import React, { useCallback, useRef, useState } from 'react';
+import {
+  Avatar,
+  Button,
+  ChatInput,
+  Link,
+  PersonIcon,
+  SystemIcon,
+  Typography,
+  VStack,
+  WarningIcon,
+} from '@letta-cloud/ui-component-library';
+import * as Sentry from '@sentry/nextjs';
+import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   Identity,
-  LettaUserMessageContentUnion,
   LettaMessageUnion,
+  LettaUserMessageContentUnion,
   ListMessagesResponse,
   SystemMessage,
   UserMessage,
 } from '@letta-cloud/sdk-core';
-import { AgentsService } from '@letta-cloud/sdk-core';
-import { v4 as uuidv4 } from 'uuid';
-import { IdentitiesService } from '@letta-cloud/sdk-core';
-import { ErrorMessageSchema } from '@letta-cloud/sdk-core';
 import {
   AgentMessageSchema,
+  AgentsService,
+  ErrorMessageSchema,
+  IdentitiesService,
   UseAgentsServiceListMessagesKeyFn,
 } from '@letta-cloud/sdk-core';
-import { OpenInNetworkInspectorButton, useCurrentAgent } from '../../hooks';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  OpenInNetworkInspectorButton,
+  useCurrentAgent,
+  useCurrentAgentMetaData,
+} from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { get } from 'lodash-es';
 import type { z } from 'zod';
@@ -43,12 +51,11 @@ import { useTranslations } from '@letta-cloud/translations';
 import { useLocalStorage } from '@mantine/hooks';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
-import { useCurrentAgentMetaData } from '../../hooks';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
-import { Messages } from '../Messages/Messages';
 import type { MessagesDisplayMode } from '../Messages/Messages';
+import { Messages } from '../Messages/Messages';
 import {
   useCurrentAPIHostConfig,
   useLettaAgentsAPI,
@@ -120,10 +127,45 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
 
       const userMessageOtid = uuidv4();
 
-      function handleError(message: string, errorCode: ErrorCode) {
+      function handleError(
+        message: string,
+        errorCode: ErrorCode,
+        responseData?: any,
+      ) {
         setIsPending(false);
         setFailedToSendMessage(true);
         setErrorCode(errorCode);
+
+        trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE_FAILED, {
+          agentId,
+          messageSendingType: 'streaming',
+          messageType:
+            role.value === 'system' ? 'system_message' : 'user_message',
+          location: 'ade:agent_simulator',
+          errorType: errorCode || 'UNKNOWN',
+          errorMessage: JSON.stringify(responseData),
+        });
+
+        // Log INTERNAL_SERVER_ERROR to Sentry
+        if (errorCode === 'INTERNAL_SERVER_ERROR') {
+
+          Sentry.captureException(
+            new Error('AgentSimulator: Internal server error occurred'),
+            {
+              tags: {
+                component: 'AgentSimulator',
+                errorType: 'INTERNAL_SERVER_ERROR',
+              },
+              extra: {
+                message,
+                agentId: payload.agentId,
+                userMessageOtid,
+                responseData,
+              },
+            },
+          );
+        }
+
         options?.onFailedToSendMessage?.(message);
 
         queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
@@ -244,6 +286,8 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         response: 'RESULTS WILL APPEAR AFTER THE REQUEST IS COMPLETED',
       });
 
+      let allText = '';
+
       try {
         const response = await fetch(
           `${baseUrl}/v1/agents/${agentId}/messages/stream`,
@@ -269,7 +313,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           const body = await response.json();
 
           if (body.reasons?.includes('free-usage-exceeded')) {
-            handleError(message, 'FREE_USAGE_EXCEEDED');
+            handleError(message, 'FREE_USAGE_EXCEEDED', body);
             updateNetworkRequest(requestId, {
               status: response.status,
               response: body,
@@ -278,7 +322,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
 
           if (body.reasons?.includes('agents-limit-exceeded')) {
-            handleError(message, 'AGENT_LIMIT_EXCEEDED');
+            handleError(message, 'AGENT_LIMIT_EXCEEDED', body);
             updateNetworkRequest(requestId, {
               status: response.status,
               response: body,
@@ -287,7 +331,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
 
           if (body.reasons?.includes('premium-usage-exceeded')) {
-            handleError(message, 'PREMIUM_USAGE_EXCEEDED');
+            handleError(message, 'PREMIUM_USAGE_EXCEEDED', body);
             updateNetworkRequest(requestId, {
               status: response.status,
               response: body,
@@ -296,7 +340,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
 
           if (response.status === 429) {
-            handleError(message, 'RATE_LIMIT_EXCEEDED');
+            handleError(message, 'RATE_LIMIT_EXCEEDED', body);
             updateNetworkRequest(requestId, {
               status: response.status,
               response: body,
@@ -305,7 +349,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
 
           if (response.status === 402) {
-            handleError(message, 'CREDIT_LIMIT_EXCEEDED');
+            handleError(message, 'CREDIT_LIMIT_EXCEEDED', body);
             updateNetworkRequest(requestId, {
               status: response.status,
               response: body,
@@ -318,7 +362,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             response: body,
           });
 
-          handleError(message, 'INTERNAL_SERVER_ERROR');
+          handleError(message, 'INTERNAL_SERVER_ERROR', body);
           return;
         }
 
@@ -326,12 +370,14 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         const decoder = new TextDecoder();
 
         if (!reader) {
-          handleError(message, 'INTERNAL_SERVER_ERROR');
+          handleError(message, 'INTERNAL_SERVER_ERROR', {
+            error: 'No response reader available',
+          });
           return;
         }
 
         let buffer = '';
-        let allText = '';
+        allText = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -375,7 +421,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
 
             try {
               const errorMessage = ErrorMessageSchema.parse(JSON.parse(data));
-              handleError(message, errorMessage.code);
+              handleError(message, errorMessage.code, {
+                streamData: allText,
+                errorMessage,
+              });
               return;
             } catch (_e) {
               // ignore
@@ -488,6 +537,23 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         setIsPending(false);
         setFailedToSendMessage(true);
         setErrorCode('INTERNAL_SERVER_ERROR');
+
+        // Log fetch errors to Sentry
+        Sentry.captureException(error, {
+          tags: {
+            component: 'AgentSimulator',
+            errorType: 'FETCH_ERROR',
+          },
+          extra: {
+            message: extractMessageTextFromContent(content),
+            agentId,
+            userMessageOtid,
+            url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
+            streamData: allText || 'No stream data available',
+            requestBody,
+          },
+        });
+
         options?.onFailedToSendMessage?.(message);
       }
     },
