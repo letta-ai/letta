@@ -24,7 +24,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useRef } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { LoadingEmptyStatusComponent } from '../../reusable/LoadingEmptyStatusComponent/LoadingEmptyStatusComponent';
-import { TABLE_ROW_HEIGHT } from '../../../constants';
+import { TABLE_ROW_HEIGHT, TABLE_ROW_MINIMUM_COUNT } from '../../../constants';
 import { SearchIcon } from '../../icons';
 import './DataTable.scss';
 
@@ -211,7 +211,7 @@ export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
 
       mounted.current = true;
 
-      onLimitChange?.(Math.max(rows, 1));
+      onLimitChange?.(Math.max(rows, TABLE_ROW_MINIMUM_COUNT));
     }
   }, [autofitHeight, limit, minHeight, onLimitChange]);
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const GenericSearchSchema = z.object({
   search: z.string().optional(),
   offset: z.number().optional(),
-  limit: z.number().max(25).optional(),
+  limit: z.number().max(100).optional(),
   orderBy: z.string().optional(),
   orderDirection: z.enum(['asc', 'desc']).optional(),
 });
