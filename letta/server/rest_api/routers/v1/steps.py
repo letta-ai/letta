@@ -57,7 +57,6 @@ async def list_steps(
         trace_ids=trace_ids,
         feedback=feedback,
         has_feedback=has_feedback,
-        tags=tags,
         project_id=project_id,
     )
 
