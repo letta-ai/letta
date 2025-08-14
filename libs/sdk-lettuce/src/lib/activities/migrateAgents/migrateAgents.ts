@@ -9,7 +9,6 @@ import {
 import type { MigrateAgentsPayload } from '../../types';
 import { AgentsService, isAPIError } from '@letta-cloud/sdk-core';
 import { inArray } from 'drizzle-orm/sql/expressions/conditions';
-import * as Sentry from '@sentry/node';
 
 interface AgentResponse {
   agentId: string;
@@ -33,7 +32,6 @@ export async function getAgentsFromTemplate(
       console.error('API Error fetching agents from template:', res.body);
     }
 
-    Sentry.captureException(res)
     throw res;
   })
 

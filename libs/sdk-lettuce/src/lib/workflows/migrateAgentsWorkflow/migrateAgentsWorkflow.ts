@@ -1,7 +1,6 @@
 import { proxyActivities, isCancellation } from '@temporalio/workflow';
 import type { activities } from '../../activities';
 import type { MigrateAgentsPayload } from '../../types';
-import * as Sentry from '@sentry/node';
 
 const { migrateAgents } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 hour',
@@ -20,7 +19,6 @@ export async function migrateAgentsWorkflow(
       console.warn('migrateAgentsworkflow was canceled:', error);
       // TODO: handle cleanup - e.g. if some agents were migrated, we should revert them?
     }
-    Sentry.captureException(error);
     throw error;
   }
 }
