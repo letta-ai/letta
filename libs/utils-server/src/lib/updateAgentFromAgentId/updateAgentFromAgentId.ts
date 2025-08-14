@@ -1,4 +1,8 @@
-import { AgentsService, BlocksService, isAPIError } from '@letta-cloud/sdk-core';
+import {
+  AgentsService,
+  BlocksService,
+  isAPIError,
+} from '@letta-cloud/sdk-core';
 import type { AgentState, UpdateAgent } from '@letta-cloud/sdk-core';
 import * as lodash from 'lodash';
 import { attachVariablesToTemplates } from '../attachVariablesToTemplates/attachVariablesToTemplates';
@@ -53,7 +57,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       {
         user_id: lettaAgentsUserId,
       },
-    ).catch(res => {
+    ).catch((res) => {
       if (isAPIError(res)) {
         console.error('API Error retrieving agent from template:', res.status);
         console.error('API Error retrieving agent from template:', res.body);
@@ -68,7 +72,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
       {
         user_id: lettaAgentsUserId,
       },
-    ).catch(res => {
+    ).catch((res) => {
       if (isAPIError(res)) {
         console.error('API Error retrieving agent from template:', res.status);
         console.error('API Error retrieving agent from template:', res.body);
@@ -106,22 +110,23 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
 
     // only add tool variables that are not already in the agent
     // as well as removing any tool variables that are not in the template
-    requestBody.tool_exec_environment_variables = agentTemplateData.tool_exec_environment_variables?.reduce(
-      (acc, tool) => {
-        // if existing agent has the tool variable, keep it
-        if (
-          typeof tool.key === 'string' &&
-          existingToolMap[tool.key] !== undefined
-        ) {
-          acc[tool.key] = existingToolMap[tool.key];
-        } else {
-          // otherwise, use the template's tool variable
-          acc[tool.key] = tool.value;
-        }
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
+    requestBody.tool_exec_environment_variables =
+      agentTemplateData.tool_exec_environment_variables?.reduce(
+        (acc, tool) => {
+          // if existing agent has the tool variable, keep it
+          if (
+            typeof tool.key === 'string' &&
+            existingToolMap[tool.key] !== undefined
+          ) {
+            acc[tool.key] = existingToolMap[tool.key];
+          } else {
+            // otherwise, use the template's tool variable
+            acc[tool.key] = tool.value;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
   }
 
   if (!preserveCoreMemories) {
@@ -138,23 +143,47 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     if (memory_blocks) {
       const existingMemoryBlocks = existingAgent.memory.blocks;
 
-      const memoryBlocksToDelete = existingMemoryBlocks.filter((block) => {
-        return !memory_blocks.some(
-          (newBlock) => newBlock.label === block.label,
-        );
-      }, []);
-
-      const memoryBlocksToAdd = memory_blocks.filter((block) => {
-        return !existingMemoryBlocks.some(
-          (existingBlock) => existingBlock.label === block.label,
-        );
+      // Create maps with label as key for efficient lookups
+      const existingBlockMap = new Map();
+      existingMemoryBlocks.forEach((block) => {
+        if (block.label) {
+          existingBlockMap.set(block.label, block);
+        }
       });
 
-      const memoryBlocksToUpdate = memory_blocks.filter((block) => {
-        return existingMemoryBlocks.some(
-          (existingBlock) => existingBlock.label === block.label,
-        );
-      }, []);
+      const newBlockMap = new Map();
+      memory_blocks.forEach((block) => {
+        if (block.label) {
+          newBlockMap.set(block.label, block);
+        }
+      });
+
+      // Create a set of all unique labels from both maps
+      const allLabels = new Set<string>([
+        ...existingBlockMap.keys(),
+        ...newBlockMap.keys(),
+      ]);
+
+      const memoryBlocksToDelete: typeof existingMemoryBlocks = [];
+      const memoryBlocksToAdd: typeof memory_blocks = [];
+      const memoryBlocksToUpdate: typeof memory_blocks = [];
+
+      // Process all unique labels
+      for (const label of allLabels) {
+        const existingBlock = existingBlockMap.get(label);
+        const newBlock = newBlockMap.get(label);
+
+        if (existingBlock && newBlock) {
+          // Block exists in both - it's an update
+          memoryBlocksToUpdate.push(newBlock);
+        } else if (newBlock) {
+          // Block only exists in new template - it's an add
+          memoryBlocksToAdd.push(newBlock);
+        } else if (existingBlock) {
+          // Block only exists in existing agent - it's a delete
+          memoryBlocksToDelete.push(existingBlock);
+        }
+      }
 
       await Promise.all([
         ...memoryBlocksToDelete.map(async (block) => {
@@ -165,10 +194,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          ).catch(res => {
+          ).catch((res) => {
             if (isAPIError(res)) {
-              console.error('API Error deleting agent from template:', res.status);
-              console.error('API Error deleting agent from template:', res.body);
+              console.error(
+                'API Error deleting agent from template:',
+                res.status,
+              );
+              console.error(
+                'API Error deleting agent from template:',
+                res.body,
+              );
             }
             throw res;
           });
@@ -189,10 +224,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          ).catch(res => {
+          ).catch((res) => {
             if (isAPIError(res)) {
-              console.error('API Error creating block from template:', res.status);
-              console.error('API Error creating block from template:', res.body);
+              console.error(
+                'API Error creating block from template:',
+                res.status,
+              );
+              console.error(
+                'API Error creating block from template:',
+                res.body,
+              );
             }
             throw res;
           });
@@ -209,10 +250,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          ).catch(res => {
+          ).catch((res) => {
             if (isAPIError(res)) {
-              console.error('API Error attaching block from template:', res.status);
-              console.error('API Error attaching block from template:', res.body);
+              console.error(
+                'API Error attaching block from template:',
+                res.status,
+              );
+              console.error(
+                'API Error attaching block from template:',
+                res.body,
+              );
             }
             throw res;
           });
@@ -234,10 +281,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
               {
                 user_id: lettaAgentsUserId,
               },
-            ).catch(res => {
+            ).catch((res) => {
               if (isAPIError(res)) {
-                console.error('API Error modifying block from template:', res.status);
-                console.error('API Error modifying block from template:', res.body);
+                console.error(
+                  'API Error modifying block from template:',
+                  res.status,
+                );
+                console.error(
+                  'API Error modifying block from template:',
+                  res.body,
+                );
               }
               throw res;
             });
@@ -258,10 +311,16 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
             {
               user_id: lettaAgentsUserId,
             },
-          ).catch(res => {
+          ).catch((res) => {
             if (isAPIError(res)) {
-              console.error('API Error modifying block from template:', res.status);
-              console.error('API Error modifying block from template:', res.body);
+              console.error(
+                'API Error modifying block from template:',
+                res.status,
+              );
+              console.error(
+                'API Error modifying block from template:',
+                res.body,
+              );
             }
             throw res;
           });
@@ -304,7 +363,7 @@ export async function updateAgentFromAgentId(options: UpdateAgentFromAgentId) {
     {
       user_id: lettaAgentsUserId,
     },
-  ).catch(res => {
+  ).catch((res) => {
     if (isAPIError(res)) {
       console.error('API Error updating agent from template:', res.status);
       console.error('API Error updating agent from template:', res.body);
