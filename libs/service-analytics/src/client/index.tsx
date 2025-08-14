@@ -10,6 +10,14 @@ import { ErrorBoundary } from 'react-error-boundary';
 import mixpanel from 'mixpanel-browser';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
+declare global {
+  interface Window {
+    identity?: {
+      userId: string;
+    };
+  }
+}
+
 function getPlatformType() {
   if (CURRENT_RUNTIME === 'letta-desktop') {
     return 'letta-desktop';
@@ -130,7 +138,9 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
         return;
       }
 
-      posthogClient.identify(userId, { name: name, email: email });
+      window.identity = { userId };
+
+      posthogClient.identify(userId, { name: name, email: email }); // posthog distinct id is the user id
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
     }
@@ -145,8 +155,8 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
 ) {
   try {
     posthog.capture(eventName, {
-      distinct_id: 'userId' in properties ? properties.userId : '',
       platformType: getPlatformType(),
+      distinctId: window.identity?.userId,
       ...properties,
     });
   } catch (error) {
