@@ -136,6 +136,8 @@ navigation:
               path: pages/agents/multiagent_custom.mdx
             - page: Multi-Agent Shared Memory
               path: pages/agents/multiagent_memory.mdx
+            - page: Groups
+              path: pages/agents/groups.mdx
           - page: Multi-User (Identities)
             path: pages/agents/multiuser.mdx
           - page: Agent File (.af)
