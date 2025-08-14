@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional, Tuple
 
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
