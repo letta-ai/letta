@@ -159,7 +159,7 @@ export async function middleware(request: NextRequest) {
   const headers = new Headers(request.headers);
 
   headers.set(CURRENT_PATH_HEADER, request.nextUrl.pathname);
-  return NextResponse.next({ headers });
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
