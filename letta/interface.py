@@ -1,4 +1,4 @@
-import re
+import re, ast 
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -196,7 +196,7 @@ class CLIInterface(AgentInterface):
                         elif function_name == "archival_memory_search":
                             print_function_message("🧠", f"searching memory with {function_name}")
                         try:
-                            msg_dict = eval(function_args)
+                            msg_dict = ast.literal_eval(function_args)
                             if function_name == "archival_memory_search":
                                 output = f'\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
                                 if STRIP_UI:
@@ -222,7 +222,7 @@ class CLIInterface(AgentInterface):
                     elif function_name in ["conversation_search", "conversation_search_date"]:
                         print_function_message("🧠", f"searching memory with {function_name}")
                         try:
-                            msg_dict = eval(function_args)
+                            msg_dict = ast.literal_eval(function_args)
                             output = f'\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
                             if STRIP_UI:
                                 print(output)
