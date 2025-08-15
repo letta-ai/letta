@@ -98,8 +98,6 @@ configure-kubectl cluster-name="letta":
             --set env.GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
             --set env.GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI}" \
             --set env.LETTA_AGENTS_ENDPOINT="${LETTA_AGENTS_ENDPOINT}" \
-            --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
-            --set env.NEXT_PUBLIC_MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
             --set env.POSTHOG_KEY="${POSTHOG_KEY}" \
@@ -405,7 +403,6 @@ deploy-cloud-api: push-cloud-api
             --set env.CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
             --set env.CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
             --set env.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
-            --set env.MIXPANEL_TOKEN="${MIXPANEL_TOKEN}" \
             --set env.NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}" \
             --set env.NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}" \
             --set env.POSTHOG_KEY="${POSTHOG_KEY}" \

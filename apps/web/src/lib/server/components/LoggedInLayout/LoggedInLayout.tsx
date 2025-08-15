@@ -17,7 +17,6 @@ import { WelcomeOverlayWrapper } from './WelcomeOverlayWrapper/WelcomeOverlayWra
 import { router } from '$web/web-api/router';
 import { OnboardingProvider } from '$web/client/hooks/useOnboarding';
 import { VerifyAccountLoginWrapper } from '$web/server/components/LoggedInLayout/VerifyAccountLoginWrapper/VerifyAccountLoginWrapper';
-import { IdentifyUserForMixpanel } from '@letta-cloud/service-analytics/client';
 
 interface InAppProps {
   children: ReactNode;
@@ -78,7 +77,6 @@ export async function LoggedInLayout(props: InAppProps) {
 
   return (
     <GlobalSessionSettingsProvider>
-      <IdentifyUserForMixpanel userId={user.id} />
       <IdentifyUserForPostHog
         userId={user.id}
         name={user.name}
