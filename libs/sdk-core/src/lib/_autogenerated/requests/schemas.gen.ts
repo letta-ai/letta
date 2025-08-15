@@ -2028,11 +2028,6 @@ export const $Body_upload_file_to_source = {
 
 export const $CancelAgentRunRequest = {
   properties: {
-    agent_id: {
-      type: 'string',
-      title: 'Agent Id',
-      description: 'ID of the agent to cancel runs for',
-    },
     run_ids: {
       anyOf: [
         {
@@ -2050,7 +2045,6 @@ export const $CancelAgentRunRequest = {
     },
   },
   type: 'object',
-  required: ['agent_id'],
   title: 'CancelAgentRunRequest',
 } as const;
 

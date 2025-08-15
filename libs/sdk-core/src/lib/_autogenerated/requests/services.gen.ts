@@ -2806,8 +2806,9 @@ export class AgentsService {
    *
    * Note to cancel active runs associated with an agent, redis is required.
    * @param data The data for the request.
-   * @param data.requestBody
+   * @param data.agentId
    * @param data.userId
+   * @param data.requestBody
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2818,6 +2819,9 @@ export class AgentsService {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/{agent_id}/messages/cancel',
+      path: {
+        agent_id: data.agentId,
+      },
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

@@ -1276,13 +1276,13 @@ async def send_message_streaming(
 
 
 class CancelAgentRunRequest(BaseModel):
-    agent_id: str = Field(..., description="ID of the agent to cancel runs for")
     run_ids: list[str] | None = Field(None, description="Optional list of run IDs to cancel")
 
 
 @router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
 async def cancel_agent_run(
-    request: CancelAgentRunRequest = Body(...),
+    agent_id: str,
+    request: CancelAgentRunRequest = Body(None),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
 ) -> dict:
@@ -1294,7 +1294,7 @@ async def cancel_agent_run(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
-    run_ids = request.run_ids
+    run_ids = request.run_ids if request else None
     if not run_ids:
         redis_client = await get_redis_client()
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")

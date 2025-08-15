@@ -4804,9 +4804,18 @@
         "summary": "Cancel Agent Run",
         "description": "Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.\n\nNote to cancel active runs associated with an agent, redis is required.",
         "operationId": "cancel_agent_run",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -12172,11 +12181,6 @@
       },
       "CancelAgentRunRequest": {
         "properties": {
-          "agent_id": {
-            "type": "string",
-            "title": "Agent Id",
-            "description": "ID of the agent to cancel runs for"
-          },
           "run_ids": {
             "anyOf": [
               {
@@ -12194,7 +12198,6 @@
           }
         },
         "type": "object",
-        "required": ["agent_id"],
         "title": "CancelAgentRunRequest"
       },
       "ChatCompletionAssistantMessageParam": {

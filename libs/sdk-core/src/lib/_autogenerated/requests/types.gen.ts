@@ -736,10 +736,6 @@ export type Body_upload_file_to_source = {
 
 export type CancelAgentRunRequest = {
   /**
-   * ID of the agent to cancel runs for
-   */
-  agent_id: string;
-  /**
    * Optional list of run IDs to cancel
    */
   run_ids?: Array<string> | null;
@@ -6627,7 +6623,8 @@ export type CreateAgentMessageStreamData = {
 export type CreateAgentMessageStreamResponse = unknown;
 
 export type CancelAgentRunData = {
-  requestBody: CancelAgentRunRequest;
+  agentId: string;
+  requestBody?: CancelAgentRunRequest;
   userId?: string | null;
 };
 

@@ -4264,8 +4264,9 @@ export const useAgentsServiceCreateAgentMessageStream = <
  *
  * Note to cancel active runs associated with an agent, redis is required.
  * @param data The data for the request.
- * @param data.requestBody
+ * @param data.agentId
  * @param data.userId
+ * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4279,7 +4280,8 @@ export const useAgentsServiceCancelAgentRun = <
       TData,
       TError,
       {
-        requestBody: CancelAgentRunRequest;
+        agentId: string;
+        requestBody?: CancelAgentRunRequest;
         userId?: string;
       },
       TContext
@@ -4291,13 +4293,15 @@ export const useAgentsServiceCancelAgentRun = <
     TData,
     TError,
     {
-      requestBody: CancelAgentRunRequest;
+      agentId: string;
+      requestBody?: CancelAgentRunRequest;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.cancelAgentRun({
+        agentId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
