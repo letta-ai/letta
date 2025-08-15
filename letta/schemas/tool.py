@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from letta.constants import (
     COMPOSIO_TOOL_TAG_NAME,
@@ -237,10 +237,10 @@ class ToolUpdate(LettaBase):
     return_char_limit: Optional[int] = Field(None, description="The maximum number of characters in the response.")
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+    metadata_: Optional[Dict[str, Any]] = Field(None, description="A dictionary of additional metadata for the tool.")
 
-    class Config:
-        extra = "ignore"  # Allows extra fields without validation errors
-        # TODO: Remove this, and clean usage of ToolUpdate everywhere else
+    model_config = ConfigDict(extra="ignore")  # Allows extra fields without validation errors
+    # TODO: Remove this, and clean usage of ToolUpdate everywhere else
 
 
 class ToolRunFromSource(LettaBase):

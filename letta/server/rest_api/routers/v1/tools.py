@@ -774,7 +774,8 @@ async def connect_mcp_server(
 
 
 class CodeInput(BaseModel):
-    code: str = Field(..., description="Python source code to parse for JSON schema")
+    code: str = Field(..., description="Source code to parse for JSON schema")
+    source_type: Optional[str] = Field("python", description="The source type of the code (python or typescript)")
 
 
 @router.post("/generate-schema", response_model=Dict[str, Any], operation_id="generate_json_schema")
@@ -784,10 +785,17 @@ async def generate_json_schema(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Generate a JSON schema from the given Python source code defining a function or class.
+    Generate a JSON schema from the given source code defining a function or class.
+    Supports both Python and TypeScript source code.
     """
     try:
-        schema = derive_openai_json_schema(source_code=request.code)
+        if request.source_type == "typescript":
+            from letta.functions.typescript_parser import derive_typescript_json_schema
+
+            schema = derive_typescript_json_schema(source_code=request.code)
+        else:
+            # Default to Python for backwards compatibility
+            schema = derive_openai_json_schema(source_code=request.code)
         return schema
 
     except Exception as e:
