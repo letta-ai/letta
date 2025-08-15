@@ -10,6 +10,7 @@ import {
   LoadingEmptyStatusComponent,
   Spinner,
   TextArea,
+  Typography,
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -54,22 +55,30 @@ function NotPublishedView({ agentId }: { agentId: string }) {
     accessLevel: AgentFileAccessLevels,
     name: z
       .string()
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message: t('validation.nameRegex'),
-      })
       .min(1, {
         message: t('validation.nameRequired'),
       })
+      .regex(/^[a-zA-Z0-9_-]+$/, {
+        message: t('validation.nameRegex'),
+      })
       .max(25, {
         message: t('validation.nameMaxLength'),
+      }),
+    summary: z
+      .string()
+      .min(1, {
+        message: t('validation.summaryRequired'),
+      })
+      .max(200, {
+        message: t('validation.summaryMaxLength'),
       }),
     description: z
       .string()
       .min(1, {
         message: t('validation.descriptionRequired'),
       })
-      .max(200, {
-        message: t('validation.descriptionMaxLength'),
+      .max(50000, {
+        message: t('validation.descriptionTooLong'),
       }),
   });
 
@@ -83,10 +92,13 @@ function NotPublishedView({ agentId }: { agentId: string }) {
 
   const form = useForm<CreateAgentFileMetadataType>({
     resolver: zodResolver(CreateAgentFileMetadataSchema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       accessLevel: 'organization',
       name: transformNameToAlphaNumeric(name) || 'default',
       description: description || '',
+      summary: '',
     },
   });
 
@@ -176,16 +188,56 @@ function NotPublishedView({ agentId }: { agentId: string }) {
             />
 
             <FormField
-              name="description"
+              name="summary"
               render={({ field }) => (
                 <TextArea
                   autosize
                   minRows={2}
-                  maxRows={3}
+                  maxRows={2}
+                  label={t('summary.label')}
+                  placeholder={t('summary.placeholder')}
+                  description={t('summary.description')}
+                  fullWidth
+                  rightOfLabelContent={
+                    <Typography
+                      variant="body4"
+                      color={
+                        field.value?.length >= 200 ? 'destructive' : 'muted'
+                      }
+                    >
+                      {field.value?.length || 0}/200
+                    </Typography>
+                  }
+                  {...field}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 200) {
+                      field.onChange(e);
+                    }
+                  }}
+                  maxLength={200}
+                />
+              )}
+            />
+
+            <FormField
+              name="description"
+              render={({ field, fieldState }) => (
+                <TextArea
+                  autosize
+                  minRows={5}
+                  maxRows={10}
                   label={t('description.label')}
                   placeholder={t('description.placeholder')}
                   description={t('description.description')}
                   fullWidth
+                  rightOfLabelContent={
+                    fieldState.error && (
+                      <Typography variant="body4" color="destructive">
+                        {fieldState.error.message}
+                      </Typography>
+                    )
+                  }
                   {...field}
                 />
               )}

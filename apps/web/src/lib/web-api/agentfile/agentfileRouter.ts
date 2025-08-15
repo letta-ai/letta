@@ -92,10 +92,10 @@ export async function getAgentfile(
     body: Object.assign({}, exportedAgentfile, {
       name: permissions.name || '',
       description: permissions.description || '',
+      summary: permissions.summary || '',
     }),
   };
 }
-
 
 type UpdateAgentfileAccessLevelRequest = ServerInferRequest<
   typeof contracts.agentfile.updateAgentfileAccessLevel
@@ -173,6 +173,7 @@ export async function getAgentfileMetadata(
     body: {
       name: permissions.name || '',
       description: permissions.description || '',
+      summary: permissions.summary || '',
       accessLevel: permissions?.accessLevel || 'none',
       agentId,
     },
@@ -191,7 +192,7 @@ export async function createAgentfileMetadata(
   request: CreateAgentfileMetadataRequest,
 ): Promise<CreateAgentfileMetadataResponse> {
   const { agentId } = request.params;
-  const { accessLevel, name, description } = request.body;
+  const { accessLevel, name, description, summary } = request.body;
 
   const user = await getUser();
   if (!user) {
@@ -218,11 +219,13 @@ export async function createAgentfileMetadata(
       accessLevel,
       name: name || '',
       description: description || '',
+      summary: summary || '',
     })
     .returning({
       accessLevel: agentfilePermissions.accessLevel,
       name: agentfilePermissions.name,
       description: agentfilePermissions.description,
+      summary: agentfilePermissions.summary,
       organizationId: agentfilePermissions.organizationId,
     });
 
@@ -237,6 +240,7 @@ export async function createAgentfileMetadata(
     body: {
       name: createdPermissions.name || '',
       description: createdPermissions.description || '',
+      summary: createdPermissions.summary || '',
       agentId,
       accessLevel: createdPermissions.accessLevel,
     },
@@ -402,6 +406,7 @@ export async function getAgentfileDetails(
       },
       system: system || '',
       description: permissions.description || '',
+      summary: permissions.summary || '',
       name: permissions.name || '',
       author: organization?.name || '',
       toolRules: tool_rules || [], // Assuming tool_rules is an array of objects
@@ -461,6 +466,7 @@ export async function listAgentfiles(
         agentId: agent.agentId,
         name: agent.name,
         description: agent.description,
+        summary: agent.summary,
         author: agent.organization?.name || 'Unknown',
         downloadCount: agent.agentfileStats?.totalDownloads || 0,
       };

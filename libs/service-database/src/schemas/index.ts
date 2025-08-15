@@ -1349,6 +1349,7 @@ export const agentfilePermissions = pgTable('agentfile_permissions', {
   agentId: text('agent_id').notNull().primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  summary: text('summary').notNull(),
   accessLevel: agentfilePermissionsEnum('agentfile_access_level').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')

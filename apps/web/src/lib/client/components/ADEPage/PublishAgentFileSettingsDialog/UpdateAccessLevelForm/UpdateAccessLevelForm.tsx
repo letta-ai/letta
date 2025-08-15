@@ -11,6 +11,7 @@ import {
   toast,
   useForm,
   VStack,
+  Typography,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import {
@@ -40,11 +41,11 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
     accessLevel: AgentFileAccessLevels,
     name: z
       .string()
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message: t('validation.nameRegex'),
-      })
       .min(1, {
         message: t('validation.nameRequired'),
+      })
+      .regex(/^[a-zA-Z0-9_-]+$/, {
+        message: t('validation.nameRegex'),
       })
       .max(25, {
         message: t('validation.nameMaxLength'),
@@ -54,8 +55,16 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
       .min(1, {
         message: t('validation.descriptionRequired'),
       })
+      .max(50000, {
+        message: t('validation.descriptionTooLong'),
+      }),
+    summary: z
+      .string()
+      .min(1, {
+        message: t('validation.summaryRequired'),
+      })
       .max(200, {
-        message: t('validation.descriptionMaxLength'),
+        message: t('validation.summaryMaxLength'),
       }),
   });
 
@@ -63,10 +72,13 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
 
   const form = useForm<UpdateAccessLevelType>({
     resolver: zodResolver(UpdateAccessLevelSchema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       accessLevel: metadata.accessLevel,
       name: metadata.name,
       description: metadata.description,
+      summary: metadata.summary,
     },
   });
 
@@ -134,12 +146,43 @@ export function UpdateAccessLevelForm(props: UpdateAccessLevelFormProps) {
           />
 
           <FormField
-            name="description"
+            name="summary"
             render={({ field }) => (
               <TextArea
                 autosize
                 minRows={2}
-                maxRows={3}
+                maxRows={2}
+                label={t('summary.label')}
+                placeholder={t('summary.placeholder')}
+                description={t('summary.description')}
+                fullWidth
+                rightOfLabelContent={
+                  <Typography
+                    variant="body4"
+                    color={field.value?.length >= 200 ? 'destructive' : 'muted'}
+                  >
+                    {field.value?.length || 0}/200
+                  </Typography>
+                }
+                {...field}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 200) {
+                    field.onChange(e);
+                  }
+                }}
+                maxLength={200}
+              />
+            )}
+          />
+
+          <FormField
+            name="description"
+            render={({ field }) => (
+              <TextArea
+                autosize
+                minRows={5}
+                maxRows={10}
                 label={t('description.label')}
                 placeholder={t('description.placeholder')}
                 description={t('description.description')}

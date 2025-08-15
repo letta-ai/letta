@@ -2508,12 +2508,19 @@
         "nameRequired": "Please enter a name for your agent file.",
         "nameMaxLength": "Names must be less than 25 characters.",
         "descriptionRequired": "Please enter a description for your agent file.",
-        "descriptionMaxLength": "Descriptions must be less than 200 characters."
+        "descriptionTooLong": "Please shorten your description",
+        "summaryRequired": "Please enter a summary for your agent file.",
+        "summaryMaxLength": "Summaries must be less than 200 characters."
       },
       "description": {
         "label": "Public description",
         "placeholder": "A short description of your agent file, this will be displayed when your agent file is published.",
-        "description": "This is the description that will be displayed when your agent file is published. It should be a short summary of what your agent file does and how it can be used."
+        "description": "This is the description that will be displayed when your agent file is published."
+      },
+      "summary": {
+        "label": "Public summary",
+        "placeholder": "Brief summary of your agent...",
+        "description": "A short summary of your agentfile that will be displayed when your agent file is published."
       },
       "name": {
         "label": "Public name",
@@ -2550,12 +2557,19 @@
       "nameRequired": "Please enter a name for your agent file.",
       "nameMaxLength": "Names must be less than 25 characters.",
       "descriptionRequired": "Please enter a description for your agent file.",
-      "descriptionMaxLength": "Descriptions must be less than 200 characters."
+      "descriptionTooLong": "Please shorten your description",
+      "summaryRequired": "Please enter a summary for your agent file.",
+      "summaryMaxLength": "Summaries must be less than 200 characters."
     },
     "description": {
       "label": "Display description",
       "placeholder": "A short description of your agent file, this will be displayed when your agent file is published.",
-      "description": "This is the description that will be displayed when your agent file is published. It should be a short summary of what your agent file does and how it can be used."
+      "description": "This is the description that will be displayed when your agent file is published."
+    },
+    "summary": {
+      "label": "Display summary",
+      "placeholder": "Brief summary of your agent...",
+      "description": "A short summary of your agentfile that will be displayed when your agent file is published."
     },
     "name": {
       "label": "Display name",

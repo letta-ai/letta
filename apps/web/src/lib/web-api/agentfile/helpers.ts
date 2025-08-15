@@ -69,6 +69,7 @@ export async function getAgentfilePermissions(agentId: string) {
       organizationId: true,
       name: true,
       description: true,
+      summary: true,
     },
   });
 

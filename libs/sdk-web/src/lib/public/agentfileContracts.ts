@@ -10,6 +10,7 @@ const GetAgentFileMetadataSchema = z.object({
   agentId: z.string(),
   name: z.string(),
   description: z.string(),
+  summary: z.string(),
 });
 
 export type GetAgentFileMetadataType = z.infer<
@@ -35,7 +36,8 @@ const UpdateAgentfileAccessLevelRequestBodySchema = z.object({
     })
     .min(1)
     .max(25),
-  description: z.string().max(200).min(1).optional(),
+  description: z.string().max(50000).min(1).optional(),
+  summary: z.string().max(200).min(1).optional(),
   accessLevel: AgentFileAccessLevels,
 });
 
@@ -111,6 +113,7 @@ const updateAgentfileAccessLevelContract = c.mutation({
 const GetAgentFileDetailsSchema = z.object({
   name: z.string(),
   description: z.string(),
+  summary: z.string(),
   author: z.string(),
   downloadCount: z.number(),
   publishedAt: z.string(),
@@ -163,6 +166,7 @@ const GetAgentfilePartialDetailsSchema = z.object({
   agentId: z.string(),
   author: z.string(),
   description: z.string(),
+  summary: z.string(),
   downloadCount: z.number(),
 });
 
