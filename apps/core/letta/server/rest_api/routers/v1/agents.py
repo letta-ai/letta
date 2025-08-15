@@ -25,6 +25,7 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
+from letta.schemas.enums import JobType
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
@@ -1274,10 +1275,14 @@ async def send_message_streaming(
             )
 
 
+class CancelAgentRunRequest(BaseModel):
+    agent_id: str = Field(..., description="ID of the agent to cancel runs for")
+    run_ids: list[str] | None = Field(None, description="Optional list of run IDs to cancel")
+
+
 @router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
 async def cancel_agent_run(
-    agent_id: str,
-    run_ids: list[str] | None = None,
+    request: CancelAgentRunRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
 ) -> dict:
@@ -1286,17 +1291,24 @@ async def cancel_agent_run(
 
     Note to cancel active runs associated with an agent, redis is required.
     """
-
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
+    run_ids = request.run_ids
     if not run_ids:
         redis_client = await get_redis_client()
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
         if run_id is None:
-            logger.warning("Cannot find run associated with agent to cancel.")
-            return {}
-        run_ids = [run_id]
+            logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
+            job_ids = await server.job_manager.list_jobs_async(
+                actor=actor,
+                statuses=[JobStatus.created, JobStatus.running],
+                job_type=JobType.RUN,
+                ascending=False,
+            )
+            run_ids = [Run.from_job(job).id for job in job_ids]
+        else:
+            run_ids = [run_id]
 
     results = {}
     for run_id in run_ids:

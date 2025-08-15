@@ -2943,6 +2943,19 @@ export const Body_upload_file_to_source = z.object({
   file: z.string(),
 });
 
+export type CancelAgentRunRequest = z.infer<typeof CancelAgentRunRequest>;
+export const CancelAgentRunRequest = z.object({
+  agent_id: z.string(),
+  run_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type ChatCompletionContentPartTextParam = z.infer<
   typeof ChatCompletionContentPartTextParam
 >;
@@ -9415,19 +9428,12 @@ export const post_Cancel_agent_run = {
   path: z.literal('/v1/agents/{agent_id}/messages/cancel'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    path: z.object({
-      agent_id: z.string(),
-    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: z.union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-    ]),
+    body: CancelAgentRunRequest,
   }),
   response: z.unknown(),
 };

@@ -39,6 +39,7 @@ import {
   Body_import_agent_serialized,
   Body_upload_file_to_folder,
   Body_upload_file_to_source,
+  CancelAgentRunRequest,
   CodeInput,
   CreateAgentRequest,
   CreateArchivalMemory,
@@ -4263,9 +4264,8 @@ export const useAgentsServiceCreateAgentMessageStream = <
  *
  * Note to cancel active runs associated with an agent, redis is required.
  * @param data The data for the request.
- * @param data.agentId
- * @param data.userId
  * @param data.requestBody
+ * @param data.userId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4279,8 +4279,7 @@ export const useAgentsServiceCancelAgentRun = <
       TData,
       TError,
       {
-        agentId: string;
-        requestBody?: string[];
+        requestBody: CancelAgentRunRequest;
         userId?: string;
       },
       TContext
@@ -4292,15 +4291,13 @@ export const useAgentsServiceCancelAgentRun = <
     TData,
     TError,
     {
-      agentId: string;
-      requestBody?: string[];
+      requestBody: CancelAgentRunRequest;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ requestBody, userId }) =>
       AgentsService.cancelAgentRun({
-        agentId,
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

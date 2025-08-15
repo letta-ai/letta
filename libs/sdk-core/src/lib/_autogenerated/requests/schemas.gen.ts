@@ -2026,6 +2026,34 @@ export const $Body_upload_file_to_source = {
   title: 'Body_upload_file_to_source',
 } as const;
 
+export const $CancelAgentRunRequest = {
+  properties: {
+    agent_id: {
+      type: 'string',
+      title: 'Agent Id',
+      description: 'ID of the agent to cancel runs for',
+    },
+    run_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Ids',
+      description: 'Optional list of run IDs to cancel',
+    },
+  },
+  type: 'object',
+  required: ['agent_id'],
+  title: 'CancelAgentRunRequest',
+} as const;
+
 export const $ChatCompletionAssistantMessageParam = {
   properties: {
     role: {

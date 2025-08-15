@@ -4804,33 +4804,13 @@
         "summary": "Cancel Agent Run",
         "description": "Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.\n\nNote to cancel active runs associated with an agent, redis is required.",
         "operationId": "cancel_agent_run",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Run Ids"
+                "$ref": "#/components/schemas/CancelAgentRunRequest"
               }
             }
           }
@@ -12189,6 +12169,33 @@
         "type": "object",
         "required": ["file"],
         "title": "Body_upload_file_to_source"
+      },
+      "CancelAgentRunRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "ID of the agent to cancel runs for"
+          },
+          "run_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Ids",
+            "description": "Optional list of run IDs to cancel"
+          }
+        },
+        "type": "object",
+        "required": ["agent_id"],
+        "title": "CancelAgentRunRequest"
       },
       "ChatCompletionAssistantMessageParam": {
         "properties": {
