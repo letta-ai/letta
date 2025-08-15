@@ -4,6 +4,12 @@ on:
   issue_comment:
     types: [created]
 
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'ref to run the workflow on'
+        required: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -17,7 +23,7 @@ jobs:
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '/lint') &&
       startsWith(github.event.comment.body, '/lint')
-    
+
     steps:
     - name: Add acknowledgment reaction
       uses: peter-evans/create-or-update-comment@v4
@@ -34,7 +40,7 @@ jobs:
             repo: context.repo.repo,
             username: context.actor
           });
-          
+
           if (!['admin', 'write'].includes(collaborator.permission)) {
             github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -55,7 +61,7 @@ jobs:
             repo: context.repo.repo,
             pull_number: context.issue.number
           });
-          
+
           core.setOutput('branch', pr.head.ref);
           core.setOutput('repo', pr.head.repo.full_name);
           core.setOutput('sha', pr.head.sha);
@@ -70,19 +76,22 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
-        enable-cache: true
+        enable-cache: false
 
     - name: Set up Python
       run: uv python install 3.12
 
     - name: Install dependencies
-      run: uv sync --extra dev --extra postgres --extra external-tools --extra tests
+      run: uv install poetry && poetry lock --all-extras # uv sync --extra dev --extra postgres --extra external-tools --extra tests
 
-    - name: Run ruff check with fixes
-      run: uv run ruff check --fix .
+#    - name: Run ruff check with fixes
+#      run: uv run ruff check --fix .
+#
+#    - name: Run ruff format
+#      run: uv run ruff format .
 
-    - name: Run ruff format
-      run: uv run ruff format .
+    - name: Run
+      run: poetry run isort . --profile black && poetry run black . && poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
 
     - name: Check for changes
       id: changes
@@ -111,7 +120,7 @@ jobs:
         issue-number: ${{ github.event.issue.number }}
         body: |
           ✅ **Lint fixes applied successfully!**
-          
+
           Ruff has automatically fixed linting issues and formatted the code.
           Changes have been committed to the PR branch.
 
@@ -122,7 +131,7 @@ jobs:
         issue-number: ${{ github.event.issue.number }}
         body: |
           ✅ **No lint issues found!**
-          
+
           The code is already properly formatted and passes all linting checks.
 
     - name: Comment on failure
@@ -132,5 +141,5 @@ jobs:
         issue-number: ${{ github.event.issue.number }}
         body: |
           ❌ **Lint command failed!**
-          
+
           There was an error while running the lint fixes. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
