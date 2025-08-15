@@ -389,6 +389,8 @@ jobs:
             export VLLM_BASE_URL="http://localhost:8000"
           fi
 
+          poetry run pip install pytest-github-actions-annotate-failures
+
           # Handle different matrix variable names and test commands based on test type
           if [[ "${{ inputs.test-type }}" == "integration" ]]; then
             poetry run pip install letta
