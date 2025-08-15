@@ -9,6 +9,8 @@ import { getTimeConfig, computeStartEndDates } from './timeConfig';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
+const DEFAULT_TIME_RANGE: TimeRange = '1d';
+
 interface ObservabilityContextType {
   startDate: string;
   endDate: string;
@@ -26,8 +28,8 @@ interface ObservabilityContextType {
 const ObservabilityContext = createContext<ObservabilityContextType>({
   startDate: new Date().toISOString(),
   endDate: new Date().toISOString(),
-  timeRange: '30d',
-  granularity: getTimeConfig('30d'),
+  timeRange: DEFAULT_TIME_RANGE,
+  granularity: getTimeConfig(DEFAULT_TIME_RANGE),
   noTemplateFilter: false,
   chartType: 'all',
   setTimeRange: () => {
@@ -65,7 +67,7 @@ export function ObservabilityProvider({
 }: ObservabilityProviderProps) {
   const [timeRange, setTimeRangeState] = useSessionStorage<TimeRange>({
     key: 'observability-time-range',
-    defaultValue: '30d',
+    defaultValue: DEFAULT_TIME_RANGE,
   });
 
   // Compute dates based on time range
