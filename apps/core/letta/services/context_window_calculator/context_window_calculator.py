@@ -21,7 +21,26 @@ class ContextWindowCalculator:
 
     @staticmethod
     def extract_system_components(system_message: str) -> Tuple[str, str, str]:
-        """Extract system prompt, core memory, and external memory summary from system message"""
+        """
+        Extract structured components from a formatted system message.
+
+        Parses the system message to extract three distinct sections marked by XML-style tags:
+        - base_instructions: The core system prompt and agent instructions
+        - memory_blocks: The agent's core memory (persistent context)
+        - memory_metadata: Metadata about external memory systems
+
+        Args:
+            system_message: A formatted system message containing XML-style section markers
+
+        Returns:
+            A tuple of (system_prompt, core_memory, external_memory_summary)
+            Each component will be an empty string if its section is not found
+
+        Note:
+            This method assumes a specific format with sections delimited by:
+            <base_instructions>, <memory_blocks>, and <memory_metadata> tags.
+            The extraction is position-based and expects sections in this order.
+        """
         base_start = system_message.find("<base_instructions>")
         memory_blocks_start = system_message.find("<memory_blocks>")
         metadata_start = system_message.find("<memory_metadata>")
@@ -43,7 +62,26 @@ class ContextWindowCalculator:
 
     @staticmethod
     def extract_summary_memory(messages: List[Any]) -> Tuple[Optional[str], int]:
-        """Extract summary memory if present and return starting index for real messages"""
+        """
+        Extract summary memory from the message list if present.
+
+        Summary memory is a special message injected at position 1 (after system message)
+        that contains a condensed summary of previous conversation history. This is used
+        when the full conversation history doesn't fit in the context window.
+
+        Args:
+            messages: List of message objects to search for summary memory
+
+        Returns:
+            A tuple of (summary_text, start_index) where:
+            - summary_text: The extracted summary content, or None if not found
+            - start_index: Index where actual conversation messages begin (1 or 2)
+
+        Detection Logic:
+            Looks for a user message at index 1 containing the phrase
+            "The following is a summary of the previous" which indicates
+            it's a summarized conversation history rather than a real user message.
+        """
         if (
             len(messages) > 1
             and messages[1].role == MessageRole.user

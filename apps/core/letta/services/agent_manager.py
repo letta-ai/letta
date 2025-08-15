@@ -2007,6 +2007,26 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Refresh the file blocks in an agent's memory with current file content.
+
+        This method synchronizes the agent's in-memory file blocks with the actual
+        file content from attached sources. It respects the per-file view window
+        limit to prevent excessive memory usage.
+
+        Args:
+            agent_state: The current agent state containing memory configuration
+            actor: The user performing this action (for permission checking)
+
+        Returns:
+            Updated agent state with refreshed file blocks
+
+        Important:
+            - File blocks are truncated based on per_file_view_window_char_limit
+            - None values are filtered out (files that couldn't be loaded)
+            - This does NOT persist changes to the database, only updates the state object
+            - Call this before agent interactions if files may have changed externally
+        """
         file_blocks = await self.file_agent_manager.list_files_for_agent(
             agent_id=agent_state.id,
             per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
@@ -2056,6 +2076,28 @@ class AgentManager:
     @enforce_types
     @trace_method
     def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
+        """
+        Append a system message to an agent's in-context message history.
+
+        This method is typically used during agent initialization to add system prompts,
+        instructions, or context that should be treated as system-level guidance.
+        Unlike user messages, system messages directly influence the agent's behavior
+        and understanding of its role.
+
+        Args:
+            agent_id: The ID of the agent to append the message to
+            content: The system message content (e.g., instructions, context, role definition)
+            actor: The user performing this action (for permission checking)
+
+        Side Effects:
+            - Creates a new Message object in the database
+            - Updates the agent's in_context_message_ids list
+            - The message becomes part of the agent's permanent context window
+
+        Note:
+            System messages consume tokens in the context window and cannot be
+            removed without rebuilding the agent's message history.
+        """
 
         # get the agent
         agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
@@ -2069,6 +2111,15 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
+        """
+        Async version of append_system_message.
+
+        Append a system message to an agent's in-context message history.
+        See append_system_message for detailed documentation.
+
+        This async version is preferred for high-throughput scenarios or when
+        called within other async operations to avoid blocking the event loop.
+        """
 
         # get the agent
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)

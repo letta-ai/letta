@@ -6,8 +6,8 @@ on:
 
   workflow_dispatch:
     inputs:
-      ref:
-        description: 'ref to run the workflow on'
+      pr_number:
+        description: 'PR number to run lint on'
         required: true
 
 permissions:
@@ -20,18 +20,22 @@ jobs:
     name: Handle /lint command
     runs-on: ubuntu-latest
     if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number) ||
+      (github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '/lint') &&
-      startsWith(github.event.comment.body, '/lint')
+      startsWith(github.event.comment.body, '/lint'))
 
     steps:
     - name: Add acknowledgment reaction
+      if: github.event_name == 'issue_comment'
       uses: peter-evans/create-or-update-comment@v4
       with:
         comment-id: ${{ github.event.comment.id }}
         reactions: eyes
 
     - name: Check permissions
+      if: github.event_name == 'issue_comment'
       uses: actions/github-script@v7
       with:
         script: |
@@ -56,15 +60,20 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
+          const pr_number = context.eventName === 'issue_comment'
+            ? context.issue.number
+            : ${{ github.event.inputs.pr_number || 'null' }};
+
           const { data: pr } = await github.rest.pulls.get({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            pull_number: context.issue.number
+            pull_number: pr_number
           });
 
           core.setOutput('branch', pr.head.ref);
           core.setOutput('repo', pr.head.repo.full_name);
           core.setOutput('sha', pr.head.sha);
+          core.setOutput('number', pr_number);
 
     - name: Checkout PR branch
       uses: actions/checkout@v4
@@ -74,15 +83,17 @@ jobs:
         fetch-depth: 0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v6
       with:
         enable-cache: false
+        activate-environment: true
 
     - name: Set up Python
       run: uv python install 3.12
 
     - name: Install dependencies
-      run: uv install poetry && poetry lock --all-extras # uv sync --extra dev --extra postgres --extra external-tools --extra tests
+      run: uv pip install poetry && poetry install --all-extras # uv sync --extra dev --extra postgres --extra external-tools --extra tests
+      working-directory: ./apps/core
 
 #    - name: Run ruff check with fixes
 #      run: uv run ruff check --fix .
@@ -90,8 +101,10 @@ jobs:
 #    - name: Run ruff format
 #      run: uv run ruff format .
 
-    - name: Run
+    - name: Run isort, black, autoflake
       run: poetry run isort . --profile black && poetry run black . && poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
+      working-directory: ./apps/core
+
 
     - name: Check for changes
       id: changes
@@ -105,10 +118,10 @@ jobs:
     - name: Commit and push changes
       if: steps.changes.outputs.changes == 'true'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "style: auto-fix lint issues with ruff
+        git commit -m "style: lint / fmt
 
         Triggered by /lint command from @${{ github.actor }}"
         git push
@@ -117,18 +130,18 @@ jobs:
       if: steps.changes.outputs.changes == 'true'
       uses: peter-evans/create-or-update-comment@v4
       with:
-        issue-number: ${{ github.event.issue.number }}
+        issue-number: ${{ steps.pr.outputs.number }}
         body: |
           ✅ **Lint fixes applied successfully!**
 
-          Ruff has automatically fixed linting issues and formatted the code.
+          The workflow has automatically fixed linting issues and formatted the code.
           Changes have been committed to the PR branch.
 
     - name: Comment on no changes
       if: steps.changes.outputs.changes == 'false'
       uses: peter-evans/create-or-update-comment@v4
       with:
-        issue-number: ${{ github.event.issue.number }}
+        issue-number: ${{ steps.pr.outputs.number }}
         body: |
           ✅ **No lint issues found!**
 
@@ -138,7 +151,7 @@ jobs:
       if: failure()
       uses: peter-evans/create-or-update-comment@v4
       with:
-        issue-number: ${{ github.event.issue.number }}
+        issue-number: ${{ steps.pr.outputs.number }}
         body: |
           ❌ **Lint command failed!**
 
