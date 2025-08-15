@@ -9,6 +9,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.enums import SandboxType
 from letta.schemas.letta_base import LettaBase, OrmMetadataBase
 from letta.schemas.pip_requirement import PipRequirement
+from letta.services.tool_sandbox.modal_constants import DEFAULT_MODAL_TIMEOUT
 from letta.settings import tool_settings
 
 # Sandbox Config
@@ -80,7 +81,7 @@ class E2BSandboxConfig(BaseModel):
 
 
 class ModalSandboxConfig(BaseModel):
-    timeout: int = Field(5 * 60, description="Time limit for the sandbox (in seconds).")
+    timeout: int = Field(DEFAULT_MODAL_TIMEOUT, description="Time limit for the sandbox (in seconds).")
     pip_requirements: list[str] | None = Field(None, description="A list of pip packages to install in the Modal sandbox")
     npm_requirements: list[str] | None = Field(None, description="A list of npm packages to install in the Modal sandbox")
     language: Literal["python", "typescript"] = "python"

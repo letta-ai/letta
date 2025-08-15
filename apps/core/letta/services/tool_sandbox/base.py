@@ -164,22 +164,14 @@ class AsyncToolSandboxBase(ABC):
         import ast
 
         try:
-            # Parse the source code to AST
             tree = ast.parse(self.tool.source_code)
 
-            # Look for function definitions
             for node in ast.walk(tree):
                 if isinstance(node, ast.AsyncFunctionDef) and node.name == self.tool.name:
                     return True
-                elif isinstance(node, ast.FunctionDef) and node.name == self.tool.name:
-                    return False
-
-            # If we couldn't find the function definition, fall back to string matching
-            return "async def " + self.tool.name in self.tool.source_code
-
-        except SyntaxError:
-            # If source code can't be parsed, fall back to string matching
-            return "async def " + self.tool.name in self.tool.source_code
+            return False
+        except:
+            return False
 
     def use_top_level_await(self) -> bool:
         """
