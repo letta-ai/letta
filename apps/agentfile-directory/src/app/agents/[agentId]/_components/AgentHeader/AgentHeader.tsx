@@ -21,7 +21,7 @@ export function AgentHeader(props: AgentHeaderProps) {
         <div className="z-[1] relative">
           <HStack justify="spaceBetween">
             <VStack>
-              <Typography variant="heading3">{name}.af</Typography>
+              <Typography variant="heading3">{name}</Typography>
               <HStack gap="large" align="center">
                 <Typography color="lighter">{author}</Typography>
                 <DownloadCount downloadCount={downloadCount} />

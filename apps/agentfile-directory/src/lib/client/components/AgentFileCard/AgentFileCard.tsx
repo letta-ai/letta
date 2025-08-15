@@ -25,7 +25,7 @@ export function AgentFileCard(props: AgentFileCardProps) {
         <Image src={Avatar} alt={name} width={40} height={40} />
         <VStack gap={false}>
           <Typography fullWidth overflow="ellipsis" bold>
-            {name}.af
+            {name}
           </Typography>
           <Typography color="lighter" light>
             {author}
