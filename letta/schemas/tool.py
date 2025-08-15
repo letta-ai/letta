@@ -12,6 +12,10 @@ from letta.constants import (
     LETTA_VOICE_TOOL_MODULE_NAME,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
+
+# MCP Tool metadata constants for schema health status
+MCP_TOOL_METADATA_SCHEMA_STATUS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_STATUS"
+MCP_TOOL_METADATA_SCHEMA_WARNINGS = f"{MCP_TOOL_TAG_NAME_PREFIX}:SCHEMA_WARNINGS"
 from letta.functions.ast_parsers import get_function_name_and_docstring
 from letta.functions.composio_helpers import generate_composio_tool_wrapper
 from letta.functions.functions import derive_openai_json_schema, get_json_schema_from_module
@@ -170,6 +174,11 @@ class ToolCreate(LettaBase):
 
         # Pass the MCP tool to the schema generator
         json_schema = generate_tool_schema_for_mcp(mcp_tool=mcp_tool)
+
+        # Store health status in json_schema metadata if available
+        if mcp_tool.health:
+            json_schema[MCP_TOOL_METADATA_SCHEMA_STATUS] = mcp_tool.health.status
+            json_schema[MCP_TOOL_METADATA_SCHEMA_WARNINGS] = mcp_tool.health.reasons
 
         # Return a ToolCreate instance
         description = mcp_tool.description

@@ -10,7 +10,15 @@ from sqlalchemy import delete, null
 from starlette.requests import Request
 
 import letta.constants as constants
-from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig
+from letta.functions.mcp_client.types import (
+    MCPServerType,
+    MCPTool,
+    MCPToolHealth,
+    SSEServerConfig,
+    StdioServerConfig,
+    StreamableHTTPServerConfig,
+)
+from letta.functions.schema_validator import validate_complete_json_schema
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.mcp_oauth import MCPOAuth, OAuthSessionStatus
@@ -59,6 +67,13 @@ class MCPManager:
 
             # list tools
             tools = await mcp_client.list_tools()
+
+            # Add health information to each tool
+            for tool in tools:
+                if tool.inputSchema:
+                    health_status, reasons = validate_complete_json_schema(tool.inputSchema)
+                    tool.health = MCPToolHealth(status=health_status.value, reasons=reasons)
+
             return tools
         except Exception as e:
             # MCP tool listing errors are often due to connection/configuration issues, not system errors
@@ -116,7 +131,16 @@ class MCPManager:
         mcp_tools = await self.list_mcp_server_tools(mcp_server_name, actor=actor)
 
         for mcp_tool in mcp_tools:
+            # TODO: @jnjpng move health check to tool class
             if mcp_tool.name == mcp_tool_name:
+                # Check tool health - reject only INVALID tools
+                if mcp_tool.health:
+                    if mcp_tool.health.status == "INVALID":
+                        raise ValueError(
+                            f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid."
+                            f"Reasons: {', '.join(mcp_tool.health.reasons)}"
+                        )
+
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
                 return await self.tool_manager.create_mcp_tool_async(
                     tool_create=tool_create, mcp_server_name=mcp_server_name, mcp_server_id=mcp_server_id, actor=actor

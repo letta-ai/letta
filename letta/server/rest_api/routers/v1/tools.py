@@ -486,6 +486,20 @@ async def add_mcp_tool(
                 },
             )
 
+        # Check tool health - reject only INVALID tools
+        if mcp_tool.health:
+            if mcp_tool.health.status == "INVALID":
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "MCPToolSchemaInvalid",
+                        "message": f"Tool {mcp_tool_name} has an invalid schema and cannot be attached",
+                        "mcp_tool_name": mcp_tool_name,
+                        "health_status": mcp_tool.health.status,
+                        "reasons": mcp_tool.health.reasons,
+                    },
+                )
+
         tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
         # For config-based servers, use the server name as ID since they don't have database IDs
         mcp_server_id = mcp_server_name

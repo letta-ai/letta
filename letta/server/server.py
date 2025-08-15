@@ -23,7 +23,8 @@ from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
-from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, MCPToolHealth, SSEServerConfig, StdioServerConfig
+from letta.functions.schema_validator import validate_complete_json_schema
 from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
@@ -2063,7 +2064,15 @@ class SyncServer(Server):
         if mcp_server_name not in self.mcp_clients:
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
-        return await self.mcp_clients[mcp_server_name].list_tools()
+        tools = await self.mcp_clients[mcp_server_name].list_tools()
+
+        # Add health information to each tool
+        for tool in tools:
+            if tool.inputSchema:
+                health_status, reasons = validate_complete_json_schema(tool.inputSchema)
+                tool.health = MCPToolHealth(status=health_status.value, reasons=reasons)
+
+        return tools
 
     async def add_mcp_server_to_config(
         self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True
