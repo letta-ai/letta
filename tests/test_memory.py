@@ -19,10 +19,10 @@ def test_create_chat_memory():
 def test_memory_limit_validation(sample_memory: Memory):
     """Test exceeding memory limit"""
     with pytest.raises(ValueError):
-        ChatMemory(persona="x " * 10000, human="y " * 10000)
+        ChatMemory(persona="x " * 50000, human="y " * 50000)
 
     with pytest.raises(ValueError):
-        sample_memory.get_block("persona").value = "x " * 10000
+        sample_memory.get_block("persona").value = "x " * 50000
 
 
 def test_memory_jinja2_set_template(sample_memory: Memory):
