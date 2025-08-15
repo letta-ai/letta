@@ -25,3 +25,12 @@ variable "sa_email" {
 variable "sa_name" {
   type = string
 }
+
+variable "project_bindings" {
+  type = set(string)
+  default = []
+}
+variable "sa_bindings" {
+  type = set(string)
+  default = []
+}

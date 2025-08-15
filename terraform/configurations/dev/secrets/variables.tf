@@ -158,36 +158,30 @@ variable "dev_cloud_api_LETTA_PG_PASSWORD" {
   sensitive   = true
 }
 
-# # credit-undertaker secrets
-# variable "dev_credit_undertaker_LETTA_PG_USER" {
-#   description = "Postgres user for credit-undertaker service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_cloud_api_DATABASE_URL" {
+  description = "Full database URL for cloud-api service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_credit_undertaker_LETTA_PG_PASSWORD" {
-#   description = "Postgres password for credit-undertaker service"
-#   type        = string
-#   sensitive   = true
-# }
+# credit-undertaker secrets
+variable "dev_credit_undertaker_LETTA_PG_PASSWORD" {
+  description = "Postgres password for credit-undertaker service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_credit_undertaker_LETTA_PG_DB" {
-#   description = "Postgres database name for credit-undertaker service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_credit_undertaker_DATABASE_URL" {
+  description = "Full database URL for credit-undertaker service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_credit_undertaker_DATABASE_URL" {
-#   description = "Full database URL for credit-undertaker service"
-#   type        = string
-#   sensitive   = true
-# }
-
-# variable "dev_credit_undertaker_STRIPE_SECRET_KEY" {
-#   description = "Stripe secret key for credit-undertaker service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_credit_undertaker_STRIPE_SECRET_KEY" {
+  description = "Stripe secret key for credit-undertaker service"
+  type        = string
+  sensitive   = true
+}
 
 # variable "dev_credit_undertaker_RESEND_API_KEY" {
 #   description = "Resend API key for credit-undertaker service"
@@ -195,36 +189,78 @@ variable "dev_cloud_api_LETTA_PG_PASSWORD" {
 #   sensitive   = true
 # }
 
-# # letta-web secrets
-# variable "dev_letta_web_DATABASE_URL" {
-#   description = "Database URL for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+# letta-web secrets
+variable "dev_letta_web_DATABASE_URL" {
+  description = "Database URL for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_letta_web_GOOGLE_CLIENT_ID" {
-#   description = "Google OAuth Client ID for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_letta_web_GOOGLE_CLIENT_ID" {
+  description = "Google OAuth Client ID for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_letta_web_GOOGLE_CLIENT_SECRET" {
-#   description = "Google OAuth Client Secret for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_letta_web_GOOGLE_CLIENT_SECRET" {
+  description = "Google OAuth Client Secret for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_letta_web_E2B_SANDBOX_TEMPLATE_ID" {
-#   description = "E2B Sandbox Template ID for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_letta_web_GOOGLE_REDIRECT_URI" {
+  description = "Google Client Redirect URI for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_letta_web_E2B_API_KEY" {
-#   description = "E2B API Key for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_letta_web_E2B_SANDBOX_TEMPLATE_ID" {
+  description = "E2B Sandbox Template ID for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_E2B_API_KEY" {
+  description = "E2B API Key for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_STRIPE_SECRET_KEY" {
+  description = "Stripe secret key for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_POSTHOG_KEY" {
+  description = "Posthog key for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_POSTHOG_HOST" {
+  description = "Posthog host for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_NEXT_PUBLIC_POSTHOG_KEY" {
+  description = "Next public posthog key for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_NEXT_PUBLIC_MIXPANEL_TOKEN" {
+  description = "Next public mixpanel token for letta-web service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_letta_web_MIXPANEL_TOKEN" {
+  description = "Mixpanel token for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
 # variable "dev_letta_web_HUBSPOT_API_KEY" {
 #   description = "HubSpot API Key for letta-web service"
@@ -238,18 +274,18 @@ variable "dev_cloud_api_LETTA_PG_PASSWORD" {
 #   sensitive   = true
 # }
 
-# variable "dev_letta_web_COMPOSIO_API_KEY" {
-#   description = "Composio API Key for letta-web service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_letta_web_COMPOSIO_API_KEY" {
+  description = "Composio API Key for letta-web service"
+  type        = string
+  sensitive   = true
+}
 
-# # lettuce secrets
-# variable "dev_lettuce_DATABASE_URL" {
-#   description = "Database URL for lettuce service"
-#   type        = string
-#   sensitive   = true
-# }
+# lettuce secrets
+variable "dev_lettuce_DATABASE_URL" {
+  description = "Database URL for lettuce service"
+  type        = string
+  sensitive   = true
+}
 
 # variable "dev_lettuce_TEMPORAL_LETTUCE_API_HOST" {
 #   description = "Temporal Lettuce API Host for lettuce service"
@@ -257,17 +293,17 @@ variable "dev_cloud_api_LETTA_PG_PASSWORD" {
 #   sensitive   = true
 # }
 
-# variable "dev_lettuce_TEMPORAL_LETTUCE_CA_PEM" {
-#   description = "Temporal Lettuce CA PEM for lettuce service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_lettuce_TEMPORAL_LETTUCE_CA_PEM" {
+  description = "Temporal Lettuce CA PEM for lettuce service"
+  type        = string
+  sensitive   = true
+}
 
-# variable "dev_lettuce_TEMPORAL_LETTUCE_CA_KEY" {
-#   description = "Temporal Lettuce CA Key for lettuce service"
-#   type        = string
-#   sensitive   = true
-# }
+variable "dev_lettuce_TEMPORAL_LETTUCE_CA_KEY" {
+  description = "Temporal Lettuce CA Key for lettuce service"
+  type        = string
+  sensitive   = true
+}
 
 # variable "dev_lettuce_RESEND_API_KEY" {
 #   description = "Resend API Key for lettuce service"
@@ -324,8 +360,20 @@ variable "dev_memgpt_server_LETTA_PG_PASSWORD" {
   sensitive   = true
 }
 
+variable "dev_memgpt_server_LETTA_PG_URI" {
+  description = "Postgres URI for memgpt-server service"
+  type        = string
+  sensitive   = true
+}
+
 variable "dev_memgpt_server_CLICKHOUSE_PASSWORD" {
   description = "Clickhouse Password for memgpt-server service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_PINECONE_API_KEY" {
+  description = "Pinecone API Key for memgpt-server service"
   type        = string
   sensitive   = true
 }

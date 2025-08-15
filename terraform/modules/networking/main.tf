@@ -42,3 +42,24 @@ resource "google_compute_global_address" "letta_web_static_ip" {
   name        = local.letta_web_static_ip
   description = var.env == "prod" && var.region == "us-central1" ? "" : "Static IP for letta-web service"
 }
+
+# Cloud Router for NAT gateway
+resource "google_compute_router" "router" {
+  name    = var.env == "prod" && var.region == "us-central1" ? "letta-router" : "letta-${local.env_region_suffix}-router"
+  region  = var.region
+  network = google_compute_network.vpc_network.id
+}
+
+# Cloud NAT gateway for outbound internet access from private nodes
+resource "google_compute_router_nat" "nat" {
+  name                               = var.env == "prod" && var.region == "us-central1" ? "letta-gateway" : "letta-${local.env_region_suffix}-gateway"
+  router                             = google_compute_router.router.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
+}

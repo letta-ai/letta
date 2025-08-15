@@ -2,13 +2,14 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+project_id: &project_id memgpt-428419
+lettaEnv: &lettaEnv dev
 
 image:
-  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/lettuce
-  pullPolicy: IfNotPresent
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/lettuce
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -20,10 +21,11 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations: {}
+  annotations:
+    iam.gke.io/gcp-service-account: "lettuce-dev-sa@memgpt-428419.iam.gserviceaccount.com"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "lettuce"
 
 podAnnotations: {}
 podLabels: {}
@@ -41,17 +43,20 @@ securityContext: {}
 
 # Environment variables for the worker
 env:
-  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
   LETTA_AGENTS_ENDPOINT: "http://memgpt-server:8083"
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   PORT: "8080"
-  TEMPORAL_LETTUCE_API_HOST: ""
-  TEMPORAL_LETTUCE_CA_PEM: ""
-  TEMPORAL_LETTUCE_CA_KEY: ""
   TEMPORAL_LETTUCE_NAMESPACE: "lettuce.tmhou"
-  RESEND_API_KEY: ""
   NEXT_PUBLIC_CURRENT_HOST: ""
+
+secretsProvider:
+  secrets:
+    - DATABASE_URL
+    - TEMPORAL_LETTUCE_API_HOST
+    - TEMPORAL_LETTUCE_CA_PEM
+    - TEMPORAL_LETTUCE_CA_KEY
+    - RESEND_API_KEY
 
 resources:
   limits:

@@ -2,6 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+project_id: &project_id memgpt-428419
+lettaEnv: &lettaEnv dev
 replicaCount: 1
 
 image:
@@ -118,3 +120,10 @@ affinity: {}
 env:
   LETTA_AGENTS_ENDPOINT: ""
   PORT: "8080"
+  GCP_PUBSUB_PROJECT_ID: *project_id
+  GCP_PUBSUB_TOPIC_ID: model-proxy-dev
+
+
+secretsProvider:
+  secrets:
+    - OPENAI_API_KEY

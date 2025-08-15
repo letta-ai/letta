@@ -7,7 +7,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 6.30"
+      version = "~> 4.0"
     }
   }
 }
@@ -60,6 +60,6 @@ module "k8s-iam" {
     for secret in data.terraform_remote_state.secrets.outputs.secrets_names :
     join("_", slice(split("_", secret), 2, length(split("_", secret)))) if length(split("_", secret)) >= 3 &&
     split("_", secret)[0] == local.env &&
-    split("_", secret)[1] == replace(local.service, "-", "_")
+    split("_", secret)[1] == local.service
   ]
 }

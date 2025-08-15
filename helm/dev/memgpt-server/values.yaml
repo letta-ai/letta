@@ -2,13 +2,15 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+project_id: &project_id memgpt-428419
+lettaEnv: &lettaEnv dev
+replicaCount: 4
 
 image:
-  repository: nginx
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/memgpt-server
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -20,10 +22,11 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations: {}
+  annotations:
+    iam.gke.io/gcp-service-account: "memgpt-server-dev-sa@memgpt-428419.iam.gserviceaccount.com"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "memgpt-server"
 
 podAnnotations: {}
 podLabels: {}
@@ -61,10 +64,10 @@ ingress:
 
 resources:
   limits:
-    cpu: 250m
+    cpu: 1
     memory: 2Gi
   requests:
-    cpu: 150m
+    cpu: 1
     memory: 1Gi
 
 livenessProbe:
@@ -73,7 +76,7 @@ livenessProbe:
     path: /v1/health/
     port: 8083
     scheme: HTTP
-  initialDelaySeconds: 390
+  initialDelaySeconds: 90
   periodSeconds: 15
   successThreshold: 1
   timeoutSeconds: 15
@@ -84,7 +87,7 @@ readinessProbe:
     path: /v1/health/
     port: 8083
     scheme: HTTP
-  initialDelaySeconds: 390
+  initialDelaySeconds: 90
   periodSeconds: 10
   successThreshold: 1
   timeoutSeconds: 15
@@ -115,23 +118,47 @@ tolerations: []
 
 affinity: {}
 
-secrets:
-  OPENAI_API_KEY: ""
-  TOGETHER_API_KEY: ""
-  MEMGPT_SERVER_PASS: ""
-  MEMGPT_PG_DB: ""
-  MEMGPT_PG_USER: ""
-  MEMGPT_PG_PASSWORD: ""
-  MEMGPT_PG_URL: ""
-  MEMGPT_PG_HOST: ""
-  MEMGPT_PG_PORT: "5432"
-  POSTGRES_URI: ""
-  ANTHROPIC_API_KEY: ""
-  E2B_SANDBOX_TEMPLATE_ID: ""
-  E2B_API_KEY: ""
-  SENTRY_DSN: ""
-  LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: ""
-  CLICKHOUSE_ENDPOINT: ""
-  CLICKHOUSE_DATABASE: ""
-  CLICKHOUSE_USERNAME: ""
-  CLICKHOUSE_PASSWORD: ""
+env:
+  # general config
+  LETTA_ENVIRONMENT: *lettaEnv
+  # db config
+  LETTA_PG_DB: memgpt
+  LETTA_PG_USER: staff
+  LETTA_PG_HOST: 10.119.0.3
+  LETTA_PG_PORT: 6432
+  # telemetry config
+  ENV_NAME: *lettaEnv
+  CLICKHOUSE_USERNAME: default
+  CLICKHOUSE_ENDPOINT: https://apyhgglpro.us-central1.gcp.clickhouse.cloud:8443
+  CLICKHOUSE_DATABASE: otel
+  LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
+  # feature flags
+  LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: true
+  LETTA_DISABLE_SQLALCHEMY_POOLING: true
+  LETTA_USE_EXPERIMENTAL: true
+  LETTA_UVICORN_WORKERS: 1
+  # set to 10 for random reason: just need something here but in theory ignoring these parameters
+  LETTA_PG_POOL_SIZE: 10
+  LETTA_PG_MAX_OVERFLOW: 10
+  LETTA_DEFAULT_LLM_HANDLE: openai/gpt-4.1
+  LETTA_DEFAULT_EMBEDDING_HANDLE: openai/text-embedding-3-small
+  MCP_READ_FROM_CONFIG: false
+  PINECONE_NAMESPACE: __default__
+  PINECONE_INDEX_HOST: https://test-index-p6kwg4z.svc.aped-4627-b74a.pinecone.io
+
+secretsProvider:
+  secrets:
+    # connection secrets
+    - LETTA_SERVER_PASS
+    - LETTA_PG_PASSWORD
+    - LETTA_PG_URI
+    # api secrets
+    - ANTHROPIC_API_KEY
+    - OPENAI_API_KEY
+    - TOGETHER_API_KEY
+    - E2B_API_KEY
+    - E2B_SANDBOX_TEMPLATE_ID
+    - PINECONE_API_KEY
+    # telemetry secrets
+    - SENTRY_DSN
+    - CLICKHOUSE_PASSWORD

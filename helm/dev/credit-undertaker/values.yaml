@@ -2,11 +2,14 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+project_id: &project_id memgpt-428419
+lettaEnv: &lettaEnv dev
+
 image:
-  repository: nginx
-  pullPolicy: IfNotPresent
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/credit-undertaker
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -18,10 +21,11 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations: {}
+  annotations:
+    iam.gke.io/gcp-service-account: "credit-undertaker-dev-sa@memgpt-428419.iam.gserviceaccount.com"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "credit-undertaker"
 
 podAnnotations: {}
 podLabels: {}
@@ -78,12 +82,16 @@ affinity: {}
 
 # Environment variables for the credit-undertaker
 env:
+  # TODO: fill in
   LETTA_PG_USER: ""
-  LETTA_PG_PASSWORD: ""
-  LETTA_PG_HOST: ""
-  LETTA_PG_PORT: ""
   LETTA_PG_DB: ""
   DATABASE_URL: ""
-  STRIPE_SECRET_KEY: ""
-  RESEND_API_KEY: ""
+  LETTA_PG_HOST: ""
+  LETTA_PG_PORT: ""
   REDIS_HOST: ""
+
+secretsProvider:
+  secrets:
+    - LETTA_PG_PASSWORD
+    - STRIPE_SECRET_KEY
+    - RESEND_API_KEY

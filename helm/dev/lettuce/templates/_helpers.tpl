@@ -60,3 +60,25 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Generate the env+service prefix for secret names, e.g. dev_lettuce_
+*/}}
+{{- define "lettuce.envServicePrefix" -}}
+{{- if .Values.envServicePrefix }}
+{{- .Values.envServicePrefix -}}
+{{- else -}}
+{{- printf "%s_%s_" .Values.lettaEnv .Chart.Name -}}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate the k8s safe (RFC1035 compliant) env+service prefix for secret names, i.e. no underscores and lowercase
+*/}}
+{{- define "lettuce.k8sEnvServicePrefix" -}}
+{{- if .Values.envServicePrefix }}
+{{- .Values.envServicePrefix | replace "_" "-" | lower -}}
+{{- else -}}
+{{- printf "%s_%s_" .Values.lettaEnv .Chart.Name | replace "_" "-" | lower -}}
+{{- end }}
+{{- end }}

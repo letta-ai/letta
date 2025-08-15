@@ -34,9 +34,23 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          envFrom:
-            - secretRef:
-                name: {{ include "memgpt-server.fullname" . }}-env-secret
+          {{- if or .Values.env .Values.secretsProvider.secrets }}
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.secretsProvider.secrets }}
+          {{- range .Values.secretsProvider.secrets }}
+            {{/* this is the one place we must not use the k8s compatible variable name */}}
+            - name: {{ . }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "memgpt-server.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+                  key: {{ include "memgpt-server.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+          {{- end }}
+          {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -51,13 +65,29 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+          {{- if .Values.secretsProvider.secrets }}
+          {{- range .Values.secretsProvider.secrets }}
+            - name: {{ include "memgpt-server.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+              mountPath: "/var/secrets/{{ . }}"
+          {{- end }}
+          {{- end }}
       volumes:
+      {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.secretsProvider.secrets }}
+      {{- range .Values.secretsProvider.secrets }}
+        - name: {{ include "memgpt-server.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+          csi:
+            driver: secrets-store-gke.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "memgpt-server.k8sEnvServicePrefix" $ }}secrets
+      {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

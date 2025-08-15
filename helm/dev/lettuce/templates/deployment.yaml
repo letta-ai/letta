@@ -37,37 +37,45 @@ spec:
           env:
             - name: NODE_OPTIONS
               value: "--max-old-space-size=1536"
-            - name: DATABASE_URL
-              value: {{ .Values.env.DATABASE_URL | quote }}
-            - name: LETTA_AGENTS_ENDPOINT
-              value: {{ .Values.env.LETTA_AGENTS_ENDPOINT | quote }}
-            - name: REDIS_HOST
-              value: {{ .Values.env.REDIS_HOST | quote }}
-            - name: REDIS_PORT
-              value: {{ .Values.env.REDIS_PORT | quote }}
-            - name: PORT
-              value: {{ .Values.env.PORT | quote }}
-            - name: TEMPORAL_LETTUCE_API_HOST
-              value: {{ .Values.env.TEMPORAL_LETTUCE_API_HOST | quote }}
-            - name: TEMPORAL_LETTUCE_CA_PEM
-              value: {{ .Values.env.TEMPORAL_LETTUCE_CA_PEM | quote }}
-            - name: TEMPORAL_LETTUCE_CA_KEY
-              value: {{ .Values.env.TEMPORAL_LETTUCE_CA_KEY | quote }}
-            - name: TEMPORAL_LETTUCE_NAMESPACE
-              value: {{ .Values.env.TEMPORAL_LETTUCE_NAMESPACE | quote }}
-            - name: RESEND_API_KEY
-              value: {{ .Values.env.RESEND_API_KEY | quote }}
-            - name: NEXT_PUBLIC_CURRENT_HOST
-              value: {{ .Values.env.NEXT_PUBLIC_CURRENT_HOST | quote }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.secretsProvider.secrets }}
+            {{- range .Values.secretsProvider.secrets }}
+            {{/* this is the one place we must not use the k8s compatible variable name */}}
+            - name: {{ . }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lettuce.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+                  key: {{ include "lettuce.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+            {{- end }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+          {{- if .Values.secretsProvider.secrets }}
+          {{- range .Values.secretsProvider.secrets }}
+            - name: {{ include "lettuce.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+              mountPath: "/var/secrets/{{ . }}"
+          {{- end }}
+          {{- end }}
       volumes:
+      {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.secretsProvider.secrets }}
+      {{- range .Values.secretsProvider.secrets }}
+        - name: {{ include "lettuce.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+          csi:
+            driver: secrets-store-gke.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "lettuce.k8sEnvServicePrefix" $ }}secrets
+      {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

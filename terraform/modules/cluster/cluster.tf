@@ -2,6 +2,8 @@ locals {
     env_region_suffix = "${var.env}-${var.region}"
     # if env == prod use existing names for everything
     cluster_name = var.env == "prod" ? "letta" : "${var.cluster_prefix}-${local.env_region_suffix}"
+    # Custom tag for firewall rules
+    cluster_node_tag = "${local.cluster_name}-cluster-nodes"
 }
 
 resource "google_container_cluster" "primary" {
@@ -65,6 +67,8 @@ resource "google_container_node_pool" "default_pool" {
     metadata = {
       disable-legacy-endpoints = "true"
     }
+    # Add custom tag for firewall rules
+    tags = [local.cluster_node_tag]
     kubelet_config {
       cpu_manager_policy = ""
       cpu_cfs_quota  = false
@@ -75,4 +79,26 @@ resource "google_container_node_pool" "default_pool" {
       mode = "GKE_METADATA"
     }
   }
+}
+
+# Firewall rule to allow egress traffic from GKE cluster nodes
+resource "google_compute_firewall" "gke_cluster_egress" {
+  name    = "gke-${local.cluster_name}-egress"
+  network = var.vpc_network_name
+
+  allow {
+    protocol = "tcp"
+  }
+
+  allow {
+    protocol = "udp"
+  }
+
+  allow {
+    protocol = "icmp"
+  }
+
+  direction          = "EGRESS"
+  target_tags        = [local.cluster_node_tag]
+  destination_ranges = ["0.0.0.0/0"]
 }

@@ -14,3 +14,20 @@ resource "google_secret_manager_secret_iam_member" "secret_iam" {
   role     = "roles/secretmanager.secretAccessor"
   member   = "serviceAccount:${var.sa_email}"
 }
+
+# allow additional permissions
+resource "google_project_iam_member" "project_iam" {
+  for_each = var.project_bindings
+  project  = var.project_id
+  role     = each.value
+  member   = "serviceAccount:${var.sa_email}"
+}
+
+resource "google_service_account_iam_binding" "sa_iam" {
+  for_each  = var.sa_bindings
+  service_account_id = var.sa_name
+  role               = each.value
+  members = [
+    "serviceAccount:${var.project_id}.svc.id.goog[default/${var.service}]"
+  ]
+}

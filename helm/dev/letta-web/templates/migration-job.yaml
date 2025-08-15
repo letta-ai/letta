@@ -15,6 +15,7 @@ spec:
       labels:
         {{- include "letta-web.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "letta-web.serviceAccountName" . }}
       restartPolicy: Never
       containers:
         - name: migration
@@ -22,8 +23,30 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["npm", "run", "web:database:migrate:ci"]
           env:
-            - name: DATABASE_URL
+            {{- if .Values.secretsProvider.secrets }}
+            {{- range .Values.secretsProvider.secrets }}
+            - name: {{ . }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "letta-web.fullname" . }}-env
-                  key: DATABASE_URL
+                  name: {{ include "letta-web.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+                  key: {{ include "letta-web.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+          {{- if .Values.secretsProvider.secrets }}
+          {{- range .Values.secretsProvider.secrets }}
+            - name: {{ include "letta-web.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+              mountPath: "/var/secrets/{{ . }}"
+          {{- end }}
+          {{- end }}
+      volumes:
+      {{- if .Values.secretsProvider.secrets }}
+      {{- range .Values.secretsProvider.secrets }}
+        - name: {{ include "letta-web.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+          csi:
+            driver: secrets-store-gke.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "letta-web.k8sEnvServicePrefix" $ }}secrets
+      {{- end }}
+      {{- end }}
