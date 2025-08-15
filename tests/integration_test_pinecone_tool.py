@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from letta_client import AsyncLetta, MessageCreate, ReasoningMessage, ToolCallMessage
 from letta_client.core import RequestOptions
 
+from tests.helpers.utils import upload_test_agentfile_from_disk
+
 REASONING_THROTTLE_MS = 100
 TEST_USER_MESSAGE = "What products or services does 11x AI sell?"
 
@@ -19,7 +21,7 @@ def server_url() -> str:
     """
     Provides the URL for the Letta server.
     If LETTA_SERVER_URL is not set, starts the server in a background thread
-    and polls until it’s accepting connections.
+    and polls until it's accepting connections.
     """
 
     def _run_server() -> None:
@@ -60,12 +62,11 @@ def client(server_url: str):
     yield async_client_instance
 
 
-async def test_pinecone_tool(client: AsyncLetta) -> None:
+async def test_pinecone_tool(client: AsyncLetta, server_url: str) -> None:
     """
     Test the Pinecone tool integration with the Letta client.
     """
-    with open("../../scripts/test-afs/knowledge-base.af", "rb") as f:
-        response = await client.agents.import_file(file=f)
+    response = upload_test_agentfile_from_disk(server_url, "knowledge-base.af")
 
     agent_id = response.agent_ids[0]
 
