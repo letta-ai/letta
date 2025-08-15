@@ -63,7 +63,13 @@ class AnthropicClient(LLMClientBase):
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[BetaRawMessageStreamEvent]:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
         request_data["stream"] = True
-        return await client.beta.messages.create(**request_data)
+
+        # Add fine-grained tool streaming beta header for better streaming performance
+        # This helps reduce buffering when streaming tool call parameters
+        # See: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/fine-grained-streaming
+        betas = ["fine-grained-tool-streaming-2025-05-14"]
+
+        return await client.beta.messages.create(**request_data, betas=betas)
 
     @trace_method
     async def send_llm_batch_request_async(
