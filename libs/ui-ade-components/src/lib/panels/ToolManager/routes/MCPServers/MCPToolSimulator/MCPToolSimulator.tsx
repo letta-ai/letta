@@ -143,7 +143,6 @@ function MCPToolInput(props: MCPToolInputProps) {
             busy={isToolRunning}
             preIcon={<PlayIcon />}
             color="tertiary"
-            hideLabel={isToolRunning}
           />
         </VStack>
       </HStack>

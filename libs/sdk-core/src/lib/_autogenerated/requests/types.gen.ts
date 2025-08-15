@@ -2976,6 +2976,10 @@ export type MCPTool = {
   _meta?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * Schema health status for OpenAI strict mode
+   */
+  health?: MCPToolHealth | null;
   [key: string]: unknown | string;
 };
 
@@ -2986,6 +2990,20 @@ export type MCPToolExecuteRequest = {
   args?: {
     [key: string]: unknown;
   };
+};
+
+/**
+ * Health status for an MCP tool's schema.
+ */
+export type MCPToolHealth = {
+  /**
+   * Schema health status: STRICT_COMPLIANT, NON_STRICT_ONLY, or INVALID
+   */
+  status: string;
+  /**
+   * List of reasons for the health status
+   */
+  reasons?: Array<string>;
 };
 
 export type ManagerType =

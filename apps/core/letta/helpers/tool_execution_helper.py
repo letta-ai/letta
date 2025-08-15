@@ -2,21 +2,39 @@ from collections import OrderedDict
 from typing import Any, Dict, Optional
 
 from letta.constants import PRE_EXECUTION_MESSAGE_ARG
+from letta.schemas.tool import MCP_TOOL_METADATA_SCHEMA_STATUS, MCP_TOOL_METADATA_SCHEMA_WARNINGS
+from letta.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
     """Enables strict mode for a tool schema by setting 'strict' to True and
     disallowing additional properties in the parameters.
 
+    If the tool schema is NON_STRICT_ONLY, strict mode will not be applied.
+
     Args:
         tool_schema (Dict[str, Any]): The original tool schema.
 
     Returns:
-        Dict[str, Any]: A new tool schema with strict mode enabled.
+        Dict[str, Any]: A new tool schema with strict mode conditionally enabled.
     """
     schema = tool_schema.copy()
 
-    # Enable strict mode
+    # Check if schema has status metadata indicating NON_STRICT_ONLY
+    schema_status = schema.get(MCP_TOOL_METADATA_SCHEMA_STATUS)
+    if schema_status == "NON_STRICT_ONLY":
+        # Don't apply strict mode for non-strict schemas
+        # Remove the metadata fields from the schema
+        schema.pop(MCP_TOOL_METADATA_SCHEMA_STATUS, None)
+        schema.pop(MCP_TOOL_METADATA_SCHEMA_WARNINGS, None)
+        return schema
+    elif schema_status == "INVALID":
+        # We should not be hitting this and allowing invalid schemas to be used
+        logger.error(f"Tool schema {schema} is invalid: {schema.get(MCP_TOOL_METADATA_SCHEMA_WARNINGS)}")
+
+    # Enable strict mode for STRICT_COMPLIANT or unspecified health status
     schema["strict"] = True
 
     # Ensure parameters is a valid dictionary
@@ -26,6 +44,11 @@ def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
         # Set additionalProperties to False
         parameters["additionalProperties"] = False
         schema["parameters"] = parameters
+
+    # Remove the metadata fields from the schema
+    schema.pop(MCP_TOOL_METADATA_SCHEMA_STATUS, None)
+    schema.pop(MCP_TOOL_METADATA_SCHEMA_WARNINGS, None)
+
     return schema
 
 

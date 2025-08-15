@@ -5912,6 +5912,12 @@ export const ToolAnnotations = z.intersection(
   }),
 );
 
+export type MCPToolHealth = z.infer<typeof MCPToolHealth>;
+export const MCPToolHealth = z.object({
+  status: z.string(),
+  reasons: z.union([z.array(z.string()), z.undefined()]).optional(),
+});
+
 export type MCPTool = z.infer<typeof MCPTool>;
 export const MCPTool = z.intersection(
   z.object({
@@ -5954,6 +5960,14 @@ export const MCPTool = z.intersection(
         z.unknown(),
         z.null(),
         z.array(z.union([z.unknown(), z.null()])),
+        z.undefined(),
+      ])
+      .optional(),
+    health: z
+      .union([
+        MCPToolHealth,
+        z.null(),
+        z.array(z.union([MCPToolHealth, z.null()])),
         z.undefined(),
       ])
       .optional(),

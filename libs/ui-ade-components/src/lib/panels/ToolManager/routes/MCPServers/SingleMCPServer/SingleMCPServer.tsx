@@ -20,6 +20,7 @@ import {
   McpIcon,
   RefreshIcon,
   ToolsIcon,
+  Tooltip,
   TrashIcon,
   Typography,
   VStack,
@@ -44,6 +45,7 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { MCPToolSimulator } from '../MCPToolSimulator/MCPToolSimulator';
+
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -189,45 +191,89 @@ function ServerToolsList(props: ServerToolsListProps) {
             color="background"
             overflowY="auto"
           >
-            {data.map((tool) => (
-              <HStack
-                padding="small"
-                gap={false}
-                key={tool.name}
-                justify="spaceBetween"
-                align="center"
-                className={cn(
-                  "w-full",
-                  selectedTool?.name === tool.name
-                    ? "bg-secondary-active"
-                    : ""
-                )}
-              >
-                <button
-                  onClick={() => {
-                    onToolSelect(tool);
-                  }}
-                  className="flex-1 flex items-center gap-2 text-left cursor-pointer p-1"
+            {data.map((tool) => {
+              let healthBadge: {
+                variant: 'destructive' | 'success' | 'warning';
+                label: string;
+                tooltip?: string;
+              } | null = null;
+
+              if (tool.health) {
+                switch (tool.health.status) {
+                  case 'NON_STRICT_ONLY':
+                    healthBadge = {
+                      variant: 'warning',
+                      label: t('ServerToolsList.schemaHealth.notStrict.label'),
+                      tooltip: t('ServerToolsList.schemaHealth.notStrict.tooltip')
+                    };
+                    break;
+                  case 'INVALID':
+                    healthBadge = {
+                      variant: 'destructive',
+                      label: t('ServerToolsList.schemaHealth.invalidSchema.label'),
+                      tooltip: t('ServerToolsList.schemaHealth.invalidSchema.tooltip')
+                    };
+                    break;
+                  case 'STRICT_COMPLIANT':
+                  default:
+                    healthBadge = null;
+                    break;
+                }
+              }
+
+              return (
+                <HStack
+                  padding="small"
+                  gap={false}
+                  key={tool.name}
+                  justify="spaceBetween"
+                  align="center"
+                  className={cn(
+                    "w-full",
+                    selectedTool?.name === tool.name
+                      ? "bg-secondary-active"
+                      : ""
+                  )}
                 >
-                  <ToolsIcon />
-                  <Typography
-                    fullWidth
-                    overflow="ellipsis"
-                    bold
-                    variant="body2"
+                  <button
+                    onClick={() => {
+                      onToolSelect(tool);
+                    }}
+                    className="flex-1 flex items-center gap-2 text-left cursor-pointer p-1"
                   >
-                    {tool.name}
-                  </Typography>
-                </button>
-                <AttachDetachButton
-                  attachedId={getAttachedId(tool.name) || undefined}
-                  toolType="external_mcp"
-                  idToAttach={`${serverName}:${tool.name}`}
-                  toolName={tool.name}
-                  size="xsmall"
-                />
-              </HStack>
-            ))}
+                    <ToolsIcon />
+                    <HStack gap="medium" align="end">
+                      <Typography
+                        overflow="ellipsis"
+                        bold
+                        variant="body2"
+                      >
+                        {tool.name}
+                      </Typography>
+                      {healthBadge && (
+                        <Tooltip content={healthBadge.tooltip} asChild>
+                          <Badge
+                            content={healthBadge.label}
+                            variant={healthBadge.variant}
+                            size="small"
+                          />
+                        </Tooltip>
+                      )}
+                    </HStack>
+                  </button>
+                  <HStack gap="small">
+                    <AttachDetachButton
+                      attachedId={getAttachedId(tool.name) || undefined}
+                      toolType="external_mcp"
+                      idToAttach={`${serverName}:${tool.name}`}
+                      toolName={tool.name}
+                      size="xsmall"
+                      disabled={tool.health?.status === 'INVALID'}
+                    />
+                  </HStack>
+                </HStack>
+              );
+            })}
           </VStack>
         </Panel>
         <PanelResizeHandle

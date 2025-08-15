@@ -8100,6 +8100,17 @@ export const $MCPTool = {
       ],
       title: 'Meta',
     },
+    health: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/MCPToolHealth',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Schema health status for OpenAI strict mode',
+    },
   },
   additionalProperties: true,
   type: 'object',
@@ -8120,6 +8131,29 @@ export const $MCPToolExecuteRequest = {
   },
   type: 'object',
   title: 'MCPToolExecuteRequest',
+} as const;
+
+export const $MCPToolHealth = {
+  properties: {
+    status: {
+      type: 'string',
+      title: 'Status',
+      description:
+        'Schema health status: STRICT_COMPLIANT, NON_STRICT_ONLY, or INVALID',
+    },
+    reasons: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Reasons',
+      description: 'List of reasons for the health status',
+    },
+  },
+  type: 'object',
+  required: ['status'],
+  title: 'MCPToolHealth',
+  description: "Health status for an MCP tool's schema.",
 } as const;
 
 export const $ManagerType = {

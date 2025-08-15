@@ -1614,7 +1614,17 @@
       "attach": "Attach tool",
       "detach": "Detach tool",
       "attached": "Attached",
-      "empty": "No tools found, please check your server configuration."
+      "empty": "No tools found, please check your server configuration.",
+      "schemaHealth": {
+        "notStrict": {
+          "label": "Not Strict",
+          "tooltip": "Strict mode will be disabled for applicable models and may cause unexpected behavior"
+        },
+        "invalidSchema": {
+          "label": "Invalid Schema",
+          "tooltip": "Tool JSON schema is invalid and incompatible with tool calling"
+        }
+      }
     },
     "RemoveMCPServerDialog": {
       "error": "There was an error removing this server, please try again or contact support.",
