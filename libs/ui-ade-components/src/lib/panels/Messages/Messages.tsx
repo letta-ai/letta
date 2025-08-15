@@ -619,6 +619,9 @@ export function Messages(props: MessagesProps) {
     setHasReachedEnd,
     getIsAutoLoading,
     getHasReachedEnd,
+    getIsAutoScrollEnabled,
+    enableAutoScroll,
+    forceScrollToBottom,
     cleanup,
   } = useScrollHandler({
     ref,
@@ -653,8 +656,15 @@ export function Messages(props: MessagesProps) {
         id: mostRecentMessage.id,
         date: new Date(mostRecentMessage.date).getTime(),
       });
+
+      // Auto-scroll when a new message is received (if auto-scroll is enabled)
+      setTimeout(() => {
+        if (getIsAutoScrollEnabled()) {
+          forceScrollToBottom();
+        }
+      }, 10);
     }
-  }, [data?.pages, lastMessageReceived?.id]);
+  }, [data?.pages, lastMessageReceived?.id, getIsAutoScrollEnabled, forceScrollToBottom]);
 
   const extractMessage = useCallback(
     function extractMessage(
@@ -1256,6 +1266,9 @@ export function Messages(props: MessagesProps) {
     setInitialized(true); // Reveal after positioning
   }, [messageGroups.length]);
 
+  // Track if we've already enabled auto-scroll for this sending session
+  const hasEnabledAutoScroll = useRef(false);
+
   useEffect(() => {
     if (ref.current) {
       if (messageGroups.length > 0) {
@@ -1265,17 +1278,25 @@ export function Messages(props: MessagesProps) {
           }
 
           if (!hasScrolledInitially.current) {
+            // Always scroll to bottom on initial load, regardless of auto-scroll state
             ref.current.scrollTop = ref.current.scrollHeight;
             hasScrolledInitially.current = true;
           }
         }, 10);
       }
 
-      if (isSendingMessage) {
+      if (isSendingMessage && !hasEnabledAutoScroll.current) {
+        // Enable auto-scroll only once when user starts sending a message
+        enableAutoScroll();
+        hasEnabledAutoScroll.current = true;
+        // Scroll to bottom
         ref.current.scrollTop = ref.current.scrollHeight;
+      } else if (!isSendingMessage) {
+        // Reset the flag when not sending
+        hasEnabledAutoScroll.current = false;
       }
     }
-  }, [messageGroups, isPanelActive, isSendingMessage]);
+  }, [messageGroups, isPanelActive, isSendingMessage, enableAutoScroll]);
 
   const AutoLoadIndicator = useMemo(() => {
     const isLoading = (getIsAutoLoading() || isFetching) && !getHasReachedEnd();

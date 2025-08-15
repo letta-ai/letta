@@ -1,10 +1,10 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 interface UseScrollHandlerProps {
   ref: React.RefObject<HTMLDivElement | null>;
   hasNextPage: boolean;
   isFetching: boolean;
-  fetchNextPage: () => Promise<any>;
+  fetchNextPage: () => Promise<unknown>;
   measureBefore: (scroller: HTMLDivElement) => void;
   setPreserveNextPrepend: (value: boolean) => void;
 }
@@ -21,9 +21,15 @@ export function useScrollHandler({
   const hasReachedEnd = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Auto-scroll state - disabled by default, only enabled when user sends message
+  const isAutoScrollEnabled = useRef(false);
+
+  // Handle scroll events
   const handleScroll = useCallback(() => {
+    if (!ref.current) return;
+
+    // Only handle pagination if conditions are met
     if (
-      !ref.current ||
       !hasNextPage ||
       isAutoLoading.current ||
       isFetching ||
@@ -65,6 +71,67 @@ export function useScrollHandler({
     setPreserveNextPrepend,
   ]);
 
+  // Futore work:
+  // Re-enable auto-scroll when user scrolls to the bottom
+  // Tricky, because of delicate balance between auto-scroll, user scroll, and positioning detection from bottom
+
+  // Setup trackpad scroll detection and content change detection
+  useEffect(() => {
+    if (!ref.current) return;
+
+    function handleWheel (_event: WheelEvent) {
+      // Disable auto-scroll immediately on any wheel event
+      isAutoScrollEnabled.current = false;
+    };
+
+    // Setup MutationObserver to detect content changes (for streaming)
+    const observer = new MutationObserver((mutations) => {
+      // Check if any mutations added nodes (new content)
+      const hasNewContent = mutations.some(mutation =>
+        mutation.type === 'childList' && mutation.addedNodes.length > 0
+      );
+
+      if (hasNewContent && isAutoScrollEnabled.current) {
+        // Check again immediately before scrolling to prevent race conditions
+        if (isAutoScrollEnabled.current && ref.current) {
+          ref.current.scrollTo({
+            top: ref.current.scrollHeight,
+            behavior: 'auto'
+          });
+        }
+      }
+    });
+
+    const container = ref.current;
+    container.addEventListener('wheel', handleWheel, { passive: true });
+
+    // Observe the scroll container for DOM changes
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      observer.disconnect();
+    };
+  }, [ref]);
+
+  // Enable auto-scroll when user sends a message
+  const enableAutoScroll = useCallback(() => {
+    isAutoScrollEnabled.current = true;
+  }, []);
+
+  // Force scroll to bottom (ignores auto-scroll state)
+  const forceScrollToBottom = useCallback(() => {
+    if (!ref.current) return;
+
+    ref.current.scrollTo({
+      top: ref.current.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, [ref]);
+
   const resetFlags = useCallback(() => {
     hasReachedEnd.current = false;
   }, []);
@@ -81,6 +148,10 @@ export function useScrollHandler({
     return hasReachedEnd.current;
   }, []);
 
+  const getIsAutoScrollEnabled = useCallback(() => {
+    return isAutoScrollEnabled.current;
+  }, []);
+
   const cleanup = useCallback(() => {
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -93,6 +164,9 @@ export function useScrollHandler({
     setHasReachedEnd,
     getIsAutoLoading,
     getHasReachedEnd,
+    getIsAutoScrollEnabled,
+    enableAutoScroll,
+    forceScrollToBottom,
     cleanup,
   };
 }
