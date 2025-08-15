@@ -73,6 +73,13 @@ export async function listTemplateAgentMigrations(
     nextPageToken,
   } = options;
 
+  if (!TEMPORAL_LETTUCE_NAMESPACE) {
+    return {
+      migrations: [],
+      nextPage: null,
+    }
+  }
+
   try {
     const connection = await Connection.connect(getTemporalConnectionConfig());
     const query = `Id = "${templateName}" AND OrganizationId = "${organizationId}"`;
