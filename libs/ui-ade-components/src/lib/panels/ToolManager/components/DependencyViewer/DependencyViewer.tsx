@@ -14,11 +14,12 @@ import {
 import { useState, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { popularDependencies } from './popularDependencies';
+import { popularNpmDependencies } from './popularNpmDependencies';
 import { DependencyItem } from './DependencyItem';
 import type { Dependency } from './types';
 import { CustomDependencyForm } from '../CustomDependencyForm/CustomDependencyForm';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
-import { CLOUD_INCLUDED_DEPENDENCIES } from './useManageDependencies/constants';
+import { CLOUD_INCLUDED_DEPENDENCIES, CLOUD_INCLUDED_NPM_DEPENDENCIES } from './useManageDependencies/constants';
 import { useCurrentAgentMetaData } from '../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
@@ -52,10 +53,14 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
       ? stagedTool.npm_requirements || []
       : stagedTool.pip_requirements || [];
       
+    const cloudIncluded = isTypeScript
+      ? CLOUD_INCLUDED_NPM_DEPENDENCIES
+      : CLOUD_INCLUDED_DEPENDENCIES;
+      
     const mergedRequirements = [
       ...currentRequirements,
-      ...(!isLocal && !isTypeScript
-        ? CLOUD_INCLUDED_DEPENDENCIES.map((v) => ({ ...v, included: true }))
+      ...(!isLocal
+        ? cloudIncluded.map((v) => ({ ...v, included: true }))
         : []),
     ];
 
@@ -82,10 +87,11 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
   }, [stagedTool.pip_requirements, stagedTool.npm_requirements, isTypeScript, isLocal, searchQuery, filter]);
 
   const filteredPopularDependencies = useMemo(() => {
-    return popularDependencies.filter((dependency) => {
-      const isInPipRequirements = addedDependencies.has(dependency.name);
+    const popularDeps = isTypeScript ? popularNpmDependencies : popularDependencies;
+    return popularDeps.filter((dependency) => {
+      const isInRequirements = addedDependencies.has(dependency.name);
 
-      if (isInPipRequirements) {
+      if (isInRequirements) {
         return false;
       }
 
@@ -96,7 +102,7 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
         }
       }
 
-      const isAdded = isInPipRequirements;
+      const isAdded = isInRequirements;
 
       switch (filter) {
         case 'added':
@@ -108,7 +114,7 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
           return true;
       }
     });
-  }, [addedDependencies, searchQuery, filter]);
+  }, [addedDependencies, searchQuery, filter, isTypeScript]);
 
   const t = useTranslations('DependencyViewer');
 
@@ -197,10 +203,10 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
             <InfoTooltip text={t('mine.tooltip')} />
           </HStack>
         )}
-        {/* Current Pip Requirements */}
+        {/* Current Requirements (Pip or NPM) */}
         {filteredRequirements.map((req) => {
           const dependency: Dependency = {
-            id: `pip-${req.name}`,
+            id: `${isTypeScript ? 'npm' : 'pip'}-${req.name}`,
             name: req.name,
             version: req.version || undefined,
             included: 'included' in req,

@@ -459,7 +459,16 @@ class ToolManager:
         else:
             # For non-MCP tools, preserve existing behavior
             if "source_code" in update_data.keys() and not bypass_name_check:
-                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                # Check source type to use appropriate parser
+                source_type = update_data.get("source_type", current_tool.source_type)
+                if source_type == "typescript":
+                    from letta.functions.typescript_parser import derive_typescript_json_schema
+
+                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+                else:
+                    # Default to Python for backwards compatibility
+                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+
                 new_name = derived_schema["name"]
                 if "json_schema" not in update_data.keys():
                     new_schema = derived_schema
@@ -533,8 +542,15 @@ class ToolManager:
             # TODO: I feel like it's bad if json_schema strays from source code so
             # if source code is provided, always derive the name from it
             if "source_code" in update_data.keys() and not bypass_name_check:
-                # derive the schema from source code to get the function name
-                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                # Check source type to use appropriate parser
+                source_type = update_data.get("source_type", current_tool.source_type)
+                if source_type == "typescript":
+                    from letta.functions.typescript_parser import derive_typescript_json_schema
+
+                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+                else:
+                    # Default to Python for backwards compatibility
+                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
                 new_name = derived_schema["name"]
 
                 # if json_schema wasn't provided, use the derived schema

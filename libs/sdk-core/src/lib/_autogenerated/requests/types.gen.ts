@@ -893,9 +893,13 @@ export type ChildToolRuleSchema = {
 
 export type CodeInput = {
   /**
-   * Python source code to parse for JSON schema
+   * Source code to parse for JSON schema
    */
   code: string;
+  /**
+   * The source type of the code (python or typescript)
+   */
+  source_type?: string | null;
 };
 
 export type CompletionCreateParamsNonStreaming = {
@@ -4916,6 +4920,12 @@ export type ToolUpdate = {
    * Optional list of npm packages required by this tool.
    */
   npm_requirements?: Array<NpmRequirement> | null;
+  /**
+   * A dictionary of additional metadata for the tool.
+   */
+  metadata_?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 export type UpdateAgent = {

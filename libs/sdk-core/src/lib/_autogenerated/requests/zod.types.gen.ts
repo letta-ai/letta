@@ -3345,6 +3345,14 @@ export const ChatCompletionUserMessageParam = z.object({
 export type CodeInput = z.infer<typeof CodeInput>;
 export const CodeInput = z.object({
   code: z.string(),
+  source_type: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type openai__types__chat__completion_create_params__Function = z.infer<
@@ -7248,6 +7256,9 @@ export const ToolUpdate = z.object({
       z.null(),
       z.array(z.union([z.array(NpmRequirement), z.null()])),
     ])
+    .optional(),
+  metadata_: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
 });
 

@@ -50,3 +50,54 @@ export const CLOUD_INCLUDED_DEPENDENCIES = [
     source: 'https://pypi.org/project/letta-nightly/',
   },
 ];
+
+export const CLOUD_INCLUDED_NPM_DEPENDENCIES = [
+  {
+    name: '@letta-cloud/sdk',
+    description: 'Letta Cloud SDK for JavaScript/TypeScript',
+    version: 'latest',
+    source: 'https://www.npmjs.com/package/@letta-cloud/sdk',
+  },
+  {
+    name: 'axios',
+    description: 'Promise based HTTP client for the browser and node.js',
+    version: '1.7.9',
+    source: 'https://www.npmjs.com/package/axios',
+  },
+  {
+    name: 'node-fetch',
+    description: 'A light-weight module that brings window.fetch to Node.js',
+    version: '3.3.2',
+    source: 'https://www.npmjs.com/package/node-fetch',
+  },
+  {
+    name: 'dotenv',
+    description: 'Loads environment variables from a .env file',
+    version: '16.4.7',
+    source: 'https://www.npmjs.com/package/dotenv',
+  },
+  {
+    name: 'zod',
+    description: 'TypeScript-first schema validation with static type inference',
+    version: '3.24.1',
+    source: 'https://www.npmjs.com/package/zod',
+  },
+  {
+    name: 'joi',
+    description: 'Object schema validation',
+    version: '17.13.3',
+    source: 'https://www.npmjs.com/package/joi',
+  },
+  {
+    name: 'lodash',
+    description: 'Utility library delivering consistency, customization, performance, and extras',
+    version: '4.17.21',
+    source: 'https://www.npmjs.com/package/lodash',
+  },
+  {
+    name: 'moment',
+    description: 'Parse, validate, manipulate, and display dates in JavaScript',
+    version: '2.30.1',
+    source: 'https://www.npmjs.com/package/moment',
+  },
+];

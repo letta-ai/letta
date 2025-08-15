@@ -16,6 +16,7 @@ import { useMemo } from 'react';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useCurrentTool } from '../LocalToolViewer/LocalToolViewer';
 import { useManageDependencies } from './useManageDependencies/useManageDependencies';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface DependencyItemProps {
   dependency: Dependency;
@@ -28,10 +29,49 @@ interface UsageDialogProps {
 function UsageDialog(props: UsageDialogProps) {
   const { name } = props;
   const t = useTranslations('DependencyViewer');
+  const tool = useCurrentTool();
+  const { stagedTool } = useStagedCode(tool);
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
+  
+  const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
 
   const pyImportName = useMemo(() => {
     return name.includes('-') ? name.replace(/-/g, '_') : name;
   }, [name]);
+  
+  const codeExample = useMemo(() => {
+    if (isTypeScript) {
+      // TypeScript/JavaScript example
+      const importStatement = name.startsWith('@') 
+        ? `import * as pkg from '${name}';`
+        : `import * as ${name.replace(/-/g, '_')} from '${name}';`;
+      
+      return {
+        language: 'typescript' as const,
+        code: `${importStatement}
+
+export async function myFunction() {
+    // Use ${name} functionality
+    const result = await ${name.replace(/-/g, '_')}.someMethod();
+    // Your code here
+    // ...
+    return result;
+}`
+      };
+    } else {
+      // Python example
+      return {
+        language: 'python' as const,
+        code: `import ${pyImportName}
+
+def my_function():
+    # Use ${name} functionality
+    df = ${pyImportName}.yourfunction()
+    # Your code here
+    # ...`
+      };
+    }
+  }, [name, pyImportName, isTypeScript]);
 
   return (
     <Dialog
@@ -52,14 +92,8 @@ function UsageDialog(props: UsageDialogProps) {
         <Code
           fontSize="small"
           showLineNumbers={false}
-          language="python"
-          code={`import ${pyImportName}
-
-def my_function():
-    # Use {name} functionality
-    df = ${pyImportName}.yourfunction()
-    # Your code here
-    # ...`}
+          language={codeExample.language}
+          code={codeExample.code}
         />
       </VStack>
     </Dialog>
@@ -71,13 +105,21 @@ export function DependencyItem({ dependency }: DependencyItemProps) {
   const { id, name, version, description, included } = dependency;
   const tool = useCurrentTool();
   const { stagedTool } = useStagedCode(tool);
+  const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
 
   const { addDependency, removeDependency } = useManageDependencies();
+  
+  const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
 
   const isAdded = useMemo(() => {
-    const currentPipRequirements = stagedTool.pip_requirements || [];
-    return currentPipRequirements.some((req) => req.name === dependency.name);
-  }, [stagedTool.pip_requirements, dependency.name]);
+    if (isTypeScript) {
+      const currentNpmRequirements = stagedTool.npm_requirements || [];
+      return currentNpmRequirements.some((req) => req.name === dependency.name);
+    } else {
+      const currentPipRequirements = stagedTool.pip_requirements || [];
+      return currentPipRequirements.some((req) => req.name === dependency.name);
+    }
+  }, [stagedTool.pip_requirements, stagedTool.npm_requirements, dependency.name, isTypeScript]);
 
   return (
     <VStack key={id} gap={false} borderBottom padding="medium" fullWidth>

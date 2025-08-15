@@ -870,7 +870,8 @@ export class ToolsService {
 
   /**
    * Generate Json Schema
-   * Generate a JSON schema from the given Python source code defining a function or class.
+   * Generate a JSON schema from the given source code defining a function or class.
+   * Supports both Python and TypeScript source code.
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId

@@ -2589,7 +2589,20 @@ export const $CodeInput = {
     code: {
       type: 'string',
       title: 'Code',
-      description: 'Python source code to parse for JSON schema',
+      description: 'Source code to parse for JSON schema',
+    },
+    source_type: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Type',
+      description: 'The source type of the code (python or typescript)',
+      default: 'python',
     },
   },
   type: 'object',
@@ -8631,7 +8644,7 @@ export const $ModalSandboxConfig = {
       type: 'integer',
       title: 'Timeout',
       description: 'Time limit for the sandbox (in seconds).',
-      default: 300,
+      default: 60,
     },
     pip_requirements: {
       anyOf: [
@@ -13080,6 +13093,19 @@ export const $ToolUpdate = {
       ],
       title: 'Npm Requirements',
       description: 'Optional list of npm packages required by this tool.',
+    },
+    metadata_: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'A dictionary of additional metadata for the tool.',
     },
   },
   type: 'object',
