@@ -19,8 +19,9 @@ from letta.constants import (
     DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
     DEPRECATED_LETTA_TOOLS,
-    EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES,
+    EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
+    INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -116,6 +117,21 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
+
+    @staticmethod
+    def _should_exclude_model_from_base_tool_rules(model: str) -> bool:
+        """Check if a model should be excluded from base tool rules based on model keywords."""
+        # First check if model contains any include keywords (overrides exclusion)
+        for include_keyword in INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES:
+            if include_keyword in model:
+                return False
+
+        # Then check if model contains any exclude keywords
+        for exclude_keyword in EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES:
+            if exclude_keyword in model:
+                return True
+
+        return False
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -334,16 +350,16 @@ class AgentManager:
 
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                # Override include_base_tool_rules to False if model matches exclusion keywords and include_base_tool_rules is not explicitly set to True
                 if (
                     (
-                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        self._should_exclude_model_from_base_tool_rules(agent_create.llm_config.model)
                         and agent_create.include_base_tool_rules is None
                     )
                     and agent_create.agent_type != AgentType.sleeptime_agent
                 ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
-                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                    logger.info(f"Overriding include_base_tool_rules to False for model: {agent_create.llm_config.model}")
                 else:
                     agent_create.include_base_tool_rules = True
 
@@ -543,16 +559,16 @@ class AgentManager:
                 tool_names = set(name_to_id.keys())  # now canonical
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                # Override include_base_tool_rules to False if model matches exclusion keywords and include_base_tool_rules is not explicitly set to True
                 if (
                     (
-                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        self._should_exclude_model_from_base_tool_rules(agent_create.llm_config.model)
                         and agent_create.include_base_tool_rules is None
                     )
                     and agent_create.agent_type != AgentType.sleeptime_agent
                 ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
-                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                    logger.info(f"Overriding include_base_tool_rules to False for model: {agent_create.llm_config.model}")
                 else:
                     agent_create.include_base_tool_rules = True
 

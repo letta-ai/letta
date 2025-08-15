@@ -328,15 +328,15 @@ READ_ONLY_BLOCK_EDIT_ERROR = f"{ERROR_MESSAGE_PREFIX} This block is read-only an
 MESSAGE_SUMMARY_REQUEST_ACK = "Understood, I will respond with a summary of the message (and only the summary, nothing else) once I receive the conversation history. I'm ready."
 
 # Maximum length of an error message
-MAX_ERROR_MESSAGE_CHAR_LIMIT = 500
+MAX_ERROR_MESSAGE_CHAR_LIMIT = 1000
 
 # Default memory limits
-CORE_MEMORY_PERSONA_CHAR_LIMIT: int = 5000
-CORE_MEMORY_HUMAN_CHAR_LIMIT: int = 5000
-CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 5000
+CORE_MEMORY_PERSONA_CHAR_LIMIT: int = 20000
+CORE_MEMORY_HUMAN_CHAR_LIMIT: int = 20000
+CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 20000
 
 # Function return limits
-FUNCTION_RETURN_CHAR_LIMIT = 6000  # ~300 words
+FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
 BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
 FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
@@ -394,5 +394,7 @@ PINECONE_THROTTLE_DELAY = 0.75  # seconds base delay between batches
 WEB_SEARCH_MODEL_ENV_VAR_NAME = "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME"
 WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE = "gpt-4.1-mini-2025-04-14"
 
-# Excluded providers from base tool rules
-EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES = {"anthropic", "openai", "google_ai", "google_vertex"}
+# Excluded model keywords from base tool rules
+EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES = ["claude-4-sonnet", "claude-3-5-sonnet", "gpt-5", "gemini-2.5-pro"]
+# But include models with these keywords in base tool rules (overrides exclusion)
+INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES = ["mini"]

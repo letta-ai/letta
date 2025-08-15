@@ -12,7 +12,7 @@ from letta.schemas.providers.base import Provider
 logger = get_logger(__name__)
 
 ALLOWED_PREFIXES = {"gpt-4", "gpt-5", "o1", "o3", "o4"}
-DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro"}
+DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro", "chat"}
 DEFAULT_EMBEDDING_BATCH_SIZE = 1024
 
 

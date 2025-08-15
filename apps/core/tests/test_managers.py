@@ -848,7 +848,7 @@ async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncS
         memory_blocks=memory_blocks,
         llm_config=LLMConfig(
             model="llama-3.1-8b-instruct",
-            model_endpoint_type="together",  # Not in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+            model_endpoint_type="together",  # Model doesn't match EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES
             model_endpoint="https://api.together.xyz",
             context_window=8192,
         ),

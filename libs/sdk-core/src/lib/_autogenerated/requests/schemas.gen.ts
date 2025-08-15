@@ -1548,7 +1548,7 @@ export const $Block = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 5000,
+      default: 20000,
     },
     project_id: {
       anyOf: [
@@ -1699,7 +1699,7 @@ export const $BlockSchema = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 5000,
+      default: 20000,
     },
     project_id: {
       anyOf: [
@@ -4423,7 +4423,7 @@ export const $CreateBlock = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 5000,
+      default: 20000,
     },
     project_id: {
       anyOf: [
@@ -4907,7 +4907,7 @@ export const $FileBlock = {
       type: 'integer',
       title: 'Limit',
       description: 'Character limit of the block.',
-      default: 5000,
+      default: 20000,
     },
     project_id: {
       anyOf: [
@@ -12077,7 +12077,7 @@ export const $Tool = {
       type: 'integer',
       title: 'Return Char Limit',
       description: 'The maximum number of characters in the response.',
-      default: 6000,
+      default: 50000,
     },
     pip_requirements: {
       anyOf: [
@@ -12485,7 +12485,7 @@ export const $ToolCreate = {
       type: 'integer',
       title: 'Return Char Limit',
       description: 'The maximum number of characters in the response.',
-      default: 6000,
+      default: 50000,
     },
     pip_requirements: {
       anyOf: [
@@ -15126,7 +15126,7 @@ export const $letta__schemas__agent_file__ToolSchema = {
       type: 'integer',
       title: 'Return Char Limit',
       description: 'The maximum number of characters in the response.',
-      default: 6000,
+      default: 50000,
     },
     pip_requirements: {
       anyOf: [
