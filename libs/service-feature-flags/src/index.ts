@@ -36,21 +36,7 @@ if (environment.LAUNCH_DARKLY_SDK_KEY) {
 
 async function getLaunchDarklyClient() {
   if (!environment.LAUNCH_DARKLY_SDK_KEY) {
-    console.warn(
-      'No LaunchDarkly SDK key provided, feature flags will default in the off state',
-    );
-
-    return {
-      initialized: () => true,
-      waitForInitialization: async () => {
-        return;
-      },
-      allFlagsState: async () => ({}),
-      variation: async () => undefined,
-      identify: () => {
-        return;
-      },
-    } as unknown as LDClient;
+    return null;
   }
 
   if (!launchDarklySingleton) {
@@ -79,6 +65,10 @@ export async function getOrganizationFeatureFlags(org: OrgDetails) {
   }
 
   const ldClient = await getLaunchDarklyClient();
+
+  if (!ldClient) {
+    return {};
+  }
 
   const context: ld.LDContext = {
     kind: 'org',
@@ -114,6 +104,11 @@ export async function getLettaUserFeatureFlags(user: UserDetails) {
 
   const ldClient = await getLaunchDarklyClient();
 
+
+  if (!ldClient) {
+    return {};
+  }
+
   const context: ld.LDContext = {
     kind: 'user',
     key: user.id,
@@ -122,6 +117,7 @@ export async function getLettaUserFeatureFlags(user: UserDetails) {
   };
 
   ldClient.identify(context);
+
   const response = await ldClient.allFlagsState(context, {
     withReasons: true,
     detailsOnlyForTrackedFlags: false, // Set to false to get reasons for all flags
@@ -150,6 +146,10 @@ export async function getSingleFlag<SingleFlag extends Flag>(
 
   const ldClient = await getLaunchDarklyClient();
 
+  if (!ldClient) {
+    return undefined;
+  }
+
   if (!orgId) {
     return ldClient.variation(
       flag,
@@ -174,6 +174,10 @@ export async function getSingleFlag<SingleFlag extends Flag>(
 export async function getDefaultFlags(): Promise<Partial<FlagMap>> {
   try {
     const ldClient = await getLaunchDarklyClient();
+
+    if (!ldClient) {
+      return {};
+    }
 
     const response = await ldClient.allFlagsState({
       key: 'default',
