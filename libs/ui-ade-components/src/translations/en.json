@@ -1618,14 +1618,14 @@
     },
     "RemoveMCPServerDialog": {
       "error": "There was an error removing this server, please try again or contact support.",
-      "title": "Remove server",
+      "title": "Delete server",
       "confirm": "Remove",
       "description": "Are you sure you want to remove this server? This will remove any tools attached to an agent that use this server."
     },
     "refetch": "Refetch tools",
     "actions": "Actions",
     "edit": "Edit server",
-    "remove": "Remove server",
+    "remove": "Delete server",
     "serverName": "Server name",
     "serverType": "Type",
     "serverUrl": "Base Server URL",
