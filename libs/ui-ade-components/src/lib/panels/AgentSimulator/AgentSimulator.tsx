@@ -36,7 +36,6 @@ import {
   AgentsService,
   ErrorMessageSchema,
   IdentitiesService,
-  useAgentsServiceCancelAgentRun,
   UseAgentsServiceListMessagesKeyFn,
 } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
@@ -569,19 +568,12 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
     ],
   );
 
-  const { mutateAsync: cancelAgentRun } = useAgentsServiceCancelAgentRun();
-  const stopMessage = useCallback(async (agentId: string) => {
-    await cancelAgentRun({agentId},
-      {
-        onSuccess: () => {
-          if (abortController.current) {
-            abortController.current.abort();
-            setIsPending(false);
-          }
-        },
-      },
-    );
-  }, [abortController, cancelAgentRun, setIsPending]);
+  const stopMessage = useCallback(() => {
+    if (abortController.current) {
+      abortController.current.abort();
+      setIsPending(false);
+    }
+  }, [setIsPending]);
 
   return {
     isPending,
@@ -1000,7 +992,7 @@ export function AgentSimulator() {
 
                     handleOnboardingStepChange();
                   }}
-                  onStopMessage={() => stopMessage(agentIdToUse || '')}
+                  onStopMessage={stopMessage}
                   isSendingMessage={isPending}
                 />
               </QuickAgentSimulatorOnboarding>
