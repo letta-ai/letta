@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
@@ -355,8 +355,7 @@ class UpdateAgent(BaseModel):
         description="If set to True, the agent will be hidden.",
     )
 
-    class Config:
-        extra = "ignore"  # Ignores extra fields
+    model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
 
 class AgentStepResponse(BaseModel):

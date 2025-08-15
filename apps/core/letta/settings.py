@@ -340,7 +340,7 @@ class Settings(BaseSettings):
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
 
-    letta_dir: Path | None = Field(Path.home() / ".letta/test", env="LETTA_TEST_DIR")
+    letta_dir: Path | None = Field(Path.home() / ".letta/test", alias="LETTA_TEST_DIR")
 
 
 class LogSettings(BaseSettings):
