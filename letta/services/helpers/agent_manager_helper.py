@@ -156,7 +156,25 @@ def _process_tags(agent: "AgentModel", tags: List[str], replace=True):
         agent.tags.extend([tag for tag in new_tags if tag.tag not in existing_tags])
 
 
-def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
+def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None) -> str:
+    """
+    Derive the appropriate system message based on agent type and configuration.
+
+    This function determines which system prompt template to use based on the
+    agent's type and whether sleeptime functionality is enabled. If a custom
+    system message is provided, it returns that instead.
+
+    Args:
+        agent_type: The type of agent (e.g., memgpt_agent, sleeptime_agent, react_agent)
+        enable_sleeptime: Whether sleeptime tools should be available (affects prompt choice)
+        system: Optional custom system message to use instead of defaults
+
+    Returns:
+        The system message string appropriate for the agent configuration
+
+    Raises:
+        ValueError: If an invalid or unsupported agent type is provided
+    """
     if system is None:
         # TODO: don't hardcode
 
@@ -204,8 +222,33 @@ def compile_memory_metadata_block(
     memory_edit_timestamp: datetime,
     timezone: str,
     previous_message_count: int = 0,
-    archival_memory_size: int = 0,
+    archival_memory_size: Optional[int] = 0,
 ) -> str:
+    """
+    Generate a memory metadata block for the agent's system prompt.
+
+    This creates a structured metadata section that informs the agent about
+    the current state of its memory systems, including timing information
+    and memory counts. This helps the agent understand what information
+    is available through its tools.
+
+    Args:
+        memory_edit_timestamp: When memory blocks were last modified
+        timezone: The timezone to use for formatting timestamps (e.g., 'America/Los_Angeles')
+        previous_message_count: Number of messages in recall memory (conversation history)
+        archival_memory_size: Number of items in archival memory (long-term storage)
+
+    Returns:
+        A formatted string containing the memory metadata block with XML-style tags
+
+    Example Output:
+        <memory_metadata>
+        - The current time is: 2024-01-15 10:30 AM PST
+        - Memory blocks were last modified: 2024-01-15 09:00 AM PST
+        - 42 previous messages between you and the user are stored in recall memory (use tools to access them)
+        - 156 total memories you created are stored in archival memory (use tools to access them)
+        </memory_metadata>
+    """
     # Put the timestamp in the local timezone (mimicking get_local_time())
     timestamp_str = format_datetime(memory_edit_timestamp, timezone)
 
