@@ -2,7 +2,7 @@ import pathToRegexp from 'path-to-regexp';
 
 const baseMessagesRoute = pathToRegexp('/v1/agents/:agent_id/messages');
 const advancedMessagesRoute = pathToRegexp(
-  '/v1/agents/:agent_id/messages/:type',
+  '/v1/agents/:agent_id/messages/:type(stream|async)',
 );
 
 export function getIsCreateMessageRoute(pathname: string): boolean {

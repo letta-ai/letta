@@ -36,6 +36,7 @@ import {
   AgentsService,
   ErrorMessageSchema,
   IdentitiesService,
+  useAgentsServiceCancelAgentRun,
   UseAgentsServiceListMessagesKeyFn,
 } from '@letta-cloud/sdk-core';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,7 +50,7 @@ import { get } from 'lodash-es';
 import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useLocalStorage } from '@mantine/hooks';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
@@ -568,12 +569,27 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
     ],
   );
 
-  const stopMessage = useCallback(() => {
-    if (abortController.current) {
-      abortController.current.abort();
-      setIsPending(false);
+  const { mutateAsync: cancelAgentRun } = useAgentsServiceCancelAgentRun();
+  const { data: isAgentRunCancellationV2Enabled } = useFeatureFlag('AGENT_RUN_CANCELLATION_V2');
+  const stopMessage = useCallback(async (agentId: string) => {
+    if (isAgentRunCancellationV2Enabled) {
+      await cancelAgentRun({agentId},
+        {
+          onSuccess: () => {
+            if (abortController.current) {
+              abortController.current.abort();
+              setIsPending(false);
+            }
+          },
+        },
+      );
+    } else {
+      if (abortController.current) {
+        abortController.current.abort();
+        setIsPending(false);
+      }
     }
-  }, [setIsPending]);
+  }, [abortController, cancelAgentRun, isAgentRunCancellationV2Enabled, setIsPending]);
 
   return {
     isPending,
@@ -992,7 +1008,7 @@ export function AgentSimulator() {
 
                     handleOnboardingStepChange();
                   }}
-                  onStopMessage={stopMessage}
+                  onStopMessage={() => stopMessage(agentIdToUse || '')}
                   isSendingMessage={isPending}
                 />
               </QuickAgentSimulatorOnboarding>
