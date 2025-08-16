@@ -2954,6 +2954,22 @@ export const CancelAgentRunRequest = z.object({
     .optional(),
 });
 
+export type ChatCompletionAllowedToolsParam = z.infer<
+  typeof ChatCompletionAllowedToolsParam
+>;
+export const ChatCompletionAllowedToolsParam = z.object({
+  mode: z.union([z.literal('auto'), z.literal('required')]),
+  tools: z.array(z.unknown()),
+});
+
+export type ChatCompletionAllowedToolChoiceParam = z.infer<
+  typeof ChatCompletionAllowedToolChoiceParam
+>;
+export const ChatCompletionAllowedToolChoiceParam = z.object({
+  allowed_tools: ChatCompletionAllowedToolsParam,
+  type: z.string(),
+});
+
 export type ChatCompletionContentPartTextParam = z.infer<
   typeof ChatCompletionContentPartTextParam
 >;
@@ -2976,23 +2992,43 @@ export const FunctionCall = z.object({
   name: z.string(),
 });
 
-export type openai__types__chat__chat_completion_message_tool_call_param__Function =
+export type openai__types__chat__chat_completion_message_function_tool_call_param__Function =
   z.infer<
-    typeof openai__types__chat__chat_completion_message_tool_call_param__Function
+    typeof openai__types__chat__chat_completion_message_function_tool_call_param__Function
   >;
-export const openai__types__chat__chat_completion_message_tool_call_param__Function =
+export const openai__types__chat__chat_completion_message_function_tool_call_param__Function =
   z.object({
     arguments: z.string(),
     name: z.string(),
   });
 
-export type ChatCompletionMessageToolCallParam = z.infer<
-  typeof ChatCompletionMessageToolCallParam
+export type ChatCompletionMessageFunctionToolCallParam = z.infer<
+  typeof ChatCompletionMessageFunctionToolCallParam
 >;
-export const ChatCompletionMessageToolCallParam = z.object({
+export const ChatCompletionMessageFunctionToolCallParam = z.object({
   id: z.string(),
   function:
-    openai__types__chat__chat_completion_message_tool_call_param__Function,
+    openai__types__chat__chat_completion_message_function_tool_call_param__Function,
+  type: z.string(),
+});
+
+export type openai__types__chat__chat_completion_message_custom_tool_call_param__Custom =
+  z.infer<
+    typeof openai__types__chat__chat_completion_message_custom_tool_call_param__Custom
+  >;
+export const openai__types__chat__chat_completion_message_custom_tool_call_param__Custom =
+  z.object({
+    input: z.string(),
+    name: z.string(),
+  });
+
+export type ChatCompletionMessageCustomToolCallParam = z.infer<
+  typeof ChatCompletionMessageCustomToolCallParam
+>;
+export const ChatCompletionMessageCustomToolCallParam = z.object({
+  id: z.string(),
+  custom:
+    openai__types__chat__chat_completion_message_custom_tool_call_param__Custom,
   type: z.string(),
 });
 
@@ -3064,7 +3100,21 @@ export const ChatCompletionAssistantMessageParam = z.object({
     ])
     .optional(),
   tool_calls: z
-    .union([z.array(ChatCompletionMessageToolCallParam), z.undefined()])
+    .union([
+      z.array(
+        z.union([
+          ChatCompletionMessageFunctionToolCallParam,
+          ChatCompletionMessageCustomToolCallParam,
+          z.array(
+            z.union([
+              ChatCompletionMessageFunctionToolCallParam,
+              ChatCompletionMessageCustomToolCallParam,
+            ]),
+          ),
+        ]),
+      ),
+      z.undefined(),
+    ])
     .optional(),
 });
 
@@ -3139,6 +3189,51 @@ export const ChatCompletionContentPartInputAudioParam = z.object({
   type: z.string(),
 });
 
+export type CustomFormatText = z.infer<typeof CustomFormatText>;
+export const CustomFormatText = z.object({
+  type: z.string(),
+});
+
+export type CustomFormatGrammarGrammar = z.infer<
+  typeof CustomFormatGrammarGrammar
+>;
+export const CustomFormatGrammarGrammar = z.object({
+  definition: z.string(),
+  syntax: z.union([z.literal('lark'), z.literal('regex')]),
+});
+
+export type CustomFormatGrammar = z.infer<typeof CustomFormatGrammar>;
+export const CustomFormatGrammar = z.object({
+  grammar: CustomFormatGrammarGrammar,
+  type: z.string(),
+});
+
+export type openai__types__chat__chat_completion_custom_tool_param__Custom =
+  z.infer<
+    typeof openai__types__chat__chat_completion_custom_tool_param__Custom
+  >;
+export const openai__types__chat__chat_completion_custom_tool_param__Custom =
+  z.object({
+    name: z.string(),
+    description: z.union([z.string(), z.undefined()]).optional(),
+    format: z
+      .union([
+        CustomFormatText,
+        CustomFormatGrammar,
+        z.array(z.union([CustomFormatText, CustomFormatGrammar])),
+        z.undefined(),
+      ])
+      .optional(),
+  });
+
+export type ChatCompletionCustomToolParam = z.infer<
+  typeof ChatCompletionCustomToolParam
+>;
+export const ChatCompletionCustomToolParam = z.object({
+  custom: openai__types__chat__chat_completion_custom_tool_param__Custom,
+  type: z.string(),
+});
+
 export type ChatCompletionDeveloperMessageParam = z.infer<
   typeof ChatCompletionDeveloperMessageParam
 >;
@@ -3172,6 +3267,29 @@ export const ChatCompletionFunctionMessageParam = z.object({
   role: z.string(),
 });
 
+export type FunctionDefinition_Input = z.infer<typeof FunctionDefinition_Input>;
+export const FunctionDefinition_Input = z.object({
+  name: z.string(),
+  description: z.union([z.string(), z.undefined()]).optional(),
+  parameters: z.union([z.unknown(), z.undefined()]).optional(),
+  strict: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ChatCompletionFunctionToolParam = z.infer<
+  typeof ChatCompletionFunctionToolParam
+>;
+export const ChatCompletionFunctionToolParam = z.object({
+  function: FunctionDefinition_Input,
+  type: z.string(),
+});
+
 export type Function_Output = z.infer<typeof Function_Output>;
 export const Function_Output = z.intersection(
   z.object({
@@ -3183,10 +3301,10 @@ export const Function_Output = z.intersection(
   }),
 );
 
-export type ChatCompletionMessageToolCall = z.infer<
-  typeof ChatCompletionMessageToolCall
+export type ChatCompletionMessageFunctionToolCall = z.infer<
+  typeof ChatCompletionMessageFunctionToolCall
 >;
-export const ChatCompletionMessageToolCall = z.intersection(
+export const ChatCompletionMessageFunctionToolCall = z.intersection(
   z.object({
     id: z.string(),
     function: Function_Output,
@@ -3196,6 +3314,24 @@ export const ChatCompletionMessageToolCall = z.intersection(
     string: z.any(),
   }),
 );
+
+export type openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom =
+  z.infer<
+    typeof openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom
+  >;
+export const openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom =
+  z.object({
+    name: z.string(),
+  });
+
+export type ChatCompletionNamedToolChoiceCustomParam = z.infer<
+  typeof ChatCompletionNamedToolChoiceCustomParam
+>;
+export const ChatCompletionNamedToolChoiceCustomParam = z.object({
+  custom:
+    openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom,
+  type: z.string(),
+});
 
 export type openai__types__chat__chat_completion_named_tool_choice_param__Function =
   z.infer<
@@ -3231,6 +3367,7 @@ export type ChatCompletionStreamOptionsParam = z.infer<
   typeof ChatCompletionStreamOptionsParam
 >;
 export const ChatCompletionStreamOptionsParam = z.object({
+  include_obfuscation: z.boolean().optional(),
   include_usage: z.boolean().optional(),
 });
 
@@ -3258,27 +3395,6 @@ export const ChatCompletionToolMessageParam = z.object({
   ]),
   role: z.string(),
   tool_call_id: z.string(),
-});
-
-export type FunctionDefinition_Input = z.infer<typeof FunctionDefinition_Input>;
-export const FunctionDefinition_Input = z.object({
-  name: z.string(),
-  description: z.union([z.string(), z.undefined()]).optional(),
-  parameters: z.union([z.unknown(), z.undefined()]).optional(),
-  strict: z
-    .union([
-      z.boolean(),
-      z.null(),
-      z.array(z.union([z.boolean(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
-export type ChatCompletionToolParam = z.infer<typeof ChatCompletionToolParam>;
-export const ChatCompletionToolParam = z.object({
-  function: FunctionDefinition_Input,
-  type: z.string(),
 });
 
 export type FileFile = z.infer<typeof FileFile>;
@@ -3455,6 +3571,13 @@ export const CompletionCreateParamsNonStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-5'),
+    z.literal('gpt-5-mini'),
+    z.literal('gpt-5-nano'),
+    z.literal('gpt-5-2025-08-07'),
+    z.literal('gpt-5-mini-2025-08-07'),
+    z.literal('gpt-5-nano-2025-08-07'),
+    z.literal('gpt-5-chat-latest'),
     z.literal('gpt-4.1'),
     z.literal('gpt-4.1-mini'),
     z.literal('gpt-4.1-nano'),
@@ -3513,6 +3636,13 @@ export const CompletionCreateParamsNonStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-5'),
+        z.literal('gpt-5-mini'),
+        z.literal('gpt-5-nano'),
+        z.literal('gpt-5-2025-08-07'),
+        z.literal('gpt-5-mini-2025-08-07'),
+        z.literal('gpt-5-nano-2025-08-07'),
+        z.literal('gpt-5-chat-latest'),
         z.literal('gpt-4.1'),
         z.literal('gpt-4.1-mini'),
         z.literal('gpt-4.1-nano'),
@@ -3689,12 +3819,14 @@ export const CompletionCreateParamsNonStreaming = z.object({
   prompt_cache_key: z.union([z.string(), z.undefined()]).optional(),
   reasoning_effort: z
     .union([
+      z.literal('minimal'),
       z.literal('low'),
       z.literal('medium'),
       z.literal('high'),
       z.null(),
       z.array(
         z.union([
+          z.literal('minimal'),
           z.literal('low'),
           z.literal('medium'),
           z.literal('high'),
@@ -3787,19 +3919,39 @@ export const CompletionCreateParamsNonStreaming = z.object({
       z.literal('none'),
       z.literal('auto'),
       z.literal('required'),
+      ChatCompletionAllowedToolChoiceParam,
       ChatCompletionNamedToolChoiceParam,
+      ChatCompletionNamedToolChoiceCustomParam,
       z.array(
         z.union([
           z.literal('none'),
           z.literal('auto'),
           z.literal('required'),
+          ChatCompletionAllowedToolChoiceParam,
           ChatCompletionNamedToolChoiceParam,
+          ChatCompletionNamedToolChoiceCustomParam,
         ]),
       ),
       z.undefined(),
     ])
     .optional(),
-  tools: z.union([z.array(ChatCompletionToolParam), z.undefined()]).optional(),
+  tools: z
+    .union([
+      z.array(
+        z.union([
+          ChatCompletionFunctionToolParam,
+          ChatCompletionCustomToolParam,
+          z.array(
+            z.union([
+              ChatCompletionFunctionToolParam,
+              ChatCompletionCustomToolParam,
+            ]),
+          ),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   top_logprobs: z
     .union([
       z.number(),
@@ -3817,6 +3969,23 @@ export const CompletionCreateParamsNonStreaming = z.object({
     ])
     .optional(),
   user: z.union([z.string(), z.undefined()]).optional(),
+  verbosity: z
+    .union([
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
   stream: z
     .union([
@@ -3854,6 +4023,13 @@ export const CompletionCreateParamsStreaming = z.object({
   ),
   model: z.union([
     z.string(),
+    z.literal('gpt-5'),
+    z.literal('gpt-5-mini'),
+    z.literal('gpt-5-nano'),
+    z.literal('gpt-5-2025-08-07'),
+    z.literal('gpt-5-mini-2025-08-07'),
+    z.literal('gpt-5-nano-2025-08-07'),
+    z.literal('gpt-5-chat-latest'),
     z.literal('gpt-4.1'),
     z.literal('gpt-4.1-mini'),
     z.literal('gpt-4.1-nano'),
@@ -3912,6 +4088,13 @@ export const CompletionCreateParamsStreaming = z.object({
     z.array(
       z.union([
         z.string(),
+        z.literal('gpt-5'),
+        z.literal('gpt-5-mini'),
+        z.literal('gpt-5-nano'),
+        z.literal('gpt-5-2025-08-07'),
+        z.literal('gpt-5-mini-2025-08-07'),
+        z.literal('gpt-5-nano-2025-08-07'),
+        z.literal('gpt-5-chat-latest'),
         z.literal('gpt-4.1'),
         z.literal('gpt-4.1-mini'),
         z.literal('gpt-4.1-nano'),
@@ -4088,12 +4271,14 @@ export const CompletionCreateParamsStreaming = z.object({
   prompt_cache_key: z.union([z.string(), z.undefined()]).optional(),
   reasoning_effort: z
     .union([
+      z.literal('minimal'),
       z.literal('low'),
       z.literal('medium'),
       z.literal('high'),
       z.null(),
       z.array(
         z.union([
+          z.literal('minimal'),
           z.literal('low'),
           z.literal('medium'),
           z.literal('high'),
@@ -4186,19 +4371,39 @@ export const CompletionCreateParamsStreaming = z.object({
       z.literal('none'),
       z.literal('auto'),
       z.literal('required'),
+      ChatCompletionAllowedToolChoiceParam,
       ChatCompletionNamedToolChoiceParam,
+      ChatCompletionNamedToolChoiceCustomParam,
       z.array(
         z.union([
           z.literal('none'),
           z.literal('auto'),
           z.literal('required'),
+          ChatCompletionAllowedToolChoiceParam,
           ChatCompletionNamedToolChoiceParam,
+          ChatCompletionNamedToolChoiceCustomParam,
         ]),
       ),
       z.undefined(),
     ])
     .optional(),
-  tools: z.union([z.array(ChatCompletionToolParam), z.undefined()]).optional(),
+  tools: z
+    .union([
+      z.array(
+        z.union([
+          ChatCompletionFunctionToolParam,
+          ChatCompletionCustomToolParam,
+          z.array(
+            z.union([
+              ChatCompletionFunctionToolParam,
+              ChatCompletionCustomToolParam,
+            ]),
+          ),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   top_logprobs: z
     .union([
       z.number(),
@@ -4216,6 +4421,23 @@ export const CompletionCreateParamsStreaming = z.object({
     ])
     .optional(),
   user: z.union([z.string(), z.undefined()]).optional(),
+  verbosity: z
+    .union([
+      z.literal('low'),
+      z.literal('medium'),
+      z.literal('high'),
+      z.null(),
+      z.array(
+        z.union([
+          z.literal('low'),
+          z.literal('medium'),
+          z.literal('high'),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
   web_search_options: z.union([WebSearchOptions, z.undefined()]).optional(),
   stream: z.boolean(),
 });
@@ -4376,9 +4598,11 @@ export const Message = z.object({
     .optional(),
   tool_calls: z
     .union([
-      z.array(ChatCompletionMessageToolCall),
+      z.array(ChatCompletionMessageFunctionToolCall),
       z.null(),
-      z.array(z.union([z.array(ChatCompletionMessageToolCall), z.null()])),
+      z.array(
+        z.union([z.array(ChatCompletionMessageFunctionToolCall), z.null()]),
+      ),
       z.undefined(),
     ])
     .optional(),

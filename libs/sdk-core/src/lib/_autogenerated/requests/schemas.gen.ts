@@ -2048,6 +2048,43 @@ export const $CancelAgentRunRequest = {
   title: 'CancelAgentRunRequest',
 } as const;
 
+export const $ChatCompletionAllowedToolChoiceParam = {
+  properties: {
+    allowed_tools: {
+      $ref: '#/components/schemas/ChatCompletionAllowedToolsParam',
+    },
+    type: {
+      type: 'string',
+      const: 'allowed_tools',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['allowed_tools', 'type'],
+  title: 'ChatCompletionAllowedToolChoiceParam',
+} as const;
+
+export const $ChatCompletionAllowedToolsParam = {
+  properties: {
+    mode: {
+      type: 'string',
+      enum: ['auto', 'required'],
+      title: 'Mode',
+    },
+    tools: {
+      items: {
+        additionalProperties: true,
+        type: 'object',
+      },
+      type: 'array',
+      title: 'Tools',
+    },
+  },
+  type: 'object',
+  required: ['mode', 'tools'],
+  title: 'ChatCompletionAllowedToolsParam',
+} as const;
+
 export const $ChatCompletionAssistantMessageParam = {
   properties: {
     role: {
@@ -2116,7 +2153,14 @@ export const $ChatCompletionAssistantMessageParam = {
     },
     tool_calls: {
       items: {
-        $ref: '#/components/schemas/ChatCompletionMessageToolCallParam',
+        anyOf: [
+          {
+            $ref: '#/components/schemas/ChatCompletionMessageFunctionToolCallParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionMessageCustomToolCallParam',
+          },
+        ],
       },
       type: 'array',
       title: 'Tool Calls',
@@ -2227,6 +2271,22 @@ export const $ChatCompletionContentPartTextParam = {
   title: 'ChatCompletionContentPartTextParam',
 } as const;
 
+export const $ChatCompletionCustomToolParam = {
+  properties: {
+    custom: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_custom_tool_param__Custom',
+    },
+    type: {
+      type: 'string',
+      const: 'custom',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['custom', 'type'],
+  title: 'ChatCompletionCustomToolParam',
+} as const;
+
 export const $ChatCompletionDeveloperMessageParam = {
   properties: {
     content: {
@@ -2298,7 +2358,43 @@ export const $ChatCompletionFunctionMessageParam = {
   title: 'ChatCompletionFunctionMessageParam',
 } as const;
 
-export const $ChatCompletionMessageToolCall = {
+export const $ChatCompletionFunctionToolParam = {
+  properties: {
+    function: {
+      $ref: '#/components/schemas/FunctionDefinition-Input',
+    },
+    type: {
+      type: 'string',
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['function', 'type'],
+  title: 'ChatCompletionFunctionToolParam',
+} as const;
+
+export const $ChatCompletionMessageCustomToolCallParam = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    custom: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_custom_tool_call_param__Custom',
+    },
+    type: {
+      type: 'string',
+      const: 'custom',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['id', 'custom', 'type'],
+  title: 'ChatCompletionMessageCustomToolCallParam',
+} as const;
+
+export const $ChatCompletionMessageFunctionToolCall = {
   properties: {
     id: {
       type: 'string',
@@ -2316,17 +2412,17 @@ export const $ChatCompletionMessageToolCall = {
   additionalProperties: true,
   type: 'object',
   required: ['id', 'function', 'type'],
-  title: 'ChatCompletionMessageToolCall',
+  title: 'ChatCompletionMessageFunctionToolCall',
 } as const;
 
-export const $ChatCompletionMessageToolCallParam = {
+export const $ChatCompletionMessageFunctionToolCallParam = {
   properties: {
     id: {
       type: 'string',
       title: 'Id',
     },
     function: {
-      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_tool_call_param__Function',
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_function_tool_call_param__Function',
     },
     type: {
       type: 'string',
@@ -2336,7 +2432,23 @@ export const $ChatCompletionMessageToolCallParam = {
   },
   type: 'object',
   required: ['id', 'function', 'type'],
-  title: 'ChatCompletionMessageToolCallParam',
+  title: 'ChatCompletionMessageFunctionToolCallParam',
+} as const;
+
+export const $ChatCompletionNamedToolChoiceCustomParam = {
+  properties: {
+    custom: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom',
+    },
+    type: {
+      type: 'string',
+      const: 'custom',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['custom', 'type'],
+  title: 'ChatCompletionNamedToolChoiceCustomParam',
 } as const;
 
 export const $ChatCompletionNamedToolChoiceParam = {
@@ -2384,6 +2496,10 @@ export const $ChatCompletionPredictionContentParam = {
 
 export const $ChatCompletionStreamOptionsParam = {
   properties: {
+    include_obfuscation: {
+      type: 'boolean',
+      title: 'Include Obfuscation',
+    },
     include_usage: {
       type: 'boolean',
       title: 'Include Usage',
@@ -2453,22 +2569,6 @@ export const $ChatCompletionToolMessageParam = {
   type: 'object',
   required: ['content', 'role', 'tool_call_id'],
   title: 'ChatCompletionToolMessageParam',
-} as const;
-
-export const $ChatCompletionToolParam = {
-  properties: {
-    function: {
-      $ref: '#/components/schemas/FunctionDefinition-Input',
-    },
-    type: {
-      type: 'string',
-      const: 'function',
-      title: 'Type',
-    },
-  },
-  type: 'object',
-  required: ['function', 'type'],
-  title: 'ChatCompletionToolParam',
 } as const;
 
 export const $ChatCompletionUserMessageParam = {
@@ -2646,6 +2746,13 @@ export const $CompletionCreateParamsNonStreaming = {
         {
           type: 'string',
           enum: [
+            'gpt-5',
+            'gpt-5-mini',
+            'gpt-5-nano',
+            'gpt-5-2025-08-07',
+            'gpt-5-mini-2025-08-07',
+            'gpt-5-nano-2025-08-07',
+            'gpt-5-chat-latest',
             'gpt-4.1',
             'gpt-4.1-mini',
             'gpt-4.1-nano',
@@ -2866,7 +2973,7 @@ export const $CompletionCreateParamsNonStreaming = {
       anyOf: [
         {
           type: 'string',
-          enum: ['low', 'medium', 'high'],
+          enum: ['minimal', 'low', 'medium', 'high'],
         },
         {
           type: 'null',
@@ -2971,14 +3078,27 @@ export const $CompletionCreateParamsNonStreaming = {
           enum: ['none', 'auto', 'required'],
         },
         {
+          $ref: '#/components/schemas/ChatCompletionAllowedToolChoiceParam',
+        },
+        {
           $ref: '#/components/schemas/ChatCompletionNamedToolChoiceParam',
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionNamedToolChoiceCustomParam',
         },
       ],
       title: 'Tool Choice',
     },
     tools: {
       items: {
-        $ref: '#/components/schemas/ChatCompletionToolParam',
+        anyOf: [
+          {
+            $ref: '#/components/schemas/ChatCompletionFunctionToolParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionCustomToolParam',
+          },
+        ],
       },
       type: 'array',
       title: 'Tools',
@@ -3008,6 +3128,18 @@ export const $CompletionCreateParamsNonStreaming = {
     user: {
       type: 'string',
       title: 'User',
+    },
+    verbosity: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Verbosity',
     },
     web_search_options: {
       $ref: '#/components/schemas/WebSearchOptions',
@@ -3066,6 +3198,13 @@ export const $CompletionCreateParamsStreaming = {
         {
           type: 'string',
           enum: [
+            'gpt-5',
+            'gpt-5-mini',
+            'gpt-5-nano',
+            'gpt-5-2025-08-07',
+            'gpt-5-mini-2025-08-07',
+            'gpt-5-nano-2025-08-07',
+            'gpt-5-chat-latest',
             'gpt-4.1',
             'gpt-4.1-mini',
             'gpt-4.1-nano',
@@ -3286,7 +3425,7 @@ export const $CompletionCreateParamsStreaming = {
       anyOf: [
         {
           type: 'string',
-          enum: ['low', 'medium', 'high'],
+          enum: ['minimal', 'low', 'medium', 'high'],
         },
         {
           type: 'null',
@@ -3391,14 +3530,27 @@ export const $CompletionCreateParamsStreaming = {
           enum: ['none', 'auto', 'required'],
         },
         {
+          $ref: '#/components/schemas/ChatCompletionAllowedToolChoiceParam',
+        },
+        {
           $ref: '#/components/schemas/ChatCompletionNamedToolChoiceParam',
+        },
+        {
+          $ref: '#/components/schemas/ChatCompletionNamedToolChoiceCustomParam',
         },
       ],
       title: 'Tool Choice',
     },
     tools: {
       items: {
-        $ref: '#/components/schemas/ChatCompletionToolParam',
+        anyOf: [
+          {
+            $ref: '#/components/schemas/ChatCompletionFunctionToolParam',
+          },
+          {
+            $ref: '#/components/schemas/ChatCompletionCustomToolParam',
+          },
+        ],
       },
       type: 'array',
       title: 'Tools',
@@ -3428,6 +3580,18 @@ export const $CompletionCreateParamsStreaming = {
     user: {
       type: 'string',
       title: 'User',
+    },
+    verbosity: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Verbosity',
     },
     web_search_options: {
       $ref: '#/components/schemas/WebSearchOptions',
@@ -4544,6 +4708,52 @@ export const $CreateBlock = {
   required: ['value', 'label'],
   title: 'CreateBlock',
   description: 'Create a block',
+} as const;
+
+export const $CustomFormatGrammar = {
+  properties: {
+    grammar: {
+      $ref: '#/components/schemas/CustomFormatGrammarGrammar',
+    },
+    type: {
+      type: 'string',
+      const: 'grammar',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['grammar', 'type'],
+  title: 'CustomFormatGrammar',
+} as const;
+
+export const $CustomFormatGrammarGrammar = {
+  properties: {
+    definition: {
+      type: 'string',
+      title: 'Definition',
+    },
+    syntax: {
+      type: 'string',
+      enum: ['lark', 'regex'],
+      title: 'Syntax',
+    },
+  },
+  type: 'object',
+  required: ['definition', 'syntax'],
+  title: 'CustomFormatGrammarGrammar',
+} as const;
+
+export const $CustomFormatText = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'text',
+      title: 'Type',
+    },
+  },
+  type: 'object',
+  required: ['type'],
+  title: 'CustomFormatText',
 } as const;
 
 export const $DuplicateFileHandling = {
@@ -8420,7 +8630,7 @@ export const $Message = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/ChatCompletionMessageToolCall',
+            $ref: '#/components/schemas/ChatCompletionMessageFunctionToolCall',
           },
           type: 'array',
         },
@@ -15622,7 +15832,51 @@ export const $letta__serialize_schemas__pydantic_agent_schema__ToolSchema = {
   title: 'ToolSchema',
 } as const;
 
-export const $openai__types__chat__chat_completion_message_tool_call_param__Function =
+export const $openai__types__chat__chat_completion_custom_tool_param__Custom = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+    },
+    format: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/CustomFormatText',
+        },
+        {
+          $ref: '#/components/schemas/CustomFormatGrammar',
+        },
+      ],
+      title: 'Format',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'Custom',
+} as const;
+
+export const $openai__types__chat__chat_completion_message_custom_tool_call_param__Custom =
+  {
+    properties: {
+      input: {
+        type: 'string',
+        title: 'Input',
+      },
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    type: 'object',
+    required: ['input', 'name'],
+    title: 'Custom',
+  } as const;
+
+export const $openai__types__chat__chat_completion_message_function_tool_call_param__Function =
   {
     properties: {
       arguments: {
@@ -15637,6 +15891,19 @@ export const $openai__types__chat__chat_completion_message_tool_call_param__Func
     type: 'object',
     required: ['arguments', 'name'],
     title: 'Function',
+  } as const;
+
+export const $openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom =
+  {
+    properties: {
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'Custom',
   } as const;
 
 export const $openai__types__chat__chat_completion_named_tool_choice_param__Function =

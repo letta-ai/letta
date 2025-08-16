@@ -12200,6 +12200,41 @@
         "type": "object",
         "title": "CancelAgentRunRequest"
       },
+      "ChatCompletionAllowedToolChoiceParam": {
+        "properties": {
+          "allowed_tools": {
+            "$ref": "#/components/schemas/ChatCompletionAllowedToolsParam"
+          },
+          "type": {
+            "type": "string",
+            "const": "allowed_tools",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["allowed_tools", "type"],
+        "title": "ChatCompletionAllowedToolChoiceParam"
+      },
+      "ChatCompletionAllowedToolsParam": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["auto", "required"],
+            "title": "Mode"
+          },
+          "tools": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tools"
+          }
+        },
+        "type": "object",
+        "required": ["mode", "tools"],
+        "title": "ChatCompletionAllowedToolsParam"
+      },
       "ChatCompletionAssistantMessageParam": {
         "properties": {
           "role": {
@@ -12268,7 +12303,14 @@
           },
           "tool_calls": {
             "items": {
-              "$ref": "#/components/schemas/ChatCompletionMessageToolCallParam"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionMessageFunctionToolCallParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionMessageCustomToolCallParam"
+                }
+              ]
             },
             "type": "array",
             "title": "Tool Calls"
@@ -12373,6 +12415,21 @@
         "required": ["text", "type"],
         "title": "ChatCompletionContentPartTextParam"
       },
+      "ChatCompletionCustomToolParam": {
+        "properties": {
+          "custom": {
+            "$ref": "#/components/schemas/openai__types__chat__chat_completion_custom_tool_param__Custom"
+          },
+          "type": {
+            "type": "string",
+            "const": "custom",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["custom", "type"],
+        "title": "ChatCompletionCustomToolParam"
+      },
       "ChatCompletionDeveloperMessageParam": {
         "properties": {
           "content": {
@@ -12441,7 +12498,41 @@
         "required": ["content", "name", "role"],
         "title": "ChatCompletionFunctionMessageParam"
       },
-      "ChatCompletionMessageToolCall": {
+      "ChatCompletionFunctionToolParam": {
+        "properties": {
+          "function": {
+            "$ref": "#/components/schemas/FunctionDefinition-Input"
+          },
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["function", "type"],
+        "title": "ChatCompletionFunctionToolParam"
+      },
+      "ChatCompletionMessageCustomToolCallParam": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "custom": {
+            "$ref": "#/components/schemas/openai__types__chat__chat_completion_message_custom_tool_call_param__Custom"
+          },
+          "type": {
+            "type": "string",
+            "const": "custom",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["id", "custom", "type"],
+        "title": "ChatCompletionMessageCustomToolCallParam"
+      },
+      "ChatCompletionMessageFunctionToolCall": {
         "properties": {
           "id": {
             "type": "string",
@@ -12459,16 +12550,16 @@
         "additionalProperties": true,
         "type": "object",
         "required": ["id", "function", "type"],
-        "title": "ChatCompletionMessageToolCall"
+        "title": "ChatCompletionMessageFunctionToolCall"
       },
-      "ChatCompletionMessageToolCallParam": {
+      "ChatCompletionMessageFunctionToolCallParam": {
         "properties": {
           "id": {
             "type": "string",
             "title": "Id"
           },
           "function": {
-            "$ref": "#/components/schemas/openai__types__chat__chat_completion_message_tool_call_param__Function"
+            "$ref": "#/components/schemas/openai__types__chat__chat_completion_message_function_tool_call_param__Function"
           },
           "type": {
             "type": "string",
@@ -12478,7 +12569,22 @@
         },
         "type": "object",
         "required": ["id", "function", "type"],
-        "title": "ChatCompletionMessageToolCallParam"
+        "title": "ChatCompletionMessageFunctionToolCallParam"
+      },
+      "ChatCompletionNamedToolChoiceCustomParam": {
+        "properties": {
+          "custom": {
+            "$ref": "#/components/schemas/openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom"
+          },
+          "type": {
+            "type": "string",
+            "const": "custom",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["custom", "type"],
+        "title": "ChatCompletionNamedToolChoiceCustomParam"
       },
       "ChatCompletionNamedToolChoiceParam": {
         "properties": {
@@ -12523,6 +12629,10 @@
       },
       "ChatCompletionStreamOptionsParam": {
         "properties": {
+          "include_obfuscation": {
+            "type": "boolean",
+            "title": "Include Obfuscation"
+          },
           "include_usage": {
             "type": "boolean",
             "title": "Include Usage"
@@ -12590,21 +12700,6 @@
         "type": "object",
         "required": ["content", "role", "tool_call_id"],
         "title": "ChatCompletionToolMessageParam"
-      },
-      "ChatCompletionToolParam": {
-        "properties": {
-          "function": {
-            "$ref": "#/components/schemas/FunctionDefinition-Input"
-          },
-          "type": {
-            "type": "string",
-            "const": "function",
-            "title": "Type"
-          }
-        },
-        "type": "object",
-        "required": ["function", "type"],
-        "title": "ChatCompletionToolParam"
       },
       "ChatCompletionUserMessageParam": {
         "properties": {
@@ -12773,6 +12868,13 @@
               {
                 "type": "string",
                 "enum": [
+                  "gpt-5",
+                  "gpt-5-mini",
+                  "gpt-5-nano",
+                  "gpt-5-2025-08-07",
+                  "gpt-5-mini-2025-08-07",
+                  "gpt-5-nano-2025-08-07",
+                  "gpt-5-chat-latest",
                   "gpt-4.1",
                   "gpt-4.1-mini",
                   "gpt-4.1-nano",
@@ -12993,7 +13095,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["low", "medium", "high"]
+                "enum": ["minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -13098,14 +13200,27 @@
                 "enum": ["none", "auto", "required"]
               },
               {
+                "$ref": "#/components/schemas/ChatCompletionAllowedToolChoiceParam"
+              },
+              {
                 "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceParam"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceCustomParam"
               }
             ],
             "title": "Tool Choice"
           },
           "tools": {
             "items": {
-              "$ref": "#/components/schemas/ChatCompletionToolParam"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionFunctionToolParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionCustomToolParam"
+                }
+              ]
             },
             "type": "array",
             "title": "Tools"
@@ -13135,6 +13250,18 @@
           "user": {
             "type": "string",
             "title": "User"
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity"
           },
           "web_search_options": {
             "$ref": "#/components/schemas/WebSearchOptions"
@@ -13192,6 +13319,13 @@
               {
                 "type": "string",
                 "enum": [
+                  "gpt-5",
+                  "gpt-5-mini",
+                  "gpt-5-nano",
+                  "gpt-5-2025-08-07",
+                  "gpt-5-mini-2025-08-07",
+                  "gpt-5-nano-2025-08-07",
+                  "gpt-5-chat-latest",
                   "gpt-4.1",
                   "gpt-4.1-mini",
                   "gpt-4.1-nano",
@@ -13412,7 +13546,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["low", "medium", "high"]
+                "enum": ["minimal", "low", "medium", "high"]
               },
               {
                 "type": "null"
@@ -13517,14 +13651,27 @@
                 "enum": ["none", "auto", "required"]
               },
               {
+                "$ref": "#/components/schemas/ChatCompletionAllowedToolChoiceParam"
+              },
+              {
                 "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceParam"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceCustomParam"
               }
             ],
             "title": "Tool Choice"
           },
           "tools": {
             "items": {
-              "$ref": "#/components/schemas/ChatCompletionToolParam"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionFunctionToolParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionCustomToolParam"
+                }
+              ]
             },
             "type": "array",
             "title": "Tools"
@@ -13554,6 +13701,18 @@
           "user": {
             "type": "string",
             "title": "User"
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbosity"
           },
           "web_search_options": {
             "$ref": "#/components/schemas/WebSearchOptions"
@@ -14615,6 +14774,49 @@
         "required": ["value", "label"],
         "title": "CreateBlock",
         "description": "Create a block"
+      },
+      "CustomFormatGrammar": {
+        "properties": {
+          "grammar": {
+            "$ref": "#/components/schemas/CustomFormatGrammarGrammar"
+          },
+          "type": {
+            "type": "string",
+            "const": "grammar",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["grammar", "type"],
+        "title": "CustomFormatGrammar"
+      },
+      "CustomFormatGrammarGrammar": {
+        "properties": {
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          },
+          "syntax": {
+            "type": "string",
+            "enum": ["lark", "regex"],
+            "title": "Syntax"
+          }
+        },
+        "type": "object",
+        "required": ["definition", "syntax"],
+        "title": "CustomFormatGrammarGrammar"
+      },
+      "CustomFormatText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": ["type"],
+        "title": "CustomFormatText"
       },
       "DuplicateFileHandling": {
         "type": "string",
@@ -18261,7 +18463,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/ChatCompletionMessageToolCall"
+                  "$ref": "#/components/schemas/ChatCompletionMessageFunctionToolCall"
                 },
                 "type": "array"
               },
@@ -24993,7 +25195,48 @@
         ],
         "title": "ToolSchema"
       },
-      "openai__types__chat__chat_completion_message_tool_call_param__Function": {
+      "openai__types__chat__chat_completion_custom_tool_param__Custom": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomFormatText"
+              },
+              {
+                "$ref": "#/components/schemas/CustomFormatGrammar"
+              }
+            ],
+            "title": "Format"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "Custom"
+      },
+      "openai__types__chat__chat_completion_message_custom_tool_call_param__Custom": {
+        "properties": {
+          "input": {
+            "type": "string",
+            "title": "Input"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["input", "name"],
+        "title": "Custom"
+      },
+      "openai__types__chat__chat_completion_message_function_tool_call_param__Function": {
         "properties": {
           "arguments": {
             "type": "string",
@@ -25007,6 +25250,17 @@
         "type": "object",
         "required": ["arguments", "name"],
         "title": "Function"
+      },
+      "openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "Custom"
       },
       "openai__types__chat__chat_completion_named_tool_choice_param__Function": {
         "properties": {

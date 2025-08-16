@@ -741,6 +741,20 @@ export type CancelAgentRunRequest = {
   run_ids?: Array<string> | null;
 };
 
+export type ChatCompletionAllowedToolChoiceParam = {
+  allowed_tools: ChatCompletionAllowedToolsParam;
+  type: 'allowed_tools';
+};
+
+export type ChatCompletionAllowedToolsParam = {
+  mode: 'auto' | 'required';
+  tools: Array<{
+    [key: string]: unknown;
+  }>;
+};
+
+export type mode = 'auto' | 'required';
+
 export type ChatCompletionAssistantMessageParam = {
   role: 'assistant';
   audio?: Audio | null;
@@ -754,7 +768,10 @@ export type ChatCompletionAssistantMessageParam = {
   function_call?: FunctionCall | null;
   name?: string;
   refusal?: string | null;
-  tool_calls?: Array<ChatCompletionMessageToolCallParam>;
+  tool_calls?: Array<
+    | ChatCompletionMessageFunctionToolCallParam
+    | ChatCompletionMessageCustomToolCallParam
+  >;
 };
 
 export type ChatCompletionAudioParam = {
@@ -793,6 +810,11 @@ export type ChatCompletionContentPartTextParam = {
   type: 'text';
 };
 
+export type ChatCompletionCustomToolParam = {
+  custom: openai__types__chat__chat_completion_custom_tool_param__Custom;
+  type: 'custom';
+};
+
 export type ChatCompletionDeveloperMessageParam = {
   content: string | Array<ChatCompletionContentPartTextParam>;
   role: 'developer';
@@ -809,17 +831,33 @@ export type ChatCompletionFunctionMessageParam = {
   role: 'function';
 };
 
-export type ChatCompletionMessageToolCall = {
+export type ChatCompletionFunctionToolParam = {
+  function: FunctionDefinition_Input;
+  type: 'function';
+};
+
+export type ChatCompletionMessageCustomToolCallParam = {
+  id: string;
+  custom: openai__types__chat__chat_completion_message_custom_tool_call_param__Custom;
+  type: 'custom';
+};
+
+export type ChatCompletionMessageFunctionToolCall = {
   id: string;
   function: Function_Output;
   type: 'function';
   [key: string]: unknown | string | Function_Output | 'function';
 };
 
-export type ChatCompletionMessageToolCallParam = {
+export type ChatCompletionMessageFunctionToolCallParam = {
   id: string;
-  function: openai__types__chat__chat_completion_message_tool_call_param__Function;
+  function: openai__types__chat__chat_completion_message_function_tool_call_param__Function;
   type: 'function';
+};
+
+export type ChatCompletionNamedToolChoiceCustomParam = {
+  custom: openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom;
+  type: 'custom';
 };
 
 export type ChatCompletionNamedToolChoiceParam = {
@@ -833,6 +871,7 @@ export type ChatCompletionPredictionContentParam = {
 };
 
 export type ChatCompletionStreamOptionsParam = {
+  include_obfuscation?: boolean;
   include_usage?: boolean;
 };
 
@@ -846,11 +885,6 @@ export type ChatCompletionToolMessageParam = {
   content: string | Array<ChatCompletionContentPartTextParam>;
   role: 'tool';
   tool_call_id: string;
-};
-
-export type ChatCompletionToolParam = {
-  function: FunctionDefinition_Input;
-  type: 'function';
 };
 
 export type ChatCompletionUserMessageParam = {
@@ -913,6 +947,13 @@ export type CompletionCreateParamsNonStreaming = {
   >;
   model:
     | string
+    | 'gpt-5'
+    | 'gpt-5-mini'
+    | 'gpt-5-nano'
+    | 'gpt-5-2025-08-07'
+    | 'gpt-5-mini-2025-08-07'
+    | 'gpt-5-nano-2025-08-07'
+    | 'gpt-5-chat-latest'
     | 'gpt-4.1'
     | 'gpt-4.1-mini'
     | 'gpt-4.1-nano'
@@ -987,7 +1028,7 @@ export type CompletionCreateParamsNonStreaming = {
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
   prompt_cache_key?: string;
-  reasoning_effort?: 'low' | 'medium' | 'high' | null;
+  reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONSchema
@@ -1003,11 +1044,16 @@ export type CompletionCreateParamsNonStreaming = {
     | 'none'
     | 'auto'
     | 'required'
-    | ChatCompletionNamedToolChoiceParam;
-  tools?: Array<ChatCompletionToolParam>;
+    | ChatCompletionAllowedToolChoiceParam
+    | ChatCompletionNamedToolChoiceParam
+    | ChatCompletionNamedToolChoiceCustomParam;
+  tools?: Array<
+    ChatCompletionFunctionToolParam | ChatCompletionCustomToolParam
+  >;
   top_logprobs?: number | null;
   top_p?: number | null;
   user?: string;
+  verbosity?: 'low' | 'medium' | 'high' | null;
   web_search_options?: WebSearchOptions;
   stream?: false | null;
 };
@@ -1023,6 +1069,13 @@ export type CompletionCreateParamsStreaming = {
   >;
   model:
     | string
+    | 'gpt-5'
+    | 'gpt-5-mini'
+    | 'gpt-5-nano'
+    | 'gpt-5-2025-08-07'
+    | 'gpt-5-mini-2025-08-07'
+    | 'gpt-5-nano-2025-08-07'
+    | 'gpt-5-chat-latest'
     | 'gpt-4.1'
     | 'gpt-4.1-mini'
     | 'gpt-4.1-nano'
@@ -1097,7 +1150,7 @@ export type CompletionCreateParamsStreaming = {
   prediction?: ChatCompletionPredictionContentParam | null;
   presence_penalty?: number | null;
   prompt_cache_key?: string;
-  reasoning_effort?: 'low' | 'medium' | 'high' | null;
+  reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high' | null;
   response_format?:
     | ResponseFormatText
     | ResponseFormatJSONSchema
@@ -1113,11 +1166,16 @@ export type CompletionCreateParamsStreaming = {
     | 'none'
     | 'auto'
     | 'required'
-    | ChatCompletionNamedToolChoiceParam;
-  tools?: Array<ChatCompletionToolParam>;
+    | ChatCompletionAllowedToolChoiceParam
+    | ChatCompletionNamedToolChoiceParam
+    | ChatCompletionNamedToolChoiceCustomParam;
+  tools?: Array<
+    ChatCompletionFunctionToolParam | ChatCompletionCustomToolParam
+  >;
   top_logprobs?: number | null;
   top_p?: number | null;
   user?: string;
+  verbosity?: 'low' | 'medium' | 'high' | null;
   web_search_options?: WebSearchOptions;
   stream: true;
 };
@@ -1524,6 +1582,22 @@ export type CreateBlock = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+};
+
+export type CustomFormatGrammar = {
+  grammar: CustomFormatGrammarGrammar;
+  type: 'grammar';
+};
+
+export type CustomFormatGrammarGrammar = {
+  definition: string;
+  syntax: 'lark' | 'regex';
+};
+
+export type syntax = 'lark' | 'regex';
+
+export type CustomFormatText = {
+  type: 'text';
 };
 
 /**
@@ -3130,7 +3204,7 @@ export type Message = {
   /**
    * The list of tool calls requested. Only applicable for role assistant.
    */
-  tool_calls?: Array<ChatCompletionMessageToolCall> | null;
+  tool_calls?: Array<ChatCompletionMessageFunctionToolCall> | null;
   /**
    * The ID of the tool call. Only applicable for role tool.
    */
@@ -5738,9 +5812,26 @@ export type letta__serialize_schemas__pydantic_agent_schema__ToolSchema = {
   } | null;
 };
 
-export type openai__types__chat__chat_completion_message_tool_call_param__Function =
+export type openai__types__chat__chat_completion_custom_tool_param__Custom = {
+  name: string;
+  description?: string;
+  format?: CustomFormatText | CustomFormatGrammar;
+};
+
+export type openai__types__chat__chat_completion_message_custom_tool_call_param__Custom =
+  {
+    input: string;
+    name: string;
+  };
+
+export type openai__types__chat__chat_completion_message_function_tool_call_param__Function =
   {
     arguments: string;
+    name: string;
+  };
+
+export type openai__types__chat__chat_completion_named_tool_choice_custom_param__Custom =
+  {
     name: string;
   };
 
