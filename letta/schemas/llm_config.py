@@ -70,9 +70,49 @@ class LLMConfig(BaseModel):
         description="Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
     )
     compatibility_type: Optional[Literal["gguf", "mlx"]] = Field(None, description="The framework compatibility type for the model.")
+    verbosity: Optional[Literal["low", "medium", "high"]] = Field(
+        "medium",
+        description="Soft control for how verbose model output should be, used for GPT-5 models.",
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_model_specific_defaults(cls, values):
+        """
+        Set model-specific default values for fields like max_tokens, context_window, etc.
+        This ensures the same defaults from default_config are applied automatically.
+        """
+        model = values.get("model")
+        if model is None:
+            return values
+
+        # Set max_tokens defaults based on model
+        if values.get("max_tokens") is None:
+            if model == "gpt-5":
+                values["max_tokens"] = 16384
+            elif model == "gpt-4.1":
+                values["max_tokens"] = 8192
+            # For other models, the field default of 4096 will be used
+
+        # Set context_window defaults if not provided
+        if values.get("context_window") is None:
+            if model == "gpt-5":
+                values["context_window"] = 128000
+            elif model == "gpt-4.1":
+                values["context_window"] = 256000
+            elif model == "gpt-4o" or model == "gpt-4o-mini":
+                values["context_window"] = 128000
+            elif model == "gpt-4":
+                values["context_window"] = 8192
+
+        # Set verbosity defaults for GPT-5 models
+        if model == "gpt-5" and values.get("verbosity") is None:
+            values["verbosity"] = "medium"
+
+        return values
 
     @model_validator(mode="before")
     @classmethod
@@ -158,6 +198,16 @@ class LLMConfig(BaseModel):
                 context_window=256000,
                 max_tokens=8192,
             )
+        elif model_name == "gpt-5":
+            return cls(
+                model="gpt-5",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=128000,
+                verbosity="medium",
+                max_tokens=16384,
+            )
         elif model_name == "letta":
             return cls(
                 model="memgpt-openai",
@@ -194,6 +244,11 @@ class LLMConfig(BaseModel):
         return config.model_endpoint_type == "google_vertex" and (
             config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
         )
+
+    @classmethod
+    def supports_verbosity(cls, config: "LLMConfig") -> bool:
+        """Check if the model supports verbosity control."""
+        return config.model_endpoint_type == "openai" and config.model.startswith("gpt-5")
 
     @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):

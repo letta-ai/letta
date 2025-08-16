@@ -53,6 +53,11 @@ def is_openai_5_model(model: str) -> bool:
     return model.startswith("gpt-5")
 
 
+def supports_verbosity_control(model: str) -> bool:
+    """Check if the model supports verbosity control, currently only GPT-5 models support this"""
+    return is_openai_5_model(model)
+
+
 def accepts_developer_role(model: str) -> bool:
     """Checks if the model accepts the 'developer' role. Note that not all reasoning models accept this role.
 
@@ -207,6 +212,10 @@ class OpenAIClient(LLMClientBase):
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
 
+        # Add verbosity control for GPT-5 models
+        if supports_verbosity_control(model) and llm_config.verbosity:
+            data.verbosity = llm_config.verbosity
+
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
 
@@ -235,8 +244,8 @@ class OpenAIClient(LLMClientBase):
                         tool.function = FunctionSchema(**structured_output_version)
                     except ValueError as e:
                         logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
-        return data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True)
+        return request_data
 
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -244,7 +253,6 @@ class OpenAIClient(LLMClientBase):
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
-
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
@@ -255,7 +263,6 @@ class OpenAIClient(LLMClientBase):
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
