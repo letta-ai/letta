@@ -16,6 +16,7 @@ import {
   Badge,
   Tooltip,
   ToolsIcon,
+  RawSwitch,
 } from '@letta-cloud/ui-component-library';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useExecuteMCPTool } from '../hooks/useExecuteMCPTool';
@@ -93,6 +94,7 @@ function MCPToolInput(props: MCPToolInputProps) {
     setStagedArguments(defaultArguments);
   }, [defaultArguments]);
 
+  // TODO: @jnjpng refactor this to be all in a form context and avoid button madness
   const handleRunTool = useCallback(() => {
     const args: Record<string, unknown> = stagedArguments.reduce(
       (acc, arg) => {
@@ -152,7 +154,7 @@ function MCPToolInput(props: MCPToolInputProps) {
         color="background"
         borderTop
         borderBottom
-        padding="xsmall"
+        padding="small"
         gap="text"
       >
         <HStack>
@@ -193,16 +195,50 @@ interface MCPToolOutputProps {
 function MCPToolOutput(props: MCPToolOutputProps) {
   const { response, error, isToolRunning } = props;
   const t = useTranslations('ToolManager/MCPToolSimulator');
+  const [isRaw, setIsRaw] = useState(false);
 
-  const outputContent = useMemo(() => {
+  const { outputContent, language } = useMemo(() => {
     if (error) {
-      return error;
+      // Fallback to text if there's an error
+      return { outputContent: error, language: 'text' as const };
     }
     if (response) {
-      return JSON.stringify(response, null, 2);
+      let processedResponse = response;
+
+      if (!isRaw) {
+        // Check if response has a result property that's a string
+        if (typeof response === 'object' && response !== null && 'result' in response) {
+          const responseObj = response as { result: unknown; success?: boolean; [key: string]: unknown };
+
+          // If result is a string, try to parse it as JSON
+          if (typeof responseObj.result === 'string') {
+            try {
+              const parsedResult = JSON.parse(responseObj.result);
+              processedResponse = {
+                ...responseObj,
+                result: parsedResult
+              };
+            } catch {
+              // If parsing fails and the string has newlines, we'll display as xml
+              if (responseObj.result.includes('\n')) {
+                return {
+                  outputContent: responseObj.result,
+                  language: 'xml' as const
+                };
+              }
+              processedResponse = response;
+            }
+          }
+        }
+      }
+
+      return {
+        outputContent: JSON.stringify(processedResponse, null, 2),
+        language: 'javascript' as const
+      };
     }
-    return '';
-  }, [error, response]);
+    return { outputContent: '', language: 'javascript' as const };
+  }, [error, response, isRaw]);
 
   return (
     <VStack fullHeight fullWidth flex color="background">
@@ -211,14 +247,24 @@ function MCPToolOutput(props: MCPToolOutputProps) {
         justify="spaceBetween"
         color="background"
         borderBottom
-        padding="xsmall"
         gap="text"
       >
-        <HStack>
-          <DataObjectIcon/>
-          <Typography variant="body2" bold>
-            {t('ToolOutput.title')}
-          </Typography>
+        <HStack fullWidth align="start" justify="spaceBetween">
+          <HStack padding="small">
+            <DataObjectIcon/>
+            <Typography variant="body2" bold>
+              {t('ToolOutput.title')}
+            </Typography>
+          </HStack>
+          <VStack fullHeight align="center" paddingRight="medium" paddingTop="medium">
+            <RawSwitch
+              size="small"
+              labelFontVariant="body2"
+              label="Raw"
+              checked={isRaw}
+              onCheckedChange={setIsRaw}
+            />
+          </VStack>
         </HStack>
       </HStack>
       <VStack collapseHeight flex overflowY="auto">
@@ -234,13 +280,13 @@ function MCPToolOutput(props: MCPToolOutputProps) {
             </Typography>
           </HStack>
         ) : (
-          <VStack>
+          <VStack paddingLeft="xxsmall">
             <Code
               variant="minimal"
               border={false}
               showLineNumbers={false}
               fontSize="small"
-              language="javascript"
+              language={language}
               code={outputContent}
             />
           </VStack>
