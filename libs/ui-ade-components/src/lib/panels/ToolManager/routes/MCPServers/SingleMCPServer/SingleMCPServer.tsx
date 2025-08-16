@@ -126,7 +126,6 @@ interface ServerToolsListProps {
 function ServerToolsList(props: ServerToolsListProps) {
   const { serverName, ref, selectedTool, onToolSelect } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
-
   const { tools } = useCurrentAgent();
 
   const { data, isError, isFetching, refetch } =
@@ -149,11 +148,13 @@ function ServerToolsList(props: ServerToolsListProps) {
     [tools],
   );
 
+  // Auto-select first tool when data loads or server changes
   useEffect(() => {
-    if (data && data.length > 0 && !selectedTool) {
+    if (data && data.length > 0) {
       onToolSelect(data[0]);
     }
-  }, [data, selectedTool, onToolSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, serverName]); // Intentionally omitting onToolSelect to prevent loops
 
   if (isError || !data || data?.length === 0 || isFetching) {
     return (
@@ -223,11 +224,11 @@ function ServerToolsList(props: ServerToolsListProps) {
 
               return (
                 <HStack
-                  padding="small"
-                  gap={false}
                   key={tool.name}
-                  justify="spaceBetween"
+                  padding="small"
+                  gap="small"
                   align="center"
+                  justify="spaceBetween"
                   className={cn(
                     "w-full",
                     selectedTool?.name === tool.name
@@ -239,14 +240,16 @@ function ServerToolsList(props: ServerToolsListProps) {
                     onClick={() => {
                       onToolSelect(tool);
                     }}
-                    className="flex-1 flex items-center gap-2 text-left cursor-pointer p-1"
+                    className="flex-1 flex items-center gap-2 text-left cursor-pointer overflow-hidden min-w-0"
                   >
-                    <ToolsIcon />
-                    <HStack gap="medium" align="end">
+                    <ToolsIcon className="flex-shrink-0" />
+                    <HStack gap="medium" align="end" flex collapseWidth overflow="hidden">
                       <Typography
                         overflow="ellipsis"
                         bold
                         variant="body2"
+                        noWrap
+                        fullWidth
                       >
                         {tool.name}
                       </Typography>
@@ -256,21 +259,23 @@ function ServerToolsList(props: ServerToolsListProps) {
                             content={healthBadge.label}
                             variant={healthBadge.variant}
                             size="small"
+                            className="flex-shrink-0"
                           />
                         </Tooltip>
                       )}
                     </HStack>
                   </button>
-                  <HStack gap="small">
+                  <div className="flex-shrink-0">
                     <AttachDetachButton
                       attachedId={getAttachedId(tool.name) || undefined}
                       toolType="external_mcp"
                       idToAttach={`${serverName}:${tool.name}`}
                       toolName={tool.name}
                       size="xsmall"
+                      hideLabel
                       disabled={tool.health?.status === 'INVALID'}
                     />
-                  </HStack>
+                  </div>
                 </HStack>
               );
             })}
@@ -369,7 +374,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
               />
             </DropdownMenu>
           </HStack>
-          <VStack gap="large">
+          <HStack gap="xlarge" align="start">
             {getIsStreamableOrHttpServer(server) ? (
               <VStack gap={false}>
                 <Typography uppercase bold variant="body3">
@@ -398,7 +403,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 />
               </div>
             </VStack>
-          </VStack>
+          </HStack>
         </VStack>
       </HStack>
       <VStack fullWidth flex fullHeight borderTop>

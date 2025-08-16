@@ -22,16 +22,18 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useExecuteMCPTool } from '../hooks/useExecuteMCPTool';
 import { useCurrentAgent } from '../../../../../hooks';
 import { parseMCPTool } from '../utils';
+import { AttachDetachButton } from '../../../components/AttachDetachButton/AttachDetachButton';
 
 interface MCPToolInputProps {
   tool: MCPTool;
   serverName: string;
   onRunTool: (args: Record<string, unknown>) => void;
   isToolRunning?: boolean;
+  attachedId?: string;
 }
 
 function MCPToolInput(props: MCPToolInputProps) {
-  const { tool: mcpTool, onRunTool, isToolRunning } = props;
+  const { tool: mcpTool, onRunTool, isToolRunning, serverName, attachedId } = props;
   const t = useTranslations('ToolManager/MCPToolSimulator');
 
   // Parse the SDK tool to get properly typed version
@@ -123,31 +125,28 @@ function MCPToolInput(props: MCPToolInputProps) {
       fullWidth
       fullHeight
     >
-      <HStack fullWidth justify="spaceBetween">
-        <VStack padding="small">
-          <HStack>
-            <ToolsIcon />
-            <Typography variant="body2" bold>
-            {tool.name}
-          </Typography>
-          </HStack>
-          {tool.description && (
-            <Typography variant="body2" color="muted">
-              {tool.description}
+      <VStack padding="small" gap="small">
+        <HStack fullWidth justify="spaceBetween" align="center">
+          <HStack gap="small" flex collapseWidth overflow="hidden">
+            <ToolsIcon className="flex-shrink-0" />
+            <Typography variant="body2" bold noWrap overflow="ellipsis">
+              {tool.name}
             </Typography>
-          )}
-        </VStack>
-        <VStack padding="small">
-          <Button
-            label={t('ToolInput.run')}
+          </HStack>
+          <AttachDetachButton
+            attachedId={attachedId}
+            toolType="external_mcp"
+            idToAttach={`${serverName}:${tool.name}`}
+            toolName={tool.name}
             size="small"
-            onClick={handleRunTool}
-            busy={isToolRunning}
-            preIcon={<PlayIcon />}
-            color="tertiary"
           />
-        </VStack>
-      </HStack>
+        </HStack>
+        {tool.description && (
+          <Typography variant="body2" color="muted" className="line-clamp-3" fullWidth>
+            {tool.description}
+          </Typography>
+        )}
+      </VStack>
       <HStack
         align="center"
         justify="spaceBetween"
@@ -163,6 +162,14 @@ function MCPToolInput(props: MCPToolInputProps) {
             {t('ToolInput.title')}
           </Typography>
         </HStack>
+        <Button
+          label={t('ToolInput.run')}
+          size="small"
+          onClick={handleRunTool}
+          busy={isToolRunning}
+          preIcon={<PlayIcon />}
+          color="tertiary"
+        />
       </HStack>
       <VStack collapseHeight flex overflowY="auto">
         {defaultArguments.length > 0 ? (
@@ -304,12 +311,19 @@ interface MCPToolSimulatorProps {
 export function MCPToolSimulator(props: MCPToolSimulatorProps) {
   const { tool: mcpTool, serverName } = props;
   const t = useTranslations('ToolManager/MCPToolSimulator');
-  const { id: agentId } = useCurrentAgent();
+  const { id: agentId, tools } = useCurrentAgent();
 
   const { mutate, data, error, isPending, reset } = useExecuteMCPTool();
 
   // Parse the SDK tool to get properly typed version
   const tool = useMemo(() => mcpTool ? parseMCPTool(mcpTool) : null, [mcpTool]);
+
+  const attachedId = useMemo(() => {
+    if (!tool || !tools) return undefined;
+    return tools.find(
+      (t) => t.name === tool.name && t.tool_type === 'external_mcp',
+    )?.id;
+  }, [tool, tools]);
 
   const handleRunTool = useCallback(
     (args: Record<string, unknown>) => {
@@ -346,6 +360,7 @@ export function MCPToolSimulator(props: MCPToolSimulatorProps) {
           serverName={serverName}
           isToolRunning={isPending}
           onRunTool={handleRunTool}
+          attachedId={attachedId}
         />
       </Panel>
       <PanelResizeHandle className="h-[1px] w-full bg-border" />
