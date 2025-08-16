@@ -42,6 +42,7 @@ from letta.utils import get_tool_call_id, smart_urljoin
 logger = get_logger(__name__)
 
 
+# TODO: MOVE THIS TO OPENAI_CLIENT
 def openai_check_valid_api_key(base_url: str, api_key: Union[str, None]) -> None:
     if api_key:
         try:
