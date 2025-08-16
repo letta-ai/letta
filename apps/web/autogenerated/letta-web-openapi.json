@@ -1651,6 +1651,54 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "verbosity": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["low"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["medium"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["high"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["low"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["medium"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["high"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -6899,6 +6947,54 @@
                                         {
                                           "type": "string",
                                           "enum": ["mlx"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "verbosity": {
+                                "oneOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": ["low"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["medium"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": ["high"]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": ["low"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["medium"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": ["high"]
                                         },
                                         {
                                           "type": "string",

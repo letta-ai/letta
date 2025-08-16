@@ -2708,6 +2708,10 @@ export type LLMConfig = {
    * The framework compatibility type for the model.
    */
   compatibility_type?: 'gguf' | 'mlx' | null;
+  /**
+   * Soft control for how verbose model output should be, used for GPT-5 models.
+   */
+  verbosity?: 'low' | 'medium' | 'high' | null;
 };
 
 /**

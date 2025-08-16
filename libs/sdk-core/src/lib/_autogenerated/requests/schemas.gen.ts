@@ -7591,6 +7591,21 @@ export const $LLMConfig = {
       title: 'Compatibility Type',
       description: 'The framework compatibility type for the model.',
     },
+    verbosity: {
+      anyOf: [
+        {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Verbosity',
+      description:
+        'Soft control for how verbose model output should be, used for GPT-5 models.',
+      default: 'medium',
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],
