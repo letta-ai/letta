@@ -2,9 +2,9 @@ import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useTranslations } from '@letta-cloud/translations';
 import React, { useCallback } from 'react';
 import {
+  Alert,
   Button,
-  FormActions,
-  HStack,
+  Form,
   RawInput,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -87,24 +87,28 @@ export function ToolSettings(props: ToolSettingsProps) {
   }, [showSave, stagedTool.id, stagedTool.return_char_limit, mutate]);
 
   return (
-    <VStack padding fullWidth fullHeight>
-      <RawInput
-        fullWidth
-        label={t('returnCharLimit.label')}
-        value={stagedTool.return_char_limit}
-        onChange={(e) => {
-          handleReturnCharLimitChange(e.target.value);
-        }}
-      />
-      {showSave && (
-        <FormActions errorMessage={isError ? t('error') : undefined}>
-          <Button label={t('save')} busy={isPending} onClick={handleSaveTool} />
-        </FormActions>
-      )}
+    <VStack padding fullWidth fullHeight gap="large">
+      <Form variant="dashboard">
+        <RawInput
+          label={t('returnCharLimit.label')}
+          value={stagedTool.return_char_limit}
+          onChange={(e) => {
+            handleReturnCharLimitChange(e.target.value);
+          }}
+          type="number"
+          fullWidth
+        />
+        {showSave && (
+          <div>
+            <Button label={t('save')} busy={isPending} onClick={handleSaveTool} />
+          </div>
+        )}
+        {isError && <Alert title={t('error')} variant="destructive" />}
+      </Form>
       {showDelete && (
-        <HStack>
+        <div>
           <DeleteToolButton currentToolId={tool.id || ''} />
-        </HStack>
+        </div>
       )}
     </VStack>
   );

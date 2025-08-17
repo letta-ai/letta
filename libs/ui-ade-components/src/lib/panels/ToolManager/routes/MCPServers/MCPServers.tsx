@@ -16,7 +16,7 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import type { MCPServerItemType } from '@letta-cloud/sdk-core';
-import { toMCPServerTypeLabel, getIsStreamableOrHttpServer } from './types';
+import { getIsStreamableOrHttpServer } from './types';
 import { useToolsServiceListMcpServers } from '@letta-cloud/sdk-core';
 import { ToolSearchInput } from '../../components/ToolSearchInput/ToolSearchInput';
 import { cn } from '@letta-cloud/ui-styles';
@@ -54,7 +54,7 @@ function MCPServerList(props: MCPServerListProps) {
       fullHeight
       borderRight
       fullWidth
-      className={!isMobile ? 'max-w-[300px]' : 'w-full'}
+      className={!isMobile ? 'max-w-[240px]' : 'w-full'}
     >
       <ToolSearchInput
         placeholder={t('search.placeholder')}
@@ -62,12 +62,11 @@ function MCPServerList(props: MCPServerListProps) {
         search={search}
         onSearchChange={onSearchChange}
       />
-      <VStack overflowY="auto" collapseHeight flex gap={false}>
+      <VStack overflowY="auto" collapseHeight flex gap="small" padding="small">
         <AddServerDialog
           trigger={
             <HStack
-              paddingY="small"
-              paddingX="medium"
+              padding="small"
               gap="small"
               justify="spaceBetween"
               align="center"
@@ -78,7 +77,7 @@ function MCPServerList(props: MCPServerListProps) {
                 <div className="pl-1">
                   <MCPServerLogo serverUrl="" />
                 </div>
-                <VStack collapseWidth flex gap="text">
+                <VStack collapseWidth flex gap="small">
                   <Typography
                     fullWidth
                     overflow="ellipsis"
@@ -101,8 +100,7 @@ function MCPServerList(props: MCPServerListProps) {
         />
         {servers.map((server) => (
           <HStack
-            paddingY="small"
-            paddingX="medium"
+            padding="small"
             gap="small"
             justify="spaceBetween"
             align="center"
@@ -130,7 +128,7 @@ function MCPServerList(props: MCPServerListProps) {
                   }
                 />
               </div>
-              <VStack collapseWidth flex gap="text">
+              <VStack collapseWidth flex gap="small" align="start">
                 <Typography
                   fullWidth
                   overflow="ellipsis"
@@ -140,20 +138,18 @@ function MCPServerList(props: MCPServerListProps) {
                   {server.server_name || 'unnamed'}
                 </Typography>
                 {!isMobile && (
-                  <Typography
-                    fullWidth
-                    variant="body3"
-                    overflow="ellipsis"
-                    noWrap
-                  >
-                    {!getIsStreamableOrHttpServer(server)
-                      ? server.command
-                      : getObfuscatedMCPServerUrl(server.server_url)}
-                  </Typography>
+                  <Badge
+                    size="small"
+                    content={
+                      !getIsStreamableOrHttpServer(server)
+                        ? server.command
+                        : getObfuscatedMCPServerUrl(server.server_url)
+                    }
+                    className="max-w-full truncate"
+                  />
                 )}
               </VStack>
             </HStack>
-            <Badge size="small" content={toMCPServerTypeLabel(server.type)} />
           </HStack>
         ))}
       </VStack>

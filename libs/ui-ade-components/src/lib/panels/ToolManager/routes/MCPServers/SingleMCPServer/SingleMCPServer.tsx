@@ -30,6 +30,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -41,6 +42,8 @@ import { getObfuscatedMCPServerUrl } from '@letta-cloud/utils-shared';
 import { MCPServerLogo } from '../../MCPServerExplorer/MCPServerLogo/MCPServerLogo';
 import { toMCPServerTypeLabel } from '../types';
 import { UpdateMCPServerDialog } from '../UpdateMCPServerDialog/UpdateMCPServerDialog';
+import { getAuthModeAndValuesFromServer } from '../utils';
+import { AuthModes } from '../AuthenticationSection';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -187,7 +190,8 @@ function ServerToolsList(props: ServerToolsListProps) {
           minSize={20}
         >
           <VStack
-            gap={false}
+            gap="small"
+            padding="small"
             fullHeight
             color="background"
             overflowY="auto"
@@ -307,8 +311,29 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
   const { server } = props;
 
   const t = useTranslations('ToolManager/SingleMCPServer');
+  const tAuth = useTranslations('ToolsEditor/MCPServers');
 
   const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
+
+  // Determine auth type for display
+  const authType = useMemo(() => {
+    // StdioServerConfig doesn't have auth properties
+    if (!getIsStreamableOrHttpServer(server)) {
+      return tAuth('AddServerDialog.authMode.none');
+    }
+
+    const { authMode } = getAuthModeAndValuesFromServer(server);
+    switch (authMode) {
+      case AuthModes.NONE:
+        return tAuth('AddServerDialog.authMode.none');
+      case AuthModes.API_KEY:
+        return tAuth('AddServerDialog.authMode.apiKey');
+      case AuthModes.CUSTOM_HEADERS:
+        return tAuth('AddServerDialog.authMode.customHeaders');
+      default:
+        return tAuth('AddServerDialog.authMode.none');
+    }
+  }, [server, tAuth]);
 
   const ref = useRef<ServerToolsRef>({
     reload: () => {
@@ -380,16 +405,24 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 <Typography uppercase bold variant="body3">
                   {t('serverUrl')}
                 </Typography>
-                <Typography>
-                  {getObfuscatedMCPServerUrl(server.server_url)}
-                </Typography>
+                <div>
+                  <Badge
+                    content={getObfuscatedMCPServerUrl(server.server_url)}
+                    size="small"
+                  />
+                </div>
               </VStack>
             ) : (
               <VStack gap={false}>
                 <Typography uppercase bold variant="body3">
                   {t('command')}
                 </Typography>
-                <Typography>{server.command}</Typography>
+                <div>
+                  <Badge
+                    content={server.command}
+                    size="small"
+                  />
+                </div>
               </VStack>
             )}
             <VStack gap={false}>
@@ -399,6 +432,17 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
               <div>
                 <Badge
                   content={toMCPServerTypeLabel(server.type)}
+                  size="small"
+                />
+              </div>
+            </VStack>
+            <VStack gap={false}>
+              <Typography uppercase bold variant="body3">
+                {t('authentication')}
+              </Typography>
+              <div>
+                <Badge
+                  content={authType}
                   size="small"
                 />
               </div>

@@ -4,7 +4,7 @@ import {
   Accordion,
   CloseIcon,
   EditIcon,
-  EyeOpenIcon,
+  ExternalLinkIcon,
   HStack,
   LinkOffIcon,
   RawInput,
@@ -157,6 +157,8 @@ function ToolsList(props: ToolsListProps) {
       })
       .map((tool) => {
         const isCoreTool = isLettaTool(tool.tool_type);
+        const isMCPTool = tool.tool_type === 'external_mcp';
+        const isReadOnlyTool = isCoreTool || isMCPTool;
 
         return {
           name: tool.name || '',
@@ -173,9 +175,9 @@ function ToolsList(props: ToolsListProps) {
                 hideLabel
                 size="xsmall"
                 color="tertiary"
-                preIcon={isCoreTool ? <EyeOpenIcon /> : <EditIcon />}
+                preIcon={isReadOnlyTool ? <ExternalLinkIcon /> : <EditIcon />}
                 label={
-                  isCoreTool
+                  isReadOnlyTool
                     ? t('ToolsList.viewDetails')
                     : t('ToolsList.editTool')
                 }

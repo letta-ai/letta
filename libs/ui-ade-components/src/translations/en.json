@@ -1639,7 +1639,8 @@
     "serverName": "Server name",
     "serverType": "Type",
     "serverUrl": "Base Server URL",
-    "command": "Command"
+    "command": "Command",
+    "authentication": "Auth"
   },
   "ComposioToolViewer": {
     "developer": "Developer",

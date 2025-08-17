@@ -8,6 +8,7 @@ import {
   CogIcon,
   DataObjectIcon,
   HStack,
+  Markdown,
   RawCodeEditor,
   SegmentIcon,
   TabGroup,
@@ -84,7 +85,7 @@ function LettaToolContent(props: LettaToolContentProps) {
             <Typography variant="body3" bold>
               {t('description')}
             </Typography>
-            <Typography>{tool.description}</Typography>
+            <Markdown text={tool.description || ''} />
           </VStack>
           <VStack gap="small" width="contained">
             <Typography variant="body3" bold>

@@ -7,6 +7,7 @@ import {
   DataObjectIcon,
   ExternalLinkIcon,
   HStack,
+  Markdown,
   RawCodeEditor,
   SegmentIcon,
   TabGroup,
@@ -53,8 +54,7 @@ function MCPToolContent(props: MCPToolContentProps) {
         <Typography variant="body3" bold>
           {t('description')}
         </Typography>
-
-        <Typography>{description}</Typography>
+        <Markdown text={description} />
       </VStack>
       <VStack gap="small" width="contained">
         <Typography variant="body3" bold>
