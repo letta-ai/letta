@@ -12,7 +12,7 @@ import type { MemoryType } from '@letta-cloud/ui-component-library';
 import {
   type AgentState,
   useBlocksServiceCreateBlock,
-  UseAgentsServiceRetrieveAgentKeyFn,
+  UseAgentsServiceRetrieveAgentKeyFn, useAgentsServiceAttachCoreMemoryBlock
 } from '@letta-cloud/sdk-core';
 import { useCallback, useMemo } from 'react';
 import { useADEPermissions } from '../useADEPermissions/useADEPermissions';
@@ -37,7 +37,7 @@ interface UseCreateMemoryBlockOptions {
   memoryType: MemoryType;
   agentId?: string;
   lettaTemplateId?: string;
-  templateId?: string;
+  agentTemplateId?: string;
   projectId: string;
   onSuccess?: (createdBlockLabel: string) => void;
   onError?: (error: Error) => void;
@@ -55,6 +55,8 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
   const [canCreateAgent] = useADEPermissions(ApplicationServices.CREATE_AGENT);
 
   const { mutate, isPending, isError, error } = useBlocksServiceCreateBlock();
+  const { mutate: attachMemory, isPending: isAttaching, isError: errorAttaching } = useAgentsServiceAttachCoreMemoryBlock();
+
 
   const queryClient = useQueryClient();
 
@@ -86,37 +88,46 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
         },
         {
           onSuccess: (createdBlock) => {
-            // Update agent state cache to add the new block
-            queryClient.setQueriesData<AgentState | undefined>(
-              {
-                queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                  agentId,
-                }),
-              },
-              (oldData) => {
-                if (!oldData) {
-                  return oldData;
-                }
 
-                const newBlock = {
-                  id: createdBlock.id,
-                  label: createdBlock.label,
-                  value: createdBlock.value,
-                  limit: createdBlock.limit,
-                  description: createdBlock.description,
-                  preserve_on_migration: createdBlock.preserve_on_migration,
-                  read_only: createdBlock.read_only,
-                };
 
-                return {
-                  ...oldData,
-                  memory: {
-                    ...oldData.memory,
-                    blocks: [...oldData.memory.blocks, newBlock],
+            attachMemory({
+              agentId,
+              blockId: createdBlock.id || '',
+            }, {
+              onSuccess: () => {
+                // Update agent state cache to add the new block
+                queryClient.setQueriesData<AgentState | undefined>(
+                  {
+                    queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                      agentId,
+                    }),
                   },
-                };
-              },
-            );
+                  (oldData) => {
+                    if (!oldData) {
+                      return oldData;
+                    }
+
+                    const newBlock = {
+                      id: createdBlock.id,
+                      label: createdBlock.label,
+                      value: createdBlock.value,
+                      limit: createdBlock.limit,
+                      description: createdBlock.description,
+                      preserve_on_migration: createdBlock.preserve_on_migration,
+                      read_only: createdBlock.read_only,
+                    };
+
+                    return {
+                      ...oldData,
+                      memory: {
+                        ...oldData.memory,
+                        blocks: [...oldData.memory.blocks, newBlock],
+                      },
+                    };
+                  },
+                );
+              }
+            })
 
             onSuccess?.(createdBlock.label || '');
           },
@@ -135,19 +146,20 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
       queryClient,
       onSuccess,
       onError,
+      attachMemory
     ],
   );
 
   return {
     handleCreate,
-    isPending,
-    isError,
+    isPending: isPending || isAttaching,
+    isError: isError || errorAttaching,
     error,
   };
 }
 
 interface UseCreateTemplateMemoryBlockOptions {
-  templateId?: string;
+  agentTemplateId?: string;
   lettaTemplateId: string;
   projectId?: string;
   onSuccess?: (createdBlockLabel: string) => void;
@@ -157,7 +169,7 @@ interface UseCreateTemplateMemoryBlockOptions {
 function useCreateTemplateMemoryBlock(
   options: UseCreateTemplateMemoryBlockOptions,
 ) {
-  const { templateId, lettaTemplateId, projectId, onSuccess, onError } =
+  const { agentTemplateId, lettaTemplateId, projectId, onSuccess, onError } =
     options;
   const [canCreateTemplates] = useADEPermissions(
     ApplicationServices.CREATE_BLOCK_TEMPLATES,
@@ -252,11 +264,11 @@ function useCreateTemplateMemoryBlock(
             });
 
             // If templateId is provided, attach the block to the agent template
-            if (templateId) {
+            if (agentTemplateId) {
               attachMutation.mutate(
                 {
                   params: {
-                    agentTemplateId: templateId,
+                    agentTemplateId: agentTemplateId,
                     blockTemplateId: createdBlock.body.id,
                   },
                 },
@@ -266,7 +278,7 @@ function useCreateTemplateMemoryBlock(
                     void queryClient.invalidateQueries({
                       queryKey:
                         webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
-                          templateId,
+                          agentTemplateId,
                         ),
                     });
 
@@ -280,7 +292,7 @@ function useCreateTemplateMemoryBlock(
                       {
                         queryKey:
                           webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
-                            templateId,
+                            agentTemplateId,
                           ),
                       },
                       (oldData) => {
@@ -345,7 +357,7 @@ function useCreateTemplateMemoryBlock(
       attachMutation,
       lettaTemplateId,
       queryClient,
-      templateId,
+      agentTemplateId,
       simulatedAgent,
       onSuccess,
       handleCreateSimulatedAgentMemoryBlock,
@@ -377,7 +389,7 @@ export function useCreateMemoryBlock(options: UseCreateMemoryBlockOptions) {
   });
 
   const templateHook = useCreateTemplateMemoryBlock({
-    templateId: options.templateId,
+    agentTemplateId: options.agentTemplateId,
     projectId,
     lettaTemplateId: options.lettaTemplateId || '',
     onSuccess,

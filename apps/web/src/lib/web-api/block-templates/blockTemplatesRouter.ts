@@ -375,10 +375,10 @@ export async function attachBlockToAgentTemplate(
   }
 
   // Verify agent template exists and belongs to the organization
-  const agentTemplate = await db.query.agentTemplates.findFirst({
+  const agentTemplate = await db.query.agentTemplateV2.findFirst({
     where: and(
-      eq(agentTemplates.id, agentTemplateId),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplateV2.id, agentTemplateId),
+      eq(agentTemplateV2.organizationId, organizationId),
     ),
   });
 
@@ -408,27 +408,11 @@ export async function attachBlockToAgentTemplate(
     };
   }
 
-  // Get the current agent template schema to attach the block to
-  const currentSchema = await db.query.agentTemplateV2.findFirst({
-    where: and(eq(agentTemplateV2.id, agentTemplateId)),
-    orderBy: (schema, { desc }) => [desc(schema.createdAt)],
-  });
-
-  if (!currentSchema) {
-    return {
-      status: 400,
-      body: {
-        message: 'Agent template schema not found',
-        errorCode: 'validation',
-      },
-    };
-  }
-
   // Check if association already exists
   const existingAssociation =
     await db.query.agentTemplateBlockTemplates.findFirst({
       where: and(
-        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, currentSchema.id),
+        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, agentTemplate.id),
         eq(agentTemplateBlockTemplates.blockTemplateId, blockTemplateId),
       ),
     });
@@ -445,9 +429,9 @@ export async function attachBlockToAgentTemplate(
 
   // Create the association
   await db.insert(agentTemplateBlockTemplates).values({
-    agentTemplateSchemaId: currentSchema.id,
+    agentTemplateSchemaId: agentTemplate.id,
     blockTemplateId,
-    lettaTemplateId: currentSchema.lettaTemplateId,
+    lettaTemplateId: agentTemplate.lettaTemplateId,
     blockLabel: output.label,
   });
 
@@ -483,10 +467,10 @@ export async function detachBlockFromAgentTemplate(
   }
 
   // Verify agent template exists and belongs to the organization
-  const agentTemplate = await db.query.agentTemplates.findFirst({
+  const agentTemplate = await db.query.agentTemplateV2.findFirst({
     where: and(
-      eq(agentTemplates.id, agentTemplateId),
-      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplateV2.id, agentTemplateId),
+      eq(agentTemplateV2.organizationId, organizationId),
     ),
   });
 
@@ -499,26 +483,12 @@ export async function detachBlockFromAgentTemplate(
     };
   }
 
-  // Get the current agent template schema
-  const currentSchema = await db.query.agentTemplateV2.findFirst({
-    where: and(eq(agentTemplateV2.id, agentTemplateId)),
-    orderBy: (schema, { desc }) => [desc(schema.createdAt)],
-  });
-
-  if (!currentSchema) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent template schema not found',
-      },
-    };
-  }
 
   // Check if association exists
   const existingAssociation =
     await db.query.agentTemplateBlockTemplates.findFirst({
       where: and(
-        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, currentSchema.id),
+        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, agentTemplate.id),
         eq(agentTemplateBlockTemplates.blockTemplateId, blockTemplateId),
       ),
     });
@@ -537,7 +507,7 @@ export async function detachBlockFromAgentTemplate(
     .delete(agentTemplateBlockTemplates)
     .where(
       and(
-        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, currentSchema.id),
+        eq(agentTemplateBlockTemplates.agentTemplateSchemaId, agentTemplate.id),
         eq(agentTemplateBlockTemplates.blockTemplateId, blockTemplateId),
       ),
     );

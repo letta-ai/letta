@@ -26,11 +26,11 @@ import { useSetAtom } from 'jotai/index';
 import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
 import { useADEAppContext } from '../../../AppContext/AppContext';
 import { useCreateMemoryBlock } from '../../../hooks/useCreateMemoryBlock/useCreateMemoryBlock';
-import { useCurrentLettaTemplate } from '../../../hooks/useCurrentLettaTemplate/useCurrentLettaTemplate';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { CoreMemoryBlock } from '../types';
 import type { CoreMemoryBlockType } from '../types';
+import { useCurrentTemplate } from '../../../hooks/useCurrentTemplate/useCurrentTemplate';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -134,6 +134,8 @@ function CustomMemoryBlockForm() {
   );
 }
 
+type TabTypes = 'custom' | 'examples';
+
 export function CreateNewMemoryBlockDialog(
   props: CreateNewMemoryBlockDialogProps,
 ) {
@@ -141,16 +143,15 @@ export function CreateNewMemoryBlockDialog(
   const { projectId } = useADEAppContext();
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('CreateNewMemoryBlockDialog');
-  const { lettaTemplateId } = useCurrentLettaTemplate();
+  const template = useCurrentTemplate();
+  const { templateId: agentTemplateId } = useCurrentAgentMetaData();
 
   const {
     agentId: currentAgentId,
-    templateId,
     isTemplate,
   } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
 
-  type TabTypes = 'custom' | 'examples';
 
   const [tab, setTab] = useState<TabTypes>('custom');
   const [blockType, setBlockType] = useState<CoreMemoryBlockType>(
@@ -213,8 +214,8 @@ export function CreateNewMemoryBlockDialog(
   const { handleCreate, isPending, error } = useCreateMemoryBlock({
     memoryType: isTemplate ? 'templated' : 'agent',
     agentId: currentAgentId,
-    lettaTemplateId,
-    templateId,
+    lettaTemplateId: template?.id || '',
+    agentTemplateId,
     projectId,
     onSuccess: (createdBlock) => {
       setCurrentMemoryBlock(createdBlock);
@@ -264,15 +265,14 @@ export function CreateNewMemoryBlockDialog(
       handleCreate({
         label: values.label,
         value: values.value,
-        lettaTemplateId,
-
+        lettaTemplateId: template?.id || '',
         limit: parseInt(values.characterLimit, 10),
         description: values.description,
         readOnly: values.readonly,
         projectId,
       });
     },
-    [currentAgentId, lettaTemplateId, projectId, handleCreate, t, blockType, agent.id],
+    [currentAgentId, template, projectId, handleCreate, t, blockType, agent.id],
   );
 
   const handleExampleSelect = useCallback(
