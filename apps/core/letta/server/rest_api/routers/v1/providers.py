@@ -76,6 +76,9 @@ async def check_provider(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     try:
+        if request.base_url and len(request.base_url) == 0:
+            # set to null if empty string
+            request.base_url = None
         await server.provider_manager.check_provider_api_key(provider_check=request)
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={request.provider_type.value}"}
