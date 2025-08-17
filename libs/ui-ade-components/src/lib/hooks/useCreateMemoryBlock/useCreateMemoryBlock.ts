@@ -184,6 +184,7 @@ function useCreateTemplateMemoryBlock(
   const simulatedAgent = useCurrentAgent();
   const agentVariables = useCurrentSimulatedAgentVariables();
 
+
   const handleCreateSimulatedAgentMemoryBlock = useCallback(
     (createdBlock: BlockTemplateType) => {
       if (!simulatedAgent) {

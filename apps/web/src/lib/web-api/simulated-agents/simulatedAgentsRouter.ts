@@ -617,6 +617,29 @@ async function syncDefaultSimulatedAgent(
       lettaAgentsId,
     });
 
+    const simulatedAgentRecord = await db.query.simulatedAgent.findFirst({
+      where: and(
+        eq(simulatedAgent.agentId, agent.id),
+        eq(simulatedAgent.organizationId, activeOrganizationId),
+      ),
+      columns: {
+        memoryVariables: true,
+      },
+    });
+
+     await updateAgentFromAgentTemplateId({
+      agentToUpdateId: agent.id,
+      agentTemplateId: agentTemplateId,
+      organizationId: activeOrganizationId,
+      lettaAgentsUserId: lettaAgentsId,
+      preserveCoreMemories: false,
+      memoryVariables: simulatedAgentRecord?.memoryVariables
+        ? convertMemoryVariablesV1ToRecordMemoryVariables(
+          simulatedAgentRecord.memoryVariables,
+        )
+        : {},
+    });
+
     return {
       status: 200,
       body: {
