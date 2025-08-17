@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "dev": "ts-node --swc ./src/main.ts",
-    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:mixpanel --external:posthog-node"
+    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:nanoid --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:mixpanel --external:posthog-node"
   },
   "author": "",
   "license": "ISC",
@@ -29,6 +29,7 @@
     "js-tiktoken": "^1.0.19",
     "lodash-es": "^4.17.21",
     "mixpanel": "^0.18.1",
+    "nanoid": "^5.1.5",
     "pg": "^8.13.3",
     "postgres": "^3.4.5",
     "posthog-node": "^5.4.0",
