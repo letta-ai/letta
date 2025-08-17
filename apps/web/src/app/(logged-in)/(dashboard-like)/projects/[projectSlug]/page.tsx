@@ -14,8 +14,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import React, { useMemo } from 'react';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-
-import { webApi, webApiQueryKeys } from '$web/client';
 import { useTranslations } from '@letta-cloud/translations';
 import { Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
@@ -24,6 +22,7 @@ import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 function RecentAgentsSection() {
   const { slug, id } = useCurrentProject();
@@ -91,18 +90,15 @@ function RecentAgentsSection() {
 
 function RecentTemplatesSection() {
   const { id: currentProjectId, slug } = useCurrentProject();
-  const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
-    queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+  const { data } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(currentProjectId, {
       search: '',
-      projectId: currentProjectId,
-      includeAgentState: true,
       limit: 3,
     }),
     queryData: {
       query: {
-        projectId: currentProjectId,
-        includeAgentState: true,
-        limit: 3,
+        project_id: currentProjectId,
+        limit: '3',
       },
     },
   });
@@ -113,24 +109,24 @@ function RecentTemplatesSection() {
 
   const t = useTranslations('projects/(projectSlug)/page');
 
-  const templatesList = useMemo(() => data?.body.agentTemplates || [], [data]);
+  const templatesList = useMemo(() => data?.body.templates || [], [data]);
 
   return (
     <BoxList
       icon={<TemplateIcon />}
       title={t('RecentTemplatesSection.title')}
-      items={templatesList.map((agent) => ({
-        title: agent.name,
+      items={templatesList.map((template) => ({
+        title: template.name,
         description:
-          typeof agent.agentState?.description === 'string'
-            ? agent.agentState?.description
+          typeof template.description === 'string' && template.description.length > 0
+            ? template.description
             : t('RecentTemplatesSection.noDescription'),
         action: (
           <Button
             color="secondary"
             label={t('RecentTemplatesSection.viewTemplate')}
             size="small"
-            href={`/projects/${slug}/templates/${agent.name}`}
+            href={`/projects/${template.project_slug}/templates/${template.name}`}
           />
         ),
       }))}

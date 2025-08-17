@@ -5,7 +5,7 @@ import { VStack } from '../../framing/VStack/VStack';
 export function LettaLoaderPanel() {
   return (
     <VStack padding fullWidth collapseHeight align="center" justify="center">
-      <LettaLoader size="large" />
+      <LettaLoader variant="grower" size="large" />
     </VStack>
   );
 }

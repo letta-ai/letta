@@ -1,6 +1,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import type { OptionType } from '@letta-cloud/ui-component-library';
+import { ActionCard, Avatar, HStack } from '@letta-cloud/ui-component-library';
 import { PlusIcon } from '@letta-cloud/ui-component-library';
 import {
   Button,
@@ -10,13 +11,12 @@ import {
   VStack,
   RawInput,
 } from '@letta-cloud/ui-component-library';
-import { webApi, webApiQueryKeys } from '$web/client';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useDebouncedValue } from '@mantine/hooks';
 import { SearchIcon } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { AgentTemplateCard } from '$web/client/components';
 import { CreateNewTemplateDialog } from '../_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 const PAGE_SIZE = 20;
 
@@ -31,29 +31,29 @@ function AgentTemplateList(props: ProjectStagingListProps) {
   const { search } = props;
 
   const { data, isLoading, fetchNextPage, hasNextPage } =
-    webApi.agentTemplates.listAgentTemplates.useInfiniteQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
+    cloudAPI.templates.listTemplates.useInfiniteQuery({
+      queryKey: cloudQueryKeys.templates.infiniteListTemplatesProjectScopedWithSearch(currentProjectId, {
         search,
-        projectId: currentProjectId,
       }),
       queryData: ({ pageParam }) => ({
         query: {
           search,
-          projectId: currentProjectId,
-          offset: pageParam.offset,
-          limit: pageParam.limit,
+          project_id: currentProjectId,
+          offset: pageParam.offset.toString(),
+          limit: pageParam.limit.toString(),
         },
       }),
       initialPageParam: { offset: 0, limit: PAGE_SIZE },
       getNextPageParam: (lastPage, allPages) => {
-        return lastPage.body.hasNextPage
+        return lastPage.body.has_next_page
           ? { limit: PAGE_SIZE, offset: allPages.length * PAGE_SIZE }
           : undefined;
       },
     });
 
+
   const deployedAgentTemplates = useMemo(() => {
-    return (data?.pages || []).flatMap((v) => v.body.agentTemplates);
+    return (data?.pages || []).flatMap((v) => v.body.templates);
   }, [data]);
 
   if (deployedAgentTemplates.length === 0) {
@@ -72,16 +72,33 @@ function AgentTemplateList(props: ProjectStagingListProps) {
     );
   }
 
+
+
   return (
     <>
-      {deployedAgentTemplates.map((agent) => (
-        <AgentTemplateCard agent={agent} key={agent.id} />
+      {deployedAgentTemplates.map((template) => (
+        <ActionCard
+          key={template.id}
+          icon={<Avatar size="small" name={template.name} />}
+          title={template.name}
+          subtitle={template.description}
+          mainAction={
+            <HStack>
+              <Button
+                href={`/projects/${template.project_slug}/templates/${template.name}`}
+                color="secondary"
+                label={t('openInADE')}
+              />
+            </HStack>
+          }
+        >
+        </ActionCard>
       ))}
       {hasNextPage && (
         <Button
           fullWidth
           color="primary"
-          label="Load more agents"
+          label={t('loadMore')}
           onClick={() => {
             void fetchNextPage();
           }}

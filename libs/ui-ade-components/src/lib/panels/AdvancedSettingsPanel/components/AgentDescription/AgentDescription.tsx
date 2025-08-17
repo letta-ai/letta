@@ -8,11 +8,11 @@ import {
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useQueryClient } from '@tanstack/react-query';
 import { useADEPermissions } from '../../../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { RawTextArea, Spinner } from '@letta-cloud/ui-component-library';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 export function AgentDescription() {
   const { agentId } = useCurrentAgentMetaData();
@@ -27,7 +27,7 @@ export function AgentDescription() {
   const debouncedMutation = useDebouncedCallback((args) => {
     mutate(args);
     void queryClient.invalidateQueries({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+      queryKey: cloudQueryKeys.templates.listTemplates,
       exact: false,
     });
   }, 500);

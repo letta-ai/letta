@@ -1,19 +1,27 @@
 import {
-  AgentsService,
-  UseAgentsServiceRetrieveAgentKeyFn,
-} from '@letta-cloud/sdk-core';
-import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
 import React from 'react';
-import { db, agentTemplates } from '@letta-cloud/service-database';
-import { and, eq, isNull } from 'drizzle-orm';
+import {
+  db,
+  lettaTemplates,
+  simulatedAgent,
+} from '@letta-cloud/service-database';
+import { and, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { webApiQueryKeys } from '$web/client';
-import { getProjectByIdOrSlug } from '$web/web-api/router';
+import {
+  convertAgentTemplateToPayload,
+  getProjectByIdOrSlug,
+} from '$web/web-api/router';
 import { getUserOrRedirect } from '$web/server/auth';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { contracts } from '@letta-cloud/sdk-web';
+import type { AgentState} from '@letta-cloud/sdk-core';
+import { AgentsService, UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
 interface TemplateBaseLayoutProps {
   params: Promise<{
@@ -46,51 +54,56 @@ async function TemplateBaseLayout(props: TemplateBaseLayoutProps) {
     return;
   }
 
-  const agentTemplate = await db.query.agentTemplates.findFirst({
+  const template = await db.query.lettaTemplates.findFirst({
     where: and(
-      eq(agentTemplates.name, templateName),
-      eq(agentTemplates.organizationId, user.activeOrganizationId),
-      isNull(agentTemplates.deletedAt),
+      eq(lettaTemplates.name, templateName),
+      eq(lettaTemplates.organizationId, user.activeOrganizationId),
+      eq(lettaTemplates.projectId, project.body.id),
+      eq(lettaTemplates.version, 'current'),
     ),
     with: {
-      launchLinkConfiguration: true,
+      agentTemplates: {
+        limit: 1,
+        with: {
+          simulatedAgents: {
+            limit: 1,
+            where: eq(simulatedAgent.isDefault, true),
+          },
+        },
+      },
     },
     columns: {
       name: true,
+      projectId: true,
       id: true,
     },
   });
 
-  const agentId = agentTemplate?.id;
 
-  if (!agentId) {
+
+  if (!template) {
     redirect(`/projects/${projectSlug}/agents`);
     return;
   }
 
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId,
-    },
-    {
+ let agent: AgentState | undefined;
+
+  const { agentTemplates, ...selectedTemplate } = template;
+
+  const defaultAgentTemplate = agentTemplates[0];
+
+  const defaultSimulatedAgent = defaultAgentTemplate?.simulatedAgents[0];
+
+  if (defaultSimulatedAgent) {
+    agent = await AgentsService.retrieveAgent({
+      agentId: defaultSimulatedAgent.agentId,
+    }, {
       user_id: user.lettaAgentsId,
-    },
-  );
+    }).catch(() => undefined);
+  }
+
 
   const queries = [
-    queryClient.prefetchQuery({
-      queryKey: webApiQueryKeys.launchLinks.getLaunchLink(agentTemplate.id),
-      queryFn: () => ({
-        status: agentTemplate.launchLinkConfiguration ? 200 : 404,
-        body: agentTemplate.launchLinkConfiguration,
-      }),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-        agentId,
-      }),
-      queryFn: () => agent,
-    }),
     queryClient.prefetchQuery({
       queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
       queryFn: () => ({
@@ -98,15 +111,60 @@ async function TemplateBaseLayout(props: TemplateBaseLayoutProps) {
       }),
     }),
     queryClient.prefetchQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
-        name: agentTemplate.name,
+      queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
+        project_slug: projectSlug,
+        name: templateName,
       }),
       queryFn: () => ({
         body: {
-          agentTemplates: [agentTemplate],
+          templates: [selectedTemplate],
         },
       }),
     }),
+    ...(defaultAgentTemplate
+      ? [
+          queryClient.prefetchQuery({
+            queryKey: webApiQueryKeys.templates.getAgentTemplateByEntityId(
+              template.id,
+              'default',
+            ),
+            queryFn: () => ({
+              body: convertAgentTemplateToPayload(defaultAgentTemplate),
+            }),
+          }),
+        ]
+      : []),
+    ...(defaultSimulatedAgent && defaultAgentTemplate
+      ? [
+          queryClient.prefetchQuery<
+            ServerInferResponses<
+              typeof contracts.simulatedAgents.getDefaultSimulatedAgent
+            >
+          >({
+            queryKey: webApiQueryKeys.simulatedAgents.getDefaultSimulatedAgent(
+              defaultAgentTemplate.id,
+            ),
+            queryFn: () => ({
+              status: 200,
+              body: {
+                name: '',
+                agentTemplateId: defaultAgentTemplate.id,
+                isCorrupted: !agent,
+                agentId: defaultSimulatedAgent.agentId,
+                id: defaultSimulatedAgent.id,
+              },
+            }),
+          }),
+        ]
+      : []),
+    ...(agent ? [
+      queryClient.prefetchQuery<AgentState>({
+        queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+          agentId: agent.id,
+        }),
+        queryFn: () => agent,
+      }),
+    ] : []),
   ];
 
   await Promise.all(queries);

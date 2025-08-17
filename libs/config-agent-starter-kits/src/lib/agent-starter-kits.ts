@@ -27,7 +27,9 @@ export interface StarterKit {
   architecture: StarterKitArchitecture;
 }
 
-export const defaultModel = 'openai/gpt-4o-mini';
+
+
+export const DEFAULT_LLM_MODEL = 'openai/gpt-4o-mini';
 
 export function isAStarterKitName(
   templateName: string,

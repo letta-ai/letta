@@ -24,9 +24,7 @@ import { useCurrentAgent } from '../../hooks';
 import { useState } from 'react';
 import React, { useMemo } from 'react';
 import { useSortedMemories } from '@letta-cloud/utils-client';
-import { useUpdateMemory } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
-import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import {
   AdvancedCoreMemoryEditor,
   useAdvancedCoreMemoryEditor,
@@ -36,11 +34,13 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useADETour } from '../../hooks/useADETour/useADETour';
 import './EditCoreMemoriesPanel.css';
 import type { Block } from '@letta-cloud/sdk-core';
+import { isAgentState } from '@letta-cloud/sdk-core';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
 import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
+import { useUpdateMemoryBlock } from '../../hooks/useUpdateMemoryBlock/useUpdateMemoryBlock';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
@@ -50,49 +50,51 @@ interface AdvancedEditorPayload {
 }
 
 interface EditMemoryFormProps extends AdvancedEditorPayload {
-  memoryType: 'simulated' | 'templated';
+  memoryType: MemoryType;
   disabled?: boolean;
   hasSimulatedDiff?: boolean;
   minimal?: boolean;
+  templateId?: string;
+  agentId?: string;
 }
 
 function EditMemoryForm(props: EditMemoryFormProps) {
-  const { label, memory, memoryType, minimal, hasSimulatedDiff, disabled } =
-    props;
+  const {
+    label,
+    templateId,
+    memory,
+    agentId,
+    memoryType,
+    minimal,
+    hasSimulatedDiff,
+    disabled,
+  } = props;
+
+  const { isTemplate } = useCurrentAgentMetaData();
 
   const sharedAgents = useSharedAgents(memory.id || '');
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
 
-  const {
-    value: templateValue,
-    onChange,
-    error,
-    isUpdating,
-  } = useUpdateMemory({
-    label,
-  });
-
-  const value = useMemo(() => {
-    if (memoryType !== 'simulated') {
-      return templateValue;
-    }
-
-    return memory.value;
-  }, [templateValue, memoryType, memory.value]);
-
   const { open } = useAdvancedCoreMemoryEditor();
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+
+  const { handleUpdate, isPending, isError } = useUpdateMemoryBlock({
+    label,
+    memoryType,
+    blockId: memory.id,
+    agentId,
+    templateId,
+  });
 
   return (
     <CoreMemoryEditor
       memoryBlock={{
         ...memory,
-        value,
       }}
       openInAdvanced={
-        memoryType === 'simulated'
+        memoryType === 'agent' && isTemplate
           ? undefined
           : () => {
               open(label);
@@ -104,12 +106,14 @@ function EditMemoryForm(props: EditMemoryFormProps) {
       hideDescription={minimal}
       hasSimulatedDiff={hasSimulatedDiff}
       sharedAgents={sharedAgents}
-      isSaving={isUpdating}
+      isSaving={isPending}
       testId={`edit-memory-block-${label}-content`}
-      errorMessage={error ? t('error') : ''}
+      errorMessage={isError ? t('error') : ''}
       disabled={!canUpdateAgent || disabled}
       onSave={(value) => {
-        onChange(value, true);
+        handleUpdate({
+          value,
+        });
       }}
     />
   );
@@ -175,23 +179,54 @@ function MemoryWrapper(props: MemoryWrapperProps) {
   );
 }
 
-function DefaultMemory() {
+function TemplateMemory() {
+  const { templateId, isTemplate } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
-  const { simulatedAgent } = useCurrentSimulatedAgent();
+  const { data: blockTemplates } =
+    webApi.blockTemplates.getAgentTemplateBlockTemplates.useQuery({
+      queryData: {
+        params: { agentTemplateId: templateId || '' },
+      },
+      queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
+        templateId || '',
+      ),
+      enabled: isTemplate,
+    });
+
+  const blockTemplateList = useMemo(() => {
+    return blockTemplates?.body?.blockTemplates || [];
+  }, [blockTemplates]);
 
   const simulatedMemoriesLabelMap = useMemo(() => {
     const map = new Map<string, Block>();
 
-    simulatedAgent?.memory?.blocks.forEach((block) => {
+    if (!isAgentState(agent)) {
+      return map;
+    }
+
+    agent.memory.blocks.forEach((block) => {
       if (block.label) {
         map.set(block.label, block);
       }
     });
 
     return map;
-  }, [simulatedAgent]);
+  }, [agent]);
 
-  const memories = useSortedMemories(agent);
+  const memories = useMemo(() => {
+    return blockTemplateList.toSorted((a, b) => {
+      return a.label.localeCompare(b.label || '') || 0;
+    });
+  }, [blockTemplateList]);
+
+  if (!blockTemplates?.body?.blockTemplates) {
+    return (
+      <VStack paddingTop="xxsmall" fullHeight gap="medium">
+        <LettaLoaderPanel />
+      </VStack>
+    );
+  }
+
   return (
     <MemoryWrapper memoryCount={memories.length}>
       {memories.map((block) => {
@@ -204,6 +239,8 @@ function DefaultMemory() {
             key={block.label}
             memory={block}
             memoryType="templated"
+            agentId={agent.id}
+            templateId={templateId}
             hasSimulatedDiff={hasSimulatedDiff}
             label={block.label || ''}
           />
@@ -217,13 +254,15 @@ interface SimulatedMemoryProps {
   minimal?: boolean;
 }
 
-function SimulatedMemory(props: SimulatedMemoryProps) {
+function AgentMemory(props: SimulatedMemoryProps) {
   const { minimal } = props;
-  const { simulatedAgent } = useCurrentSimulatedAgent();
+  const agent = useCurrentAgent();
 
-  const memories = useSortedMemories(simulatedAgent);
+  const { isTemplate } = useCurrentAgentMetaData();
 
-  if (!simulatedAgent) {
+  const memories = useSortedMemories(agent);
+
+  if (!agent) {
     return (
       <VStack paddingTop="xxsmall" fullHeight gap="medium">
         <LettaLoaderPanel />
@@ -236,10 +275,11 @@ function SimulatedMemory(props: SimulatedMemoryProps) {
       {memories.map((block) => (
         <EditMemoryForm
           key={block.label}
-          disabled
+          disabled={isTemplate}
           memory={block}
+          agentId={agent.id}
           minimal={minimal}
-          memoryType="simulated"
+          memoryType="agent"
           label={block.label || ''}
         />
       ))}
@@ -406,7 +446,7 @@ function MemoryTabs() {
               },
               {
                 label: t('toggleMemoryType.simulated.label'),
-                value: 'simulated',
+                value: 'agent',
                 postIcon: (
                   <InfoTooltip text={t('toggleMemoryType.simulated.tooltip')} />
                 ),
@@ -431,18 +471,18 @@ type VisualMode = 'aside' | 'page';
 function MemoryPageRenderer() {
   const { visibleMemoryType } = useVisibleMemoryTypeContext();
 
-  if (visibleMemoryType === 'simulated') {
-    return <SimulatedMemory />;
+  if (visibleMemoryType === 'agent') {
+    return <AgentMemory />;
   }
 
-  return <DefaultMemory />;
+  return <TemplateMemory />;
 }
 
 function MemoryAsideRender() {
   return (
     <HStack fullWidth gap={false} fullHeight>
       <VStack paddingRight="xsmall" borderRight fullHeight fullWidth>
-        <DefaultMemory />
+        <TemplateMemory />
       </VStack>
       <VStack
         paddingLeft="xsmall"
@@ -450,7 +490,7 @@ function MemoryAsideRender() {
         fullWidth
         color="background-grey2"
       >
-        <SimulatedMemory minimal />
+        <AgentMemory minimal />
       </VStack>
     </HStack>
   );
@@ -469,7 +509,10 @@ export function EditMemory() {
   return (
     <PanelMainContent variant="noPadding">
       <QuickMemoryOnboarding>
-        <VisibleMemoryTypeProvider>
+        <VisibleMemoryTypeProvider
+          key={isTemplate ? 'templated' : 'agent'}
+          defaultVisibleMemoryType={isTemplate ? 'templated' : 'agent'}
+        >
           <MemoryOnboarding>
             <VStack
               className="core-memory-panel"

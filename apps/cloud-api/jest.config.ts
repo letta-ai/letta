@@ -22,6 +22,8 @@ export default {
     ...moduleNameMapper,
     '@t3-oss/env-nextjs': '<rootDir>/__mocks__/empty.ts',
     'lodash-es': 'lodash',
+    'nanoid':  '<rootDir>/__mocks__/nanoid.ts',
   },
+  setupFilesAfterEnv: ['<rootDir>/e2e/test-setup.ts'],
   coverageDirectory: '../../coverage/libs/service-auth',
 };

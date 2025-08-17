@@ -631,6 +631,13 @@
       "when": 1755208138390,
       "tag": "0089_fuzzy_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1755283529220,
+      "tag": "0090_elite_captain_britain",
+      "breakpoints": true
     }
   ]
 }

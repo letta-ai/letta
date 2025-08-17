@@ -1,6 +1,5 @@
 import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
-import type { AgentTemplateType } from '@letta-cloud/sdk-web';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import {
   Button,
   isMultiValue,
@@ -10,13 +9,27 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useEmptyBaseTemplateValue } from '../../hooks/useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
 
 function TemplateSelectorDropdown() {
   const { setBaseTemplateId, baseTemplateId } = useObservabilityContext();
+  const { id: currentProjectId } = useCurrentProject();
 
-  const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
-    queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+  const { data } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(
+      currentProjectId,
+      {
+        search: '',
+        limit: 100,
+      },
+    ),
+    queryData: {
+      query: {
+        project_id: currentProjectId,
+        limit: '100',
+      },
+    },
   });
 
   const t = useTranslations(
@@ -26,7 +39,7 @@ function TemplateSelectorDropdown() {
   const emptyValue = useEmptyBaseTemplateValue();
 
   const formatOptions = useCallback(
-    (options: AgentTemplateType[]) => {
+    (options: Array<{ id: string; name: string }>) => {
       return [
         ...options.map((a) => ({
           label: a.name,
@@ -40,9 +53,11 @@ function TemplateSelectorDropdown() {
 
   const loadOptions = useCallback(
     async (inputValue: string) => {
-      const response = await webApi.agentTemplates.listAgentTemplates.query({
+      const response = await cloudAPI.templates.listTemplates.query({
         query: {
           search: inputValue,
+          project_id: currentProjectId,
+          limit: '100',
         },
       });
 
@@ -50,16 +65,16 @@ function TemplateSelectorDropdown() {
         return [];
       }
 
-      return formatOptions(response.body.agentTemplates);
+      return formatOptions(response.body.templates);
     },
-    [formatOptions],
+    [formatOptions, currentProjectId],
   );
 
   return (
     <RawAsyncSelect
       fullWidth
       label={t('TemplateSelectorDropdown.title')}
-      defaultOptions={data ? formatOptions(data.body.agentTemplates) : []}
+      defaultOptions={data ? formatOptions(data.body.templates) : []}
       loadOptions={loadOptions}
       isLoading={!data}
       onSelect={(option) => {

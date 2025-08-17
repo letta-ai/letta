@@ -1,23 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
+import React, { useMemo, useRef } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useFormatters } from '@letta-cloud/utils-client';
 import {
   VersionHistory,
-  Button,
   HStack,
   LoadingEmptyStatusComponent,
   Typography,
   VStack,
-  AgentStateViewer,
+  TemplateSnapshotViewer,
   Badge,
   Tooltip,
 } from '@letta-cloud/ui-component-library';
-import {
-  type AgentStateVersions,
-  useAgentStateFromVersionName,
-} from '$web/client/hooks/useAgentStateFromVersionName/useAgentStateFromVersionName';
+import type { AgentStateVersions } from '$web/client/hooks/useAgentStateFromVersionName/useAgentStateFromVersionName';
+import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
+import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
 
 interface VersionDetailsProps {
   version: AgentStateVersions;
@@ -26,10 +24,11 @@ interface VersionDetailsProps {
 function VersionDetails(props: VersionDetailsProps) {
   const { version } = props;
 
-  const { agentName } = useCurrentAgentMetaData();
-  const agentState = useAgentStateFromVersionName(version);
+  const templateName = useCurrentTemplateName();
 
   const t = useTranslations('pages/distribution/VersionHistory');
+
+  const { data: templateSnapshot } = useCurrentTemplateSnapshot(version);
 
   return (
     <VStack collapseHeight overflow="hidden" fullWidth>
@@ -51,7 +50,7 @@ function VersionDetails(props: VersionDetailsProps) {
             variant="body4"
             bold
           >
-            {agentName}:{version}
+            {templateName}:{version}
           </Typography>
           {version === 'current' && (
             <Tooltip content={t('notSaved.tooltip')}>
@@ -65,10 +64,10 @@ function VersionDetails(props: VersionDetailsProps) {
           )}
         </HStack>
         <VStack flex overflowY="auto" color="background" collapseHeight>
-          {!agentState ? (
+          {!templateSnapshot ? (
             <LoadingEmptyStatusComponent isLoading loaderVariant="grower" />
           ) : (
-            <AgentStateViewer baseState={agentState} />
+            <TemplateSnapshotViewer baseState={templateSnapshot.body} />
           )}
         </VStack>
       </VStack>
@@ -76,63 +75,64 @@ function VersionDetails(props: VersionDetailsProps) {
   );
 }
 
-const VERSION_HEIGHT = 70;
-
 export function VersionHistorySection() {
-  const [limit, setLimit] = useState(0);
-  const { agentId } = useCurrentAgentMetaData();
+  const { slug: projectSlug } = useCurrentProject();
+  const templateName = useCurrentTemplateName();
   const containerRef = useRef<HTMLDivElement>(null);
   const t = useTranslations('pages/distribution/VersionHistory');
 
-  const {
-    data: versionData,
-    isLoading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  } = webApi.agentTemplates.listTemplateVersions.useInfiniteQuery({
-    queryKey: webApiQueryKeys.agentTemplates.listTemplateVersionsWithSearch(
-      agentId,
-      {
-        limit,
+  // Fetch only the first 10 versions from the API
+  const { data: versionData, isLoading } =
+    cloudAPI.templates.listTemplateVersions.useQuery({
+      queryKey: cloudQueryKeys.templates.listTemplateVersionsWithQuery(
+        projectSlug,
+        templateName,
+        {
+          limit: 10,
+        },
+      ),
+      queryData: {
+        query: {
+          limit: '10',
+          offset: '0',
+        },
+        params: {
+          project_slug: projectSlug,
+          name: templateName,
+        },
       },
-    ),
-    queryData: ({ pageParam }) => ({
-      query: {
-        limit: limit,
-        offset: pageParam.offset,
-      },
-      params: {
-        agentTemplateId: agentId,
-      },
-    }),
-    initialPageParam: { offset: 0 },
-    getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.body.hasNextPage) {
-        return {
-          offset: allPages.length * limit,
-        };
-      }
-
-      return undefined;
-    },
-  });
-
-  useEffect(() => {
-    if (containerRef.current) {
-      const newLimit = Math.ceil(
-        containerRef.current.clientHeight / VERSION_HEIGHT,
-      );
-      setLimit(newLimit);
-    }
-  }, []);
+    });
 
   const versions = useMemo(() => {
-    if (!versionData) {
+    if (!versionData?.body?.versions) {
       return [];
     }
 
-    return versionData.pages?.flatMap((v) => v.body.versions) || [];
+    const fetchedVersions = versionData.body.versions;
+
+    // If we have no versions, return empty
+    if (fetchedVersions.length === 0) {
+      return [];
+    }
+
+    // Find the oldest fetched version number
+    const oldestFetchedVersion = Math.min(
+      ...fetchedVersions.map((v) => parseInt(v.version)),
+    );
+
+    // Generate versions from oldestFetchedVersion - 1 down to 1
+    const generatedVersions = [];
+    for (let i = oldestFetchedVersion - 1; i >= 1; i--) {
+      generatedVersions.push({
+        version: i.toString(),
+        created_at: '', // Leave blank as requested
+        message: undefined,
+        is_latest: false,
+      });
+    }
+
+    // Combine fetched versions with generated versions
+    return [...fetchedVersions, ...generatedVersions];
   }, [versionData]);
 
   const { formatDateAndTime } = useFormatters();
@@ -148,7 +148,9 @@ export function VersionHistorySection() {
           version: version.version,
         }),
         message: version.message,
-        subtitle: formatDateAndTime(version.createdAt),
+        subtitle: version.created_at
+          ? formatDateAndTime(version.created_at)
+          : undefined,
         details: (
           <VersionDetails key={version.version} version={version.version} />
         ),
@@ -174,23 +176,7 @@ export function VersionHistorySection() {
             loadingMessage={t('loading')}
           />
         ) : (
-          <VersionHistory
-            versions={versionHistoryItems}
-            loadMoreButton={
-              hasNextPage && (
-                <Button
-                  busy={isFetchingNextPage}
-                  fullWidth
-                  color="secondary"
-                  label={t('loadMore')}
-                  onClick={() => {
-                    void fetchNextPage();
-                  }}
-                  disabled={isLoading}
-                />
-              )
-            }
-          />
+          <VersionHistory versions={versionHistoryItems} />
         )}
       </VStack>
     </VStack>

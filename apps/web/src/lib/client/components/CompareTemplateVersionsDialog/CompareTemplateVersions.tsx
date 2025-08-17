@@ -1,53 +1,48 @@
-import type { AgentState } from '@letta-cloud/sdk-core';
 import React from 'react';
 import {
-  AgentStateViewer,
+  TemplateSnapshotViewer,
   LoadingEmptyStatusComponent,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
-import {
-  type AgentStateVersions,
-  useAgentStateFromVersionName,
+import type {
+  AgentStateVersions,
 } from '$web/client/hooks/useAgentStateFromVersionName/useAgentStateFromVersionName';
+import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
 
 interface CompareTemplateVersionsProps {
   leftComparisonVersion: AgentStateVersions;
   rightComparisonVersion: AgentStateVersions;
   leftNameOverride?: string;
   rightNameOverride?: string;
-  defaultLeftComparisonState?: AgentState;
-  defaultRightComparisonState?: AgentState;
 }
 
 export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
   const { name } = useCurrentAgent();
   const t = useTranslations('components/CompareTemplateVersions');
 
+
   const {
     leftComparisonVersion,
-    defaultLeftComparisonState,
     rightComparisonVersion,
     leftNameOverride,
     rightNameOverride,
   } = props;
 
-  const leftAgentState = useAgentStateFromVersionName(
+  const leftAgentState = useCurrentTemplateSnapshot(
     leftComparisonVersion,
-    defaultLeftComparisonState,
   );
 
-  const rightAgentState = useAgentStateFromVersionName(
+  const rightAgentState = useCurrentTemplateSnapshot(
     rightComparisonVersion,
-    defaultLeftComparisonState,
   );
 
   return (
     <>
-      {!leftAgentState || !rightAgentState ? (
+      {!leftAgentState?.data || !rightAgentState?.data ? (
         <LoadingEmptyStatusComponent isLoading loadingMessage={t('loading')} />
       ) : (
-        <AgentStateViewer
+        <TemplateSnapshotViewer
           baseName={
             leftNameOverride
               ? leftNameOverride
@@ -58,8 +53,8 @@ export function CompareTemplateVersions(props: CompareTemplateVersionsProps) {
               ? rightNameOverride
               : `${name}:${rightComparisonVersion}`
           }
-          baseState={leftAgentState}
-          comparedState={rightAgentState}
+          baseState={leftAgentState.data.body}
+          comparedState={rightAgentState.data.body}
         />
       )}
     </>

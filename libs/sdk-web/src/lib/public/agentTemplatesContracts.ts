@@ -4,6 +4,7 @@ import { VersionedTemplateType, zodTypes } from '@letta-cloud/sdk-core';
 import type { AgentState as AgentStateType } from '@letta-cloud/sdk-core';
 import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
 import { ProjectAgentTemplateSchema } from './projectContracts';
+import { AgentTemplateSchemaResponseSchema } from '@letta-cloud/utils-shared';
 
 const c = initContract();
 
@@ -18,56 +19,9 @@ export const AgentTemplateSchema = z.object({
 
 export const AgentTemplatesSchema = z.array(AgentTemplateSchema);
 
-export type AgentTemplateType = z.infer<typeof AgentTemplateSchema>;
 
-/* List Agent Templates */
-export const ListAgentTemplatesResponseSchema = z.object({
-  agentTemplates: AgentTemplatesSchema,
-  hasNextPage: z.boolean(),
-});
+// Schemas are now imported from @letta-cloud/types
 
-export type ListAgentTemplatesResponse = z.infer<
-  typeof ListAgentTemplatesResponseSchema
->;
-
-export const ListAgentTemplatesQuerySchema = z.object({
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-  search: z.string().optional(),
-  name: z.string().optional(),
-  projectId: z.string().optional(),
-  includeLatestDeployedVersion: z.boolean().optional(),
-  includeAgentState: z.boolean().optional(),
-});
-
-export type ListAgentTemplatesQuery = z.infer<
-  typeof ListAgentTemplatesQuerySchema
->;
-
-export const listAgentTemplatesContract = c.query({
-  method: 'GET',
-  path: '/agent-templates',
-  query: ListAgentTemplatesQuerySchema,
-  responses: {
-    200: ListAgentTemplatesResponseSchema,
-  },
-});
-
-/* Fork Testing Agent */
-const ForkAgentTemplateParamsSchema = z.object({
-  projectId: z.string(),
-  agentTemplateId: z.string(),
-});
-
-const forkAgentTemplateContract = c.mutation({
-  method: 'POST',
-  path: '/projects/:projectId/testing-agents/:agentTemplateId/fork',
-  pathParams: ForkAgentTemplateParamsSchema,
-  body: z.undefined(),
-  responses: {
-    201: ProjectAgentTemplateSchema,
-  },
-});
 
 /* Get Agent Template Simulation Session */
 const GetAgentTemplateSessionParamsSchema = z.object({
@@ -286,9 +240,8 @@ const updateTemplateNameContract = c.mutation({
   },
 });
 
+
 export const agentTemplatesContracts = c.router({
-  listAgentTemplates: listAgentTemplatesContract,
-  forkAgentTemplate: forkAgentTemplateContract,
   getAgentTemplateByVersion: getAgentTemplateByVersionContract,
   getAgentTemplateById: getAgentTemplateByIdContract,
   getDeployedAgentTemplateById: getDeployedAgentTemplateByIdContract,
@@ -301,11 +254,6 @@ export const agentTemplatesContracts = c.router({
 });
 
 export const agentTemplatesQueryClientKeys = {
-  listAgentTemplates: ['listAgentTemplates'],
-  listAgentTemplatesWithSearch: (query: ListAgentTemplatesQuery) => [
-    ...agentTemplatesQueryClientKeys.listAgentTemplates,
-    query,
-  ],
   getAgentTemplateSession: (params: GetAgentTemplateSessionParams) => [
     'getAgentTemplateSession',
     params,

@@ -82,6 +82,7 @@
   "pages/distribution/CreateAgentFromTemplateDialog": {
     "create": "Create agent",
     "errors": {
+      "unsupportedTemplateType": "You are trying to create an agent from a template that is not supported just yet",
       "default": "There was an error creating the agent, please try again or contact support.",
       "limit": "You have reached the maximum number of agents for your plan (<limit></limit>), please <link>upgrade your plan</link> to create more agents."
     },
@@ -2053,6 +2054,8 @@
       "placeholder": "my-template-name-here",
       "label": "Search template by name"
     },
+    "openInADE": "Open in ADE",
+    "loadMore": "Load more templates",
     "noTemplatesFound": "No templates found that match your search",
     "noTemplates": "You have no templates in this project, create one below",
     "createTemplate": "New template"
@@ -2112,6 +2115,8 @@
   },
   "projects/(projectSlug)/agents/page/DeployAgentDialog": {
     "SelectedTemplateState": {
+      "error": "There was an error loading the template, please try again or contact support.",
+      "errorUnsupported": "Non classic templates are yet not supported yet",
       "memoryVariables": {
         "label": "Memory Variables"
       },
@@ -2638,7 +2643,8 @@
       "publish": "Publish AgentFile",
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",
-      "delete": "Delete {agentBaseType}",
+      "deleteAgent": "Delete Agent",
+      "deleteTemplate": "Delete Template",
       "download": "Download AgentFile (.af)",
       "externalVersionManagement": "External Version Management",
       "networkInspector": "Network Inspector"
@@ -2648,6 +2654,9 @@
       "title": "Deploy agent instructions"
     },
     "VersionAgentDialog": {
+      "error": {
+        "title": "There was an error saving the template, please try again or contact support."
+      },
       "mobileWarning": "Versioning templates are only available on desktop, as there is a lot of information to display.",
       "onboarding": {
         "badge": "Finish saving a template",

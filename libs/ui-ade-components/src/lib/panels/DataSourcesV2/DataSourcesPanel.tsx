@@ -10,7 +10,7 @@ export function DataSourcesPanel() {
   const { sources } = useCurrentAgent();
 
   if (!sources) {
-    return <LoadingEmptyStatusComponent loaderVariant="grower" isLoading />;
+    return <LoadingEmptyStatusComponent loaderVariant="grower" hideText isLoading />;
   }
 
   if (sources.length === 0) {

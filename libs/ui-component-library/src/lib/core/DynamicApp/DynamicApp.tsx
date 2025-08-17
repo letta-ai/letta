@@ -89,10 +89,6 @@ function useDynamicAppWindowState(
         setLeft((windowWidth - nextWidth) / 2);
         setTop((windowHeight - nextHeight) / 2);
 
-        console.log('fasd', {
-          nextWidth,
-          nextHeight,
-        });
         setWidth(nextWidth);
         setHeight(nextHeight);
 

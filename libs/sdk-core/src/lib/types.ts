@@ -247,3 +247,88 @@ export const DatasetItemCreateMessageSchema = z.object({
 export type DatasetItemCreateMessageType = z.infer<
   typeof DatasetItemCreateMessageSchema
 >;
+
+export const LLMConfigPropertiesForAgentTemplateSchema = z.object({
+  model: z.string(),
+  model_endpoint_type: z.enum([
+    'openai',
+    'anthropic',
+    'cohere',
+    'google_ai',
+    'google_vertex',
+    'azure',
+    'groq',
+    'ollama',
+    'webui',
+    'webui-legacy',
+    'lmstudio',
+    'lmstudio-legacy',
+    'lmstudio-chatcompletions',
+    'llamacpp',
+    'koboldcpp',
+    'vllm',
+    'hugging-face',
+    'mistral',
+    'together',
+    'bedrock',
+    'deepseek',
+    'xai',
+  ]),
+  model_endpoint: z.string().optional().nullable(),
+  provider_name: z.string().optional().nullable(),
+  provider_category: z.enum(['byok', 'base']).nullable(),
+  model_wrapper: z.string().nullish(),
+  context_window: z.number(),
+  put_inner_thoughts_in_kwargs: z.boolean().optional(),
+  handle: z.string().optional().nullable(),
+  temperature: z.number().optional(),
+  max_tokens: z.number().optional(),
+  enable_reasoner: z.boolean().optional(),
+  reasoning_effort: z
+    .enum(['minimal', 'low', 'medium', 'high'])
+    .optional()
+    .nullable(),
+  max_reasoning_tokens: z.number().optional(),
+  frequency_penalty: z.number().optional().nullable(),
+  compatibility_type: z.enum(['gguf', 'mlx']).optional().nullable(),
+});
+
+export type LLMConfigPropertiesForAgentTemplateType = z.infer<
+  typeof LLMConfigPropertiesForAgentTemplateSchema
+>;
+
+/* the schema is purposly not structured as to allow for more flexibility in the agent template */
+export const AgentTemplateProperties = z.object({
+  context_window_limit: z.number().nullable(),
+  max_tokens: z.number().nullable(),
+  max_reasoning_tokens: z.number().nullable(),
+  max_files_open: z.number().nullable(),
+  message_buffer_autoclear: z.boolean().nullable(),
+  per_file_view_window_char_limit: z.number().nullable(),
+});
+
+export type AgentTemplatePropertiesType = z.infer<
+  typeof AgentTemplateProperties
+>;
+
+export const GroupConfigurationSchema = z.object({
+  managerAgentId: z.string().optional(),
+  managerType: z.string().optional(),
+  terminationToken: z.string().optional(),
+  maxTurns: z.number().optional(),
+  sleeptimeAgentFrequency: z.number().optional(),
+  maxMessageBufferLength: z.number().optional(),
+  minMessageBufferLength: z.number().optional(),
+});
+
+export type GroupConfigurationType = z.infer<typeof GroupConfigurationSchema>;
+
+export const LettaTemplateTypes = z.enum([
+  'classic',
+  'cluster',
+  'sleeptime',
+  'round_robin',
+  'supervisor',
+  'dynamic',
+  'voice_sleeptime',
+]);

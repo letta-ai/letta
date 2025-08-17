@@ -15,3 +15,10 @@ export * from './lib/getStepDurationFromTrace/getStepDurationFromTrace';
 export * from './lib/getLettaProcessingDurationFromTrace/getLettaProcessingDurationFromTrace';
 export * from './lib/getTTFTFromTrace/getTTFTFromTrace';
 export * from './lib/getADEConfigConstants/getADEConfigConstants';
+export * from './lib/synchronizeSimulatedAgentWithAgentTemplate/synchronizeSimulatedAgentWithAgentTemplate';
+export * from './lib/compareTemplateSchemaStates/compareTemplateSchemaStates';
+export * from './lib/attachMemoryVariablesToBlockValue/attachMemoryVariablesToBlockValue';
+export * from './lib/convertRecordMemoryVariablesToMemoryVariablesV1/convertRecordMemoryVariablesToMemoryVariablesV1'
+export * from './types';
+export * from './lib/validateVersionString/validateVersionString'
+export * from './lib/generateTemplateSnapshot/generateTemplateSnapshot'

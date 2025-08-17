@@ -17,27 +17,20 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  useAgentsServiceAttachCoreMemoryBlock,
-  useBlocksServiceCreateBlock,
-  isAPIError,
-  type Block,
-  type AgentState,
-  UseAgentsServiceRetrieveAgentKeyFn,
-} from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useCurrentAgent } from '../../../hooks';
 import type { ExampleBlockPayload } from './ExampleBlocks';
 import { ExampleBlocks } from './ExampleBlocks';
 import { useSetAtom } from 'jotai/index';
 import { currentAdvancedCoreMemoryAtom } from '../currentAdvancedCoreMemoryAtom';
-import { UseBlocksServiceInfiniteQuery } from '../../../SearchMemoryBlocks/SearchMemoryBlocks';
+import { useADEAppContext } from '../../../AppContext/AppContext';
+import { useCreateMemoryBlock } from '../../../hooks/useCreateMemoryBlock/useCreateMemoryBlock';
+import { useCurrentLettaTemplate } from '../../../hooks/useCurrentLettaTemplate/useCurrentLettaTemplate';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { CoreMemoryBlock } from '../types';
 import type { CoreMemoryBlockType } from '../types';
-import { useADEAppContext } from '../../../AppContext/AppContext';
 
 interface CreateNewMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -148,9 +141,13 @@ export function CreateNewMemoryBlockDialog(
   const { projectId } = useADEAppContext();
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('CreateNewMemoryBlockDialog');
+  const { lettaTemplateId } = useCurrentLettaTemplate();
 
-  const queryClient = useQueryClient();
-  const { agentId: currentAgentId } = useCurrentAgentMetaData();
+  const {
+    agentId: currentAgentId,
+    templateId,
+    isTemplate,
+  } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
 
   type TabTypes = 'custom' | 'examples';
@@ -213,24 +210,22 @@ export function CreateNewMemoryBlockDialog(
     },
   });
 
-  const {
-    mutate: createBlock,
-    reset: resetCreating,
-    isPending: isCreatingBlock,
-    error: createError,
-  } = useBlocksServiceCreateBlock();
-
-  const {
-    mutate: attachBlock,
-    reset: resetAttaching,
-    isPending: isAttachingBlock,
-  } = useAgentsServiceAttachCoreMemoryBlock();
-
-  const isPending = isCreatingBlock || isAttachingBlock;
+  const { handleCreate, isPending, error } = useCreateMemoryBlock({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    agentId: currentAgentId,
+    lettaTemplateId,
+    templateId,
+    projectId,
+    onSuccess: (createdBlock) => {
+      setCurrentMemoryBlock(createdBlock);
+      toast.success(t('success'));
+      handleOpenChange(false);
+    },
+  });
 
   const errorMessage = useMemo(() => {
-    if (createError) {
-      if (isAPIError(createError) && createError.status === 402) {
+    if (error) {
+      if (isAPIError(error) && error.status === 402) {
         return t.rich('errors.overage', {
           link: (chunks) => <BillingLink>{chunks}</BillingLink>,
         });
@@ -238,18 +233,16 @@ export function CreateNewMemoryBlockDialog(
       return t('errors.default');
     }
     return undefined;
-  }, [createError, t]);
+  }, [error, t]);
 
   const handleOpenChange = useCallback(
     (nextState: boolean) => {
       setOpen(nextState);
       if (!nextState) {
         form.reset();
-        resetCreating();
-        resetAttaching();
       }
     },
-    [form, resetCreating, resetAttaching],
+    [form],
   );
 
   const handleSubmit = useCallback(
@@ -259,79 +252,27 @@ export function CreateNewMemoryBlockDialog(
         return;
       }
 
+      if (!projectId) {
+        return;
+      }
+
       trackClientSideEvent(AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY, {
         agentId: agent.id,
         blockType,
       });
 
-      createBlock(
-        {
-          requestBody: {
-            label: values.label,
-            value: values.value,
-            limit: parseInt(values.characterLimit, 10),
-            description: values.description,
-            read_only: values.readonly,
-            project_id: projectId,
-          },
-        },
-        {
-          onSuccess: (data: Block) => {
-            if (!data.id) {
-              toast.error(t('errors.createBlockError'));
-              return;
-            }
+      handleCreate({
+        label: values.label,
+        value: values.value,
+        lettaTemplateId,
 
-            void queryClient.invalidateQueries({
-              queryKey: UseBlocksServiceInfiniteQuery({}).slice(0, 2),
-              exact: false,
-            });
-
-            attachBlock(
-              {
-                agentId: currentAgentId,
-                blockId: data.id,
-              },
-              {
-                onSuccess: (nextAgentState) => {
-                  // Update the query cache with the new agent state
-                  queryClient.setQueriesData<AgentState | undefined>(
-                    {
-                      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                        agentId: currentAgentId,
-                      }),
-                    },
-                    () => {
-                      return nextAgentState;
-                    },
-                  );
-
-                  setCurrentMemoryBlock(values.label);
-
-                  toast.success(t('success'));
-                  handleOpenChange(false);
-                },
-                onError: () => {
-                  toast.error(t('errors.attachError'));
-                },
-              },
-            );
-          },
-        },
-      );
+        limit: parseInt(values.characterLimit, 10),
+        description: values.description,
+        readOnly: values.readonly,
+        projectId,
+      });
     },
-    [
-      projectId,
-      currentAgentId,
-      createBlock,
-      t,
-      attachBlock,
-      queryClient,
-      setCurrentMemoryBlock,
-      handleOpenChange,
-      agent.id,
-      blockType,
-    ],
+    [currentAgentId, lettaTemplateId, projectId, handleCreate, t, blockType, agent.id],
   );
 
   const handleExampleSelect = useCallback(

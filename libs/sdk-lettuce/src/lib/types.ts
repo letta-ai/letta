@@ -1,28 +1,51 @@
-export interface MigrateAgentsPayload {
-  memoryVariables?: Record<string, string>;
-  preserveCoreMemories?: boolean;
+import type { VersionStringWithProject } from '@letta-cloud/utils-shared';
+
+export interface MigrateTemplateEntitiesPayload {
   preserveToolVariables?: boolean;
-  agentIds?: string[];
-  template: string;
-  coreUserId: string;
+  preserveCoreMemories?: boolean;
+  versionString: VersionStringWithProject;
   organizationId: string;
-  batchConfig?: MigrationBatchConfig;
+  lettaAgentsId: string;
+  batchSize?: number; // Default to 25 if not specified
 }
 
-export interface MigrationBatchConfig {
-  agentFetchBatchSize?: number; // Number of agents to fetch per API call (default: 50)
-  workflowBatchSize?: number; // Number of agents to process concurrently (default: 10)
-  maxRetries?: number; // Maximum retries for failed batches (default: 3)
-}
-
-export interface MigrateAgentPayload {
-  memoryVariables?: Record<string, string>;
-  preserveCoreMemories?: boolean;
-  preserveToolVariables?: boolean;
+export interface MigrateSingleAgentPayload {
   agentId: string;
-  template: string;
-  coreUserId: string;
+  preserveToolVariables?: boolean;
+  preserveCoreMemories?: boolean;
+  versionString: VersionStringWithProject;
   organizationId: string;
+  lettaAgentsId: string;
+}
+
+export interface MigrateBatchPayload {
+  agents: Array<{
+    agentId: string;
+    variables: Record<string, string>;
+  }>;
+  preserveToolVariables?: boolean;
+  preserveCoreMemories?: boolean;
+  versionString: VersionStringWithProject;
+  organizationId: string;
+  lettaAgentsId: string;
+  batchNumber: number;
+}
+
+export interface MigrateBatchResult {
+  successful: number;
+  failed: number;
+  total: number;
+  batchNumber: number;
+  failedAgentIds: string[];
+}
+
+export interface UpdateAgentFromAgentTemplateIdPayload {
+  agentId: string;
+  agentTemplateId: string;
+  preserveToolVariables?: boolean;
+  preserveCoreMemories?: boolean;
+  organizationId: string;
+  lettaAgentsId: string;
 }
 
 export interface DeleteExpiredTokensAndUsersResult {

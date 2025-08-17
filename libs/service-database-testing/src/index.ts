@@ -18,8 +18,18 @@ beforeEach(() => {
 function mockDatabaseInsert() {
   const returning = jest.fn(() => []);
 
+  const onConflictDoUpdate = jest.fn(() => ({
+    returning,
+  }));
+
+  const onConflictDoNothing = jest.fn(() => ({
+    returning,
+  }));
+
   const values = jest.fn(() => ({
     returning,
+    onConflictDoUpdate,
+    onConflictDoNothing,
   }));
 
   mockDatabase.insert.mockReturnValue({
@@ -29,6 +39,8 @@ function mockDatabaseInsert() {
   return {
     valuesFn: values,
     returningFn: returning,
+    onConflictDoUpdateFn: onConflictDoUpdate,
+    onConflictDoNothingFn: onConflictDoNothing,
   };
 }
 

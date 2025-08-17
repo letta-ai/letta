@@ -14,8 +14,8 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { AgentDescription } from '../AdvancedSettingsPanel/components/AgentDescription/AgentDescription';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 function AgentTags() {
   const { id: agentId, tags: currentTags } = useCurrentAgent();
@@ -38,7 +38,7 @@ function AgentTags() {
   const handleUpdate = useCallback(
     async (tags: string[]) => {
       void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+        queryKey: cloudQueryKeys.templates.listTemplates,
         exact: false,
       });
 

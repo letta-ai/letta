@@ -14,7 +14,6 @@ import { useABTestId } from '../../../hooks/useABTestId/useABTestId';
 import { useTranslations } from '@letta-cloud/translations';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
-  type AgentTemplateType,
   webApi,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
@@ -22,6 +21,10 @@ import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurren
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import type {
+  PublicTemplateDetailsType
+} from '@letta-cloud/sdk-cloud-api';
 
 interface SelectTemplateProps {
   setSelectedTemplate: (option: OptionType) => void;
@@ -33,26 +36,24 @@ function SelectTemplate(props: SelectTemplateProps) {
 
   const { id: projectId } = useCurrentProject();
   const t = useTranslations('projects/ab-tests.AttachTemplateToSimulator');
-  const { data } = webApi.agentTemplates.listAgentTemplates.useQuery({
-    queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
-      includeLatestDeployedVersion: true,
-      projectId,
+  const { data } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
+      project_id: projectId,
     }),
     queryData: {
       query: {
-        includeLatestDeployedVersion: true,
-        projectId,
+        project_id: projectId,
       },
     },
   });
 
-  const formatOptions = useCallback((options: AgentTemplateType[]) => {
+  const formatOptions = useCallback((options: PublicTemplateDetailsType[]) => {
     return [
       ...options.map((a) => ({
         label: a.name,
         value: a.name,
         data: {
-          latestVersion: a.latestDeployedVersion || '1',
+          latestVersion: a.latest_version || '1',
         },
       })),
     ];
@@ -60,11 +61,10 @@ function SelectTemplate(props: SelectTemplateProps) {
 
   const loadOptions = useCallback(
     async (inputValue: string) => {
-      const response = await webApi.agentTemplates.listAgentTemplates.query({
+      const response = await cloudAPI.templates.listTemplates.query({
         query: {
           search: inputValue,
-          includeLatestDeployedVersion: true,
-          projectId,
+          project_id: projectId,
         },
       });
 
@@ -72,7 +72,7 @@ function SelectTemplate(props: SelectTemplateProps) {
         return [];
       }
 
-      return formatOptions(response.body.agentTemplates);
+      return formatOptions(response.body.templates);
     },
     [formatOptions, projectId],
   );
@@ -82,7 +82,7 @@ function SelectTemplate(props: SelectTemplateProps) {
       fullWidth
       hideLabel
       label={t('label')}
-      defaultOptions={data ? formatOptions(data.body.agentTemplates) : []}
+      defaultOptions={data ? formatOptions(data.body.templates) : []}
       loadOptions={loadOptions}
       placeholder={t('placeholder')}
       isLoading={!data}
@@ -309,7 +309,7 @@ function VariableSelector() {
           setSelectedTemplate={setSelectedTemplate}
         />
         <VersionSelector
-          latestVersion={selectedTemplate?.data?.latestVersion}
+          latestVersion={selectedTemplate?.data?.version}
           selectedVersion={selectedVersion}
           setSelectedVersion={setSelectedVersion}
         />

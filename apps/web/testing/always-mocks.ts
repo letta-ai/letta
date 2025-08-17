@@ -13,6 +13,11 @@ jest.mock('lodash-es', () => {
 
 jest.mock('@letta-cloud/config-environment-variables');
 
+jest.mock('nanoid', () => ({
+  nanoid: () => `test-nanoid-${Math.random().toString(36).substring(2, 15)}`,
+}))
+
+
 global.TextEncoder = TextEncoder;
 // @ts-expect-error - stub
 global.TextDecoder = TextDecoder;

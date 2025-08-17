@@ -1,14 +1,13 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import type { SDKContext } from '../../../types';
-import { db, deployedAgentVariables } from '@letta-cloud/service-database';
-import { eq } from 'drizzle-orm';
-import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
-import { updateAgentFromAgentId } from '@letta-cloud/utils-server';
+import {
+  getTemplateByName,
+} from '@letta-cloud/utils-server';
 import { environment } from '@letta-cloud/config-environment-variables';
-import { startMigrateAgents } from '@letta-cloud/lettuce-client';
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { startMigrateSingleAgent } from '@letta-cloud/lettuce-client';
 import { getContextDataHack } from '../../../getContextDataHack/getContextDataHack';
+import { validateVersionString } from '@letta-cloud/utils-shared';
 
 type MigrateAgentRequest = ServerInferRequest<
   typeof cloudContracts.agents.migrateAgent
@@ -24,7 +23,6 @@ export async function migrateAgent(
 ): Promise<MigrateAgentResponse> {
   const { to_template, preserve_core_memories, preserve_tool_variables } =
     req.body;
-  let { variables } = req.body;
   const { agent_id: agentIdToMigrate } = req.params;
 
   const { organizationId, lettaAgentsUserId } = getContextDataHack(
@@ -32,25 +30,24 @@ export async function migrateAgent(
     context,
   );
 
-  const split = to_template.split(':');
-  const templateName = split[0];
-  const version = split[1];
-
-  if (!version) {
+  if (validateVersionString(to_template) === false) {
     return {
       status: 400,
       body: {
-        message: `Please specify a version or add \`latest\` to the template name. Example: ${templateName}:latest`,
+        message: `Invalid version string: ${to_template}. Please use a valid version format project_slug/template_name:version.`,
       },
     };
   }
 
-  const deployedAgentTemplate = await getDeployedTemplateByVersion(
-    to_template,
+  const template = await getTemplateByName({
+    versionString: to_template,
+    lettaAgentsId: lettaAgentsUserId,
     organizationId,
-  );
+    includeAgents: true,
+    includeBlocks: false,
+  });
 
-  if (!deployedAgentTemplate) {
+  if (!template) {
     return {
       status: 404,
       body: {
@@ -59,45 +56,32 @@ export async function migrateAgent(
     };
   }
 
+  if (template.type !== 'classic') {
+    return {
+      status: 404,
+      body: {
+        message:
+          'This route currently only works with "classic" agent templates.',
+      },
+    };
+  }
+
   if (environment.TEMPORAL_LETTUCE_API_HOST) {
-    await startMigrateAgents({
-      agentIds: [agentIdToMigrate],
-      template: to_template,
-      memoryVariables: variables,
+    await startMigrateSingleAgent({
+      agentId: agentIdToMigrate,
+      versionString: to_template,
       preserveCoreMemories: preserve_core_memories,
       preserveToolVariables: preserve_tool_variables,
-      coreUserId: lettaAgentsUserId,
+      lettaAgentsId: lettaAgentsUserId,
       organizationId: organizationId,
     });
   } else {
-    if (!variables) {
-      const deployedAgentVariablesItem =
-        await db.query.deployedAgentVariables.findFirst({
-          where: eq(deployedAgentVariables.deployedAgentId, agentIdToMigrate),
-        });
-
-      variables = deployedAgentVariablesItem?.value || {};
-    }
-
-    if (!deployedAgentTemplate?.id) {
-      return {
-        status: 404,
-        body: {
-          message: 'Template version provided does not exist',
-        },
-      };
-    }
-
-    await updateAgentFromAgentId({
-      memoryVariables: variables || {},
-      baseAgentId: deployedAgentTemplate.id,
-      agentToUpdateId: agentIdToMigrate,
-      lettaAgentsUserId,
-      preserveCoreMemories: preserve_core_memories,
-      preserveToolVariables: preserve_tool_variables,
-      baseTemplateId: deployedAgentTemplate.agentTemplateId,
-      templateId: deployedAgentTemplate.id,
-    });
+    return {
+      status: 500,
+      body: {
+        message: 'Migration failed due to missing Temporal Lettuce API host configuration.'
+      },
+    };
   }
 
   return {

@@ -242,7 +242,10 @@ interface MemoriesListProps {
 
 function MemoriesList(props: MemoriesListProps) {
   const { search } = props;
-  const { id: agentId } = useCurrentSimulatedAgent();
+  const { simulatedAgentId } = useCurrentSimulatedAgent();
+  const { agentId: normalAgentId, isTemplate } = useCurrentAgentMetaData();
+
+  const agentId = isTemplate ? simulatedAgentId : normalAgentId;
 
   const limit = 5;
 
@@ -259,7 +262,7 @@ function MemoriesList(props: MemoriesListProps) {
     >({
       queryKey: UseInfiniteAgentPassagesQueryFn([
         {
-          agentId,
+          agentId: agentId || '',
           limit: limit + 1,
           search: debouncedSearch,
         },
@@ -269,7 +272,7 @@ function MemoriesList(props: MemoriesListProps) {
           limit: limit + 1,
           after: pageParam?.after,
           search: debouncedSearch,
-          agentId,
+          agentId: agentId || '',
         });
       },
       refetchInterval: 10000,
@@ -283,7 +286,7 @@ function MemoriesList(props: MemoriesListProps) {
 
         return undefined;
       },
-      enabled: !!limit,
+      enabled: !!limit && !!agentId,
     });
 
   const allMemories = useMemo(() => {
@@ -439,18 +442,21 @@ function CreateMemoryDialog() {
 
 export function useArchivalMemoriesTitle() {
   const t = useTranslations('ADE/ArchivalMemories');
-  const { id: currentAgentId } = useCurrentSimulatedAgent();
+  const { simulatedAgentId } = useCurrentSimulatedAgent();
+  const { agentId: normalAgentId, isTemplate } = useCurrentAgentMetaData();
+
+  const agentId = isTemplate ? simulatedAgentId : normalAgentId;
 
   const { data, isLoading } = useAgentsServiceListPassages(
     {
-      agentId: currentAgentId,
+      agentId: agentId || '',
       limit: 21,
       ascending: false,
     },
     undefined,
     {
       refetchInterval: 10000,
-      enabled: !!currentAgentId,
+      enabled: !!agentId,
     },
   );
 

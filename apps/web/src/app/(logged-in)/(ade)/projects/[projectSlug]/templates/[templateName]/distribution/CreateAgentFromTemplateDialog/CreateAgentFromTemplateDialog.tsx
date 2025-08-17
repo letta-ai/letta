@@ -10,13 +10,10 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
-import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
+import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+import type { TemplateSnapshotSchemaType } from '@letta-cloud/utils-shared';
 import React, { type FormEvent, useCallback, useMemo } from 'react';
-import {
-  type AgentState,
-  UseAgentsServiceListAgentsKeyFn,
-} from '@letta-cloud/sdk-core';
+import { UseAgentsServiceListAgentsKeyFn } from '@letta-cloud/sdk-core';
 import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { useRouter } from 'next/navigation';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
@@ -30,13 +27,17 @@ interface CreateAgentFromTemplateDialogProps {
 }
 
 interface AgentInputDetailsProps {
-  agentState: AgentState;
-  version: string;
+  template: TemplateSnapshotSchemaType;
   templateName: string;
 }
 
 function AgentInputDetails(props: AgentInputDetailsProps) {
-  const { agentState, templateName, version } = props;
+  const { template, templateName } = props;
+  const version = template.version;
+
+  const agentTemplate = useMemo(() => {
+    return template.agents[0];
+  }, [template]);
 
   const { push } = useRouter();
   const { slug: projectSlug } = useCurrentProject();
@@ -44,14 +45,14 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
   const t = useTranslations('pages/distribution/CreateAgentFromTemplateDialog');
 
   const toolVariablesInTemplate = useMemo(() => {
-    return (agentState.tool_exec_environment_variables || [])?.map(
-      (item) => item.key,
-    );
-  }, [agentState]);
+    return (agentTemplate?.toolVariables?.data || [])?.map((item) => item.key);
+  }, [agentTemplate]);
 
   const memoryVariablesInTemplate = useMemo(() => {
-    return findMemoryBlockVariables(agentState);
-  }, [agentState]);
+    return (agentTemplate?.memoryVariables?.data || [])?.map(
+      (item) => item.key,
+    );
+  }, [agentTemplate]);
 
   const [memoryVariables, setMemoryVariables] = React.useState<KeyValue[]>(
     memoryVariablesInTemplate
@@ -133,6 +134,10 @@ function AgentInputDetails(props: AgentInputDetailsProps) {
     return null;
   }, [error, t]);
 
+  if (template.type !== 'classic') {
+    return <Typography>{t('errors.unsupportedTemplateType')}</Typography>;
+  }
+
   return (
     <form className="contents" onSubmit={handleCreateAgent}>
       <VStack fullHeight paddingBottom gap="form" flex>
@@ -179,7 +184,7 @@ export function CreateAgentFromTemplateDialog(
   props: CreateAgentFromTemplateDialogProps,
 ) {
   const { trigger, templateName } = props;
-  const { deployedAgentTemplate } = useLatestAgentTemplate();
+  const { data: latestTemplate } = useCurrentTemplateSnapshot('latest');
 
   const t = useTranslations('pages/distribution/CreateAgentFromTemplateDialog');
 
@@ -190,15 +195,14 @@ export function CreateAgentFromTemplateDialog(
       title={t('title', { templateName })}
       trigger={trigger}
     >
-      {!deployedAgentTemplate?.state ? (
+      {!latestTemplate ? (
         <LoadingEmptyStatusComponent isLoading loadingMessage={t('loading')} />
       ) : (
         <VStack>
           <Typography>{t('description', { templateName })}</Typography>
           <AgentInputDetails
             templateName={templateName}
-            version={deployedAgentTemplate.version}
-            agentState={deployedAgentTemplate.state}
+            template={latestTemplate.body}
           />
         </VStack>
       )}

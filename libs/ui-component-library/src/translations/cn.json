@@ -2,7 +2,7 @@
   "components/QuotaBlock": {
     "usage": "<value></value> 的 <max></max>"
   },
-  "components/AgentStateViewer": {
+  "components/TemplateSnapshotViewer": {
     "changed": "已更改",
     "StateViewer": {
       "base": "基础",

@@ -1,4 +1,5 @@
 import type { AgentState, CreateAgentRequest } from '@letta-cloud/sdk-core';
+import { attachMemoryVariablesToBlockValue } from '@letta-cloud/utils-shared';
 
 export function attachVariablesToTemplates(
   agentTemplate: AgentState,
@@ -8,9 +9,10 @@ export function attachVariablesToTemplates(
     if (memoryVariables && typeof block.value === 'string') {
       return {
         ...block,
-        value: block.value.replace(/{{(.*?)}}/g, (_m, p1) => {
-          return memoryVariables?.[p1] || '';
-        }),
+        value: attachMemoryVariablesToBlockValue(
+          block.value,
+          memoryVariables || {},
+        ),
       };
     }
 

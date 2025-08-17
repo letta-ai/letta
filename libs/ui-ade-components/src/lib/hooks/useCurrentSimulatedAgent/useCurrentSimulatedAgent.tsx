@@ -1,20 +1,30 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
+import type { contracts } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 import { useMemo } from 'react';
-import { toast } from '@letta-cloud/ui-component-library';
-import { useTranslations } from '@letta-cloud/translations';
 import {
-  type AgentState,
   isAgentState,
-  useAgentsServiceListAgentSources,
   useAgentsServiceRetrieveAgent,
   UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import { compareAgentStates } from '@letta-cloud/utils-shared';
+import {
+  synchronizeSimulatedAgentWithAgentTemplate,
+  removeMetadataFromAgentTemplateResponse,
+  removeMetadataFromBlockTemplate,
+} from '@letta-cloud/utils-shared';
+import { useIsMutating, useQueryClient } from '@tanstack/react-query';
+import { isFetchError } from '@ts-rest/react-query/v5';
+import {
+  useCurrentAgentTemplate,
+  useCurrentAgentTemplateQueryKey,
+} from '../useCurrentAgentTemplate/useCurrentAgentTemplate';
+import type { ServerInferResponses } from '@ts-rest/core';
+import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import { useADEAppContext } from '../../../index';
 import { isEqual } from 'lodash';
 
 interface SimulatedAgentProviderProps {
@@ -22,104 +32,218 @@ interface SimulatedAgentProviderProps {
 }
 
 function SimulatedAgentProviderLogic(props: SimulatedAgentProviderProps) {
-  const t = useTranslations('ADE/AgentSimulator');
-
-  const templateAgentState = useCurrentAgent();
-
-  const agentTemplateId = templateAgentState.id;
-
   const { children } = props;
 
-  const { simulatedAgentId } = useCurrentSimulatedAgent();
+  useSynchronizeSimulatedAgentWithAgentTemplate();
 
-  // manages the simulated agent state
+  // Compare template schema with current synchronized state to trigger sync when needed
+  return children;
+}
 
-  const mounted = useRef(false);
+export function useSynchronizeSimulatedAgentWithAgentTemplate() {
+  const {
+    isTemplate,
+    templateName,
+    templateId: agentTemplateId,
+  } = useCurrentAgentMetaData();
+  const currentAgentTemplateQueryKey = useCurrentAgentTemplateQueryKey();
 
-  const agentStateStore = useRef<AgentState>(templateAgentState as AgentState);
+  const { projectSlug } = useADEAppContext();
+  const { simulatedAgent } = useCurrentSimulatedAgent();
 
-  const variables = useCurrentSimulatedAgentVariables();
-  const { mutate: updateSession } =
-    webApi.simulatedAgents.refreshSimulatedSession.useMutation({
+  const queryClient = useQueryClient();
+  // Fetch the current agent template schema for comparison
+  const { data: agentTemplateSchema, error } = useCurrentAgentTemplate();
+
+  const { data: blockTemplates } =
+    webApi.blockTemplates.getAgentTemplateBlockTemplates.useQuery({
+      queryData: {
+        params: { agentTemplateId: agentTemplateId || '' },
+      },
+      queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
+        agentTemplateId || '',
+      ),
+      enabled: isTemplate,
+    });
+
+  const isNotFound = useMemo(() => {
+    if (isFetchError(error)) {
+      return false;
+    }
+
+    return error?.status === 404;
+  }, [error]);
+
+  const cachedTemplateBlocks = useRef(blockTemplates?.body.blockTemplates);
+
+  const { mutate: syncDefaultSimulatedAgent, isPending: isSyncing } =
+    webApi.simulatedAgents.syncDefaultSimulatedAgent.useMutation({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: currentAgentTemplateQueryKey,
+        });
+      },
       onError: () => {
-        toast.error(t('refreshError'));
+        // On error, invalidate to ensure we have the correct state
+        void queryClient.invalidateQueries({
+          queryKey: currentAgentTemplateQueryKey,
+        });
       },
     });
 
-  const { data: sourceList } = useAgentsServiceListAgentSources({
-    agentId: templateAgentState.id || '',
-  });
-
-  const debounceUpdateSession = useDebouncedCallback(updateSession, 2000);
+  const debounceSyncTemplate = useDebouncedCallback(
+    syncDefaultSimulatedAgent,
+    3000,
+  );
 
   useEffect(() => {
-    if (!simulatedAgentId) {
+    if (isSyncing) {
       return;
     }
 
-    // update session just in case
-    if (!mounted.current) {
-      debounceUpdateSession({
+    if (isNotFound && agentTemplateId) {
+      // if not found, then we should attempt a synchronization
+      debounceSyncTemplate({
         params: {
-          simulatedAgentId,
+          agentTemplateId,
         },
       });
     }
-
-    mounted.current = true;
-  }, [simulatedAgentId, agentTemplateId, debounceUpdateSession, updateSession]);
+  }, [agentTemplateId, isNotFound, isSyncing, debounceSyncTemplate]);
 
   useEffect(() => {
-    if (!simulatedAgentId) {
+    if (isSyncing) {
       return;
     }
 
-    if (!isAgentState(templateAgentState)) {
+    if (!blockTemplates) {
       return;
     }
 
-    // check if the agent state has changed
-    if (compareAgentStates(templateAgentState, agentStateStore.current)) {
+    if (blockTemplates?.body.blockTemplates && !cachedTemplateBlocks.current) {
+      cachedTemplateBlocks.current = blockTemplates.body.blockTemplates;
       return;
     }
 
-    agentStateStore.current = templateAgentState;
+    if (!agentTemplateId || !isTemplate) {
+      return;
+    }
 
-    // update the existing session
-    debounceUpdateSession({
+    if (!agentTemplateSchema?.body) {
+      return;
+    }
+
+    if (!cachedTemplateBlocks.current) {
+      return;
+    }
+
+    if (!isAgentState(simulatedAgent)) {
+      return;
+    }
+
+    const cleanedBlockTemplates = blockTemplates.body.blockTemplates.map(removeMetadataFromBlockTemplate);
+
+    // Synchronize current agent state to get comparable data structure
+    const { agentTemplate } =
+      synchronizeSimulatedAgentWithAgentTemplate({
+        ...simulatedAgent,
+        memory: {
+          ...simulatedAgent,
+          blocks: cleanedBlockTemplates,
+        }
+      });
+
+
+    // Fast comparison to check if sync is needed
+    const statesMatch =
+      isEqual(
+        blockTemplates.body.blockTemplates,
+        cachedTemplateBlocks.current,
+      ) &&
+      isEqual(
+        agentTemplate,
+        removeMetadataFromAgentTemplateResponse(agentTemplateSchema.body),
+      );
+
+    if (statesMatch) {
+      return;
+    }
+
+
+    cachedTemplateBlocks.current = blockTemplates.body.blockTemplates;
+
+    // Optimistically update the query cache before sync
+    const optimisticSchema = {
+      ...agentTemplateSchema.body,
+      ...agentTemplate,
+    };
+
+    void queryClient.setQueriesData<
+      ServerInferResponses<
+        typeof cloudContracts.templates.getTemplateSnapshot,
+        200
+      >
+    >(
+      {
+        queryKey: cloudQueryKeys.templates.getTemplateSnapshot(
+          projectSlug,
+          `${templateName}:current`,
+        ),
+      },
+      (oldData) => {
+        if (!oldData) {
+          return oldData;
+        }
+
+        if (oldData.body.type === 'classic') {
+          return {
+            ...oldData,
+            body: {
+              ...oldData.body,
+              agents: [
+                {
+                  ...oldData.body.agents[0],
+                  ...agentTemplate,
+                },
+              ],
+              blocks: cleanedBlockTemplates,
+            },
+          };
+        }
+
+        return oldData;
+      },
+    );
+
+    queryClient.setQueryData<
+      ServerInferResponses<
+        typeof contracts.templates.getAgentTemplateByEntityId,
+        200
+      >
+    >(currentAgentTemplateQueryKey, {
+      status: 200,
+      body: optimisticSchema,
+    });
+
+    // Template schema has changed, trigger sync
+    debounceSyncTemplate({
       params: {
-        simulatedAgentId,
+        agentTemplateId,
       },
     });
   }, [
+    simulatedAgent,
     agentTemplateId,
-    simulatedAgentId,
-    templateAgentState,
-    debounceUpdateSession,
-    sourceList,
+    agentTemplateSchema?.body,
+    blockTemplates,
+    debounceSyncTemplate,
+    queryClient,
+    isSyncing,
+    isTemplate,
+    currentAgentTemplateQueryKey,
+    projectSlug,
+    templateName,
   ]);
-
-  const lastVariableState = useRef(variables);
-
-  useEffect(() => {
-    if (!simulatedAgentId) {
-      return;
-    }
-
-    if (isEqual(lastVariableState.current, variables)) {
-      return;
-    }
-
-    lastVariableState.current = variables;
-
-    debounceUpdateSession({
-      params: {
-        simulatedAgentId,
-      },
-    });
-  }, [debounceUpdateSession, simulatedAgentId, variables]);
-
-  return children;
 }
 
 export function SimulatedAgentProvider(props: SimulatedAgentProviderProps) {
@@ -134,26 +258,28 @@ export function SimulatedAgentProvider(props: SimulatedAgentProviderProps) {
 }
 
 export function useCurrentSimulatedAgent() {
-  const agentState = useCurrentAgent();
-  const { id: agentId } = agentState;
-
-  const { isTemplate, agentId: templateId } = useCurrentAgentMetaData();
+  const { templateId, agentId } = useCurrentAgentMetaData();
 
   const {
     data: agentSession,
     isError,
     isLoading,
   } = webApi.simulatedAgents.getDefaultSimulatedAgent.useQuery({
-    queryKey:
-      webApiQueryKeys.simulatedAgents.getDefaultSimulatedAgent(templateId),
+    queryKey: webApiQueryKeys.simulatedAgents.getDefaultSimulatedAgent(
+      templateId || '',
+    ),
     queryData: {
       params: {
-        agentTemplateId: agentId,
+        agentTemplateId: templateId || '',
       },
     },
     retry: false,
-    enabled: isTemplate,
+    enabled: !!templateId,
   });
+
+  const isResyncing = useIsMutating({
+    mutationKey: webApiQueryKeys.simulatedAgents.refreshSimulatedSession(agentSession?.body.id || ''),
+  })
 
   const {
     data: agent,
@@ -165,18 +291,10 @@ export function useCurrentSimulatedAgent() {
     },
     undefined,
     {
-      enabled: !!agentSession?.body.agentId,
+      enabled: !isResyncing && !!agentSession?.body.agentId,
       refetchInterval: 2500,
     },
   );
-
-  const agentIdToUse = useMemo(() => {
-    if (isTemplate) {
-      return agentSession?.body.agentId || '';
-    }
-
-    return agentId;
-  }, [agentId, agentSession?.body.agentId, isTemplate]);
 
   return {
     isError,
@@ -186,7 +304,7 @@ export function useCurrentSimulatedAgent() {
     simulatedAgent: agent,
     simulatedSession: agentSession,
     simulatedAgentId: agentSession?.body.id,
-    id: agentIdToUse || '',
+    id: agentId,
   };
 }
 
@@ -203,7 +321,6 @@ export function useCurrentSimulatedAgentVariables() {
           simulatedAgentId: simulatedAgentId || '',
         },
       },
-      retry: false,
       enabled: !!simulatedAgentId,
     });
 

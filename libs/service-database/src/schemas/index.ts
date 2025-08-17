@@ -10,6 +10,7 @@ import {
   primaryKey,
   unique,
   integer,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import type {
@@ -18,10 +19,15 @@ import type {
   OnboardingStepsType,
   AccessPolicyVersionOneType,
   DatabaseBillingTiersType,
+  ToolRulesArray, VariableStoreVersionOneType
 } from '@letta-cloud/types';
 import type { ApplicationServices } from '@letta-cloud/service-rbac';
 import type { UserPresetRolesType } from '@letta-cloud/service-rbac';
-import type { DatasetItemCreateMessageType } from '@letta-cloud/sdk-core';
+import type {
+  AgentTemplatePropertiesType,
+  DatasetItemCreateMessageType,
+  GroupConfigurationType,
+} from '@letta-cloud/sdk-core';
 
 export const emailWhitelist = pgTable('email_whitelist', {
   id: text('id')
@@ -407,6 +413,279 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   datasets: many(datasets),
 }));
 
+/* Start template schemas */
+export const lettaTemplateTypes = pgEnum('letta_template_types', [
+  // this is the default fallback for old templates
+  'classic',
+
+  // this just means templates with multiple agents but no group configuration
+  'cluster',
+
+  // this means templates with group configuration
+  'sleeptime',
+  'round_robin',
+  'supervisor',
+  'dynamic',
+  'voice_sleeptime',
+]);
+
+export const lettaTemplates = pgTable(
+  'letta_templates',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('name').notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+
+    // version is either a numeric version (e.g. 1, 2, 3) or 'current' for the working version
+    // version is immutable, so it should not change after creation
+    version: text('version')
+      .notNull()
+      .default(sql`'current'`),
+
+    // add a flag for latest_deployed for better indexing
+    latestDeployed: boolean('latest_deployed'),
+
+    description: text('description').notNull(),
+    type: lettaTemplateTypes('type').notNull(),
+
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+
+    message: text('message').notNull(),
+
+    groupConfiguration: jsonb(
+      'group_configuration',
+    ).$type<GroupConfigurationType>(),
+
+    /* migration reference */
+    migrationOriginalTemplateId: text(
+      'migration_original_template_id',
+    ).references(() => agentTemplates.id, { onDelete: 'set null' }),
+    migrationOriginalDeployedTemplateId: text(
+      'migration_original_deployed_template_id',
+    ).references(() => deployedAgentTemplates.id, { onDelete: 'set null' }),
+  },
+  (table) => ({
+    uniqueNameWithVersion: uniqueIndex('unique_name_with_version').on(
+      table.name,
+      table.organizationId,
+      table.projectId,
+      table.version,
+    ),
+  }),
+);
+
+export const lettaTemplatesRelations = relations(
+  lettaTemplates,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [lettaTemplates.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [lettaTemplates.projectId],
+      references: [projects.id],
+    }),
+    agentTemplates: many(agentTemplateV2),
+    blockTemplates: many(blockTemplate),
+  }),
+);
+
+export const agentTemplateV2 = pgTable(
+  'agent_template_v2',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text('label').default('default').notNull(),
+    entityId: text('entity_id').notNull(),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    lettaTemplateId: text('letta_template_id')
+      .references(() => lettaTemplates.id, { onDelete: 'cascade' })
+      .notNull(),
+
+    memoryVariables:
+      json('memory_variables').$type<VariableStoreVersionOneType>(),
+    toolVariables: json('tool_variables').$type<VariableStoreVersionOneType>(),
+
+    /* defaults */
+    tags: jsonb('tags').$type<string[]>(),
+    identityIds: jsonb('identity_ids').$type<string[]>(),
+
+    /* absolutes */
+    systemPrompt: text('system_prompt').notNull(),
+    toolIds: jsonb('tool_ids').$type<string[]>(),
+    toolRules: jsonb('tool_rules').$type<ToolRulesArray>(),
+    sourceIds: jsonb('source_ids').$type<string[]>(),
+    model: text('model').notNull(),
+    // embedding on cloud is handled from cloud, so no store is needed
+    //embeddingConfig: jsonb('embedding_config').$type<LLMConfigType>(),
+
+    /* other k/v properties */
+    properties: jsonb('properties').$type<AgentTemplatePropertiesType>(),
+
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    uniqueEntityIdPerLettaTemplate: uniqueIndex(
+      'unique_agent_entity_id_per_letta_template',
+    ).on(table.entityId, table.lettaTemplateId),
+  }),
+);
+
+export const agentTemplateV2Relations = relations(
+  agentTemplateV2,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [agentTemplateV2.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [agentTemplateV2.projectId],
+      references: [projects.id],
+    }),
+    lettaTemplate: one(lettaTemplates, {
+      fields: [agentTemplateV2.lettaTemplateId],
+      references: [lettaTemplates.id],
+    }),
+    simulatedAgents: many(simulatedAgent),
+  }),
+);
+
+export const blockTemplate = pgTable(
+  'block_template',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    entityId: text('entity_id').notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    lettaTemplateId: text('letta_template_id')
+      .references(() => lettaTemplates.id, { onDelete: 'cascade' })
+      .notNull(),
+    value: text('value').notNull(),
+    label: text('label').notNull(),
+    limit: integer('limit').notNull().default(1),
+    description: text('description').notNull(),
+    preserveOnMigration: boolean('preserve_on_migration'),
+    readOnly: boolean('read_only').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    uniqueEntityIdPerLettaTemplate: uniqueIndex(
+      'unique_block_entity_id_per_letta_template',
+    ).on(table.entityId, table.lettaTemplateId),
+  }),
+);
+
+// Relations for blockTemplateSchema
+export const blockTemplateSchemaRelations = relations(
+  blockTemplate,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [blockTemplate.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [blockTemplate.projectId],
+      references: [projects.id],
+    }),
+    lettaTemplate: one(lettaTemplates, {
+      fields: [blockTemplate.lettaTemplateId],
+      references: [lettaTemplates.id],
+    }),
+    // Many-to-many relation to agentTemplates
+    agentTemplateBlockTemplates: many(agentTemplateBlockTemplates),
+  }),
+);
+
+// Junction table for many-to-many relationship
+export const agentTemplateBlockTemplates = pgTable(
+  'agent_template_block_templates',
+  {
+    agentTemplateSchemaId: text('agent_template_v2_id')
+      .notNull()
+      .references(() => agentTemplateV2.id, {
+        onDelete: 'cascade',
+      }),
+    blockTemplateId: text('block_template_id')
+      .notNull()
+      .references(() => blockTemplate.id, { onDelete: 'cascade' }),
+    lettaTemplateId: text('letta_template_id')
+      .references(() => lettaTemplates.id, { onDelete: 'cascade' })
+      .notNull(),
+    // Denormalized label field to enable pure Drizzle unique constraint
+    // Since labels are immutable at application level, this stays consistent
+    blockLabel: text('block_label').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    // Composite primary key prevents duplicate block templates per agent template schema
+    pk: primaryKey({
+      columns: [table.agentTemplateSchemaId, table.blockTemplateId],
+    }),
+    // Pure Drizzle unique constraint: ensures unique block labels per agent template schema
+    uniqueLabelPerAgentSchema: unique('unique_block_label_per_agent_schema').on(
+      table.agentTemplateSchemaId,
+      table.blockLabel,
+    ),
+  }),
+);
+
+// Relations for the junction table
+export const agentTemplateBlockTemplatesRelations = relations(
+  agentTemplateBlockTemplates,
+  ({ one }) => ({
+    lettaTemplate: one(lettaTemplates, {
+      fields: [agentTemplateBlockTemplates.lettaTemplateId],
+      references: [lettaTemplates.id],
+    }),
+    agentTemplate: one(agentTemplateV2, {
+      fields: [agentTemplateBlockTemplates.agentTemplateSchemaId],
+      references: [agentTemplateV2.id],
+    }),
+    blockTemplate: one(blockTemplate, {
+      fields: [agentTemplateBlockTemplates.blockTemplateId],
+      references: [blockTemplate.id],
+    }),
+  }),
+);
+
+/* End template schemas */
+
 export const agentTemplates = pgTable(
   'agent_templates',
   {
@@ -517,7 +796,7 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .$onUpdate(() => new Date()),
 });
 
-export const simulatedAgent = pgTable(
+export const simulatedAgentDeprecated = pgTable(
   'simulated_agent_real',
   {
     id: text('id')
@@ -562,15 +841,43 @@ export const simulatedAgent = pgTable(
   }),
 );
 
+export const simulatedAgent = pgTable(
+  'simulated_agent_v2',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    agentId: text('agent_id').unique().notNull(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, {
+        onDelete: 'cascade',
+      }),
+    organizationId: text('organization_id')
+      .references(() => organizations.id, { onDelete: 'cascade' })
+      .notNull(),
+    isDefault: boolean('is_default').notNull().default(false),
+    agentTemplateId: text('agent_template_v2_id')
+      .references(() => agentTemplateV2.id, {
+        onDelete: 'cascade',
+      })
+      .notNull(),
+    memoryVariables:
+      json('memory_variables').$type<VariableStoreVersionOneType>(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .$onUpdate(() => new Date()),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (self) => ({
+    // unique constraint on agentTemplateId + deployedAgentTemplateId + default
+    uniqueDefault: uniqueIndex(
+      'unique_default_simulated_agent_to_agent_template',
+    ).on(self.agentTemplateId, self.isDefault),
+  }),
+);
+
 export const simulatedAgentRelations = relations(simulatedAgent, ({ one }) => ({
-  agentTemplate: one(agentTemplates, {
-    fields: [simulatedAgent.agentTemplateId],
-    references: [agentTemplates.id],
-  }),
-  deployedAgentTemplate: one(deployedAgentTemplates, {
-    fields: [simulatedAgent.deployedAgentTemplateId],
-    references: [deployedAgentTemplates.id],
-  }),
   project: one(projects, {
     fields: [simulatedAgent.projectId],
     references: [projects.id],
@@ -578,6 +885,10 @@ export const simulatedAgentRelations = relations(simulatedAgent, ({ one }) => ({
   organization: one(organizations, {
     fields: [simulatedAgent.organizationId],
     references: [organizations.id],
+  }),
+  agentTemplate: one(agentTemplateV2, {
+    fields: [simulatedAgent.agentTemplateId],
+    references: [agentTemplateV2.id],
   }),
 }));
 

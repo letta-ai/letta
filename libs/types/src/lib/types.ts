@@ -1,4 +1,14 @@
 import { z } from 'zod';
+import type {
+  ChildToolRule,
+  InitToolRule,
+  TerminalToolRule,
+  ConditionalToolRule,
+  ContinueToolRule,
+  RequiredBeforeExitToolRule,
+  MaxCountPerStepToolRule,
+  ParentToolRule,
+} from '@letta-cloud/sdk-core';
 
 export const ComposioProviderConfiguration = z.object({
   type: z.literal('composio'),
@@ -47,7 +57,7 @@ export const stepCostVersionOne = z.object({
 export type StepCostVersionOne = z.infer<typeof stepCostVersionOne>;
 
 export const MemoryVariableVersionOne = z.object({
-  version: z.literal('1'),
+  version: z.string(),
   data: z
     .object({
       key: z.string(),
@@ -59,6 +69,19 @@ export const MemoryVariableVersionOne = z.object({
 
 export type MemoryVariableVersionOneType = z.infer<
   typeof MemoryVariableVersionOne
+>;
+
+export const VariableStoreVersionOne = z.object({
+  version: z.string(),
+  data: z.object({
+    key: z.string(),
+    defaultValue: z.string().nullish(),
+    type: z.string(),
+  }).array()
+});
+
+export type VariableStoreVersionOneType = z.infer<
+  typeof VariableStoreVersionOne
 >;
 
 export const onboardingSteps = z.enum([
@@ -223,3 +246,79 @@ export const AgentFileAccessLevels = z.enum([
 ]);
 
 export const DEFAULT_EMBEDDING_MODEL = 'openai/text-embedding-3-small';
+
+// Tool rule schemas - manually created to match exact SDK types
+export const ChildToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('constrain_child_tools').optional(),
+  prompt_template: z.string().nullable().optional(),
+  children: z.array(z.string()),
+});
+
+export const InitToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('run_first').optional(),
+  prompt_template: z.string().nullable().optional(),
+});
+
+export const TerminalToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('exit_loop').optional(),
+  prompt_template: z.string().nullable().optional(),
+});
+
+export const ConditionalToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('conditional').optional(),
+  prompt_template: z.string().nullable().optional(),
+  default_child: z.string().nullable().optional(),
+  child_output_mapping: z.record(z.string(), z.string()),
+  require_output_mapping: z.boolean().optional(),
+});
+
+export const ContinueToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('continue_loop').optional(),
+  prompt_template: z.string().nullable().optional(),
+});
+
+export const RequiredBeforeExitToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('required_before_exit').optional(),
+  prompt_template: z.string().nullable().optional(),
+});
+
+export const MaxCountPerStepToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('max_count_per_step').optional(),
+  prompt_template: z.string().nullable().optional(),
+  max_count_limit: z.number(),
+});
+
+export const ParentToolRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('parent_last_tool').optional(),
+  prompt_template: z.string().nullable().optional(),
+  children: z.array(z.string()),
+});
+
+// Union of all tool rule schemas
+export const ToolRuleSchema = z.union([
+  ChildToolRuleSchema,
+  InitToolRuleSchema,
+  TerminalToolRuleSchema,
+  ConditionalToolRuleSchema,
+  ContinueToolRuleSchema,
+  RequiredBeforeExitToolRuleSchema,
+  MaxCountPerStepToolRuleSchema,
+  ParentToolRuleSchema,
+]);
+
+// Tool rules array schema - can be null or array of tool rules
+export const ToolRulesSchema = z.array(ToolRuleSchema).nullable();
+
+// Tool Rule Types - use SDK types directly for type compatibility
+export type ToolRule =
+  ChildToolRule | ConditionalToolRule | ContinueToolRule | InitToolRule | MaxCountPerStepToolRule | ParentToolRule | RequiredBeforeExitToolRule | TerminalToolRule;
+
+export type ToolRulesArray = ToolRule[] | null;

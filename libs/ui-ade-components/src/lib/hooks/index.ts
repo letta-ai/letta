@@ -1,10 +1,9 @@
 'use client';
 export * from './useADESidebarContext/useADESidebarContext';
 export * from './useSyncUpdateCurrentAgent/useSyncUpdateCurrentAgent';
-export * from './useUpdateMemory/useUpdateMemory';
+export * from './useUpdateMemoryBlock/useUpdateMemoryBlock';
 export * from './useADESidebarContext/useADESidebarContext';
 export * from './useSyncUpdateCurrentAgent/useSyncUpdateCurrentAgent';
-export * from './useUpdateMemory/useUpdateMemory';
 export * from './useCurrentBasePathname/useCurrentBasePathname';
 export * from './useCurrentAgent/useCurrentAgent';
 export * from './useAgentBaseNameType/useAgentBaseNameType';
@@ -12,3 +11,4 @@ export * from './useCurrentAgentMetaData/useCurrentAgentMetaData';
 export * from './useCurrentGroup/useCurrentGroup';
 export * from './useOrderedTraces/useOrderedTraces';
 export * from './useNetworkInspectorVisibility/useNetworkInspectorVisibility';
+export * from './useUpdateSimulatedMemoryBlocksOnVariableInjection/useUpdateSimulatedMemoryBlocksOnVariableInjection';

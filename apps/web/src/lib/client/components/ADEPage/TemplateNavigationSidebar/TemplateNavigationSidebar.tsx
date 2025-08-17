@@ -178,8 +178,8 @@ export function TemplateSidebarInner() {
                 queryData: {
                   operator: { label: 'equals', value: 'eq' },
                   value: {
-                    label: `${slug}:latest`,
-                    value: `${slug}:latest`,
+                    label: `${templateName}:latest`,
+                    value: `${templateName}:latest`,
                   },
                 },
               },

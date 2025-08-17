@@ -1,9 +1,9 @@
 import { createContext, useContext, useState } from 'react';
 
-export type MemoryType = 'simulated' | 'templated';
+export type MemoryType = 'agent' | 'templated';
 
 const VisibleMemoryTypeContext = createContext<UseVisibleMemoryTypeContext>({
-  visibleMemoryType: 'simulated',
+  visibleMemoryType: 'agent',
   setVisibleMemoryType: () => {
     return;
   },
@@ -20,11 +20,14 @@ export function useVisibleMemoryTypeContext() {
 
 export function VisibleMemoryTypeProvider({
   children,
+  defaultVisibleMemoryType = 'agent',
 }: {
   children: React.ReactNode;
+  defaultVisibleMemoryType?: MemoryType;
 }) {
+
   const [visibleMemoryType, setVisibleMemoryType] =
-    useState<MemoryType>('templated');
+    useState<MemoryType>(defaultVisibleMemoryType || 'agent');
 
   return (
     <VisibleMemoryTypeContext.Provider

@@ -14,10 +14,12 @@ import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAtomValue } from 'jotai/index';
-import { isAgentConvertingToTemplateAtom } from './DeploymentButton/DeploymentButton';
 import { TemplateNavigationSidebar } from './TemplateNavigationSidebar/TemplateNavigationSidebar';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
 import './ADEPage.scss';
+import {
+  isAgentConvertingToTemplateAtom
+} from '$web/client/components/ADEPage/DeploymentButton/CreateTemplateFromAgentButton/CreateTemplateFromAgentButton';
 
 interface LoaderContentProps {
   isError?: boolean;

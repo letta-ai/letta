@@ -1,62 +1,63 @@
-import { db, simulatedAgent } from '@letta-cloud/service-database';
-import { copyAgentById } from '../copyAgentById/copyAgentById';
-import type { AgentState } from '@letta-cloud/sdk-core';
-import type { MemoryVariableVersionOneType } from '@letta-cloud/types';
+import { db, lettaTemplates, simulatedAgent } from '@letta-cloud/service-database';
+import { convertRecordMemoryVariablesToMemoryVariablesV1 } from '@letta-cloud/utils-shared';
+import { createEntitiesFromTemplate } from '../createEntitiesFromTemplate/createEntitiesFromTemplate';
+import { eq } from 'drizzle-orm';
 
 interface CreateSimulatedAgentArgs {
   memoryVariables: Record<string, string>;
   agentTemplateId: string;
-  deployedAgentTemplateId?: string | null;
   organizationId: string;
+  lettaTemplateId: string;
   lettaAgentsId: string;
   projectId: string;
   isDefault?: boolean;
 }
 
-export function recordMemoryVariablesToMemoryVariablesV1(
-  memoryVariables: Record<string, string>,
-): MemoryVariableVersionOneType {
-  return {
-    data: Object.entries(memoryVariables).map(([key, label]) => ({
-      key,
-      label,
-      type: 'string',
-    })),
-    version: '1',
-  };
-}
 
 export async function createSimulatedAgent(args: CreateSimulatedAgentArgs) {
   const {
     memoryVariables,
     agentTemplateId,
     projectId,
-    deployedAgentTemplateId = null,
     organizationId,
     lettaAgentsId,
-    isDefault = false,
+    lettaTemplateId,
+    isDefault = false
   } = args;
 
-  // Create the simulated agent
-  const agent = await copyAgentById(agentTemplateId, lettaAgentsId, {
-    memoryVariables,
-    projectId,
-    hidden: true,
+  // find parent template
+  const template = await db.query.lettaTemplates.findFirst({
+    where: eq(lettaTemplates.id, lettaTemplateId),
   });
+
+  if (!template) {
+    throw new Error(`Template with ID ${lettaTemplateId} not found`);
+  }
+
+  // Create the simulated agent
+  const [agent] = await createEntitiesFromTemplate({
+    projectId,
+    lettaAgentsId,
+    template,
+    overrides: {
+      memoryVariables,
+      hidden: true,
+    },
+  })
 
   if (!agent?.id || !agent?.project_id) {
     throw new Error('Failed to create simulated agent');
   }
+
 
   // Save to database
   const simulatedAgentData = {
     agentId: agent.id,
     projectId: agent.project_id,
     organizationId,
-    isDefault: isDefault,
+    isDefault,
     agentTemplateId,
-    deployedAgentTemplateId,
-    memoryVariables: recordMemoryVariablesToMemoryVariablesV1(memoryVariables),
+    memoryVariables: convertRecordMemoryVariablesToMemoryVariablesV1(memoryVariables),
   };
 
   const [res] = await db

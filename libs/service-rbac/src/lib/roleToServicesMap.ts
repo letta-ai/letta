@@ -15,6 +15,7 @@ const analystPermissions = [
   ApplicationServices.READ_DATASETS,
   ApplicationServices.READ_DATASET_ITEMS,
   ApplicationServices.READ_AB_TESTS,
+  ApplicationServices.READ_BLOCK_TEMPLATES,
 ];
 
 const editorPermissions = [
@@ -43,6 +44,9 @@ const editorPermissions = [
   ApplicationServices.CREATE_AB_TESTS,
   ApplicationServices.UPDATE_AB_TESTS,
   ApplicationServices.DELETE_AB_TESTS,
+  ApplicationServices.CREATE_BLOCK_TEMPLATES,
+  ApplicationServices.UPDATE_BLOCK_TEMPLATES,
+  ApplicationServices.DELETE_BLOCK_TEMPLATES,
 ];
 
 const adminPermissions = [

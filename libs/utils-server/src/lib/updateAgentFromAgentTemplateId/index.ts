@@ -1,0 +1,1 @@
+export { updateAgentFromAgentTemplateId } from './updateAgentFromAgentTemplateId';

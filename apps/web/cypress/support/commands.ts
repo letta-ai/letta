@@ -134,7 +134,9 @@ Cypress.Commands.add(
 );
 
 Cypress.Commands.add('editMemoryBlock', (content: string) => {
-  cy.findByTestId('edit-memory-block-human-content').dblclick();
+  cy.findByTestId('edit-memory-block-human-content', {
+    timeout: 50000,
+  }).dblclick();
   cy.findByTestId('edit-memory-block-human-content', { timeout: 50000 }).type(
     content,
     { parseSpecialCharSequences: false },

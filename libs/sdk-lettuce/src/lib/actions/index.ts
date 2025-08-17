@@ -1,4 +1,5 @@
 export * from './startPingPong/startPingPong';
-export * from './startMigrateAgents/startMigrateAgents';
-export * from './startMigrateAgent/startMigrateAgent';
+export * from './startMigrateTemplateEntities/startMigrateTemplateEntities';
+export * from './startMigrateSingleAgent/startMigrateSingleAgent';
+export * from './startMigrateBatch/startMigrateBatch';
 export * from './cleanupExpiredAccessTokens/cleanupExpiredAccessTokens';

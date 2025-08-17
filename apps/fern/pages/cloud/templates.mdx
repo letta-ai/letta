@@ -1,5 +1,5 @@
 ---
-title: Introduction to Agent Templates 
+title: Introduction to Agent Templates
 slug: guides/templates/overview
 ---
 
@@ -22,7 +22,7 @@ flowchart TD
         tool_3"]
         memory["Memory Structure
         ---------------
-        system_instructions 
+        system_instructions
         core_memory
         archival_memory"]
     end
@@ -42,7 +42,7 @@ flowchart TD
 ```
 </Frame>
 
-Agent templates support [versioning](/guides/templates/versioning), which allows you to programatically 
+Agent templates support [versioning](/guides/templates/versioning), which allows you to programatically
 upgrade all agents on an old version of a template to the new version of the same template.
 
 Agent templates also support [memory variables](/guides/templates/variables), a way to conveniently customize
@@ -56,14 +56,12 @@ When you are editing a template in the ADE, the ADE will simulate an agent for y
 
 You can refresh the simulator and create a new simulated agent from your template at any time by clicking the "Flush Simulation" button 🔄 (at the top of the chat window).
 
-To create a persistent agent from an existing template, you can use the `from_template` arguement in the [agent creation endpoint](/api-reference/agents/create):
+To create a persistent agent from an existing template, you can use the  [create agents from template endpoint](/api-reference/templates/agents/create):
 ```sh
-curl -X POST https://app.letta.com/v1/agents \
+curl -X POST https://app.letta.com/v1/templates/{project_slug}/{template_name}:{template_version} \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "from_template": template-name:latest"
-  }'
+  -d '{}'
 ```
 
 ### Creating a template from an agent

@@ -19,6 +19,9 @@ const config: Config = {
     '../../libs/sdk-core-testing/src/index.ts',
     './testing/always-mocks.ts',
   ],
+  moduleNameMapper: {
+    'nanoid':  '<rootDir>/testing/empty.ts',
+  },
   testEnvironment: 'jsdom',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   coverageDirectory: '../../coverage/apps/web',

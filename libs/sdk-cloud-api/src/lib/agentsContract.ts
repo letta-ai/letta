@@ -7,10 +7,7 @@ import type {
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
 import { zodTypes } from '@letta-cloud/sdk-core';
-import {
-  type ListAgentsData,
-  VersionedTemplateType,
-} from '@letta-cloud/sdk-core';
+import type {  ListAgentsData } from '@letta-cloud/sdk-core';
 
 const { AgentState } = zodTypes;
 
@@ -28,97 +25,6 @@ const createAgentContract = c.mutation({
   body: c.type<CreateAgentRequest>(),
   responses: {
     201: CreateAgentResponseSchema,
-  },
-});
-
-/* deploy agent template */
-const AgentNotFoundResponseSchema = z.object({
-  message: z.literal('Agent not found'),
-});
-
-const FailedToDeployAgentTemplateErrorSchema = z.object({
-  message: z.literal('Failed to version agent template'),
-});
-
-const versionAgentTemplateContract = c.mutation({
-  method: 'POST',
-  summary: 'Version Agent Template',
-  path: '/v1/agents/:agent_id/version-template',
-  description: 'Creates a versioned version of an agent',
-  body: z.object({
-    migrate_deployed_agents: z.boolean().optional(),
-    message: z.string().max(140).optional(),
-    preserve_tool_variables: z.boolean().optional().openapi({
-      description:
-        "If true, preserves the existing agent's tool environment variables when migrating deployed agents",
-    }),
-  }),
-  query: z.object({
-    returnAgentState: z.boolean().or(z.literal('true')).optional(),
-  }),
-  pathParams: z.object({
-    agent_id: z.string().openapi({
-      description:
-        'The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well',
-    }),
-  }),
-  responses: {
-    201: VersionedTemplateType,
-    404: AgentNotFoundResponseSchema,
-    500: FailedToDeployAgentTemplateErrorSchema,
-  },
-});
-
-/* migrate an agent to a new versioned agent template */
-const MigrateAgentToNewVersionedAgentTemplateBodySchema = z.object({
-  to_template: z.string(),
-  variables: z.record(z.string()).optional().openapi({
-    description:
-      'If you chose to not preserve core memories, you should provide the new variables for the core memories',
-  }),
-  preserve_core_memories: z.boolean(),
-  preserve_tool_variables: z.boolean().optional().openapi({
-    description:
-      "If true, preserves the existing agent's tool environment variables instead of using the template's variables",
-  }),
-});
-
-const MigrateAgentToNewVersionedAgentTemplateResponseSchema = z.object({
-  success: z.literal(true),
-});
-
-const MigrateAgentToNewVersionedAgentTemplateNotFoundResponseSchema = z.object({
-  message: z
-    .literal(
-      'Agent provided is a template or not found, you can only migrate deployed agents',
-    )
-    .or(z.literal('Template version provided does not exist')),
-});
-
-const MigrationFailedResponseSchema = z.object({
-  message: z.literal('Migration failed'),
-});
-
-const MigrationFailedDueToProjectMismatchResponseSchema = z.object({
-  message: z.literal(
-    'You can only migrate agents to a new versioned agent template that belongs to the same project',
-  ),
-});
-
-const migrateAgentContract = c.mutation({
-  method: 'POST',
-  summary: 'Migrate Agent',
-  path: '/v1/agents/:agent_id/migrate',
-  description: 'Migrate an agent to a new versioned agent template',
-  body: MigrateAgentToNewVersionedAgentTemplateBodySchema,
-  pathParams: z.object({
-    agent_id: z.string(),
-  }),
-  responses: {
-    200: MigrateAgentToNewVersionedAgentTemplateResponseSchema,
-    404: MigrateAgentToNewVersionedAgentTemplateNotFoundResponseSchema,
-    409: MigrationFailedDueToProjectMismatchResponseSchema,
-    500: MigrationFailedResponseSchema,
   },
 });
 
@@ -240,29 +146,6 @@ const searchDeployedAgentsContract = c.mutation({
   },
 });
 
-const FailedToCreateAgentTemplateErrorSchema = z.object({
-  message: z.literal('Failed to create agent template'),
-});
-
-const createTemplateFromAgentContract = c.mutation({
-  method: 'POST',
-  summary: 'Create Template From Agent',
-  path: '/v1/agents/:agent_id/template',
-  description: 'Create a template from an agent',
-  pathParams: z.object({
-    agent_id: z.string(),
-  }),
-  body: z.object({
-    project: z.string().optional(),
-  }),
-  responses: {
-    201: z.object({
-      templateName: z.string(),
-      templateId: z.string(),
-    }),
-    500: FailedToCreateAgentTemplateErrorSchema,
-  },
-});
 
 /* get agent variables */
 const GetAgentVariablesResponseSchema = z.object({
@@ -288,14 +171,42 @@ const getAgentVariablesContract = c.query({
   },
 });
 
+
+
+/* migrate an agent to a new versioned agent template */
+const MigrateAgentToNewVersionedAgentTemplateBodySchema = z.object({
+  to_template: z.string(),
+  preserve_core_memories: z.boolean(),
+  preserve_tool_variables: z.boolean().optional().openapi({
+    description:
+      "If true, preserves the existing agent's tool environment variables instead of using the template's variables",
+  }),
+});
+
+const MigrateAgentToNewVersionedAgentTemplateResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const migrateAgentContract = c.mutation({
+  method: 'POST',
+  summary: 'Migrate Agent',
+  path: '/v1/agents/:agent_id/migrate',
+  description: 'Migrate an agent to a new versioned agent template. This will only work for "classic" and non-multiagent agent templates.',
+  body: MigrateAgentToNewVersionedAgentTemplateBodySchema,
+  pathParams: z.object({
+    agent_id: z.string(),
+  }),
+  responses: {
+    200: MigrateAgentToNewVersionedAgentTemplateResponseSchema,
+  },
+});
+
 export const agentsContract = c.router({
   createAgent: createAgentContract,
   searchDeployedAgents: searchDeployedAgentsContract,
-  versionAgentTemplate: versionAgentTemplateContract,
-  migrateAgent: migrateAgentContract,
   getAgentById: getAgentByIdContract,
   deleteAgent: deleteAgentContract,
-  createTemplateFromAgent: createTemplateFromAgentContract,
+  migrateAgent: migrateAgentContract,
   getAgentVariables: getAgentVariablesContract,
 });
 

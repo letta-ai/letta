@@ -1,5 +1,5 @@
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
-import { useFeatureFlag, webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import {
   Button,
   Dialog,
@@ -26,13 +26,13 @@ import {
   DockLeftIcon,
 } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   adeKeyMap,
-  DeleteAgentDialog,
+  DeleteAgentDialog, DeleteTemplateDialog,
   ExportAgentButton,
-  useCurrentAgentMetaData,
+  useCurrentAgentMetaData
 } from '@letta-cloud/ui-ade-components';
 import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
@@ -47,6 +47,8 @@ import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
 import { PublishAgentFileSettingsDialog } from '$web/client/components/ADEPage/PublishAgentFileSettingsDialog/PublishAgentFileSettingsDialog';
 import { ExternalVersionManagementDialog } from '$web/client/components/ADEPage/ExternalVersionManagementDialog/ExternalVersionManagementDialog';
 import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -64,11 +66,11 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
 
   const agentBaseType = useAgentBaseTypeName();
 
-  const { id: agentTemplateId } = useCurrentAgent();
+  const templateName = useCurrentTemplateName();
   const { push } = useRouter();
-  const { id: projectId, slug: projectSlug } = useCurrentProject();
+  const { slug: projectSlug } = useCurrentProject();
   const { mutate, isPending, isError, isSuccess } =
-    webApi.agentTemplates.forkAgentTemplate.useMutation();
+    cloudAPI.templates.forkTemplate.useMutation();
 
   const handleForkAgent = useCallback(() => {
     if (isPending || isSuccess) {
@@ -78,9 +80,10 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
     mutate(
       {
         params: {
-          projectId,
-          agentTemplateId: agentTemplateId,
+          project: projectSlug,
+          template_version: `${templateName}:latest`,
         },
+        body: {},
       },
       {
         onSuccess: (response) => {
@@ -88,15 +91,7 @@ function ForkAgentDialog(props: ForkAgentDialogProps) {
         },
       },
     );
-  }, [
-    agentTemplateId,
-    isPending,
-    isSuccess,
-    mutate,
-    projectId,
-    projectSlug,
-    push,
-  ]);
+  }, [templateName, isPending, isSuccess, mutate, projectSlug, push]);
 
   return (
     <Dialog
@@ -213,20 +208,34 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             })}
           />
         )}
-        <DeleteAgentDialog
-          agentId={agentTemplateId}
-          agentName={name}
-          trigger={
-            <DropdownMenuItem
-              doNotCloseOnSelect
-              preIcon={<TrashIcon />}
-              label={t('AgentSettingsDropdown.delete', {
-                agentBaseType: agentBaseType.capitalized,
-              })}
-            />
-          }
-          onSuccess={handleDeleteAgentSuccess}
-        />
+        {isTemplate ? (
+          <DeleteTemplateDialog
+            templateName={name}
+            projectSlug={projectSlug}
+            onSuccess={handleDeleteAgentSuccess}
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<TrashIcon />}
+                label={t('AgentSettingsDropdown.deleteTemplate')}
+              />
+            }
+          />
+        ) : (
+          <DeleteAgentDialog
+            agentId={agentTemplateId}
+            agentName={name}
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<TrashIcon />}
+                label={t('AgentSettingsDropdown.deleteAgent')}
+              />
+            }
+            onSuccess={handleDeleteAgentSuccess}
+          />
+
+        )}
         <DropdownMenuSeparator />
         {showShareAgentFile && (
           <PublishAgentFileSettingsDialog
@@ -373,7 +382,7 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
 
   const { template_id } = useCurrentAgent();
 
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal, isTemplate } = useCurrentAgentMetaData();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -384,18 +393,29 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
     setMounted(true);
   }, []);
 
-  const { data: agentTemplate } =
-    webApi.agentTemplates.getDeployedAgentTemplateById.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.getDeployedAgentTemplateById(
-        template_id || '',
-      ),
-      queryData: {
-        params: {
-          id: template_id || '',
-        },
+  const { data: agentTemplates } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
+      template_id: template_id || '',
+    }),
+    queryData: {
+      query: {
+        template_id: template_id || '',
       },
-      enabled: !!template_id,
-    });
+    },
+    enabled: !!template_id,
+  });
+
+  const agentTemplateVersion = useMemo(() => {
+    if (!agentTemplates || agentTemplates.body.templates.length === 0) {
+      return null;
+    }
+    const latestTemplate = agentTemplates.body.templates[0];
+
+    const [_, wholeName] = latestTemplate.template_deployment_slug.split('/');
+    const [name, version] = wholeName.split(':');
+
+    return { name, version };
+  }, [agentTemplates]);
 
   const projectUrl = !id ? projectSlug : `/projects/${projectSlug}`;
 
@@ -429,15 +449,15 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
             color="tertiary"
           />
           <HStack align="center">
-            {mounted && agentTemplate?.body.fullVersion && (
+            {(mounted && agentTemplateVersion && !isTemplate) && (
               <>
                 <Typography variant="body2">
                   <Link
-                    data-testid={`fullversion:${agentTemplate.body.fullVersion}`}
+                    data-testid={`fullversion:${agentTemplateVersion.name}:${agentTemplateVersion.version}`}
                     noUnderlineWithoutHover
-                    href={`/projects/${projectSlug}/templates/${agentTemplate.body.templateName}`}
+                    href={`/projects/${projectSlug}/templates/${agentTemplateVersion.name}`}
                   >
-                    {agentTemplate.body.fullVersion}
+                    {agentTemplateVersion.name}:{agentTemplateVersion.version}
                   </Link>
                 </Typography>
                 <Typography variant="body2">/</Typography>
@@ -462,14 +482,22 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
 }
 
 export function ADEHeader() {
-  const { agentName } = useCurrentAgentMetaData();
+  const { agentName, templateName, isTemplate } = useCurrentAgentMetaData();
+
+  const name = useMemo(() => {
+    if (isTemplate && templateName) {
+      return templateName;
+    }
+    return agentName;
+  }, [agentName, templateName, isTemplate]);
+
   return (
     <>
       <VisibleOnMobile>
-        <MobileADEHeader name={agentName} />
+        <MobileADEHeader name={name} />
       </VisibleOnMobile>
       <HiddenOnMobile>
-        <DesktopADEHeader name={agentName} />
+        <DesktopADEHeader name={name} />
       </HiddenOnMobile>
     </>
   );

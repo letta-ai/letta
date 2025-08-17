@@ -16,7 +16,8 @@ import { useCurrentBasePathname } from '../../hooks';
 import { useCurrentAgentMetaData } from '../../hooks';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { webApi } from '@letta-cloud/sdk-web';
+import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
+import { useADEAppContext } from '../../AppContext/AppContext';
 
 interface UpdateNameDialogProps {
   trigger: React.ReactNode;
@@ -25,8 +26,10 @@ interface UpdateNameDialogProps {
 export function UpdateNameDialog(props: UpdateNameDialogProps) {
   const { trigger } = props;
   const [open, setOpen] = React.useState(false);
-  const { agentName, isTemplate, isLocal } = useCurrentAgentMetaData();
+  const { agentName, isTemplate, templateName, isLocal } =
+    useCurrentAgentMetaData();
   const basePathname = useCurrentBasePathname();
+  const { projectSlug } = useADEAppContext();
 
   const t = useTranslations('UpdateNameDialog');
 
@@ -69,10 +72,10 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
   const { mutate, isPending, error } = useAgentsServiceModifyAgent();
 
   const {
-    mutate: templateMutate,
-    isPending: templatePending,
-    error: templateError,
-  } = webApi.agentTemplates.updateTemplateName.useMutation();
+    mutate: cloudTemplateMutate,
+    isPending: cloudTemplatePending,
+    error: cloudTemplateError,
+  } = cloudAPI.templates.renameTemplate.useMutation();
 
   const handleSubmit = useCallback(
     (values: UpdateNameFormValues) => {
@@ -95,13 +98,14 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
       }
 
       if (isTemplate) {
-        templateMutate(
+        cloudTemplateMutate(
           {
             params: {
-              agentTemplateId,
+              project: projectSlug,
+              template_name: templateName || '',
             },
             body: {
-              name: values.name,
+              new_name: values.name,
             },
           },
           {
@@ -138,14 +142,17 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
       mutate,
       agentTemplateId,
       localMutate,
-      templateMutate,
+      cloudTemplateMutate,
+      templateName,
+      projectSlug,
       basePathname,
     ],
   );
 
   useEffect(() => {
-    if (error) {
-      if (isAPIError(error) && error.status === 409) {
+    const currentError = error || cloudTemplateError;
+    if (currentError) {
+      if (isAPIError(currentError) && currentError.status === 409) {
         form.setError('name', {
           message: t('error.conflict', {
             agentBaseType: agentBaseType.base,
@@ -159,7 +166,7 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
         message: t('error.default'),
       });
     }
-  }, [t, error, form, agentBaseType.base]);
+  }, [t, error, cloudTemplateError, form, agentBaseType.base]);
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -178,9 +185,9 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
         })}
         trigger={trigger}
         errorMessage={
-          localError || templateError ? t('error.default') : undefined
+          localError || cloudTemplateError ? t('error.default') : undefined
         }
-        isConfirmBusy={isPending || localIsPending || templatePending}
+        isConfirmBusy={isPending || localIsPending || cloudTemplatePending}
         confirmText={t('confirm')}
         onSubmit={form.handleSubmit(handleSubmit)}
       >

@@ -31,13 +31,11 @@ If you decide to make significant changes to your agent and would prefer to make
 
 ## Specifying a version when creating an agent
 
-You can specify a template version when creating an agent in the [agent creation endpoint](/api-reference/agents/create).
-For example, to deploy an agent from a template called `template-name` at version 2, you would use `:v2` as the template tag:
+You can specify a template version when creating an agent in the you can use the  [create agents from template endpoint](/api-reference/templates/agents/create)
+For example, to deploy an agent from a template called `template-name` at version 2, you would use `:2` as the template tag:
 ```sh
-curl -X POST https://api.letta.com/v1/agents \
+curl -X POST https://app.letta.com/v1/templates/{project_slug}/{template_name}:2 \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer YOUR_API_KEY' \
-  -d '{
-    "from_template": template-name:v2"
-  }'
+  -d '{}'
 ```

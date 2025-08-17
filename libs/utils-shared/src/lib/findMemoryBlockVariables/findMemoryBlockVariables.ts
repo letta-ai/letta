@@ -1,6 +1,9 @@
+import type {
+  AgentStateForSynchronization
+} from '../synchronizeSimulatedAgentWithAgentTemplate/synchronizeSimulatedAgentWithAgentTemplate';
 import type { AgentState } from '@letta-cloud/sdk-core';
 
-export function findMemoryBlockVariables(agentState: AgentState) {
+export function findMemoryBlockVariables(agentState: AgentState | AgentStateForSynchronization) {
   // find all instances {{variable}} in memory blocks
 
   const list = new Set<string>();

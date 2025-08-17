@@ -1,7 +1,7 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
-  defaultModel,
+  DEFAULT_LLM_MODEL,
   isAStarterKitName,
   STARTER_KITS,
 } from '@letta-cloud/config-agent-starter-kits';
@@ -10,7 +10,7 @@ import { ToolsService } from '@letta-cloud/sdk-core';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { agentTemplates, db, projects } from '@letta-cloud/service-database';
 import { and, count, eq } from 'drizzle-orm';
-import { cloudApiRouter, createTemplate } from 'tmp-cloud-api-router';
+import { cloudApiRouter } from 'tmp-cloud-api-router';
 import {
   getActiveBillableAgentsCount,
   getCustomerSubscription,
@@ -18,6 +18,7 @@ import {
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getDefaultProject } from '@letta-cloud/utils-server';
 import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
+import { createTemplateFromAgentState } from '@letta-cloud/utils-server';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -163,7 +164,7 @@ async function createAgentFromStarterKit(
         model:
           'model' in starterKit.agentState
             ? starterKit.agentState.model
-            : defaultModel,
+            : DEFAULT_LLM_MODEL,
         embedding: DEFAULT_EMBEDDING_MODEL,
         tool_ids: toolIds,
         project_id: project.id,
@@ -245,23 +246,6 @@ async function createTemplateFromStarterKit(
     };
   }
 
-  // lookup projectId
-  const project = await db.query.projects.findFirst({
-    where: and(
-      eq(projects.id, projectId),
-      eq(projects.organizationId, activeOrganizationId),
-    ),
-  });
-
-  if (!project) {
-    return {
-      status: 404,
-      body: {
-        message: 'Project not found',
-      },
-    };
-  }
-
   const subscription = await getCustomerSubscription(activeOrganizationId);
 
   const limits = await getUsageLimits(subscription.tier);
@@ -287,28 +271,33 @@ async function createTemplateFromStarterKit(
       ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
       : [];
 
-  const template = await createTemplate({
+  const template = await createTemplateFromAgentState({
     projectId,
     organizationId: activeOrganizationId,
     lettaAgentsId,
     userId,
-    createAgentState: {
+    agentState: {
       ...starterKit.agentState,
-      tool_ids: toolIds,
-      model:
-        'model' in starterKit.agentState
-          ? starterKit.agentState.model
-          : defaultModel,
-      embedding: DEFAULT_EMBEDDING_MODEL,
-      initial_message_sequence: [],
+      memory: {
+        blocks: starterKit.agentState.memory_blocks,
+      },
+      tools: toolIds.map((toolId) => ({
+        id: toolId,
+      })),
+      llm_config: {
+        handle:
+          'model' in starterKit.agentState
+            ? starterKit.agentState.model
+            : DEFAULT_LLM_MODEL,
+      },
     },
   });
 
   return {
     status: 201,
     body: {
-      projectSlug: project.slug,
-      templateName: template.templateName,
+      projectSlug: template.projectSlug,
+      templateName: template.lettaTemplate.name,
     },
   };
 }

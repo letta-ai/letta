@@ -1428,7 +1428,6 @@ export function Messages(props: MessagesProps) {
         <LoadingEmptyStatusComponent
           isLoading
           loaderFillColor="background-grey"
-          hideText
           loaderVariant="spinner"
         />
       </div>

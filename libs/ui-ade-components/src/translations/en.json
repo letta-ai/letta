@@ -2626,6 +2626,15 @@
     "confirmTextLabel": "Type the name of the {agentBaseType} name to confirm",
     "description": "Are you sure you want to delete this {agentBaseType}? This is permanent and cannot be undone."
   },
+  "DeleteTemplateDialog": {
+    "nameError": "Template name does not match",
+    "title": "Delete Template",
+    "error": "There was an error deleting template '{templateName}', try again or contact support.",
+    "confirm": "Delete Template",
+    "confirmText": "Your template's name is <strong>{templateName}</strong>",
+    "confirmTextLabel": "Type the name of the template to confirm",
+    "description": "Are you sure you want to delete this template? This will delete all versions of the template. This is permanent and cannot be undone."
+  },
   "components/StarterKitSelector": {
     "sleeptimeAlert": {
       "title": "When sleep-time is enabled, additional sleep-time agents are spawned to manage memory and process files in the background."

@@ -1,7 +1,7 @@
 export * from './lib/removeCreditsFromOrganization/removeCreditsFromOrganization';
 export * from './lib/addCreditsToOrganization/addCreditsToOrganization';
 export * from './lib/processStep/processStep';
-export * from './lib/getDeployedTemplateByVersion/getDeployedTemplateByVersion';
+export * from './lib/getDeployedDeprecatedTemplateByVersion/getDeployedDeprecatedTemplateByVersion';
 export * from './lib/getCreditCostPerModel/getCreditCostPerModel';
 export * from './lib/redisOrganizationCredits/redisOrganizationCredits';
 export * from './lib/handleMessageRateLimiting/handleMessageRateLimiting';
@@ -11,6 +11,7 @@ export * from './lib/parseAccessToken/parseAccessToken';
 export * from './lib/getOrganizationUser/getOrganizationUser';
 export * from './lib/getProjectBySlug/getProjectBySlug';
 export * from './lib/updateAgentFromAgentId/updateAgentFromAgentId';
+export * from './lib/updateAgentFromAgentTemplateId/updateAgentFromAgentTemplateId';
 export * from './lib/copyAgentById/copyAgentById';
 export * from './lib/attachVariablesToTemplates/attachVariablesToTemplates';
 export * from './lib/findUniqueAgentTemplateName/findUniqueAgentTemplateName';
@@ -28,3 +29,10 @@ export * from './lib/checkIfUserIsAllVerified/checkIfUserIsAllVerified';
 export * from './lib/contentModerationCheck/contentModerationCheck';
 export * from './lib/markActiveAgent/markActiveAgent';
 export * from './lib/createSimulatedAgent/createSimulatedAgent';
+export * from './lib/getTemplateByName/getTemplateByName';
+export * from './lib/convertV1AgentTemplateToV2Agent/convertV1AgentTemplateToV2Agent';
+export * from './lib/createTemplateFromAgentState/createTemplateFromAgentState';
+export * from './lib/saveTemplateVersion/saveTemplate';
+export * from './lib/migrateEntities/migrateEntities';
+export * from './lib/forkTemplate/forkTemplate';
+export * from './lib/createEntitiesFromTemplate/createEntitiesFromTemplate'

@@ -273,19 +273,22 @@ function useQueryDefinition() {
     },
   });
 
-  const { data: templateData } =
-    webApi.agentTemplates.listAgentTemplates.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
-        projectId: currentProjectId,
+  const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(
+      currentProjectId,
+      {
+        search: '',
         limit: TEMPLATE_SEARCH_LIMIT,
-      }),
-      queryData: {
-        query: {
-          projectId: currentProjectId,
-          limit: TEMPLATE_SEARCH_LIMIT,
-        },
       },
-    });
+    ),
+    queryData: {
+      query: {
+        project_id: currentProjectId,
+        limit: TEMPLATE_SEARCH_LIMIT.toString(),
+        offset: '0',
+      },
+    },
+  });
 
   const { defaultIdentities, handleLoadIdentities } = useQueryIdentities({
     projectId: currentProjectId,
@@ -336,7 +339,7 @@ function useQueryDefinition() {
       return null;
     }
 
-    const arr = templateData.body.agentTemplates.map((template) => ({
+    const arr = templateData.body.templates.map((template) => ({
       label: template.name,
       value: template.id,
     }));
@@ -349,11 +352,12 @@ function useQueryDefinition() {
 
   const handleLoadTemplateNames = useCallback(
     async (query: string) => {
-      const response = await webApi.agentTemplates.listAgentTemplates.query({
+      const response = await cloudAPI.templates.listTemplates.query({
         query: {
           search: query,
-          projectId: currentProjectId,
-          limit: TEMPLATE_SEARCH_LIMIT,
+          project_id: currentProjectId,
+          limit: TEMPLATE_SEARCH_LIMIT.toString(),
+          offset: '0',
         },
       });
 
@@ -361,7 +365,7 @@ function useQueryDefinition() {
         return [];
       }
 
-      const options = response.body.agentTemplates.map((template) => ({
+      const options = response.body.templates.map((template) => ({
         label: template.name,
         value: template.id,
       }));

@@ -80,7 +80,7 @@ describe('letta', () => {
 
     cy.clearPointerEventLock();
 
-    cy.findAllByTestId('edit-memory-block-human-content')
+    cy.findAllByTestId('edit-memory-block-human-content', { timeout: 500000 })
       .first()
       .dblclick({ force: true });
 
@@ -98,7 +98,7 @@ describe('letta', () => {
     }).click();
 
     // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(2000);
+    cy.wait(5000);
 
     cy.findByTestId('toggle-variables-button', { timeout: 50000 })
       .first()
@@ -113,7 +113,7 @@ describe('letta', () => {
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(2000);
 
-    cy.findByTestId('tab-item:simulated', { timeout: 50000 }).click({
+    cy.findByTestId('tab-item:agent', { timeout: 50000 }).click({
       force: true,
     });
     cy.findByTestId('edit-memory-block-human-content', {

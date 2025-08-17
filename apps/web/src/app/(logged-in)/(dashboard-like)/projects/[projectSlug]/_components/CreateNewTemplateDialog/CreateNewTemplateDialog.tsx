@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { webApi, webApiQueryKeys } from '$web/client';
+import { webApi } from '$web/client';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -24,6 +24,7 @@ import {
 } from '@letta-cloud/ui-ade-components';
 import { isAPIError } from '@letta-cloud/sdk-core';
 import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
+import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -99,7 +100,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         {
           onSuccess: (data) => {
             void queryClient.invalidateQueries({
-              queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
+              queryKey: cloudQueryKeys.templates.listTemplates,
               exact: false,
             });
 

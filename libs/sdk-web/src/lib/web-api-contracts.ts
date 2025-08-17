@@ -99,6 +99,14 @@ import {
 } from './public/datasetItemContracts';
 import { datasetContracts, datasetQueryKeys } from './public/datasetContracts';
 import { abTestContracts, abTestQueryKeys } from './public/abTestsContracts';
+import {
+  blockTemplatesContracts,
+  blockTemplatesQueryKeys,
+} from './public/blockTemplatesContracts';
+import {
+  internalTemplatesContracts,
+  templatesQueryClientKeys,
+} from './public/internalTemplatesContracts';
 
 export const contracts = {
   user: userContract,
@@ -137,6 +145,8 @@ export const contracts = {
   datasetItems: datasetItemContracts,
   dataset: datasetContracts,
   abTest: abTestContracts,
+  blockTemplates: blockTemplatesContracts,
+  templates: internalTemplatesContracts,
 };
 
 export const queryClientKeys = {
@@ -172,6 +182,8 @@ export const queryClientKeys = {
   datasetItems: datasetItemQueryKeys,
   dataset: datasetQueryKeys,
   abTest: abTestQueryKeys,
+  blockTemplates: blockTemplatesQueryKeys,
+  templates: templatesQueryClientKeys,
 };
 
 export * from './public/projectContracts';
@@ -203,3 +215,5 @@ export type * from './public/agentfileContracts';
 export * from './public/datasetItemContracts';
 export * from './public/datasetContracts';
 export * from './public/abTestsContracts';
+export * from './public/blockTemplatesContracts';
+export * from './public/internalTemplatesContracts';

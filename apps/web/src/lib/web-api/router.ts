@@ -32,6 +32,8 @@ import { simulatedAgentsRouter } from '$web/web-api/simulated-agents/simulatedAg
 import * as datasetItemsRouter from '$web/web-api/dataset-items/datasetItemsRouter';
 import * as datasetsRouter from '$web/web-api/datasets/datasetsRouter';
 import * as abTestsRouter from '$web/web-api/ab-tests/abTestsRouter';
+import * as blockTemplatesRouter from '$web/web-api/block-templates/blockTemplatesRouter';
+import { internalTemplatesRouter } from '$web/web-api/templates/internalTemplatesRouter';
 
 export const router = {
   user: userRouter,
@@ -70,6 +72,8 @@ export const router = {
   datasetItems: datasetItemsRouter,
   dataset: datasetsRouter,
   abTest: abTestsRouter,
+  blockTemplates: blockTemplatesRouter,
+  templates: internalTemplatesRouter,
 };
 
 export * from './user/userRouter';
@@ -82,3 +86,5 @@ export * from './ade-preferences/adePreferencesRouter';
 export * from './dataset-items/datasetItemsRouter';
 export * from './datasets/datasetsRouter';
 export * from './ab-tests/abTestsRouter';
+export * from './block-templates/blockTemplatesRouter';
+export * from './templates/internalTemplatesRouter';

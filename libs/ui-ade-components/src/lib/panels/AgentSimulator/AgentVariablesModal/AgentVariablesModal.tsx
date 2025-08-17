@@ -15,12 +15,11 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { useCurrentAgent, useCurrentAgentMetaData } from '../../../hooks';
+import { useCurrentAgent, useCurrentAgentMetaData, useUpdateSimulatedMemoryBlocksOnVariableInjection } from '../../../hooks';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { Link } from '@letta-cloud/ui-component-library';
 import {
-  getIsAgentState,
   UseAgentsServiceRetrieveAgentKeyFn,
   useAgentsServiceModifyAgent,
 } from '@letta-cloud/sdk-core';
@@ -34,7 +33,11 @@ import {
   type webApiContracts,
   webApiQueryKeys,
 } from '@letta-cloud/sdk-web';
-import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
+import {
+  convertMemoryVariablesV1ToRecordMemoryVariables,
+  removeMetadataFromBlockTemplate,
+  synchronizeSimulatedAgentWithAgentTemplate
+} from '@letta-cloud/utils-shared';
 import {
   useCurrentSimulatedAgent,
   useCurrentSimulatedAgentVariables,
@@ -248,22 +251,57 @@ function ToolVariables() {
 
 function MemoryVariableEditorWrapper() {
   const variables = useCurrentSimulatedAgentVariables();
-  const agentState = useCurrentAgent();
+  const {
+    isTemplate,
+    templateId: agentTemplateId,
+  } = useCurrentAgentMetaData();
 
-  const variableList = useMemo(() => {
-    if (!getIsAgentState(agentState)) {
-      return [];
+  const { simulatedAgent } = useCurrentSimulatedAgent();
+
+  const { data: blockTemplates } =
+    webApi.blockTemplates.getAgentTemplateBlockTemplates.useQuery({
+      queryData: {
+        params: { agentTemplateId: agentTemplateId || '' },
+      },
+      queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
+        agentTemplateId || '',
+      ),
+      enabled: isTemplate,
+    });
+
+
+  const agentTemplateVariables = useMemo(() => {
+    if (!isTemplate || !simulatedAgent || !blockTemplates) {
+      return {};
     }
 
-    return findMemoryBlockVariables(agentState);
-  }, [agentState]);
+    const cleanedBlockTemplates = blockTemplates.body.blockTemplates.map(removeMetadataFromBlockTemplate);
+
+    // Synchronize current agent state to get comparable data structure
+    const { agentTemplate } =
+      synchronizeSimulatedAgentWithAgentTemplate({
+        ...simulatedAgent,
+        memory: {
+          ...simulatedAgent,
+          blocks: cleanedBlockTemplates,
+        }
+      });
+
+    if (!agentTemplate.memoryVariables) {
+      return {};
+    }
+
+    return convertMemoryVariablesV1ToRecordMemoryVariables(
+      agentTemplate.memoryVariables
+    );
+  }, [simulatedAgent, isTemplate, blockTemplates]);
 
   if (!variables) {
     return <LettaLoader variant="grower" />;
   }
 
   const mergedVariables = {
-    ...Object.fromEntries(variableList.map((key) => [key, ''])),
+    ...agentTemplateVariables,
     ...variables.memoryVariables,
   };
 
@@ -295,12 +333,16 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
 
   const [_, setModalState] = useAtom(agentVariableModalState);
 
+
+  const refreshMemoryBlocks = useUpdateSimulatedMemoryBlocksOnVariableInjection();
+  const { mutate: resync } =
+    webApi.simulatedAgents.refreshSimulatedSession.useMutation({
+      mutationKey: webApiQueryKeys.simulatedAgents.refreshSimulatedSession(simulatedAgentId || ''),
+    });
+
   const { mutate, isPending } =
     webApi.simulatedAgents.updateSimulatedAgentVariables.useMutation({
       onSuccess: (response) => {
-        if (response.status !== 200) {
-          return;
-        }
         queryClient.setQueriesData<
           ServerInferResponses<
             typeof webApiContracts.simulatedAgents.getSimulatedAgentVariables,
@@ -321,6 +363,12 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
           },
         );
 
+        resync({
+          params: {
+            simulatedAgentId: simulatedAgentId || '',
+          },
+        });
+
         setModalState(false);
       },
     });
@@ -335,11 +383,14 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
     },
   });
 
+
   const handleUpdateSession = useCallback(
     (values: MemoryVariableFormStateType) => {
       const variableData = Object.fromEntries(
         values.variables.map(({ key, value }) => [key, value]),
       );
+
+      refreshMemoryBlocks(variableData);
 
       mutate({
         params: {
@@ -350,7 +401,7 @@ function MemoryVariableEditor(props: MemoryVariableEditorProps) {
         },
       });
     },
-    [simulatedAgentId, mutate],
+    [refreshMemoryBlocks, simulatedAgentId, mutate],
   );
 
   return (

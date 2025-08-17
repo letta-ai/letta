@@ -4,167 +4,22 @@ import {
   getUserOrThrow,
   getUserWithActiveOrganizationIdOrThrow,
 } from '$web/server/auth';
-import { and, desc, eq, ilike, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   agentTemplates,
   db,
   deployedAgentTemplates,
 } from '@letta-cloud/service-database';
 import { AgentsService } from '@letta-cloud/sdk-core';
-import type { AgentState } from '@letta-cloud/sdk-core';
 import {
-  getDeployedTemplateByVersion,
-  getTemplateProjectId,
+  getDeployedDeprecatedTemplateByVersion,
 } from '@letta-cloud/utils-server';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
-import { createTemplate } from 'tmp-cloud-api-router';
 import type { GeneralRequestContext } from '../../server';
 import { listTemplateAgentMigrations } from '$web/server/lib/listTemplateAgentMigrations/listTemplateAgentMigrations';
 import { abortTemplateAgentMigration } from '$web/server/lib/abortTemplateAgentMigration/abortTemplateAgentMigration';
 import { findMemoryBlockVariables } from '@letta-cloud/utils-shared';
 
-function randomThreeDigitNumber() {
-  return Math.floor(Math.random() * 1000);
-}
-
-function getDateAsAlphanumericString(date: Date): string {
-  return date.valueOf().toString(36) + randomThreeDigitNumber().toString(36);
-}
-
-type ListAgentTemplatesQueryRequest = ServerInferRequest<
-  typeof contracts.agentTemplates.listAgentTemplates
->;
-
-type ListAgentTemplatesQueryResponse = ServerInferResponses<
-  typeof contracts.agentTemplates.listAgentTemplates
->;
-
-export async function listAgentTemplates(
-  req: ListAgentTemplatesQueryRequest,
-): Promise<ListAgentTemplatesQueryResponse> {
-  const {
-    search,
-    offset,
-    includeLatestDeployedVersion,
-    includeAgentState,
-    limit = 10,
-    projectId,
-    name,
-  } = req.query;
-
-  const {
-    activeOrganizationId: organizationId,
-    permissions,
-    lettaAgentsId,
-  } = await getUserOrThrow();
-
-  if (!permissions.has(ApplicationServices.READ_TEMPLATES)) {
-    return {
-      status: 403,
-      body: {},
-    };
-  }
-
-  if (!organizationId) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  const where = [
-    eq(agentTemplates.organizationId, organizationId),
-    isNull(agentTemplates.deletedAt),
-  ];
-
-  if (projectId) {
-    where.push(eq(agentTemplates.projectId, projectId));
-  }
-
-  if (search) {
-    where.push(ilike(agentTemplates.name, `%${search}%`));
-  }
-
-  if (name) {
-    where.push(eq(agentTemplates.name, name));
-  }
-
-  const agentTemplatesResponse = await db.query.agentTemplates.findMany({
-    where: and(...where),
-    limit: limit + 1,
-    offset,
-    with: {
-      ...(includeLatestDeployedVersion && {
-        deployedAgentTemplates: {
-          limit: 1,
-          where: isNull(deployedAgentTemplates.deletedAt),
-          orderBy: [desc(deployedAgentTemplates.createdAt)],
-        },
-      }),
-    },
-    orderBy: [desc(agentTemplates.createdAt)],
-    columns: {
-      name: true,
-      id: true,
-      updatedAt: true,
-    },
-  });
-
-  const hasNextPage = agentTemplatesResponse.length > limit;
-
-  const agentStateMap = new Map<string, AgentState>();
-  if (includeAgentState) {
-    const agentStates = await Promise.all(
-      agentTemplatesResponse.map((agentTemplate) =>
-        AgentsService.retrieveAgent(
-          {
-            agentId: agentTemplate.id,
-          },
-          {
-            user_id: lettaAgentsId,
-          },
-        ).catch(() => null),
-      ),
-    );
-
-    agentStates.forEach((agentState, index) => {
-      if (!agentState) {
-        return;
-      }
-
-      agentStateMap.set(agentTemplatesResponse[index].id, agentState);
-    });
-  }
-
-  return {
-    status: 200,
-    body: {
-      agentTemplates: agentTemplatesResponse
-        .slice(0, limit)
-        .map((agentTemplate) => {
-          return {
-            name: agentTemplate.name,
-            id: agentTemplate.id,
-
-            updatedAt: agentTemplate.updatedAt.toISOString(),
-            ...(includeAgentState
-              ? {
-                  agentState: agentStateMap.get(agentTemplate.id),
-                }
-              : {}),
-            ...(includeLatestDeployedVersion
-              ? {
-                  latestDeployedVersion:
-                    agentTemplate.deployedAgentTemplates[0]?.version,
-                  latestDeployedId: agentTemplate.deployedAgentTemplates[0]?.id,
-                }
-              : {}),
-          };
-        }),
-      hasNextPage,
-    },
-  };
-}
 
 type GetAgentTemplateByIdRequest = ServerInferRequest<
   typeof contracts.agentTemplates.getAgentTemplateById
@@ -231,104 +86,6 @@ export async function getAgentTemplateById(
   };
 }
 
-type ForkAgentTemplateRequest = ServerInferRequest<
-  typeof contracts.agentTemplates.forkAgentTemplate
->;
-
-type ForkAgentTemplateResponse = ServerInferResponses<
-  typeof contracts.agentTemplates.forkAgentTemplate
->;
-
-export async function forkAgentTemplate(
-  req: ForkAgentTemplateRequest,
-): Promise<ForkAgentTemplateResponse> {
-  const { agentTemplateId, projectId } = req.params;
-  const {
-    activeOrganizationId,
-    lettaAgentsId,
-    permissions,
-    id: userId,
-  } = await getUserWithActiveOrganizationIdOrThrow();
-
-  if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
-    return {
-      status: 403,
-      body: {},
-    };
-  }
-
-  const testingAgent = await db.query.agentTemplates.findFirst({
-    where: and(
-      isNull(agentTemplates.deletedAt),
-      eq(agentTemplates.organizationId, activeOrganizationId),
-      eq(agentTemplates.projectId, projectId),
-      eq(agentTemplates.id, agentTemplateId),
-    ),
-  });
-
-  if (!testingAgent) {
-    return {
-      status: 404,
-      body: {},
-    };
-  }
-
-  const agentDetails = await AgentsService.retrieveAgent(
-    {
-      agentId: testingAgent.id,
-    },
-    {
-      user_id: lettaAgentsId,
-    },
-  );
-
-  const name = `forked-${testingAgent.name}-${getDateAsAlphanumericString(new Date())}`;
-
-  const copiedTemplate = await createTemplate({
-    projectId,
-    organizationId: activeOrganizationId,
-    lettaAgentsId,
-    userId,
-    name,
-    createAgentState: {
-      include_base_tools: false,
-      tool_rules: agentDetails.tool_rules,
-      tool_exec_environment_variables:
-        agentDetails.tool_exec_environment_variables?.reduce(
-          (v, c) => {
-            return {
-              ...v,
-              [c.key]: c.value,
-            };
-          },
-          {} as Record<string, string>,
-        ),
-      llm_config: agentDetails.llm_config,
-      embedding_config: agentDetails.embedding_config,
-      system: agentDetails.system,
-      tool_ids: agentDetails.tools
-        .map((tool) => tool.id)
-        .filter(Boolean) as string[],
-      memory_blocks: agentDetails.memory.blocks.map((block) => {
-        return {
-          limit: block.limit,
-          label: block.label || '',
-          value: block.value,
-        };
-      }),
-    },
-  });
-
-  return {
-    status: 201,
-    body: {
-      id: copiedTemplate.templateId,
-      name: copiedTemplate.templateName,
-      updatedAt: new Date().toISOString(),
-    },
-  };
-}
-
 type GetAgentTemplateByVersion = ServerInferRequest<
   typeof contracts.agentTemplates.getAgentTemplateByVersion
 >;
@@ -352,7 +109,7 @@ async function getAgentTemplateByVersion(
   }
 
   const [versionName] = slug.split(':');
-  const deployedAgentTemplate = await getDeployedTemplateByVersion(
+  const deployedAgentTemplate = await getDeployedDeprecatedTemplateByVersion(
     slug,
     activeOrganizationId,
   );
@@ -502,13 +259,10 @@ async function importAgentFileAsTemplate(
   context: GeneralRequestContext,
 ): Promise<ImportAgentFileAsTemplateResponse> {
   const {
-    activeOrganizationId,
     permissions,
-    id: userId,
-    lettaAgentsId,
   } = await getUserWithActiveOrganizationIdOrThrow();
 
-  const { append_copy_suffix, override_existing_tools, project_id } = req.body;
+  const { project_id } = req.body;
 
   if (!permissions.has(ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES)) {
     return {
@@ -538,89 +292,11 @@ async function importAgentFileAsTemplate(
       },
     };
   }
-
-  const serializedResponse = await AgentsService.importAgentSerialized(
-    {
-      formData: {
-        file: file as Blob,
-        project_id: getTemplateProjectId(project_id),
-        append_copy_suffix: append_copy_suffix,
-        strip_messages: true,
-        override_existing_tools: override_existing_tools,
-      }
-    },
-    {
-      user_id: lettaAgentsId,
-    },
-  );
-
-  if (!serializedResponse.agent_ids[0]) {
-    return {
-      status: 400,
-      body: {
-        message: 'Failed to import agent file',
-      },
-    };
-  }
-
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId: serializedResponse.agent_ids[0],
-      includeRelationships: [],
-    },
-    {
-      user_id: lettaAgentsId,
-    },
-  );
-
-  if (!agent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
-
-  const response = await createTemplate({
-    projectId: project_id,
-    organizationId: activeOrganizationId,
-    userId,
-    lettaAgentsId: lettaAgentsId,
-    createAgentState: {
-      llm_config: agent.llm_config,
-      embedding_config: agent.embedding_config,
-      system: agent.system,
-      enable_sleeptime: agent.enable_sleeptime,
-      include_base_tool_rules: false,
-      include_multi_agent_tools: false,
-      agent_type: agent.agent_type,
-      tool_exec_environment_variables:
-        agent.tool_exec_environment_variables?.reduce(
-          (v, c) => ({
-            ...v,
-            [c.key]: c.value,
-          }),
-          {} as Record<string, string>,
-        ),
-      description: agent.description,
-      tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
-      tool_rules: agent.tool_rules,
-      memory_blocks: agent.memory.blocks.map((block) => {
-        return {
-          limit: block.limit,
-          label: block.label || '',
-          value: block.value,
-        };
-      }),
-    },
-  });
-
   return {
     status: 201,
     body: {
-      id: response.templateId,
-      name: response.templateName,
+      id: 'response.templateId',
+      name: 'response.templateName',
     },
   };
 }
@@ -865,7 +541,7 @@ async function getAgentTemplateMemoryVariables(
     };
   }
 
-  const deployedAgentTemplate = await getDeployedTemplateByVersion(
+  const deployedAgentTemplate = await getDeployedDeprecatedTemplateByVersion(
     name,
     activeOrganizationId,
   );
@@ -897,9 +573,7 @@ async function getAgentTemplateMemoryVariables(
 export const agentTemplateRoutes = {
   listAgentMigrations,
   abortAgentMigration,
-  listAgentTemplates,
   getAgentTemplateByVersion,
-  forkAgentTemplate,
   listTemplateVersions,
   getAgentTemplateById,
   updateTemplateName,

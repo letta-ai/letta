@@ -149,7 +149,7 @@
       "migrationLock": "This memory block will not be overwritten by the migration process"
     }
   },
-  "components/AgentStateViewer": {
+  "components/TemplateSnapshotViewer": {
     "changed": "Changed",
     "StateViewer": {
       "base": "Base",

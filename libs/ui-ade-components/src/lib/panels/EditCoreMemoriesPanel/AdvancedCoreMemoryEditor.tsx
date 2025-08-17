@@ -23,29 +23,24 @@ import {
   useForm,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import { useFormContext } from 'react-hook-form';
-import type { Block, AgentState } from '@letta-cloud/sdk-core';
-import {
-  useAgentsServiceModifyCoreMemoryBlock,
-  UseAgentsServiceRetrieveAgentKeyFn,
-  useBlocksServiceDeleteBlock,
-} from '@letta-cloud/sdk-core';
+import type { Block } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
-import { useSortedMemories } from '@letta-cloud/utils-client';
 import { useADEPermissions } from '../../hooks/useADEPermissions/useADEPermissions';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CreateNewMemoryBlockDialog } from './CreateNewMemoryBlockDialog/CreateNewMemoryBlockDialog';
 import './AdvancedCoreMemoryEditor.scss';
 import { currentAdvancedCoreMemoryAtom } from './currentAdvancedCoreMemoryAtom';
 import { AttachMemoryBlockDialog } from './AttachMemoryBlockDialog/AttachMemoryBlockDialog';
-import { UseBlocksServiceInfiniteQuery } from '../../SearchMemoryBlocks/SearchMemoryBlocks';
 import { DetachMemoryBlock } from './DetachMemoryBlock/DetachMemoryBlock';
+import { useUpdateMemoryBlock } from '../../hooks/useUpdateMemoryBlock/useUpdateMemoryBlock';
+import { useDeleteMemoryBlock } from '../../hooks/useDeleteMemoryBlock/useDeleteMemoryBlock';
+import { useListMemories } from '../../hooks/useListMemories/useListMemories';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
@@ -104,9 +99,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
   const { memory, onFormDirtyChange } = props;
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
-  const agent = useCurrentAgent();
-
-  const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
+  const { isTemplate, agentId, templateId } = useCurrentAgentMetaData();
 
   const memoryUpdateSchema = useMemo(() => {
     return z.object({
@@ -128,6 +121,14 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
 
+  const { handleUpdate, isPending, isError } = useUpdateMemoryBlock({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    label: memory.label || '',
+    agentId,
+    blockId: memory.id || '',
+    templateId,
+  });
+
   const form = useForm<MemoryUpdatePayload>({
     resolver: zodResolver(memoryUpdateSchema),
     defaultValues: {
@@ -140,99 +141,25 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     },
   });
 
-  const queryClient = useQueryClient();
+  const handleFormUpdate = useCallback(
+    (values: MemoryUpdatePayload) => {
+      const updateData = {
+        label: values.label,
+        value: values.value,
+        limit: values.maxCharacters,
+        description: values.description,
+        preserveOnMigration: values.preserveOnMigration,
+        readOnly: values.readOnly,
+      };
 
-  const { mutateAsync: updateAgentMemoryByLabel } =
-    useAgentsServiceModifyCoreMemoryBlock();
-  const [isPending, setIsPending] = useState(false);
-  const [isError, setIsError] = useState(false);
+      trackClientSideEvent(AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY, {
+        agentId: agentId,
+      });
 
-  const handleUpdate = useCallback(
-    async (values: MemoryUpdatePayload) => {
-      if (!canUpdateAgent) {
-        return;
-      }
-
-      try {
-        setIsPending(true);
-        setIsError(false);
-
-        if (isPending) {
-          return;
-        }
-
-        if (!memory.label) {
-          return;
-        }
-
-        trackClientSideEvent(AnalyticsEvent.UPDATE_BLOCK_IN_CORE_MEMORY, {
-          agentId: agent.id,
-        });
-
-        await updateAgentMemoryByLabel({
-          agentId: agent.id,
-          blockLabel: memory.label,
-          requestBody: {
-            description: values.description,
-            read_only: values.readOnly,
-            preserve_on_migration: values.preserveOnMigration,
-            limit: values.maxCharacters,
-            value: values.value,
-          },
-        });
-
-        queryClient.setQueriesData<AgentState | undefined>(
-          {
-            queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-              agentId: agent.id,
-            }),
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              ...oldData,
-              memory: {
-                ...oldData.memory,
-                blocks: oldData.memory.blocks.map((block) => {
-                  if (block.label === memory.label) {
-                    return {
-                      ...block,
-                      limit: values.maxCharacters,
-                      description: values.description,
-                      read_only: values.readOnly,
-                      value: values.value,
-                    };
-                  }
-
-                  return block;
-                }),
-              },
-            };
-          },
-        );
-
-        form.reset(values);
-      } catch (_e) {
-        setIsError(true);
-      } finally {
-        setIsPending(false);
-      }
+      handleUpdate(updateData);
     },
-    [
-      agent.id,
-      canUpdateAgent,
-      form,
-      isPending,
-      memory.label,
-      queryClient,
-      updateAgentMemoryByLabel,
-    ],
+    [handleUpdate, agentId],
   );
-
-  const { isTemplate } = useCurrentAgentMetaData();
 
   useEffect(() => {
     onFormDirtyChange?.(form.formState.isDirty);
@@ -266,11 +193,11 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             )}
           </HStack>
           <HStack gap={false}>
-            <DetachMemoryBlock blockId={memory.id || ''} />
+            {!isTemplate && <DetachMemoryBlock blockId={memory.id || ''} />}
             <DeleteMemoryBlockDialog blockId={memory.id || ''} />
           </HStack>
         </HStack>
-        <Form onSubmit={form.handleSubmit(handleUpdate)}>
+        <Form onSubmit={form.handleSubmit(handleFormUpdate)}>
           <MemoryWarning rootLabel={memory.label || ''} />
 
           <FormField
@@ -279,7 +206,6 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               <Input
                 fullWidth
                 type="number"
-                disabled={!canUpdateAgent}
                 label={t('AdvancedMemoryEditorForm.maxCharacters.label')}
                 {...field}
               />
@@ -291,7 +217,6 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               <TextArea
                 autosize={false}
                 maxRows={3}
-                disabled={!canUpdateAgent}
                 infoTooltip={{
                   text: t('AdvancedMemoryEditorForm.description.tooltip'),
                 }}
@@ -309,7 +234,6 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
                 rightOfLabelContent={<CharacterCounter value={field.value} />}
                 autosize={false}
                 fullHeight
-                disabled={!canUpdateAgent}
                 data-testid="advanced-memory-editor-value"
                 fullWidth
                 label={t('AdvancedMemoryEditorForm.value.label')}
@@ -360,21 +284,19 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             />
           )}
 
-          {canUpdateAgent && (
-            <VStack paddingBottom>
-              <FormActions
-                errorMessage={
-                  isError ? t('AdvancedMemoryEditorForm.error') : undefined
-                }
-              >
-                <Button
-                  label={t('AdvancedMemoryEditorForm.update')}
-                  busy={isPending}
-                  data-testid="advanced-memory-editor-update"
-                />
-              </FormActions>
-            </VStack>
-          )}
+          <VStack paddingBottom>
+            <FormActions
+              errorMessage={
+                isError ? t('AdvancedMemoryEditorForm.error') : undefined
+              }
+            >
+              <Button
+                label={t('AdvancedMemoryEditorForm.update')}
+                busy={isPending}
+                data-testid="advanced-memory-editor-update"
+              />
+            </FormActions>
+          </VStack>
         </Form>
       </FormProvider>
     </VStack>
@@ -388,85 +310,57 @@ interface DeleteMemoryBlockDialogProps {
 function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
   const { id: agentId } = useCurrentAgent();
+  const { isTemplate, templateId } = useCurrentAgentMetaData();
   const { blockId } = props;
-  const queryClient = useQueryClient();
   const setSelectMemoryBlockLabel = useSetAtom(currentAdvancedCoreMemoryAtom);
 
-  const {
-    isError: deleteError,
-    mutate: deleteBlock,
-    reset: resetDeleting,
-    isPending: isDeletingBlock,
-  } = useBlocksServiceDeleteBlock();
-
   const [isOpen, setIsOpen] = useState(false);
+
+  const agent = useCurrentAgent();
+  const handleSelectNextBlock = useCallback(
+    (deletedBlockId: string) => {
+      if (!agent?.memory?.blocks) return;
+
+      const remainingBlocks = agent.memory.blocks.filter(
+        (block) => block.id !== deletedBlockId,
+      );
+
+      if (remainingBlocks?.[0]?.label) {
+        setSelectMemoryBlockLabel((prev) => ({
+          ...prev,
+          selectedMemoryBlockLabel: remainingBlocks[0].label || '',
+        }));
+      } else {
+        setSelectMemoryBlockLabel((prev) => ({
+          ...prev,
+          selectedMemoryBlockLabel: '',
+        }));
+      }
+    },
+    [agent, setSelectMemoryBlockLabel],
+  );
+
+  const {
+    handleDelete,
+    isPending: isDeletingBlock,
+    isError: deleteError,
+  } = useDeleteMemoryBlock({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    blockId,
+    agentId,
+    templateId,
+    onSuccess: () => {
+      handleSelectNextBlock(blockId);
+      setIsOpen(false);
+    },
+  });
 
   const handleDeleteBlock = useCallback(() => {
     trackClientSideEvent(AnalyticsEvent.DELETE_BLOCK_IN_CORE_MEMORY, {
       agentId,
     });
-
-    deleteBlock(
-      {
-        blockId,
-      },
-      {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({
-            queryKey: UseBlocksServiceInfiniteQuery({}).slice(0, 2),
-            exact: false,
-          });
-
-          queryClient.setQueriesData<AgentState | undefined>(
-            {
-              queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                agentId: agentId,
-              }),
-            },
-            (data) => {
-              if (!data) {
-                return data;
-              }
-
-              const nextBlocks = data.memory.blocks.filter(
-                (block) => block.id !== blockId,
-              );
-
-              if (nextBlocks?.[0]?.label) {
-                setSelectMemoryBlockLabel((prev) => ({
-                  ...prev,
-                  selectedMemoryBlockLabel: nextBlocks[0].label || '',
-                }));
-              } else {
-                setSelectMemoryBlockLabel((prev) => ({
-                  ...prev,
-                  selectedMemoryBlockLabel: '',
-                }));
-              }
-
-              return {
-                ...data,
-                memory: {
-                  ...data.memory,
-                  blocks: nextBlocks,
-                },
-              };
-            },
-          );
-
-          resetDeleting();
-          setIsOpen(false);
-        },
-      },
-    );
-  }, [
-    agentId,
-    setSelectMemoryBlockLabel,
-    deleteBlock,
-    blockId,
-    queryClient,
-    resetDeleting,
-  ]);
+    handleDelete();
+  }, [handleDelete, agentId]);
 
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -505,24 +399,30 @@ function DeleteMemoryBlockDialog(props: DeleteMemoryBlockDialogProps) {
 
 function CoreMemoryMobileNav() {
   const agent = useCurrentAgent();
+  const { isTemplate, templateId } = useCurrentAgentMetaData();
 
-  const sortedMemories = useSortedMemories(agent);
+  const { memories } = useListMemories({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    agentId: isTemplate ? undefined : agent.id,
+    templateId: isTemplate ? templateId : undefined,
+  });
+
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
   const [{ selectedMemoryBlockLabel }, setIsAdvancedCoreMemoryEditorOpen] =
     useAtom(currentAdvancedCoreMemoryAtom);
 
   const options = useMemo(() => {
-    if (!sortedMemories) {
+    if (!memories) {
       return [];
     }
 
-    return sortedMemories.map((block) => ({
+    return memories.map((block) => ({
       label: block.label || '',
       value: block.label || '',
       id: block.id,
     }));
-  }, [sortedMemories]);
+  }, [memories]);
 
   const handleBlockClick = useCallback(
     (label: string) => {
@@ -600,8 +500,14 @@ const hasUnsavedChangesAtom = atom<boolean>(false);
 
 function CoreMemorySidebar() {
   const agent = useCurrentAgent();
+  const { isTemplate, templateId } = useCurrentAgentMetaData();
 
-  const sortedMemories = useSortedMemories(agent);
+  const { memories } = useListMemories({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    agentId: isTemplate ? undefined : agent.id,
+    templateId: templateId,
+  });
+
   const [search, setSearch] = useState('');
   const t = useTranslations('ADE/AdvancedCoreMemoryEditor');
 
@@ -609,14 +515,14 @@ function CoreMemorySidebar() {
     useAtom(currentAdvancedCoreMemoryAtom);
 
   const blocks = useMemo(() => {
-    if (!sortedMemories) {
+    if (!memories) {
       return [];
     }
 
-    return sortedMemories.filter((block) => {
+    return memories.filter((block) => {
       return (block.label || '').toLowerCase().includes(search.toLowerCase());
     });
-  }, [search, sortedMemories]);
+  }, [search, memories]);
 
   const handleBlockClick = useCallback(
     (label: string) => {
@@ -771,14 +677,19 @@ export function useAdvancedCoreMemoryEditor() {
 function EditorContent() {
   const [{ selectedMemoryBlockLabel }] = useAtom(currentAdvancedCoreMemoryAtom);
   const { close } = useAdvancedCoreMemoryEditor();
-  const { memory } = useCurrentAgent();
+  const { isTemplate, templateId, agentId } = useCurrentAgentMetaData();
+
+  const { memories } = useListMemories({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    agentId,
+    templateId,
+  });
+
   const setHasUnsavedChanges = useSetAtom(hasUnsavedChangesAtom);
 
   const selectedMemoryBlock = useMemo(() => {
-    return memory?.blocks.find(
-      (block) => block.label === selectedMemoryBlockLabel,
-    );
-  }, [memory, selectedMemoryBlockLabel]);
+    return memories.find((block) => block.label === selectedMemoryBlockLabel);
+  }, [memories, selectedMemoryBlockLabel]);
 
   useEffect(() => {
     setHasUnsavedChanges(false);
@@ -793,36 +704,34 @@ function EditorContent() {
         loaderFillColor="background-grey"
         emptyMessage={t('EditorContent.empty')}
         emptyAction={
-          <CreateNewMemoryBlockDialog
-            trigger={
-              canUpdateAgent && (
-                <VStack>
-                  <CreateNewMemoryBlockDialog
-                    trigger={
-                      <Button
-                        preIcon={<PlusIcon />}
-                        data-testid="create-new-memory-block-item"
-                        color="secondary"
-                        size="small"
-                        label={t('CoreMemorySidebar.create')}
-                      />
-                    }
+          canUpdateAgent && (
+            <VStack>
+              <CreateNewMemoryBlockDialog
+                trigger={
+                  <Button
+                    preIcon={<PlusIcon />}
+                    data-testid="create-new-memory-block-item"
+                    color="secondary"
+                    size="small"
+                    label={t('CoreMemorySidebar.create')}
                   />
-                  <AttachMemoryBlockDialog
-                    trigger={
-                      <Button
-                        size="small"
-                        hideLabel
-                        preIcon={<LinkIcon />}
-                        color="tertiary"
-                        label={t('CoreMemorySidebar.attach')}
-                      />
-                    }
-                  />
-                </VStack>
-              )
-            }
-          />
+                }
+              />
+              {!isTemplate && (
+                <AttachMemoryBlockDialog
+                  trigger={
+                    <Button
+                      size="small"
+                      hideLabel
+                      preIcon={<LinkIcon />}
+                      color="tertiary"
+                      label={t('CoreMemorySidebar.attach')}
+                    />
+                  }
+                />
+              )}
+            </VStack>
+          )
         }
       />
     );

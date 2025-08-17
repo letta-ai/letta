@@ -26,6 +26,7 @@ import type {
 } from '@letta-cloud/sdk-web';
 import { GetTracesByProjectIdQuery } from '@letta-cloud/sdk-web';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ViewMessageTrace } from '@letta-cloud/ui-ade-components';
@@ -50,19 +51,21 @@ function useQueryDefinition() {
   });
 
   // Load template data for default options
-  const { data: templateData } =
-    webApi.agentTemplates.listAgentTemplates.useQuery({
-      queryKey: webApiQueryKeys.agentTemplates.listAgentTemplatesWithSearch({
-        projectId: currentProjectId,
+  const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesProjectScopedWithSearch(
+      currentProjectId,
+      {
+        search: '',
         limit: 10,
-      }),
-      queryData: {
-        query: {
-          projectId: currentProjectId,
-          limit: 10,
-        },
       },
-    });
+    ),
+    queryData: {
+      query: {
+        project_id: currentProjectId,
+        limit: '10',
+      },
+    },
+  });
 
   const queryFilter = useMemo(() => {
     const query = params.get('query');
@@ -81,7 +84,7 @@ function useQueryDefinition() {
       return [];
     }
 
-    const arr = templateData.body.agentTemplates.map((template) => ({
+    const arr = templateData.body.templates.map((template) => ({
       label: template.name,
       value: template.id,
     }));
@@ -94,11 +97,11 @@ function useQueryDefinition() {
 
   const handleLoadTemplateNames = useCallback(
     async (query: string) => {
-      const response = await webApi.agentTemplates.listAgentTemplates.query({
+      const response = await cloudAPI.templates.listTemplates.query({
         query: {
           search: query,
-          projectId: currentProjectId,
-          limit: 10,
+          project_id: currentProjectId,
+          limit: '10',
         },
       });
 
@@ -106,7 +109,7 @@ function useQueryDefinition() {
         return [];
       }
 
-      const options = response.body.agentTemplates.map((template) => ({
+      const options = response.body.templates.map((template) => ({
         label: template.name,
         value: template.id,
       }));

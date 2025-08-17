@@ -3,21 +3,24 @@ import type { AgentState } from '@letta-cloud/sdk-core';
 import { AgentsService } from '@letta-cloud/sdk-core';
 import {
   db,
-  agentTemplates,
   simulatedAgent,
-  deployedAgentTemplates,
+  simulatedAgentDeprecated,
+  agentTemplateV2,
 } from '@letta-cloud/service-database';
-import { and, eq, desc, isNull } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
   createSimulatedAgent as createSimulatedAgentUtil,
-  copyAgentById,
-  updateAgentFromAgentId,
-  recordMemoryVariablesToMemoryVariablesV1,
+  updateAgentFromAgentTemplateId,
+  createEntitiesFromTemplate,
 } from '@letta-cloud/utils-server';
 import * as Sentry from '@sentry/nextjs';
-import { MemoryVariableVersionOne } from '@letta-cloud/types';
+import { syncAgentTemplateWithState } from './sync/syncAgentTemplateWithState';
+import {
+  convertMemoryVariablesV1ToRecordMemoryVariables,
+  convertRecordMemoryVariablesToMemoryVariablesV1,
+} from '@letta-cloud/utils-shared';
 
 type GetDefaultSimulatedAgentRequest = ServerInferRequest<
   typeof contracts.simulatedAgents.getDefaultSimulatedAgent
@@ -34,7 +37,7 @@ async function getDefaultSimulatedAgent(
   const { activeOrganizationId, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
-  const simulatedAgentResponse = await db.query.simulatedAgent.findFirst({
+  let simulatedAgentResponse = await db.query.simulatedAgent.findFirst({
     where: and(
       eq(simulatedAgent.agentTemplateId, agentTemplateId),
       eq(simulatedAgent.isDefault, true),
@@ -47,6 +50,7 @@ async function getDefaultSimulatedAgent(
     with: {
       agentTemplate: {
         columns: {
+          lettaTemplateId: true,
           name: true,
           id: true,
         },
@@ -55,12 +59,93 @@ async function getDefaultSimulatedAgent(
   });
 
   if (!simulatedAgentResponse) {
-    return {
-      status: 404,
-      body: {
-        message: 'Default simulated agent not found',
+    // If no default agent found, create one
+    const agentTemplate = await db.query.agentTemplateV2.findFirst({
+      where: eq(agentTemplateV2.id, agentTemplateId),
+      columns: {
+        name: true,
+        id: true,
+        projectId: true,
+        lettaTemplateId: true,
       },
-    };
+    });
+
+    if (!agentTemplate) {
+      return {
+        status: 404,
+        body: {
+          message: 'Agent template not found',
+        },
+      };
+    }
+
+    try {
+      // first see if simulated agent v1 exists
+      const existingSimulatedAgent =
+        await db.query.simulatedAgentDeprecated.findFirst({
+          where: and(
+            eq(simulatedAgentDeprecated.agentTemplateId, agentTemplate.id),
+            eq(simulatedAgentDeprecated.organizationId, activeOrganizationId),
+            eq(simulatedAgentDeprecated.isDefault, true),
+          ),
+        });
+
+      // if it exists, make the new simulated agent from it
+      if (existingSimulatedAgent) {
+        // Save to database
+        const [res] = await db
+          .insert(simulatedAgent)
+          .values({
+            agentId: existingSimulatedAgent.agentId,
+            projectId: agentTemplate.projectId,
+            organizationId: activeOrganizationId,
+            isDefault: true,
+            agentTemplateId,
+            memoryVariables: convertRecordMemoryVariablesToMemoryVariablesV1(
+              {},
+            ),
+          })
+          .returning();
+
+        simulatedAgentResponse = {
+          id: res.id,
+          agentId: res.agentId,
+          agentTemplate: {
+            id: agentTemplate.id,
+            name: agentTemplate.name,
+            lettaTemplateId: agentTemplate.lettaTemplateId,
+          },
+        };
+      } else {
+        const response = await createSimulatedAgentUtil({
+          projectId: agentTemplate.projectId,
+          lettaTemplateId: agentTemplate.lettaTemplateId,
+          agentTemplateId: agentTemplate.id,
+          organizationId: activeOrganizationId,
+          lettaAgentsId,
+          memoryVariables: {},
+          isDefault: true,
+        });
+
+        simulatedAgentResponse = {
+          id: response.agent.id,
+          agentId: response.agent.id,
+          agentTemplate: {
+            id: agentTemplate.id,
+            name: agentTemplate.name,
+            lettaTemplateId: agentTemplate.lettaTemplateId,
+          },
+        };
+      }
+    } catch (error) {
+      console.error('Failed to create default simulated agent:', error);
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to create default simulated agent',
+        },
+      };
+    }
   }
 
   if (!simulatedAgentResponse.agentTemplate?.id) {
@@ -104,9 +189,6 @@ async function getDefaultSimulatedAgent(
       id: simulatedAgentResponse.id,
       agentId: simulatedAgentResponse.agentId,
       agentTemplateId: simulatedAgentResponse.agentTemplate.id,
-      deployedAgentTemplateId: null,
-      agentTemplateFullName: `${simulatedAgentResponse.agentTemplate.name || 'Unknown'}:current`,
-      agentTemplateName: simulatedAgentResponse.agentTemplate.name || '',
       isCorrupted,
     },
   };
@@ -123,11 +205,7 @@ type CreateSimulatedAgentResponse = ServerInferResponses<
 async function createSimulatedAgent(
   req: CreateSimulatedAgentRequest,
 ): Promise<CreateSimulatedAgentResponse> {
-  const {
-    agentTemplateId,
-    deployedAgentTemplateId = null,
-    memoryVariables = {},
-  } = req.body;
+  const { agentTemplateId, memoryVariables = {} } = req.body;
   const { activeOrganizationId, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
@@ -136,14 +214,6 @@ async function createSimulatedAgent(
     eq(simulatedAgent.agentTemplateId, agentTemplateId),
     eq(simulatedAgent.organizationId, activeOrganizationId),
   ];
-
-  if (deployedAgentTemplateId) {
-    whereConditions.push(
-      eq(simulatedAgent.deployedAgentTemplateId, deployedAgentTemplateId),
-    );
-  } else {
-    whereConditions.push(isNull(simulatedAgent.deployedAgentTemplateId));
-  }
 
   const existingAgent = await db.query.simulatedAgent.findFirst({
     where: and(...whereConditions),
@@ -167,23 +237,9 @@ async function createSimulatedAgent(
       isCorrupted = true;
     }
 
-    // Get deployed template version if needed
-    let deployedTemplate = null;
-    if (existingAgent.deployedAgentTemplateId) {
-      deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
-        where: eq(
-          deployedAgentTemplates.id,
-          existingAgent.deployedAgentTemplateId,
-        ),
-        columns: {
-          version: true,
-        },
-      });
-    }
-
     // Get agent template for the response
-    const template = await db.query.agentTemplates.findFirst({
-      where: eq(agentTemplates.id, existingAgent.agentTemplateId),
+    const template = await db.query.agentTemplateV2.findFirst({
+      where: eq(agentTemplateV2.id, existingAgent.agentTemplateId),
       columns: {
         name: true,
         id: true,
@@ -206,48 +262,32 @@ async function createSimulatedAgent(
         id: existingAgent.agentId,
         agentId: existingAgent.agentId,
         agentTemplateId: existingAgent.agentTemplateId,
-        deployedAgentTemplateId: existingAgent.deployedAgentTemplateId,
-        agentTemplateFullName: deployedTemplate
-          ? `${template.name}:${deployedTemplate.version}`
-          : `${template.name}:current`,
-        agentTemplateName: template.name,
         isCorrupted,
       },
     };
   }
 
   // Check if agent template exists
-  const template = await db.query.agentTemplates.findFirst({
-    where: eq(agentTemplates.id, agentTemplateId),
+  const template = await db.query.agentTemplateV2.findFirst({
+    where: eq(agentTemplateV2.id, agentTemplateId),
+    with: {
+      lettaTemplate: {
+        columns: {
+          id: true,
+          name: true,
+          projectId: true,
+        },
+      },
+    },
   });
 
-  if (!template) {
+  if (!template?.lettaTemplate) {
     return {
       status: 400,
       body: {
         message: 'Agent template does not exist',
       },
     };
-  }
-
-  // If deployedAgentTemplateId is provided, check if it exists and get version
-  let deployedTemplate = null;
-  if (deployedAgentTemplateId) {
-    deployedTemplate = await db.query.deployedAgentTemplates.findFirst({
-      where: eq(deployedAgentTemplates.id, deployedAgentTemplateId),
-      columns: {
-        version: true,
-      },
-    });
-
-    if (!deployedTemplate) {
-      return {
-        status: 400,
-        body: {
-          message: 'Deployed agent template does not exist',
-        },
-      };
-    }
   }
 
   // Create the simulated agent
@@ -257,10 +297,9 @@ async function createSimulatedAgent(
       memoryVariables,
       projectId: template.projectId,
       agentTemplateId,
-      deployedAgentTemplateId,
       organizationId: activeOrganizationId,
       lettaAgentsId,
-      isDefault: deployedAgentTemplateId === null, // Only set as default if no specific deployed template
+      lettaTemplateId: template.lettaTemplate.id,
     });
     agent = result.agent;
   } catch (_error) {
@@ -279,11 +318,6 @@ async function createSimulatedAgent(
       id: agent.id,
       agentId: agent.id,
       agentTemplateId: template.id,
-      deployedAgentTemplateId,
-      agentTemplateFullName: deployedTemplate
-        ? `${template.name}:${deployedTemplate.version}`
-        : `${template.name}:current`,
-      agentTemplateName: template.name,
       isCorrupted: null,
     },
   };
@@ -316,7 +350,6 @@ async function flushSimulatedAgent(
       organizationId: true,
       isDefault: true,
       agentTemplateId: true,
-      deployedAgentTemplateId: true,
       memoryVariables: true,
     },
     with: {
@@ -325,11 +358,8 @@ async function flushSimulatedAgent(
           name: true,
           id: true,
         },
-      },
-      deployedAgentTemplate: {
-        columns: {
-          id: true,
-          version: true,
+        with: {
+          lettaTemplate: true,
         },
       },
     },
@@ -344,6 +374,15 @@ async function flushSimulatedAgent(
     };
   }
 
+  if (!simulatedAgentRecord.agentTemplate?.lettaTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent template not found',
+      },
+    };
+  }
+
   try {
     // Delete the existing agent from Letta service
     void AgentsService.deleteAgent({
@@ -354,20 +393,27 @@ async function flushSimulatedAgent(
     });
 
     // Create a new agent directly using copyAgentById
-    const agent = await copyAgentById(
-      simulatedAgentRecord.agentTemplateId,
+    const [agent] = await createEntitiesFromTemplate({
+      template: simulatedAgentRecord.agentTemplate.lettaTemplate,
+      projectId: simulatedAgentRecord.projectId,
       lettaAgentsId,
-      {
-        projectId: simulatedAgentRecord.projectId,
-        memoryVariables: memoryVariablesV1ToRecordVariables(
-          simulatedAgentRecord.memoryVariables,
-        ),
-        hidden: true,
+      overrides: {
+        memoryVariables: simulatedAgentRecord.memoryVariables
+          ? convertMemoryVariablesV1ToRecordMemoryVariables(
+              simulatedAgentRecord.memoryVariables,
+            )
+          : {},
+        name: simulatedAgentRecord.agentTemplate.name,
       },
-    );
+    });
 
     if (!agent?.id || !agent?.project_id) {
-      throw new Error('Failed to create new agent');
+      return {
+        status: 500,
+        body: {
+          message: 'Failed to create new simulated agent',
+        },
+      };
     }
     // Insert new record with the new agent ID
     await db
@@ -377,21 +423,13 @@ async function flushSimulatedAgent(
       })
       .where(eq(simulatedAgent.id, simulatedAgentId));
 
-    const deployedTemplate = simulatedAgentRecord.deployedAgentTemplate;
-    const agentTemplate = simulatedAgentRecord.agentTemplate;
-
     return {
       status: 200,
       body: {
-        name: agent.name || agentTemplate.name || 'Unknown Agent',
+        name: agent.name || 'Unknown Agent',
         id: simulatedAgentId,
         agentId: agent.id,
         agentTemplateId: simulatedAgentRecord.agentTemplateId,
-        deployedAgentTemplateId: simulatedAgentRecord.deployedAgentTemplateId,
-        agentTemplateFullName: deployedTemplate
-          ? `${agentTemplate.name}:${deployedTemplate.version}`
-          : `${agentTemplate.name}:current`,
-        agentTemplateName: agentTemplate.name,
         isCorrupted: null,
       },
     };
@@ -404,24 +442,6 @@ async function flushSimulatedAgent(
       },
     };
   }
-}
-
-function memoryVariablesV1ToRecordVariables(
-  memoryVariables: unknown,
-): Record<string, string> {
-  const out = MemoryVariableVersionOne.safeParse(memoryVariables);
-
-  if (!out.success) {
-    return {};
-  }
-
-  return out.data.data.reduce(
-    (v, c) => ({
-      ...v,
-      [c.key]: c.label,
-    }),
-    {} as Record<string, string>,
-  );
 }
 
 type RefreshSimulatedSessionRequest = ServerInferRequest<
@@ -451,7 +471,6 @@ async function refreshSimulatedSession(
       organizationId: true,
       isDefault: true,
       agentTemplateId: true,
-      deployedAgentTemplateId: true,
       memoryVariables: true,
     },
     with: {
@@ -459,12 +478,6 @@ async function refreshSimulatedSession(
         columns: {
           name: true,
           id: true,
-        },
-      },
-      deployedAgentTemplate: {
-        columns: {
-          id: true,
-          version: true,
         },
       },
     },
@@ -481,13 +494,17 @@ async function refreshSimulatedSession(
 
   try {
     // Update the agent to match the current template state
-    const updatedAgent = await updateAgentFromAgentId({
+    const updatedAgent = await updateAgentFromAgentTemplateId({
       agentToUpdateId: simulatedAgentRecord.agentId,
-      baseAgentId: simulatedAgentRecord.agentTemplateId,
+      agentTemplateId: simulatedAgentRecord.agentTemplateId,
+      organizationId: activeOrganizationId,
       lettaAgentsUserId: lettaAgentsId,
-      memoryVariables: memoryVariablesV1ToRecordVariables(
-        simulatedAgentRecord.memoryVariables,
-      ),
+      preserveCoreMemories: false,
+      memoryVariables: simulatedAgentRecord.memoryVariables
+        ? convertMemoryVariablesV1ToRecordMemoryVariables(
+            simulatedAgentRecord.memoryVariables,
+          )
+        : {},
     });
 
     if (!updatedAgent) {
@@ -507,21 +524,13 @@ async function refreshSimulatedSession(
         ),
       );
 
-    const deployedTemplate = simulatedAgentRecord.deployedAgentTemplate;
-    const agentTemplate = simulatedAgentRecord.agentTemplate;
-
     return {
       status: 200,
       body: {
-        name: updatedAgent.name || agentTemplate.name || 'Unknown Agent',
+        name: updatedAgent.name || 'Unknown Agent',
         id: updatedAgent.id,
         agentId: updatedAgent.id,
         agentTemplateId: simulatedAgentRecord.agentTemplateId,
-        deployedAgentTemplateId: simulatedAgentRecord.deployedAgentTemplateId,
-        agentTemplateFullName: deployedTemplate
-          ? `${agentTemplate.name}:${deployedTemplate.version}`
-          : `${agentTemplate.name}:current`,
-        agentTemplateName: agentTemplate.name,
         isCorrupted: null,
       },
     };
@@ -531,6 +540,95 @@ async function refreshSimulatedSession(
       status: 500,
       body: {
         message: 'Failed to refresh simulated session',
+      },
+    };
+  }
+}
+
+type SyncDefaultSimulatedAgentRequest = ServerInferRequest<
+  typeof contracts.simulatedAgents.syncDefaultSimulatedAgent
+>;
+
+type SyncDefaultSimulatedAgentResponse = ServerInferResponses<
+  typeof contracts.simulatedAgents.syncDefaultSimulatedAgent
+>;
+
+async function syncDefaultSimulatedAgent(
+  req: SyncDefaultSimulatedAgentRequest,
+): Promise<SyncDefaultSimulatedAgentResponse> {
+  const { agentTemplateId } = req.params;
+  const { activeOrganizationId, lettaAgentsId } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  try {
+    // Find the default simulated agent for the template
+    const defaultSimulatedAgent = await db.query.simulatedAgent.findFirst({
+      where: and(
+        eq(simulatedAgent.agentTemplateId, agentTemplateId),
+        eq(simulatedAgent.organizationId, activeOrganizationId),
+        eq(simulatedAgent.isDefault, true),
+      ),
+      with: {
+        agentTemplate: {
+          columns: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!defaultSimulatedAgent) {
+      return {
+        status: 404,
+        body: {
+          message: 'Default simulated agent not found for this template',
+        },
+      };
+    }
+
+    const agent = await AgentsService.retrieveAgent(
+      {
+        agentId: defaultSimulatedAgent.agentId,
+        includeRelationships: [],
+      },
+      {
+        user_id: lettaAgentsId,
+      },
+    ).catch((e) => {
+      Sentry.captureException(e);
+      return null;
+    });
+
+    if (!agent) {
+      return {
+        status: 500,
+        body: {
+          message: 'Agent not found in Letta service',
+        },
+      };
+    }
+
+    // Synchronize the agent template with the current agent state
+    await syncAgentTemplateWithState({
+      agentTemplateId,
+      organizationId: activeOrganizationId,
+      agentState: agent,
+      projectId: defaultSimulatedAgent.projectId,
+      lettaAgentsId,
+    });
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+      },
+    };
+  } catch (error) {
+    console.error('Error syncing default simulated agent:', error);
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to sync default simulated agent',
       },
     };
   }
@@ -574,9 +672,9 @@ async function getSimulatedAgentVariables(
   return {
     status: 200,
     body: {
-      memoryVariables: memoryVariablesV1ToRecordVariables(
+      memoryVariables:  simulatedAgentRecord.memoryVariables ? convertMemoryVariablesV1ToRecordMemoryVariables(
         simulatedAgentRecord.memoryVariables,
-      ),
+      ) : {},
     },
   };
 }
@@ -623,7 +721,7 @@ async function updateSimulatedAgentVariables(
       .update(simulatedAgent)
       .set({
         memoryVariables:
-          recordMemoryVariablesToMemoryVariablesV1(memoryVariables),
+          convertRecordMemoryVariablesToMemoryVariablesV1(memoryVariables),
       })
       .where(
         and(
@@ -728,12 +826,7 @@ type ListSimulatedAgentsResponse = ServerInferResponses<
 async function listSimulatedAgents(
   req: ListSimulatedAgentsRequest,
 ): Promise<ListSimulatedAgentsResponse> {
-  const {
-    agentTemplateId,
-    deployedAgentTemplateId,
-    offset = 0,
-    limit = 10,
-  } = req.query;
+  const { agentTemplateId, offset = 0, limit = 10 } = req.query;
   const { activeOrganizationId, lettaAgentsId } =
     await getUserWithActiveOrganizationIdOrThrow();
 
@@ -744,12 +837,6 @@ async function listSimulatedAgents(
 
   if (agentTemplateId) {
     whereConditions.push(eq(simulatedAgent.agentTemplateId, agentTemplateId));
-  }
-
-  if (deployedAgentTemplateId) {
-    whereConditions.push(
-      eq(simulatedAgent.deployedAgentTemplateId, deployedAgentTemplateId),
-    );
   }
 
   try {
@@ -763,12 +850,6 @@ async function listSimulatedAgents(
           columns: {
             name: true,
             id: true,
-          },
-        },
-        deployedAgentTemplate: {
-          columns: {
-            id: true,
-            version: true,
           },
         },
       },
@@ -810,19 +891,11 @@ async function listSimulatedAgents(
         }> => result.status === 'fulfilled',
       )
       .map(({ value: { simulatedAgent: sa, agent, isCorrupted } }) => {
-        const deployedAgentTemplateVersion = sa.deployedAgentTemplate?.version;
-        const agentTemplateFullName = deployedAgentTemplateVersion
-          ? `${sa.agentTemplate.name}:${deployedAgentTemplateVersion}`
-          : `${sa.agentTemplate.name}:current`;
-
         return {
           name: agent?.name || sa.agentTemplate.name || 'Unknown Agent',
           id: sa.agentId,
           agentId: sa.agentId,
-          agentTemplateId: sa.agentTemplateId,
-          deployedAgentTemplateId: sa.deployedAgentTemplateId,
-          agentTemplateFullName,
-          agentTemplateName: sa.agentTemplate.name,
+          agentTemplateId: sa.agentTemplate.id,
           isCorrupted,
         };
       });
@@ -850,6 +923,7 @@ export const simulatedAgentsRouter = {
   deleteSimulatedAgent,
   flushSimulatedAgent,
   refreshSimulatedSession,
+  syncDefaultSimulatedAgent,
   getSimulatedAgentVariables,
   updateSimulatedAgentVariables,
   listSimulatedAgents,

@@ -927,12 +927,6 @@ export function AgentSimulator() {
           Array.isArray(agentState.tool_rules) &&
           agentState.tool_rules.length > 0
         ) {
-          console.log(
-            'b',
-            agentState.tool_rules.filter(
-              (rule) => rule.tool_name !== 'memory_rethink',
-            ),
-          );
           AgentsService.modifyAgent({
             agentId: agentIdToUse || '',
             requestBody: {

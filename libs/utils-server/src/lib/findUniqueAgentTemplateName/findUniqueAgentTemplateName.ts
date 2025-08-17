@@ -4,7 +4,7 @@ import {
   animals,
   uniqueNamesGenerator,
 } from 'unique-names-generator';
-import { agentTemplates, db } from '@letta-cloud/service-database';
+import { lettaTemplates, db } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
 export async function findUniqueAgentTemplateName(deep = 0) {
@@ -14,11 +14,11 @@ export async function findUniqueAgentTemplateName(deep = 0) {
     separator: '-',
   });
 
-  const existingAgent = await db.query.agentTemplates.findFirst({
-    where: eq(agentTemplates.name, name),
+  const existingTemplate = await db.query.lettaTemplates.findFirst({
+    where: eq(lettaTemplates.name, name),
   });
 
-  if (existingAgent && deep < 10) {
+  if (existingTemplate && deep < 10) {
     return findUniqueAgentTemplateName(deep + 1);
   }
 

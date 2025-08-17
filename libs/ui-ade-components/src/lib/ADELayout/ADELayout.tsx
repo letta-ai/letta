@@ -502,33 +502,7 @@ function MobileLayout() {
 
 function QuickADEOnboarding() {
   const t = useTranslations('ADELayout.QuickADEOnboarding');
-  const { currentStep, setStep, resetTour } = useQuickADETour();
-
-  if (currentStep === 'welcome') {
-    return (
-      <OnboardingPrimaryDialog
-        isOpen
-        imageUrl={WelcomeWebp}
-        title={t('welcome')}
-        primaryAction={
-          <Button
-            onClick={() => {
-              setStep('message');
-            }}
-            label={t('continue')}
-            color="primary"
-          />
-        }
-      >
-        <VStack>
-          <OnboardingPrimaryHeading
-            title={t('welcome')}
-            description={t('description')}
-          ></OnboardingPrimaryHeading>
-        </VStack>
-      </OnboardingPrimaryDialog>
-    );
-  }
+  const { currentStep, resetTour } = useQuickADETour();
 
   if (currentStep === 'done') {
     return (

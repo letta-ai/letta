@@ -506,6 +506,7 @@ export async function attachAbTestTemplate(
     projectId: existingAbTest.projectId,
     organizationId,
     lettaAgentsId,
+    lettaTemplateId: '',
     isDefault: false,
     memoryVariables: memoryVariables || {},
     agentTemplateId: agentTemplate.id,

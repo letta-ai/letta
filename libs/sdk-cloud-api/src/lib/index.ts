@@ -21,3 +21,5 @@ export * from './agentsContract';
 export const cloudAPI = initTsrReactQuery(cloudContracts, {
   baseUrl: process.env['OVERRIDE_WEB_ORIGIN_SDK_ENDPOINT'] || '',
 });
+
+export type * from './templatesContract';

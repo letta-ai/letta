@@ -116,7 +116,7 @@ export function AgentSettingsPanel() {
   const { capitalized: baseName } = useAgentBaseTypeName();
 
   if (!currentAgent.llm_config) {
-    return <LoadingEmptyStatusComponent emptyMessage="" isLoading />;
+    return <LoadingEmptyStatusComponent emptyMessage="" hideText loaderVariant="grower" isLoading />;
   }
 
   return (

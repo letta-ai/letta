@@ -227,7 +227,7 @@ function CoreMemoryEditorHeader(props: CoreMemoryEditorHeaderProps) {
             {hasSimulatedDiff && (
               <InfoChip
                 onClick={() => {
-                  setVisibleMemoryType('simulated');
+                  setVisibleMemoryType('agent');
                 }}
                 variant="brand"
                 label={t('CoreMemoryEditorHeader.simulatedDiff')}

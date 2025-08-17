@@ -2,7 +2,6 @@
 import { ADEPage } from '$web/client/components/ADEPage/ADEPage';
 import {
   Avatar,
-  Badge,
   Button,
   CalendarIcon,
   CopyIcon,
@@ -43,7 +42,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { useFeatureFlag, useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import { LaunchLinks } from './LaunchLinks/LaunchLinks';
 import { VersionHistorySection } from './VersionHistorySection/VersionHistorySection';
-import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
+
 import { useFormatters } from '@letta-cloud/utils-client';
 import { CreateAgentFromTemplateDialog } from './CreateAgentFromTemplateDialog/CreateAgentFromTemplateDialog';
 import { TypescriptInstructions } from './TypescriptInstructions/TypescriptInstructions';
@@ -355,7 +354,6 @@ function RecentAgents() {
   const [search, setSearch] = useState('');
   const t = useTranslations('pages/distribution');
   const [debouncedSearch] = useDebouncedValue(search, 500);
-  const { deployedAgentTemplate } = useLatestAgentTemplate();
   const { slug } = useCurrentProject();
   const { agentName } = useCurrentAgentMetaData();
 
@@ -439,12 +437,6 @@ function RecentAgents() {
                 <HStack gap="small" align="center">
                   <LettaInvaderIcon />
                   <Typography>{agent.name}</Typography>
-                  {deployedAgentTemplate?.id !== agent.template_id && (
-                    <Badge
-                      variant="warning"
-                      content={t('RecentAgents.notAtCurrentVersion')}
-                    />
-                  )}
                 </HStack>
                 <HStack wrap>
                   {(agent.identity_ids || []).length > 0 ? (

@@ -13,13 +13,10 @@ import {
   projects,
 } from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
-import { versionAgentTemplate } from './lib/versionAgentTemplate/versionAgentTemplate';
-import { getDeployedTemplateByVersion } from '@letta-cloud/utils-server';
+import { getDeployedDeprecatedTemplateByVersion } from '@letta-cloud/utils-server';
 import { LRUCache } from 'lru-cache';
 import { cloudApiRouter } from '../router';
-import { createTemplate } from '../createTemplate/createTemplate';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
-import { migrateAgent } from './lib/migrateAgent/migrateAgent';
 import type { SDKContext } from '../types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 
@@ -187,11 +184,37 @@ async function createAgent(
     };
   }
 
+  const [name] = from_template.split(':');
+
+  const tplt = await db.query.lettaTemplates.findFirst({
+    where: and(
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.name, name),
+      isNull(agentTemplates.deletedAt),
+    ),
+    with: {
+      project: {
+        columns: {
+          slug: true,
+        }
+      }
+    }
+  });
+
+  if (!tplt?.project?.slug) {
+    return {
+      status: 404,
+      body: {
+        message: `Template ${name} not found`,
+      },
+    };
+  }
+
   const deployedAgentTemplate =
     await cloudApiRouter.templates.createAgentsFromTemplate(
       {
         params: {
-          project: projectSlug || '',
+          project: tplt.project.slug,
           template_version: from_template,
         },
         body: {
@@ -429,7 +452,7 @@ async function searchDeployedAgents(
       }
 
       if (searchTerm.field === 'version') {
-        const deployedAgentTemplate = await getDeployedTemplateByVersion(
+        const deployedAgentTemplate = await getDeployedDeprecatedTemplateByVersion(
           searchTerm.value,
           getContextDataHack(req, context).organizationId,
         );
@@ -513,103 +536,6 @@ async function searchDeployedAgents(
   };
 }
 
-type CreateTemplateFromAgentRequest = ServerInferRequest<
-  typeof cloudContracts.agents.createTemplateFromAgent
->;
-
-type CreateTemplateFromAgentResponse = ServerInferResponses<
-  typeof cloudContracts.agents.createTemplateFromAgent
->;
-
-async function createTemplateFromAgent(
-  request: CreateTemplateFromAgentRequest,
-  context: SDKContext,
-): Promise<CreateTemplateFromAgentResponse> {
-  const { agent_id: agentId } = request.params;
-  const { lettaAgentsUserId, organizationId, userId } = getContextDataHack(
-    request,
-    context,
-  );
-  const { project } = request.body;
-
-  const foundProject = await db.query.projects.findFirst({
-    where: and(
-      eq(
-        projects.organizationId,
-        getContextDataHack(request, context).organizationId,
-      ),
-      eq(projects.slug, project || ''),
-      isNull(projects.deletedAt),
-    ),
-  });
-
-  if (!foundProject) {
-    return {
-      status: 404,
-      body: {
-        message: `Project ${project} not found`,
-      },
-    };
-  }
-
-  const agent = await AgentsService.retrieveAgent(
-    {
-      agentId,
-    },
-    {
-      user_id: lettaAgentsUserId,
-    },
-  );
-
-  if (!agent) {
-    return {
-      status: 404,
-      body: {
-        message: 'Agent not found',
-      },
-    };
-  }
-
-  const response = await createTemplate({
-    projectId: foundProject.id,
-    organizationId,
-    userId,
-    lettaAgentsId: lettaAgentsUserId,
-    createAgentState: {
-      llm_config: agent.llm_config,
-      embedding_config: agent.embedding_config,
-      system: agent.system,
-      enable_sleeptime: agent.enable_sleeptime,
-      include_base_tool_rules: false,
-      include_multi_agent_tools: false,
-      agent_type: agent.agent_type,
-      tool_exec_environment_variables:
-        agent.tool_exec_environment_variables?.reduce(
-          (v, c) => ({
-            ...v,
-            [c.key]: c.value,
-          }),
-          {} as Record<string, string>,
-        ),
-      description: agent.description,
-      tool_ids: agent.tools.map((tool) => tool.id || '').filter(Boolean),
-      tool_rules: agent.tool_rules,
-      memory_blocks: agent.memory.blocks.map((block) => {
-        return {
-          limit: block.limit,
-          label: block.label || '',
-          value: block.value,
-        };
-      }),
-    },
-  });
-
-  return {
-    status: 201,
-    body: response,
-  };
-}
-
 type GetAgentVariablesRequest = ServerInferRequest<
   typeof cloudContracts.agents.getAgentVariables
 >;
@@ -667,11 +593,8 @@ async function getAgentVariables(
 
 export const agentsRouter = {
   createAgent,
-  versionAgentTemplate,
-  migrateAgent,
   getAgentVariables,
   getAgentById,
   deleteAgent,
   searchDeployedAgents,
-  createTemplateFromAgent,
 };

@@ -1,4 +1,3 @@
-import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   Badge,
@@ -11,78 +10,34 @@ import {
   FormProvider,
   HStack,
   MiniApp,
-  Popover,
-  TemplateIcon,
   TextArea,
-  toast,
-  Tooltip,
   Typography,
   useForm,
   VStack,
-  WarningIcon,
   HiddenOnMobile,
   VisibleOnMobile,
-  RocketIcon,
+  Alert,
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 
 import { z } from 'zod';
-import { useQueryClient } from '@tanstack/react-query';
+
 import React, { useCallback, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type webApiContracts, webApiQueryKeys } from '$web/client';
-import { CLOUD_UPSELL_URL } from '$web/constants';
-import type { AgentState } from '@letta-cloud/sdk-core';
+
 import { useUserHasPermission } from '$web/client/hooks';
-import type { ServerInferResponses } from '@ts-rest/core';
-import { type contracts, useSetOnboardingStep } from '@letta-cloud/sdk-web';
-import { atom, useSetAtom } from 'jotai';
+
 import { useCurrentAgentMetaData } from '@letta-cloud/ui-ade-components';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { CompareTemplateVersions } from '$web/client/components';
-import type { InfiniteData } from '@tanstack/query-core';
-import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
-import { useLatestAgentTemplate } from '$web/client/hooks/useLatestAgentTemplate/useLatestAgentTemplate';
-import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-
-function CloudUpsellDeploy() {
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  return (
-    <Popover
-      triggerAsChild
-      trigger={
-        <Button
-          size="default"
-          color="primary"
-          preIcon={<RocketIcon size="small" />}
-          data-testid="trigger-cloud-upsell"
-          label={t('CloudUpsellDeploy.trigger')}
-        />
-      }
-      align="end"
-    >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          <Typography variant="heading5" bold>
-            {t('CloudUpsellDeploy.title')}
-          </Typography>
-          <Typography>{t('CloudUpsellDeploy.description')}</Typography>
-          <Button
-            fullWidth
-            label={t('CloudUpsellDeploy.cta')}
-            href={CLOUD_UPSELL_URL}
-            color="primary"
-          />
-        </VStack>
-      </VStack>
-    </Popover>
-  );
-}
+import { CloudUpsellDeploy } from '$web/client/components/ADEPage/DeploymentButton/CloudUpsellButton/CloudUpsellButton';
+import { CreateTemplateButton } from '$web/client/components/ADEPage/DeploymentButton/CreateTemplateFromAgentButton/CreateTemplateFromAgentButton';
+import { cloudAPI } from '@letta-cloud/sdk-cloud-api';
+import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
+import { webApi } from '@letta-cloud/sdk-web';
 
 interface CreateNewTemplateVersionDialogProps {
   trigger: React.ReactNode;
@@ -187,8 +142,9 @@ function CreateNewTemplateVersionDialog(
   props: CreateNewTemplateVersionDialogProps,
 ) {
   const { trigger } = props;
-  const { id: agentTemplateId } = useCurrentAgent();
-  const queryClient = useQueryClient();
+  const { slug } = useCurrentProject();
+
+  const { templateId: agentTemplateId } = useCurrentAgentMetaData();
   const [open, setOpen] = useState(false);
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
@@ -206,13 +162,11 @@ function CreateNewTemplateVersionDialog(
     [t],
   );
 
-  const { name } = useCurrentAgent();
+  const templateName = useCurrentTemplateName();
 
-  const { setOnboardingStep } = useSetOnboardingStep();
   const showOnboardingMessage = useShowOnboarding('save_version');
 
   type VersionAgentFormValues = z.infer<typeof versionAgentFormSchema>;
-  const agentState = useCurrentAgent();
 
   const form = useForm<VersionAgentFormValues>({
     resolver: zodResolver(versionAgentFormSchema),
@@ -222,117 +176,65 @@ function CreateNewTemplateVersionDialog(
       message: '',
     },
   });
-  const { mutate, isPending } =
-    cloudAPI.agents.versionAgentTemplate.useMutation({
-      onSuccess: (response, input) => {
-        void queryClient.invalidateQueries({
-          queryKey: webApiQueryKeys.agentTemplates.listAgentTemplates,
-          exact: false,
-        });
+  const {
+    mutate: saveTemplateVersion,
+    isPending: isSaving,
+    isError: savingError,
+    isSuccess,
+  } = cloudAPI.templates.saveTemplateVersion.useMutation({
+    onSuccess: () => {
+      window.location.href = `/projects/${slug}/templates/${templateName}/distribution`;
+    },
+  });
 
-        void queryClient.refetchQueries({
-          queryKey: webApiQueryKeys.agentTemplates.listAgentMigrations({
-            templateName: name || '',
-          }),
-          exact: false,
-        });
+  const {
+    isError: syncError,
+    mutate: syncDefaultSimulatedAgent,
+    isPending: isSyncing,
+  } = webApi.simulatedAgents.syncDefaultSimulatedAgent.useMutation();
 
-        void queryClient.setQueriesData<
-          ServerInferResponses<
-            typeof contracts.agentTemplates.getAgentTemplateByVersion,
-            200
-          >
-        >(
-          {
-            queryKey: webApiQueryKeys.agentTemplates.getAgentTemplateByVersion(
-              `${name}:latest`,
-            ),
-            exact: true,
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              ...oldData,
-              body: response.body,
-            };
-          },
-        );
-
-        setOpen(false);
-
-        queryClient.setQueriesData<
-          InfiniteData<
-            ServerInferResponses<
-              typeof webApiContracts.agentTemplates.listTemplateVersions,
-              200
-            >
-          >
-        >(
-          {
-            queryKey: webApiQueryKeys.agentTemplates
-              .listTemplateVersionsWithSearch(agentTemplateId, {})
-              .slice(0, -1),
-            exact: false,
-          },
-          (oldData) => {
-            if (!oldData) {
-              return oldData;
-            }
-
-            return {
-              ...oldData,
-              pages: [
-                {
-                  ...oldData.pages[0],
-                  body: {
-                    ...oldData.pages[0].body,
-                    versions: [
-                      {
-                        id: response.body.id,
-                        version: response.body.version,
-                        message: input.body?.message || '',
-                        agentTemplateId: input.params?.agent_id,
-                        createdAt: new Date().toISOString(),
-                      },
-                      ...oldData.pages[0].body.versions,
-                    ],
-                  },
-                },
-                ...oldData.pages.slice(1),
-              ],
-            };
-          },
-        );
-
-        if (showOnboardingMessage) {
-          setOnboardingStep({
-            stepToClaim: 'save_version',
-            onboardingStep: 'deploy_agent',
-          });
-        }
-      },
-    });
+  const isPending = useMemo(() => {
+    return isSaving || isSyncing;
+  }, [isSaving, isSyncing]);
 
   const handleVersionNewAgent = useCallback(
     (values: VersionAgentFormValues) => {
-      mutate({
-        query: {
-          returnAgentState: true,
+      syncDefaultSimulatedAgent(
+        {
+          params: {
+            agentTemplateId: agentTemplateId || '',
+          },
         },
-        body: {
-          migrate_deployed_agents: values.migrate,
-          preserve_tool_variables: !values.overwriteToolVariables,
-          message: values.message,
+        {
+          onSuccess: () => {
+            saveTemplateVersion({
+              body: {
+                migrate_agents: values.migrate,
+                preserve_environment_variables_on_migration:
+                  !values.overwriteToolVariables,
+                message: values.message,
+              },
+              params: {
+                project: slug,
+                template_name: templateName,
+              },
+            });
+          },
         },
-        params: { agent_id: agentTemplateId },
-      });
+      );
     },
-    [mutate, agentTemplateId],
+    [
+      saveTemplateVersion,
+      agentTemplateId,
+      syncDefaultSimulatedAgent,
+      slug,
+      templateName,
+    ],
   );
-  const { deployedAgentTemplate } = useLatestAgentTemplate();
+
+  const isError = useMemo(() => {
+    return syncError || savingError;
+  }, [syncError, savingError]);
 
   return (
     <FormProvider {...form}>
@@ -401,8 +303,6 @@ function CreateNewTemplateVersionDialog(
                       )}
                       leftComparisonVersion="latest"
                       rightComparisonVersion="current"
-                      defaultRightComparisonState={agentState as AgentState}
-                      defaultLeftComparisonState={deployedAgentTemplate?.state}
                     />
                   </VStack>
                 </VStack>
@@ -412,7 +312,7 @@ function CreateNewTemplateVersionDialog(
                   borderLeft
                   fullHeight
                 >
-                  <FormFields isPending={isPending} />
+                  <FormFields isPending={isPending || isSuccess} />
                 </VStack>
               </HStack>
             </HiddenOnMobile>
@@ -426,12 +326,13 @@ function CreateNewTemplateVersionDialog(
                     )}
                     leftComparisonVersion="latest"
                     rightComparisonVersion="current"
-                    defaultRightComparisonState={agentState as AgentState}
-                    defaultLeftComparisonState={deployedAgentTemplate?.state}
                   />
                 </VStack>
                 <VStack>
-                  <FormFields isPending={isPending} />
+                  {isError && (
+                    <Alert title={t('VersionAgentDialog.error.title')} />
+                  )}
+                  <FormFields isPending={isPending || isSuccess} />
                 </VStack>
               </VStack>
             </VisibleOnMobile>
@@ -469,7 +370,6 @@ function OnboardingWrapper(props: OnboardingWrapperProps) {
 
 function TemplateVersionDisplay() {
   // get latest template version
-  const { deployedAgentTemplate, otherError } = useLatestAgentTemplate();
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
   );
@@ -480,32 +380,8 @@ function TemplateVersionDisplay() {
 
   const show = useShowOnboarding('save_version');
 
-  const versionNumber = deployedAgentTemplate?.version;
-  if (otherError) {
-    return (
-      <Tooltip asChild content={t('DeploymentButton.errorTooltip')}>
-        <Button
-          size="default"
-          color="destructive"
-          data-testid="version-template-trigger"
-          label={t('DeploymentButton.error')}
-          preIcon={<WarningIcon size="small" />}
-        />
-      </Tooltip>
-    );
-  }
-
   if (!canUpdateTemplate) {
-    return (
-      <Button
-        size="default"
-        color="primary"
-        disabled
-        label={t('DeploymentButton.readyToDeploy.trigger', {
-          version: versionNumber,
-        })}
-      />
-    );
+    return null;
   }
 
   return (
@@ -523,72 +399,6 @@ function TemplateVersionDisplay() {
         }
       />
     </OnboardingWrapper>
-  );
-}
-
-export const isAgentConvertingToTemplateAtom = atom(false);
-
-function CreateTemplateButton() {
-  const { slug } = useCurrentProject();
-  const { id: agentId } = useCurrentAgent();
-  const setConvertingAtom = useSetAtom(isAgentConvertingToTemplateAtom);
-  const { mutate, isPending, isSuccess } =
-    cloudAPI.agents.createTemplateFromAgent.useMutation({
-      onSuccess: (body) => {
-        const { templateName } = body.body;
-
-        // do not use next/link here as we need to force a full page reload
-        window.location.href = `/projects/${slug}/templates/${templateName}`;
-      },
-      onError: () => {
-        setConvertingAtom(false);
-        toast.error(t('CreateTemplateButton.error'));
-      },
-    });
-
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/(agentId)/AgentPage',
-  );
-
-  const handleConvert = useCallback(() => {
-    setConvertingAtom(true);
-
-    mutate({
-      params: { agent_id: agentId },
-      body: {
-        project: slug,
-      },
-    });
-  }, [setConvertingAtom, mutate, agentId, slug]);
-
-  return (
-    <Popover
-      align="end"
-      triggerAsChild
-      trigger={
-        <Button
-          size="default"
-          preIcon={<TemplateIcon />}
-          color="primary"
-          label={t('CreateTemplateButton.trigger')}
-        />
-      }
-    >
-      <VStack padding="medium" gap="large">
-        <VStack>
-          <Typography bold>{t('CreateTemplateButton.title')}</Typography>
-          <Typography>{t('CreateTemplateButton.description')}</Typography>
-        </VStack>
-        <Button
-          color="primary"
-          busy={isPending || isSuccess}
-          fullWidth
-          label={t('CreateTemplateButton.cta')}
-          type="button"
-          onClick={handleConvert}
-        />
-      </VStack>
-    </Popover>
   );
 }
 

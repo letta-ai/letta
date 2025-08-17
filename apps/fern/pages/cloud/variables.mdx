@@ -39,9 +39,9 @@ For example, if we change the name of the user from "Alice" to "Bob", the simula
 
 ## Defining variables during agent creation
 
-When we're ready to create an agent from our template, we can specify the values for the variables using the `variables` parameter in the [agent creation endpoint](/api-reference/agents/create):
+When we're ready to create an agent from our template, we can specify the values for the variables using the `variables` parameter in the [create agents from template endpoint](/api-reference/templates/agents/create):
 ```sh
-curl -X POST https://app.letta.com/v1/agents \
+curl -X POST https://app.letta.com/v1/templates/{project_slug}/{template_name}:{template_version} \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{

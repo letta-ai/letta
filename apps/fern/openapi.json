@@ -9240,105 +9240,9 @@
         }
       }
     },
-    "/v1/agents/{agent_id}/version-template": {
-      "post": {
-        "description": "Creates a versioned version of an agent",
-        "summary": "Version Agent Template",
-        "tags": ["agents"],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The agent ID of the agent to migrate, if this agent is not a template, it will create a agent template from the agent provided as well"
-          },
-          {
-            "name": "returnAgentState",
-            "in": "query",
-            "schema": {
-              "oneOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "enum": ["true"]
-                }
-              ]
-            }
-          }
-        ],
-        "operationId": "agents.versionAgentTemplate",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "migrate_deployed_agents": {
-                    "type": "boolean"
-                  },
-                  "message": {
-                    "type": "string",
-                    "maxLength": 140
-                  },
-                  "preserve_tool_variables": {
-                    "type": "boolean",
-                    "description": "If true, preserves the existing agent's tool environment variables when migrating deployed agents"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "201"
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Agent not found"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Failed to version agent template"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/agents/{agent_id}/migrate": {
       "post": {
-        "description": "Migrate an agent to a new versioned agent template",
+        "description": "Migrate an agent to a new versioned agent template. This will only work for \"classic\" and non-multiagent agent templates.",
         "summary": "Migrate Agent",
         "tags": ["agents"],
         "parameters": [
@@ -9361,13 +9265,6 @@
                 "properties": {
                   "to_template": {
                     "type": "string"
-                  },
-                  "variables": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    },
-                    "description": "If you chose to not preserve core memories, you should provide the new variables for the core memories"
                   },
                   "preserve_core_memories": {
                     "type": "boolean"
@@ -9396,133 +9293,6 @@
                     }
                   },
                   "required": ["success"]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": [
-                        "Agent provided is a template or not found, you can only migrate deployed agents",
-                        "Template version provided does not exist"
-                      ]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": [
-                        "You can only migrate agents to a new versioned agent template that belongs to the same project"
-                      ]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Migration failed"]
-                    }
-                  },
-                  "required": ["message"]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents/{agent_id}/template": {
-      "post": {
-        "description": "Create a template from an agent",
-        "summary": "Create Template From Agent",
-        "tags": ["agents"],
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "operationId": "agents.createTemplateFromAgent",
-        "requestBody": {
-          "description": "Body",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "project": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "201",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "templateName": {
-                      "type": "string"
-                    },
-                    "templateId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["templateName", "templateId"]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "enum": ["Failed to create agent template"]
-                    }
-                  },
-                  "required": ["message"]
                 }
               }
             }
@@ -9765,6 +9535,13 @@
             }
           },
           {
+            "name": "template_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "name",
             "in": "query",
             "schema": {
@@ -9772,7 +9549,21 @@
             }
           },
           {
-            "name": "projectId",
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project_id",
             "in": "query",
             "schema": {
               "type": "string"
@@ -9794,7 +9585,8 @@
                         "type": "object",
                         "properties": {
                           "name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The exact name of the template"
                           },
                           "id": {
                             "type": "string"
@@ -9803,6 +9595,13 @@
                             "type": "string"
                           },
                           "project_slug": {
+                            "type": "string"
+                          },
+                          "latest_version": {
+                            "type": "string",
+                            "description": "The latest version of the template"
+                          },
+                          "description": {
                             "type": "string"
                           },
                           "template_deployment_slug": {
@@ -9815,6 +9614,7 @@
                           "id",
                           "project_id",
                           "project_slug",
+                          "latest_version",
                           "template_deployment_slug"
                         ]
                       }
@@ -9824,6 +9624,1101 @@
                     }
                   },
                   "required": ["templates", "has_next_page"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}/{template_name}": {
+      "post": {
+        "description": "Saves the current version of the template as a new version",
+        "summary": "Save template version (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}, any version appended will be ignored"
+          }
+        ],
+        "operationId": "templates.saveTemplateVersion",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "preserve_environment_variables_on_migration": {
+                    "type": "boolean",
+                    "description": "If true, the environment variables will be preserved in the template version when migrating agents"
+                  },
+                  "preserve_core_memories_on_migration": {
+                    "type": "boolean",
+                    "description": "If true, the core memories will be preserved in the template version when migrating agents"
+                  },
+                  "migrate_agents": {
+                    "type": "boolean",
+                    "description": "If true, existing agents attached to this template will be migrated to the new template version"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "A message to describe the changes made in this template version"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The exact name of the template"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "project_slug": {
+                      "type": "string"
+                    },
+                    "latest_version": {
+                      "type": "string",
+                      "description": "The latest version of the template"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "template_deployment_slug": {
+                      "type": "string",
+                      "description": "The full name of the template, including version and project slug"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "id",
+                    "project_id",
+                    "project_slug",
+                    "latest_version",
+                    "template_deployment_slug"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "Deletes all versions of a template with the specified name",
+        "summary": "Delete template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name (without version)"
+          }
+        ],
+        "operationId": "templates.deleteTemplate",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}/{template_version}/snapshot": {
+      "get": {
+        "description": "Get a snapshot of the template version, this will return the template state at a specific version",
+        "summary": "Get template snapshot (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+          }
+        ],
+        "operationId": "templates.getTemplateSnapshot",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "model": {
+                            "type": "string"
+                          },
+                          "systemPrompt": {
+                            "type": "string"
+                          },
+                          "toolIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "sourceIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "properties": {
+                            "type": "object",
+                            "properties": {
+                              "context_window_limit": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_tokens": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_reasoning_tokens": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_files_open": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "message_buffer_autoclear": {
+                                "type": "boolean",
+                                "nullable": true
+                              },
+                              "per_file_view_window_char_limit": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "context_window_limit",
+                              "max_tokens",
+                              "max_reasoning_tokens",
+                              "max_files_open",
+                              "message_buffer_autoclear",
+                              "per_file_view_window_char_limit"
+                            ],
+                            "nullable": true
+                          },
+                          "memoryVariables": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string"
+                              },
+                              "data": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "defaultValue": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["key", "type"]
+                                }
+                              }
+                            },
+                            "required": ["version", "data"],
+                            "nullable": true
+                          },
+                          "toolVariables": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string"
+                              },
+                              "data": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "defaultValue": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["key", "type"]
+                                }
+                              }
+                            },
+                            "required": ["version", "data"],
+                            "nullable": true
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "identityIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "toolRules": {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["constrain_child_tools"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "children": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": ["tool_name", "children"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["run_first"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["exit_loop"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["conditional"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "default_child": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "child_output_mapping": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "require_output_mapping": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "tool_name",
+                                    "child_output_mapping"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["continue_loop"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["required_before_exit"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["max_count_per_step"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "max_count_limit": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": ["tool_name", "max_count_limit"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["parent_last_tool"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "children": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "required": ["tool_name", "children"]
+                                }
+                              ]
+                            },
+                            "nullable": true
+                          },
+                          "entityId": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "model",
+                          "systemPrompt",
+                          "toolIds",
+                          "sourceIds",
+                          "properties",
+                          "memoryVariables",
+                          "toolVariables",
+                          "tags",
+                          "identityIds",
+                          "toolRules",
+                          "entityId",
+                          "name"
+                        ]
+                      }
+                    },
+                    "blocks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "limit": {
+                            "type": "number"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "preserveOnMigration": {
+                            "type": "boolean",
+                            "nullable": true
+                          },
+                          "readOnly": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "value",
+                          "limit",
+                          "description",
+                          "preserveOnMigration",
+                          "readOnly"
+                        ]
+                      }
+                    },
+                    "configuration": {
+                      "type": "object",
+                      "properties": {
+                        "managerAgentId": {
+                          "type": "string"
+                        },
+                        "managerType": {
+                          "type": "string"
+                        },
+                        "terminationToken": {
+                          "type": "string"
+                        },
+                        "maxTurns": {
+                          "type": "number"
+                        },
+                        "sleeptimeAgentFrequency": {
+                          "type": "number"
+                        },
+                        "maxMessageBufferLength": {
+                          "type": "number"
+                        },
+                        "minMessageBufferLength": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "classic",
+                        "cluster",
+                        "sleeptime",
+                        "round_robin",
+                        "supervisor",
+                        "dynamic",
+                        "voice_sleeptime"
+                      ]
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "agents",
+                    "blocks",
+                    "configuration",
+                    "type",
+                    "version"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}/{template_version}/fork": {
+      "post": {
+        "description": "Forks a template version into a new template",
+        "summary": "Fork template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template version, formatted as {template-name}:{version-number} or {template-name}:latest"
+          }
+        ],
+        "operationId": "templates.forkTemplate",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "description": "Optional custom name for the forked template. If not provided, a random name will be generated."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The exact name of the template"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "project_slug": {
+                      "type": "string"
+                    },
+                    "latest_version": {
+                      "type": "string",
+                      "description": "The latest version of the template"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "template_deployment_slug": {
+                      "type": "string",
+                      "description": "The full name of the template, including version and project slug"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "id",
+                    "project_id",
+                    "project_slug",
+                    "latest_version",
+                    "template_deployment_slug"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}": {
+      "post": {
+        "description": "Creates a new template from an existing agent",
+        "summary": "Create template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          }
+        ],
+        "operationId": "templates.createTemplate",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["agent"]
+                      },
+                      "agent_id": {
+                        "type": "string",
+                        "description": "The ID of the agent to use as a template, can be from any project"
+                      },
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "description": "Optional custom name for the template. If not provided, a random name will be generated."
+                      }
+                    },
+                    "required": ["type", "agent_id"],
+                    "summary": "From Agent",
+                    "description": "Create a template from an existing agent"
+                  }
+                ],
+                "summary": "Create template",
+                "description": "The type of template to create, currently only agent templates are supported"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The exact name of the template"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "project_id": {
+                      "type": "string"
+                    },
+                    "project_slug": {
+                      "type": "string"
+                    },
+                    "latest_version": {
+                      "type": "string",
+                      "description": "The latest version of the template"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "template_deployment_slug": {
+                      "type": "string",
+                      "description": "The full name of the template, including version and project slug"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "id",
+                    "project_id",
+                    "project_slug",
+                    "latest_version",
+                    "template_deployment_slug"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}/{template_name}/name": {
+      "patch": {
+        "description": "Renames all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.",
+        "summary": "Rename template (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The current template name (version will be automatically stripped if included)"
+          }
+        ],
+        "operationId": "templates.renameTemplate",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "new_name": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "description": "The new name for the template"
+                  }
+                },
+                "required": ["new_name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project_slug}/{name}/versions": {
+      "get": {
+        "description": "List all versions of a specific template",
+        "summary": "List template versions (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name (without version)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "operationId": "templates.listTemplateVersions",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "version": {
+                            "type": "string",
+                            "description": "The version number"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "description": "When the version was created"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "Version description message"
+                          },
+                          "is_latest": {
+                            "type": "boolean",
+                            "description": "Whether this is the latest version"
+                          }
+                        },
+                        "required": ["version", "created_at", "is_latest"]
+                      }
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "total_count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["versions", "has_next_page", "total_count"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }

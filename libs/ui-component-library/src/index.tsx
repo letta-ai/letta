@@ -169,7 +169,7 @@ export * from './lib/core/KeyValueEditor/KeyValueEditor';
 
 export * from './lib/core/VerticalDelineatedTextChunker/VerticalDelineatedTextChunker';
 
-export * from './lib/reusable/AgentStateViewer/AgentStateViewer';
+export * from './lib/reusable/TemplateSnapshotViewer/TemplateSnapshotViewer';
 
 export * from './translations';
 
