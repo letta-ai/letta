@@ -63,7 +63,7 @@ export function useSynchronizeSimulatedAgentWithAgentTemplate() {
       queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
         agentTemplateId || '',
       ),
-      enabled: isTemplate,
+      enabled: !!(isTemplate && agentTemplateId),
     });
 
   const isNotFound = useMemo(() => {

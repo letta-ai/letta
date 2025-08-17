@@ -25,7 +25,7 @@ export function useUpdateSimulatedMemoryBlocksOnVariableInjection() {
       queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
         templateId || '',
       ),
-      enabled: isTemplate,
+      enabled: !!(isTemplate && templateId),
     });
   const { mutate: modifyCoreMemoryBlock } =
     useAgentsServiceModifyCoreMemoryBlock();

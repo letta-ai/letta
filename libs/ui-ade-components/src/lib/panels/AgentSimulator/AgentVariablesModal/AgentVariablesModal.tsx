@@ -266,7 +266,7 @@ function MemoryVariableEditorWrapper() {
       queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
         agentTemplateId || '',
       ),
-      enabled: isTemplate,
+      enabled: !!(isTemplate && agentTemplateId),
     });
 
 

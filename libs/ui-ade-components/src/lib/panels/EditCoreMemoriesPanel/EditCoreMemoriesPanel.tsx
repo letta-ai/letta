@@ -190,7 +190,7 @@ function TemplateMemory() {
       queryKey: webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
         templateId || '',
       ),
-      enabled: isTemplate,
+      enabled: !!(isTemplate && templateId),
     });
 
   const blockTemplateList = useMemo(() => {
