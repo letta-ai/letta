@@ -49,9 +49,13 @@ async def create_provider(
     Create a new custom provider
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    for field_name in request.model_fields:
+        value = getattr(request, field_name, None)
+        if isinstance(value, str) and value == "":
+            setattr(request, field_name, None)
 
-    provider = ProviderCreate(**request.model_dump())
-
+    request_data = request.model_dump(exclude_unset=True, exclude_none=True)
+    provider = ProviderCreate(**request_data)
     provider = await server.provider_manager.create_provider_async(provider, actor=actor)
     return provider
 
