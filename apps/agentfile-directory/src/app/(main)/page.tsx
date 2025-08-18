@@ -29,26 +29,89 @@ function AllAgentsSection() {
     return firstPage?.totalCount ? `${firstPage?.totalCount}` : '???';
   }, [firstPage]);
 
+  // {/*TODO: HARDCODE FEATURED AGENTS BELOW*/}
+  const featuredAgentfiles = [
+    {
+      description: 'string',
+      name: 'agent1',
+      agentId: 'agent1',
+      author: 'string',
+      downloadCount: 10,
+      imageSrc: '/placeholder-square.png',
+    },
+    {
+      description: 'string',
+      name: 'agent2',
+      agentId: 'agent2',
+      author: 'string',
+      downloadCount: 10,
+      imageSrc: '/placeholder-square.png',
+    },
+    {
+      description: 'string',
+      name: 'agent3',
+      agentId: 'sagent3tring',
+      author: 'string',
+      downloadCount: 10,
+      imageSrc: '/placeholder-square.png',
+    },
+    {
+      description: 'string',
+      name: 'agent4',
+      agentId: 'agent4',
+      author: 'string',
+      downloadCount: 10,
+      imageSrc: '/placeholder-square.png',
+    },
+  ];
+
   return (
-    <Section seeMoreLink="/search" count={totalCount} title={t('all')}>
-      {!firstPage ? (
-        <NiceGridDisplay itemWidth="292px" itemHeight="155px">
-          {new Array(15).fill(0).map((_, index) => (
-            <Skeleton
-              /* eslint-disable-next-line react/forbid-component-props */
-              className="w-full h-[155px] aspect-[4/3] "
-              key={index}
-            />
-          ))}
-        </NiceGridDisplay>
-      ) : (
-        <NiceGridDisplay itemWidth="292px" itemHeight="155px">
-          {firstPage?.items.map((agent) => (
-            <AgentFileCard agent={agent} key={agent.agentId} />
-          ))}
-        </NiceGridDisplay>
-      )}
-    </Section>
+    <>
+      <Section title={t('featured')}>
+        {!firstPage ? (
+          <NiceGridDisplay itemWidth="292px" itemHeight="100px">
+            {new Array(4).fill(0).map((_, index) => (
+              <Skeleton
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="w-full h-[155px] aspect-[4/3] "
+                key={index}
+              />
+            ))}
+          </NiceGridDisplay>
+        ) : (
+          <NiceGridDisplay itemWidth="292px" itemHeight="155px">
+            {/*HERE*/}
+            {featuredAgentfiles?.map((agent) => (
+              <AgentFileCard
+                agent={agent}
+                key={agent.agentId}
+                imageSrc={agent.imageSrc}
+              />
+            ))}
+          </NiceGridDisplay>
+        )}
+      </Section>
+
+      <Section seeMoreLink="/search" count={totalCount} title={t('all')}>
+        {!firstPage ? (
+          <NiceGridDisplay itemWidth="292px" itemHeight="155px">
+            {new Array(15).fill(0).map((_, index) => (
+              <Skeleton
+                /* eslint-disable-next-line react/forbid-component-props */
+                className="w-full h-[155px] aspect-[4/3] "
+                key={index}
+              />
+            ))}
+          </NiceGridDisplay>
+        ) : (
+          <NiceGridDisplay itemWidth="292px" itemHeight="155px">
+            {firstPage?.items.map((agent) => (
+              <AgentFileCard agent={agent} key={agent.agentId} />
+            ))}
+          </NiceGridDisplay>
+        )}
+      </Section>
+    </>
   );
 }
 

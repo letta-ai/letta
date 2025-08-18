@@ -26,7 +26,8 @@
     "search": "Search agentfiles",
     "or": "or",
     "go": "Search",
-    "all": "All"
+    "all": "All",
+    "featured": "Featured"
   },
   "agentfile-directory/search": {
     "label": "Search",

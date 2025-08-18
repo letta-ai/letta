@@ -7,46 +7,57 @@ import Image from 'next/image';
 
 interface AgentFileCardProps {
   agent: GetAgentfilePartialDetailsType;
+  imageSrc?: string;
 }
 
 export function AgentFileCard(props: AgentFileCardProps) {
-  const { agent } = props;
+  const { agent, imageSrc } = props;
   const { agentId, author, downloadCount, description, name } = agent;
 
   return (
-    <VStack
-      color="background-grey3"
-      as="a"
-      href={`/agents/${agentId}`}
-      padding="small"
-      border
-    >
-      <HStack>
-        <Image src={Avatar} alt={name} width={40} height={40} />
-        <VStack gap={false}>
-          <Typography fullWidth overflow="ellipsis" bold>
-            {name}
-          </Typography>
-          <Typography color="lighter" light>
-            {author}
-          </Typography>
+    <VStack gap={null}>
+      <VStack
+        color="background-grey3"
+        as="a"
+        href={`/agents/${agentId}`}
+        padding="small"
+        border
+      >
+        {imageSrc && (
+          <Image
+            src={imageSrc}
+            alt={name}
+            width="300"
+            height="300"
+            style={{ width: '100%', height: 'auto' }}
+          />
+        )}
+        <HStack>
+          <VStack gap={false}>
+            <Typography fullWidth overflow="ellipsis" bold>
+              {name}
+            </Typography>
+            <Typography color="lighter" light>
+              {author}
+            </Typography>
+          </VStack>
+        </HStack>
+        <VStack paddingY="small">
+          <div className="h-[32px]">
+            <Typography
+              /* eslint-disable-next-line react/forbid-component-props */
+              className="line-clamp-2"
+              color="lighter"
+              light
+            >
+              {description}
+            </Typography>
+          </div>
         </VStack>
-      </HStack>
-      <VStack paddingY="small">
-        <div className="h-[32px]">
-          <Typography
-            /* eslint-disable-next-line react/forbid-component-props */
-            className="line-clamp-2"
-            color="lighter"
-            light
-          >
-            {description}
-          </Typography>
-        </div>
+        <HStack>
+          <DownloadCount count={downloadCount} />
+        </HStack>
       </VStack>
-      <HStack>
-        <DownloadCount count={downloadCount} />
-      </HStack>
     </VStack>
   );
 }
