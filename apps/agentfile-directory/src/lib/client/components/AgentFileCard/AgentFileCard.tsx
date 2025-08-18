@@ -1,6 +1,5 @@
 import type { GetAgentfilePartialDetailsType } from '@letta-cloud/sdk-web';
 import { HStack, Typography, VStack } from '@letta-cloud/ui-component-library';
-import Avatar from './Avatar.svg';
 import { DownloadCount } from '../DownloadCount/DownloadCount';
 import React from 'react';
 import Image from 'next/image';
@@ -29,6 +28,7 @@ export function AgentFileCard(props: AgentFileCardProps) {
             alt={name}
             width="300"
             height="300"
+            /* eslint-disable-next-line react/forbid-component-props */
             style={{ width: '100%', height: 'auto' }}
           />
         )}

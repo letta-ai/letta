@@ -833,6 +833,7 @@
     },
     "embeddingInput": {
       "label": "Embedding model",
+      "loading": "Loading...",
       "description": "Letta cloud uses a standard embedding model to ensure consistent data embedding across all agents."
     }
   },

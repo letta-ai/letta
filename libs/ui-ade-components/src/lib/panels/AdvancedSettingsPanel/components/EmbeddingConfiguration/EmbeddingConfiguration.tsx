@@ -21,7 +21,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
 
 interface EmbeddingConfig {
-  embeddingConfig?: AgentState['embedding_config'];
+  embeddingConfig: AgentState['embedding_config'];
 }
 
 export function EmbeddingSelector(props: EmbeddingConfig) {
@@ -58,6 +58,7 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
       })),
     }));
   }, [embeddingModels]);
+
 
   const [modelState, setModelState] = useState<OptionType | undefined>(
     embeddingConfig
@@ -118,15 +119,41 @@ export function EmbeddingSelector(props: EmbeddingConfig) {
   );
 }
 
+interface EmbeddingSelectorWrapperProps {
+  embeddingConfig?: AgentState['embedding_config'];
+}
+
+function EmbeddingSelectorWrapper(props: EmbeddingSelectorWrapperProps) {
+  const { embeddingConfig } = props;
+  const t = useTranslations('ADE/EmbeddingConfiguration');
+
+  if (!embeddingConfig) {
+    return (
+      <RawInput
+        fullWidth
+        size="small"
+        label={t('embeddingInput.label')}
+        placeholder={t('embeddingInput.loading')}
+        description={t('embeddingInput.description')}
+        disabled
+      />
+    )
+  }
+
+  return <EmbeddingSelector embeddingConfig={embeddingConfig} />;
+
+}
+
 export function EmbeddingConfiguration() {
   const currentAgent = useCurrentAgent();
   const { isLocal } = useCurrentAgentMetaData();
   const t = useTranslations('ADE/EmbeddingConfiguration');
 
+
   return (
     <>
       {isLocal ? (
-        <EmbeddingSelector embeddingConfig={currentAgent.embedding_config} />
+        <EmbeddingSelectorWrapper embeddingConfig={currentAgent.embedding_config} />
       ) : (
         <RawInput
           fullWidth
