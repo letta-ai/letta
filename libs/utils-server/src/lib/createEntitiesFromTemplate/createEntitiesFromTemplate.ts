@@ -138,6 +138,9 @@ export async function createEntitiesFromTemplate(
     include_default_source: false,
     embedding: DEFAULT_EMBEDDING_MODEL,
     max_files_open: agentTemplate.properties?.max_files_open,
+    context_window_limit: agentTemplate.properties?.context_window_limit,
+    max_tokens: agentTemplate.properties?.max_tokens,
+    max_reasoning_tokens: agentTemplate.properties?.max_reasoning_tokens,
     per_file_view_window_char_limit:
       agentTemplate.properties?.per_file_view_window_char_limit,
     template_id: template.id,

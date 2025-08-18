@@ -311,6 +311,22 @@ export async function updateAgentFromAgentTemplateId(
     };
   }
 
+  const nextLLMConfig = existingAgent.llm_config;
+
+  if (agentTemplate.properties?.max_tokens) {
+    nextLLMConfig.max_tokens = agentTemplate.properties.max_tokens;
+  }
+
+  if (agentTemplate.properties?.max_reasoning_tokens) {
+    nextLLMConfig.max_reasoning_tokens =
+      agentTemplate.properties.max_reasoning_tokens;
+  }
+
+  if (agentTemplate.properties?.context_window_limit) {
+    nextLLMConfig.context_window =
+      agentTemplate.properties.context_window_limit;
+  }
+
   // Update the agent with the template schema
   const agent = await AgentsService.modifyAgent(
     {
