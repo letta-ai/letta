@@ -45,7 +45,7 @@ registerPromiseWorker(
     let errors: PythonValidatorError[] = [];
 
     const preCode = `from pydantic import BaseModel, Field
-from typing import List, Dict, Union, Optional`;
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union`;
 
     try {
       await self.pyodide.runPythonAsync(`${preCode}\n${message.code}`);
