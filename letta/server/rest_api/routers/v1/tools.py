@@ -944,6 +944,8 @@ async def generate_tool_from_prompt(
     """
     Generate a tool from the given user prompt.
     """
+    response_data = None
+
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or "anthropic/claude-3-5-sonnet-20240620")
@@ -1006,5 +1008,5 @@ async def generate_tool_from_prompt(
             response=response.choices[0].message.content,
         )
     except Exception as e:
-        logger.error(f"Failed to generate tool: {str(e)}")
+        logger.error(f"Failed to generate tool: {str(e)}. Raw response: {response_data}")
         raise HTTPException(status_code=500, detail=f"Failed to generate tool: {str(e)}")
