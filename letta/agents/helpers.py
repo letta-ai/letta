@@ -222,6 +222,7 @@ def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
             # Load it again - this is due to sometimes Anthropic returning weird json @caren
             tool_args = json.loads(tool_args)
     except json.JSONDecodeError:
+        logger.error("Failed to JSON decode tool call argument string: %s", tool_call_args_str)
         tool_args = {}
 
     return tool_args
