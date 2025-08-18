@@ -118,7 +118,7 @@ function Dashboard() {
       <AppHeader />
       <HStack overflow="hidden" fullWidth gap={false} fullHeight>
         <Sidebar />
-        <div className="relative w-0 flex-1">
+        <div className="relative flex-1 min-w-0">
           <Outlet />
         </div>
       </HStack>
