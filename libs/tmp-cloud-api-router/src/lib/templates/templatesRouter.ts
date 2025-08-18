@@ -18,7 +18,7 @@ import {
   createEntitiesFromTemplate,
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
-import { and, eq, ilike, count, not } from 'drizzle-orm';
+import { and, eq, ilike, count, not, desc } from 'drizzle-orm';
 import { validateVersionString } from '@letta-cloud/utils-shared';
 import { generateTemplateSnapshot } from '@letta-cloud/utils-shared';
 import { environment } from '@letta-cloud/config-environment-variables';
@@ -222,6 +222,7 @@ async function listTemplates(
         },
       },
     },
+    orderBy: [desc(lettaTemplates.createdAt)],
     offset,
     limit: limit + 1,
   });

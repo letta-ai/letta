@@ -26,6 +26,7 @@ import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useADEAppContext } from '../../../index';
 import { isEqual } from 'lodash';
+import { useCurrentTemplateSnapshot } from '../useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
 
 interface SimulatedAgentProviderProps {
   children: React.ReactNode;
@@ -33,6 +34,10 @@ interface SimulatedAgentProviderProps {
 
 function SimulatedAgentProviderLogic(props: SimulatedAgentProviderProps) {
   const { children } = props;
+
+  // immediately load snapshots
+  useCurrentTemplateSnapshot('current');
+  useCurrentTemplateSnapshot('latest');
 
   useSynchronizeSimulatedAgentWithAgentTemplate();
 
@@ -249,6 +254,8 @@ export function useSynchronizeSimulatedAgentWithAgentTemplate() {
 export function SimulatedAgentProvider(props: SimulatedAgentProviderProps) {
   const { children } = props;
   const { isTemplate } = useCurrentAgentMetaData();
+
+
 
   if (!isTemplate) {
     return children;

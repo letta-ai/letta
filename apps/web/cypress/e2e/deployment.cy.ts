@@ -53,7 +53,15 @@ describe('letta', () => {
       'The users name is {{name}}. Please include the word DeploymentMan at the end of every message.',
     );
 
+
     cy.stageAndDeployAgent();
+
+
+    cy.location('pathname', { timeout: 50000 }).should(
+      'match',
+      /\/projects\/(.+)\/templates\/DEPLOYMENTAGENT\/distribution/,
+      { timeout: 50000 }
+    );
 
     cy.visit('/projects/deploymentest/agents');
 
@@ -119,6 +127,12 @@ describe('letta', () => {
     );
 
     cy.stageAndDeployAgent();
+
+    cy.location('pathname', { timeout: 50000 }).should(
+      'match',
+      /\/projects\/(.+)\/templates\/DEPLOYMENTAGENT\/distribution/,
+      { timeout: 50000 }
+    );
 
     cy.visit('/projects/deploymentest/agents');
 

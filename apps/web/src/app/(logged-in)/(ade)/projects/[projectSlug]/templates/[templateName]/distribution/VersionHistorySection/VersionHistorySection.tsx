@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from '@letta-cloud/ui-component-library';
 import type { AgentStateVersions } from '$web/client/hooks/useAgentStateFromVersionName/useAgentStateFromVersionName';
-import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+import { useCurrentTemplateSnapshot } from '@letta-cloud/ui-ade-components';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';

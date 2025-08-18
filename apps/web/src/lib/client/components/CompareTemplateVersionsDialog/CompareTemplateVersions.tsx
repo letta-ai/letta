@@ -8,7 +8,7 @@ import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAge
 import type {
   AgentStateVersions,
 } from '$web/client/hooks/useAgentStateFromVersionName/useAgentStateFromVersionName';
-import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+import { useCurrentTemplateSnapshot } from '@letta-cloud/ui-ade-components';
 
 interface CompareTemplateVersionsProps {
   leftComparisonVersion: AgentStateVersions;

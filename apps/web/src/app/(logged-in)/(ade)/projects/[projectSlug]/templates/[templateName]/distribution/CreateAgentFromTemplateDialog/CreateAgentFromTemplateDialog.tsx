@@ -10,7 +10,7 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import { useCurrentTemplateSnapshot } from '$web/client/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+import { useCurrentTemplateSnapshot } from '@letta-cloud/ui-ade-components';
 import type { TemplateSnapshotSchemaType } from '@letta-cloud/utils-shared';
 import React, { type FormEvent, useCallback, useMemo } from 'react';
 import { UseAgentsServiceListAgentsKeyFn } from '@letta-cloud/sdk-core';

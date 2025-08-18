@@ -42,3 +42,4 @@ export * from './lib/panels/DataSourcesV2/_components/UpdateSourceInstructionsMo
 export * from './lib/hooks/useQueryIdenities/useQueryIdentities';
 export * from './lib/OnboardingAsideFocus/OnboardingAsideFocus';
 export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
+export * from './lib/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';

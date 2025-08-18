@@ -1,23 +1,22 @@
 'use client'
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
-import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useParams } from 'next/navigation';
 
 export function useCurrentTemplateSnapshot(version: string) {
-  const {  templateName, } = useParams<{
+  const {  templateName, projectSlug } = useParams<{
     templateName: string;
+    projectSlug: string;
   }>();
-
-  const { slug } = useCurrentProject();
 
   return cloudAPI.templates.getTemplateSnapshot.useQuery({
     queryKey: cloudQueryKeys.templates.getTemplateSnapshot(
-      slug,
+      projectSlug,
       `${templateName}:${version}`,
     ),
     queryData: {
-      params: { project: slug, template_version: `${templateName}:${version}` },
+      params: { project: projectSlug, template_version: `${templateName}:${version}` },
     },
+    enabled: !!templateName && !!projectSlug,
     retry: false,
   });
 }
