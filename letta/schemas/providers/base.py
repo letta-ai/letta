@@ -141,6 +141,9 @@ class Provider(ProviderBase):
             XAIProvider,
         )
 
+        if self.base_url == "":
+            self.base_url = None
+
         match self.provider_type:
             case ProviderType.letta:
                 return LettaProvider(**self.model_dump(exclude_none=True))
