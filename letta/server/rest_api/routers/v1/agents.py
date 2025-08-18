@@ -998,6 +998,8 @@ async def send_message(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     # Create a new run for execution tracking
@@ -1140,6 +1142,8 @@ async def send_message_streaming(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
 
@@ -1533,6 +1537,8 @@ async def preview_raw_payload(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     if agent_eligible and model_compatible:
@@ -1601,6 +1607,8 @@ async def summarize_agent_conversation(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     if agent_eligible and model_compatible:
