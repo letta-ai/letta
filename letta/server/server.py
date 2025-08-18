@@ -857,6 +857,9 @@ class SyncServer(Server):
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
 
+        if request.reasoning is None:
+            request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
+
         if request.embedding_config is None:
             if request.embedding is None:
                 if settings.default_embedding_handle is None:
