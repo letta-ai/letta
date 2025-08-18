@@ -1,14 +1,14 @@
-'use client';
-import { ToolsEditor } from '@letta-cloud/ui-ade-components';
-import { useMemo, useState } from 'react';
-import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import {
   LoadingEmptyStatusComponent,
   DesktopPageLayout,
   VStack,
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
+import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
+import { ToolsEditor } from '@letta-cloud/ui-ade-components';
+import { useMemo, useState } from 'react';
+import { DesktopToolManagerLayout } from './ToolManagerLayout';
 
 export function GlobalTools() {
   const {
@@ -17,6 +17,7 @@ export function GlobalTools() {
     isLoading,
   } = useToolsServiceListTools({ limit: 250 });
   const [search, setSearch] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('custom');
 
   const t = useTranslations('GlobalTools');
 
@@ -25,14 +26,46 @@ export function GlobalTools() {
   }, [tools]);
 
   const filteredTools = useMemo(() => {
-    return (allTools || []).filter((tool) =>
+    let categoryFilteredTools = allTools;
+
+    switch (selectedCategory) {
+      case 'custom':
+        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'custom');
+        break;
+      case 'multi-agent':
+        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'letta_multi_agent_core');
+        break;
+      case 'utility':
+        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'letta_builtin');
+        break;
+      case 'base':
+        categoryFilteredTools = allTools.filter(tool =>
+          tool.tool_type === 'letta_core' ||
+          tool.tool_type === 'letta_memory_core' ||
+          tool.tool_type === 'letta_sleeptime_core'
+        );
+        break;
+      case 'mcp-servers':
+        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'external_mcp');
+        break;
+      default:
+        categoryFilteredTools = allTools;
+    }
+
+    return categoryFilteredTools.filter((tool) =>
       (tool.name || '').toLowerCase().includes(search.toLowerCase()),
     );
-  }, [search, allTools]);
+  }, [search, allTools, selectedCategory]);
 
   const [selectedToolId, setSelectedToolId] = useState<string | null>(() => {
-    return allTools?.[0]?.id || null;
+    return filteredTools?.[0]?.id || null;
   });
+
+  useMemo(() => {
+    if (filteredTools.length > 0 && !filteredTools.find(tool => tool.id === selectedToolId)) {
+      setSelectedToolId(filteredTools[0].id || null);
+    }
+  }, [filteredTools, selectedToolId]);
 
   if (!tools) {
     return (
@@ -51,7 +84,10 @@ export function GlobalTools() {
       subtitle={t('subtitle')}
       title={t('title')}
     >
-      <VStack fullWidth fullHeight overflowY="auto" padding="small">
+      <DesktopToolManagerLayout
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      >
         <ToolsEditor
           selectedToolId={selectedToolId}
           setSelectedToolId={setSelectedToolId}
@@ -60,7 +96,7 @@ export function GlobalTools() {
           search={search}
           onSearchChange={setSearch}
         />
-      </VStack>
+      </DesktopToolManagerLayout>
     </DesktopPageLayout>
   );
 }

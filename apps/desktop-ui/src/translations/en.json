@@ -272,5 +272,14 @@
     "subtitle": "View and manage all available tools in your system.",
     "loading": "Loading tools...",
     "error": "Failed to load tools"
+  },
+  "tools/layout": {
+    "createTool": "Create custom tool",
+    "addMCPServer": "Add MCP server",
+    "nav": {
+      "return": "Back",
+      "allTools": "Hosted tools",
+      "mcpServers": "MCP servers"
+    }
   }
 }
