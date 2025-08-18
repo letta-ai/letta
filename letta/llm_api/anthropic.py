@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import time
 import warnings
@@ -734,7 +735,20 @@ def _prepare_anthropic_request(
 
     # Move 'system' to the top level
     assert data["messages"][0]["role"] == "system", f"Expected 'system' role in messages[0]:\n{data['messages'][0]}"
-    data["system"] = data["messages"][0]["content"]
+    system_content = data["messages"][0]["content"]
+
+# Add cache control to system message
+    if isinstance(system_content, str):
+        data["system"] = [
+            {
+                "type": "text",
+                "text": system_content,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
+    else:
+        data["system"] = system_content
+
     data["messages"] = data["messages"][1:]
 
     # Process messages
@@ -794,7 +808,7 @@ def anthropic_chat_completions_request(
     max_reasoning_tokens: Optional[int] = None,
     provider_name: Optional[str] = None,
     provider_category: Optional[ProviderCategory] = None,
-    betas: List[str] = ["tools-2024-04-04"],
+    betas: List[str] = ["tools-2024-04-04", "prompt-caching-2024-07-31"],
     user_id: Optional[str] = None,
 ) -> ChatCompletionResponse:
     """https://docs.anthropic.com/claude/docs/tool-use"""
@@ -864,7 +878,7 @@ def anthropic_chat_completions_request_stream(
     max_reasoning_tokens: Optional[int] = None,
     provider_name: Optional[str] = None,
     provider_category: Optional[ProviderCategory] = None,
-    betas: List[str] = ["tools-2024-04-04"],
+    betas: List[str] = ["tools-2024-04-04", "prompt-caching-2024-07-31"],
     user_id: Optional[str] = None,
 ) -> Generator[ChatCompletionChunkResponse, None, None]:
     """Stream chat completions from Anthropic API.
@@ -933,7 +947,7 @@ def anthropic_chat_completions_process_stream(
     provider_category: Optional[ProviderCategory] = None,
     create_message_id: bool = True,
     create_message_datetime: bool = True,
-    betas: List[str] = ["tools-2024-04-04"],
+    betas: List[str] = ["tools-2024-04-04", "prompt-caching-2024-07-31"],
     name: Optional[str] = None,
     user_id: Optional[str] = None,
 ) -> ChatCompletionResponse:
