@@ -1,3 +1,5 @@
+'use client'
+
 import type { FileMetadata } from '@letta-cloud/sdk-core';
 import {
   Badge,
@@ -120,12 +122,17 @@ export function FileStatus(props: FileStatusProps) {
       : 0;
   }
 
-  // Use smooth progress animation for embedding states
+  // Detect if this is Pinecone processing (has chunks but no embedding progress)
+  const isPineconeProcessing = (file.total_chunks || 0) > 0 && (file.chunks_embedded || 0) === 0;
+
+  // Use smooth progress animation for embedding states (but not for Pinecone)
   const isEmbeddingActive = Boolean(
-    file.processing_status === 'embedding' ||
+    !isPineconeProcessing && (
+      file.processing_status === 'embedding' ||
       (file.processing_status === 'parsing' &&
         file.total_chunks &&
-        file.total_chunks > 0),
+        file.total_chunks > 0)
+    ),
   );
 
   const actualPercentage = getActualPercentage();
@@ -181,17 +188,14 @@ export function FileStatus(props: FileStatusProps) {
 
       // If we have totalChunks but chunksEmbedded is 0, we're actually in embedding phase
       if (totalChunks > 0 && chunksEmbedded === 0) {
-        const embeddingText = t('statuses.embeddingWithProgress', {
-          percentage: smoothPercentage,
-        });
-
+        // For Pinecone, just show "Embedding" without progress
         return (
           <Badge
             border
             busy
             variant="success"
             size="small"
-            content={embeddingText}
+            content={t('statuses.embedding')}
           />
         );
       }
@@ -208,9 +212,13 @@ export function FileStatus(props: FileStatusProps) {
     }
     case 'embedding': {
       const totalChunks = file.total_chunks || 0;
+      const chunksEmbedded = file.chunks_embedded || 0;
+
+      // Detect Pinecone case: has total chunks but chunks_embedded stays at 0
+      const isPineconeProcessing = totalChunks > 0 && chunksEmbedded === 0;
 
       const embeddingText =
-        totalChunks > 0
+        totalChunks > 0 && !isPineconeProcessing
           ? t('statuses.embeddingWithProgress', {
               percentage: smoothPercentage,
             })

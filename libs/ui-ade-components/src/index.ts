@@ -39,6 +39,7 @@ export * from './lib/hooks/useADELayoutConfig/useADELayoutConfig';
 export * from './lib/panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
 export * from './lib/panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
 export * from './lib/panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
+export * from './lib/panels/DataSourcesV2/_components/DataSourceView/FilesView/FileView/FileStatus';
 export * from './lib/hooks/useQueryIdenities/useQueryIdentities';
 export * from './lib/OnboardingAsideFocus/OnboardingAsideFocus';
 export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';

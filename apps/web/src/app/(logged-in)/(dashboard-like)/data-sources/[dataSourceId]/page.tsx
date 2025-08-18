@@ -24,7 +24,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import type { FileMetadata } from '@letta-cloud/sdk-core';
+import type { FileMetadata, ListSourceFilesResponse } from '@letta-cloud/sdk-core';
 import { useSourcesServiceRetrieveSource } from '@letta-cloud/sdk-core';
 import {
   UseJobsServiceListActiveJobsKeyFn,
@@ -38,7 +38,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeleteFileDialog } from '@letta-cloud/ui-ade-components';
+import { DeleteFileDialog, FileStatus } from '@letta-cloud/ui-ade-components';
 import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
@@ -66,14 +66,22 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: UseSourcesServiceListSourceFilesKeyFn({
-          sourceId: dataSourceId,
-          after: undefined,
-          limit,
-        }),
-      });
+    onSuccess: (uploadedFile) => {
+      void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
+        {
+          queryKey: UseSourcesServiceListSourceFilesKeyFn({
+            sourceId: dataSourceId,
+            after: undefined,
+            limit,
+          }),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+          return [...oldData, uploadedFile];
+        },
+      );
 
       void queryClient.invalidateQueries({
         queryKey: UseJobsServiceListActiveJobsKeyFn(),
@@ -263,6 +271,8 @@ function DataSourceFilesPage() {
     sourceId,
   });
 
+  const [isPolling, setIsPolling] = useState(false);
+
   const { data: files, isError } = useSourcesServiceListSourceFiles(
     {
       sourceId,
@@ -272,8 +282,21 @@ function DataSourceFilesPage() {
     undefined,
     {
       enabled: limit > 0,
+      refetchInterval: isPolling ? 3000 : false,
     },
   );
+
+  const hasProcessingFiles = useMemo(() => {
+    return files?.some(
+      (file) =>
+        file.processing_status !== 'completed' &&
+        file.processing_status !== 'error',
+    );
+  }, [files]);
+
+  useEffect(() => {
+    setIsPolling(hasProcessingFiles || false);
+  }, [hasProcessingFiles]);
 
   const [fileToDelete, setFileToDelete] = useState<Omit<
     DeleteFilePayload,
@@ -288,6 +311,20 @@ function DataSourceFilesPage() {
       {
         header: t('table.columns.name'),
         accessorKey: 'file_name',
+        cell: ({ row }) => {
+          const file = row.original;
+
+          return (
+            <HStack align="center" gap="small">
+              <Typography>{file.original_file_name || file.file_name}</Typography>
+              {file.processing_status !== 'completed' && (
+                <div style={{ marginLeft: '8px' }}>
+                  <FileStatus file={file} />
+                </div>
+              )}
+            </HStack>
+          );
+        },
       },
       {
         header: t('table.columns.fileSize'),
@@ -321,7 +358,7 @@ function DataSourceFilesPage() {
                   setFileToDelete({
                     sourceId,
                     fileId: cell.row.original.id || '',
-                    fileName: cell.row.original.file_name || '',
+                    fileName: cell.row.original.original_file_name || cell.row.original.file_name || '',
                   });
                 }}
                 label={t('deleteFile')}
