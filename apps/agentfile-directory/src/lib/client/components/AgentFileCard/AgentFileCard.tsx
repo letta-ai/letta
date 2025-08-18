@@ -11,7 +11,7 @@ interface AgentFileCardProps {
 
 export function AgentFileCard(props: AgentFileCardProps) {
   const { agent, imageSrc } = props;
-  const { agentId, author, downloadCount, description, name } = agent;
+  const { agentId, author, downloadCount, description, name, summary } = agent;
 
   return (
     <VStack gap={null}>
@@ -50,7 +50,7 @@ export function AgentFileCard(props: AgentFileCardProps) {
               color="lighter"
               light
             >
-              {description}
+              {summary}
             </Typography>
           </div>
         </VStack>

@@ -29,10 +29,13 @@ function AllAgentsSection() {
     return firstPage?.totalCount ? `${firstPage?.totalCount}` : '???';
   }, [firstPage]);
 
+  console.log(firstPage);
+
   // {/*TODO: HARDCODE FEATURED AGENTS BELOW*/}
   const featuredAgentfiles = [
     {
       description: 'string',
+      summary: 'short summary here',
       name: 'agent1',
       agentId: 'agent1',
       author: 'string',
@@ -41,6 +44,7 @@ function AllAgentsSection() {
     },
     {
       description: 'string',
+      summary: 'short summary here',
       name: 'agent2',
       agentId: 'agent2',
       author: 'string',
@@ -49,6 +53,7 @@ function AllAgentsSection() {
     },
     {
       description: 'string',
+      summary: 'short summary here',
       name: 'agent3',
       agentId: 'sagent3tring',
       author: 'string',
@@ -57,6 +62,7 @@ function AllAgentsSection() {
     },
     {
       description: 'string',
+      summary: 'short summary here',
       name: 'agent4',
       agentId: 'agent4',
       author: 'string',
