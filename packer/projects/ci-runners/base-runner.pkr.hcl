@@ -104,6 +104,7 @@ build {
       "${path.root}/scripts/install_build_tools.sh",
       "${path.root}/scripts/install_deploy_tools.sh",
       "${path.root}/scripts/install_ops_agent.sh",
+      "${path.root}/scripts/disk_cache_tuning.sh",
     ]
   }
 
