@@ -15,3 +15,6 @@
 
 // Import commands.ts using ES2015 syntax:
 import './commands';
+
+// Import utility classes for improved testing patterns
+import './utils';

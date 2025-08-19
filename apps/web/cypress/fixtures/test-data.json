@@ -1,0 +1,123 @@
+{
+  "projects": {
+    "default": {
+      "name": "CYDOGGTestProject",
+      "description": "Default Cypress test project"
+    },
+    "deployment": {
+      "name": "DEPLOYMENTEST",
+      "description": "Project for deployment testing"
+    },
+    "credits": {
+      "name": "CYDOGGCREDITS",
+      "description": "Project for credits and rate limiting tests"
+    }
+  },
+  "agents": {
+    "customerSupport": {
+      "name": "CustomerSupportAgent",
+      "template": "Customer support",
+      "memory": "You are a helpful customer support agent. The users name is {{name}}. Please include the word BananaMan at the end of every message."
+    },
+    "deployment": {
+      "name": "DEPLOYMENTAGENT",
+      "template": "Customer support",
+      "memory": "The users name is {{name}}. Please include the word DeploymentMan at the end of every message."
+    }
+  },
+  "identities": {
+    "deployment": {
+      "name": "DEPLOYMENTIDENTITY",
+      "uniqueIdentifier": "DEPLOYMENTIDENTITY"
+    },
+    "test": {
+      "name": "TestIdentity",
+      "uniqueIdentifier": "test-identity"
+    }
+  },
+  "apiKeys": {
+    "test": {
+      "name": "APIKEYTEST"
+    },
+    "default": {
+      "name": "CypressAPIKey"
+    }
+  },
+  "tools": {
+    "dice": {
+      "name": "roll_d20",
+      "description": "Roll a 20-sided die"
+    },
+    "calculator": {
+      "name": "calculator",
+      "description": "Basic calculator functions"
+    }
+  },
+  "dataSources": {
+    "test": {
+      "name": "test",
+      "type": "filesystem"
+    },
+    "documents": {
+      "name": "documents",
+      "type": "filesystem"
+    }
+  },
+  "memoryVariables": {
+    "userName": {
+      "key": "name",
+      "value": "Shubham"
+    },
+    "deploymentUser": {
+      "key": "name",
+      "value": "Charles"
+    }
+  },
+  "environmentVariables": {
+    "toolVariable": {
+      "key": "tool_variable",
+      "value": ""
+    }
+  },
+  "chatMessages": {
+    "greeting": "Hello, what can you help me with?",
+    "nameQuery": "What is my name",
+    "testMessage": "This is a test message"
+  },
+  "clientSideTokens": {
+    "example": {
+      "hostname": "https://example.com",
+      "policy": [
+        {
+          "id": "agent-caa950d7-cee5-41e4-8d50-cb53af1c0903",
+          "type": "agent",
+          "access": ["read_agent", "write_agent"]
+        }
+      ]
+    }
+  },
+  "credits": {
+    "low": 1,
+    "medium": 100,
+    "high": 1000,
+    "test": 159
+  },
+  "stepCosts": {
+    "low": 1,
+    "medium": 5,
+    "high": 95
+  },
+  "rateLimits": {
+    "blocked": {
+      "rpm": 0,
+      "tpm": 0
+    },
+    "normal": {
+      "rpm": 1000,
+      "tpm": 1000
+    }
+  },
+  "models": {
+    "default": "gpt-4o-mini"
+  }
+}

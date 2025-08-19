@@ -32,6 +32,7 @@ function DataSourceViewHeader(props: DataSourceViewHeaderProps) {
         <DataSourceSelector
           trigger={
             <Button
+              data-testid="current-folder-name"
               label={source.name}
               size="small"
               color="secondary"

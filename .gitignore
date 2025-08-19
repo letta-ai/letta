@@ -88,3 +88,6 @@ vitest.config.*.timestamp*
 
 # cloud plugins
 /apps/core/letta/plugins/production.py
+
+# Cypress cache
+apps/web/cypress/.cache/

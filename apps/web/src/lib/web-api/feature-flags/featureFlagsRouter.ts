@@ -44,7 +44,7 @@ async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
 
   if (process.env.NODE_ENV !== 'production') {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports,@typescript-eslint/no-var-requires
+
       flagOverrides = require('../../../../flag.overrides.json');
     } catch (_e) {
       // Ignore errors

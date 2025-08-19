@@ -713,7 +713,7 @@ function NavigationOverlay() {
             </VStack>
             <div
               onClick={handleCloseOnClickInside}
-              /* eslint-disable-next-line react/forbid-component-props */
+
               className={cn(
                 'fixed fade-in-10 transition-all inset-0 bg-black bg-opacity-50 z-sidebarNavOverlay',
                 open ? 'opacity-100' : 'opacity-0 pointer-events-none',
@@ -793,7 +793,7 @@ export function DashboardHeaderNavigation(
               className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
               href="https://discord.gg/letta"
             >
-              {/* eslint-disable-next-line react/forbid-component-props */}
+              { }
               <DiscordLogoMarkDynamic size="small" />
               <Typography bold>
                 {t('DashboardHeaderNavigation.supportPopover.discord.joinUs')}

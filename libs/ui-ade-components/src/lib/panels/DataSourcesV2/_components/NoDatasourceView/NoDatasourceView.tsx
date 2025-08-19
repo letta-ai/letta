@@ -17,6 +17,7 @@ export function NoDatasourceView() {
   return (
     <PanelMainContent>
       <VStack
+        data-testid="no-datasources"
         className="min-h-[200px]"
         align="center"
         justify="center"

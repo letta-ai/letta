@@ -97,6 +97,7 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   return (
     <Dialog
       isOpen
+      testId="detach-tool"
       onOpenChange={(state) => {
         if (!state) {
           onClose();
@@ -193,6 +194,7 @@ function ToolsList(props: ToolsListProps) {
                 }}
               />
               <Button
+                data-testid={`detach-tool:${tool.name}`}
                 hideLabel
                 size="xsmall"
                 color="tertiary"
