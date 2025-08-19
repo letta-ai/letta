@@ -398,6 +398,7 @@ async function flushSimulatedAgent(
       projectId: simulatedAgentRecord.projectId,
       lettaAgentsId,
       overrides: {
+        hidden: true,
         memoryVariables: simulatedAgentRecord.memoryVariables
           ? convertMemoryVariablesV1ToRecordMemoryVariables(
               simulatedAgentRecord.memoryVariables,
