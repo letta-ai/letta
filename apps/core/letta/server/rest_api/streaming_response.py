@@ -332,5 +332,5 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             )
             capture_sentry_exception(exc)
             return
-        if more_body:
+        if more_body and self._client_connected:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
