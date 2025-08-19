@@ -183,9 +183,14 @@ class AnthropicClient(LLMClientBase):
 
         # Extended Thinking
         if self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
+            thinking_budget = max(llm_config.max_reasoning_tokens, 1024)
+            if thinking_budget != llm_config.max_reasoning_tokens:
+                logger.warning(
+                    f"Max reasoning tokens must be at least 1024 for Claude. Setting max_reasoning_tokens to 1024 for model {llm_config.model}."
+                )
             data["thinking"] = {
                 "type": "enabled",
-                "budget_tokens": llm_config.max_reasoning_tokens,
+                "budget_tokens": thinking_budget,
             }
             # `temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking'
             data["temperature"] = 1.0
