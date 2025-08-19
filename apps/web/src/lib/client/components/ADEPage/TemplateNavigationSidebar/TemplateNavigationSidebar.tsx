@@ -179,7 +179,7 @@ export function TemplateSidebarInner() {
                   operator: { label: 'equals', value: 'eq' },
                   value: {
                     label: `${templateName}:latest`,
-                    value: `${templateName}:latest`,
+                    value: `${slug}/${templateName}:latest`,
                   },
                 },
               },

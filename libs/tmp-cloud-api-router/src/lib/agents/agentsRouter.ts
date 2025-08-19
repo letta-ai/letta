@@ -7,18 +7,19 @@ import {
   agentTemplates,
   db,
   deployedAgentMetadata,
-  deployedAgentTemplates,
+  lettaTemplates,
   deployedAgentVariables,
   organizationPreferences,
-  projects,
+  projects
 } from '@letta-cloud/service-database';
 import { and, eq, isNull } from 'drizzle-orm';
-import { getDeployedDeprecatedTemplateByVersion } from '@letta-cloud/utils-server';
+import { getTemplateByName } from '@letta-cloud/utils-server';
 import { LRUCache } from 'lru-cache';
 import { cloudApiRouter } from '../router';
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import type { SDKContext } from '../types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
+import { validateVersionString } from '@letta-cloud/utils-shared';
 
 type CreateAgentRequest = ServerInferRequest<
   typeof cloudContracts.agents.createAgent
@@ -447,10 +448,20 @@ async function searchDeployedAgents(
       }
 
       if (searchTerm.field === 'version') {
-        const deployedAgentTemplate = await getDeployedDeprecatedTemplateByVersion(
-          searchTerm.value,
-          getContextDataHack(req, context).organizationId,
-        );
+        const { organizationId, lettaAgentsUserId } = getContextDataHack(req, context);
+
+        if (!validateVersionString(searchTerm.value)) {
+          return;
+        }
+
+
+        const deployedAgentTemplate = await getTemplateByName({
+          versionString: searchTerm.value,
+          organizationId: organizationId,
+          lettaAgentsId: lettaAgentsUserId,
+        });
+
+
         if (!deployedAgentTemplate) {
           return;
         }
@@ -493,25 +504,21 @@ async function searchDeployedAgents(
         };
       }
 
-      const template = await db.query.deployedAgentTemplates.findFirst({
+      const template = await db.query.lettaTemplates.findFirst({
         where: and(
           eq(
-            deployedAgentTemplates.organizationId,
+            lettaTemplates.organizationId,
             getContextDataHack(req, context).organizationId,
           ),
-          eq(deployedAgentTemplates.id, templateId),
-          isNull(deployedAgentTemplates.deletedAt),
+          eq(lettaTemplates.id, templateId),
         ),
-        with: {
-          agentTemplate: true,
-        },
       });
 
-      if (!template?.agentTemplate?.name) {
+      if (!template) {
         return agent;
       }
 
-      const version = `${template.agentTemplate.name || 'unknown'}:${template.version}`;
+      const version = `${template.name || 'unknown'}:${template.version}`;
 
       idToTemplateCache.set(templateId, version);
 

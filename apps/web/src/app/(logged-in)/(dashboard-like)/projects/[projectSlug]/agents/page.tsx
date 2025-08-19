@@ -224,7 +224,7 @@ interface UseQueryDefinitionResponse {
 
 function useQueryDefinition() {
   const t = useTranslations('projects/(projectSlug)/agents/page');
-  const { id: currentProjectId } = useCurrentProject();
+  const { id: currentProjectId, slug } = useCurrentProject();
 
   const params = useSearchParams();
 
@@ -295,6 +295,7 @@ function useQueryDefinition() {
     valueType: 'id',
   });
 
+
   const handleLoadOptions = useCallback(
     async (query: string) => {
       const response =
@@ -310,12 +311,12 @@ function useQueryDefinition() {
       return [
         ...response.body.deployedAgentTemplates.map((agent) => ({
           label: `${agent.testingAgentName}:${agent.version}`,
-          value: `${agent.testingAgentName}:${agent.version}`,
+          value: `${slug}/${agent.testingAgentName}:${agent.version}`,
         })),
         { label: t('anyVersion'), value: '' },
       ];
     },
-    [currentProjectId, t],
+    [currentProjectId, t, slug],
   );
 
   const defaultTemplateSearchOptions = useMemo(() => {
@@ -326,13 +327,14 @@ function useQueryDefinition() {
     const arr = data.body.deployedAgentTemplates.map((agent) => {
       const version = `${agent.testingAgentName}:${agent.version}`;
 
-      return { label: version, value: version };
+      return { label: version, value: `${slug}/${version}` };
     });
+
 
     arr.unshift({ label: t('anyVersion'), value: '' });
 
     return arr;
-  }, [data?.body, t]);
+  }, [data?.body, slug, t]);
 
   const defaultTemplateNameOptions = useMemo(() => {
     if (!templateData?.body) {
@@ -798,6 +800,8 @@ function DeployedAgentsPage() {
 
   const filterByVersion = useCallback(
     (version: string) => {
+      const [, noProjectVersion] = version.split('/');
+
       const nextQuery = {
         root: {
           combinator: 'AND',
@@ -815,7 +819,7 @@ function DeployedAgentsPage() {
                 operator:
                   fieldDefinitions.version.queries[0].options.options[0],
                 value: {
-                  label: version,
+                  label: noProjectVersion,
                   value: version,
                 },
               },
@@ -872,7 +876,7 @@ function DeployedAgentsPage() {
               {row.original.template && (
                 <button
                   onClick={() => {
-                    filterByVersion(row.original.template || '');
+                    filterByVersion(`${currentProjectSlug}/${row.original.template || ''}`);
                   }}
                 >
                   <Badge size="small" content={row.original.template} />

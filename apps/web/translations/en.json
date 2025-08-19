@@ -198,7 +198,7 @@
       "nextStep": "Complete onboarding"
     },
     "createAgent": "Create manually",
-    "agents": "Agents",
+    "distribution": "Distribution",
     "DeploymentInstructions": {
       "title": "Distribution"
     },
