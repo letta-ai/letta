@@ -142,7 +142,7 @@ class OpenAIProvider(Provider):
         """This function is used to tune LLMConfig parameters to improve model performance."""
 
         # gpt-4o-mini has started to regress with pretty bad emoji spam loops (2025-07)
-        if "gpt-4o" in model_name or "gpt-4.1-mini" in model_name:
+        if "gpt-4o" in model_name or "gpt-4.1-mini" in model_name or model_name == "letta-free":
             llm_config.frequency_penalty = 1.0
         return llm_config
 
