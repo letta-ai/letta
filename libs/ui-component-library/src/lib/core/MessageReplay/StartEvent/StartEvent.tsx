@@ -4,7 +4,6 @@ import { Typography } from '../../Typography/Typography';
 import { EventItem } from '../../EventItem/EventItem';
 import { LettaInvaderIcon } from '../../../icons';
 import { useMemo } from 'react';
-import type { MessageCreate } from '@letta-cloud/sdk-core';
 import { Code } from '../../Code/Code';
 import { EventDurationsBadge } from '../EventDurationsBadge/EventDurationsBadge';
 
@@ -18,13 +17,17 @@ export function StartEvent(props: StartEventProps) {
 
   const t = useTranslations('components/StartEvent');
 
-  const messages: MessageCreate[] = useMemo(() => {
+  const messages = useMemo(() => {
     try {
-      return JSON.parse(
-        trace.SpanAttributes['http.request.body.messages'].replace(/'/g, '"'),
-      ) as MessageCreate[];
+      return JSON.stringify(
+        JSON.parse(
+          trace.SpanAttributes['http.request.body.messages'].replace(/'/g, '"'),
+        ),
+        null,
+        2,
+      );
     } catch (_e) {
-      return [];
+      return trace.SpanAttributes['http.request.body.messages'];
     }
   }, [trace]);
 
@@ -40,7 +43,7 @@ export function StartEvent(props: StartEventProps) {
         </Typography>
         <Code
           language="javascript"
-          code={JSON.stringify(messages, null, 2)}
+          code={messages}
           fontSize="small"
           showLineNumbers={false}
         />

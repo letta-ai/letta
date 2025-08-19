@@ -127,7 +127,6 @@ export function MessageReplay(props: MessageReplayProps) {
     return getTTFTFromTrace(traces);
   }, [traces]);
 
-  console.log(ttftDuration);
   if (!rootSpan) {
     return null;
   }
