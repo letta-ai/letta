@@ -48,8 +48,8 @@ const buttonVariants = cva(
           'bg-background-grey2 text-background-grey2-content hover:bg-background-grey2-hover border-transparent',
       },
       size: {
-        '3xsmall': 'gap-1 px-[0.5]',
-        '2xsmall': 'gap-1 px-[0.5]',
+        '3xsmall': 'gap-1 px-[0.5] text-xs',
+        '2xsmall': 'gap-1 px-[0.5] text-xs',
         xsmall:
           'px-2 py-1 h-biHeight-xs min-h-biHeight-xs text-xs font-medium gap-1',
         large:

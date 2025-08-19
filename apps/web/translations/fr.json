@@ -766,6 +766,7 @@
     "error": "Une erreur s'est produite lors de la mise à jour du modèle, veuillez réessayer ou contacter l'assistance."
   },
   "components/Messages": {
+    "traceViewer": "View message trace",
     "hiddenUserMessage": "Message utilisateur interne",
     "noParsableMessages": "Aucun message n'est disponible dans cette vue, cela est généralement dû à un manque d'actions send_message déclenchées dans votre agent, vérifiez davantage le débogage pour vérifier.",
     "imageAltText": "Image utilisateur chargée",

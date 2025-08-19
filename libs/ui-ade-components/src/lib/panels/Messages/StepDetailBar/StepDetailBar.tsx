@@ -4,6 +4,7 @@ import {
   Button,
   ChevronDownIcon,
   ChevronUpIcon,
+  CodeIcon,
   DetailedMessageView,
   EventDurationsBadge,
   HStack,
@@ -28,6 +29,7 @@ import {
 } from '@letta-cloud/utils-shared';
 import { ModifyToolBehaviorPopover } from '../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
 import { CopyMessageContentButton } from '../CopyMessageContentButton/CopyMessageContentButton';
+import { ViewMessageTrace } from '../../../ViewMessageTrace/ViewMessageTrace';
 
 interface StepDetailBarProps {
   message: AgentSimulatorMessageType;
@@ -38,7 +40,7 @@ interface StepDetailBarProps {
 export function StepDetailBar(props: StepDetailBarProps) {
   const { message, setShowDetails, showDetails } = props;
   const t = useTranslations('components/Messages');
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal, agentId } = useCurrentAgentMetaData();
 
   const { stepId, timestamp } = message;
 
@@ -116,12 +118,13 @@ export function StepDetailBar(props: StepDetailBarProps) {
               {!!message.toolName && (
                 <ModifyToolBehaviorPopover toolName={message.toolName} />
               )}
-              {message.raw && <CopyMessageContentButton message={message.raw} />}
-
+              {message.raw && (
+                <CopyMessageContentButton message={message.raw} />
+              )}
             </HStack>
           </HStack>
 
-          {stepId && <FeedbackButtons stepId={stepId}  />}
+          {stepId && <FeedbackButtons stepId={stepId} />}
         </HStack>
         <HStack gap="small" align="center">
           {stepDetails?.stop_reason === 'cancelled' && (
@@ -192,7 +195,28 @@ export function StepDetailBar(props: StepDetailBarProps) {
             className="rounded-t-md"
           >
             <DetailedMessageView stepId={stepId} />
-            <HStack justify="end" borderTop color="background-grey2">
+            <HStack
+              fullWidth
+              justify="spaceBetween"
+              borderTop
+              color="background-grey2"
+            >
+              {stepId && stepDetails?.trace_id && (
+                <ViewMessageTrace
+                  showAgentMetadata={false}
+                  agentId={agentId}
+                  trigger={
+                    <Button
+                      label={t('traceViewer')}
+                      size="xsmall"
+                      preIcon={<CodeIcon color="muted" size="auto" />}
+                      color="tertiary"
+                      _use_rarely_className="muted"
+                    />
+                  }
+                  traceId={stepDetails.trace_id}
+                />
+              )}
               <EventDurationsBadge
                 stepDuration={stepDuration}
                 llmDuration={llmDuration}
