@@ -239,7 +239,7 @@ class GoogleVertexClient(LLMClientBase):
             request_data["config"]["response_mime_type"] = "application/json"
             request_data["config"]["response_schema"] = self.get_function_call_response_schema(tools[0])
             del request_data["config"]["tools"]
-        else:
+        elif tools:
             tool_config = ToolConfig(
                 function_calling_config=FunctionCallingConfig(
                     # ANY mode forces the model to predict only function calls

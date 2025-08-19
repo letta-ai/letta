@@ -348,12 +348,9 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": summary_transcript},
         ]
-    print("messages going to summarizer:", input_messages)
     input_messages_obj = [simple_message_wrapper(msg) for msg in input_messages]
-    print("messages going to summarizer (objs):", input_messages_obj)
-
     request_data = llm_client.build_request_data(input_messages_obj, llm_config, tools=[])
-    print("request data:", request_data)
+
     # NOTE: we should disable the inner_thoughts_in_kwargs here, because we don't use it
     # I'm leaving it commented it out for now for safety but is fine assuming the var here is a copy not a reference
     # llm_config.put_inner_thoughts_in_kwargs = False
