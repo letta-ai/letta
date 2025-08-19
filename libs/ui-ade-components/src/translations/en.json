@@ -62,7 +62,19 @@
     "title": "No folders attached",
     "new": "Create new",
     "or": "or",
-    "attach": "Attach existing"
+    "attach": "Attach existing",
+    "dragAndDrop": {
+      "dropMessage": "Drop files here to upload",
+      "autoCreateMessage": "Auto-create folder and upload files"
+    },
+    "errors": {
+      "createFolderError": "Failed to create folder. Please try again.",
+      "attachFolderError": "Failed to attach folder to agent. Please try again.",
+      "uploadErrorTitle": "Upload Error"
+    },
+    "loading": {
+      "creatingFolder": "Creating folder and uploading files..."
+    }
   },
   "ADE/NetworkInspector": {
     "title": "Network Inspector",
