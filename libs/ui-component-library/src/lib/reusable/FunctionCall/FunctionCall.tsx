@@ -300,6 +300,7 @@ export function FunctionCall(props: FunctionCallProps) {
                           label={t('seeMore')}
                           color="tertiary"
                           fullWidth
+                          size="small"
                           preIcon={<ContextWindowIcon size="small" />}
                         />
                       }
