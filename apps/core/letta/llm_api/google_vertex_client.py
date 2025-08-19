@@ -255,10 +255,13 @@ class GoogleVertexClient(LLMClientBase):
         # Otherwise, use the value from max_reasoning_tokens
         if "flash" in llm_config.model:
             # Gemini flash models may fail to call tools even with FunctionCallingConfigMode.ANY if thinking is fully disabled, set to minimum to prevent tool call failure
+            thinking_budget = llm_config.max_reasoning_tokens if llm_config.enable_reasoner else self.get_thinking_budget(llm_config.model)
+            if thinking_budget <= 0:
+                logger.error(
+                    f"Thinking budget of {thinking_budget} for Gemini reasoning model {llm_config.model}, this will likely cause tool call failures"
+                )
             thinking_config = ThinkingConfig(
-                thinking_budget=(
-                    llm_config.max_reasoning_tokens if llm_config.enable_reasoner else self.get_thinking_budget(llm_config.model)
-                ),
+                thinking_budget=(thinking_budget),
             )
             request_data["config"]["thinking_config"] = thinking_config.model_dump()
 
@@ -496,6 +499,12 @@ class GoogleVertexClient(LLMClientBase):
             "required": ["name", "args"],
         }
 
+    # https://ai.google.dev/gemini-api/docs/thinking#set-budget
+    # | Model           | Default setting                                                   | Range        | Disable thinking           | Turn on dynamic thinking|
+    # |-----------------|-------------------------------------------------------------------|--------------|----------------------------|-------------------------|
+    # | 2.5 Pro         | Dynamic thinking: Model decides when and how much to think        | 128-32768    | N/A: Cannot disable        | thinkingBudget = -1     |
+    # | 2.5 Flash       | Dynamic thinking: Model decides when and how much to think        | 0-24576      | thinkingBudget = 0         | thinkingBudget = -1     |
+    # | 2.5 Flash Lite  | Model does not think                                              | 512-24576    | thinkingBudget = 0         | thinkingBudget = -1     |
     def get_thinking_budget(self, model: str) -> bool:
         if model_settings.gemini_force_minimum_thinking_budget:
             if all(substring in model for substring in ["2.5", "flash", "lite"]):
