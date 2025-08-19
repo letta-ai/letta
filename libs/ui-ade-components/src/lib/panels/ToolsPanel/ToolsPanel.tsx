@@ -2,6 +2,7 @@
 import React, { useCallback, useId, useMemo, useState } from 'react';
 import {
   Accordion,
+  Badge,
   EditIcon,
   ExternalLinkIcon,
   HStack,
@@ -21,7 +22,7 @@ import { VStack } from '@letta-cloud/ui-component-library';
 import { Dialog } from '@letta-cloud/ui-component-library';
 import { Button, PanelMainContent } from '@letta-cloud/ui-component-library';
 import { useCurrentAgent } from '../../hooks';
-import type { AgentState, ToolType } from '@letta-cloud/sdk-core';
+import type { AgentState, Tool, ToolType } from '@letta-cloud/sdk-core';
 import { useAgentsServiceDetachTool, isLettaTool } from '@letta-cloud/sdk-core';
 import { UseAgentsServiceRetrieveAgentKeyFn } from '@letta-cloud/sdk-core';
 
@@ -123,6 +124,32 @@ function RemoveToolDialog(props: RemoveToolFromAgentDialogProps) {
   );
 }
 
+// MCP Tool metadata constants for schema health status (matching backend)
+const MCP_TOOL_TAG_NAME_PREFIX = 'mcp:';
+const MCP_TOOL_METADATA_SCHEMA_STATUS = `${MCP_TOOL_TAG_NAME_PREFIX}SCHEMA_STATUS`;
+
+function getToolStrictModeInfo(tool: Tool): boolean {
+  // Check if tool has json_schema
+  if (!tool.json_schema) {
+    return false;
+  }
+
+  // Check for MCP tool metadata
+  const schemaStatus = tool.json_schema[MCP_TOOL_METADATA_SCHEMA_STATUS];
+  if (schemaStatus === 'NON_STRICT_ONLY') {
+    return true;
+  }
+
+  // Check the strict field directly
+  // If strict is explicitly false, it's non-strict
+  if (tool.json_schema.strict === false) {
+    return true;
+  }
+
+  // Default to strict compliant
+  return false;
+}
+
 interface ToolsListProps {
   search: string;
 }
@@ -166,6 +193,7 @@ function ToolsList(props: ToolsListProps) {
         const isCoreTool = isLettaTool(tool.tool_type);
         const isMCPTool = tool.tool_type === 'external_mcp';
         const isReadOnlyTool = isCoreTool || isMCPTool;
+        const isNonStrict = getToolStrictModeInfo(tool);
 
         return {
           name: tool.name || '',
@@ -181,6 +209,7 @@ function ToolsList(props: ToolsListProps) {
               sourceType={tool.source_type}
             />
           ),
+          nonStrict: isNonStrict,
           actionNode: (
             <HStack gap={false}>
               <Button
@@ -263,6 +292,7 @@ interface ParsedTool {
   icon: React.ReactNode;
   actionNode?: React.ReactNode;
   onClick?: () => void;
+  isNonStrict?: boolean;
 }
 
 interface ToolAccordionProps {
@@ -273,6 +303,7 @@ interface ToolAccordionProps {
 
 function ToolAccordion(props: ToolAccordionProps) {
   const { tools, label, defaultOpen } = props;
+  const t = useTranslations('ToolManager/SingleMCPServer');
 
   const id = useId();
 
@@ -299,7 +330,7 @@ function ToolAccordion(props: ToolAccordionProps) {
             border
             key={tool.id}
           >
-            <HStack collapseWidth flex>
+            <HStack collapseWidth flex gap="small">
               <SpecificToolIcon
                 size="xsmall"
                 toolType={tool.type}
@@ -314,6 +345,11 @@ function ToolAccordion(props: ToolAccordionProps) {
               >
                 {tool.name}
               </Typography>
+              {tool.isNonStrict && (
+                <Tooltip content={t('ServerToolsList.schemaHealth.notStrict.tooltip')}>
+                  <Badge variant="warning" size="small" content={t('ServerToolsList.schemaHealth.notStrict.label')} />
+                </Tooltip>
+              )}
             </HStack>
             <HStack>{tool.actionNode}</HStack>
           </HStack>

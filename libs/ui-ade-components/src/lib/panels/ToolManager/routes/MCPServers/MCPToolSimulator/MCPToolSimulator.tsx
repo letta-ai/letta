@@ -14,7 +14,6 @@ import {
   DataObjectIcon,
   LoadingEmptyStatusComponent,
   Badge,
-  Tooltip,
   ToolsIcon,
   RawSwitch,
 } from '@letta-cloud/ui-component-library';
@@ -63,16 +62,7 @@ function MCPToolInput(props: MCPToolInputProps) {
         </HStack>
       );
 
-      const keyBadge = (type || isRequired) ? (
-        description ? (
-          <Tooltip content={description}>
-            {keyBadgeContent}
-          </Tooltip>
-        ) : (
-          keyBadgeContent
-        )
-      ) : undefined;
-
+      const keyBadge = (type || isRequired) ? keyBadgeContent : undefined;
 
       const valuePlaceholder = description
         ? `${description}${enumValues?.length ? ` (${enumValues.join(', ')})` : ''}`
@@ -254,6 +244,8 @@ function MCPToolOutput(props: MCPToolOutputProps) {
         justify="spaceBetween"
         color="background"
         borderBottom
+        paddingTop="xsmall"
+        paddingBottom="xsmall"
         gap="text"
       >
         <HStack fullWidth align="start" justify="spaceBetween">
@@ -263,9 +255,9 @@ function MCPToolOutput(props: MCPToolOutputProps) {
               {t('ToolOutput.title')}
             </Typography>
           </HStack>
-          <VStack fullHeight align="center" paddingRight="medium" paddingTop="medium">
+          <VStack fullHeight align="center" paddingRight="large" paddingTop="small">
             <RawSwitch
-              size="small"
+              size="default"
               labelFontVariant="body2"
               label="Raw"
               checked={isRaw}

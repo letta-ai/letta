@@ -247,7 +247,7 @@ function ServerToolsList(props: ServerToolsListProps) {
                     className="flex-1 flex items-center gap-2 text-left cursor-pointer overflow-hidden min-w-0"
                   >
                     <ToolsIcon className="flex-shrink-0" />
-                    <HStack gap="medium" align="end" flex collapseWidth overflow="hidden">
+                    <HStack gap="medium" align="end" flex collapseWidth overflow="hidden" paddingRight="xsmall">
                       <Typography
                         overflow="ellipsis"
                         bold
@@ -257,16 +257,18 @@ function ServerToolsList(props: ServerToolsListProps) {
                       >
                         {tool.name}
                       </Typography>
-                      {healthBadge && (
-                        <Tooltip content={healthBadge.tooltip} asChild>
-                          <Badge
-                            content={healthBadge.label}
-                            variant={healthBadge.variant}
-                            size="small"
-                            className="flex-shrink-0"
-                          />
-                        </Tooltip>
-                      )}
+                      <VStack>
+                        {healthBadge && (
+                          <Tooltip content={healthBadge.tooltip} asChild>
+                            <Badge
+                              content={healthBadge.label}
+                              variant={healthBadge.variant}
+                              size="small"
+                              className="flex-shrink-0"
+                            />
+                          </Tooltip>
+                        )}
+                      </VStack>
                     </HStack>
                   </button>
                   <div className="flex-shrink-0">
