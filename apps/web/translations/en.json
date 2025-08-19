@@ -3152,7 +3152,8 @@
     "uploadDialog": {
       "title": "Upload File",
       "confirmText": "Upload",
-      "triggerLabel": "Upload File"
+      "triggerLabel": "Upload File",
+      "uploadingProgress": "Uploading {current} of {total} files..."
     },
     "fileType": {
       "defaultType": "Text",

@@ -73,6 +73,14 @@
     "changeFile": "更改文件",
     "removeFile": "移除文件"
   },
+  "components/MultiFileUpload": {
+    "dropFiles": "将文件拖放到此处",
+    "dropFilesHere": "在此处放置文件",
+    "maxFilesReached": "最多允许 {max} 个文件",
+    "chooseFilesText": "选择文件",
+    "changeFiles": "更改文件",
+    "removeFile": "移除文件"
+  },
   "onboarding/OnboardingSteps": {
     "step": "{currentStep} / {totalSteps}"
   },

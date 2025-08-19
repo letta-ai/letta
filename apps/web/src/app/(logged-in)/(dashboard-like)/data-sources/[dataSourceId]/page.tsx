@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   FormField,
   FormProvider,
-  SingleFileUpload,
+  MultiFileUpload,
   UploadIcon,
   useForm,
   VStack,
@@ -50,21 +50,23 @@ import {
 } from '@letta-cloud/ui-ade-components';
 
 const uploadToFormValuesSchema = z.object({
-  file: z.custom<File>((v) => v instanceof File),
+  files: z.array(z.custom<File>((v) => v instanceof File)).min(1),
 });
 
 type UploadToFormValues = z.infer<typeof uploadToFormValuesSchema>;
 
 interface UploadFileDialogProps {
   limit: number;
+  onUploadComplete?: () => void;
 }
 
-function UploadFileDialog({ limit }: UploadFileDialogProps) {
+function UploadFileDialog({ limit, onUploadComplete }: UploadFileDialogProps) {
   const t = useTranslations('data-sources/files/page');
   const dataSourceId = useCurrentDataSourceId();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
+
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: (uploadedFile) => {
       void queryClient.setQueriesData<ListSourceFilesResponse | undefined>(
@@ -94,6 +96,9 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
   const form = useForm<UploadToFormValues>({
     resolver: zodResolver(uploadToFormValuesSchema),
     mode: 'onChange',
+    defaultValues: {
+      files: [],
+    },
   });
 
   useEffect(() => {
@@ -103,13 +108,39 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
   }, [form]);
 
   const onSubmit = useCallback(
-    (values: UploadToFormValues) => {
-      mutate({
-        formData: { file: values.file },
-        sourceId: dataSourceId,
+    async (values: UploadToFormValues) => {
+      for (const file of values.files) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            mutate(
+              {
+                formData: { file },
+                sourceId: dataSourceId,
+              },
+              {
+                onSuccess: () => {
+                  resolve();
+                },
+                onError: (error) => {
+                  reject(error);
+                },
+              },
+            );
+          });
+        } catch (error) {
+          console.error('Failed to upload file:', error);
+        }
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: UseJobsServiceListActiveJobsKeyFn(),
       });
+
+      setIsDialogOpen(false);
+      form.reset({ files: [] });
+      onUploadComplete?.();
     },
-    [dataSourceId, mutate],
+    [form, mutate, dataSourceId, onUploadComplete, queryClient],
   );
 
   const [canUpdateDataSource] = useUserHasPermission(
@@ -136,12 +167,20 @@ function UploadFileDialog({ limit }: UploadFileDialogProps) {
           />
         }
       >
-        <FormField
-          render={({ field }) => (
-            <SingleFileUpload fullWidth {...field} hideLabel label="file" />
-          )}
-          name="file"
-        />
+        <VStack fullWidth gap="medium">
+          <FormField
+            render={({ field }) => (
+              <MultiFileUpload
+                fullWidth
+                {...field}
+                hideLabel
+                label="files"
+                maxFiles={10}
+              />
+            )}
+            name="files"
+          />
+        </VStack>
       </Dialog>
     </FormProvider>
   );

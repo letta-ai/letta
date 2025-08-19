@@ -1588,7 +1588,8 @@
     "uploadDialog": {
       "title": "Télécharger le fichier",
       "confirmText": "Télécharger",
-      "triggerLabel": "Télécharger le fichier"
+      "triggerLabel": "Télécharger le fichier",
+      "uploadingProgress": "Téléchargement de {current} sur {total} fichiers..."
     },
     "fileType": {
       "defaultType": "Texte",

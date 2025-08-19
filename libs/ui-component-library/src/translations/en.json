@@ -249,6 +249,14 @@
     "changeFile": "Change file",
     "removeFile": "Remove file"
   },
+  "components/MultiFileUpload": {
+    "dropFiles": "Drop files here",
+    "dropFilesHere": "Drop files here",
+    "maxFilesReached": "Maximum {max} files allowed",
+    "chooseFilesText": "Choose files",
+    "changeFiles": "Change files",
+    "removeFile": "Remove file"
+  },
   "onboarding/OnboardingSteps": {
     "step": "{currentStep} of {totalSteps}"
   },

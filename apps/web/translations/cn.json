@@ -2184,7 +2184,8 @@
     "uploadDialog": {
       "title": "上传文件",
       "confirmText": "上传",
-      "triggerLabel": "上传文件"
+      "triggerLabel": "上传文件",
+      "uploadingProgress": "正在上传 {total} 个文件中的第 {current} 个..."
     },
     "fileType": {
       "defaultType": "文本",
