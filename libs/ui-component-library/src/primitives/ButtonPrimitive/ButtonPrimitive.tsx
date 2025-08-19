@@ -16,14 +16,14 @@ function isAnchorElement(
 }
 
 function isAnchorRef(
-  ref: React.Ref<PossibleRootType>,
-): ref is React.Ref<HTMLAnchorElement> {
+  _ref: React.Ref<PossibleRootType>,
+): _ref is React.Ref<HTMLAnchorElement> {
   return true;
 }
 
 function isButtonRef(
-  ref: React.Ref<PossibleRootType>,
-): ref is React.Ref<HTMLButtonElement> {
+  _ref: React.Ref<PossibleRootType>,
+): _ref is React.Ref<HTMLButtonElement> {
   return true;
 }
 

@@ -113,10 +113,8 @@ async function getCurrentOrganizationTeamMembers(
     .innerJoin(users, eq(organizationUsers.userId, users.id))
     .where(
       and(
-        ...[
-          eq(organizationUsers.organizationId, organizationId),
-          ...(search ? [ilike(users.name, `%${search}%`)] : []),
-        ],
+        eq(organizationUsers.organizationId, organizationId),
+        ...(search ? [ilike(users.name, `%${search}%`)] : []),
       ),
     );
 

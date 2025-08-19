@@ -1,6 +1,5 @@
 import {
   type PublicUserSchemaType,
-  useFeatureFlag,
 } from '@letta-cloud/sdk-web';
 import { useViewportSize } from '@mantine/hooks';
 import { useEffect, useState } from 'react';

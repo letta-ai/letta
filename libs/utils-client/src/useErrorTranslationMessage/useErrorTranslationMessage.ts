@@ -49,5 +49,5 @@ export function useErrorTranslationMessage<T extends AppRoute>(
       message,
       errorCode: translationKey,
     };
-  }, [error]);
+  }, [error, options.messageMap]);
 }

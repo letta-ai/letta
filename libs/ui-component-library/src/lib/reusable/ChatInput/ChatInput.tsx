@@ -170,7 +170,7 @@ interface RoleSelectorProps {
 }
 
 function RoleSelector(props: RoleSelectorProps) {
-  const t = useTranslations('ui-component-library/reusable/ChatInput');
+  const _t = useTranslations('ui-component-library/reusable/ChatInput');
   const { roles, role, setRole, disabled } = props;
   const [open, setOpen] = useState(false);
 

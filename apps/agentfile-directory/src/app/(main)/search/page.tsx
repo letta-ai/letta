@@ -129,7 +129,7 @@ export default function SearchResults() {
         <VStack paddingBottom>
           {isLoadingPage ? (
             <NiceGridDisplay itemWidth="292px" itemHeight="155px">
-              {new Array(15).fill(0).map((_, index) => (
+              {Array.from({ length: 15 }, (_, index) => (
                 <Skeleton
                   /* eslint-disable-next-line react/forbid-component-props */
                   className="w-full h-[155px] aspect-[4/3] "

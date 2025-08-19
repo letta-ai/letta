@@ -1,5 +1,6 @@
 import type * as z from 'zod';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for type utility to detect any type
 declare type IsAny<T> = [any extends T ? 'true' : 'false'] extends ['true']
   ? true
   : false;
@@ -46,7 +47,7 @@ export declare type ToZod<T> =
                       ? z.ZodNumber
                       : Equals<T, Date> extends true
                         ? z.ZodDate
-                        : T extends Record<string, any>
+                        : T extends Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- Required for generic object type matching
                           ? z.ZodObject<
                               {
                                 [k in keyof T]-?: ToZod<T[k]>;

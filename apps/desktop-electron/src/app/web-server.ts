@@ -5,7 +5,7 @@
  */
 
 import { createServer } from 'http';
-import { dialog, app } from 'electron';
+import { dialog } from 'electron';
 
 let serverId: string | null;
 

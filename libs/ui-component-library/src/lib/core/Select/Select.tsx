@@ -360,7 +360,7 @@ export interface AsyncSelectProps extends BaseSelectProps {
 function AsyncSelectPrimitive(_props: AsyncSelectProps) {
   const { hideIconsOnOptions, size, ...props } = _props;
   const styles = useStyles({
-    ...(props.styleConfig || {}),
+    ...props.styleConfig,
     size: size || 'default',
   });
   const [open, setOpen] = React.useState(false);
@@ -485,7 +485,7 @@ function SelectPrimitive(_props: SelectProps) {
     ...props
   } = _props;
   const styles = useStyles({
-    ...(props.styleConfig || {}),
+    ...props.styleConfig,
     size: size || 'default',
   });
   const { isInDialog } = useDialogContext();
@@ -566,7 +566,7 @@ function SelectPrimitive(_props: SelectProps) {
 function CreatableAsyncSelectPrimitive(_props: AsyncSelectProps) {
   const { hideIconsOnOptions, size, ...props } = _props;
   const styles = useStyles({
-    ...(props.styleConfig || {}),
+    ...props.styleConfig,
     size: size || 'default',
   });
 

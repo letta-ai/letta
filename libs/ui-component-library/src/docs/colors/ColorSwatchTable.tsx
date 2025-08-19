@@ -37,9 +37,9 @@ function ColorSwatches({ colors, name, notes }: ColorSwatchesProps) {
   return (
     <tr className="">
       <td className="text-sm! font-semibold">{name}</td>
-      {Object.values({ ...baseColors, ...colors }).map((color) => (
-        <td className="text-center">
-          {color ? <ColorSwatch key={color} color={color} /> : 'N/A'}
+      {Object.values({ ...baseColors, ...colors }).map((color, index) => (
+        <td key={color || `empty-${index}`} className="text-center">
+          {color ? <ColorSwatch color={color} /> : 'N/A'}
         </td>
       ))}
       <td className="text-left">{notes}</td>

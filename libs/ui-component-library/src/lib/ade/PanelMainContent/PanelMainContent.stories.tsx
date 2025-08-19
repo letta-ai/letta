@@ -36,7 +36,7 @@ export const Primary: Story = {
           <Button key={i} color="primary" size="small" label={`Button ${i}`} />
         )),
         Nothing: [
-          <div className="bg-blue-50 w-full h-full">Panel Main Content</div>,
+          <div key="nothing" className="bg-blue-50 w-full h-full">Panel Main Content</div>,
         ],
       },
     },

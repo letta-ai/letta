@@ -1,7 +1,6 @@
 import {
   LoadingEmptyStatusComponent,
   DesktopPageLayout,
-  VStack,
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';

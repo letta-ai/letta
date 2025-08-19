@@ -159,6 +159,7 @@ function OverridesViewer(props: OverridesViewerProps) {
       {overriddenValues.map((value, index) => {
         return (
           <InlineInput
+            key={index}
             showArrow={index === 0}
             value={value.value}
             scope={value.scope}

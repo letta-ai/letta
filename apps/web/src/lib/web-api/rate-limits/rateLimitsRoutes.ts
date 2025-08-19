@@ -25,10 +25,8 @@ async function getInferenceRateLimits(
 
   const inferenceModels = await db.query.inferenceModelsMetadata.findMany({
     where: and(
-      ...[
-        ...(search ? [ilike(inferenceModelsMetadata.name, `%${search}%`)] : []),
-        isNull(inferenceModelsMetadata.disabledAt),
-      ],
+      ...(search ? [ilike(inferenceModelsMetadata.name, `%${search}%`)] : []),
+      isNull(inferenceModelsMetadata.disabledAt),
     ),
     offset,
     limit: limit + 1,
@@ -106,10 +104,8 @@ async function getEmbeddingRateLimits(
 
   const embeddings = await db.query.embeddingModelsMetadata.findMany({
     where: and(
-      ...[
-        ...(search ? [ilike(inferenceModelsMetadata.name, `%${search}%`)] : []),
-        isNull(inferenceModelsMetadata.disabledAt),
-      ],
+      ...(search ? [ilike(inferenceModelsMetadata.name, `%${search}%`)] : []),
+      isNull(inferenceModelsMetadata.disabledAt),
     ),
     offset,
     limit: limit + 1,

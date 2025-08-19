@@ -502,7 +502,7 @@ export function SearchMemoryBlocks(props: SearchMemoryBlocksProps) {
       <VStack collapseHeight ref={innerContentRef} flex>
         {isLoadingPage ? (
           <>
-            {new Array(limit).fill(0).map((_, index) => (
+            {Array.from({ length: limit }, (_, index) => (
               <Skeleton
                 /* eslint-disable-next-line react/forbid-component-props */
                 style={{ height: ELEMENT_HEIGHT }}
@@ -513,7 +513,7 @@ export function SearchMemoryBlocks(props: SearchMemoryBlocksProps) {
           </>
         ) : (
           <>
-            {new Array(limit).fill(0).map((_, index) => {
+            {Array.from({ length: limit }, (_, index) => {
               const block = currentPage?.[index];
 
               if (!block) {

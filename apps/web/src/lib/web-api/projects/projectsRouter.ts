@@ -465,7 +465,7 @@ export async function deleteProject(
     db.delete(agentTemplates).where(eq(agentTemplates.projectId, projectId)),
   );
 
-  await Promise.all([...operations]);
+  await Promise.all(operations);
 
   return {
     status: 200,

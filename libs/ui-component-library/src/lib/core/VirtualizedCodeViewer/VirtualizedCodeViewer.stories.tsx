@@ -11,7 +11,7 @@ type Story = StoryObj<typeof VirtualizedCodeViewer>;
 
 export const Primary: Story = {
   args: {
-    content: new Array(1000).fill('Hello World!').join('\n'),
+    content: Array.from({ length: 1000 }, () => 'Hello World!').join('\n'),
   },
   decorators: [
     (Story) => (

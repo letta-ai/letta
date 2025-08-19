@@ -15,14 +15,14 @@ export function useDesktopConfig() {
       setDesktopConfig(config);
       setIsLoading(false);
     });
-  }, []);
+  }, [setDesktopConfig]);
 
   const handleSetDesktopConfig = useCallback(
     async (config: DesktopConfigSchemaType) => {
       setDesktopConfig(config);
       await window.desktopConfig.save(config);
     },
-    [],
+    [setDesktopConfig],
   );
 
   return {

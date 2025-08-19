@@ -48,15 +48,13 @@ function SelectTemplate(props: SelectTemplateProps) {
   });
 
   const formatOptions = useCallback((options: PublicTemplateDetailsType[]) => {
-    return [
-      ...options.map((a) => ({
-        label: a.name,
-        value: a.name,
-        data: {
-          latestVersion: a.latest_version || '1',
-        },
-      })),
-    ];
+    return options.map((a) => ({
+      label: a.name,
+      value: a.name,
+      data: {
+        latestVersion: a.latest_version || '1',
+      },
+    }));
   }, []);
 
   const loadOptions = useCallback(

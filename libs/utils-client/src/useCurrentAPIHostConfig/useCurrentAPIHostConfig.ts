@@ -1,5 +1,4 @@
 import { useCurrentDevelopmentServerConfig } from '../useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
-import { environment } from '@letta-cloud/config-environment-variables';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
 

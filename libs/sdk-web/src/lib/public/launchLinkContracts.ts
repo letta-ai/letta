@@ -1,4 +1,3 @@
-import type { ServerInferResponses } from '@ts-rest/core';
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { AccessLevelEnumSchema } from './sharedAgentChatsContracts';

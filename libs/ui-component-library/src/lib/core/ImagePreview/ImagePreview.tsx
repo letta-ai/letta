@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { CloseIcon, DisabledByDefaultIcon } from '../../icons';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { cn } from '@letta-cloud/ui-styles';

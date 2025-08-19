@@ -82,7 +82,7 @@ const radioDotEvenMoreInnerVariants = cva('rounded-full opacity-0', {
 
 export interface RadioDotProps extends VariantProps<typeof radioDotVariants> {
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  Indicator?: HTMLElementType | any;
+  Indicator?: HTMLElementType | any; // eslint-disable-line @typescript-eslint/no-explicit-any -- Flexible component prop for custom indicators
   checked?: boolean;
 }
 

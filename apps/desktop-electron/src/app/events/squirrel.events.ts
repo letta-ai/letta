@@ -66,7 +66,7 @@ export default class SquirrelEvents {
         'close',
         () => setTimeout(app.quit, 1000),
       );
-    } catch (error) {
+    } catch (_error) {
       setTimeout(app.quit, 1000);
     }
   }

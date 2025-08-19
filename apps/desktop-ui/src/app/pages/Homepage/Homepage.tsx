@@ -2,7 +2,6 @@ import { CenterPage } from '../shared/CenterPage/CenterPage';
 import {
   LettaLoader,
   Typography,
-  VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 

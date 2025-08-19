@@ -20,12 +20,10 @@ export async function getDeployedDeprecatedTemplateByVersion(
 
   const rootAgentTemplate = await db.query.agentTemplates.findFirst({
     where: and(
-      ...[
-        eq(agentTemplates.organizationId, organizationId),
-        eq(agentTemplates.name, templateName),
-        isNull(agentTemplates.deletedAt),
-        ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
-      ],
+      eq(agentTemplates.organizationId, organizationId),
+      eq(agentTemplates.name, templateName),
+      isNull(agentTemplates.deletedAt),
+      ...(projectId ? [eq(agentTemplates.projectId, projectId)] : []),
     ),
   });
 

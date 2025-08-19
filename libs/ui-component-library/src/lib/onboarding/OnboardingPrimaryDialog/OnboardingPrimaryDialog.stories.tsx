@@ -8,7 +8,6 @@ import { HStack } from '../../framing/HStack/HStack';
 import { VStack } from '../../framing/VStack/VStack';
 import { Badge } from '../../core/Badge/Badge';
 import { OnboardingCheckbox } from '../OnboardingCheckbox/OnboardingCheckbox';
-import { OnboardingRewardElement } from '../OnboardingRewardElement/OnboardingRewardElement';
 import { LettaCoinIcon } from '../../icons';
 import { Typography } from '../../core/Typography/Typography';
 

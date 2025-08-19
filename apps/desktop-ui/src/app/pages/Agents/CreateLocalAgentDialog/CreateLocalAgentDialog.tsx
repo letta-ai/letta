@@ -94,7 +94,7 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
             ...agentState,
             memory_blocks: agentState.memory_blocks || [],
             name: nextName,
-            tools: [...(starterKit.tools || []).map((tool) => tool.name)],
+            tools: (starterKit.tools || []).map((tool) => tool.name),
             llm_config: llmModels?.[0],
             embedding_config: embeddingModels?.[0],
           },
@@ -111,11 +111,11 @@ export function CreateLocalAgentDialog(props: CreateAgentDialogProps) {
       developmentServerConfig,
       isPending,
       isSuccess,
-      t,
       createAgent,
       llmModels,
       embeddingModels,
       getAllTools,
+      navigate,
     ],
   );
 

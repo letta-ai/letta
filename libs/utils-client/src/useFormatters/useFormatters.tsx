@@ -70,14 +70,14 @@ export function useFormatters() {
     }).format(value);
   }
 
-  function formatNumber(number: number, options?: Intl.NumberFormatOptions) {
+  const formatNumber = useCallback((number: number, options?: Intl.NumberFormatOptions) => {
     return new Intl.NumberFormat(
       defaultLocal,
       options || {
         style: 'decimal',
       },
     ).format(number);
-  }
+  }, []);
 
   function formatSmallDuration(
     duration: number, // in nanoseconds

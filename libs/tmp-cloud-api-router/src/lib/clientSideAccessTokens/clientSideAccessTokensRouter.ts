@@ -8,7 +8,7 @@ import {
   generateClientSideAPIKey,
 } from '@letta-cloud/service-auth';
 import { clientSideAccessTokens, db } from '@letta-cloud/service-database';
-import { and, eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 type CreateClientSideAccessTokenRequest = ServerInferRequest<
   typeof cloudContracts.clientSideAccessTokens.createClientSideAccessToken

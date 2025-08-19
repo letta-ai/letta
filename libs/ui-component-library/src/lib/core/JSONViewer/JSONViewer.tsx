@@ -4,7 +4,7 @@ import { default as JSONPretty } from 'react-json-pretty';
 import './JSONViewer.scss';
 
 interface JSONViewerProps {
-  data: any;
+  data: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- JSONViewer accepts any JSON-serializable data
 }
 
 export function JSONViewer(props: JSONViewerProps) {

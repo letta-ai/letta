@@ -35,8 +35,6 @@ if (environment.REDIS_PASSWORD) {
   options.password = environment.REDIS_PASSWORD;
 }
 
-type GetArgsType<T> = T extends (...args: infer Args) => unknown ? Args : never;
-
 export function createRedisInstance() {
   try {
     if (!redisInstance) {

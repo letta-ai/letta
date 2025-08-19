@@ -131,9 +131,7 @@ function DeployFromTemplate(props: DeployFromTemplateProps) {
                   </VStack>
                 </Card>
               ))
-            : new Array(4)
-                .fill(null)
-                .map((_, index) => (
+            : Array.from({ length: 4 }, (_, index) => (
                   <ActionCard title="" key={index} isSkeleton />
                 ))}
         </NiceGridDisplay>

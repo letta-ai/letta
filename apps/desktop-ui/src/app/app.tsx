@@ -35,7 +35,7 @@ import { useDesktopConfig } from './hooks/useDesktopConfig/useDesktopConfig';
 
 function Sidebar() {
   const t = useTranslations('App');
-  const { desktopConfig } = useDesktopConfig();
+  const { desktopConfig: _desktopConfig } = useDesktopConfig();
   const location = useLocation();
 
   return (
@@ -135,7 +135,7 @@ export function App() {
         navigate(route);
       });
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <SetupProvider>

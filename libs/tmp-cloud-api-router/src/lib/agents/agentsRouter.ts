@@ -255,11 +255,6 @@ async function createAgent(
   };
 }
 
-interface GetValidProjectIdFromPayload {
-  organizationId: string;
-  projectId?: string | undefined;
-  projectSlug?: string;
-}
 
 type GetAgentByIdRequest = ServerInferRequest<
   typeof cloudContracts.agents.getAgentById

@@ -25,7 +25,7 @@ interface VerticalBarChartProps {
 
 function VerticalBarChart(props: VerticalBarChartProps) {
   const { chunks, setSelectedChunkId, selectedChunkId, baseId } = props;
-  const { formatTokenSize, formatNumber } = useFormatters();
+  const { formatTokenSize: _formatTokenSize, formatNumber } = useFormatters();
   const t = useTranslations();
 
   const onClickBar = useCallback(
@@ -172,41 +172,42 @@ export function VerticalDelineatedTextChunker(
   React.useEffect(() => {
     const currentRef = scrollRef.current;
 
-    if (currentRef) {
-      currentRef.addEventListener('scroll', () => {
-        if (!currentRef) {
-          return;
+    function selector() {
+      if (!currentRef) {
+        return;
+      }
+
+      const scrollTop = currentRef.scrollTop;
+      const clientHeight = currentRef.clientHeight;
+      const scrollBottom = scrollTop + clientHeight;
+
+      const firstChunk = chunks.find((c) => {
+        const chunkElement = document.getElementById(
+          `${baseId}-${c.id}-scroll`,
+        );
+        if (!chunkElement) {
+          return false;
         }
 
-        const scrollTop = currentRef.scrollTop;
-        const clientHeight = currentRef.clientHeight;
-        const scrollBottom = scrollTop + clientHeight;
+        const chunkTop = chunkElement.offsetTop;
+        const chunkBottom = chunkTop + chunkElement.clientHeight;
 
-        const firstChunk = chunks.find((c) => {
-          const chunkElement = document.getElementById(
-            `${baseId}-${c.id}-scroll`,
-          );
-          if (!chunkElement) {
-            return false;
-          }
-
-          const chunkTop = chunkElement.offsetTop;
-          const chunkBottom = chunkTop + chunkElement.clientHeight;
-
-          return chunkTop <= scrollBottom && chunkBottom >= scrollTop;
-        });
-
-        if (firstChunk) {
-          setSelectedChunkId(firstChunk.id);
-        }
+        return chunkTop <= scrollBottom && chunkBottom >= scrollTop;
       });
+
+      if (firstChunk) {
+        setSelectedChunkId(firstChunk.id);
+      }
+    }
+
+
+    if (currentRef) {
+      currentRef.addEventListener('scroll', selector);
     }
 
     return () => {
       if (currentRef) {
-        currentRef.removeEventListener('scroll', () => {
-          return;
-        });
+        currentRef.removeEventListener('scroll', selector);
       }
     };
   }, [chunks, baseId]);

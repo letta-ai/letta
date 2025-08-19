@@ -144,7 +144,7 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
     }
-  }, [userId, email, name]);
+  }, [userId, email, name, posthogClient]);
 
   return null;
 }

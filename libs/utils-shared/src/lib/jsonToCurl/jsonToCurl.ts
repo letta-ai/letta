@@ -1,7 +1,7 @@
 interface JsonToCurlArgs {
   url: string;
   headers: Record<string, string>;
-  body?: Record<string, any>;
+  body?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any -- Body can contain any JSON-serializable values
   method?: string;
 }
 

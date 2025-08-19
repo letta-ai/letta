@@ -87,7 +87,7 @@ function AllAgentsSection() {
       <Section title={t('featured')}>
         {!firstPage ? (
           <NiceGridDisplay itemWidth="292px" itemHeight="100px">
-            {new Array(4).fill(0).map((_, index) => (
+            {Array.from({ length: 4 }, (_, index) => (
               <Skeleton
                 /* eslint-disable-next-line react/forbid-component-props */
                 className="w-full h-[155px] aspect-[4/3] "
@@ -112,7 +112,7 @@ function AllAgentsSection() {
       <Section seeMoreLink="/search" count={totalCount} title={t('all')}>
         {!firstPage ? (
           <NiceGridDisplay itemWidth="292px" itemHeight="155px">
-            {new Array(15).fill(0).map((_, index) => (
+            {Array.from({ length: 15 }, (_, index) => (
               <Skeleton
                 /* eslint-disable-next-line react/forbid-component-props */
                 className="w-full h-[155px] aspect-[4/3] "

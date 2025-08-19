@@ -35,8 +35,8 @@ export const Primary: Story = {
       options: ['With Buttons', 'No Buttons'],
       mapping: {
         'With Buttons': [
-          <Button color="primary" size="small" label="Next" />,
-          <Button color="primary" size="small" label="Next" />,
+          <Button key="button1" color="primary" size="small" label="Next" />,
+          <Button key="button2" color="primary" size="small" label="Next" />,
         ],
         'No Buttons': [],
       },

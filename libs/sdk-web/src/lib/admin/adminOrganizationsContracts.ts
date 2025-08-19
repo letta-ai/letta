@@ -2,7 +2,6 @@ import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { type GenericSearch, GenericSearchSchema } from '../shared';
 import { DatabaseBillingTiers, PricingModelEnum } from '@letta-cloud/types';
-import { organizationVerifiedDomains } from '@letta-cloud/service-database';
 
 const c = initContract();
 

@@ -11,7 +11,7 @@ type Story = StoryObj<typeof Steps>;
 
 export const Primary: Story = {
   args: {
-    steps: [<div>Step 1</div>, <div>Step 2</div>],
+    steps: [<div key="step1">Step 1</div>, <div key="step2">Step 2</div>],
     currentStep: 0,
   },
   argTypes: {

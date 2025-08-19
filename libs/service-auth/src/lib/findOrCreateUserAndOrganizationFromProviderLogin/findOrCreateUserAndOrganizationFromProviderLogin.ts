@@ -279,7 +279,7 @@ async function findExistingUser(
   };
 }
 
-async function isUserInWhitelist(email: string) {
+async function _isUserInWhitelist(email: string) {
   // some hardcoding to allow letta and memgpt.ai emails bypass the whitelist
   if (isLettaEmail(email)) {
     return true;

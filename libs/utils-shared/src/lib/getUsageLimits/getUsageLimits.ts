@@ -25,7 +25,7 @@ const OneGB = 1_073_741_824; // 1024 * 1024 * 1024
 const OneHundredMB = 1024 * 1024 * 100; // 100 MB
 const TwentyFiveMB = 1024 * 1024 * 25; // 25 MB
 const FiveMB = 1024 * 1024 * 5; // 5 MB
-const OneMB = 1024 * 1024; // 1 MB
+const _OneMB = 1024 * 1024; // 1 MB
 
 const limitMap: Record<BillingTiersType, UsageLimits> = {
   enterprise: {

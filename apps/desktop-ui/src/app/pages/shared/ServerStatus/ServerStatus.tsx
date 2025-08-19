@@ -1,11 +1,9 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { HealthService } from '@letta-cloud/sdk-core';
 import {
   HStack,
   StatusIndicator,
   Typography,
 } from '@letta-cloud/ui-component-library';
-import { useEffect, useRef, useState } from 'react';
 import { useServerStatus } from '../../../hooks/useServerStatus/useServerStatus';
 
 interface ServerStatusProps {
@@ -13,7 +11,7 @@ interface ServerStatusProps {
   onDisconnect?: () => void;
 }
 
-export function ServerStatus(props: ServerStatusProps) {
+export function ServerStatus(_props: ServerStatusProps) {
   const isConnected = useServerStatus();
   const t = useTranslations('AppHeader');
 

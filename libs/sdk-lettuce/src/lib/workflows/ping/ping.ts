@@ -17,7 +17,7 @@ export async function ping(name: string): Promise<string> {
     const pong = await getPong();
 
     return `${name}: ${pong}`;
-  } catch (e) {
+  } catch (_e) {
     throw new workflow.ApplicationFailure('Failed to pong');
   }
 }

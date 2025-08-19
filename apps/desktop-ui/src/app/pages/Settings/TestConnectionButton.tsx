@@ -59,7 +59,7 @@ export function TestConnectionButton({
       } else {
         setTestingStatus('failed');
       }
-    } catch (error) {
+    } catch (_error) {
       // Network errors, connection refused, etc.
       // Still enforce minimum delay even on errors
       const elapsedTime = Date.now() - startTime;

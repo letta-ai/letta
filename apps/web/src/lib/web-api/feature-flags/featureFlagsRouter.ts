@@ -75,7 +75,7 @@ async function getFeatureFlags(): Promise<FeatureFlagsResponse> {
 
       return acc;
     },
-    {} as Record<string, any>,
+    {} as Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any -- Feature flag values can be any type
   );
 
   return {

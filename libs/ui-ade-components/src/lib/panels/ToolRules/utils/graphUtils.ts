@@ -79,9 +79,7 @@ export function getOutwardEdgeCount(
 
   const isParent = rules.some((r) => r.type === 'constrain_child_tools');
   const hasExitLoop = rules.some((r) => r.type === 'exit_loop');
-  const hasNoType =
-    rules.length === 0 ||
-    rules.every((r) => !r.type || r.type === 'continue_loop');
+  const hasNoType = rules.every((r) => !r.type || r.type === 'continue_loop');
   const constrainRule = rules.find(isChildRule);
 
   if (hasExitLoop || hasNoType) count++;
@@ -175,8 +173,7 @@ export function getControlNodeOpacity(params: {
     const focusedRules = toolGroups[focusedTool] || [];
     const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
     const hasNoType =
-      focusedRules.length === 0 ||
-      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
+            focusedRules.every((r) => !r.type || r.type === 'continue_loop');
     const isParent = focusedRules.some(
       (r) => r.type === 'constrain_child_tools',
     );
@@ -190,8 +187,7 @@ export function getControlNodeOpacity(params: {
     const focusedRules = toolGroups[focusedTool] || [];
     const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
     const hasNoType =
-      focusedRules.length === 0 ||
-      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
+            focusedRules.every((r) => !r.type || r.type === 'continue_loop');
     const isParent = focusedRules.some(
       (r) => r.type === 'constrain_child_tools',
     );
@@ -205,8 +201,7 @@ export function getControlNodeOpacity(params: {
     const focusedRules = toolGroups[focusedTool] || [];
     const hasExit = focusedRules.some((r) => r.type === 'exit_loop');
     const hasNoType =
-      focusedRules.length === 0 ||
-      focusedRules.every((r) => !r.type || r.type === 'continue_loop');
+            focusedRules.every((r) => !r.type || r.type === 'continue_loop');
 
     return hasExit || hasNoType ? NODE_OPACITY.FULL : NODE_OPACITY.DEFAULT;
   }
@@ -232,7 +227,7 @@ export function getToolNodeOpacity(params: {
     const hasMaxCount = rules.some((r) => r.type === 'max_count_per_step');
 
     // Check if tool has NO TYPE rules (truly empty or undefined types)
-    const hasNoTypeRules = rules.length === 0 || rules.every((r) => !r.type);
+    const hasNoTypeRules =  rules.every((r) => !r.type);
 
     // Check if tool ONLY has continue_loop rules and nothing else
     const hasOnlyContinue =
@@ -512,7 +507,7 @@ export function createEdgeData(
     const hasRequiredBeforeExit = rules.some(
       (r) => r.type === 'required_before_exit',
     );
-    const hasNoType = rules.length === 0 || rules.every((r) => !r.type);
+    const hasNoType =  rules.every((r) => !r.type);
 
     // AGENT → Tool connections for ALL tools (including run_first tools)
     edgeData.push({

@@ -37,6 +37,8 @@ function DownloadAgentButton(props: DownloadAgentButtonProps) {
       align="center"
       fullWidth
       bold
+      target="_blank"
+      rel="noreferrer"
       color="tertiary"
       preIcon={<DownloadIcon />}
       size="large"
@@ -83,6 +85,8 @@ export function AgentHeaderActions(props: AgentHeaderActionsProps) {
         align="center"
         fullWidth
         bold
+        target="_blank"
+        rel="noreferrer"
         size="large"
         onClick={handleUseInCloudClick}
       />

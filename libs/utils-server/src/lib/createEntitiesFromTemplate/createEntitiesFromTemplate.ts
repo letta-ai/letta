@@ -154,7 +154,7 @@ export async function createEntitiesFromTemplate(
     {
       user_id: lettaAgentsId,
     },
-  ).catch((error) => {
+  ).catch((_error) => {
     return null
   });
 

@@ -9,7 +9,7 @@ import {
   organizations,
   stepCostSchemaTable,
 } from '@letta-cloud/service-database';
-import { and, eq, gte } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import {
   accessPolicyVersionOne,
   ModelTiers,

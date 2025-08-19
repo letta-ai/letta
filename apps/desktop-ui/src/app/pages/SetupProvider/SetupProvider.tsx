@@ -165,7 +165,7 @@ function SetupDialog() {
         },
       });
     },
-    [],
+    [handleSetDesktopConfig],
   );
 
   return (
@@ -195,11 +195,13 @@ function SetupDialog() {
         <Steps
           steps={[
             <WelcomeStep
+              key="welcome"
               goToNextStep={() => {
                 setStep(1);
               }}
             />,
             <ConfigureDatabaseTypeStep
+              key="configure-db"
               goToNextStep={handleSelectDatabaseType}
             />,
           ]}

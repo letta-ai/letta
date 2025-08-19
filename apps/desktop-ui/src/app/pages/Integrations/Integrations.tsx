@@ -354,7 +354,7 @@ export function Integrations() {
 
   useEffect(() => {
     handleSave();
-  }, [settings]);
+  }, [settings, handleSave]);
 
   return (
     <DesktopPageLayout

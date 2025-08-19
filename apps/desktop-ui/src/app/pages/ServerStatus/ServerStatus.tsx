@@ -1,13 +1,11 @@
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Alert,
   Button,
   DesktopPageLayout,
   HStack,
   LettaLoader,
   LoadingEmptyStatusComponent,
   RefreshIcon,
-  TerminalIcon,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';

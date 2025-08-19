@@ -31,7 +31,7 @@ export function createPageRouter<
   PageKey extends string,
   ThisRouter extends GenericPanelRouter<PageKey>,
 >(
-  router: ThisRouter,
+  _router: ThisRouter,
   options: CreatePageRouterOptions<
     keyof ThisRouter extends string ? keyof ThisRouter : never
   >,

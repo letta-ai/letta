@@ -22,7 +22,7 @@ export function useFeatureFlag<SingleFlag extends Flag>(
   const flagData = useMemo(() => {
     try {
       return data?.body?.[flag];
-    } catch (e) {
+    } catch (_e) {
       return undefined;
     }
   }, [data, flag]);

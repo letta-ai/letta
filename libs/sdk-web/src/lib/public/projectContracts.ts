@@ -162,7 +162,7 @@ const AgentSchema = z.object({
   createdAt: z.string(),
 });
 
-const AgentsSchema = z.array(AgentSchema);
+const _AgentsSchema = z.array(AgentSchema);
 
 export type AgentType = z.infer<typeof AgentSchema>;
 

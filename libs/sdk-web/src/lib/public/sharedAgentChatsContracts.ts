@@ -1,6 +1,5 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { GenericSearchSchema } from '../shared';
 const c = initContract();
 
 export const AccessLevelEnumSchema = z.enum([

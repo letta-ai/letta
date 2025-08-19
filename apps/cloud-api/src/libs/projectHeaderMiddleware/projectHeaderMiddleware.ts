@@ -43,7 +43,7 @@ export async function projectHeaderMiddleware(
   }
 
   req.body = {
-    ...(req.body || {}),
+    ...req.body,
     project_id: project.id,
   };
 

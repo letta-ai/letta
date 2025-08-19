@@ -87,7 +87,7 @@ export async function requireProjectMiddleware(
     });
 
     req.body = {
-      ...(req.body || {}),
+      ...req.body,
       project_id: defaultProject,
     };
 

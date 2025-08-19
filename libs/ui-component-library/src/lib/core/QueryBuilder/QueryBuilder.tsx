@@ -532,7 +532,7 @@ function QueryCondition(props: QueryRowProps) {
           handleUpdateField(value?.value || '');
         }}
       />
-      {definitionType?.queries?.map((query, index) => {
+      {definitionType?.queries?.map((query, _index) => {
         return (
           <InputConstructor
             key={`${field}-${query.key}`}

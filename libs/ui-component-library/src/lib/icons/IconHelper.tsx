@@ -5,7 +5,7 @@ import * as icons from '../icons';
 export * from './index';
 
 interface IconWrapperProps {
-  Icon: any;
+  Icon: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- Generic icon component prop
   name: string;
 }
 

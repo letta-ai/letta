@@ -3,8 +3,6 @@ import { z } from 'zod';
 import { VersionedTemplateType, zodTypes } from '@letta-cloud/sdk-core';
 import type { AgentState as AgentStateType } from '@letta-cloud/sdk-core';
 import { MigrationStatus } from '@letta-cloud/sdk-cloud-api';
-import { ProjectAgentTemplateSchema } from './projectContracts';
-import { AgentTemplateSchemaResponseSchema } from '@letta-cloud/utils-shared';
 
 const c = initContract();
 

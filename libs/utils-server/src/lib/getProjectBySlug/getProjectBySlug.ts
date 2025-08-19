@@ -1,4 +1,4 @@
-import { db, organizationUsers, projects } from '@letta-cloud/service-database';
+import { db, projects } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 
 export function getProjectBySlug(slug: string, orgId: string) {

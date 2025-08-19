@@ -1,5 +1,4 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { Badge } from '../../Badge/Badge';
 import { HStack } from '../../../framing/HStack/HStack';
 import { InfoTooltip } from '../../../reusable/InfoTooltip/InfoTooltip';
 

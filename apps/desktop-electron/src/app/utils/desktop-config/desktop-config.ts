@@ -26,7 +26,7 @@ export function getDesktopConfig(): DesktopConfigSchemaType | null {
       JSON.parse(desktopConfigContent),
     );
     return desktopConfig;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

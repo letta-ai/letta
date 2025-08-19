@@ -7,6 +7,7 @@ export function BillingLink({ children }: BillingLinkProps) {
     <a
       className="underline"
       target="_blank"
+      rel="noreferrer"
       href="/settings/organization/billing"
     >
       {children}

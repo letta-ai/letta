@@ -173,7 +173,7 @@ function EditDatabaseSettingsDialog(props: EditDatabaseSettingsDialogProps) {
         connectionString: values.connectionString,
       },
     });
-  }, []);
+  }, [handleSetDesktopConfig, t]);
   return (
     <FormProvider {...form}>
       <Dialog

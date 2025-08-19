@@ -23,7 +23,7 @@ export function StartEvent(props: StartEventProps) {
       return JSON.parse(
         trace.SpanAttributes['http.request.body.messages'].replace(/'/g, '"'),
       ) as MessageCreate[];
-    } catch (e) {
+    } catch (_e) {
       return [];
     }
   }, [trace]);

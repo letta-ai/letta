@@ -790,6 +790,7 @@ export function DashboardHeaderNavigation(
             </Typography>
             <a
               target="_blank"
+              rel="noreferrer"
               className="px-3 flex justify-center items-center gap-2 py-2 text-white bg-[#7289da]"
               href="https://discord.gg/letta"
             >

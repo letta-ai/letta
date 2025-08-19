@@ -50,7 +50,7 @@ async function mainLogic(
           defaultPaymentMethod: getDefaultPaymentMethod(customer),
         };
       }
-    } catch (error) {
+    } catch (_error) {
       //
     }
   }

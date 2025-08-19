@@ -10,7 +10,7 @@ import {
   getDesktopConfig,
   saveDesktopConfig,
 } from '../utils/desktop-config/desktop-config';
-import { DesktopConfigSchemaType } from '@letta-cloud/types';
+import type { DesktopConfigSchemaType } from '@letta-cloud/types';
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -19,7 +19,7 @@ export default class ElectronEvents {
 }
 
 // Retrieve app version
-ipcMain.handle('get-app-version', (event) => {
+ipcMain.handle('get-app-version', (_event) => {
   console.log(`Fetching application version... [v${environment.version}]`);
 
   return environment.version;
@@ -31,7 +31,7 @@ ipcMain.handle('letta-config:load', () => {
   App.mainWindow.webContents.send('letta-config:receive', config);
 });
 
-ipcMain.handle('letta-config:save', (event, config) => {
+ipcMain.handle('letta-config:save', (_event, config) => {
   App.saveLettaConfig(config);
 });
 
@@ -49,7 +49,7 @@ ipcMain.handle('desktop-config:get', () => {
 
 ipcMain.handle(
   'desktop-config:save',
-  (event, payload: DesktopConfigSchemaType) => {
+  (_event, payload: DesktopConfigSchemaType) => {
     saveDesktopConfig(payload);
 
     App.restartLettaServer();
@@ -67,6 +67,6 @@ ipcMain.handle('set-to-dashboard-size', () => {
 });
 
 // Handle App termination
-ipcMain.on('quit', (event, code) => {
+ipcMain.on('quit', (_event, code) => {
   app.exit(code);
 });

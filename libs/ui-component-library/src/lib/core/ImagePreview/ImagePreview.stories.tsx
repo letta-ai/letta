@@ -160,7 +160,7 @@ export const WithCallbacks: Story = {
   },
 };
 
-function WithCallbacksStory(args: any) {
+function WithCallbacksStory(args: any) { // eslint-disable-line @typescript-eslint/no-explicit-any -- Storybook args type
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [clickCount, setClickCount] = useState(0);
 

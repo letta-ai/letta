@@ -75,7 +75,7 @@ export function LettaAgentsAPIWrapper({
         return config;
       });
     };
-  }, [baseUrl, password]);
+  }, [baseUrl, password, resetAllLettaAgentsQueryKeys]);
 
   return React.createElement(
     LettaAgentsAPIContext.Provider,

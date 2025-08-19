@@ -83,7 +83,7 @@ function ABTests() {
         flex
         overflow="hidden"
       >
-        {new Array(arraySize).fill(null).map((_, index) => {
+        {Array.from({ length: arraySize }, (_, index) => {
           const selectedTemplate = templates[index];
 
           return (

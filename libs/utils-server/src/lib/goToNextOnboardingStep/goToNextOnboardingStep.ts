@@ -1,12 +1,10 @@
 import {
   db,
-  organizationClaimedOnboardingRewards,
   userProductOnboarding,
   users,
 } from '@letta-cloud/service-database';
-import { addCreditsToOrganization } from '../addCreditsToOrganization/addCreditsToOrganization';
 import { and, eq, isNull } from 'drizzle-orm';
-import { type OnboardingStepsType, stepToRewardMap } from '@letta-cloud/types';
+import type { OnboardingStepsType } from '@letta-cloud/types';
 
 interface GoToNextOnboardingStepOptions {
   userId: string;
@@ -48,7 +46,7 @@ export async function goToNextOnboardingStep(
   const currentOnboardingSteps =
     userFromDb.userProductOnboarding?.completedSteps || [];
 
-  const claimedSteps =
+  const _claimedSteps =
     userFromDb.activeOrganization?.organizationClaimedOnboardingRewards?.map(
       (reward) => reward.rewardKey,
     ) || [];

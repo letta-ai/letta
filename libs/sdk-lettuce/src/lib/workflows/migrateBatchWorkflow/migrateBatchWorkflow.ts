@@ -1,9 +1,7 @@
 import {
-  proxyActivities,
   isCancellation,
   startChild,
 } from '@temporalio/workflow';
-import type { activities } from '../../activities';
 import type { MigrateSingleAgentPayload } from '../../types';
 import type { VersionStringWithProject } from '@letta-cloud/utils-shared';
 
@@ -98,7 +96,7 @@ export async function migrateBatchWorkflow(
         } else if (result.status === 'fulfilled' && !result.value.success) {
           console.error(
             `Agent migration failed for ${result.value.agentId} in batch ${batchNumber}:`,
-            (result.value as any).error,
+            (result.value as any).error, // eslint-disable-line @typescript-eslint/no-explicit-any -- Error object structure is dynamic
           );
         }
       }

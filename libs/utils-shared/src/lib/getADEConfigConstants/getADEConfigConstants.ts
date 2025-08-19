@@ -22,7 +22,7 @@ export function getADEConfigConstants() {
         );
 
         return output;
-      } catch (error) {
+      } catch (_error) {
         return null;
       }
     },

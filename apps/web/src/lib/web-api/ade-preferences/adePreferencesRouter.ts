@@ -44,7 +44,7 @@ async function getADEPreferences(
   return {
     status: 200,
     body: {
-      displayConfig: preferences.displayConfig as any,
+      displayConfig: preferences.displayConfig as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- Display config structure varies
     },
   };
 }

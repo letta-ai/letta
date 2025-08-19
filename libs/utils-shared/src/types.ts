@@ -8,10 +8,8 @@ import {
   LettaTemplateTypes,
 } from '@letta-cloud/sdk-core';
 import {
-  MemoryVariableVersionOne,
   ToolRulesSchema,
-  VariableStoreVersionOne,
-  VariableStoreVersionOneType
+  VariableStoreVersionOne
 } from '@letta-cloud/types';
 
 // Agent Template Schema Types

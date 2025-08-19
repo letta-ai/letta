@@ -60,7 +60,7 @@ export async function listMiddleware(
     req.query.project_id = defaultProjectId;
 
     next();
-  } catch (error) {
+  } catch (_error) {
     // If we can't get the default project, continue without setting it
     // This allows the request to proceed and potentially fail with appropriate error handling downstream
     res.status(400).json({

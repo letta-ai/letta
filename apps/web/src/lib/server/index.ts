@@ -7,7 +7,7 @@ import type { TsRestRequest } from '@ts-rest/serverless/next.cjs';
 type StreamedDataOutput = Record<string, string>;
 
 interface StreamedArgumentsParserGeneratorOptions {
-  dataTransfer?: any;
+  dataTransfer?: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- DataTransfer API has complex types
 }
 
 export interface GeneralRequestContext {

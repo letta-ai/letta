@@ -4,7 +4,7 @@ import {
   projects,
 } from '@letta-cloud/service-database';
 import { findUniqueAgentTemplateName } from '../findUniqueAgentTemplateName/findUniqueAgentTemplateName';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { createTemplateEntitiesFromAgentState } from '../createTemplateEntitiesFromAgentState/createTemplateEntitiesFromAgentState';

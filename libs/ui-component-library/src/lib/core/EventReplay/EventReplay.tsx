@@ -21,7 +21,7 @@ interface TimelineItemComponentProps {
 function TimelineItemComponent(props: TimelineItemComponentProps) {
   const { item } = props;
 
-  const { formatSmallDuration } = useFormatters();
+  const { formatSmallDuration: _formatSmallDuration } = useFormatters();
   const [showDetails, setShowDetails] = useState(false);
 
   return (

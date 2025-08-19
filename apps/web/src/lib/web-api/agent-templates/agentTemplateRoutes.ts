@@ -218,11 +218,9 @@ async function listTemplateVersions(
 
   const response = await db.query.deployedAgentTemplates.findMany({
     where: and(
-      ...[
-        eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
-        isNull(deployedAgentTemplates.deletedAt),
-        ...(versionId ? [eq(deployedAgentTemplates.id, versionId)] : []),
-      ],
+      eq(deployedAgentTemplates.agentTemplateId, agentTemplateId),
+      isNull(deployedAgentTemplates.deletedAt),
+      ...(versionId ? [eq(deployedAgentTemplates.id, versionId)] : []),
     ),
     limit: limit + 1,
     offset,

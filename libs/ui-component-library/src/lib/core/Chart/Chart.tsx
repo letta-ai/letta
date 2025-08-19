@@ -54,7 +54,7 @@ export function makeMultiValueFormattedTooltip(
 </div>`;
 }
 
-export function generateFormatter(formatFn: (value: string) => string) {
+export function generateFormatter(_formatFn: (value: string) => string) {
   return {};
 }
 

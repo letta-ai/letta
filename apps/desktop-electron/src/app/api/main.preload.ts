@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { DesktopConfigSchemaType } from '@letta-cloud/types';
+import type { DesktopConfigSchemaType } from '@letta-cloud/types';
 
 contextBridge.exposeInMainWorld('electron', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
