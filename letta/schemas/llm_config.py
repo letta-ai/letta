@@ -246,6 +246,12 @@ class LLMConfig(BaseModel):
         )
 
     @classmethod
+    def is_google_ai_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "google_ai" and (
+            config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
+        )
+
+    @classmethod
     def supports_verbosity(cls, config: "LLMConfig") -> bool:
         """Check if the model supports verbosity control."""
         return config.model_endpoint_type == "openai" and config.model.startswith("gpt-5")
@@ -276,7 +282,7 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-            elif cls.is_google_vertex_reasoning_model(config):
+            elif cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 if config.max_reasoning_tokens == 0:
