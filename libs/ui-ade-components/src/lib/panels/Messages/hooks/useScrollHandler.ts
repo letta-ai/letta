@@ -24,6 +24,9 @@ export function useScrollHandler({
   // Auto-scroll state - disabled by default, only enabled when user sends message
   const isAutoScrollEnabled = useRef(false);
 
+  // Track if we're currently loading history to prevent auto-scroll during history fetch
+  const isHistoryLoading = useRef(false);
+
   // Handle scroll events
   const handleScroll = useCallback(() => {
     if (!ref.current) return;
@@ -52,6 +55,7 @@ export function useScrollHandler({
 
       if (scrollTop <= threshold) {
         isAutoLoading.current = true;
+        isHistoryLoading.current = true; // Mark that we're loading history
 
         // tell the hook we expect to prepend and want to preserve view
         setPreserveNextPrepend(true);
@@ -59,6 +63,10 @@ export function useScrollHandler({
 
         void fetchNextPage().finally(() => {
           isAutoLoading.current = false;
+          // Keep history loading flag true for a bit to prevent immediate auto-scroll
+          setTimeout(() => {
+            isHistoryLoading.current = false;
+          }, 100);
         });
       }
     }, 50); // Much faster debounce for smoother response
@@ -91,9 +99,10 @@ export function useScrollHandler({
         mutation.type === 'childList' && mutation.addedNodes.length > 0
       );
 
-      if (hasNewContent && isAutoScrollEnabled.current) {
+      if (hasNewContent && isAutoScrollEnabled.current && !isHistoryLoading.current) {
+        // Only auto-scroll if we're not currently loading history
         // Check again immediately before scrolling to prevent race conditions
-        if (isAutoScrollEnabled.current && ref.current) {
+        if (isAutoScrollEnabled.current && ref.current && !isHistoryLoading.current) {
           ref.current.scrollTo({
             top: ref.current.scrollHeight,
             behavior: 'auto'

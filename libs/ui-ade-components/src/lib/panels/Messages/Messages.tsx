@@ -573,9 +573,7 @@ export function Messages(props: MessagesProps) {
       const messageExistingMap = new Set<string>();
 
       return [
-        ...(firstPage as AgentMessage[]).filter(
-          (v) => v.message_type === 'user_message',
-        ),
+        ...(firstPage as AgentMessage[]),
         ...(Array.isArray(res) ? res : []),
       ].filter((message) => {
         // dedupe user_message by otid or id
@@ -1298,22 +1296,11 @@ export function Messages(props: MessagesProps) {
     }
   }, [messageGroups, isPanelActive, isSendingMessage, enableAutoScroll]);
 
-  // Fix for scroll position offset when message finishes generating
-  // This ensures we scroll to bottom after StepDetailBar icons are rendered
-  useEffect(() => {
-    if (ref.current && !isSendingMessage && messageGroups.length > 0) {
-      // Small delay to allow StepDetailBar components to render
-      const timeoutId = setTimeout(() => {
-        if (ref.current) {
-          ref.current.scrollTop = ref.current.scrollHeight;
-        }
-      }, 10);
 
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }
-  }, [isSendingMessage, messageGroups.length]);
+
+
+
+
 
   const AutoLoadIndicator = useMemo(() => {
     const isLoading = (getIsAutoLoading() || isFetching) && !getHasReachedEnd();
@@ -1428,6 +1415,7 @@ export function Messages(props: MessagesProps) {
         <LoadingEmptyStatusComponent
           isLoading
           loaderFillColor="background-grey"
+          hideText
           loaderVariant="spinner"
         />
       </div>
