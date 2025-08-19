@@ -9264,7 +9264,7 @@ async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organ
     # Create the MCP server with the same URL
     created_server = await server.mcp_manager.create_mcp_server(
         PydanticMCPServer(
-            server_name=f"test_mcp_server_{") + str(uuid.uuid4().hex[:8]) + ("}",  # ensure unique name
+            server_name=f"test_mcp_server_{str(uuid.uuid4().hex[:8])}",  # ensure unique name
             server_type=MCPServerType.SSE,
             server_url=test_server_url,
             organization_id=default_organization.id,
@@ -9306,7 +9306,7 @@ async def test_oauth_sessions_with_different_url_persist(server, default_organiz
     # Create the MCP server at server_url
     created_server = await server.mcp_manager.create_mcp_server(
         PydanticMCPServer(
-            server_name=f"test_mcp_server_{") + str(uuid.uuid4().hex[:8]) + ("}",
+            server_name=f"test_mcp_server_{str(uuid.uuid4().hex[:8])}",
             server_type=MCPServerType.SSE,
             server_url=server_url,
             organization_id=default_organization.id,
@@ -9349,7 +9349,7 @@ async def test_mcp_server_creation_links_orphaned_sessions(server, default_organ
     # Create server
     created_server = await server.mcp_manager.create_mcp_server(
         PydanticMCPServer(
-            server_name=f"test_atomic_server_{") + str(uuid.uuid4().hex[:8]) + ("}",
+            server_name=f"test_atomic_server_{str(uuid.uuid4().hex[:8])}",
             server_type=MCPServerType.SSE,
             server_url=server_url,
             organization_id=default_organization.id,
@@ -9392,7 +9392,7 @@ async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, d
     # Create server
     created_server = await server.mcp_manager.create_mcp_server(
         PydanticMCPServer(
-            server_name=f"cleanup_server_{") + str(uuid.uuid4().hex[:8]) + ("}",
+            server_name=f"cleanup_server_{str(uuid.uuid4().hex[:8])}",
             server_type=MCPServerType.SSE,
             server_url=server_url,
             organization_id=default_organization.id,
