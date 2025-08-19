@@ -18,28 +18,46 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { useQueryClient } from '@tanstack/react-query';
 import { DataSourceFileUpload } from '../DataSourceFileUpload/DataSourceFileUpload';
-import { FileView } from './FileView/FileView';
-import { DEFAULT_FILE_LIMIT } from '../../../constants';
+import {
+  DEFAULT_FILE_LIMIT,
+} from '../../../constants';
+import { VirtualizedFilesContainer } from './VirtualizedFilesContainer';
 
-interface FilesViewProps {
+export interface FilesViewProps {
   sourceId: string;
+  search?: string;
 }
 
 export function FilesView(props: FilesViewProps) {
-  const { sourceId } = props;
+  const { sourceId, search = '' } = props;
 
   const t = useTranslations('ADE/DataSources/FilesView');
   const uploadT = useTranslations('ADE/EditDataSourcesPanel.NoFilesView');
-  const dropZoneRef = useRef<HTMLElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { data: files, isError } = useSourcesServiceListSourceFiles(
+  const { data: allFiles, isError } = useSourcesServiceListSourceFiles(
     {
       sourceId,
       limit: DEFAULT_FILE_LIMIT,
     },
     undefined,
   );
+
+  // Filter files based on search query
+  const files = useMemo(() => {
+    if (!allFiles) return allFiles;
+
+    if (!search.trim()) {
+      return allFiles;
+    }
+
+    const searchLower = search.toLowerCase();
+    return allFiles.filter((file) => {
+      const fileName = file.file_name?.toLowerCase() || '';
+      return fileName.includes(searchLower);
+    });
+  }, [allFiles, search]);
 
   const { mutate, error, reset } = useSourcesServiceUploadFileToSource({
     onSuccess: (uploadedFile) => {
@@ -123,7 +141,6 @@ export function FilesView(props: FilesViewProps) {
     acceptMultiple: false,
     dropZoneRef,
   });
-
   if (!files) {
     return <LoadingEmptyStatusComponent noMinHeight loaderVariant="grower" />;
   }
@@ -132,16 +149,18 @@ export function FilesView(props: FilesViewProps) {
     return <Alert title={t('error')} variant="destructive" />;
   }
 
+  const dragProps =
+    files.length > 0
+      ? {
+          onDragEnter: handleDragEnter,
+          onDragLeave: handleDragLeave,
+          onDragOver: handleDragOver,
+          onDrop: handleDrop,
+        }
+      : {};
+
   return (
-    <VStack
-      ref={dropZoneRef}
-      fullHeight
-      className="relative"
-      onDragEnter={files.length > 0 ? handleDragEnter : undefined}
-      onDragLeave={files.length > 0 ? handleDragLeave : undefined}
-      onDragOver={files.length > 0 ? handleDragOver : undefined}
-      onDrop={files.length > 0 ? handleDrop : undefined}
-    >
+    <div className="relative h-full w-full flex flex-col">
       {isDragging && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center transition-all"
@@ -159,10 +178,20 @@ export function FilesView(props: FilesViewProps) {
         </div>
       )}
 
-      {files.map((file) => (
-        <FileView key={file.id || ''} file={file} />
-      ))}
-      {files.length === 0 && <DataSourceFileUpload sourceId={sourceId} />}
+      {files.length > 0 ? (
+        <div
+          ref={dropZoneRef}
+          className="relative h-full w-full"
+          {...dragProps}
+        >
+          <VirtualizedFilesContainer
+            files={files}
+          />
+        </div>
+      ) : (
+        <DataSourceFileUpload sourceId={sourceId} />
+      )}
+
       {errorMessage && files.length > 0 && (
         <div className="bg-chip-destructive rounded-sm">
           <VStack padding="xsmall">
@@ -172,6 +201,6 @@ export function FilesView(props: FilesViewProps) {
           </VStack>
         </div>
       )}
-    </VStack>
+    </div>
   );
 }

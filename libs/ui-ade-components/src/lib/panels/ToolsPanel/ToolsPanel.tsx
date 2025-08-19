@@ -2,12 +2,10 @@
 import React, { useCallback, useId, useMemo, useState } from 'react';
 import {
   Accordion,
-  CloseIcon,
   EditIcon,
   ExternalLinkIcon,
   HStack,
   LinkOffIcon,
-  RawInput,
   RuleIcon,
   SearchIcon,
   ToolManagerIcon,
@@ -17,6 +15,7 @@ import {
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
+import { SearchOverlay } from '../../shared/SearchOverlay';
 
 import { VStack } from '@letta-cloud/ui-component-library';
 import { Dialog } from '@letta-cloud/ui-component-library';
@@ -176,7 +175,12 @@ function ToolsList(props: ToolsListProps) {
           },
           type: tool.tool_type || 'custom',
           sourceType: tool.source_type ?? undefined,
-          icon: <SpecificToolIcon toolType={tool.tool_type} sourceType={tool.source_type} />,
+          icon: (
+            <SpecificToolIcon
+              toolType={tool.tool_type}
+              sourceType={tool.source_type}
+            />
+          ),
           actionNode: (
             <HStack gap={false}>
               <Button
@@ -296,7 +300,11 @@ function ToolAccordion(props: ToolAccordionProps) {
             key={tool.id}
           >
             <HStack collapseWidth flex>
-              <SpecificToolIcon size="xsmall" toolType={tool.type} sourceType={tool.sourceType} />
+              <SpecificToolIcon
+                size="xsmall"
+                toolType={tool.type}
+                sourceType={tool.sourceType}
+              />
               <Typography
                 noWrap
                 fullWidth
@@ -412,16 +420,6 @@ function ToolUtilities(props: ToolUtilitiesProps) {
 
   const t = useTranslations('ADE/Tools');
 
-  const onKeyUpInput = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Escape') {
-        setShowSearch(false);
-        onSearchChange('');
-      }
-    },
-    [onSearchChange],
-  );
-
   return (
     <HStack
       gap="small"
@@ -431,40 +429,17 @@ function ToolUtilities(props: ToolUtilitiesProps) {
       paddingX="small"
       paddingY="xsmall"
     >
-      {showSearch && (
-        <div
-          style={{ paddingRight: '0.7rem', paddingTop: '0.1rem' }}
-          className="absolute animate-in z-[1] duration-500  top-0 left-0 px-2 w-full"
-        >
-          <HStack align="center" color="background-grey" fullWidth>
-            <RawInput
-              fullWidth
-              preIcon={<SearchIcon />}
-              variant="tertiary"
-              label={t('ToolsListPage.search.label')}
-              autoFocus
-              value={search}
-              hideLabel
-              onKeyUp={onKeyUpInput}
-              onChange={(e) => {
-                onSearchChange(e.target.value);
-              }}
-              placeholder={t('ToolsListPage.search.placeholder')}
-            />
-            <Button
-              hideLabel
-              size="xsmall"
-              color="tertiary"
-              preIcon={<CloseIcon />}
-              label={t('ToolsListPage.search.close')}
-              onClick={() => {
-                setShowSearch(false);
-                onSearchChange('');
-              }}
-            />
-          </HStack>
-        </div>
-      )}
+      <SearchOverlay
+        isVisible={showSearch}
+        value={search}
+        onChange={onSearchChange}
+        onClose={() => {
+          setShowSearch(false);
+        }}
+        placeholder={t('ToolsListPage.search.placeholder')}
+        label={t('ToolsListPage.search.label')}
+        closeLabel={t('ToolsListPage.search.close')}
+      />
       <HStack align="center">
         <Button
           label={t('ToolsListPage.openExplorer')}

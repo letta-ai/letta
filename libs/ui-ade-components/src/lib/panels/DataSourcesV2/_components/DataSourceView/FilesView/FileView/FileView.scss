@@ -1,4 +1,8 @@
 
+.fileview {
+  min-height: 66px;
+  max-height: 66px;
+}
 
 .fileview-inner, .fileview-status, .fileview-agent-status {
   position: absolute;

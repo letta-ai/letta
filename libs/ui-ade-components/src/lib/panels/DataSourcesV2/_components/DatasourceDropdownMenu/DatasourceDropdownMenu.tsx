@@ -92,10 +92,11 @@ function DetachDataSourceDialog({ source }: { source: Source }) {
 export interface DatasourceDropdownMenuProps {
   source: Source;
   trigger?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export function DatasourceDropdownMenu(props: DatasourceDropdownMenuProps) {
-  const { source, trigger } = props;
+  const { source, trigger, disabled = false } = props;
   const t = useTranslations('ADE/EditDataSourcesPanel.DatasourceDropdownMenu');
 
   return (
@@ -110,6 +111,7 @@ export function DatasourceDropdownMenu(props: DatasourceDropdownMenuProps) {
             color="tertiary"
             size="xsmall"
             hideLabel
+            disabled={disabled}
             label={t('menuLabel')}
             preIcon={<VerticalDotsIcon />}
           />

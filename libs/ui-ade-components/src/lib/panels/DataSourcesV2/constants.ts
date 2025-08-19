@@ -1,2 +1,4 @@
 export const HARDCODED_DATASOURCE_COUNT = 1000;
 export const DEFAULT_FILE_LIMIT = 1000;
+export const FILE_WINDOWING_THRESHOLD = 5;
+export const FILE_VIEW_HEIGHT = 66;

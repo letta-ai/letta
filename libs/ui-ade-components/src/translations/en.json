@@ -51,7 +51,9 @@
   },
   "ADE/DataSourceViewHeader": {
     "addFile": "Add file",
-    "selectDataSource": "View attached folders"
+    "selectDataSource": "View attached folders",
+    "searchFiles": "Search files",
+    "closeSearch": "Close file search"
   },
   "ADE/AttachMemoryBlockDialog": {
     "title": "Attach Memory Block"
@@ -2667,5 +2669,10 @@
       "default": "There was an error summarizing the conversation. Please try again."
     }
   },
-  "tokens": "tokens"
+  "tokens": "tokens",
+  "SearchOverlay": {
+    "placeholder": "Search...",
+    "label": "Search",
+    "closeLabel": "Close search"
+  }
 }
