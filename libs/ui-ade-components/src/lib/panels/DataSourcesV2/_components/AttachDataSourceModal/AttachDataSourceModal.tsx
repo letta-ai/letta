@@ -45,20 +45,8 @@ function DataSourceItem(props: DataSourceItemProps) {
             agentId: id,
           }),
         },
-        (oldData) => {
-          if (!oldData) {
-            return oldData;
-          }
-
-          return {
-            ...oldData,
-            sources: [
-              response,
-              ...oldData.sources.filter(
-                (currentSource) => currentSource.id !== response.id,
-              ),
-            ],
-          };
+        () => {
+          return response
         },
       );
 
