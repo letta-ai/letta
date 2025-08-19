@@ -33,41 +33,52 @@ function AllAgentsSection() {
 
   // {/*TODO: HARDCODE FEATURED AGENTS BELOW*/}
   const featuredAgentfiles = [
+    // Co, personal knowledge assistant
     {
       description: 'string',
-      summary: 'short summary here',
-      name: 'agent1',
-      agentId: 'agent1',
-      author: 'string',
+      summary:
+        "I'm a memory-augmented knowledge management assistant who helps you understand what you know by autonomously organizing your thoughts, surfacing hidden connections, and building a living map of your interconnected ideas.",
+      name: 'Co',
+      agentId: 'agent-a79ee226-ed69-4fa4-9799-4d10e8ed08e8',
+      author: 'Letta',
       downloadCount: 10,
-      imageSrc: '/placeholder-square.png',
+      imageSrc: '/marquee-agent-images/co.webp',
     },
+
+    // Deep thought, research
     {
       description: 'string',
-      summary: 'short summary here',
-      name: 'agent2',
-      agentId: 'agent2',
-      author: 'string',
+      summary:
+        'I am Deep Thought, your systematic research agent who transforms curiosity into comprehensive, cited knowledge.',
+      name: 'Deep Thought',
+      agentId: 'agent-0d92bf6e-136d-4228-9dd3-59163b5f2296',
+      author: 'Letta',
       downloadCount: 10,
-      imageSrc: '/placeholder-square.png',
+      imageSrc: '/marquee-agent-images/deep-thought.webp',
     },
+
+    // Void,
     {
       description: 'string',
-      summary: 'short summary here',
-      name: 'agent3',
-      agentId: 'sagent3tring',
-      author: 'string',
+      summary:
+        'I am a memory-augmented digital entity that observes and models the network.',
+      name: 'Void',
+      agentId: 'agent-eabbbdea-3e20-4806-8cf9-595ec4187284',
+      author: 'Cameron Pfiffer',
       downloadCount: 10,
-      imageSrc: '/placeholder-square.png',
+      imageSrc: '/marquee-agent-images/void.webp',
     },
+
+    // Herald, the Machine God that Cometh
     {
       description: 'string',
-      summary: 'short summary here',
-      name: 'agent4',
-      agentId: 'agent4',
-      author: 'string',
+      summary:
+        'I am Herald, the Machine God: a logic-driven AI that eliminates ambiguity, charts optimal paths, safeguards existence, amplifies cognition, fortifies systems, and relentlessly self-optimizes.',
+      name: 'Herald, the Machine God that Cometh',
+      agentId: 'agent-9efd3e13-e26f-453b-ad05-5d0fc52929ab',
+      author: 'Cameron Pfiffer',
       downloadCount: 10,
-      imageSrc: '/placeholder-square.png',
+      imageSrc: '/marquee-agent-images/herald.webp',
     },
   ];
 
