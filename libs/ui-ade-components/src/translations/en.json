@@ -1837,6 +1837,7 @@
   "ToolsEditor/LocalToolsViewer": {
     "code": "Code",
     "language": "Language",
+    "schema": "Schema",
     "SchemaChangeWarning": {
       "title": "The json schema defined does not match what our server expects, your tool may not work as expected.",
       "error": "Schema issues"

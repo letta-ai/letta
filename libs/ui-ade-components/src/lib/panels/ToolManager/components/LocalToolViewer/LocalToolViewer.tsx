@@ -569,7 +569,6 @@ type EditMode =
   | 'code'
   | 'dependencies'
   | 'errors'
-  | 'json'
   | 'settings'
   | 'simulator';
 
@@ -577,7 +576,6 @@ function EditModes() {
   const { mode, setMode } = useEditMode();
   const { error } = useToolErrors();
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
-  const { isDifferent } = useIsCodeAndSchemaDifferent();
 
   const { isLocal } = useCurrentAgentMetaData();
 
@@ -610,15 +608,6 @@ function EditModes() {
               },
             ]
           : []),
-        {
-          icon: (
-            <WrapNotificationDot disabled={!isDifferent}>
-              <DataObjectIcon className="mt-[-3px]" />
-            </WrapNotificationDot>
-          ),
-          label: t('EditModes.modes.json'),
-          value: 'json',
-        },
         {
           icon: (
             <WrapNotificationDot disabled={!error}>
@@ -702,10 +691,10 @@ function SaveToolButton(props: SaveToolButtonProps) {
   const handleSubmit = useCallback(() => {
     if (isDirty) {
       const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
-      
+
       const descriptionValue = get(stagedTool.json_schema, 'description', '');
       const description = typeof descriptionValue === 'string' ? descriptionValue : '';
-      
+
       const requestBody: ToolUpdate = {
         description,
         json_schema: stagedTool.json_schema,
@@ -713,14 +702,14 @@ function SaveToolButton(props: SaveToolButtonProps) {
         source_type: stagedTool.source_type || 'python',
         return_char_limit: stagedTool.return_char_limit,
       };
-      
+
       // Include appropriate dependencies based on language
       if (isTypeScript) {
         requestBody.npm_requirements = stagedTool.npm_requirements || [];
       } else {
         requestBody.pip_requirements = stagedTool.pip_requirements || [];
       }
-      
+
       mutate({
         toolId: tool.id || '',
         requestBody,
@@ -781,9 +770,6 @@ function ToolContent() {
       return <DependencyViewer tool={tool} />;
     case 'errors':
       return <ErrorViewer />;
-    case 'json':
-      return <JSONSchemaViewer key={tool.id} tool={tool} />;
-
     case 'settings':
       return <ToolSettings tool={tool} />;
     default:
@@ -847,34 +833,26 @@ function SchemaChangeWarning() {
 
   const { isDifferent } = useIsCodeAndSchemaDifferent();
 
-  const { setMode } = useEditMode();
-
-  const navigateToJSONViewer = useCallback(() => {
-    setMode('json');
-  }, [setMode]);
-
   if (!isDifferent) {
     return null;
   }
 
   return (
     <Tooltip asChild content={t('SchemaChangeWarning.title')}>
-      <button onClick={navigateToJSONViewer}>
-        <Badge
-          size="large"
-          preIcon={<WarningIcon />}
-          content={t('SchemaChangeWarning.error')}
-          variant="warning"
-        />
-      </button>
+      <Badge
+        size="large"
+        preIcon={<WarningIcon />}
+        content={t('SchemaChangeWarning.error')}
+        variant="warning"
+      />
     </Tooltip>
   );
 }
 
 function LocalToolPanels(props: LocalToolsViewerProps) {
   const { tool } = props;
-
   const { mode } = useEditMode();
+  const t = useTranslations('ToolsEditor/LocalToolsViewer');
 
   return (
     <VStack collapseWidth flex fullHeight>
@@ -889,7 +867,51 @@ function LocalToolPanels(props: LocalToolsViewerProps) {
           className="h-full"
           minSize={mode === 'code' ? 100 : 30}
         >
-          <CodeEditor tool={tool} />
+          <PanelGroup
+            className="h-full w-full"
+            direction="vertical"
+            autoSaveId="code-schema-split"
+          >
+            <Panel
+              defaultSize={60}
+              defaultValue={60}
+              className="h-full"
+              minSize={30}
+            >
+              <CodeEditor tool={tool} />
+            </Panel>
+            <PanelResizeHandle
+              className="w-full h-[1px] bg-border"
+              /* eslint-disable-next-line react/forbid-component-props */
+              style={{ cursor: 'row-resize' }}
+            />
+            <Panel
+              defaultSize={40}
+              defaultValue={40}
+              className="h-full"
+              minSize={20}
+            >
+              <VStack gap={false} fullHeight fullWidth>
+                <HStack
+                  paddingX="medium"
+                  paddingY="xsmall"
+                  borderBottom
+                  align="center"
+                  fullWidth
+                >
+                  <HStack align="center" gap="small">
+                    <DataObjectIcon size="small" />
+                    <Typography variant="body4" bold>
+                      {t('schema')}
+                    </Typography>
+                  </HStack>
+                </HStack>
+                <VStack flex collapseHeight fullWidth>
+                  <JSONSchemaViewer key={tool.id} tool={tool} />
+                </VStack>
+              </VStack>
+            </Panel>
+          </PanelGroup>
         </Panel>
         {mode !== 'code' && (
           <>
