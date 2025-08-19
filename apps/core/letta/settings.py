@@ -268,6 +268,7 @@ class Settings(BaseSettings):
     # experimental toggle
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
+    use_asyncio_shield: bool = True
 
     # Database pool monitoring
     enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring
