@@ -37,6 +37,7 @@ import { SpecificToolIcon } from '../ToolManager/components/SpecificToolIcon/Spe
 import { MAX_TOOLS_THRESHOLD } from './constants';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { AddToolPopover } from '../ToolManager/components/AddToolPopover/AddToolPopover';
 
 interface RemoveToolPayload {
   toolName: string;
@@ -143,6 +144,12 @@ function ToolsList(props: ToolsListProps) {
 
     return currentTools
       .filter((tool) => {
+        if (
+          tool.tool_type === 'letta_voice_sleeptime_core' ||
+          tool.tool_type === 'letta_files_core'
+        ) {
+          return false;
+        }
         if (!search) {
           return true;
         }
@@ -492,19 +499,22 @@ function ToolUtilities(props: ToolUtilitiesProps) {
           }}
         />
       </HStack>
-      <Button
-        bold
-        label={t('ToolsListPage.search.trigger')}
-        color="tertiary"
-        size="xsmall"
-        disabled={showSearch}
-        hideLabel
-        onClick={() => {
-          setShowSearch(!showSearch);
-        }}
-        active={showSearch}
-        preIcon={<SearchIcon />}
-      />
+      <HStack align="center">
+        <Button
+          bold
+          label={t('ToolsListPage.search.trigger')}
+          color="tertiary"
+          size="xsmall"
+          disabled={showSearch}
+          hideLabel
+          onClick={() => {
+            setShowSearch(!showSearch);
+          }}
+          active={showSearch}
+          preIcon={<SearchIcon />}
+        />
+        <AddToolPopover disabled={showSearch} />
+      </HStack>
     </HStack>
   );
 }

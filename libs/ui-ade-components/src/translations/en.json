@@ -2120,6 +2120,7 @@
   },
   "ADE/Tools": {
     "allTools": "Attached tools",
+    "addTool": "Add tool",
     "TooManyToolsWarning": {
       "description": "Potential tool overload",
       "tooltip": "You have {count} tools attached. Agent performance typically degrades with more than {threshold} tools. Having too many tools can make it harder for the agent to select the right tool and may increase response times. Consider removing unused tools, combining tools, or using multiple agents."
@@ -2187,7 +2188,8 @@
       },
       "error": "There was an error adding this tool, please try again or contact support.",
       "alreadyAdded": "Attached",
-      "attach": "Attach tool"
+      "attach": "Attach tool",
+      "success": "Tool successfully attached"
     },
     "EditToolWrapper": {
       "unnamed": "Unnamed tool",
