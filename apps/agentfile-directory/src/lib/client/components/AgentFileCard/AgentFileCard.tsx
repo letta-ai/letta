@@ -11,8 +11,6 @@ interface AgentFileCardProps {
 
 export function AgentFileCard(props: AgentFileCardProps) {
   const { agent, imageSrc } = props;
-
-  // NOTE: description is not currently used
   const { agentId, author, downloadCount, name, summary } = agent;
 
   return (
