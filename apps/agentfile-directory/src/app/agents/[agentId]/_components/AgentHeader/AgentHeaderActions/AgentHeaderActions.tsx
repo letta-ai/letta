@@ -7,6 +7,8 @@ import {
 import { useTranslations } from '@letta-cloud/translations';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { useEffect, useState } from 'react';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface DownloadAgentButtonProps {
   agentId: string;
@@ -18,17 +20,27 @@ function DownloadAgentButton(props: DownloadAgentButtonProps) {
 
   const t = useTranslations('pages/agent/AgentHeader.actions');
 
+  function handleDownloadClick() {
+    trackClientSideEvent(AnalyticsEvent.AGENTFILE_DOWNLOAD, {
+      agentId,
+    });
+    // Open the download link
+    window.open(
+      `${environment.NEXT_PUBLIC_CURRENT_HOST}/agentfiles/${agentId}/download/${agentName}`,
+      '_blank',
+    );
+  }
+
   return (
     <Button
       label={t('downloadAgent')}
       align="center"
       fullWidth
-      href={`${environment.NEXT_PUBLIC_CURRENT_HOST}/agentfiles/${agentId}/download/${agentName}`}
       bold
-      target="_blank"
       color="tertiary"
       preIcon={<DownloadIcon />}
       size="large"
+      onClick={handleDownloadClick}
     />
   );
 }
@@ -52,6 +64,17 @@ export function AgentHeaderActions(props: AgentHeaderActionsProps) {
     return null;
   }
 
+  function handleUseInCloudClick() {
+    trackClientSideEvent(AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD, {
+      agentId,
+    });
+    // Open the import link
+    window.open(
+      `${environment.NEXT_PUBLIC_CURRENT_HOST}/projects?import-agent=${agentId}`,
+      '_blank',
+    );
+  }
+
   return (
     <HStack>
       <DownloadAgentButton agentId={agentId} agentName={agentName} />
@@ -59,10 +82,9 @@ export function AgentHeaderActions(props: AgentHeaderActionsProps) {
         label={t('useInCloud')}
         align="center"
         fullWidth
-        href={`${environment.NEXT_PUBLIC_CURRENT_HOST}/projects?import-agent=${agentId}`}
         bold
-        target="_blank"
         size="large"
+        onClick={handleUseInCloudClick}
       />
     </HStack>
   );

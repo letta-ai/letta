@@ -309,6 +309,7 @@ export async function getAgentfileSummary(
       })),
       system: system || '',
       description: permissions.description || '',
+      summary: permissions.summary || '',
       name: permissions.name || '',
       author: organization?.name || '',
     },

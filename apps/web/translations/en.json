@@ -3179,6 +3179,7 @@
   "agentfiles/page": {
     "noAuthor": "No author",
     "name": "Name",
+    "description": "Description",
     "downloadError": "There was an error downloading the agent file, please try again or contact support.",
     "memory": "Memory Blocks",
     "system": "System Prompt",

@@ -43,6 +43,8 @@ export enum AnalyticsEvent {
   USER_ONBOARDING_RESOURCE_CLICKED = 'user_onboarding:resource_clicked',
   SKIP_USER_ONBOARDING = 'user_onboarding:skip',
   CREATE_API_KEY = 'user:create_api_key',
+  AGENTFILE_USE_IN_LETTA_CLOUD = 'agent:agentfile:use_in_letta_cloud',
+  AGENTFILE_DOWNLOAD = 'agent:agentfile:download',
 }
 
 export interface BaseProperty {
@@ -141,6 +143,9 @@ interface OnboardingResourceProperty
   extends ResourceProperty,
     OnboardingProperty {}
 
+interface AgentFileProperty {
+  agentId: string;
+}
 
 interface SendMessageFailedProperty extends MessageProperty {
   errorType: string;
@@ -189,4 +194,6 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.SKIP_USER_ONBOARDING]: OnboardingProperty;
   [AnalyticsEvent.CREATE_API_KEY]: OrganizationProperty;
   [AnalyticsEvent.SEND_MESSAGE_FAILED]: SendMessageFailedProperty;
+  [AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD]: AgentFileProperty;
+  [AnalyticsEvent.AGENTFILE_DOWNLOAD]: AgentFileProperty;
 }

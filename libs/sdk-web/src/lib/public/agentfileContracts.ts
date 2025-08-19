@@ -69,6 +69,7 @@ const GetAgentfileSummarySchema = z.object({
   system: z.string(),
   name: z.string(),
   description: z.string(),
+  summary: z.string(),
   author: z.string(),
 });
 

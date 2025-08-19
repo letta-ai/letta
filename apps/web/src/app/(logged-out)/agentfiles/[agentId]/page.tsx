@@ -11,12 +11,15 @@ import {
   Typography,
   PythonIcon,
   toast,
+  Markdown,
 } from '@letta-cloud/ui-component-library';
 import agentfileIcon from './agentfile-icon.png';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { Fragment, useCallback } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import axios from 'axios';
+import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
+import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 function useAgentId() {
   const params = useParams<{ agentId: string }>();
@@ -48,11 +51,13 @@ function getToolIcon(toolName: string) {
   }
 }
 
-interface AgentfileContentContainer {
+interface AgentfileContentContainerInterface {
   children: React.ReactNode;
 }
 
-function AgentfileContentContainer({ children }: AgentfileContentContainer) {
+function AgentfileContentContainer({
+  children,
+}: AgentfileContentContainerInterface) {
   return (
     <VStack
       // eslint-disable-next-line react/forbid-component-props
@@ -70,6 +75,10 @@ function AgentfileViewer() {
   const t = useTranslations('agentfiles/page');
 
   const handleAsyncDownload = useCallback(async () => {
+    trackClientSideEvent(AnalyticsEvent.AGENTFILE_DOWNLOAD, {
+      agentId,
+    });
+
     const downloadURL = `/api/agentfiles/${agentId}/download`;
 
     if (!agent) {
@@ -96,11 +105,18 @@ function AgentfileViewer() {
     }
   }, [agentId, t, agent]);
 
+  const handleUseInCloudClick = useCallback(() => {
+    trackClientSideEvent(AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD, {
+      agentId,
+    });
+    window.open(`/projects?import-agent=${agentId}`, '_blank');
+  }, [agentId]);
+
   if (!agent) {
     return null;
   }
 
-  const { name, author, description, memory, tools, system } = agent;
+  const { name, author, memory, tools, system, summary, description } = agent;
 
   return (
     <LoggedOutWrapper
@@ -127,12 +143,26 @@ function AgentfileViewer() {
               </Typography>
             </VStack>
             <Typography variant={'large'} light>
-              {description}
+              {summary}
             </Typography>
           </VStack>
         </HStack>
 
         <div className="text-left bg-white border-x border-b">
+          <div className="border-t">
+            <Accordion
+              id="multi-0"
+              trigger={t('description')}
+              defaultOpen={true}
+              theme={'agentfile'}
+            >
+              <AgentfileContentContainer>
+                <Typography variant="body2" light overrideEl="span">
+                  {description && <Markdown text={description} />}
+                </Typography>
+              </AgentfileContentContainer>
+            </Accordion>
+          </div>
           <div className="border-t">
             <Accordion
               id="multi-1"
@@ -196,8 +226,7 @@ function AgentfileViewer() {
         <VStack fullWidth>
           <Button
             label={t('useInLettaCloud')}
-            href={agentId ? `/projects?import-agent=${agentId}` : undefined}
-            target="_blank"
+            onClick={handleUseInCloudClick}
             align="center"
             fullWidth
             bold
