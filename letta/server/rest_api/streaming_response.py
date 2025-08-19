@@ -15,6 +15,7 @@ from letta.schemas.letta_ping import LettaPing
 from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.job_manager import JobManager
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -177,6 +178,18 @@ class StreamingResponseWithStatusCode(StreamingResponse):
     response_started: bool = False
 
     async def stream_response(self, send: Send) -> None:
+        if settings.use_asyncio_shield:
+            try:
+                await asyncio.shield(self._protected_stream_response(send))
+            except asyncio.CancelledError:
+                logger.info(f"Stream response was cancelled, but shielded task should continue")
+            except Exception as e:
+                logger.error(f"Error in protected stream response: {e}")
+                raise
+        else:
+            await self._protected_stream_response(send)
+
+    async def _protected_stream_response(self, send: Send) -> None:
         more_body = True
         try:
             first_chunk = await self.body_iterator.__anext__()
