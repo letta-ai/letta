@@ -273,13 +273,17 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": cancellation_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": cancellation_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
             return
 
         # Handle client timeouts (should throw error to inform user)
@@ -298,13 +302,17 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": error_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": error_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
             capture_sentry_exception(exc)
             return
 
@@ -323,14 +331,22 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": error_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": error_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
+
             capture_sentry_exception(exc)
             return
         if more_body and self._client_connected:
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
+            try:
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
+            except anyio.ClosedResourceError:
+                self._client_connected = False
