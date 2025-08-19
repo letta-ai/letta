@@ -327,6 +327,8 @@ export async function updateAgentFromAgentTemplateId(
       agentTemplate.properties.context_window_limit;
   }
 
+  requestBody.llm_config = nextLLMConfig;
+
   // Update the agent with the template schema
   const agent = await AgentsService.modifyAgent(
     {
