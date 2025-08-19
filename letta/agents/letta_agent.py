@@ -431,7 +431,7 @@ class LettaAgent(BaseAgent):
 
                     if step_progression <= StepProgression.RESPONSE_RECEIVED:
                         # TODO (cliandy): persist response if we get it back
-                        if settings.track_errored_messages:
+                        if settings.track_errored_messages and initial_messages:
                             for message in initial_messages:
                                 message.is_err = True
                                 message.step_id = effective_step_id
@@ -714,7 +714,7 @@ class LettaAgent(BaseAgent):
 
                     if step_progression <= StepProgression.RESPONSE_RECEIVED:
                         # TODO (cliandy): persist response if we get it back
-                        if settings.track_errored_messages:
+                        if settings.track_errored_messages and initial_messages:
                             for message in initial_messages:
                                 message.is_err = True
                                 message.step_id = effective_step_id
@@ -1109,7 +1109,7 @@ class LettaAgent(BaseAgent):
                             )
 
                     if step_progression <= StepProgression.STREAM_RECEIVED:
-                        if first_chunk and settings.track_errored_messages:
+                        if first_chunk and settings.track_errored_messages and initial_messages:
                             for message in initial_messages:
                                 message.is_err = True
                                 message.step_id = effective_step_id
