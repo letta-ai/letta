@@ -1,4 +1,4 @@
-import { AgentsService, BlocksService } from '@letta-cloud/sdk-core';
+import { AgentsService, BlocksService, LlmsService } from '@letta-cloud/sdk-core';
 import type { UpdateAgent } from '@letta-cloud/sdk-core';
 
 import {
@@ -64,10 +64,6 @@ export async function updateAgentFromAgentTemplateId(
 
   // Build the base request body from template schema
   let requestBody: UpdateAgent = {};
-
-  if (agentTemplate.model) {
-    requestBody.model = agentTemplate.model;
-  }
 
   if (agentTemplate.toolIds) {
     requestBody.tool_ids = agentTemplate.toolIds;
@@ -311,7 +307,25 @@ export async function updateAgentFromAgentTemplateId(
     };
   }
 
-  const nextLLMConfig = existingAgent.llm_config;
+  let nextLLMConfig = existingAgent.llm_config;
+
+
+  if (agentTemplate.model) {
+    const llms = await LlmsService.listModels()
+
+    const model = llms.find(
+      (model) => model.handle === agentTemplate.model,
+    );
+
+    if (!model) {
+      throw new Error(`Model ${agentTemplate.model} not found`);
+    }
+
+    nextLLMConfig = {
+      ...nextLLMConfig,
+      ...model,
+    }
+  }
 
   if (agentTemplate.properties?.max_tokens) {
     nextLLMConfig.max_tokens = agentTemplate.properties.max_tokens;
@@ -327,7 +341,9 @@ export async function updateAgentFromAgentTemplateId(
       agentTemplate.properties.context_window_limit;
   }
 
+
   requestBody.llm_config = nextLLMConfig;
+
 
   // Update the agent with the template schema
   const agent = await AgentsService.modifyAgent(
