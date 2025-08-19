@@ -15,3 +15,4 @@ export * from './LettaAgentsAPIWrapper/LettaAgentsAPIWrapper';
 export * from './useTikTokenEncoder/useTikTokenEncoder';
 export * from './useStepDuration/useStepDuration';
 export * from './useTotalTraceDuration/useTotalTraceDuration';
+export * from './disableClosingOnNetworkInspector/disableClosingOnNetworkInspector';

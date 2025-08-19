@@ -20,7 +20,7 @@ import { Tooltip } from '../Tooltip/Tooltip';
 import { Slot } from '@radix-ui/react-slot';
 import './DynamicApp.scss';
 import { atom, useAtom } from 'jotai';
-import { useSessionStorage, useViewportSize } from '@mantine/hooks';
+import { useViewportSize } from '@mantine/hooks';
 import { VStack } from '../../framing/VStack/VStack';
 
 type DynamicAppViewVariant = 'fullscreen' | 'windowed';
@@ -329,6 +329,7 @@ interface FullscreenConfiguration {
 interface DynamicAppProps {
   name: string;
   trigger?: React.ReactNode;
+  className?: string;
   defaultView?: DynamicAppViewVariant;
   windowConfiguration: WindowConfiguration;
   fullscreenConfiguration?: FullscreenConfiguration;
@@ -425,6 +426,7 @@ export function DynamicApp(props: DynamicAppProps) {
     windowConfiguration,
     fullscreenConfiguration = {},
     children,
+    className,
     name,
     isOpen: parentIsOpen,
     onOpenChange: parentOnOpenChange,
@@ -441,6 +443,8 @@ export function DynamicApp(props: DynamicAppProps) {
     }
     return localIsOpen;
   }, [parentIsOpen, localIsOpen]);
+
+
 
   const onOpenChange = useMemo(() => {
     if (parentOnOpenChange) {
@@ -496,7 +500,7 @@ export function DynamicApp(props: DynamicAppProps) {
     }
 
     return {
-      zIndex: focusedAppId === id ? 10 : 9,
+      zIndex: focusedAppId === id ? 11 : 10,
       top: `${top}px`,
       left: `${left}px`,
       width: `${width}px`,
@@ -598,6 +602,7 @@ export function DynamicApp(props: DynamicAppProps) {
     };
   }, [initializeWindowedMode, isWindowed]);
 
+
   return (
     <DialogRoot modal={false} open={isOpen} onOpenChange={onOpenChange}>
       <DialogContext.Provider
@@ -616,13 +621,14 @@ export function DynamicApp(props: DynamicAppProps) {
             )}
           />
           <DialogPrimitive.Content
+            aria-describedby="dynamicapp-content"
             onOpenAutoFocus={() => {
               initializeWindowedMode?.();
             }}
             onInteractOutside={(e) => {
-              if (isWindowed) {
-                e.preventDefault();
-              }
+
+              e.preventDefault();
+
             }}
           >
             <div id="dynamicapp-dropdown-content" className="z-dropdown" />
@@ -633,7 +639,8 @@ export function DynamicApp(props: DynamicAppProps) {
                 isFullscreen
                   ? 'left-[50%] top-[50%] transition-width transition-height max-h-[90dvh] max-w-[95vw] translate-x-[-50%] translate-y-[-50%]'
                   : '',
-                'fixed border dynamic-app  flex flex-col  w-full h-full text-base z-miniapp  duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-background',
+                className,
+                'fixed border dynamic-app  flex flex-col z-miniapp  w-full h-full text-base   duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-background',
               )}
             >
               <DynamicHeader

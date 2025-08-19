@@ -26,9 +26,11 @@ export function buildConfig(appDir: string): Config {
           miniappShadow: '8',
           miniapp: '9',
           dialog: '10',
+          networkInspector: '11',
           dropdown: '11',
           tooltip: '12',
           draggedItem: '13',
+
         },
         gap: {
           2: 'var(--default-gap)',

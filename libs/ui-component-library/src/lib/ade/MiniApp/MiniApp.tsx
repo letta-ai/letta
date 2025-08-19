@@ -3,6 +3,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@letta-cloud/ui-styles';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { DialogContext } from '../../core/Dialog/Dialog';
+import { disableClosingOnNetworkInspector } from '@letta-cloud/utils-client';
 
 interface MiniAppProps {
   children: React.ReactNode;
@@ -54,7 +55,9 @@ export function MiniApp(props: MiniAppProps) {
             )}
           />
 
-          <DialogPrimitive.Content>
+          <DialogPrimitive.Content
+            onInteractOutside={disableClosingOnNetworkInspector}
+          >
             <div id="miniapp-dropdown-content" className="z-dropdown" />
 
             <div

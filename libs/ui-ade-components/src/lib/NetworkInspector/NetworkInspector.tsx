@@ -252,25 +252,25 @@ function RequestList(props: RequestListProps) {
 export function NetworkInspector() {
   const { networkRequests } = useNetworkRequest();
 
-  const [networkInspectorOpen, setNetworkInspectorOpen] =
-    useNetworkInspectorVisibility();
-  useHotkeys([
-    [
-      adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
-      () => {
-        setNetworkInspectorOpen((prev) => ({
-          ...prev,
-          isOpen: !prev.isOpen,
-        }));
-      },
-    ],
-  ]);
+
 
   const t = useTranslations('ADE/NetworkInspector');
 
   const [networkInspectorState, setNetworkInspectorState] =
     useNetworkInspectorVisibility();
   const [, setExpandedRequestId] = useAtom(expandedRequestIdAtom);
+
+  useHotkeys([
+    [
+      adeKeyMap.OPEN_NETWORK_INSPECTOR.command,
+      () => {
+        setNetworkInspectorState((prev) => ({
+          ...prev,
+          isOpen: !prev.isOpen,
+        }));
+      },
+    ],
+  ]);
 
   React.useEffect(() => {
     const { expandRequestId } = networkInspectorState;
@@ -311,9 +311,9 @@ export function NetworkInspector() {
 
   return (
     <DynamicApp
-      isOpen={networkInspectorOpen.isOpen}
+      isOpen={networkInspectorState.isOpen}
       onOpenChange={(status) => {
-        setNetworkInspectorOpen((prev) => ({
+        setNetworkInspectorState((prev) => ({
           ...prev,
           isOpen: status,
         }));
@@ -321,6 +321,8 @@ export function NetworkInspector() {
           setExpandedRequestId(null);
         }
       }}
+      /* Network inspector should be above everything */
+      className="network-inspector pointer-events-auto"
       name={t('title')}
       windowConfiguration={{
         defaultHeight: 600,
