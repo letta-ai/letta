@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentAgent } from '../../../../hooks';
 
 const updateSourceInstructionsSchema = z.object({
-  instructions: z.string().min(1),
+  instructions: z.string(),
 });
 
 type UpdateSourceInstructionsFormValues = z.infer<
