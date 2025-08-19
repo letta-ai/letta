@@ -15303,7 +15303,7 @@
             ],
             "title": "Enable Reasoner",
             "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": false
+            "default": true
           },
           "reasoning": {
             "anyOf": [
@@ -25214,7 +25214,7 @@
             ],
             "title": "Enable Reasoner",
             "description": "Whether to enable internal extended thinking step for a reasoner model.",
-            "default": false
+            "default": true
           },
           "reasoning": {
             "anyOf": [

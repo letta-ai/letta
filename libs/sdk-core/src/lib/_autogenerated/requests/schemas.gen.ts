@@ -4320,7 +4320,7 @@ export const $CreateAgentRequest = {
       title: 'Enable Reasoner',
       description:
         'Whether to enable internal extended thinking step for a reasoner model.',
-      default: false,
+      default: true,
     },
     reasoning: {
       anyOf: [
@@ -14942,7 +14942,7 @@ export const $letta__schemas__agent_file__AgentSchema = {
       title: 'Enable Reasoner',
       description:
         'Whether to enable internal extended thinking step for a reasoner model.',
-      default: false,
+      default: true,
     },
     reasoning: {
       anyOf: [

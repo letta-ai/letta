@@ -211,7 +211,7 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
     max_reasoning_tokens: Optional[int] = Field(
         None, description="The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value."
     )
-    enable_reasoner: Optional[bool] = Field(False, description="Whether to enable internal extended thinking step for a reasoner model.")
+    enable_reasoner: Optional[bool] = Field(True, description="Whether to enable internal extended thinking step for a reasoner model.")
     reasoning: Optional[bool] = Field(None, description="Whether to enable reasoning for this agent.")
     from_template: Optional[str] = Field(None, description="The template id used to configure the agent")
     template: bool = Field(False, description="Whether the agent is a template")
