@@ -207,7 +207,6 @@ Cypress.Commands.add(
           );
         });
       } else {
-        console.log('fdsafd')
         // Create agent template once and store the slug
         cy.useDefaultProject();
         // visit default project
@@ -319,6 +318,88 @@ Cypress.Commands.add('useDefaultAgent', () => {
 Cypress.Commands.add('clearDefaultAgent', () => {
   cy.task('clearAgentId', 'CYDOGGTestAgent');
 });
+
+Cypress.Commands.add(
+  'seedDefaultProject',
+  (projectName = 'CYDOGGTestProject') => {
+    // Use caching like ensureDefaultProject but via API
+    cy.task('getProjectSlug', projectName).then((cachedSlug) => {
+      if (cachedSlug) {
+        // Project already exists in cache, no need to create
+        cy.log(`Using cached project: ${projectName} (${cachedSlug})`);
+      } else {
+        // Create project via API and cache the result
+        cy.request({
+          method: 'POST',
+          url: '/api/projects',
+          body: {
+            name: projectName,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }).then((response) => {
+          expect(response.status).to.eq(201);
+          const projectSlug = response.body.slug;
+          const projectId = response.body.id;
+          // Cache the project ID for future use
+          cy.task('setProjectSlug', { name: projectName, slug: projectSlug, id: projectId });
+          cy.log(`Created and cached project: ${projectName} (${projectId})`);
+        });
+      }
+    });
+  },
+);
+
+Cypress.Commands.add(
+  'seedDefaultAgentTemplate',
+  (templateType = 'Customer support', agentName = 'CYDOGGTestAgent') => {
+    // Use caching like ensureDefaultAgentTemplate but via API
+    cy.task('getTemplateSlug', agentName).then((cachedSlug) => {
+      if (cachedSlug) {
+        // Template already exists in cache, no need to create
+        cy.log(`Using cached template: ${agentName} (${cachedSlug})`);
+      } else {
+        // Get the project ID first
+        cy.task('getProjectId', 'CYDOGGTestProject').then((projectId) => {
+          if (!projectId) {
+            throw new Error('Project must be seeded before template');
+          }
+
+          // Map template type to starter kit ID
+          const starterKitMap = {
+            'Customer support': 'customerSupport',
+            'Personal assistant': 'personalAssistant',
+            'Companion': 'companion',
+            'Character roleplay': 'characterRoleplay',
+            'Internet chatbot': 'internetChatbot',
+            'Scratch': 'scratch',
+          };
+
+          const starterKitId = starterKitMap[templateType] || 'customerSupport';
+
+          // Create template via starter kit API
+          cy.request({
+            method: 'POST',
+            url: `/api/starter-kits/${starterKitId}/templates`,
+            body: {
+              projectId: projectId,
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }).then((response) => {
+            expect(response.status).to.eq(201);
+            const templateName = response.body.templateName;
+            // Cache the template name for future use
+            cy.task('setTemplateSlug', { name: agentName, slug: templateName });
+            cy.log(`Created and cached template: ${agentName} (${templateName})`);
+          });
+        });
+      }
+    });
+  },
+);
 
 Cypress.Commands.add('waitForInteractiveElement', (selector: string) => {
   cy.get(selector, { timeout: 30000 })

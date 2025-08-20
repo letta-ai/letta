@@ -1,7 +1,7 @@
 import { DATA_SOURCES, TOOLS } from '../support/constants';
 
 describe(
-  'Test the ADE with a template',
+  'Template Creation and Management',
   { tags: ['@ade', '@agent-templates', '@critical'] },
   () => {
     let _testData: unknown;
@@ -17,8 +17,8 @@ describe(
       cy.clearAllCachedData();
       cy.cleanupTestData();
       cy.seedTestData();
-      cy.ensureDefaultProject('CYDOGGTestProject');
-      cy.ensureDefaultAgentTemplate('Customer support', 'CYDOGGTestAgent');
+      cy.seedDefaultProject('CYDOGGTestProject');
+      cy.seedDefaultAgentTemplate('Customer support', 'CYDOGGTestAgent');
     });
 
     after(() => {
@@ -26,13 +26,64 @@ describe(
       cy.cleanupTestData();
     });
 
-    beforeEach(() => {
-      cy.googleLoginWithSession();
-      cy.useDefaultAgentTemplate();
+    describe('Template Creation', () => {
+      it(
+        'should create a new agent template via UI',
+        { tags: ['@template-creation'] },
+        () => {
+          cy.googleLoginWithSession();
+          cy.task('getProjectSlug', 'CYDOGGTestProject').then((projectSlug) => {
+            cy.visitWithDevDelay(`/projects/${projectSlug}`);
+          });
+
+          cy.testStep('Create agent template', () => {
+            cy.findAllByTestId('create-agent-template-button', {
+              timeout: 50000,
+            })
+              .first()
+              .click();
+
+            cy.findByTestId('image-card:Customer support').click();
+
+            cy.location('pathname', { timeout: 50000 }).should(
+              'match',
+              /\/projects\/(.+)\/templates\/(.+)/,
+            );
+          });
+
+          cy.testStep('Update template name', () => {
+            cy.findByTestId('update-agent-name-button', {
+              timeout: 50000
+            }).click();
+            cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
+            cy.findByTestId('update-name-dialog-update-name').type('NewTestTemplate');
+            cy.findByTestId('update-name-dialog-confirm-button').click();
+
+            cy.location('pathname', { timeout: 50000 }).should(
+              'match',
+              new RegExp('/projects/(.+)/templates/NewTestTemplate'),
+            );
+          });
+
+          cy.testStep('Verify template structure', () => {
+            cy.findAllByTestId('accordion-trigger-core-tools', {
+              timeout: 50000
+            }).first().should('exist');
+            cy.findByTestId('edit-memory-block-human-content', {
+              timeout: 50000,
+            }).should('exist');
+          });
+        },
+      );
     });
 
-    describe('Default Template State', () => {
-      it('should have attached the correct tools', () => {
+    describe('Template Editing', () => {
+      beforeEach(() => {
+        cy.googleLoginWithSession();
+        cy.useDefaultAgentTemplate();
+      });
+
+      it('should have attached the correct tools by default', () => {
         cy.testStep('Open core tools accordion', () => {
           cy.findAllByTestId('accordion-trigger-core-tools', {
             timeout: 50000,
@@ -58,9 +109,7 @@ describe(
             .and('be.visible');
         });
       });
-    });
 
-    describe('Memory Block Configuration', () => {
       it(
         'should configure memory variables',
         { tags: ['@memory-variables'] },
@@ -112,9 +161,7 @@ describe(
           });
         },
       );
-    });
 
-    describe('Memory Block Management in Advanced Editor', () => {
       it(
         'should create and delete a memory block through the advanced editor',
         { tags: ['@memory-blocks', '@advanced-editor'] },
@@ -208,9 +255,7 @@ describe(
           });
         },
       );
-    });
 
-    describe('Environment Variables', () => {
       it(
         'should manage environment variables',
         { tags: ['@environment-variables'] },
@@ -229,9 +274,7 @@ describe(
           });
         },
       );
-    });
 
-    describe('Template Deployment', () => {
       it(
         'should stage and deploy agent template',
         { tags: ['@deployment'] },
@@ -257,26 +300,30 @@ describe(
           });
 
           cy.testStep('Verify deployment via API', () => {
-            cy.request({
-              method: 'POST',
-              url: '/v1/agents',
-              body: {
-                from_template: 'CYDOGGTestAgent:latest',
-                name: 'deployedagent',
-                tags: ['test'],
-                memory_variables: {
-                  name: 'Shubham',
+            cy.location('pathname').then((pathname) => {
+              // path comes from /projects/:projectSlug/templates/:templateName/distribution
+              const templateName = pathname.split('/')[4];
+              cy.request({
+                method: 'POST',
+                url: '/v1/agents',
+                body: {
+                  from_template: `${templateName}:latest`,
+                  name: 'deployedagent',
+                  tags: ['test'],
+                  memory_variables: {
+                    name: 'Shubham',
+                  },
+                  toolVariables: {},
                 },
-                toolVariables: {},
-              },
-            }).then((response) => {
-              expect(response.body.name).eq('deployedagent');
-              expect(response.body.tags[0]).eq('test');
-              const humanBlock = response.body.memory.blocks.find(
-                (block) => block.label === 'human',
-              );
-              expect(humanBlock.value).to.contain('Shubham');
-              expect(response.status).to.eq(201);
+              }).then((response) => {
+                expect(response.body.name).eq('deployedagent');
+                expect(response.body.tags[0]).eq('test');
+                const humanBlock = response.body.memory.blocks.find(
+                  (block) => block.label === 'human',
+                );
+                expect(humanBlock.value).to.contain('Shubham');
+                expect(response.status).to.eq(201);
+              });
             });
           });
         },

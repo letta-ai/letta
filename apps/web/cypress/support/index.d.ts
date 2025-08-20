@@ -34,6 +34,8 @@ declare namespace Cypress {
     ensureDefaultAgent(agentName?: string, templateName?: string): void;
     useDefaultAgent(): void;
     clearDefaultAgent(): void;
+    seedDefaultProject(projectName?: string): void;
+    seedDefaultAgentTemplate(templateType?: string, agentName?: string): void;
     testStep(stepName: string, fn: () => void): void;
     stageAndDeployAgent(): void;
     clearAllCachedData(): void;
@@ -41,9 +43,10 @@ declare namespace Cypress {
 
     // Task types for persistent caching
     task(name: 'getProjectSlug', arg: string): Cypress.Chainable<string | null>;
+    task(name: 'getProjectId', arg: string): Cypress.Chainable<string | null>;
     task(
       name: 'setProjectSlug',
-      arg: { name: string; slug: string },
+      arg: { name: string; slug: string; id?: string },
     ): Cypress.Chainable<null>;
     task(name: 'clearProjectSlug', arg: string): Cypress.Chainable<null>;
     task(

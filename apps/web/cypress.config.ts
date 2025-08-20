@@ -28,6 +28,7 @@ function loadCache() {
   }
   return {
     projects: {},
+    projectIds: {},
     templates: {},
     agents: {},
   };
@@ -35,6 +36,7 @@ function loadCache() {
 
 interface CacheData {
   projects: Record<string, string>;
+  projectIds: Record<string, string>;
   templates: Record<string, string>;
   agents: Record<string, string>;
 }
@@ -96,17 +98,26 @@ export default defineConfig({
           return cache.projects[projectName] || null;
         },
 
-        setProjectSlug({ name, slug }: { name: string; slug: string }) {
+        setProjectSlug({ name, slug, id }: { name: string; slug: string; id?: string }) {
           const cache = loadCache();
           cache.projects[name] = slug;
+          if (id) {
+            cache.projectIds[name] = id;
+          }
           saveCache(cache);
           return null;
+        },
+
+        getProjectId(projectName: string) {
+          const cache = loadCache();
+          return cache.projectIds[projectName] || null;
         },
 
         clearProjectSlug(projectName: string) {
           const cache = loadCache();
           const { [projectName]: _, ...restProjects } = cache.projects;
-          saveCache({ ...cache, projects: restProjects });
+          const { [projectName]: __, ...restProjectIds } = cache.projectIds;
+          saveCache({ ...cache, projects: restProjects, projectIds: restProjectIds });
           return null;
         },
 
@@ -154,6 +165,7 @@ export default defineConfig({
         clearAllCache() {
           const cache = {
             projects: {},
+            projectIds: {},
             templates: {},
             agents: {},
           };
