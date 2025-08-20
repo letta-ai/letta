@@ -1284,3 +1284,32 @@ def test_file_processing_timeout_logic():
     # Test recent file
     recent_time = current_time - timedelta(minutes=10)
     assert not (recent_time < timeout_threshold), "Recent file should not trigger timeout"
+
+
+def test_letta_free_embedding(disable_pinecone, client: LettaSDKClient):
+    """Test creating a source with letta/letta-free embedding and uploading a file"""
+    # create a source with letta-free embedding
+    source = client.sources.create(name="test_letta_free_source", embedding="letta/letta-free")
+
+    # verify source was created with correct embedding
+    assert source.name == "test_letta_free_source"
+    print("\n\n\n\ntest")
+    print(source.embedding_config)
+    # assert source.embedding_config.embedding_model == "letta-free"
+
+    # upload test.txt file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # verify file was uploaded successfully
+    assert file_metadata.processing_status == "completed"
+    assert file_metadata.source_id == source.id
+    assert file_metadata.file_name == "test.txt"
+
+    # verify file appears in source files list
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].id == file_metadata.id
+
+    # cleanup
+    client.sources.delete(source_id=source.id)
