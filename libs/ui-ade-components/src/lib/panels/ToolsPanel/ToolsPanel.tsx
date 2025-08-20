@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useId, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Accordion,
   Badge,
@@ -271,11 +271,13 @@ function ToolsList(props: ToolsListProps) {
         />
       )}
       <ToolAccordion
+        id="core-tools"
         defaultOpen={false}
         label={t('ToolsList.lettaTools', { count: lettaTools.length })}
         tools={lettaTools}
       />
       <ToolAccordion
+        id="custom-tools"
         defaultOpen
         label={t('ToolsList.customTools', { count: customTools.length })}
         tools={customTools}
@@ -299,13 +301,13 @@ interface ToolAccordionProps {
   tools: ParsedTool[];
   label: string;
   defaultOpen?: boolean;
+  id: string;
 }
 
 function ToolAccordion(props: ToolAccordionProps) {
-  const { tools, label, defaultOpen } = props;
+  const { tools, label, id, defaultOpen } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
 
-  const id = useId();
 
   return (
     <Accordion
@@ -313,7 +315,7 @@ function ToolAccordion(props: ToolAccordionProps) {
       id={id}
       caretType="arrow"
       trigger={
-        <HStack data-testId="core-tools-accordion">
+        <HStack>
           <Typography variant="body3">{label}</Typography>
         </HStack>
       }

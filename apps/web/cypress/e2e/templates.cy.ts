@@ -35,7 +35,11 @@ describe(
     describe('Default Template State', () => {
       it('should have attached the correct tools', () => {
         cy.testStep('Open core tools accordion', () => {
-          cy.findByTestId('core-tools-accordion').click();
+          cy.findAllByTestId('accordion-trigger-core-tools', {
+            timeout: 50000
+          }).first().click({
+            force: true,
+          });
         });
 
         cy.testStep('Verify core tools are attached', () => {

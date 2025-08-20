@@ -62,12 +62,16 @@ function AccordionTrigger({
   ref,
   theme,
   caretType,
+  id,
   ...props
 }: AccordionTriggerProps) {
   return (
-    <AccordionPrimitive.Header className="flex">
+    <AccordionPrimitive.Header
+      className="flex">
       <AccordionPrimitive.Trigger
         ref={ref}
+        data-testid={`accordion-trigger-${id}`}
+
         className={cn(accordionTriggerVariants({ theme }), className)}
         {...props}
       >
@@ -150,7 +154,7 @@ export function Accordion({
       collapsible
     >
       <AccordionItem theme={theme} value={id}>
-        <AccordionTrigger caretType={caretType} theme={theme}>
+        <AccordionTrigger id={id} caretType={caretType} theme={theme}>
           {trigger}
         </AccordionTrigger>
         <AccordionContent theme={theme}>{children}</AccordionContent>
