@@ -33,7 +33,7 @@
       "files": ["**/*.ts", "**/*.tsx"],
       "rules": {
         "typescript/consistent-type-imports": "error",
-        "typescript/no-explicit-any": "warn",
+        "typescript/no-explicit-any": "error",
         "no-invalid-remove-event-listener": "error",
         "typescript/no-unused-vars": "error",
         "typescript/prefer-as-const": "warn",

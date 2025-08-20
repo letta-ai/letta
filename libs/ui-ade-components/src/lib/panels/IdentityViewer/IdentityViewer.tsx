@@ -5,8 +5,10 @@ import { useCurrentAgent, useCurrentAgentMetaData } from '../../hooks';
 import {
   type AgentState,
   IdentitiesService,
+  type Identity,
   useAgentsServiceModifyAgent,
   UseAgentsServiceRetrieveAgentKeyFn,
+  useIdentitiesServiceListIdentities,
   useIdentitiesServiceRetrieveIdentity,
   UseIdentitiesServiceRetrieveIdentityKeyFn,
 } from '@letta-cloud/sdk-core';
@@ -84,6 +86,43 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
     );
   }, [identityIds, mutate, queryClient, agentId]);
 
+  const mapIdentityToOption = useCallback(
+    (identity: Identity) => {
+      queryClient.setQueriesData(
+        {
+          queryKey: UseIdentitiesServiceRetrieveIdentityKeyFn({
+            identityId: identity.id || '',
+          }),
+        },
+        identity,
+      );
+
+      return {
+        label: `${identity.name}${identity.identifier_key ? ` (${identity.identifier_key})` : ''}`,
+        icon: <Avatar name={identity.name} />,
+        badge: (
+          <Badge
+            content={identityTypeToTranslationMap[identity.identity_type]}
+          />
+        ),
+        value: identity.id,
+      };
+    },
+    [queryClient, identityTypeToTranslationMap],
+  );
+
+  const { data: defaultIdentities } = useIdentitiesServiceListIdentities({
+    limit: 10,
+  });
+
+  const mappedDefaultIdentities = useMemo(() => {
+    if (!defaultIdentities) {
+      return [];
+    }
+
+    return defaultIdentities.map(mapIdentityToOption);
+  }, [defaultIdentities, mapIdentityToOption]);
+
   const searchIdentities = useCallback(
     async (query: string) => {
       const response = await IdentitiesService.listIdentities({
@@ -91,29 +130,9 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
         ...(projectId ? { projectId } : {}),
       });
 
-      return response.map((identity) => {
-        queryClient.setQueriesData(
-          {
-            queryKey: UseIdentitiesServiceRetrieveIdentityKeyFn({
-              identityId: identity.id || '',
-            }),
-          },
-          identity,
-        );
-
-        return {
-          label: `${identity.name}${identity.identifier_key ? ` (${identity.identifier_key})` : ''}`,
-          icon: <Avatar name={identity.name} />,
-          badge: (
-            <Badge
-              content={identityTypeToTranslationMap[identity.identity_type]}
-            />
-          ),
-          value: identity.id,
-        };
-      });
+      return response.map(mapIdentityToOption);
     },
-    [projectId, queryClient, identityTypeToTranslationMap],
+    [projectId, mapIdentityToOption],
   );
 
   const handleRemove = useCallback(
@@ -170,6 +189,8 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
           fullWidth
           value={[]}
           hideLabel
+          defaultOptions={mappedDefaultIdentities}
+          isLoading={!defaultIdentities}
           styleConfig={{
             size: 'large',
           }}
