@@ -312,7 +312,7 @@ class GoogleVertexClient(LLMClientBase):
                     if candidate.finish_reason == "MALFORMED_FUNCTION_CALL":
                         raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}...")
                     else:
-                        raise ValueError(f"Error in response data from LLM: {response_data}")
+                        raise ValueError(f"Error in response data from LLM: {candidate.model_dump()}")
 
                 role = content.role
                 assert role == "model", f"Unknown role in response: {role}"
