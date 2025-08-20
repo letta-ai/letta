@@ -157,7 +157,7 @@ jobs:
           USE_GKE_GCLOUD_AUTH_PLUGIN: True
         run: |
           echo "Waiting for Kubernetes deployment rollout to complete..."
-          kubectl rollout status deployment/cloud-api --timeout=600s
+          kubectl rollout status deployment/cloud-api
           echo "Deployment rollout completed successfully"
 
       - name: Update deployment status to success

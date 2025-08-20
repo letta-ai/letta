@@ -130,7 +130,7 @@ jobs:
           USE_GKE_GCLOUD_AUTH_PLUGIN: True
         run: |
           echo "Waiting for Kubernetes deployment rollout to complete..."
-          kubectl rollout status deployment/memgpt-server --timeout=800s
+          kubectl rollout status deployment/memgpt-server
           echo "Deployment rollout completed successfully"
 
   staging-tests:

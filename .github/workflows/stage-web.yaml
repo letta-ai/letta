@@ -187,5 +187,5 @@ jobs:
           USE_GKE_GCLOUD_AUTH_PLUGIN: True
         run: |
           echo "Waiting for Kubernetes deployment rollout to complete..."
-          kubectl rollout status deployment/letta-web --timeout=600s
+          kubectl rollout status deployment/letta-web
           echo "Deployment rollout completed successfully"
