@@ -105,8 +105,16 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
     return z.object({
       label: z
         .string()
-        .regex(
-          /^[a-zA-Z_-][a-zA-Z0-9_-]*$/,
+        .refine(
+          (value) => {
+            // If the label is unchanged from the original, allow it (even if it has spaces)
+            // This bypasses validation for existing labels created via SDK that contain spaces
+            if (value === memory.label) {
+              return true;
+            }
+            // For new/changed labels, apply the strict validation
+            return /^[a-zA-Z_-][a-zA-Z0-9_-]*$/.test(value);
+          },
           t('AdvancedMemoryEditorForm.label.error'),
         ),
       maxCharacters: z.coerce
@@ -117,7 +125,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
       description: z.string(),
       preserveOnMigration: z.boolean().optional(),
     });
-  }, [t]);
+  }, [t, memory.label]);
 
   type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
 
