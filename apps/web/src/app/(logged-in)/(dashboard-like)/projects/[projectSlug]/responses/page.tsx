@@ -587,7 +587,12 @@ export default function ResponsesPage() {
       return [];
     }
 
-    return data?.body.items;
+    // Sort by createdAt timestamp in descending order (newest first)
+    return data.body.items.sort((a, b) => {
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
   }, [data]);
 
   const hasNextPage = useMemo(() => {
