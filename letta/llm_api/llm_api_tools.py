@@ -246,65 +246,6 @@ def create(
 
         return response
 
-    elif llm_config.model_endpoint_type == "xai":
-        api_key = model_settings.xai_api_key
-
-        if function_call is None and functions is not None and len(functions) > 0:
-            # force function calling for reliability, see https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice
-            function_call = "required"
-
-        data = build_openai_chat_completions_request(
-            llm_config,
-            messages,
-            user_id,
-            functions,
-            function_call,
-            use_tool_naming,
-            put_inner_thoughts_first=put_inner_thoughts_first,
-            use_structured_output=False,  # NOTE: not supported atm for xAI
-        )
-
-        # Specific bug for the mini models (as of Apr 14, 2025)
-        # 400 - {'code': 'Client specified an invalid argument', 'error': 'Argument not supported on this model: presencePenalty'}
-        # 400 - {'code': 'Client specified an invalid argument', 'error': 'Argument not supported on this model: frequencyPenalty'}
-        if "grok-3-mini-" in llm_config.model:
-            data.presence_penalty = None
-            data.frequency_penalty = None
-
-        if stream:  # Client requested token streaming
-            data.stream = True
-            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
-                stream_interface, AgentRefreshStreamingInterface
-            ), type(stream_interface)
-            response = openai_chat_completions_process_stream(
-                url=llm_config.model_endpoint,
-                api_key=api_key,
-                chat_completion_request=data,
-                stream_interface=stream_interface,
-                name=name,
-                # TODO turn on to support reasoning content from xAI reasoners:
-                # https://docs.x.ai/docs/guides/reasoning#reasoning
-                expect_reasoning_content=False,
-            )
-        else:  # Client did not request token streaming (expect a blocking backend response)
-            data.stream = False
-            if isinstance(stream_interface, AgentChunkStreamingInterface):
-                stream_interface.stream_start()
-            try:
-                response = openai_chat_completions_request(
-                    url=llm_config.model_endpoint,
-                    api_key=api_key,
-                    chat_completion_request=data,
-                )
-            finally:
-                if isinstance(stream_interface, AgentChunkStreamingInterface):
-                    stream_interface.stream_end()
-
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-
-        return response
-
     elif llm_config.model_endpoint_type == "groq":
         if stream:
             raise NotImplementedError("Streaming not yet implemented for Groq.")

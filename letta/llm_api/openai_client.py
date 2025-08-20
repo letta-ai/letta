@@ -146,6 +146,9 @@ class OpenAIClient(LLMClientBase):
     def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
         return requires_auto_tool_choice(llm_config)
 
+    def supports_structured_output(self, llm_config: LLMConfig) -> bool:
+        return supports_structured_output(llm_config)
+
     @trace_method
     def build_request_data(
         self,
