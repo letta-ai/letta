@@ -4976,6 +4976,7 @@ export const DuplicateFileHandling = z.union([
   z.literal('skip'),
   z.literal('error'),
   z.literal('suffix'),
+  z.literal('replace'),
 ]);
 
 export type DynamicManagerUpdate = z.infer<typeof DynamicManagerUpdate>;
@@ -8521,7 +8522,12 @@ export const post_Upload_file_to_source = {
   parameters: z.object({
     query: z.object({
       duplicate_handling: z
-        .union([z.literal('skip'), z.literal('error'), z.literal('suffix')])
+        .union([
+          z.literal('skip'),
+          z.literal('error'),
+          z.literal('suffix'),
+          z.literal('replace'),
+        ])
         .optional(),
     }),
     path: z.object({
@@ -8794,7 +8800,12 @@ export const post_Upload_file_to_folder = {
   parameters: z.object({
     query: z.object({
       duplicate_handling: z
-        .union([z.literal('skip'), z.literal('error'), z.literal('suffix')])
+        .union([
+          z.literal('skip'),
+          z.literal('error'),
+          z.literal('suffix'),
+          z.literal('replace'),
+        ])
         .optional(),
     }),
     path: z.object({

@@ -4758,7 +4758,7 @@ export const $CustomFormatText = {
 
 export const $DuplicateFileHandling = {
   type: 'string',
-  enum: ['skip', 'error', 'suffix'],
+  enum: ['skip', 'error', 'suffix', 'replace'],
   title: 'DuplicateFileHandling',
   description: 'How to handle duplicate filenames when uploading files',
 } as const;

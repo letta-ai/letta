@@ -270,18 +270,21 @@ async def upload_file_to_folder(
             )
         elif duplicate_handling == DuplicateFileHandling.SKIP:
             # Return existing file metadata with custom header to indicate it was skipped
-            from fastapi import Response
-
             response = Response(
                 content=existing_file.model_dump_json(), media_type="application/json", headers={"X-Upload-Result": "skipped"}
             )
             return response
-        # For SUFFIX, continue to generate unique filename
+        elif duplicate_handling == DuplicateFileHandling.REPLACE:
+            # delete the file
+            deleted_file = await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
+            unique_filename = original_filename
 
-    # Generate unique filename (adds suffix if needed)
-    unique_filename = await server.file_manager.generate_unique_filename(
-        original_filename=original_filename, source=folder, organization_id=actor.organization_id
-    )
+    if not unique_filename:
+        # For SUFFIX, continue to generate unique filename
+        # Generate unique filename (adds suffix if needed)
+        unique_filename = await server.file_manager.generate_unique_filename(
+            original_filename=original_filename, source=folder, organization_id=actor.organization_id
+        )
 
     # create file metadata
     file_metadata = FileMetadata(

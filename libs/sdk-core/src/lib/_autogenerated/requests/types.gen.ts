@@ -1603,7 +1603,7 @@ export type CustomFormatText = {
 /**
  * How to handle duplicate filenames when uploading files
  */
-export type DuplicateFileHandling = 'skip' | 'error' | 'suffix';
+export type DuplicateFileHandling = 'skip' | 'error' | 'suffix' | 'replace';
 
 export type DynamicManager = {
   manager_type?: 'dynamic';
