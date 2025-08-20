@@ -171,12 +171,7 @@ function ToolsList(props: ToolsListProps) {
 
     return currentTools
       .filter((tool) => {
-        if (
-          tool.tool_type === 'letta_voice_sleeptime_core' ||
-          tool.tool_type === 'letta_files_core'
-        ) {
-          return false;
-        }
+        // Only filter by search, don't exclude any tool types
         if (!search) {
           return true;
         }
@@ -246,12 +241,12 @@ function ToolsList(props: ToolsListProps) {
       });
   }, [currentTools, openToolManager, search, t]);
 
-  const lettaTools = useMemo(() => {
-    return toolsList.filter((tool) => tool.type.includes('letta'));
+  const coreTools = useMemo(() => {
+    return toolsList.filter((tool) => tool.type !== 'custom');
   }, [toolsList]);
 
   const customTools = useMemo(() => {
-    return toolsList.filter((tool) => !tool.type.includes('letta'));
+    return toolsList.filter((tool) => tool.type === 'custom');
   }, [toolsList]);
 
   return (
@@ -273,8 +268,8 @@ function ToolsList(props: ToolsListProps) {
       <ToolAccordion
         id="core-tools"
         defaultOpen={false}
-        label={t('ToolsList.lettaTools', { count: lettaTools.length })}
-        tools={lettaTools}
+        label={t('ToolsList.lettaTools', { count: coreTools.length })}
+        tools={coreTools}
       />
       <ToolAccordion
         id="custom-tools"
