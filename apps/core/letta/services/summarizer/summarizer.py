@@ -354,7 +354,11 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
     # NOTE: we should disable the inner_thoughts_in_kwargs here, because we don't use it
     # I'm leaving it commented it out for now for safety but is fine assuming the var here is a copy not a reference
     # llm_config.put_inner_thoughts_in_kwargs = False
-    response_data = await llm_client.request_async(request_data, llm_config)
+    try:
+        response_data = await llm_client.request_async(request_data, llm_config)
+    except Exception as e:
+        # handle LLM error (likely a context window exceeded error)
+        raise llm_client.handle_llm_error(e)
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")

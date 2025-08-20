@@ -1352,6 +1352,7 @@ class LettaAgent(BaseAgent):
     ) -> list[Message]:
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
+        # TODO: `force` and `clear` seem to no longer be used, we should remove
         if force or (total_tokens and total_tokens > llm_config.context_window):
             self.logger.warning(
                 f"Total tokens {total_tokens} exceeds configured max tokens {llm_config.context_window}, forcefully clearing message history."
@@ -1363,6 +1364,7 @@ class LettaAgent(BaseAgent):
                 clear=True,
             )
         else:
+            # NOTE (Sarah): Seems like this is doing nothing?
             self.logger.info(
                 f"Total tokens {total_tokens} does not exceed configured max tokens {llm_config.context_window}, passing summarizing w/o force."
             )
