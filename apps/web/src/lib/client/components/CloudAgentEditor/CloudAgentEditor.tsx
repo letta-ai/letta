@@ -8,8 +8,6 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { ADELayout } from '@letta-cloud/ui-ade-components';
 import React, { useState } from 'react';
-import { useCurrentProject } from '../../hooks/useCurrentProject/useCurrentProject';
-import { useCurrentUser } from '$web/client/hooks';
 
 interface MobileNavigationContextData {
   activePanel: string | null;
@@ -43,9 +41,7 @@ function MobileNavigationProvider(props: MobileNavigationProviderProps) {
 }
 
 export function CloudAgentEditor() {
-  const { id: projectId, slug } = useCurrentProject();
 
-  const user = useCurrentUser();
 
   return (
     <ADEPage>
@@ -53,7 +49,7 @@ export function CloudAgentEditor() {
         <VStack overflow="hidden" position="relative" fullWidth fullHeight>
           <Frame overflow="hidden" position="relative" fullWidth fullHeight>
             <HiddenOnMobile checkWithJs>
-              <ADELayout user={user} projectId={projectId} projectSlug={slug} />
+              <ADELayout  />
             </HiddenOnMobile>
           </Frame>
         </VStack>
@@ -62,7 +58,7 @@ export function CloudAgentEditor() {
         <MobileNavigationProvider>
           <VStack fullHeight fullWidth flex>
             <VisibleOnMobile checkWithJs>
-              <ADELayout user={user} projectId={projectId} projectSlug={slug} />
+              <ADELayout />
             </VisibleOnMobile>
           </VStack>
         </MobileNavigationProvider>

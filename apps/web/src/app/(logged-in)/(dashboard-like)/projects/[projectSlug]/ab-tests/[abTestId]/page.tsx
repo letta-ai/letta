@@ -15,12 +15,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import { TemplateChatSimulator } from './_components/TemplateChatSimulator/TemplateChatSimulator';
 import { AttachTemplateToSimulator } from './_components/AttachTemplateToSimulator/AttachTemplateToSimulator';
 import {
-  AppContextProvider,
   useSendMessage,
 } from '@letta-cloud/ui-ade-components';
 import { isFetchError } from '@ts-rest/react-query/v5';
-import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
-import { useCurrentUser } from '$web/client/hooks';
 
 function ABTests() {
   const abTestId = useABTestId();
@@ -145,18 +142,10 @@ function ABTests() {
 }
 
 export default function ABTestPage() {
-  const { id: projectId, slug: projectSlug } = useCurrentProject();
-  const user = useCurrentUser();
   return (
     <VStack fullHeight fullWidth gap={false} overflow="hidden">
       <VStack collapseHeight gap={false} flex>
-        <AppContextProvider
-          projectSlug={projectSlug}
-          projectId={projectId}
-          user={user}
-        >
           <ABTests />
-        </AppContextProvider>
       </VStack>
     </VStack>
   );

@@ -51,7 +51,6 @@ import {
   ImportAgentsDialog,
   Messages,
   DeleteAgentDialog,
-  AppContextProvider,
 } from '@letta-cloud/ui-ade-components';
 import type { InfiniteData } from '@tanstack/query-core';
 import {
@@ -63,7 +62,6 @@ import {
 } from '@letta-cloud/sdk-cloud-api';
 import { TrashIcon } from '@letta-cloud/ui-component-library';
 import { useQueryIdentities } from '@letta-cloud/ui-ade-components';
-import { useCurrentUser } from '$web/client/hooks';
 
 const TEMPLATE_SEARCH_LIMIT = 10;
 
@@ -96,22 +94,16 @@ interface DeployedAgentViewProps {
 function DeployedAgentView(props: DeployedAgentViewProps) {
   const { agent, onClose, onAgentUpdate } = props;
   const { name } = agent;
-  const { slug: currentProjectSlug, id: currentProjectId } =
+  const { slug: currentProjectSlug } =
     useCurrentProject();
   const t = useTranslations('projects/(projectSlug)/agents/page');
-
-  const currentUser = useCurrentUser();
 
   const { data } = useAgentsServiceRetrieveAgent({
     agentId: agent.id || '',
   });
 
   return (
-    <AppContextProvider
-      projectId={currentProjectId}
-      projectSlug={currentProjectSlug}
-      user={currentUser}
-    >
+
       <div className="contents">
         <Frame
           onClick={onClose}
@@ -213,7 +205,6 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
           </VStack>
         </VStack>
       </div>
-    </AppContextProvider>
   );
 }
 

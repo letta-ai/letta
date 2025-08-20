@@ -42,12 +42,10 @@ export function AppContextProvider({
 
 export function useADEAppContext() {
   const context = React.useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
+
   return {
-    user: context.user,
-    projectId: context.projectId || '',
-    projectSlug: context.projectSlug || '',
+    user: context?.user || undefined,
+    projectId: context?.projectId || '',
+    projectSlug: context?.projectSlug || '',
   };
 }

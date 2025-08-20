@@ -41,8 +41,6 @@ import {
 } from '../panels/EditDataSourcesPanel/EditDataSourcesPanel';
 import { AgentSimulator } from '../panels/AgentSimulator/AgentSimulator';
 import { ContextWindowPanel } from '../panels/ContextEditorPanel/ContextEditorPanel';
-import { AppContextProvider } from '../AppContext/AppContext';
-import type { UserContextData } from '../AppContext/AppContext';
 
 import {
   EditMemory,
@@ -75,12 +73,6 @@ import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPau
 import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
-
-interface ADELayoutProps {
-  user?: UserContextData['user'];
-  projectId?: string;
-  projectSlug?: string;
-}
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -625,47 +617,40 @@ function ADEOnboarding() {
   );
 }
 
-export function ADELayout(props: ADELayoutProps) {
-  const { user, projectId, projectSlug } = props;
+export function ADELayout() {
 
   useGlobalNetworkInterceptor();
 
   return (
-    <AppContextProvider
-      projectSlug={projectSlug}
-      user={user}
-      projectId={projectId}
-    >
-      <SimulatedAgentProvider>
-        <ToolManagerProvider>
-          <Frame
-            overflow="hidden"
-            position="relative"
-            fullWidth
-            fullHeight
-            zIndex="rightAboveZero"
-          >
-            <HiddenOnMobile checkWithJs>
-              <QuickADEOnboarding />
-              <ADEOnboarding />
-              <DesktopLayout />
-            </HiddenOnMobile>
-            <VisibleOnMobile checkWithJs>
-              <MobileLayout />
-            </VisibleOnMobile>
-          </Frame>
-          <VStack
-            className="top-0 left-0 fixed z-[-1]"
-            position="fixed"
-            fullHeight
-            fullWidth
-            align="center"
-            justify="center"
-          >
-            <Logo size="large" color="steel" />
-          </VStack>
-        </ToolManagerProvider>
-      </SimulatedAgentProvider>
-    </AppContextProvider>
+    <SimulatedAgentProvider>
+      <ToolManagerProvider>
+        <Frame
+          overflow="hidden"
+          position="relative"
+          fullWidth
+          fullHeight
+          zIndex="rightAboveZero"
+        >
+          <HiddenOnMobile checkWithJs>
+            <QuickADEOnboarding />
+            <ADEOnboarding />
+            <DesktopLayout />
+          </HiddenOnMobile>
+          <VisibleOnMobile checkWithJs>
+            <MobileLayout />
+          </VisibleOnMobile>
+        </Frame>
+        <VStack
+          className="top-0 left-0 fixed z-[-1]"
+          position="fixed"
+          fullHeight
+          fullWidth
+          align="center"
+          justify="center"
+        >
+          <Logo size="large" color="steel" />
+        </VStack>
+      </ToolManagerProvider>
+    </SimulatedAgentProvider>
   );
 }
