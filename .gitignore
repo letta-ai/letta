@@ -86,6 +86,9 @@ vitest.config.*.timestamp*
 .terraform.*
 .tsbuildinfo
 
+# claude
+.claude
+
 # cloud plugins
 /apps/core/letta/plugins/production.py
 
