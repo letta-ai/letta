@@ -9,7 +9,6 @@ import {
   RawInput,
   Typography,
   VStack,
-  TokenIcon,
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
 
@@ -112,7 +111,6 @@ export function AgentSettingsPanel() {
   const t = useTranslations('ADE/AgentSettingsPanel');
   const { data: isReasoningToggleEnabled } = useFeatureFlag('REASONING_TOGGLE');
 
-  const { isLocal } = useCurrentAgentMetaData();
   const { capitalized: baseName } = useAgentBaseTypeName();
 
   if (!currentAgent.llm_config) {
@@ -147,20 +145,8 @@ export function AgentSettingsPanel() {
           <AgentIdentifierToCopy />
         </VStack>
 
-        <HStack fullWidth align="end">
-          <ModelSelector llmConfig={currentAgent.llm_config} />
-          {!isLocal && (
-            <Button
-              size="small"
-              hideLabel
-              href="/models"
-              target="_blank"
-              preIcon={<TokenIcon />}
-              color="secondary"
-              label={t('viewSupportedModels')}
-            />
-          )}
-        </HStack>
+        <ModelSelector llmConfig={currentAgent.llm_config} />
+
       </VStack>
       <VStack gap="large">
         {isReasoningToggleEnabled && <ReasoningSwitch />}

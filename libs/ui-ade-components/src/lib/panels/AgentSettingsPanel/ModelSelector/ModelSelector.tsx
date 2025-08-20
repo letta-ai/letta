@@ -2,9 +2,15 @@ import type { AgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   brandKeyToLogo,
+  Button,
+  HStack,
+  InfoIcon,
   isBrandKey,
   isMultiValue,
-  RawSelect,
+  Popover,
+  RawSelect, TokenIcon,
+  Typography,
+  VStack
 } from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
@@ -98,25 +104,80 @@ export function ModelSelector(props: LocalModelSelectorProps) {
     llmConfig.model,
   ]);
 
-  return (
-    <RawSelect
-      fullWidth
-      size="small"
-      placeholder={t('placeholder')}
-      isLoading={isLoading}
-      infoTooltip={{
-        text: t('tooltip'),
-      }}
-      options={options}
-      onSelect={(value) => {
-        if (isMultiValue(value) || !value?.value) {
-          return;
-        }
+  // Check if the current model is invalid (not found in available options)
+  const isModelInvalid = useMemo(() => {
+    if (isLoading || isLocal) {
+      return false;
+    }
 
-        setSelectedModelValue(value.value);
-      }}
-      value={value}
-      label={t('label')}
-    />
+    const currentHandle = llmConfig.handle;
+    if (!currentHandle) {
+      return false;
+    }
+
+    return !getSelectedOption(currentHandle);
+  }, [isLoading, isLocal, llmConfig.handle, getSelectedOption]);
+
+  return (
+    <VStack fullWidth gap="small">
+      <HStack align="end">
+        <RawSelect
+          fullWidth
+          size="small"
+          placeholder={t('placeholder')}
+          isLoading={isLoading}
+          infoTooltip={{
+            text: t('tooltip'),
+          }}
+          options={options}
+          onSelect={(value) => {
+            if (isMultiValue(value) || !value?.value) {
+              return;
+            }
+
+            setSelectedModelValue(value.value);
+          }}
+          value={value}
+          label={t('label')}
+        />
+        {!isLocal && (
+          <Button
+            size="small"
+            hideLabel
+            href="/models"
+            target="_blank"
+            preIcon={<TokenIcon />}
+            color="secondary"
+            label={t('viewSupportedModels')}
+          />
+        )}
+      </HStack>
+      {isModelInvalid && (
+        <VStack border padding="small"  align="start" color="warning">
+          <Typography variant="body3">
+            {t('invalidModelWarning.message')}
+          </Typography>
+          <Popover
+            trigger={
+              <Button
+                size="xsmall"
+                color="secondary"
+                preIcon={<InfoIcon />}
+                label={t('invalidModelWarning.moreInfo')}
+              />
+            }
+          >
+            <VStack gap="small" padding="medium" className="max-w-[300px]">
+              <Typography variant="body2" bold>
+                {t('invalidModelWarning.popover.title')}
+              </Typography>
+              <Typography variant="body3">
+                {t('invalidModelWarning.popover.description')}
+              </Typography>
+            </VStack>
+          </Popover>
+        </VStack>
+      )}
+    </VStack>
   );
 }

@@ -643,10 +643,18 @@
   "ADE/AgentSettingsPanel/ModelSelector": {
     "tooltip": "The model (LLM) backend for the agent",
     "label": "Model",
-    "placeholder": "Loading model..."
+    "placeholder": "Loading model...",
+    "viewSupportedModels": "Configure and view all models",
+    "invalidModelWarning": {
+      "message": "The selected model is not supported in letta cloud, please select a different model.",
+      "moreInfo": "Why am I seeing this?",
+      "popover": {
+        "title": "Why is this model invalid?",
+        "description": "The model you have selected is not supported in Letta cloud. This usually means that an invalid llm config was set via the SDK or you have removed the bring-your-own-key provider that came with this model."
+      }
+    }
   },
   "ADE/AgentSettingsPanel": {
-    "viewSupportedModels": "Configure and view all models",
     "IdentityElement": {
       "remove": "Remove"
     },
