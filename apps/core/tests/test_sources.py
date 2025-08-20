@@ -4,6 +4,7 @@ import tempfile
 import threading
 import time
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pytest
 from dotenv import load_dotenv
@@ -72,14 +73,19 @@ def client() -> LettaSDKClient:
 
 
 def upload_file_and_wait(
-    client: LettaSDKClient, source_id: str, file_path: str, max_wait: int = 60, duplicate_handling: DuplicateFileHandling = None
+    client: LettaSDKClient,
+    source_id: str,
+    file_path: str,
+    name: Optional[str] = None,
+    max_wait: int = 60,
+    duplicate_handling: DuplicateFileHandling = None,
 ):
     """Helper function to upload a file and wait for processing to complete"""
     with open(file_path, "rb") as f:
         if duplicate_handling:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling)
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
         else:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f)
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
 
     # Wait for the file to be processed
     start_time = time.time()
@@ -848,6 +854,87 @@ def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClien
     finally:
         # Clean up temporary file
         if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+
+
+def test_upload_file_with_custom_name(disable_pinecone, client: LettaSDKClient):
+    """Test that uploading a file with a custom name overrides the original filename"""
+    # Create agent
+    agent_state = client.agents.create(
+        name="test_agent_custom_name",
+        memory_blocks=[
+            CreateBlock(
+                label="persona",
+                value="I am a helpful assistant",
+            ),
+            CreateBlock(
+                label="human",
+                value="The user is a developer",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    # Create source
+    source = client.sources.create(name="test_source_custom_name", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Create a temporary file with specific content
+    import tempfile
+
+    temp_file_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write("This is a test file for custom naming")
+            temp_file_path = f.name
+
+        # Upload file with custom name
+        custom_name = "my_custom_file_name.txt"
+        file_metadata = upload_file_and_wait(client, source.id, temp_file_path, name=custom_name)
+
+        # Verify the file uses the custom name
+        assert file_metadata.file_name == custom_name
+        assert file_metadata.original_file_name == custom_name
+
+        # Verify file appears in source files list with custom name
+        files = client.sources.files.list(source_id=source.id, limit=1)
+        assert len(files) == 1
+        assert files[0].file_name == custom_name
+        assert files[0].original_file_name == custom_name
+
+        # Verify the custom name is used in file blocks
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        file_blocks = agent_state.memory.file_blocks
+        assert len(file_blocks) == 1
+        # Check that the custom name appears in the block label
+        assert custom_name.replace(".txt", "") in file_blocks[0].label
+
+        # Test duplicate handling with custom name - upload same file with same custom name
+        from letta.schemas.enums import DuplicateFileHandling
+
+        with pytest.raises(Exception) as exc_info:
+            upload_file_and_wait(client, source.id, temp_file_path, name=custom_name, duplicate_handling=DuplicateFileHandling.ERROR)
+        assert "already exists" in str(exc_info.value).lower()
+
+        # Upload same file with different custom name should succeed
+        different_custom_name = "folder_a/folder_b/another_custom_name.txt"
+        file_metadata2 = upload_file_and_wait(client, source.id, temp_file_path, name=different_custom_name)
+        assert file_metadata2.file_name == different_custom_name
+        assert file_metadata2.original_file_name == different_custom_name
+
+        # Verify both files exist
+        files = client.sources.files.list(source_id=source.id, limit=10)
+        assert len(files) == 2
+        file_names = {f.file_name for f in files}
+        assert custom_name in file_names
+        assert different_custom_name in file_names
+
+    finally:
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
 
 

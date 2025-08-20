@@ -258,7 +258,9 @@ async def upload_file_to_source(
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name
-    original_filename = sanitize_filename(name if name else file.filename)  # Basic sanitization only
+    # If custom name is provided, use it directly (it's just metadata, not a filesystem path)
+    # Otherwise, sanitize the uploaded filename for security
+    original_filename = name if name else sanitize_filename(file.filename)  # Basic sanitization only
 
     # Check if duplicate exists
     existing_file = await server.file_manager.get_file_by_original_name_and_source(
