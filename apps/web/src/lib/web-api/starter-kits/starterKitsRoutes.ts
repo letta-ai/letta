@@ -266,6 +266,39 @@ async function createTemplateFromStarterKit(
     };
   }
 
+  const data = await ToolsService.listTools(
+    {
+      limit: 2000,
+    },
+    {
+      user_id: lettaAgentsId,
+    },
+  ).catch(() => {
+    return null
+  });
+
+  if (!data) {
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to fetch tools',
+      },
+    };
+  }
+
+  const toolIdsForStarterKit = data.filter(
+    (tool) =>
+      tool.name &&
+      tool.tool_type &&
+      ['letta_core', 'letta_sleeptime_core'].includes(tool.tool_type) &&
+      [
+        'conversation_search',
+        'memory_insert',
+        'memory_replace',
+        'send_message',
+      ].includes(tool.name),
+  );
+
   const toolIds =
     'tools' in starterKit
       ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
@@ -281,9 +314,19 @@ async function createTemplateFromStarterKit(
       memory: {
         blocks: starterKit.agentState.memory_blocks,
       },
-      tools: toolIds.map((toolId) => ({
-        id: toolId,
-      })),
+
+      tool_rules: [
+        {
+          type: 'required_before_exit',
+          tool_name: 'send_message',
+        },
+      ],
+      tools: [
+        ...toolIds.map((toolId) => ({
+          id: toolId,
+        })),
+        ...toolIdsForStarterKit,
+      ],
       llm_config: {
         handle:
           'model' in starterKit.agentState

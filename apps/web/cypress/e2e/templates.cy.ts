@@ -32,6 +32,29 @@ describe(
     });
 
 
+    describe('Default Template State', () => {
+      it('should have attached the correct tools', () => {
+        cy.testStep('Open core tools accordion', () => {
+          cy.findByTestId('core-tools-accordion').click();
+        });
+
+        cy.testStep('Verify core tools are attached', () => {
+          cy.findByTestId('tool-attached:send_message')
+            .should('exist')
+            .and('be.visible');
+          cy.findByTestId('tool-attached:conversation_search')
+            .should('exist')
+            .and('be.visible');
+          cy.findByTestId('tool-attached:memory_insert')
+            .should('exist')
+            .and('be.visible');
+          cy.findByTestId('tool-attached:memory_replace')
+            .should('exist')
+            .and('be.visible');
+        });
+      })
+    });
+
     describe('Memory Block Configuration', () => {
       it(
         'should configure memory variables',

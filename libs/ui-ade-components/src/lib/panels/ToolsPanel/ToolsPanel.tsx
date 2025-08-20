@@ -313,7 +313,7 @@ function ToolAccordion(props: ToolAccordionProps) {
       id={id}
       caretType="arrow"
       trigger={
-        <HStack>
+        <HStack data-testId="core-tools-accordion">
           <Typography variant="body3">{label}</Typography>
         </HStack>
       }
@@ -342,6 +342,7 @@ function ToolAccordion(props: ToolAccordionProps) {
                 overflow="ellipsis"
                 bold
                 variant="body3"
+                data-testId={`tool-attached:${tool.name}`}
               >
                 {tool.name}
               </Typography>
