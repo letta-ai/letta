@@ -31,15 +31,16 @@ describe(
       cy.useDefaultAgentTemplate();
     });
 
-
     describe('Default Template State', () => {
       it('should have attached the correct tools', () => {
         cy.testStep('Open core tools accordion', () => {
           cy.findAllByTestId('accordion-trigger-core-tools', {
-            timeout: 50000
-          }).first().click({
-            force: true,
-          });
+            timeout: 50000,
+          })
+            .first()
+            .click({
+              force: true,
+            });
         });
 
         cy.testStep('Verify core tools are attached', () => {
@@ -56,7 +57,7 @@ describe(
             .should('exist')
             .and('be.visible');
         });
-      })
+      });
     });
 
     describe('Memory Block Configuration', () => {
@@ -113,6 +114,102 @@ describe(
       );
     });
 
+    describe('Memory Block Management in Advanced Editor', () => {
+      it(
+        'should create and delete a memory block through the advanced editor',
+        { tags: ['@memory-blocks', '@advanced-editor'] },
+        () => {
+          cy.testStep('Open the Advanced Core Memory Editor', () => {
+            cy.findByTestId('open-advanced-memory-editor', {
+              timeout: 10000,
+            }).click();
+          });
+
+          cy.testStep('Create a new memory block', () => {
+            // Click the create new memory block button in the sidebar
+            cy.findAllByTestId('create-new-memory-block-item', { timeout: 10000 })
+              .first()
+              .click();
+
+            // Fill in the basic memory block details
+            cy.findByTestId('memory-block-label-input').type(
+              'cypress_test_block',
+            );
+            cy.findByTestId('memory-block-description-input').type(
+              'A test memory block created by Cypress automation',
+            );
+
+            // Expand advanced section with predictable testId
+            cy.findByTestId(
+              'accordion-trigger-memory-block-advanced-options',
+            ).click();
+
+            // Set advanced field values
+            cy.findByTestId('memory-block-value-input').type(
+              'This is test content for the cypress memory block. It contains important information that will be used during testing.',
+            );
+            cy.findByTestId('memory-block-character-limit-input')
+              .clear()
+              .type('2000');
+
+            // Submit the form using the dialog's confirm button
+            cy.findByTestId('create-new-memory-block-dialog-confirm-button', {
+              timeout: 5000,
+            }).click();
+          });
+
+          cy.testStep('Verify memory block was created', () => {
+            // Check that the new memory block appears in the sidebar
+            cy.findByTestId('memory-block-cypress_test_block', {
+              timeout: 10000,
+            })
+              .should('exist')
+              .and('be.visible');
+
+            // Click on the memory block to select it
+            cy.findByTestId('memory-block-cypress_test_block').click();
+
+            // Verify the content is displayed in the advanced editor
+            cy.findByTestId('advanced-memory-editor-description', {
+              timeout: 5000,
+            }).should(
+              'contain.value',
+              'A test memory block created by Cypress automation',
+            );
+
+            cy.findByTestId('advanced-memory-editor-value').should(
+              'contain.value',
+              'This is test content for the cypress memory block',
+            );
+          });
+
+          cy.testStep('Delete the memory block', () => {
+            // Ensure the memory block is still selected
+            cy.findByTestId('memory-block-cypress_test_block').should(
+              'have.attr',
+              'aria-selected',
+              'true',
+            );
+
+            // Click the delete button
+            cy.findByTestId('delete-memory-block', { timeout: 5000 }).click();
+
+            // Confirm the deletion in the dialog
+            cy.findByTestId(
+              'delete-memory-block-dialog-confirm-button',
+            ).click();
+          });
+
+          cy.testStep('Verify memory block was deleted', () => {
+            // Verify the memory block no longer exists in the sidebar
+            cy.findByTestId('memory-block-cypress_test_block', {
+              timeout: 5000,
+            }).should('not.exist');
+          });
+        },
+      );
+    });
+
     describe('Environment Variables', () => {
       it(
         'should manage environment variables',
@@ -140,9 +237,10 @@ describe(
         { tags: ['@deployment'] },
         () => {
           cy.testStep('Configure agent with all components', () => {
-
             cy.findByTestId('create-new-data-source').click();
-            cy.findByTestId('create-data-source-dialog-name').type(DATA_SOURCES.TEMPLATE);
+            cy.findByTestId('create-data-source-dialog-name').type(
+              DATA_SOURCES.TEMPLATE,
+            );
             cy.findByTestId('create-data-source-modal-confirm-button').click();
 
             cy.findByTestId('open-tool-explorer').click();

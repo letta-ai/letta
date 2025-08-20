@@ -36,6 +36,30 @@ const createBlockTemplateContract = c.mutation({
   },
 });
 
+/* Create and Attach Block Template to Agent Template */
+const createAndAttachBlockToAgentTemplateContract = c.mutation({
+  method: 'POST',
+  path: '/agent-templates/:agentTemplateId/block-templates',
+  pathParams: z.object({
+    agentTemplateId: z.string(),
+  }),
+  body: CreateBlockTemplatePayloadSchema,
+  responses: {
+    201: z.object({
+      blockTemplate: BlockTemplateSchema,
+      success: z.boolean(),
+      message: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+      errorCode: z.enum(['validation', 'conflict', 'default']),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
 /* Update Block Template */
 export const UpdateBlockTemplatePayloadSchema = z.object({
   label: z.string().min(1, 'Label is required').optional(),
@@ -188,6 +212,8 @@ export const blockTemplatesContracts = c.router({
   attachBlockToAgentTemplate: attachBlockToAgentTemplateContract,
   detachBlockFromAgentTemplate: detachBlockFromAgentTemplateContract,
   getAgentTemplateBlockTemplates: getAgentTemplateBlockTemplatesContract,
+  createAndAttachBlockToAgentTemplate:
+    createAndAttachBlockToAgentTemplateContract,
 });
 
 export const blockTemplatesQueryKeys = {

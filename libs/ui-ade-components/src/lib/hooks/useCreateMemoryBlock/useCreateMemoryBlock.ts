@@ -12,7 +12,8 @@ import type { MemoryType } from '@letta-cloud/ui-component-library';
 import {
   type AgentState,
   useBlocksServiceCreateBlock,
-  UseAgentsServiceRetrieveAgentKeyFn, useAgentsServiceAttachCoreMemoryBlock
+  UseAgentsServiceRetrieveAgentKeyFn,
+  useAgentsServiceAttachCoreMemoryBlock,
 } from '@letta-cloud/sdk-core';
 import { useCallback, useMemo } from 'react';
 import { useADEPermissions } from '../useADEPermissions/useADEPermissions';
@@ -55,8 +56,11 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
   const [canCreateAgent] = useADEPermissions(ApplicationServices.CREATE_AGENT);
 
   const { mutate, isPending, isError, error } = useBlocksServiceCreateBlock();
-  const { mutate: attachMemory, isPending: isAttaching, isError: errorAttaching } = useAgentsServiceAttachCoreMemoryBlock();
-
+  const {
+    mutate: attachMemory,
+    isPending: isAttaching,
+    isError: errorAttaching,
+  } = useAgentsServiceAttachCoreMemoryBlock();
 
   const queryClient = useQueryClient();
 
@@ -88,46 +92,48 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
         },
         {
           onSuccess: (createdBlock) => {
+            attachMemory(
+              {
+                agentId,
+                blockId: createdBlock.id || '',
+              },
+              {
+                onSuccess: () => {
+                  // Update agent state cache to add the new block
+                  queryClient.setQueriesData<AgentState | undefined>(
+                    {
+                      queryKey: UseAgentsServiceRetrieveAgentKeyFn({
+                        agentId,
+                      }),
+                    },
+                    (oldData) => {
+                      if (!oldData) {
+                        return oldData;
+                      }
 
+                      const newBlock = {
+                        id: createdBlock.id,
+                        label: createdBlock.label,
+                        value: createdBlock.value,
+                        limit: createdBlock.limit,
+                        description: createdBlock.description,
+                        preserve_on_migration:
+                          createdBlock.preserve_on_migration,
+                        read_only: createdBlock.read_only,
+                      };
 
-            attachMemory({
-              agentId,
-              blockId: createdBlock.id || '',
-            }, {
-              onSuccess: () => {
-                // Update agent state cache to add the new block
-                queryClient.setQueriesData<AgentState | undefined>(
-                  {
-                    queryKey: UseAgentsServiceRetrieveAgentKeyFn({
-                      agentId,
-                    }),
-                  },
-                  (oldData) => {
-                    if (!oldData) {
-                      return oldData;
-                    }
-
-                    const newBlock = {
-                      id: createdBlock.id,
-                      label: createdBlock.label,
-                      value: createdBlock.value,
-                      limit: createdBlock.limit,
-                      description: createdBlock.description,
-                      preserve_on_migration: createdBlock.preserve_on_migration,
-                      read_only: createdBlock.read_only,
-                    };
-
-                    return {
-                      ...oldData,
-                      memory: {
-                        ...oldData.memory,
-                        blocks: [...oldData.memory.blocks, newBlock],
-                      },
-                    };
-                  },
-                );
-              }
-            })
+                      return {
+                        ...oldData,
+                        memory: {
+                          ...oldData.memory,
+                          blocks: [...oldData.memory.blocks, newBlock],
+                        },
+                      };
+                    },
+                  );
+                },
+              },
+            );
 
             onSuccess?.(createdBlock.label || '');
           },
@@ -146,7 +152,7 @@ function useCreateAgentMemoryBlock(options: UseCreateAgentMemoryBlockOptions) {
       queryClient,
       onSuccess,
       onError,
-      attachMemory
+      attachMemory,
     ],
   );
 
@@ -175,15 +181,12 @@ function useCreateTemplateMemoryBlock(
     ApplicationServices.CREATE_BLOCK_TEMPLATES,
   );
 
-  const createMutation =
-    webApi.blockTemplates.createBlockTemplate.useMutation();
-  const attachMutation =
-    webApi.blockTemplates.attachBlockToAgentTemplate.useMutation();
+  const createAndAttachMutation =
+    webApi.blockTemplates.createAndAttachBlockToAgentTemplate.useMutation();
 
   const queryClient = useQueryClient();
   const simulatedAgent = useCurrentAgent();
   const agentVariables = useCurrentSimulatedAgentVariables();
-
 
   const handleCreateSimulatedAgentMemoryBlock = useCallback(
     (createdBlock: BlockTemplateType) => {
@@ -239,123 +242,109 @@ function useCreateTemplateMemoryBlock(
         return;
       }
 
-      if (createMutation.isPending || attachMutation.isPending) {
+      // If agentTemplateId is provided, use the combined endpoint
+      if (agentTemplateId) {
+        if (createAndAttachMutation.isPending) {
+          return;
+        }
+
+        createAndAttachMutation.mutate(
+          {
+            params: {
+              agentTemplateId,
+            },
+            body: {
+              label: payload.label,
+              value: payload.value,
+              lettaTemplateId,
+              limit: payload.limit,
+              description: payload.description,
+              preserveOnMigration: payload.preserveOnMigration,
+              readOnly: payload.readOnly,
+              projectId,
+            },
+          },
+          {
+            onSuccess: (response) => {
+              const createdBlock = response.body.blockTemplate;
+
+              // Invalidate queries
+              void queryClient.invalidateQueries({
+                queryKey: webApiQueryKeys.blockTemplates.getBlockTemplates,
+              });
+              void queryClient.invalidateQueries({
+                queryKey:
+                  webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
+                    agentTemplateId,
+                  ),
+              });
+
+              // Optimistically add to agent template block templates list
+              queryClient.setQueriesData<
+                ServerInferResponses<
+                  typeof contracts.blockTemplates.getAgentTemplateBlockTemplates,
+                  200
+                >
+              >(
+                {
+                  queryKey:
+                    webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
+                      agentTemplateId,
+                    ),
+                },
+                (oldData) => {
+                  if (!oldData) {
+                    return oldData;
+                  }
+
+                  return {
+                    ...oldData,
+                    body: {
+                      ...oldData.body,
+                      blockTemplates: [
+                        ...oldData.body.blockTemplates,
+                        createdBlock,
+                      ],
+                    },
+                  };
+                },
+              );
+
+              // Update simulated agent if exists
+              if (simulatedAgent) {
+                handleCreateSimulatedAgentMemoryBlock({
+                  id: createdBlock.id,
+                  createdAt: createdBlock.createdAt,
+                  updatedAt: createdBlock.updatedAt,
+                  label: createdBlock.label,
+                  value: attachMemoryVariablesToBlockValue(
+                    createdBlock.value,
+                    agentVariables?.memoryVariables || {},
+                  ),
+                  limit: createdBlock.limit,
+                  description: createdBlock.description,
+                  preserveOnMigration: createdBlock.preserveOnMigration,
+                  readOnly: createdBlock.readOnly,
+                });
+              }
+
+              onSuccess?.(createdBlock.label);
+            },
+            onError: (error) => {
+              onError?.(error as Error);
+            },
+          },
+        );
         return;
       }
 
-      // First create the block template
-      createMutation.mutate(
-        {
-          body: {
-            label: payload.label,
-            value: payload.value,
-            lettaTemplateId,
-            limit: payload.limit,
-            description: payload.description,
-            preserveOnMigration: payload.preserveOnMigration,
-            readOnly: payload.readOnly,
-            projectId,
-          },
-        },
-        {
-          onSuccess: (createdBlock) => {
-            // Invalidate block template queries
-            void queryClient.invalidateQueries({
-              queryKey: webApiQueryKeys.blockTemplates.getBlockTemplates,
-            });
-
-            // If templateId is provided, attach the block to the agent template
-            if (agentTemplateId) {
-              attachMutation.mutate(
-                {
-                  params: {
-                    agentTemplateId: agentTemplateId,
-                    blockTemplateId: createdBlock.body.id,
-                  },
-                },
-                {
-                  onSuccess: () => {
-                    // Invalidate agent template block templates list
-                    void queryClient.invalidateQueries({
-                      queryKey:
-                        webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
-                          agentTemplateId,
-                        ),
-                    });
-
-                    // Optimistically add to agent template block templates list
-                    queryClient.setQueriesData<
-                      ServerInferResponses<
-                        typeof contracts.blockTemplates.getAgentTemplateBlockTemplates,
-                        200
-                      >
-                    >(
-                      {
-                        queryKey:
-                          webApiQueryKeys.blockTemplates.getAgentTemplateBlockTemplates(
-                            agentTemplateId,
-                          ),
-                      },
-                      (oldData) => {
-                        if (!oldData) {
-                          return oldData;
-                        }
-
-                        return {
-                          ...oldData,
-                          body: {
-                            ...oldData.body,
-                            blockTemplates: [
-                              ...oldData.body.blockTemplates,
-                              createdBlock.body,
-                            ],
-                          },
-                        };
-                      },
-                    );
-
-                    // Update simulated agent if exists
-                    if (simulatedAgent) {
-                      handleCreateSimulatedAgentMemoryBlock({
-                        id: createdBlock.body.id,
-                        createdAt: createdBlock.body.createdAt,
-                        updatedAt: createdBlock.body.updatedAt,
-                        label: createdBlock.body.label,
-                        value: attachMemoryVariablesToBlockValue(
-                          createdBlock.body.value,
-                          agentVariables?.memoryVariables || {},
-                        ),
-                        limit: createdBlock.body.limit,
-                        description: createdBlock.body.description,
-                        preserveOnMigration:
-                          createdBlock.body.preserveOnMigration,
-                        readOnly: createdBlock.body.readOnly,
-                      });
-                    }
-
-                    onSuccess?.(createdBlock.body.label);
-                  },
-                  onError: (error) => {
-                    onError?.(error as Error);
-                  },
-                },
-              );
-            } else {
-              // No template to attach to, just return the created block
-              onSuccess?.(createdBlock.body.label);
-            }
-          },
-          onError: (error) => {
-            onError?.(error as Error);
-          },
-        },
-      );
+      // This should not happen since agentTemplateId is required for template blocks
+      onError?.(new Error('Agent template ID is required for template blocks'));
     },
     [
       canCreateTemplates,
       projectId,
-      createMutation,
-      attachMutation,
+      createAndAttachMutation,
       lettaTemplateId,
       queryClient,
       agentTemplateId,
@@ -367,9 +356,9 @@ function useCreateTemplateMemoryBlock(
     ],
   );
 
-  const isPending = createMutation.isPending || attachMutation.isPending;
-  const isError = createMutation.isError || attachMutation.isError;
-  const error = createMutation.error || attachMutation.error;
+  const isPending = createAndAttachMutation.isPending;
+  const isError = createAndAttachMutation.isError;
+  const error = createAndAttachMutation.error;
 
   return {
     handleCreate,

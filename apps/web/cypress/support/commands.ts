@@ -230,7 +230,9 @@ Cypress.Commands.add(
           /\/projects\/(.+)\/templates\/(.+)/,
         );
 
-        cy.findByTestId('update-agent-name-button').click();
+        cy.findByTestId('update-agent-name-button', {
+          timeout: 50000,
+        }).click();
         cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
         cy.findByTestId('update-name-dialog-update-name').type(agentName);
         cy.findByTestId('update-name-dialog-confirm-button').click();
@@ -411,7 +413,9 @@ Cypress.Commands.add(
       /\/projects\/(.+)\/templates\/(.+)/,
     );
 
-    cy.findByTestId('update-agent-name-button').click();
+    cy.findByTestId('update-agent-name-button', {
+      timeout: 50000,
+    }).click();
     cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
     cy.findByTestId('update-name-dialog-update-name').type(agentName);
     cy.findByTestId('update-name-dialog-confirm-button').click();

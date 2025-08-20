@@ -1,5 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback, useId, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Dialog,
   FormField,
@@ -38,7 +38,6 @@ interface CreateNewMemoryBlockDialogProps {
 
 function CustomMemoryBlockForm() {
   const t = useTranslations('CreateNewMemoryBlockDialog');
-  const id = useId();
 
   return (
     <VStack paddingTop="small" gap="form">
@@ -75,7 +74,7 @@ function CustomMemoryBlockForm() {
       />
 
       <Accordion
-        id={id}
+        id="memory-block-advanced-options"
         trigger={
           <Typography variant="body2" uppercase color="muted">
             {t('advanced')}
@@ -146,12 +145,8 @@ export function CreateNewMemoryBlockDialog(
   const template = useCurrentTemplate();
   const { templateId: agentTemplateId } = useCurrentAgentMetaData();
 
-  const {
-    agentId: currentAgentId,
-    isTemplate,
-  } = useCurrentAgentMetaData();
+  const { agentId: currentAgentId, isTemplate } = useCurrentAgentMetaData();
   const agent = useCurrentAgent();
-
 
   const [tab, setTab] = useState<TabTypes>('custom');
   const [blockType, setBlockType] = useState<CoreMemoryBlockType>(

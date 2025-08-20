@@ -63,18 +63,20 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
     mutate: localMutate,
     isPending: localIsPending,
     error: localError,
+    isSuccess: localSuccess,
   } = useAgentsServiceModifyAgent();
 
   const agentBaseType = useAgentBaseTypeName();
 
   const { id: agentTemplateId } = useCurrentAgent();
 
-  const { mutate, isPending, error } = useAgentsServiceModifyAgent();
+  const { mutate, isPending, isSuccess, error } = useAgentsServiceModifyAgent();
 
   const {
     mutate: cloudTemplateMutate,
     isPending: cloudTemplatePending,
     error: cloudTemplateError,
+    isSuccess: cloudSuccess,
   } = cloudAPI.templates.renameTemplate.useMutation();
 
   const handleSubmit = useCallback(
@@ -187,7 +189,14 @@ export function UpdateNameDialog(props: UpdateNameDialogProps) {
         errorMessage={
           localError || cloudTemplateError ? t('error.default') : undefined
         }
-        isConfirmBusy={isPending || localIsPending || cloudTemplatePending}
+        isConfirmBusy={
+          isPending ||
+          isSuccess ||
+          localSuccess ||
+          cloudSuccess ||
+          localIsPending ||
+          cloudTemplatePending
+        }
         confirmText={t('confirm')}
         onSubmit={form.handleSubmit(handleSubmit)}
       >

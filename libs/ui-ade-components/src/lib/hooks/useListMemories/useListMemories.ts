@@ -19,6 +19,7 @@ interface UseListMemoriesOptions {
 }
 
 interface UseListMemoriesReturnValue {
+  isNotLoaded: boolean;
   memories: Array<Block | BlockTemplateType>;
   isLoading: boolean;
   isError: boolean;
@@ -71,6 +72,7 @@ function useListAgentMemories(
   }, [agentData]);
 
   return {
+    isNotLoaded: !agentId || !agentData,
     memories,
     isLoading,
     isError,
@@ -116,6 +118,7 @@ function useListTemplateMemories(
   }, [templateId, agentTemplateBlocksData]);
 
   return {
+    isNotLoaded: !templateId || !agentTemplateBlocksData,
     memories,
     isLoading,
     isError,

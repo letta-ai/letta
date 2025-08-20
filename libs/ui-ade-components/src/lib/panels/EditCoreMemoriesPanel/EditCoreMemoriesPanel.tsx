@@ -43,6 +43,7 @@ import { useSharedAgents } from '../../hooks/useSharedAgents/useSharedAgents';
 import { useUpdateMemoryBlock } from '../../hooks/useUpdateMemoryBlock/useUpdateMemoryBlock';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useListMemories } from '../../hooks/useListMemories';
 
 interface AdvancedEditorPayload {
   label: string;
@@ -377,12 +378,23 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
 
 function AdvancedEditorButton() {
   const { open, close, isOpen } = useAdvancedCoreMemoryEditor();
+  const agent = useCurrentAgent();
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
-  const { memory } = useCurrentAgent();
+  const { isTemplate, templateId } = useCurrentAgentMetaData();
+
+  const { memories, isNotLoaded } = useListMemories({
+    memoryType: isTemplate ? 'templated' : 'agent',
+    agentId: isTemplate ? undefined : agent.id,
+    templateId: isTemplate ? templateId : undefined,
+  });
 
   const firstLabel = useMemo(() => {
-    return memory?.blocks?.[0]?.label;
-  }, [memory]);
+    return memories?.[0]?.label;
+  }, [memories]);
+
+  if (isNotLoaded) {
+    return null;
+  }
 
   return (
     <HStack
@@ -400,6 +412,7 @@ function AdvancedEditorButton() {
         bold
         hideLabelOnSmallPanel
         preIcon={<MemoryBlocksIcon />}
+        data-testid="open-advanced-memory-editor"
         label={t('advancedEditor')}
         onClick={() => {
           if (isOpen) {

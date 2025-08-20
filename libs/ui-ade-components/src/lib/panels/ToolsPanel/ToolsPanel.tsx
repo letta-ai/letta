@@ -344,7 +344,7 @@ function ToolAccordion(props: ToolAccordionProps) {
                 overflow="ellipsis"
                 bold
                 variant="body3"
-                data-testId={`tool-attached:${tool.name}`}
+                data-testid={`tool-attached:${tool.name}`}
               >
                 {tool.name}
               </Typography>

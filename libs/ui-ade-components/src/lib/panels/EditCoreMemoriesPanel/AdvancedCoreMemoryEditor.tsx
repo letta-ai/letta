@@ -472,7 +472,6 @@ function CoreMemoryMobileNav() {
             <Button
               hideLabel
               preIcon={<PlusIcon />}
-              data-testid="create-new-memory-block-item"
               color="tertiary"
               label={t('CoreMemorySidebar.create')}
             />
@@ -485,7 +484,6 @@ function CoreMemoryMobileNav() {
             <Button
               hideLabel
               preIcon={<LinkIcon />}
-              data-testid="create-new-memory-block-item"
               color="tertiary"
               label={t('CoreMemorySidebar.attach')}
             />

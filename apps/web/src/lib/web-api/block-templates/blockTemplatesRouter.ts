@@ -105,8 +105,7 @@ export async function updateBlockTemplate(
   req: UpdateBlockTemplateRequest,
 ): Promise<UpdateBlockTemplateResponse> {
   const { blockTemplateId } = req.params;
-  const { value, limit, description, preserveOnMigration, readOnly } =
-    req.body;
+  const { value, limit, description, preserveOnMigration, readOnly } = req.body;
 
   const { activeOrganizationId: organizationId, permissions } =
     await getUserWithActiveOrganizationIdOrThrow();
@@ -144,10 +143,10 @@ export async function updateBlockTemplate(
   }
   if (typeof description === 'string') {
     updateData.description = description;
-  };
+  }
 
   if (typeof preserveOnMigration === 'boolean') {
-    updateData.preserveOnMigration = preserveOnMigration
+    updateData.preserveOnMigration = preserveOnMigration;
   }
   if (typeof readOnly === 'boolean') {
     updateData.readOnly = readOnly;
@@ -483,7 +482,6 @@ export async function detachBlockFromAgentTemplate(
     };
   }
 
-
   // Check if association exists
   const existingAssociation =
     await db.query.agentTemplateBlockTemplates.findFirst({
@@ -614,6 +612,145 @@ export async function getAgentTemplateBlockTemplates(
         createdAt: blockTemplate.createdAt.toISOString(),
         updatedAt: blockTemplate.updatedAt.toISOString(),
       })),
+    },
+  };
+}
+
+type CreateAndAttachBlockToAgentTemplateRequest = ServerInferRequest<
+  typeof contracts.blockTemplates.createAndAttachBlockToAgentTemplate
+>;
+type CreateAndAttachBlockToAgentTemplateResponse = ServerInferResponses<
+  typeof contracts.blockTemplates.createAndAttachBlockToAgentTemplate
+>;
+
+export async function createAndAttachBlockToAgentTemplate(
+  req: CreateAndAttachBlockToAgentTemplateRequest,
+): Promise<CreateAndAttachBlockToAgentTemplateResponse> {
+  const { agentTemplateId } = req.params;
+  const {
+    label,
+    value,
+    limit,
+    description,
+    preserveOnMigration,
+    readOnly,
+    lettaTemplateId,
+    projectId,
+  } = req.body;
+
+  const { activeOrganizationId: organizationId, permissions } =
+    await getUserWithActiveOrganizationIdOrThrow();
+
+  if (!permissions.has(ApplicationServices.CREATE_BLOCK_TEMPLATES)) {
+    return {
+      status: 403,
+      body: null,
+    };
+  }
+
+  // Verify project exists and belongs to the organization
+  const project = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.id, projectId),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 400,
+      body: {
+        message: 'Project not found or does not belong to your organization',
+        errorCode: 'validation',
+      },
+    };
+  }
+
+  // Verify agent template exists and belongs to the organization
+  const agentTemplate = await db.query.agentTemplateV2.findFirst({
+    where: and(
+      eq(agentTemplateV2.id, agentTemplateId),
+      eq(agentTemplateV2.organizationId, organizationId),
+    ),
+  });
+
+  if (!agentTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: 'Agent template not found',
+      },
+    };
+  }
+
+  // Use a transaction to ensure both operations succeed or fail together
+  const result = await db.transaction(async (tx) => {
+    // Create the block template
+    const [createdBlockTemplate] = await tx
+      .insert(blockTemplate)
+      .values({
+        entityId: nanoid(8),
+        label,
+        lettaTemplateId,
+        value,
+        limit,
+        description,
+        preserveOnMigration,
+        readOnly,
+        projectId,
+        organizationId,
+      })
+      .returning();
+
+    // Check if association already exists
+    const existingAssociation =
+      await tx.query.agentTemplateBlockTemplates.findFirst({
+        where: and(
+          eq(
+            agentTemplateBlockTemplates.agentTemplateSchemaId,
+            agentTemplate.id,
+          ),
+          eq(
+            agentTemplateBlockTemplates.blockTemplateId,
+            createdBlockTemplate.id,
+          ),
+        ),
+      });
+
+    if (existingAssociation) {
+      // This shouldn't happen with a fresh block, but check just in case
+      throw new Error(
+        'Block template is already attached to this agent template',
+      );
+    }
+
+    // Create the association
+    await tx.insert(agentTemplateBlockTemplates).values({
+      agentTemplateSchemaId: agentTemplate.id,
+      blockTemplateId: createdBlockTemplate.id,
+      lettaTemplateId: agentTemplate.lettaTemplateId,
+      blockLabel: createdBlockTemplate.label,
+    });
+
+    return createdBlockTemplate;
+  });
+
+  return {
+    status: 201,
+    body: {
+      blockTemplate: {
+        id: result.id,
+        label: result.label,
+        value: result.value,
+        limit: result.limit,
+        description: result.description,
+        preserveOnMigration: result.preserveOnMigration,
+        readOnly: result.readOnly,
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
+      },
+      success: true,
+      message: 'Block template created and attached successfully',
     },
   };
 }

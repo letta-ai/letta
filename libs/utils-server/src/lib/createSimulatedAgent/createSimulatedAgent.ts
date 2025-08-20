@@ -63,7 +63,8 @@ export async function createSimulatedAgent(args: CreateSimulatedAgentArgs) {
   const [res] = await db
     .insert(simulatedAgent)
     .values(simulatedAgentData)
-    .returning();
+    .onConflictDoNothing()
+    .returning()
 
   return {
     agent,
