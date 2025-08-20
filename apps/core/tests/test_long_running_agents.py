@@ -28,6 +28,10 @@ def server_url() -> str:
 
         start_server(debug=True)
 
+    api_url = os.getenv("LETTA_API_URL")
+    if api_url:
+        return api_url
+
     url: str = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
 
     if not os.getenv("LETTA_SERVER_URL"):
@@ -56,12 +60,18 @@ def client(server_url: str) -> Letta:
     """
     Creates and returns a synchronous Letta REST client for testing.
     """
-    client_instance = Letta(base_url=server_url)
+    api_url = os.getenv("LETTA_API_URL")
+    api_key = os.getenv("LETTA_API_KEY")
+
+    if api_url and not api_key:
+        raise ValueError("LETTA_API_KEY is required when passing LETTA_API_URL")
+
+    client_instance = Letta(token=api_key, base_url=api_url if api_url else server_url)
     return client_instance
 
 
-async def test_deep_research_agent(client, server_url, disable_e2b_api_key):
-    imported_af = upload_test_agentfile_from_disk(server_url, "deep-thought.af")
+async def test_deep_research_agent(client: Letta, server_url, disable_e2b_api_key):
+    imported_af = upload_test_agentfile_from_disk(client, "deep-thought.af")
 
     agent_id = imported_af.agent_ids[0]
 
@@ -69,6 +79,7 @@ async def test_deep_research_agent(client, server_url, disable_e2b_api_key):
         response = client.agents.messages.create_stream(
             agent_id=agent_id,
             stream_tokens=True,
+            include_pings=True,
             messages=[
                 MessageCreate(
                     role="user",
@@ -90,8 +101,8 @@ async def test_deep_research_agent(client, server_url, disable_e2b_api_key):
         client.agents.delete(agent_id=agent_id)
 
 
-async def test_11x_agent(client, server_url, disable_e2b_api_key):
-    imported_af = upload_test_agentfile_from_disk(server_url, "mock_alice.af")
+async def test_11x_agent(client: Letta, server_url, disable_e2b_api_key):
+    imported_af = upload_test_agentfile_from_disk(client, "mock_alice.af")
 
     agent_id = imported_af.agent_ids[0]
 

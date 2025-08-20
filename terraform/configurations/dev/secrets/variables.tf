@@ -372,7 +372,7 @@ variable "dev_memgpt_server_CLICKHOUSE_PASSWORD" {
   sensitive   = true
 }
 
-variable "dev_memgpt_server_PINECONE_API_KEY" {
+variable "dev_memgpt_server_LETTA_PINECONE_API_KEY" {
   description = "Pinecone API Key for memgpt-server service"
   type        = string
   sensitive   = true

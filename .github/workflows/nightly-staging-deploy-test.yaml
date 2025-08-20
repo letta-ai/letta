@@ -185,7 +185,8 @@ jobs:
         working-directory: apps/core
         env:
           # Point tests to staging environment
-          LETTA_SERVER_URL: "https://api-dev.letta.com"
+          LETTA_API_URL: "https://api-dev.letta.com"
+          # LETTA_SERVER_URL: "https://api-dev.letta.com"
           LETTA_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
 
           # LLM Provider API Keys

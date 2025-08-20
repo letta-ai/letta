@@ -97,7 +97,7 @@ locals {
     "dev_memgpt-server_SENTRY_DSN" = var.dev_memgpt_server_SENTRY_DSN
     "dev_memgpt-server_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_CLICKHOUSE_PASSWORD
     "dev_memgpt-server_LETTA_PG_URI" = var.dev_memgpt_server_LETTA_PG_URI
-    "dev_memgpt-server_PINECONE_API_KEY" = var.dev_memgpt_server_PINECONE_API_KEY
+    "dev_memgpt-server_LETTA_PINECONE_API_KEY" = var.dev_memgpt_server_LETTA_PINECONE_API_KEY
 
     # memgpt-server-voice secrets
     "dev_memgpt-server-voice_LETTA_SERVER_PASS" = var.dev_memgpt_server_voice_LETTA_SERVER_PASS
