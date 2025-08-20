@@ -209,6 +209,7 @@ async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
+    name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -256,7 +257,8 @@ async def upload_file_to_source(
     content = await file.read()
 
     # Store original filename and handle duplicate logic
-    original_filename = sanitize_filename(file.filename)  # Basic sanitization only
+    # Use custom name if provided, otherwise use the uploaded file's name
+    original_filename = sanitize_filename(name if name else file.filename)  # Basic sanitization only
 
     # Check if duplicate exists
     existing_file = await server.file_manager.get_file_by_original_name_and_source(
