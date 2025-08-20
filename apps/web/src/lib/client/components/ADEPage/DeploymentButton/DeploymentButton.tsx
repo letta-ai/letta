@@ -45,10 +45,11 @@ interface CreateNewTemplateVersionDialogProps {
 
 interface FormFieldsProps {
   isPending: boolean;
+  isError: boolean;
 }
 
 function FormFields(props: FormFieldsProps) {
-  const { isPending } = props;
+  const { isPending, isError } = props;
 
   const t = useTranslations(
     'projects/(projectSlug)/agents/(agentId)/AgentPage',
@@ -125,6 +126,12 @@ function FormFields(props: FormFieldsProps) {
           name="overwriteToolVariables"
         />
       </VStack>
+      {isError && (
+        <Alert
+          title={t('VersionAgentDialog.error.title')}
+          variant={'destructive'}
+        />
+      )}
       <Button
         data-testid="deploy-agent-dialog-trigger"
         color="primary"
@@ -312,7 +319,10 @@ function CreateNewTemplateVersionDialog(
                   borderLeft
                   fullHeight
                 >
-                  <FormFields isPending={isPending || isSuccess} />
+                  <FormFields
+                    isPending={isPending || isSuccess}
+                    isError={isError}
+                  />
                 </VStack>
               </HStack>
             </HiddenOnMobile>
@@ -332,7 +342,10 @@ function CreateNewTemplateVersionDialog(
                   {isError && (
                     <Alert title={t('VersionAgentDialog.error.title')} />
                   )}
-                  <FormFields isPending={isPending || isSuccess} />
+                  <FormFields
+                    isPending={isPending || isSuccess}
+                    isError={isError}
+                  />
                 </VStack>
               </VStack>
             </VisibleOnMobile>

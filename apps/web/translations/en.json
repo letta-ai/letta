@@ -2657,7 +2657,7 @@
     },
     "VersionAgentDialog": {
       "error": {
-        "title": "There was an error saving the template, please try again or contact support."
+        "title": "An error occurred while saving the template. Please try again or contact support."
       },
       "mobileWarning": "Versioning templates are only available on desktop, as there is a lot of information to display.",
       "onboarding": {
