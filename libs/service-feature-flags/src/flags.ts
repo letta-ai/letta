@@ -137,6 +137,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  FAVORITE_PROJECTS: {
+    description: 'Enable favorite projects functionality',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
   POLL_ACTIVE_RUNS_IN_SIMULATOR: {
     description: 'Enable polling active runs in simulator',
     expiryDate: '2025-12-31',

@@ -1431,7 +1431,9 @@
         "agents": "Agents",
         "totalMessages": "Total Messages",
         "viewButton": "View Project",
-        "noLastUpdatedAt": "Local"
+        "noLastUpdatedAt": "Local",
+        "addToFavorites": "Favorite",
+        "removeFromFavorites": "Remove from Favorites"
       }
     },
     "searchInput": {

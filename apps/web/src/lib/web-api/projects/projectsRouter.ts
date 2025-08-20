@@ -5,6 +5,7 @@ import {
   deployedAgentTemplates,
   organizationPreferences,
   projects,
+  projectFavorites,
 } from '@letta-cloud/service-database';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import { and, count, desc, eq, ilike, isNull } from 'drizzle-orm';
@@ -52,19 +53,34 @@ export async function getProjects(
       updatedAt: true,
       slug: true,
     },
+    with: {
+      favoriteUsers: {
+        where: eq(projectFavorites.userId, user.id),
+      },
+    },
     orderBy: [desc(projects.updatedAt)],
     offset,
     limit,
   });
 
+  // Sort projects with favorites first
+  const sortedProjects = [...projectsList].sort((a, b) => {
+    const aIsFavorited = a.favoriteUsers.length > 0;
+    const bIsFavorited = b.favoriteUsers.length > 0;
+    if (aIsFavorited && !bIsFavorited) return -1;
+    if (!aIsFavorited && bIsFavorited) return 1;
+    return 0;
+  });
+
   return {
     status: 200,
     body: {
-      projects: projectsList.map((project) => ({
+      projects: sortedProjects.map((project) => ({
         name: project.name,
         updatedAt: project.updatedAt.toISOString(),
         id: project.id,
         slug: project.slug,
+        isFavorited: project.favoriteUsers.length > 0,
       })),
     },
   };
@@ -113,6 +129,11 @@ export async function getProjectByIdOrSlug(
       id: true,
       slug: true,
     },
+    with: {
+      favoriteUsers: {
+        where: eq(projectFavorites.userId, user.id),
+      },
+    },
   });
 
   if (!project) {
@@ -129,6 +150,7 @@ export async function getProjectByIdOrSlug(
       name: project.name,
       id: project.id,
       slug: project.slug,
+      isFavorited: project.favoriteUsers.length > 0,
     },
   };
 }
@@ -475,6 +497,77 @@ export async function deleteProject(
   };
 }
 
+type ToggleFavoriteProjectRequest = ServerInferRequest<
+  typeof contracts.projects.toggleFavoriteProject
+>;
+
+type ToggleFavoriteProjectResponse = ServerInferResponses<
+  typeof contracts.projects.toggleFavoriteProject
+>;
+
+export async function toggleFavoriteProject(
+  req: ToggleFavoriteProjectRequest,
+): Promise<ToggleFavoriteProjectResponse> {
+  const { projectId } = req.params;
+  const { isFavorited } = req.body;
+
+  const user = await getUserWithActiveOrganizationIdOrThrow();
+
+  const organizationId = user.activeOrganizationId;
+
+  if (!user.permissions.has(ApplicationServices.READ_PROJECTS)) {
+    return {
+      status: 403,
+      body: {},
+    };
+  }
+
+  // Verify project exists and user has access
+  const project = await db.query.projects.findFirst({
+    where: and(
+      isNull(projects.deletedAt),
+      eq(projects.id, projectId),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!project) {
+    return {
+      status: 404,
+      body: {},
+    };
+  }
+
+  if (isFavorited) {
+    // Add to favorites
+    await db
+      .insert(projectFavorites)
+      .values({
+        userId: user.id,
+        projectId: projectId,
+      })
+      .onConflictDoNothing();
+  } else {
+    // Remove from favorites
+    await db
+      .delete(projectFavorites)
+      .where(
+        and(
+          eq(projectFavorites.userId, user.id),
+          eq(projectFavorites.projectId, projectId),
+        ),
+      );
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      isFavorited,
+    },
+  };
+}
+
 export const projectsRouter = {
   getProjects,
   getProjectByIdOrSlug,
@@ -482,4 +575,5 @@ export const projectsRouter = {
   getProjectDeployedAgentTemplates,
   updateProject,
   deleteProject,
+  toggleFavoriteProject,
 };

@@ -27,6 +27,7 @@ export const PartialProjectSchema = z.object({
   id: z.string(),
   slug: z.string(),
   updatedAt: z.string(),
+  isFavorited: z.boolean().optional(),
 });
 
 export type PartialProjectType = z.infer<typeof PartialProjectSchema>;
@@ -186,6 +187,24 @@ export type GetProjectByIdContractSuccessResponse = ServerInferResponses<
   200
 >;
 
+/* Toggle Favorite Project */
+const toggleFavoriteProjectContract = c.mutation({
+  method: 'POST',
+  path: '/projects/:projectId/favorite',
+  pathParams: z.object({
+    projectId: z.string(),
+  }),
+  body: z.object({
+    isFavorited: z.boolean(),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      isFavorited: z.boolean(),
+    }),
+  },
+});
+
 export const projectsContract = c.router({
   getProjects: c.query({
     method: 'GET',
@@ -200,6 +219,7 @@ export const projectsContract = c.router({
   getProjectDeployedAgentTemplates: getProjectDeployedAgentTemplatesContract,
   updateProject: updateProjectContract,
   deleteProject: deleteProjectContract,
+  toggleFavoriteProject: toggleFavoriteProjectContract,
 });
 
 export const projectsQueryClientKeys = {

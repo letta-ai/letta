@@ -14,6 +14,8 @@ import {
   LoadingEmptyStatusComponent,
   NiceGridDisplay,
   PlusIcon,
+  StarIcon,
+  StarFilledIcon,
   Typography,
   useForm,
   VStack,
@@ -28,13 +30,13 @@ import {
   useFormatters,
   useErrorTranslationMessage,
 } from '@letta-cloud/utils-client';
-import Link from 'next/link';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { BillingLink } from '@letta-cloud/ui-component-library';
 import { ImportAgentsDialog } from '@letta-cloud/ui-ade-components';
 
-import { webApi, webApiContracts, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi, webApiContracts, webApiQueryKeys, useFeatureFlag } from '@letta-cloud/sdk-web';
+import type { ServerInferResponses } from '@ts-rest/core';
 
 interface ProjectsListProps {
   search: string;
@@ -143,17 +145,54 @@ interface ProjectCardProps {
   projectName: string;
   lastUpdatedAt?: string;
   url: string;
+  isFavorited?: boolean;
+  onToggleFavorite?: (projectId: string, isFavorited: boolean) => void;
+  showFavoriteButton?: boolean;
 }
 
 function ProjectCard(props: ProjectCardProps) {
-  const { projectName, lastUpdatedAt, url } = props;
+  const { projectId, projectName, lastUpdatedAt, url, isFavorited, onToggleFavorite, showFavoriteButton } = props;
   const t = useTranslations('projects/page');
   const { formatDateAndTime } = useFormatters();
+  const router = useRouter();
+
+  function handleFavoriteClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(projectId, !isFavorited);
+    }
+  };
+
+  function handleCardClick(e: React.MouseEvent) {
+    // Only navigate if the click wasn't on the favorite button
+    const target = e.target as HTMLElement;
+    if (!target.closest('button')) {
+      router.push(url);
+    }
+  }
 
   return (
-    <Link href={url}>
+    <div onClick={handleCardClick} style={{ cursor: 'pointer' }}>
       {/* eslint-disable-next-line react/forbid-component-props */}
-      <Card className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2">
+      <Card className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 relative">
+        {showFavoriteButton && (
+          <div style={{
+            position: 'absolute',
+            top: '0.5rem',
+            right: '0.5rem',
+            zIndex: 10,
+          }}>
+            <Button
+              color="tertiary"
+              size="small"
+              hideLabel
+              onClick={handleFavoriteClick}
+              preIcon={isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />}
+              label={isFavorited ? t('projectsList.projectItem.removeFromFavorites') : t('projectsList.projectItem.addToFavorites')}
+            />
+          </div>
+        )}
         <VStack fullWidth>
           <VStack gap="medium" fullWidth>
             <Avatar size="medium" name={projectName} />
@@ -183,13 +222,16 @@ function ProjectCard(props: ProjectCardProps) {
           </VStack>
         </VStack>
       </Card>
-    </Link>
+    </div>
   );
 }
 
 function ProjectsList(props: ProjectsListProps) {
   const t = useTranslations('projects/page');
   const [debouncedSearch] = useDebouncedValue(props.search, 500);
+  const queryClient = useQueryClient();
+  const { data: favoriteProjectsEnabled } = useFeatureFlag('FAVORITE_PROJECTS');
+
   const { data, isError } = webApi.projects.getProjects.useQuery({
     queryKey: webApiQueryKeys.projects.getProjectsWithSearch({
       search: debouncedSearch,
@@ -200,6 +242,68 @@ function ProjectsList(props: ProjectsListProps) {
       },
     },
   });
+
+  const { mutate: toggleFavorite } = webApi.projects.toggleFavoriteProject.useMutation({
+    onMutate: async ({ params, body }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: webApiQueryKeys.projects.getProjects });
+
+      // Snapshot the previous value
+      const previousProjects = queryClient.getQueryData(
+        webApiQueryKeys.projects.getProjectsWithSearch({
+          search: debouncedSearch,
+        })
+      );
+
+      // Optimistically update
+      queryClient.setQueryData<ServerInferResponses<typeof webApiContracts.projects.getProjects, 200>>(
+        webApiQueryKeys.projects.getProjectsWithSearch({
+          search: debouncedSearch,
+        }),
+        (old) => {
+          if (!old?.body?.projects) return old;
+          return {
+            ...old,
+            body: {
+              ...old.body,
+              projects: old.body.projects.map((p) =>
+                p.id === params.projectId
+                  ? { ...p, isFavorited: body.isFavorited }
+                  : p
+              ),
+            },
+          };
+        }
+      );
+
+      return { previousProjects };
+    },
+    onError: (_err, _variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousProjects) {
+        queryClient.setQueryData(
+          webApiQueryKeys.projects.getProjectsWithSearch({
+            search: debouncedSearch,
+          }),
+          context.previousProjects
+        );
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      void queryClient.invalidateQueries({ queryKey: webApiQueryKeys.projects.getProjects });
+    },
+  });
+
+  const handleToggleFavorite = useCallback(
+    (projectId: string, isFavorited: boolean) => {
+      toggleFavorite({
+        params: { projectId },
+        body: { isFavorited },
+      });
+    },
+    [toggleFavorite]
+  );
 
   if (!data || isError || data.body.projects.length === 0) {
     return (
@@ -227,6 +331,9 @@ function ProjectsList(props: ProjectsListProps) {
             projectName={project.name}
             lastUpdatedAt={project.updatedAt}
             url={`/projects/${project.slug}`}
+            isFavorited={project.isFavorited}
+            onToggleFavorite={handleToggleFavorite}
+            showFavoriteButton={favoriteProjectsEnabled === true}
           />
         ))}
       </NiceGridDisplay>

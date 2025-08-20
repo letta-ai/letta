@@ -638,6 +638,13 @@
       "when": 1755283529220,
       "tag": "0090_elite_captain_britain",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1755650488212,
+      "tag": "0091_stormy_katie_power",
+      "breakpoints": true
     }
   ]
 }

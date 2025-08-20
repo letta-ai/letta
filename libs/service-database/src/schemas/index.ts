@@ -402,6 +402,22 @@ export const projects = pgTable(
   }),
 );
 
+export const projectFavorites = pgTable(
+  'project_favorites',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.projectId] }),
+  }),
+);
+
 export const projectRelations = relations(projects, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [projects.organizationId],
@@ -411,6 +427,18 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   agentTemplates: many(agentTemplates),
   deployedAgentsMetadata: many(deployedAgentMetadata),
   datasets: many(datasets),
+  favoriteUsers: many(projectFavorites),
+}));
+
+export const projectFavoritesRelations = relations(projectFavorites, ({ one }) => ({
+  user: one(users, {
+    fields: [projectFavorites.userId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [projectFavorites.projectId],
+    references: [projects.id],
+  }),
 }));
 
 /* Start template schemas */
