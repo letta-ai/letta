@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from letta_client import AsyncLetta, MessageCreate, ReasoningMessage, ToolCallMessage
 from letta_client.core import RequestOptions
 
-from tests.helpers.utils import upload_test_agentfile_from_disk
+from tests.helpers.utils import upload_test_agentfile_from_disk_async
 
 REASONING_THROTTLE_MS = 100
 TEST_USER_MESSAGE = "What products or services does 11x AI sell?"
@@ -66,7 +66,7 @@ async def test_pinecone_tool(client: AsyncLetta, server_url: str) -> None:
     """
     Test the Pinecone tool integration with the Letta client.
     """
-    response = upload_test_agentfile_from_disk(server_url, "knowledge-base.af")
+    response = await upload_test_agentfile_from_disk_async(client, "knowledge-base.af")
 
     agent_id = response.agent_ids[0]
 

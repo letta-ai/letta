@@ -3,7 +3,7 @@ import os
 import time
 from typing import Optional, Union
 
-import requests
+from letta_client import AsyncLetta, Letta
 
 from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
@@ -254,7 +254,8 @@ def validate_context_window_overview(
     assert len(overview.functions_definitions) > 0
 
 
-def upload_test_agentfile_from_disk(server_url: str, filename: str) -> ImportedAgentsResponse:
+# Changed this from server_url to client since client may be authenticated or not
+def upload_test_agentfile_from_disk(client: Letta, filename: str) -> ImportedAgentsResponse:
     """
     Upload a given .af file to live FastAPI server.
     """
@@ -263,18 +264,17 @@ def upload_test_agentfile_from_disk(server_url: str, filename: str) -> ImportedA
     file_path = os.path.join(path_to_test_agent_files, filename)
 
     with open(file_path, "rb") as f:
-        files = {"file": (filename, f, "application/json")}
+        return client.agents.import_file(file=f, append_copy_suffix=True, override_existing_tools=False)
 
-        # Send parameters as form data instead of query parameters
-        form_data = {
-            "append_copy_suffix": "true",
-            "override_existing_tools": "false",
-        }
 
-        response = requests.post(
-            f"{server_url}/v1/agents/import",
-            headers={"user_id": ""},
-            files=files,
-            data=form_data,  # Send as form data
-        )
-        return ImportedAgentsResponse(**response.json())
+async def upload_test_agentfile_from_disk_async(client: AsyncLetta, filename: str) -> ImportedAgentsResponse:
+    """
+    Upload a given .af file to live FastAPI server.
+    """
+    path_to_current_file = os.path.dirname(__file__)
+    path_to_test_agent_files = path_to_current_file.removesuffix("/helpers") + "/test_agent_files"
+    file_path = os.path.join(path_to_test_agent_files, filename)
+
+    with open(file_path, "rb") as f:
+        uploaded = await client.agents.import_file(file=f, append_copy_suffix=True, override_existing_tools=False)
+        return uploaded
