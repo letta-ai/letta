@@ -45,6 +45,7 @@ export enum AnalyticsEvent {
   CREATE_API_KEY = 'user:create_api_key',
   AGENTFILE_USE_IN_LETTA_CLOUD = 'agent:agentfile:use_in_letta_cloud',
   AGENTFILE_DOWNLOAD = 'agent:agentfile:download',
+  API_VISIT = 'api:visit',
 }
 
 export interface BaseProperty {
@@ -152,6 +153,14 @@ interface SendMessageFailedProperty extends MessageProperty {
   errorMessage: string;
 }
 
+interface ApiVisitProperty extends BaseProperty {
+  organizationId: string;
+  endpoint: string;
+  method: string;
+  route: string;
+  body: string;
+}
+
 export interface AnalyticsEventProperties {
   [AnalyticsEvent.USER_LOGGED_IN]: BaseProperty;
   [AnalyticsEvent.USER_CREATED]: BaseProperty;
@@ -196,4 +205,5 @@ export interface AnalyticsEventProperties {
   [AnalyticsEvent.SEND_MESSAGE_FAILED]: SendMessageFailedProperty;
   [AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD]: AgentFileProperty;
   [AnalyticsEvent.AGENTFILE_DOWNLOAD]: AgentFileProperty;
+  [AnalyticsEvent.API_VISIT]: ApiVisitProperty;
 }
