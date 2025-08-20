@@ -1869,5 +1869,50 @@
     },
     "alreadyAddedLabel": "已添加"
   },
-  "tokens": "令牌"
+  "tokens": "令牌",
+  "CreateNewMemoryBlockDialog": {
+    "advanced": "高级设置",
+    "title": "创建新的内存块",
+    "tabs": {
+      "custom": "自定义块",
+      "example": "示例块"
+    },
+    "label": {
+      "label": "标签",
+      "placeholder": "例如，user_profile, system_context"
+    },
+    "description": {
+      "label": "描述",
+      "placeholder": "此内存块用途的简要描述"
+    },
+    "value": {
+      "label": "值",
+      "placeholder": "此内存块的初始内容"
+    },
+    "characterLimit": {
+      "label": "字符限制",
+      "description": "此内存块中允许的最大字符数",
+      "placeholder": "例如，2000"
+    },
+    "readonly": {
+      "label": "只读",
+      "description": "启用时，智能体无法修改此内存块"
+    },
+    "preserveOnMigration": {
+      "label": "迁移时保留",
+      "description": "启用时，在将智能体迁移到新模板版本时将保留此内存块。这对于可能由智能体更新的内存很有用。"
+    },
+    "errors": {
+      "labelRequired": "标签是必需的",
+      "labelFormat": "标签必须以字母、下划线或连字符开头，并且只包含字母、数字、下划线和连字符",
+      "labelExists": "具有此标签的内存块已存在",
+      "characterLimitMustBeNumber": "字符限制必须是数字",
+      "overage": "您已达到计划的最大内存块数量，请<link>升级</link>或删除一些内存块。",
+      "default": "创建此内存块时出错，请重试或联系支持。",
+      "noAgent": "未选择智能体",
+      "createBlockError": "创建内存块失败",
+      "attachError": "将内存块附加到智能体失败"
+    },
+    "success": "内存块创建成功"
+  }
 }

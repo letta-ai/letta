@@ -38,6 +38,7 @@ interface CreateNewMemoryBlockDialogProps {
 
 function CustomMemoryBlockForm() {
   const t = useTranslations('CreateNewMemoryBlockDialog');
+  const { isTemplate } = useCurrentAgentMetaData();
 
   return (
     <VStack paddingTop="small" gap="form">
@@ -121,12 +122,33 @@ function CustomMemoryBlockForm() {
               <Switch
                 fullWidth
                 data-testid="memory-block-readonly-switch"
-                {...field}
+                checked={field.value}
+                onCheckedChange={(status) => {
+                  field.onChange(status);
+                }}
                 label={t('readonly.label')}
                 description={t('readonly.description')}
               />
             )}
           />
+
+          {isTemplate && (
+            <FormField
+              name="preserveOnMigration"
+              render={({ field }) => (
+                <Switch
+                  fullWidth
+                  data-testid="memory-block-preserve-on-migration-switch"
+                  checked={field.value}
+                  onCheckedChange={(status) => {
+                    field.onChange(status);
+                  }}
+                  label={t('preserveOnMigration.label')}
+                  description={t('preserveOnMigration.description')}
+                />
+              )}
+            />
+          )}
         </VStack>
       </Accordion>
     </VStack>
@@ -191,6 +213,7 @@ export function CreateNewMemoryBlockDialog(
       message: t('errors.characterLimitMustBeNumber'),
     }),
     readonly: z.boolean(),
+    preserveOnMigration: z.boolean().optional(),
   });
 
   type MemoryBlockFormValues = z.infer<typeof memoryBlockFormSchema>;
@@ -203,6 +226,7 @@ export function CreateNewMemoryBlockDialog(
       value: '',
       characterLimit: '5000',
       readonly: false,
+      preserveOnMigration: false,
     },
   });
 
@@ -260,6 +284,7 @@ export function CreateNewMemoryBlockDialog(
         limit: parseInt(values.characterLimit, 10),
         description: values.description,
         readOnly: values.readonly,
+        preserveOnMigration: values.preserveOnMigration,
         projectId: projectId || '',
       });
     },

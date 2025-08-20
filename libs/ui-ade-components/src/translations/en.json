@@ -2536,6 +2536,10 @@
       "label": "Read-only",
       "description": "When enabled, this memory block cannot be modified by the agent"
     },
+    "preserveOnMigration": {
+      "label": "Preserve on migration",
+      "description": "When enabled, this memory block will be preserved when migrating the agent to a new template version. This is useful for memories that could be updated by the agent."
+    },
     "errors": {
       "labelRequired": "Label is required",
       "labelFormat": "Label must start with a letter, underscore, or hyphen and contain only letters, numbers, underscores, and hyphens",

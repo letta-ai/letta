@@ -128,7 +128,7 @@ async function getDefaultSimulatedAgent(
         });
 
         simulatedAgentResponse = {
-          id: response.agent.id,
+          id: response.simulatedAgentRecord.id,
           agentId: response.agent.id,
           agentTemplate: {
             id: agentTemplate.id,

@@ -40,6 +40,22 @@ declare namespace Cypress {
     stageAndDeployAgent(): void;
     clearAllCachedData(): void;
     freshTestStart(): void;
+    createEntitiesFromTemplate(options: {
+      templateVersion: string;
+      agentName: string;
+      tags?: string[];
+      memoryVariables?: Record<string, string>;
+      toolVariables?: Record<string, string>;
+      identityIds?: string[];
+      initialMessageSequence?: any[];
+    }): Cypress.Chainable<{ agents: import('@letta-cloud/sdk-core').AgentState[] }>;
+    getTemplateSnapshot(templateVersion: string): Cypress.Chainable<import('@letta-cloud/utils-shared').TemplateSnapshotSchemaType>;
+    getCurrentTemplateFromUrl(): Cypress.Chainable<{
+      projectSlug: string;
+      templateName: string;
+      templateVersion: string;
+      fullTemplateVersion: string;
+    }>;
 
     // Task types for persistent caching
     task(name: 'getProjectSlug', arg: string): Cypress.Chainable<string | null>;

@@ -1,4 +1,5 @@
 import { DATA_SOURCES, TOOLS } from '../support/constants';
+import type { AgentState } from '@letta-cloud/sdk-core';
 
 describe(
   'Template Creation and Management',
@@ -114,6 +115,35 @@ describe(
         'should configure memory variables',
         { tags: ['@memory-variables'] },
         () => {
+          let initialAgent: AgentState;
+          let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
+
+          cy.testStep('Get initial agent state from template', () => {
+            cy.getCurrentTemplateFromUrl().then((template) => {
+              templateInfo = template;
+              return cy.createEntitiesFromTemplate({
+                templateVersion: template.fullTemplateVersion,
+                agentName: 'InitialTestAgent',
+                tags: ['initial-test']
+              });
+            }).then((response) => {
+              expect(response.agents).to.be.an('array');
+              expect(response.agents[0]).to.have.property('id');
+
+              initialAgent = response.agents[0];
+              expect(initialAgent.name).to.eq('InitialTestAgent');
+
+              // Verify initial state doesn't contain Shubham yet
+              const humanBlock = initialAgent.memory.blocks.find(
+                (block) => block.label === 'human'
+              );
+              expect(humanBlock, 'Human block should exist').to.exist;
+              if (humanBlock) {
+                expect(humanBlock.value).to.not.contain('Shubham');
+              }
+            });
+          });
+
           cy.testStep('Edit memory block with variables', () => {
             cy.clearPointerEventLock();
             cy.waitForMemoryBlockReady();
@@ -159,16 +189,92 @@ describe(
               timeout: 50000,
             }).contains('Shubham', { timeout: 50000 });
           });
+
+          cy.testStep('Save template version with migration enabled', () => {
+            cy.get('body').click({ force: true });
+            cy.stageAndDeployAgent();
+          });
+
+          cy.testStep('Verify initial agent was migrated to new values', () => {
+            // Retrieve the updated initial agent using the API
+            cy.request(`/v1/agents/${initialAgent.id}`)
+              .its('body')
+              .then((updatedAgent: AgentState) => {
+                expect(updatedAgent.memory.blocks).to.be.an('array');
+
+                const humanBlock = updatedAgent.memory.blocks.find(
+                  (block) => block.label === 'human'
+                );
+                expect(humanBlock, 'Human block should exist after migration').to.exist;
+
+                if (humanBlock) {
+                  expect(humanBlock.value, 'Since we never defined this environment variable the agent should not contain this variable').to.not.contain('Shubham');
+                  expect(humanBlock.value).to.contain('BananaMan');
+                }
+              });
+          });
+
+          cy.testStep('Create new agent and verify it gets updated template values', () => {
+            cy.createEntitiesFromTemplate({
+              templateVersion: `${templateInfo.templateVersion.replace(':current', ':latest')}`,
+              agentName: 'NewTestAgent',
+              tags: ['new-test'],
+              memoryVariables: { name: 'Shubham' }
+            }).then((response) => {
+              expect(response.agents).to.be.an('array');
+
+              const newAgent = response.agents[0];
+              expect(newAgent.memory.blocks).to.be.an('array');
+              expect(newAgent.name).to.eq('NewTestAgent');
+
+              const humanBlock = newAgent.memory.blocks.find(
+                (block) => block.label === 'human'
+              );
+              expect(humanBlock, 'Human block should exist in new agent').to.exist;
+
+              if (humanBlock) {
+                expect(humanBlock.value).to.contain('Shubham');
+                expect(humanBlock.value).to.contain('BananaMan');
+              }
+            });
+          });
         },
       );
 
       it(
-        'should create and delete a memory block through the advanced editor',
-        { tags: ['@memory-blocks', '@advanced-editor'] },
+        'should create and delete a memory block through the advanced editor with migration verification',
+        { tags: ['@memory-blocks', '@advanced-editor', '@migration'] },
         () => {
+          let initialAgent: AgentState;
+          let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
+
+          // PHASE 1: Initial state verification
+          cy.testStep('Phase 1: Create initial agent from current template state', () => {
+            cy.getCurrentTemplateFromUrl().then((template) => {
+              templateInfo = template;
+              return cy.createEntitiesFromTemplate({
+                templateVersion: template.fullTemplateVersion,
+                agentName: 'AdvancedEditorTestAgent',
+                tags: ['advanced-editor-test']
+              });
+            }).then((response) => {
+              expect(response.agents).to.be.an('array');
+              expect(response.agents[0]).to.have.property('id');
+
+              initialAgent = response.agents[0];
+              expect(initialAgent.name).to.eq('AdvancedEditorTestAgent');
+
+              // Verify initial state doesn't have our test block
+              const testBlock = initialAgent.memory.blocks.find(
+                (block) => block.label === 'cypress_test_block'
+              );
+              expect(testBlock, 'Test block should not exist initially').to.not.exist;
+            });
+          });
+
           cy.testStep('Open the Advanced Core Memory Editor', () => {
             cy.findByTestId('open-advanced-memory-editor', {
-              timeout: 10000,
+              timeout: 50000,
             }).click();
           });
 
@@ -199,6 +305,11 @@ describe(
               .clear()
               .type('2000');
 
+            // Test preserveOnMigration checkbox - enable it
+            cy.findByTestId('memory-block-preserve-on-migration-switch').click();
+
+            // Test readOnly checkbox - keep it disabled for now (we'll test it later)
+
             // Submit the form using the dialog's confirm button
             cy.findByTestId('create-new-memory-block-dialog-confirm-button', {
               timeout: 5000,
@@ -208,7 +319,7 @@ describe(
           cy.testStep('Verify memory block was created', () => {
             // Check that the new memory block appears in the sidebar
             cy.findByTestId('memory-block-cypress_test_block', {
-              timeout: 10000,
+              timeout: 50000,
             })
               .should('exist')
               .and('be.visible');
@@ -230,28 +341,172 @@ describe(
             );
           });
 
-          cy.testStep('Delete the memory block', () => {
-            // Ensure the memory block is still selected
-            cy.findByTestId('memory-block-cypress_test_block').should(
-              'have.attr',
-              'aria-selected',
-              'true',
-            );
-
-            // Click the delete button
-            cy.findByTestId('delete-memory-block', { timeout: 5000 }).click();
-
-            // Confirm the deletion in the dialog
-            cy.findByTestId(
-              'delete-memory-block-dialog-confirm-button',
-            ).click();
+          // PHASE 2: Migration verification after block addition
+          cy.testStep('Phase 2: Save template version and verify migration after block addition', () => {
+            cy.get('body').click({ force: true });
+            cy.stageAndDeployAgent();
           });
 
-          cy.testStep('Verify memory block was deleted', () => {
+
+
+          cy.testStep('Phase 2: Verify initial agent was migrated with new block', () => {
+            // Retrieve the updated initial agent using the API
+            cy.request(`/v1/agents/${initialAgent.id}`)
+              .its('body')
+              .then((updatedAgent: AgentState) => {
+                expect(updatedAgent.memory.blocks).to.be.an('array');
+
+                const testBlock = updatedAgent.memory.blocks.find(
+                  (block) => block.label === 'cypress_test_block'
+                );
+                expect(testBlock, 'Test block should exist after migration').to.exist;
+
+                if (testBlock) {
+                  expect(testBlock.value).to.contain('This is test content for the cypress memory block');
+                  expect(testBlock.description).to.eq('A test memory block created by Cypress automation');
+                  expect(testBlock.preserve_on_migration).to.eq(true);
+                  expect(testBlock.read_only).to.eq(false);
+                }
+              });
+          });
+
+          cy.testStep('Phase 2: Navigate back to template editor', () => {
+            // Navigate back to the template editor after deployment
+            cy.visitWithDevDelay(`/projects/${templateInfo.projectSlug}/templates/${templateInfo.templateName}`);
+            // Reopen the advanced memory editor
+            cy.findByTestId('open-advanced-memory-editor', {
+              timeout: 50000,
+            }).click();
+          });
+
+          cy.testStep('Phase 2: Create new agent and verify it gets the new block', () => {
+            cy.createEntitiesFromTemplate({
+              templateVersion: `${templateInfo.templateVersion.replace(':current', ':latest')}`,
+              agentName: 'NewAgentWithBlock',
+              tags: ['new-test-with-block']
+            }).then((response) => {
+              expect(response.agents).to.be.an('array');
+
+              const newAgent = response.agents[0];
+              expect(newAgent.memory.blocks).to.be.an('array');
+              expect(newAgent.name).to.eq('NewAgentWithBlock');
+
+              const testBlock = newAgent.memory.blocks.find(
+                (block) => block.label === 'cypress_test_block'
+              );
+              expect(testBlock, 'New agent should have the test block').to.exist;
+
+              if (testBlock) {
+                expect(testBlock.value).to.contain('This is test content for the cypress memory block');
+                expect(testBlock.preserve_on_migration).to.eq(true);
+                expect(testBlock.read_only).to.eq(false);
+              }
+            });
+          });
+
+          // PHASE 3: Migration verification after block deletion with readOnly testing
+          cy.testStep('Phase 3: Test readOnly functionality and modify block', () => {
+            // Select the memory block
+            cy.findByTestId('memory-block-cypress_test_block').click();
+
+            // Enable readOnly checkbox to test this functionality
+            cy.findByTestId('advanced-memory-editor-readonly-checkbox').click();
+
+            // Verify preserveOnMigration checkbox is checked (from creation) (check if data-state="checked")
+            cy.findByTestId('advanced-memory-editor-preserve-on-migration-checkbox')
+              .should('have.attr', 'data-state', 'checked');
+
+            // Update the memory block with readOnly enabled
+            cy.findByTestId('advanced-memory-editor-update').click();
+
+            // Wait for the update to complete
+            cy.wait(2000);
+          });
+
+          cy.testStep('Phase 3: Verify readOnly works and deploy', () => {
+            // Deploy to save readOnly state
+            cy.get('body').click({ force: true });
+            cy.stageAndDeployAgent();
+          });
+
+          cy.testStep('Phase 3: Navigate back and verify readOnly state', () => {
+            // Navigate back to the template editor
+            cy.visitWithDevDelay(`/projects/${templateInfo.projectSlug}/templates/${templateInfo.templateName}`);
+            // Reopen the advanced memory editor
+            cy.findByTestId('open-advanced-memory-editor', {
+              timeout: 50000,
+            }).click();
+          });
+
+          cy.testStep('Phase 3: Verify readOnly migration and delete the block', () => {
+            // Verify the updated agent has readOnly enabled
+            cy.request(`/v1/agents/${initialAgent.id}`)
+              .its('body')
+              .then((updatedAgent: AgentState) => {
+                const testBlock = updatedAgent.memory.blocks.find(
+                  (block) => block.label === 'cypress_test_block'
+                );
+                expect(testBlock, 'Test block should still exist').to.exist;
+                if (testBlock) {
+                  expect(testBlock.read_only).to.eq(true);
+                  expect(testBlock.preserve_on_migration).to.eq(true);
+                }
+              });
+
+            // Now delete the memory block
+            cy.findByTestId('memory-block-cypress_test_block').click();
+            cy.findByTestId('delete-memory-block', { timeout: 5000 }).click();
+            cy.findByTestId('delete-memory-block-dialog-confirm-button').click();
+          });
+
+          cy.testStep('Phase 3: Verify memory block was deleted from UI', () => {
             // Verify the memory block no longer exists in the sidebar
             cy.findByTestId('memory-block-cypress_test_block', {
               timeout: 5000,
             }).should('not.exist');
+          });
+
+          cy.testStep('Phase 3: Save template version and verify migration after block deletion', () => {
+            cy.get('body').click({ force: true });
+            cy.stageAndDeployAgent();
+          });
+
+          cy.testStep('Phase 3: Navigate back to template editor for final verification', () => {
+            // Navigate back to the template editor after deployment
+            cy.visitWithDevDelay(`/projects/${templateInfo.projectSlug}/templates/${templateInfo.templateName}`);
+          });
+
+          cy.testStep('Phase 3: Verify initial agent was migrated with block removed', () => {
+            // Retrieve the updated initial agent using the API
+            cy.request(`/v1/agents/${initialAgent.id}`)
+              .its('body')
+              .then((updatedAgent: AgentState) => {
+                expect(updatedAgent.memory.blocks).to.be.an('array');
+
+                const testBlock = updatedAgent.memory.blocks.find(
+                  (block) => block.label === 'cypress_test_block'
+                );
+                expect(testBlock, 'Test block should be removed after migration').to.not.exist;
+              });
+          });
+
+          cy.testStep('Phase 3: Create final new agent and verify block is absent', () => {
+            cy.createEntitiesFromTemplate({
+              templateVersion: `${templateInfo.templateVersion.replace(':current', ':latest')}`,
+              agentName: 'FinalAgentWithoutBlock',
+              tags: ['final-test-without-block']
+            }).then((response) => {
+              expect(response.agents).to.be.an('array');
+
+              const newAgent = response.agents[0];
+              expect(newAgent.memory.blocks).to.be.an('array');
+              expect(newAgent.name).to.eq('FinalAgentWithoutBlock');
+
+              const testBlock = newAgent.memory.blocks.find(
+                (block) => block.label === 'cypress_test_block'
+              );
+              expect(testBlock, 'Final new agent should not have the deleted test block').to.not.exist;
+            });
           });
         },
       );

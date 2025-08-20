@@ -176,6 +176,9 @@ export async function updateAgentFromAgentTemplateId(
             {
               requestBody: {
                 label: block.label,
+                description: block.description || '',
+                preserve_on_migration: block.preserve_on_migration || false,
+                read_only: block.read_only || false,
                 value: block.value,
                 limit: block.limit,
               },
@@ -212,6 +215,8 @@ export async function updateAgentFromAgentTemplateId(
                 blockLabel: block.label,
                 requestBody: {
                   preserve_on_migration: block.preserve_on_migration || false,
+                  read_only: block.read_only || false,
+                  description: block.description || '',
                 },
               },
               {

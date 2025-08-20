@@ -237,7 +237,7 @@ function TemplateMemory() {
 
         return (
           <EditMemoryForm
-            key={block.label}
+            key={`${block.label}_template`}
             memory={block}
             memoryType="templated"
             agentId={agent.id}
@@ -273,9 +273,9 @@ function AgentMemory(props: SimulatedMemoryProps) {
 
   return (
     <MemoryWrapper memoryCount={memories.length}>
-      {memories.map((block) => (
+      {memories.map((block, index) => (
         <EditMemoryForm
-          key={block.label}
+          key={`${block.label}_${index}`}
           disabled={isTemplate}
           memory={block}
           agentId={agent.id}

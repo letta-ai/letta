@@ -310,6 +310,7 @@ function useCreateTemplateMemoryBlock(
                 },
               );
 
+
               // Update simulated agent if exists
               if (simulatedAgent) {
                 handleCreateSimulatedAgentMemoryBlock({

@@ -1,7 +1,6 @@
 import {
   webApi,
   webApiQueryKeys,
-  type BlockTemplateType,
 } from '@letta-cloud/sdk-web';
 import type { MemoryType } from '@letta-cloud/ui-component-library';
 import {
@@ -20,7 +19,7 @@ interface UseListMemoriesOptions {
 
 interface UseListMemoriesReturnValue {
   isNotLoaded: boolean;
-  memories: Array<Block | BlockTemplateType>;
+  memories: Block[];
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
@@ -114,7 +113,15 @@ function useListTemplateMemories(
     if (!templateId || !agentTemplateBlocksData) {
       return [];
     }
-    return agentTemplateBlocksData.body.blockTemplates;
+    return agentTemplateBlocksData.body.blockTemplates.map(block => ({
+      id: block.id || '',
+      label: block.label || '',
+      value: block.value || '',
+      limit: block.limit || 1,
+      description: block.description || '',
+      preserve_on_migration: block.preserveOnMigration || false,
+      read_only: block.readOnly || false,
+    }))
   }, [templateId, agentTemplateBlocksData]);
 
   return {

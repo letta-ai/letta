@@ -129,6 +129,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
 
   type MemoryUpdatePayload = z.infer<typeof memoryUpdateSchema>;
 
+
   const { handleUpdate, isPending, isError } = useUpdateMemoryBlock({
     memoryType: isTemplate ? 'templated' : 'agent',
     label: memory.label || '',
@@ -255,6 +256,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
             render={({ field }) => (
               <div className="w-[300px]">
                 <Checkbox
+                  data-testid="advanced-memory-editor-readonly-checkbox"
                   infoTooltip={{
                     text: t('AdvancedMemoryEditorForm.readOnly.tooltip'),
                   }}
@@ -274,6 +276,7 @@ function AdvancedMemoryEditorForm(props: AdvancedMemoryEditorProps) {
               render={({ field }) => (
                 <div className="w-[300px]">
                   <Checkbox
+                    data-testid="advanced-memory-editor-preserve-on-migration-checkbox"
                     infoTooltip={{
                       text: t(
                         'AdvancedMemoryEditorForm.preserveOnMigration.tooltip',

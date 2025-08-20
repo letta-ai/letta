@@ -574,3 +574,105 @@ Cypress.Commands.add('waitForDeploymentComplete', () => {
     timeout: 60000,
   });
 });
+
+Cypress.Commands.add('createEntitiesFromTemplate', (options: {
+  templateVersion: string;
+  agentName: string;
+  tags?: string[];
+  memoryVariables?: Record<string, string>;
+  toolVariables?: Record<string, string>;
+  identityIds?: string[];
+}) => {
+  const {
+    templateVersion,
+    agentName,
+    tags = [],
+    memoryVariables = {},
+    toolVariables = {},
+    identityIds = [],
+  } = options;
+
+  // Extract project and template_version from templateVersion (format: project_slug/template_name:version)
+  const [projectAndTemplate, version = 'latest'] = templateVersion.split(':');
+  const [project, templateName] = projectAndTemplate.split('/');
+
+  if (!project || !templateName) {
+    throw new Error('Invalid template version format. Expected: project_slug/template_name:version');
+  }
+
+  cy.request({
+    method: 'POST',
+    url: `/v1/templates/${project}/${templateName}:${version}/agents`,
+    body: {
+      agent_name: agentName,
+      tags,
+      memory_variables: memoryVariables,
+      tool_variables: toolVariables,
+      identity_ids: identityIds,
+    },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((response) => {
+    expect(response.status).to.eq(201);
+    expect(response.body).to.have.property('agents');
+    expect(response.body.agents).to.be.an('array');
+    expect(response.body.agents[0]).to.have.property('id');
+    expect(response.body.agents[0]).to.have.property('name', agentName);
+
+    if (tags.length > 0) {
+      expect(response.body.agents[0].tags).to.include.members(tags);
+    }
+
+    return response.body;
+  });
+});
+
+Cypress.Commands.add('getTemplateSnapshot', (templateVersion: string) => {
+  // Extract project and template_version from templateVersion (format: project_slug/template_name:version)
+  const [projectAndTemplate, version = 'latest'] = templateVersion.split(':');
+  const [project, templateName] = projectAndTemplate.split('/');
+
+  if (!project || !templateName) {
+    throw new Error('Invalid template version format. Expected: project_slug/template_name:version');
+  }
+
+  return cy.request({
+    method: 'GET',
+    url: `/v1/templates/${project}/${templateName}:${version}/snapshot`,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((response) => {
+    expect(response.status).to.eq(200);
+    expect(response.body).to.have.property('agents');
+    expect(response.body).to.have.property('blocks');
+    expect(response.body).to.have.property('configuration');
+    expect(response.body).to.have.property('type');
+    expect(response.body).to.have.property('version');
+    expect(response.body.agents).to.be.an('array');
+    expect(response.body.blocks).to.be.an('array');
+
+    return response.body;
+  });
+});
+
+Cypress.Commands.add('getCurrentTemplateFromUrl', () => {
+  return cy.url().then((url) => {
+    // Match pattern: /projects/{projectSlug}/templates/{templateName}
+    const match = url.match(/\/projects\/([^\/]+)\/templates\/([^\/\?]+)/);
+
+    if (!match) {
+      throw new Error('Current URL is not a template page. Expected format: /projects/{projectSlug}/templates/{templateName}');
+    }
+
+    const [, projectSlug, templateName] = match;
+
+    return {
+      projectSlug,
+      templateName,
+      templateVersion: `${projectSlug}/${templateName}:current`,
+      fullTemplateVersion: `${projectSlug}/${templateName}:latest`
+    };
+  });
+});
