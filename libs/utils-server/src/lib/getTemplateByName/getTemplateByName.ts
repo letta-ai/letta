@@ -53,8 +53,6 @@ export async function getTemplateByName(options: GetTemplateByNameOptions) {
       eq(lettaTemplates.name, templateName),
     ];
 
-
-
     if (version === 'current') {
       baseWhere.push(eq(lettaTemplates.version, 'current'));
     } else if (version === 'latest') {

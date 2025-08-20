@@ -22,7 +22,13 @@
     "type-check": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit -p apps/web/tsconfig.json"
+        "command": "tsc --noEmit --incremental -p apps/web/tsconfig.json"
+      }
+    },
+    "type-check:fast": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --incremental --assumeChangesOnlyAffectDirectDependencies -p apps/web/tsconfig.json"
       }
     },
     "generate-openapi": {

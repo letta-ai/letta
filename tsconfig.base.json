@@ -14,6 +14,7 @@
     "lib": ["ES2023.Array", "es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "assumeChangesOnlyAffectDirectDependencies": true,
     "baseUrl": ".",
     "strictNullChecks": true,
     "incremental": true,

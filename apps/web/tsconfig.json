@@ -11,13 +11,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
+    "tsBuildInfoFile": ".next/.tsbuildinfo",
     "strictNullChecks": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "assumeChangesOnlyAffectDirectDependencies": true
   },
   "include": [
     "**/*.ts",
