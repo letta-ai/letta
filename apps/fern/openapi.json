@@ -1538,6 +1538,24 @@
               "default": "suffix"
             },
             "description": "How to handle duplicate filenames"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional custom name to override the uploaded file's name",
+              "title": "Name"
+            },
+            "description": "Optional custom name to override the uploaded file's name"
           }
         ],
         "requestBody": {
@@ -2247,6 +2265,24 @@
               "default": "suffix"
             },
             "description": "How to handle duplicate filenames"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional custom name to override the uploaded file's name",
+              "title": "Name"
+            },
+            "description": "Optional custom name to override the uploaded file's name"
           }
         ],
         "requestBody": {

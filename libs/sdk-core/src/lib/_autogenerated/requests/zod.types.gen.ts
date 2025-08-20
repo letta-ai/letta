@@ -8529,6 +8529,9 @@ export const post_Upload_file_to_source = {
           z.literal('replace'),
         ])
         .optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     path: z.object({
       source_id: z.string(),
@@ -8806,6 +8809,9 @@ export const post_Upload_file_to_folder = {
           z.literal('suffix'),
           z.literal('replace'),
         ])
+        .optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
     path: z.object({

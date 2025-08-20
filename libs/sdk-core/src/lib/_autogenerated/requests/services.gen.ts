@@ -1204,6 +1204,7 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.formData
    * @param data.duplicateHandling How to handle duplicate filenames
+   * @param data.name Optional custom name to override the uploaded file's name
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -1220,6 +1221,7 @@ export class SourcesService {
       },
       query: {
         duplicate_handling: data.duplicateHandling,
+        name: data.name,
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',
@@ -1602,6 +1604,7 @@ export class FoldersService {
    * @param data.folderId
    * @param data.formData
    * @param data.duplicateHandling How to handle duplicate filenames
+   * @param data.name Optional custom name to override the uploaded file's name
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -1618,6 +1621,7 @@ export class FoldersService {
       },
       query: {
         duplicate_handling: data.duplicateHandling,
+        name: data.name,
       },
       formData: data.formData,
       mediaType: 'multipart/form-data',

@@ -6152,6 +6152,10 @@ export type UploadFileToSourceData = {
    */
   duplicateHandling?: DuplicateFileHandling;
   formData: Body_upload_file_to_source;
+  /**
+   * Optional custom name to override the uploaded file's name
+   */
+  name?: string | null;
   sourceId: string;
   userId?: string | null;
 };
@@ -6285,6 +6289,10 @@ export type UploadFileToFolderData = {
   duplicateHandling?: DuplicateFileHandling;
   folderId: string;
   formData: Body_upload_file_to_folder;
+  /**
+   * Optional custom name to override the uploaded file's name
+   */
+  name?: string | null;
   userId?: string | null;
 };
 

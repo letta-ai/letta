@@ -3886,6 +3886,7 @@ export const useSourcesServiceCreateSource = <
  * @param data.sourceId
  * @param data.formData
  * @param data.duplicateHandling How to handle duplicate filenames
+ * @param data.name Optional custom name to override the uploaded file's name
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -3902,6 +3903,7 @@ export const useSourcesServiceUploadFileToSource = <
       {
         duplicateHandling?: DuplicateFileHandling;
         formData: Body_upload_file_to_source;
+        name?: string;
         sourceId: string;
         userId?: string;
       },
@@ -3916,15 +3918,17 @@ export const useSourcesServiceUploadFileToSource = <
     {
       duplicateHandling?: DuplicateFileHandling;
       formData: Body_upload_file_to_source;
+      name?: string;
       sourceId: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ duplicateHandling, formData, sourceId, userId }) =>
+    mutationFn: ({ duplicateHandling, formData, name, sourceId, userId }) =>
       SourcesService.uploadFileToSource({
         duplicateHandling,
         formData,
+        name,
         sourceId,
         userId,
       }) as unknown as Promise<TData>,
@@ -3980,6 +3984,7 @@ export const useFoldersServiceCreateFolder = <
  * @param data.folderId
  * @param data.formData
  * @param data.duplicateHandling How to handle duplicate filenames
+ * @param data.name Optional custom name to override the uploaded file's name
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -3997,6 +4002,7 @@ export const useFoldersServiceUploadFileToFolder = <
         duplicateHandling?: DuplicateFileHandling;
         folderId: string;
         formData: Body_upload_file_to_folder;
+        name?: string;
         userId?: string;
       },
       TContext
@@ -4011,15 +4017,17 @@ export const useFoldersServiceUploadFileToFolder = <
       duplicateHandling?: DuplicateFileHandling;
       folderId: string;
       formData: Body_upload_file_to_folder;
+      name?: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ duplicateHandling, folderId, formData, userId }) =>
+    mutationFn: ({ duplicateHandling, folderId, formData, name, userId }) =>
       FoldersService.uploadFileToFolder({
         duplicateHandling,
         folderId,
         formData,
+        name,
         userId,
       }) as unknown as Promise<TData>,
     ...options,
