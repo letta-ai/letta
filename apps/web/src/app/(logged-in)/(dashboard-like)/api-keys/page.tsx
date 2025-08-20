@@ -388,9 +388,11 @@ function APIKeysPage() {
           offset={offset}
           hasNextPage={data?.body.hasNextPage}
           onSetOffset={setOffset}
+          noResultsAction={canCreateKey ? <CreateAPIKeyDialog /> : null}
           showPagination
           autofitHeight
           errorMessage={isError ? t('errorMessage') : undefined}
+          noResultsText={t('emptyMessage')}
           loadingText={t('loadingMessage')}
           onLimitChange={setLimit}
           columns={apiKeysColumns}
