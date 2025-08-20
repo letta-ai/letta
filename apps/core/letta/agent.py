@@ -42,6 +42,7 @@ from letta.log import get_logger
 from letta.memory import summarize_messages
 from letta.orm import User
 from letta.otel.tracing import log_event, trace_method
+from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
@@ -59,7 +60,7 @@ from letta.schemas.tool_rule import TerminalToolRule
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import check_supports_structured_output, compile_memory_metadata_block
+from letta.services.helpers.agent_manager_helper import check_supports_structured_output
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.services.job_manager import JobManager
 from letta.services.mcp.base_client import AsyncBaseMCPClient
@@ -1246,7 +1247,7 @@ class Agent(BaseAgent):
 
         agent_manager_passage_size = self.agent_manager.passage_size(actor=self.user, agent_id=self.agent_state.id)
         message_manager_size = self.message_manager.size(actor=self.user, agent_id=self.agent_state.id)
-        external_memory_summary = compile_memory_metadata_block(
+        external_memory_summary = PromptGenerator.compile_memory_metadata_block(
             memory_edit_timestamp=get_utc_time(),
             timezone=self.agent_state.timezone,
             previous_message_count=self.message_manager.size(actor=self.user, agent_id=self.agent_state.id),
