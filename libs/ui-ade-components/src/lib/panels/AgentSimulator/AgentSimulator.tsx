@@ -43,6 +43,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   OpenInNetworkInspectorButton,
   useCurrentAgent,
+  useCurrentAgentActiveRuns,
   useCurrentAgentMetaData,
 } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
@@ -736,6 +737,9 @@ export function AgentSimulator() {
 
   const { isLocal } = useCurrentAgentMetaData();
   const { id: agentIdToUse } = useCurrentSimulatedAgent();
+  const { data: isPollActiveRunsEnabled } = useFeatureFlag('POLL_ACTIVE_RUNS_IN_SIMULATOR');
+  const { hasActiveRuns, setOptimisticActiveRun, clearOptimisticActiveRuns } =
+    useCurrentAgentActiveRuns();
 
   const ref = useRef<ChatInputRef | null>(null);
 
@@ -748,6 +752,9 @@ export function AgentSimulator() {
   } = useSendMessage({
     onFailedToSendMessage: (message) => {
       ref.current?.setChatMessage(message);
+      if (isPollActiveRunsEnabled) {
+        clearOptimisticActiveRuns();
+      }
     },
   });
 
@@ -998,12 +1005,15 @@ export function AgentSimulator() {
                     role: RoleOption,
                     content: LettaUserMessageContentUnion[] | string,
                   ) => {
+                    if (isPollActiveRunsEnabled) {
+                      setOptimisticActiveRun();
+                    }
                     sendMessage({ role, content, agentId: agentIdToUse || '' });
 
                     handleOnboardingStepChange();
                   }}
                   onStopMessage={() => stopMessage(agentIdToUse || '')}
-                  isSendingMessage={isPending}
+                  isSendingMessage={isPending || (!!isPollActiveRunsEnabled && hasActiveRuns)}
                 />
               </QuickAgentSimulatorOnboarding>
             </VStack>

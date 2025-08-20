@@ -6,6 +6,7 @@ export * from './useADESidebarContext/useADESidebarContext';
 export * from './useSyncUpdateCurrentAgent/useSyncUpdateCurrentAgent';
 export * from './useCurrentBasePathname/useCurrentBasePathname';
 export * from './useCurrentAgent/useCurrentAgent';
+export * from './useCurrentAgentActiveRuns/useCurrentAgentActiveRuns';
 export * from './useAgentBaseNameType/useAgentBaseNameType';
 export * from './useCurrentAgentMetaData/useCurrentAgentMetaData';
 export * from './useCurrentGroup/useCurrentGroup';
