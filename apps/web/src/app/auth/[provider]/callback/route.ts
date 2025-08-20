@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { AuthProviderContextSchema } from '../types';
-import type {
-  ProviderUserPayload,
-  SupportedProviders,
+import {
+  type ProviderUserPayload,
+  type SupportedProviders, supportedProvidersSchema
 } from '@letta-cloud/sdk-web';
 import type { NextRequest } from 'next/server';
 import {
@@ -12,7 +12,7 @@ import {
   getInviteCodeFromState,
   getRedirectUrlFromState,
   isValidCSRFState,
-  signInUserFromProviderLogin,
+  signInUserFromProviderLogin
 } from '$web/server/auth';
 import { LoginErrorsEnum } from '$web/errors';
 import * as Sentry from '@sentry/node';
@@ -20,7 +20,7 @@ import { parseInviteCode } from '$web/utils';
 import { WorkOS } from '@workos-inc/node';
 import {
   db,
-  organizationSSOConfiguration,
+  organizationSSOConfiguration
 } from '@letta-cloud/service-database';
 import { eq } from 'drizzle-orm';
 
@@ -32,7 +32,7 @@ interface GoogleAccessTokenResponse {
 }
 
 async function getAccessTokenFromGoogle(
-  code: string,
+  code: string
 ): Promise<ProviderUserPayload> {
   const response = await axios.post<GoogleAccessTokenResponse>(
     'https://oauth2.googleapis.com/token',
@@ -41,15 +41,15 @@ async function getAccessTokenFromGoogle(
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
       code,
       grant_type: 'authorization_code',
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-    },
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI
+    }
   );
 
   return extractGoogleIdTokenData(response.data.id_token);
 }
 
 async function getAccessTokenFromGithub(
-  code: string,
+  code: string
 ): Promise<ProviderUserPayload> {
   const response = await axios.post<string>(
     'https://github.com/login/oauth/access_token',
@@ -57,8 +57,8 @@ async function getAccessTokenFromGithub(
       client_id: process.env.AUTH_GITHUB_CLIENT_ID,
       client_secret: process.env.AUTH_GITHUB_CLIENT_SECRET,
       code,
-      redirect_uri: process.env.AUTH_GITHUB_REDIRECT_URI,
-    },
+      redirect_uri: process.env.AUTH_GITHUB_REDIRECT_URI
+    }
   );
 
   const accessToken = new URLSearchParams(response.data).get('access_token');
@@ -71,13 +71,13 @@ async function getAccessTokenFromGithub(
 }
 
 async function getDetailsFromWorkOS(
-  code: string,
+  code: string
 ): Promise<ProviderUserPayload> {
   const workos = new WorkOS(process.env.WORKOS_API_KEY);
 
   const { profile } = await workos.sso.getProfileAndToken({
     code,
-    clientId: process.env.WORKOS_CLIENT_ID || '',
+    clientId: process.env.WORKOS_CLIENT_ID || ''
   });
 
   if (!profile.organizationId) {
@@ -87,8 +87,8 @@ async function getDetailsFromWorkOS(
   const org = await db.query.organizationSSOConfiguration.findFirst({
     where: eq(
       organizationSSOConfiguration.workOSOrganizationId,
-      profile.organizationId,
-    ),
+      profile.organizationId
+    )
   });
 
   if (!org) {
@@ -102,13 +102,13 @@ async function getDetailsFromWorkOS(
     imageUrl: '',
     isVerified: true,
     organizationOverride: org.organizationId,
-    provider: 'workos-sso',
+    provider: 'workos-sso'
   };
 }
 
 async function getUserDetailsFromProvider(
   provider: SupportedProviders,
-  code: string,
+  code: string
 ): Promise<ProviderUserPayload> {
   switch (provider) {
     case 'google':
@@ -124,7 +124,7 @@ async function getUserDetailsFromProvider(
 
 export async function GET(
   req: NextRequest,
-  context: AuthProviderContextSchema,
+  context: AuthProviderContextSchema
 ) {
   try {
     const { provider } = await context.params;
@@ -142,7 +142,13 @@ export async function GET(
       return new Response('No code provided', { status: 400 });
     }
 
-    const userPayload = await getUserDetailsFromProvider(provider, code);
+    const res = supportedProvidersSchema.safeParse(provider);
+
+    if (!res.success) {
+      return new Response('Invalid provider', { status: 400 });
+    }
+
+    const userPayload = await getUserDetailsFromProvider(res.data, code);
 
     const inviteCode = getInviteCodeFromState(state || '');
 
@@ -153,8 +159,8 @@ export async function GET(
         return new Response('Error signing in', {
           status: 302,
           headers: {
-            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVALID_INVITE_CODE}&code=${inviteCode}`,
-          },
+            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVALID_INVITE_CODE}&code=${inviteCode}`
+          }
         });
       }
 
@@ -162,8 +168,8 @@ export async function GET(
         return new Response('Error signing in', {
           status: 302,
           headers: {
-            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVITE_MISMATCH_EMAIL}&code=${inviteCode}`,
-          },
+            location: `/signup-via-invite?errorCode=${LoginErrorsEnum.INVITE_MISMATCH_EMAIL}&code=${inviteCode}`
+          }
         });
       }
     }
@@ -173,7 +179,7 @@ export async function GET(
     const redirectUrl = getRedirectUrlFromState(state || '');
     return generateRedirectSignatureForLoggedInUser({
       newUserDetails,
-      redirectUrl,
+      redirectUrl
     });
   } catch (e) {
     const errorCode = (() => {
@@ -195,8 +201,8 @@ export async function GET(
     return new Response('Error signing in', {
       status: 302,
       headers: {
-        location: `/login?errorCode=${errorCode}`,
-      },
+        location: `/login?errorCode=${errorCode}`
+      }
     });
   }
 }

@@ -1,4 +1,4 @@
-import type { SupportedProviders } from '@letta-cloud/sdk-web';
+import  { type SupportedProviders, supportedProvidersSchema } from '@letta-cloud/sdk-web';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -21,7 +21,13 @@ export async function GET(
   req: NextRequest,
   context: AuthProviderContextSchema,
 ) {
-  const authUrl = generateOAuthStep1URL((await context.params).provider);
+  const res = supportedProvidersSchema.safeParse((await context.params).provider);
+
+  if (!res.success) {
+    return new Response('Invalid provider', { status: 400 });
+  }
+
+  const authUrl = generateOAuthStep1URL(res.data);
 
   const redirectUrl = req.nextUrl.searchParams.get('redirect') || '';
   const inviteCode = req.nextUrl.searchParams.get('inviteCode') || undefined;

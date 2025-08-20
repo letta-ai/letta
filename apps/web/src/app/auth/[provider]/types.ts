@@ -1,10 +1,9 @@
 import { z } from 'zod';
-import { supportedProvidersSchema } from '@letta-cloud/sdk-web';
 
 export const authProviderContextSchema = z.object({
   params: z
     .object({
-      provider: supportedProvidersSchema,
+      provider: z.string(),
     })
     .promise(),
 });

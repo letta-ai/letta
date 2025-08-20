@@ -141,7 +141,7 @@
     "mixpanel": "^0.18.0",
     "mixpanel-browser": "^2.58.0",
     "nanoid": "^5.0.9",
-    "next": "^15.2.4",
+    "next": "^15.5.0",
     "next-intl": "^3.26.3",
     "next-transition-router": "^0.2.6",
     "nextjs-toploader": "^3.7.15",
