@@ -554,6 +554,13 @@ ready:
     npm run web:database:migrate
     npm run core:database:migrate
 
+
+install-all-web-service-deps:
+    @echo "🚧 Installing all web service dependencies..."
+    npm install
+    just setup-cloud-api
+    just setup-desktop
+
 start-services:
     @echo "🚧 Starting up postgres, redis..."
     docker compose up -d redis postgres
