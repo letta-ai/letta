@@ -42,6 +42,7 @@ from letta.orm.sandbox_config import AgentEnvironmentVariable
 from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
+from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import DEFAULT_BLOCKS
@@ -89,7 +90,6 @@ from letta.services.helpers.agent_manager_helper import (
     check_supports_structured_output,
     compile_system_message,
     derive_system_message,
-    get_system_message_from_compiled_memory,
     initialize_message_sequence,
     initialize_message_sequence_async,
     package_initial_message_sequence,
@@ -1783,7 +1783,7 @@ class AgentManager:
 
         # update memory (TODO: potentially update recall/archival stats separately)
 
-        new_system_message_str = get_system_message_from_compiled_memory(
+        new_system_message_str = PromptGenerator.get_system_message_from_compiled_memory(
             system_prompt=agent_state.system,
             memory_with_sources=curr_memory_str,
             in_context_memory_last_edit=memory_edit_timestamp,
