@@ -62,7 +62,7 @@ function ToolButton(props: ToolButtonProps) {
           {getFileExtension()}
         </Typography>
       </HStack>
-      {isDirty && <div className="w-[8px] h-[8px] bg-primary rounded-full" />}
+      {isDirty && tool.tool_type === 'custom' && <div className="w-[8px] h-[8px] bg-primary rounded-full" />}
     </HStack>
   );
 }
