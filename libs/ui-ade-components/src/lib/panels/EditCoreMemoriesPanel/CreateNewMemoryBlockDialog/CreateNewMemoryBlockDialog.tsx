@@ -248,10 +248,6 @@ export function CreateNewMemoryBlockDialog(
         return;
       }
 
-      if (!projectId) {
-        return;
-      }
-
       trackClientSideEvent(AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY, {
         agentId: agent.id,
         blockType,
@@ -264,7 +260,7 @@ export function CreateNewMemoryBlockDialog(
         limit: parseInt(values.characterLimit, 10),
         description: values.description,
         readOnly: values.readonly,
-        projectId,
+        projectId: projectId || '',
       });
     },
     [currentAgentId, template, projectId, handleCreate, t, blockType, agent.id],

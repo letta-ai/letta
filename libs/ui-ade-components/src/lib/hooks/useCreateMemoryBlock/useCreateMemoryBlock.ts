@@ -26,10 +26,10 @@ import type { z } from 'zod';
 
 // Use the same payload schema for both agent and template blocks
 // Agent blocks will omit projectId, template blocks will include it
-export type AgentMemoryBlockPayload = Omit<
-  z.infer<typeof CreateBlockTemplatePayloadSchema>,
-  'projectId'
+export type AgentMemoryBlockPayload = z.infer<
+  typeof CreateBlockTemplatePayloadSchema
 >;
+
 export type TemplateMemoryBlockPayload = z.infer<
   typeof CreateBlockTemplatePayloadSchema
 >;
