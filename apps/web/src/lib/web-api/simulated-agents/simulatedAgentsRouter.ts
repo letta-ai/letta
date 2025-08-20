@@ -648,7 +648,7 @@ async function syncDefaultSimulatedAgent(
       },
     };
   } catch (error) {
-    console.error('Error syncing default simulated agent:', error);
+    Sentry.captureException(error);
     return {
       status: 500,
       body: {
