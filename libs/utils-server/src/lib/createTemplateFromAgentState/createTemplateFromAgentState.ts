@@ -149,7 +149,7 @@ export async function createTemplateFromAgentState(
       tx,
       agentState: {
         ...agentState,
-        system: DEFAULT_SYSTEM_PROMPT,
+        system: agentState.system || DEFAULT_SYSTEM_PROMPT,
         llm_config: {
           ...agentState.llm_config,
           handle: agentState.llm_config.handle || 'openai/gpt-4o-mini',
