@@ -118,7 +118,7 @@ class AsyncTimer:
     def __init__(self, callback_func: Callable | None = None):
         self._start_time_ns = None
         self._end_time_ns = None
-        self.elapsed_ns = None
+        self._elapsed_ns = None
         self.callback_func = callback_func
 
     async def __aenter__(self):
@@ -127,7 +127,7 @@ class AsyncTimer:
 
     async def __aexit__(self, exc_type, exc, tb):
         self._end_time_ns = time.perf_counter_ns()
-        self.elapsed_ns = self._end_time_ns - self._start_time_ns
+        self._elapsed_ns = self._end_time_ns - self._start_time_ns
         if self.callback_func:
             from asyncio import iscoroutinefunction
 
@@ -139,6 +139,10 @@ class AsyncTimer:
 
     @property
     def elapsed_ms(self):
-        if self.elapsed_ns is not None:
-            return ns_to_ms(self.elapsed_ns)
+        if self._elapsed_ns is not None:
+            return ns_to_ms(self._elapsed_ns)
         return None
+
+    @property
+    def elapsed_ns(self):
+        return self._elapsed_ns

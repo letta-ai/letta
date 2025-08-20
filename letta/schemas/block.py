@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 from typing_extensions import Self
 
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, DEFAULT_HUMAN_BLOCK_DESCRIPTION, DEFAULT_PERSONA_BLOCK_DESCRIPTION
@@ -38,8 +38,7 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # def __len__(self):
     #     return len(self.value)
 
-    class Config:
-        extra = "ignore"  # Ignores extra fields
+    model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
     @model_validator(mode="after")
     def verify_char_limit(self) -> Self:
@@ -115,8 +114,7 @@ class BlockUpdate(BaseBlock):
     value: Optional[str] = Field(None, description="Value of the block.")
     project_id: Optional[str] = Field(None, description="The associated project id.")
 
-    class Config:
-        extra = "ignore"  # Ignores extra fields
+    model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
 
 class CreateBlock(BaseBlock):
@@ -130,6 +128,14 @@ class CreateBlock(BaseBlock):
     # block templates
     is_template: bool = False
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_value_is_string(cls, data):
+        """Convert None value to empty string"""
+        if data and isinstance(data, dict) and data.get("value") is None:
+            data["value"] = ""
+        return data
 
 
 class CreateHuman(CreateBlock):

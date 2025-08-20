@@ -1,6 +1,9 @@
 import functools
+import os
 import time
 from typing import Optional, Union
+
+import requests
 
 from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
@@ -11,6 +14,7 @@ from letta.schemas.memory import ContextWindowOverview
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.schemas.user import User as PydanticUser
+from letta.server.rest_api.routers.v1.agents import ImportedAgentsResponse
 from letta.server.server import SyncServer
 
 
@@ -248,3 +252,29 @@ def validate_context_window_overview(
     # Check for tools
     assert overview.num_tokens_functions_definitions > 0
     assert len(overview.functions_definitions) > 0
+
+
+def upload_test_agentfile_from_disk(server_url: str, filename: str) -> ImportedAgentsResponse:
+    """
+    Upload a given .af file to live FastAPI server.
+    """
+    path_to_current_file = os.path.dirname(__file__)
+    path_to_test_agent_files = path_to_current_file.removesuffix("/helpers") + "/test_agent_files"
+    file_path = os.path.join(path_to_test_agent_files, filename)
+
+    with open(file_path, "rb") as f:
+        files = {"file": (filename, f, "application/json")}
+
+        # Send parameters as form data instead of query parameters
+        form_data = {
+            "append_copy_suffix": "true",
+            "override_existing_tools": "false",
+        }
+
+        response = requests.post(
+            f"{server_url}/v1/agents/import",
+            headers={"user_id": ""},
+            files=files,
+            data=form_data,  # Send as form data
+        )
+        return ImportedAgentsResponse(**response.json())

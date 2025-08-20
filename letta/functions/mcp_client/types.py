@@ -18,8 +18,19 @@ TEMPLATED_VARIABLE_REGEX = (
 logger = get_logger(__name__)
 
 
+class MCPToolHealth(BaseModel):
+    """Health status for an MCP tool's schema."""
+
+    # TODO: @jnjpng use the enum provided in schema_validator.py
+    status: str = Field(..., description="Schema health status: STRICT_COMPLIANT, NON_STRICT_ONLY, or INVALID")
+    reasons: List[str] = Field(default_factory=list, description="List of reasons for the health status")
+
+
 class MCPTool(Tool):
     """A simple wrapper around MCP's tool definition (to avoid conflict with our own)"""
+
+    # Optional health information added at runtime
+    health: Optional[MCPToolHealth] = Field(None, description="Schema health status for OpenAI strict mode")
 
 
 class MCPServerType(str, Enum):

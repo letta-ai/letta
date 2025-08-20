@@ -20,9 +20,9 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
     STRUCTURED_OUTPUT_MODELS,
 )
-from letta.embeddings import embedding_model
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import format_datetime, get_local_time, get_local_time_fast
+from letta.llm_api.llm_client import LLMClient
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.archives_agents import ArchivesAgents
@@ -156,7 +156,25 @@ def _process_tags(agent: "AgentModel", tags: List[str], replace=True):
         agent.tags.extend([tag for tag in new_tags if tag.tag not in existing_tags])
 
 
-def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None):
+def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool] = None, system: Optional[str] = None) -> str:
+    """
+    Derive the appropriate system message based on agent type and configuration.
+
+    This function determines which system prompt template to use based on the
+    agent's type and whether sleeptime functionality is enabled. If a custom
+    system message is provided, it returns that instead.
+
+    Args:
+        agent_type: The type of agent (e.g., memgpt_agent, sleeptime_agent, react_agent)
+        enable_sleeptime: Whether sleeptime tools should be available (affects prompt choice)
+        system: Optional custom system message to use instead of defaults
+
+    Returns:
+        The system message string appropriate for the agent configuration
+
+    Raises:
+        ValueError: If an invalid or unsupported agent type is provided
+    """
     if system is None:
         # TODO: don't hardcode
 
@@ -204,8 +222,33 @@ def compile_memory_metadata_block(
     memory_edit_timestamp: datetime,
     timezone: str,
     previous_message_count: int = 0,
-    archival_memory_size: int = 0,
+    archival_memory_size: Optional[int] = 0,
 ) -> str:
+    """
+    Generate a memory metadata block for the agent's system prompt.
+
+    This creates a structured metadata section that informs the agent about
+    the current state of its memory systems, including timing information
+    and memory counts. This helps the agent understand what information
+    is available through its tools.
+
+    Args:
+        memory_edit_timestamp: When memory blocks were last modified
+        timezone: The timezone to use for formatting timestamps (e.g., 'America/Los_Angeles')
+        previous_message_count: Number of messages in recall memory (conversation history)
+        archival_memory_size: Number of items in archival memory (long-term storage)
+
+    Returns:
+        A formatted string containing the memory metadata block with XML-style tags
+
+    Example Output:
+        <memory_metadata>
+        - The current time is: 2024-01-15 10:30 AM PST
+        - Memory blocks were last modified: 2024-01-15 09:00 AM PST
+        - 42 previous messages between you and the user are stored in recall memory (use tools to access them)
+        - 156 total memories you created are stored in archival memory (use tools to access them)
+        </memory_metadata>
+    """
     # Put the timestamp in the local timezone (mimicking get_local_time())
     timestamp_str = format_datetime(memory_edit_timestamp, timezone)
 
@@ -939,7 +982,7 @@ def _apply_relationship_filters(query, include_relationships: Optional[List[str]
     return query
 
 
-def build_passage_query(
+async def build_passage_query(
     actor: User,
     agent_id: Optional[str] = None,
     file_id: Optional[str] = None,
@@ -963,8 +1006,14 @@ def build_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Start with base query for source passages
@@ -1150,7 +1199,7 @@ def build_passage_query(
     return main_query
 
 
-def build_source_passage_query(
+async def build_source_passage_query(
     actor: User,
     agent_id: Optional[str] = None,
     file_id: Optional[str] = None,
@@ -1171,8 +1220,14 @@ def build_source_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Base query for source passages
@@ -1248,7 +1303,7 @@ def build_source_passage_query(
     return query
 
 
-def build_agent_passage_query(
+async def build_agent_passage_query(
     actor: User,
     agent_id: str,  # Required for agent passages
     query_text: Optional[str] = None,
@@ -1267,8 +1322,14 @@ def build_agent_passage_query(
     if embed_query:
         assert embedding_config is not None, "embedding_config must be specified for vector search"
         assert query_text is not None, "query_text must be specified for vector search"
-        embedded_text = embedding_model(embedding_config).get_text_embedding(query_text)
-        embedded_text = np.array(embedded_text)
+
+        # Use the new LLMClient for embeddings
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+        embedded_text = np.array(embeddings[0])
         embedded_text = np.pad(embedded_text, (0, MAX_EMBEDDING_DIM - embedded_text.shape[0]), mode="constant").tolist()
 
     # Base query for agent passages - join through archives_agents

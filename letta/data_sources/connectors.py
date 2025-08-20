@@ -4,7 +4,6 @@ import typer
 
 from letta.constants import EMBEDDING_BATCH_SIZE
 from letta.data_sources.connectors_helper import assert_all_files_exist_locally, extract_metadata_from_files, get_filenames_in_dir
-from letta.embeddings import embedding_model
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.source import Source
@@ -40,61 +39,29 @@ class DataConnector:
 
 async def load_data(connector: DataConnector, source: Source, passage_manager: PassageManager, file_manager: FileManager, actor: "User"):
     from letta.llm_api.llm_client import LLMClient
-    from letta.schemas.embedding_config import EmbeddingConfig
 
     """Load data from a connector (generates file and passages) into a specified source_id, associated with a user_id."""
     embedding_config = source.embedding_config
 
     # insert passages/file
-    texts = []
     embedding_to_document_name = {}
     passage_count = 0
     file_count = 0
 
-    async def generate_embeddings(texts: List[str], embedding_config: EmbeddingConfig) -> List[Passage]:
-        passages = []
-        if embedding_config.embedding_endpoint_type == "openai":
-            texts.append(passage_text)
-
-            client = LLMClient.create(
-                provider_type=embedding_config.embedding_endpoint_type,
-                actor=actor,
-            )
-            embeddings = await client.request_embeddings(texts, embedding_config)
-
-        else:
-            embed_model = embedding_model(embedding_config)
-            embeddings = [embed_model.get_text_embedding(text) for text in texts]
-
-        # collate passage and embedding
-        for text, embedding in zip(texts, embeddings):
-            passage = Passage(
-                text=text,
-                file_id=file_metadata.id,
-                source_id=source.id,
-                metadata=passage_metadata,
-                organization_id=source.organization_id,
-                embedding_config=source.embedding_config,
-                embedding=embedding,
-            )
-            hashable_embedding = tuple(passage.embedding)
-            file_name = file_metadata.file_name
-            if hashable_embedding in embedding_to_document_name:
-                typer.secho(
-                    f"Warning: Duplicate embedding found for passage in {file_name} (already exists in {embedding_to_document_name[hashable_embedding]}), skipping insert into VectorDB.",
-                    fg=typer.colors.YELLOW,
-                )
-                continue
-
-            passages.append(passage)
-            embedding_to_document_name[hashable_embedding] = file_name
-        return passages
+    # Use the new LLMClient for all embedding requests
+    client = LLMClient.create(
+        provider_type=embedding_config.embedding_endpoint_type,
+        actor=actor,
+    )
 
     for file_metadata in connector.find_files(source):
         file_count += 1
         await file_manager.create_file(file_metadata, actor)
 
-        # generate passages
+        # generate passages for this file
+        texts = []
+        metadatas = []
+
         for passage_text, passage_metadata in connector.generate_passages(file_metadata, chunk_size=embedding_config.embedding_chunk_size):
             # for some reason, llama index parsers sometimes return empty strings
             if len(passage_text) == 0:
@@ -104,23 +71,73 @@ async def load_data(connector: DataConnector, source: Source, passage_manager: P
                 )
                 continue
 
-            # get embedding
             texts.append(passage_text)
-            if len(texts) >= EMBEDDING_BATCH_SIZE:
-                passages = await generate_embeddings(texts, embedding_config)
-                texts = []
-            else:
-                continue
+            metadatas.append(passage_metadata)
 
-            # insert passages into passage store
+            if len(texts) >= EMBEDDING_BATCH_SIZE:
+                # Process the batch
+                embeddings = await client.request_embeddings(texts, embedding_config)
+                passages = []
+
+                for text, embedding, passage_metadata in zip(texts, embeddings, metadatas):
+                    passage = Passage(
+                        text=text,
+                        file_id=file_metadata.id,
+                        source_id=source.id,
+                        metadata=passage_metadata,
+                        organization_id=source.organization_id,
+                        embedding_config=source.embedding_config,
+                        embedding=embedding,
+                    )
+                    hashable_embedding = tuple(passage.embedding)
+                    file_name = file_metadata.file_name
+                    if hashable_embedding in embedding_to_document_name:
+                        typer.secho(
+                            f"Warning: Duplicate embedding found for passage in {file_name} (already exists in {embedding_to_document_name[hashable_embedding]}), skipping insert into VectorDB.",
+                            fg=typer.colors.YELLOW,
+                        )
+                        continue
+
+                    passages.append(passage)
+                    embedding_to_document_name[hashable_embedding] = file_name
+
+                # insert passages into passage store
+                await passage_manager.create_many_passages_async(passages, actor)
+                passage_count += len(passages)
+
+                # Reset for next batch
+                texts = []
+                metadatas = []
+
+        # Process final remaining texts for this file
+        if len(texts) > 0:
+            embeddings = await client.request_embeddings(texts, embedding_config)
+            passages = []
+
+            for text, embedding, passage_metadata in zip(texts, embeddings, metadatas):
+                passage = Passage(
+                    text=text,
+                    file_id=file_metadata.id,
+                    source_id=source.id,
+                    metadata=passage_metadata,
+                    organization_id=source.organization_id,
+                    embedding_config=source.embedding_config,
+                    embedding=embedding,
+                )
+                hashable_embedding = tuple(passage.embedding)
+                file_name = file_metadata.file_name
+                if hashable_embedding in embedding_to_document_name:
+                    typer.secho(
+                        f"Warning: Duplicate embedding found for passage in {file_name} (already exists in {embedding_to_document_name[hashable_embedding]}), skipping insert into VectorDB.",
+                        fg=typer.colors.YELLOW,
+                    )
+                    continue
+
+                passages.append(passage)
+                embedding_to_document_name[hashable_embedding] = file_name
+
             await passage_manager.create_many_passages_async(passages, actor)
             passage_count += len(passages)
-
-    # final remaining
-    if len(texts) > 0:
-        passages = await generate_embeddings(texts, embedding_config)
-        await passage_manager.create_many_passages_async(passages, actor)
-        passage_count += len(passages)
 
     return passage_count, file_count
 

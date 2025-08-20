@@ -18,7 +18,6 @@ class ProviderType(str, Enum):
     azure = "azure"
     vllm = "vllm"
     bedrock = "bedrock"
-    cohere = "cohere"
 
 
 class ProviderCategory(str, Enum):
@@ -155,6 +154,7 @@ class DuplicateFileHandling(str, Enum):
     SKIP = "skip"  # skip files with duplicate names
     ERROR = "error"  # error when duplicate names are encountered
     SUFFIX = "suffix"  # add numeric suffix to make names unique (default behavior)
+    REPLACE = "replace"  # replace the file with the duplicate name
 
 
 class SandboxType(str, Enum):

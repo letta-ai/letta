@@ -874,7 +874,7 @@ def validate_function_response(function_response: Any, return_char_limit: int, s
         function_response_string = str(function_response)
 
     # TODO we should change this to a max token limit that's variable based on tokens remaining (or context-window)
-    if truncate and len(function_response_string) > return_char_limit:
+    if truncate and return_char_limit and len(function_response_string) > return_char_limit:
         logger.warning(f"function return was over limit ({len(function_response_string)} > {return_char_limit}) and was truncated")
         function_response_string = f"{function_response_string[:return_char_limit]}... [NOTE: function output was truncated since it exceeded the character limit ({len(function_response_string)} > {return_char_limit})]"
 

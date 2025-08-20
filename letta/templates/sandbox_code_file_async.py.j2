@@ -30,14 +30,12 @@ async def _async_wrapper():
 
     {# Use a temporary Pydantic wrapper to recursively serialize any nested Pydantic objects #}
     try:
-        from pydantic import BaseModel
+        from pydantic import BaseModel, ConfigDict
         from typing import Any
 
         class _TempResultWrapper(BaseModel):
+            model_config = ConfigDict(arbitrary_types_allowed=True)
             result: Any
-
-            class Config:
-                arbitrary_types_allowed = True
 
         _wrapped = _TempResultWrapper(result=_function_result)
         _serialized_result = _wrapped.model_dump()['result']

@@ -209,6 +209,7 @@ async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
+    name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -256,13 +257,15 @@ async def upload_file_to_source(
     content = await file.read()
 
     # Store original filename and handle duplicate logic
-    original_filename = sanitize_filename(file.filename)  # Basic sanitization only
+    # Use custom name if provided, otherwise use the uploaded file's name
+    original_filename = sanitize_filename(name if name else file.filename)  # Basic sanitization only
 
     # Check if duplicate exists
     existing_file = await server.file_manager.get_file_by_original_name_and_source(
         original_filename=original_filename, source_id=source_id, actor=actor
     )
 
+    unique_filename = None
     if existing_file:
         # Duplicate found, handle based on strategy
         if duplicate_handling == DuplicateFileHandling.ERROR:
@@ -271,18 +274,21 @@ async def upload_file_to_source(
             )
         elif duplicate_handling == DuplicateFileHandling.SKIP:
             # Return existing file metadata with custom header to indicate it was skipped
-            from fastapi import Response
-
             response = Response(
                 content=existing_file.model_dump_json(), media_type="application/json", headers={"X-Upload-Result": "skipped"}
             )
             return response
-        # For SUFFIX, continue to generate unique filename
+        elif duplicate_handling == DuplicateFileHandling.REPLACE:
+            # delete the file
+            deleted_file = await server.file_manager.delete_file(file_id=existing_file.id, actor=actor)
+            unique_filename = original_filename
 
-    # Generate unique filename (adds suffix if needed)
-    unique_filename = await server.file_manager.generate_unique_filename(
-        original_filename=original_filename, source=source, organization_id=actor.organization_id
-    )
+    if not unique_filename:
+        # For SUFFIX, continue to generate unique filename
+        # Generate unique filename (adds suffix if needed)
+        unique_filename = await server.file_manager.generate_unique_filename(
+            original_filename=original_filename, source=source, organization_id=actor.organization_id
+        )
 
     # create file metadata
     file_metadata = FileMetadata(

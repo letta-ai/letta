@@ -23,7 +23,8 @@ from letta.config import LettaConfig
 from letta.constants import LETTA_TOOL_EXECUTION_DIR
 from letta.data_sources.connectors import DataConnector, load_data
 from letta.errors import HandleNotFoundError
-from letta.functions.mcp_client.types import MCPServerType, MCPTool, SSEServerConfig, StdioServerConfig
+from letta.functions.mcp_client.types import MCPServerType, MCPTool, MCPToolHealth, SSEServerConfig, StdioServerConfig
+from letta.functions.schema_validator import validate_complete_json_schema
 from letta.groups.helpers import load_multi_agent
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
@@ -40,7 +41,7 @@ from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType
+from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType, ToolSourceType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate
@@ -856,6 +857,9 @@ class SyncServer(Server):
             request.llm_config = await self.get_cached_llm_config_async(actor=actor, **config_params)
             log_event(name="end get_cached_llm_config", attributes=config_params)
 
+        if request.reasoning is None:
+            request.reasoning = request.llm_config.enable_reasoner or request.llm_config.put_inner_thoughts_in_kwargs
+
         if request.embedding_config is None:
             if request.embedding is None:
                 if settings.default_embedding_handle is None:
@@ -1099,33 +1103,6 @@ class SyncServer(Server):
     def get_recall_memory_summary(self, agent_id: str, actor: User) -> RecallMemorySummary:
         return RecallMemorySummary(size=self.message_manager.size(actor=actor, agent_id=agent_id))
 
-    def get_agent_archival(
-        self,
-        user_id: str,
-        agent_id: str,
-        after: Optional[str] = None,
-        before: Optional[str] = None,
-        limit: Optional[int] = 100,
-        order_by: Optional[str] = "created_at",
-        reverse: Optional[bool] = False,
-        query_text: Optional[str] = None,
-        ascending: Optional[bool] = True,
-    ) -> List[Passage]:
-        # TODO: Thread actor directly through this function, since the top level caller most likely already retrieved the user
-        actor = self.user_manager.get_user_or_default(user_id=user_id)
-
-        # iterate over records
-        records = self.agent_manager.list_passages(
-            actor=actor,
-            agent_id=agent_id,
-            after=after,
-            query_text=query_text,
-            before=before,
-            ascending=ascending,
-            limit=limit,
-        )
-        return records
-
     async def get_agent_archival_async(
         self,
         agent_id: str,
@@ -1153,7 +1130,7 @@ class SyncServer(Server):
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Insert passages into the archive
-        passages = await self.passage_manager.insert_passage_async(agent_state=agent_state, text=memory_contents, actor=actor)
+        passages = await self.passage_manager.insert_passage(agent_state=agent_state, text=memory_contents, actor=actor)
 
         return passages
 
@@ -1470,10 +1447,6 @@ class SyncServer(Server):
         # load data into the document store
         passage_count, document_count = await load_data(connector, source, self.passage_manager, self.file_manager, actor=actor)
         return passage_count, document_count
-
-    def list_data_source_passages(self, user_id: str, source_id: str) -> List[Passage]:
-        # TODO: move this query into PassageManager
-        return self.agent_manager.list_passages(actor=self.user_manager.get_user_or_default(user_id=user_id), source_id=source_id)
 
     def list_all_sources(self, actor: User) -> List[Source]:
         # TODO: legacy: remove
@@ -1934,12 +1907,19 @@ class SyncServer(Server):
         pip_requirements: Optional[List[PipRequirement]] = None,
     ) -> ToolReturnMessage:
         """Run a tool from source code"""
-        if tool_source_type is not None and tool_source_type != "python":
-            raise ValueError("Only Python source code is supported at this time")
+
+        if tool_source_type not in (None, ToolSourceType.python, ToolSourceType.typescript):
+            raise ValueError("Tool source type is not supported at this time. Found {tool_source_type}")
 
         # If tools_json_schema is explicitly passed in, override it on the created Tool object
         if tool_json_schema:
-            tool = Tool(name=tool_name, source_code=tool_source, json_schema=tool_json_schema, pip_requirements=pip_requirements)
+            tool = Tool(
+                name=tool_name,
+                source_code=tool_source,
+                json_schema=tool_json_schema,
+                pip_requirements=pip_requirements,
+                source_type=tool_source_type,
+            )
         else:
             # NOTE: we're creating a floating Tool object and NOT persisting to DB
             tool = Tool(
@@ -1947,6 +1927,7 @@ class SyncServer(Server):
                 source_code=tool_source,
                 args_json_schema=tool_args_json_schema,
                 pip_requirements=pip_requirements,
+                source_type=tool_source_type,
             )
 
         assert tool.name is not None, "Failed to create tool object"
@@ -2086,7 +2067,15 @@ class SyncServer(Server):
         if mcp_server_name not in self.mcp_clients:
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
-        return await self.mcp_clients[mcp_server_name].list_tools()
+        tools = await self.mcp_clients[mcp_server_name].list_tools()
+
+        # Add health information to each tool
+        for tool in tools:
+            if tool.inputSchema:
+                health_status, reasons = validate_complete_json_schema(tool.inputSchema)
+                tool.health = MCPToolHealth(status=health_status.value, reasons=reasons)
+
+        return tools
 
     async def add_mcp_server_to_config(
         self, server_config: Union[SSEServerConfig, StdioServerConfig], allow_upsert: bool = True

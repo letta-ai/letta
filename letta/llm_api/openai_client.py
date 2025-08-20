@@ -26,7 +26,6 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderCategory, ProviderType
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
@@ -52,6 +51,11 @@ def is_openai_reasoning_model(model: str) -> bool:
 def is_openai_5_model(model: str) -> bool:
     """Utility function to check if the model is a '5' model"""
     return model.startswith("gpt-5")
+
+
+def supports_verbosity_control(model: str) -> bool:
+    """Check if the model supports verbosity control, currently only GPT-5 models support this"""
+    return is_openai_5_model(model)
 
 
 def accepts_developer_role(model: str) -> bool:
@@ -102,8 +106,6 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     """Certain providers require the tool choice to be set to 'auto'."""
     if "nebius.com" in llm_config.model_endpoint:
         return True
-    if "together.ai" in llm_config.model_endpoint or "together.xyz" in llm_config.model_endpoint:
-        return True
     if llm_config.handle and "vllm" in llm_config.handle:
         return True
     if llm_config.compatibility_type == "mlx":
@@ -113,13 +115,7 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
 
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = ProviderManager().get_override_key(llm_config.provider_name, actor=self.actor)
-        if llm_config.model_endpoint_type == ProviderType.together:
-            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
+        api_key, _, _ = self.get_byok_overrides(llm_config)
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -130,25 +126,14 @@ class OpenAIClient(LLMClientBase):
         return kwargs
 
     def _prepare_client_kwargs_embedding(self, embedding_config: EmbeddingConfig) -> dict:
-        api_key = None
-        if embedding_config.embedding_endpoint_type == ProviderType.together:
-            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
-
-        if not api_key:
-            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
+        api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
         # supposedly the openai python client requires a dummy API key
         api_key = api_key or "DUMMY_API_KEY"
         kwargs = {"api_key": api_key, "base_url": embedding_config.embedding_endpoint}
         return kwargs
 
     async def _prepare_client_kwargs_async(self, llm_config: LLMConfig) -> dict:
-        api_key = None
-        if llm_config.provider_category == ProviderCategory.byok:
-            from letta.services.provider_manager import ProviderManager
-
-            api_key = await ProviderManager().get_override_key_async(llm_config.provider_name, actor=self.actor)
-        if llm_config.model_endpoint_type == ProviderType.together:
-            api_key = model_settings.together_api_key or os.environ.get("TOGETHER_API_KEY")
+        api_key, _, _ = await self.get_byok_overrides_async(llm_config)
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
@@ -157,6 +142,9 @@ class OpenAIClient(LLMClientBase):
         kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
 
         return kwargs
+
+    def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
+        return requires_auto_tool_choice(llm_config)
 
     @trace_method
     def build_request_data(
@@ -204,7 +192,7 @@ class OpenAIClient(LLMClientBase):
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
-        if requires_auto_tool_choice(llm_config):
+        if self.requires_auto_tool_choice(llm_config):
             tool_choice = "auto"
         elif tools:
             # only set if tools is non-Null
@@ -223,6 +211,10 @@ class OpenAIClient(LLMClientBase):
             # NOTE: the reasoners that don't support temperature require 1.0, not None
             temperature=llm_config.temperature if supports_temperature_param(model) else 1.0,
         )
+
+        # Add verbosity control for GPT-5 models
+        if supports_verbosity_control(model) and llm_config.verbosity:
+            data.verbosity = llm_config.verbosity
 
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
@@ -252,8 +244,8 @@ class OpenAIClient(LLMClientBase):
                         tool.function = FunctionSchema(**structured_output_version)
                     except ValueError as e:
                         logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
-
-        return data.model_dump(exclude_unset=True)
+        request_data = data.model_dump(exclude_unset=True)
+        return request_data
 
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -261,7 +253,6 @@ class OpenAIClient(LLMClientBase):
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
-
         response: ChatCompletion = client.chat.completions.create(**request_data)
         return response.model_dump()
 
@@ -272,7 +263,6 @@ class OpenAIClient(LLMClientBase):
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-
         response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 

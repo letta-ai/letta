@@ -18,7 +18,8 @@ class ToolSettings(BaseSettings):
     e2b_api_key: str | None = Field(default=None, description="API key for using E2B as a tool sandbox")
     e2b_sandbox_template_id: str | None = Field(default=None, description="Template ID for E2B Sandbox. Updated Manually.")
 
-    modal_api_key: str | None = Field(default=None, description="API key for using Modal as a tool sandbox")
+    modal_token_id: str | None = Field(default=None, description="Token id for using Modal as a tool sandbox")
+    modal_token_secret: str | None = Field(default=None, description="Token secret for using Modal as a tool sandbox")
 
     # Search Providers
     tavily_api_key: str | None = Field(default=None, description="API key for using Tavily as a search provider.")
@@ -41,7 +42,7 @@ class ToolSettings(BaseSettings):
     def sandbox_type(self) -> SandboxType:
         if self.e2b_api_key:
             return SandboxType.E2B
-        elif self.modal_api_key:
+        elif self.modal_token_id and self.modal_token_secret:
             return SandboxType.MODAL
         else:
             return SandboxType.LOCAL
@@ -267,6 +268,7 @@ class Settings(BaseSettings):
     # experimental toggle
     use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
+    use_asyncio_shield: bool = True
 
     # Database pool monitoring
     enable_db_pool_monitoring: bool = True  # Enable connection pool monitoring
@@ -339,7 +341,7 @@ class Settings(BaseSettings):
 class TestSettings(Settings):
     model_config = SettingsConfigDict(env_prefix="letta_test_", extra="ignore")
 
-    letta_dir: Path | None = Field(Path.home() / ".letta/test", env="LETTA_TEST_DIR")
+    letta_dir: Path | None = Field(Path.home() / ".letta/test", alias="LETTA_TEST_DIR")
 
 
 class LogSettings(BaseSettings):

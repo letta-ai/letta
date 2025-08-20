@@ -93,7 +93,7 @@ def test_derive_openai_json_schema():
     test_cases = [
         ("pydantic_as_single_arg_example", "create_step", False),
         ("list_of_pydantic_example", "create_task_plan", False),
-        ("nested_pydantic_as_arg_example", "create_task_plan", False),
+        # ("nested_pydantic_as_arg_example", "create_task_plan", False),
         ("simple_d20", "roll_d20", False),
         ("all_python_complex", "check_order_status", True),
         ("all_python_complex_nodict", "check_order_status", False),

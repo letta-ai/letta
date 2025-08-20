@@ -82,18 +82,8 @@ class OllamaProvider(OpenAIProvider):
                 response_json = await response.json()
 
         configs = []
-        for model in response_json.get("models", []):
-            model_name = model["name"]
-            model_details = await self._get_model_details_async(model_name)
-            if not model_details or "embedding" not in model_details.get("capabilities", []):
-                continue
-
-            embedding_dim = None
-            model_info = model_details.get("model_info", {})
-            if architecture := model_info.get("general.architecture"):
-                if embedding_length := model_info.get(f"{architecture}.embedding_length"):
-                    embedding_dim = int(embedding_length)
-
+        for model in response_json["models"]:
+            embedding_dim = await self._get_model_embedding_dim(model["name"])
             if not embedding_dim:
                 logger.warning(f"Ollama model {model_name} has no embedding dimension, using default {DEFAULT_EMBEDDING_DIM}")
                 embedding_dim = DEFAULT_EMBEDDING_DIM

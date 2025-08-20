@@ -11,11 +11,13 @@ from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
+from letta.orm.step_metrics import StepMetrics as StepMetricsModel
 from letta.otel.tracing import get_trace_id, trace_method
 from letta.schemas.enums import StepStatus
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
+from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
@@ -186,6 +188,13 @@ class StepManager:
         async with db_registry.async_session() as session:
             step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
             return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def get_step_metrics_async(self, step_id: str, actor: PydanticUser) -> PydanticStepMetrics:
+        async with db_registry.async_session() as session:
+            metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            return metrics.to_pydantic()
 
     @enforce_types
     @trace_method
@@ -371,6 +380,65 @@ class StepManager:
 
             await session.commit()
             return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def record_step_metrics_async(
+        self,
+        actor: PydanticUser,
+        step_id: str,
+        llm_request_ns: Optional[int] = None,
+        tool_execution_ns: Optional[int] = None,
+        step_ns: Optional[int] = None,
+        agent_id: Optional[str] = None,
+        job_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        base_template_id: Optional[str] = None,
+    ) -> PydanticStepMetrics:
+        """Record performance metrics for a step.
+
+        Args:
+            actor: The user making the request
+            step_id: The ID of the step to record metrics for
+            llm_request_ns: Time spent on LLM request in nanoseconds
+            tool_execution_ns: Time spent on tool execution in nanoseconds
+            step_ns: Total time for the step in nanoseconds
+            agent_id: The ID of the agent
+            job_id: The ID of the job
+            project_id: The ID of the project
+            template_id: The ID of the template
+            base_template_id: The ID of the base template
+
+        Returns:
+            The created step metrics
+
+        Raises:
+            NoResultFound: If the step does not exist
+        """
+        async with db_registry.async_session() as session:
+            step = await session.get(StepModel, step_id)
+            if not step:
+                raise NoResultFound(f"Step with id {step_id} does not exist")
+            if step.organization_id != actor.organization_id:
+                raise Exception("Unauthorized")
+
+            metrics_data = {
+                "id": step_id,
+                "organization_id": actor.organization_id,
+                "agent_id": agent_id or step.agent_id,
+                "job_id": job_id or step.job_id,
+                "project_id": project_id or step.project_id,
+                "llm_request_ns": llm_request_ns,
+                "tool_execution_ns": tool_execution_ns,
+                "step_ns": step_ns,
+                "template_id": template_id,
+                "base_template_id": base_template_id,
+            }
+
+            metrics = StepMetricsModel(**metrics_data)
+            await metrics.create_async(session)
+            return metrics.to_pydantic()
 
     def _verify_job_access(
         self,

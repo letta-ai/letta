@@ -19,8 +19,9 @@ from letta.constants import (
     DEFAULT_MAX_FILES_OPEN,
     DEFAULT_TIMEZONE,
     DEPRECATED_LETTA_TOOLS,
-    EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES,
+    EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
+    INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -116,6 +117,21 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
+
+    @staticmethod
+    def _should_exclude_model_from_base_tool_rules(model: str) -> bool:
+        """Check if a model should be excluded from base tool rules based on model keywords."""
+        # First check if model contains any include keywords (overrides exclusion)
+        for include_keyword in INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES:
+            if include_keyword in model:
+                return False
+
+        # Then check if model contains any exclude keywords
+        for exclude_keyword in EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES:
+            if exclude_keyword in model:
+                return True
+
+        return False
 
     @staticmethod
     def _resolve_tools(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -334,16 +350,16 @@ class AgentManager:
 
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                # Override include_base_tool_rules to False if model matches exclusion keywords and include_base_tool_rules is not explicitly set to True
                 if (
                     (
-                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        self._should_exclude_model_from_base_tool_rules(agent_create.llm_config.model)
                         and agent_create.include_base_tool_rules is None
                     )
                     and agent_create.agent_type != AgentType.sleeptime_agent
                 ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
-                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                    logger.info(f"Overriding include_base_tool_rules to False for model: {agent_create.llm_config.model}")
                 else:
                     agent_create.include_base_tool_rules = True
 
@@ -543,16 +559,16 @@ class AgentManager:
                 tool_names = set(name_to_id.keys())  # now canonical
                 tool_rules = list(agent_create.tool_rules or [])
 
-                # Override include_base_tool_rules to False if provider is not in excluded set and include_base_tool_rules is not explicitly set to True
+                # Override include_base_tool_rules to False if model matches exclusion keywords and include_base_tool_rules is not explicitly set to True
                 if (
                     (
-                        agent_create.llm_config.model_endpoint_type in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+                        self._should_exclude_model_from_base_tool_rules(agent_create.llm_config.model)
                         and agent_create.include_base_tool_rules is None
                     )
                     and agent_create.agent_type != AgentType.sleeptime_agent
                 ) or agent_create.include_base_tool_rules is False:
                     agent_create.include_base_tool_rules = False
-                    logger.info(f"Overriding include_base_tool_rules to False for provider: {agent_create.llm_config.model_endpoint_type}")
+                    logger.info(f"Overriding include_base_tool_rules to False for model: {agent_create.llm_config.model}")
                 else:
                     agent_create.include_base_tool_rules = True
 
@@ -630,6 +646,7 @@ class AgentManager:
                     [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
                 )
 
+                env_rows = []
                 if agent_create.tool_exec_environment_variables:
                     env_rows = [
                         {
@@ -640,7 +657,8 @@ class AgentManager:
                         }
                         for key, val in agent_create.tool_exec_environment_variables.items()
                     ]
-                    await session.execute(insert(AgentEnvironmentVariable).values(env_rows))
+                    result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
+                    env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
 
                 include_relationships = []
                 if tool_ids:
@@ -655,6 +673,9 @@ class AgentManager:
                     include_relationships.append("tags")
 
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
+
+                if agent_create.tool_exec_environment_variables and env_rows:
+                    result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
@@ -1986,6 +2007,26 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def refresh_file_blocks(self, agent_state: PydanticAgentState, actor: PydanticUser) -> PydanticAgentState:
+        """
+        Refresh the file blocks in an agent's memory with current file content.
+
+        This method synchronizes the agent's in-memory file blocks with the actual
+        file content from attached sources. It respects the per-file view window
+        limit to prevent excessive memory usage.
+
+        Args:
+            agent_state: The current agent state containing memory configuration
+            actor: The user performing this action (for permission checking)
+
+        Returns:
+            Updated agent state with refreshed file blocks
+
+        Important:
+            - File blocks are truncated based on per_file_view_window_char_limit
+            - None values are filtered out (files that couldn't be loaded)
+            - This does NOT persist changes to the database, only updates the state object
+            - Call this before agent interactions if files may have changed externally
+        """
         file_blocks = await self.file_agent_manager.list_files_for_agent(
             agent_id=agent_state.id,
             per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit,
@@ -2035,6 +2076,28 @@ class AgentManager:
     @enforce_types
     @trace_method
     def append_system_message(self, agent_id: str, content: str, actor: PydanticUser):
+        """
+        Append a system message to an agent's in-context message history.
+
+        This method is typically used during agent initialization to add system prompts,
+        instructions, or context that should be treated as system-level guidance.
+        Unlike user messages, system messages directly influence the agent's behavior
+        and understanding of its role.
+
+        Args:
+            agent_id: The ID of the agent to append the message to
+            content: The system message content (e.g., instructions, context, role definition)
+            actor: The user performing this action (for permission checking)
+
+        Side Effects:
+            - Creates a new Message object in the database
+            - Updates the agent's in_context_message_ids list
+            - The message becomes part of the agent's permanent context window
+
+        Note:
+            System messages consume tokens in the context window and cannot be
+            removed without rebuilding the agent's message history.
+        """
 
         # get the agent
         agent = self.get_agent_by_id(agent_id=agent_id, actor=actor)
@@ -2048,6 +2111,15 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def append_system_message_async(self, agent_id: str, content: str, actor: PydanticUser):
+        """
+        Async version of append_system_message.
+
+        Append a system message to an agent's in-context message history.
+        See append_system_message for detailed documentation.
+
+        This async version is preferred for high-throughput scenarios or when
+        called within other async operations to avoid blocking the event loop.
+        """
 
         # get the agent
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -2354,7 +2426,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    def list_passages(
+    async def list_passages(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2372,8 +2444,8 @@ class AgentManager:
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
-        with db_registry.session() as session:
-            main_query = build_passage_query(
+        async with db_registry.async_session() as session:
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2394,7 +2466,7 @@ class AgentManager:
                 main_query = main_query.limit(limit)
 
             # Execute query
-            result = session.execute(main_query)
+            result = await session.execute(main_query)
 
             passages = []
             for row in result:
@@ -2437,7 +2509,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_passage_query(
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2500,7 +2572,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_source_passage_query(
+            main_query = await build_source_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2546,7 +2618,7 @@ class AgentManager:
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         async with db_registry.async_session() as session:
-            main_query = build_agent_passage_query(
+            main_query = await build_agent_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 query_text=query_text,
@@ -2574,7 +2646,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    def passage_size(
+    async def passage_size(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2591,8 +2663,8 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         """Returns the count of passages matching the given criteria."""
-        with db_registry.session() as session:
-            main_query = build_passage_query(
+        async with db_registry.async_session() as session:
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,
@@ -2610,7 +2682,7 @@ class AgentManager:
 
             # Convert to count query
             count_query = select(func.count()).select_from(main_query.subquery())
-            return session.scalar(count_query) or 0
+            return (await session.scalar(count_query)) or 0
 
     @enforce_types
     async def passage_size_async(
@@ -2630,7 +2702,7 @@ class AgentManager:
         agent_only: bool = False,
     ) -> int:
         async with db_registry.async_session() as session:
-            main_query = build_passage_query(
+            main_query = await build_passage_query(
                 actor=actor,
                 agent_id=agent_id,
                 file_id=file_id,

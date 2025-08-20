@@ -16,7 +16,6 @@ class LLMConfig(BaseModel):
     model_endpoint_type: Literal[
         "openai",
         "anthropic",
-        "cohere",
         "google_ai",
         "google_vertex",
         "azure",
@@ -56,7 +55,7 @@ class LLMConfig(BaseModel):
         description="The maximum number of tokens to generate. If not set, the model will use its default value.",
     )
     enable_reasoner: bool = Field(
-        False, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
+        True, description="Whether or not the model should use extended thinking if it is a 'reasoning' style model"
     )
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = Field(
         None,
@@ -71,9 +70,49 @@ class LLMConfig(BaseModel):
         description="Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. From OpenAI: Number between -2.0 and 2.0.",
     )
     compatibility_type: Optional[Literal["gguf", "mlx"]] = Field(None, description="The framework compatibility type for the model.")
+    verbosity: Optional[Literal["low", "medium", "high"]] = Field(
+        "medium",
+        description="Soft control for how verbose model output should be, used for GPT-5 models.",
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_model_specific_defaults(cls, values):
+        """
+        Set model-specific default values for fields like max_tokens, context_window, etc.
+        This ensures the same defaults from default_config are applied automatically.
+        """
+        model = values.get("model")
+        if model is None:
+            return values
+
+        # Set max_tokens defaults based on model
+        if values.get("max_tokens") is None:
+            if model == "gpt-5":
+                values["max_tokens"] = 16384
+            elif model == "gpt-4.1":
+                values["max_tokens"] = 8192
+            # For other models, the field default of 4096 will be used
+
+        # Set context_window defaults if not provided
+        if values.get("context_window") is None:
+            if model == "gpt-5":
+                values["context_window"] = 128000
+            elif model == "gpt-4.1":
+                values["context_window"] = 256000
+            elif model == "gpt-4o" or model == "gpt-4o-mini":
+                values["context_window"] = 128000
+            elif model == "gpt-4":
+                values["context_window"] = 8192
+
+        # Set verbosity defaults for GPT-5 models
+        if model == "gpt-5" and values.get("verbosity") is None:
+            values["verbosity"] = "medium"
+
+        return values
 
     @model_validator(mode="before")
     @classmethod
@@ -159,6 +198,16 @@ class LLMConfig(BaseModel):
                 context_window=256000,
                 max_tokens=8192,
             )
+        elif model_name == "gpt-5":
+            return cls(
+                model="gpt-5",
+                model_endpoint_type="openai",
+                model_endpoint="https://api.openai.com/v1",
+                model_wrapper=None,
+                context_window=128000,
+                verbosity="medium",
+                max_tokens=16384,
+            )
         elif model_name == "letta":
             return cls(
                 model="memgpt-openai",
@@ -197,12 +246,35 @@ class LLMConfig(BaseModel):
         )
 
     @classmethod
+    def is_google_ai_reasoning_model(cls, config: "LLMConfig") -> bool:
+        return config.model_endpoint_type == "google_ai" and (
+            config.model.startswith("gemini-2.5-flash") or config.model.startswith("gemini-2.5-pro")
+        )
+
+    @classmethod
+    def supports_verbosity(cls, config: "LLMConfig") -> bool:
+        """Check if the model supports verbosity control."""
+        return config.model_endpoint_type == "openai" and config.model.startswith("gpt-5")
+
+    @classmethod
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
         if not reasoning:
-            if cls.is_openai_reasoning_model(config) or config.model.startswith("gemini-2.5-pro"):
-                raise ValueError("Reasoning cannot be disabled for OpenAI o1/o3 models")
-            config.put_inner_thoughts_in_kwargs = False
-            config.enable_reasoner = False
+            if cls.is_openai_reasoning_model(config):
+                logger.warning("Reasoning cannot be disabled for OpenAI o1/o3 models")
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = True
+                if config.reasoning_effort is None:
+                    config.reasoning_effort = "medium"
+            elif config.model.startswith("gemini-2.5-pro"):
+                logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
+                # Handle as non-reasoner until we support summary
+                config.put_inner_thoughts_in_kwargs = True
+                config.enable_reasoner = True
+                if config.max_reasoning_tokens == 0:
+                    config.max_reasoning_tokens = 1024
+            else:
+                config.put_inner_thoughts_in_kwargs = False
+                config.enable_reasoner = False
 
         else:
             config.enable_reasoner = True
@@ -210,7 +282,7 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.max_reasoning_tokens == 0:
                     config.max_reasoning_tokens = 1024
-            elif cls.is_google_vertex_reasoning_model(config):
+            elif cls.is_google_vertex_reasoning_model(config) or cls.is_google_ai_reasoning_model(config):
                 # Handle as non-reasoner until we support summary
                 config.put_inner_thoughts_in_kwargs = True
                 if config.max_reasoning_tokens == 0:
