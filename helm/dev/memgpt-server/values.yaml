@@ -158,7 +158,7 @@ secretsProvider:
     - TOGETHER_API_KEY
     - E2B_API_KEY
     - E2B_SANDBOX_TEMPLATE_ID
-    - PINECONE_API_KEY
+    - LETTA_PINECONE_API_KEY
     # telemetry secrets
     - SENTRY_DSN
     - CLICKHOUSE_PASSWORD
