@@ -999,7 +999,7 @@ async def send_message(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
     ]
 
     # Create a new run for execution tracking
@@ -1143,7 +1143,7 @@ async def send_message_streaming(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
 
@@ -1538,7 +1538,7 @@ async def preview_raw_payload(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
     ]
 
     if agent_eligible and model_compatible:
@@ -1608,7 +1608,7 @@ async def summarize_agent_conversation(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
     ]
 
     if agent_eligible and model_compatible:
