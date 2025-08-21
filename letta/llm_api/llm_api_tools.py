@@ -8,7 +8,7 @@ import requests
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
 from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
-from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
+from letta.llm_api.helpers import unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
     build_openai_chat_completions_request,
     openai_chat_completions_process_stream,
@@ -16,14 +16,13 @@ from letta.llm_api.openai import (
     prepare_openai_payload,
 )
 from letta.local_llm.chat_completion_proxy import get_chat_completion
-from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
+from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.orm.user import User
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
@@ -240,57 +239,6 @@ def create(
                 organization_id=actor.organization_id,
             ),
         )
-
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-
-        return response
-
-    elif llm_config.model_endpoint_type == "groq":
-        if stream:
-            raise NotImplementedError("Streaming not yet implemented for Groq.")
-
-        if model_settings.groq_api_key is None and llm_config.model_endpoint == "https://api.groq.com/openai/v1/chat/completions":
-            raise LettaConfigurationError(message="Groq key is missing from letta config file", missing_fields=["groq_api_key"])
-
-        # force to true for groq, since they don't support 'content' is non-null
-        if llm_config.put_inner_thoughts_in_kwargs:
-            functions = add_inner_thoughts_to_functions(
-                functions=functions,
-                inner_thoughts_key=INNER_THOUGHTS_KWARG,
-                inner_thoughts_description=INNER_THOUGHTS_KWARG_DESCRIPTION,
-            )
-
-        tools = [{"type": "function", "function": f} for f in functions] if functions is not None else None
-        data = ChatCompletionRequest(
-            model=llm_config.model,
-            messages=[m.to_openai_dict(put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs) for m in messages],
-            tools=tools,
-            tool_choice=function_call,
-            user=str(user_id),
-        )
-
-        # https://console.groq.com/docs/openai
-        # "The following fields are currently not supported and will result in a 400 error (yikes) if they are supplied:"
-        assert data.top_logprobs is None
-        assert data.logit_bias is None
-        assert data.logprobs == False
-        assert data.n == 1
-        # They mention that none of the messages can have names, but it seems to not error out (for now)
-
-        data.stream = False
-        if isinstance(stream_interface, AgentChunkStreamingInterface):
-            stream_interface.stream_start()
-        try:
-            # groq uses the openai chat completions API, so this component should be reusable
-            response = openai_chat_completions_request(
-                url=llm_config.model_endpoint,
-                api_key=model_settings.groq_api_key,
-                chat_completion_request=data,
-            )
-        finally:
-            if isinstance(stream_interface, AgentChunkStreamingInterface):
-                stream_interface.stream_end()
 
         if llm_config.put_inner_thoughts_in_kwargs:
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
