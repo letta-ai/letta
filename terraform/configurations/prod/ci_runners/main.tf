@@ -63,7 +63,7 @@ module small_runners {
   pool_name_prefix = "ci-runners-small"
   runner_labels = "small"
   runner_image = "family/ci-runner-dev"
-  machine_type = "c4a-standard-1" # 1 CPU and 4GB Memory
+  machine_type = "c4a-standard-2" # 2 CPUs and 8GB Memory
   ssh_pubkey = "letta:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILflk18SwzkU5NS9CPylt3vszYJas365wX7OCTbxPWXw"
   sa_email = "ci-runner-sa-dev@memgpt-428419.iam.gserviceaccount.com"
 

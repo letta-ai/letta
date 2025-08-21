@@ -248,11 +248,38 @@ jobs:
           echo "   - The preview-python-sdk job hasn't run successfully for this branch/commit"
           exit 1
 
-      - name: Install dependencies
+      - name: Clear Poetry cache
+        working-directory: ${{ inputs.poetry-core-directory }}
+        run: |
+          poetry cache clear --all pypi
+          poetry env remove --all || true
+
+      - name: Install dependencies with retry
         shell: bash
         working-directory: ${{ inputs.poetry-core-directory }}
         run: |
-          poetry install --no-interaction --no-root -vv ${{ inputs.install-args }}
+          for attempt in {1..3}; do
+            echo "Poetry install attempt $attempt/3"
+
+            if poetry install --no-interaction --no-root --no-cache -vv ${{ inputs.install-args }}; then
+              echo "Poetry install succeeded on attempt $attempt"
+              break
+            else
+              exit_code=$?
+              echo "Poetry install failed on attempt $attempt with exit code $exit_code"
+
+              if [ $attempt -eq 3 ]; then
+                echo "All poetry install attempts failed"
+                exit $exit_code
+              fi
+
+              echo "Cleaning up before retry..."
+              poetry cache clear --all pypi || true
+              poetry env remove --all || true
+              rm -rf .venv || true
+              sleep 10
+            fi
+          done
 
       - name: Install custom SDK
         if: inputs.skip-fern-generation != true
