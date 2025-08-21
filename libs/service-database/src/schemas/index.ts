@@ -349,10 +349,7 @@ export const lettaAPIKeys = pgTable('letta_api_keys', {
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull(),
   apiKey: text('api_key').notNull().unique(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' })
-    .notNull(),
+  userId: text('user_id'),
   coreUserId: text('core_user_id').notNull(),
   organizationId: text('organization_id')
     .notNull()
