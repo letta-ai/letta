@@ -17,6 +17,8 @@ from letta_client.core import ApiError
 from letta_client.types import AgentState, ToolReturnMessage
 from pydantic import BaseModel, Field
 
+from tests.helpers.utils import upload_file_and_wait
+
 # Constants
 SERVER_PORT = 8283
 
@@ -1869,3 +1871,132 @@ def test_agent_serialization_v2(
     if len(original_user_msgs) > 0 and len(imported_user_msgs) > 0:
         assert imported_user_msgs[0].content == original_user_msgs[0].content, "User message content not preserved"
         assert "Test message" in imported_user_msgs[0].content, "Test message content not found"
+
+
+def test_export_import_agent_with_files(client: LettaSDKClient):
+    """Test exporting and importing an agent with files attached."""
+
+    # Clean up any existing source with the same name from previous runs
+    existing_sources = client.sources.list()
+    for existing_source in existing_sources:
+        client.sources.delete(source_id=existing_source.id)
+
+    # Create a source and upload test files
+    source = client.sources.create(name="test_export_source", embedding="openai/text-embedding-3-small")
+
+    # Upload test files to the source
+    test_files = ["tests/data/test.txt", "tests/data/test.md"]
+
+    for file_path in test_files:
+        upload_file_and_wait(client, source.id, file_path)
+
+    # Verify files were uploaded successfully
+    files_in_source = client.sources.files.list(source_id=source.id, limit=10)
+    assert len(files_in_source) == len(test_files), f"Expected {len(test_files)} files, got {len(files_in_source)}"
+
+    # Create a simple agent with the source attached
+    temp_agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(label="human", value="username: sarah"),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+        source_ids=[source.id],  # Attach the source with files
+    )
+
+    # Verify the agent has the source and file blocks
+    agent_state = client.agents.retrieve(agent_id=temp_agent.id)
+    assert len(agent_state.sources) == 1, "Agent should have one source attached"
+    assert agent_state.sources[0].id == source.id, "Agent should have the correct source attached"
+
+    # Verify file blocks are present
+    file_blocks = agent_state.memory.file_blocks
+    assert len(file_blocks) == len(test_files), f"Expected {len(test_files)} file blocks, got {len(file_blocks)}"
+
+    # Export the agent
+    serialized_agent = client.agents.export_file(agent_id=temp_agent.id, use_legacy_format=False)
+
+    # Convert to JSON bytes for import
+    json_str = json.dumps(serialized_agent)
+    file_obj = io.BytesIO(json_str.encode("utf-8"))
+
+    # Import the agent
+    import_result = client.agents.import_file(file=file_obj, append_copy_suffix=True, override_existing_tools=True)
+
+    # Verify import was successful
+    assert len(import_result.agent_ids) == 1, "Should have imported exactly one agent"
+    imported_agent_id = import_result.agent_ids[0]
+    imported_agent = client.agents.retrieve(agent_id=imported_agent_id)
+
+    # Verify the source is attached to the imported agent
+    assert len(imported_agent.sources) == 1, "Imported agent should have one source attached"
+    imported_source = imported_agent.sources[0]
+
+    # Check that imported source has the same files
+    imported_files = client.sources.files.list(source_id=imported_source.id, limit=10)
+    assert len(imported_files) == len(test_files), f"Imported source should have {len(test_files)} files"
+
+    # Verify file blocks are preserved in imported agent
+    imported_file_blocks = imported_agent.memory.file_blocks
+    assert len(imported_file_blocks) == len(test_files), f"Imported agent should have {len(test_files)} file blocks"
+
+    # Verify file block content
+    for file_block in imported_file_blocks:
+        assert file_block.value is not None and len(file_block.value) > 0, "Imported file block should have content"
+        assert "[Viewing file start" in file_block.value, "Imported file block should show file viewing header"
+
+    # Test that files can be opened on the imported agent
+    if len(imported_files) > 0:
+        test_file = imported_files[0]
+        client.agents.files.open(agent_id=imported_agent_id, file_id=test_file.id)
+
+    # Clean up
+    client.agents.delete(agent_id=temp_agent.id)
+    client.agents.delete(agent_id=imported_agent_id)
+    client.sources.delete(source_id=source.id)
+
+
+def test_import_agent_with_files_from_disk(client: LettaSDKClient):
+    """Test exporting an agent with files to disk and importing it back."""
+    # Upload test files to the source
+    test_files = ["tests/data/test.txt", "tests/data/test.md"]
+
+    # Save to file
+    file_path = os.path.join(os.path.dirname(__file__), "test_agent_files", "test_agent_with_files_and_sources.af")
+
+    # Now import from the file
+    with open(file_path, "rb") as f:
+        import_result = client.agents.import_file(
+            file=f, append_copy_suffix=True, override_existing_tools=True  # Use suffix to avoid name conflict
+        )
+
+    # Verify import was successful
+    assert len(import_result.agent_ids) == 1, "Should have imported exactly one agent"
+    imported_agent_id = import_result.agent_ids[0]
+    imported_agent = client.agents.retrieve(agent_id=imported_agent_id)
+
+    # Verify the source is attached to the imported agent
+    assert len(imported_agent.sources) == 1, "Imported agent should have one source attached"
+    imported_source = imported_agent.sources[0]
+
+    # Check that imported source has the same files
+    imported_files = client.sources.files.list(source_id=imported_source.id, limit=10)
+    assert len(imported_files) == len(test_files), f"Imported source should have {len(test_files)} files"
+
+    # Verify file blocks are preserved in imported agent
+    imported_file_blocks = imported_agent.memory.file_blocks
+    assert len(imported_file_blocks) == len(test_files), f"Imported agent should have {len(test_files)} file blocks"
+
+    # Verify file block content
+    for file_block in imported_file_blocks:
+        assert file_block.value is not None and len(file_block.value) > 0, "Imported file block should have content"
+        assert "[Viewing file start" in file_block.value, "Imported file block should show file viewing header"
+
+    # Test that files can be opened on the imported agent
+    if len(imported_files) > 0:
+        test_file = imported_files[0]
+        client.agents.files.open(agent_id=imported_agent_id, file_id=test_file.id)
+
+    # Clean up agents and sources
+    client.agents.delete(agent_id=imported_agent_id)
+    client.sources.delete(source_id=imported_source.id)

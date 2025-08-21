@@ -278,3 +278,39 @@ async def upload_test_agentfile_from_disk_async(client: AsyncLetta, filename: st
     with open(file_path, "rb") as f:
         uploaded = await client.agents.import_file(file=f, append_copy_suffix=True, override_existing_tools=False)
         return uploaded
+
+
+def upload_file_and_wait(
+    client: Letta,
+    source_id: str,
+    file_path: str,
+    name: Optional[str] = None,
+    max_wait: int = 60,
+    duplicate_handling: Optional["DuplicateFileHandling"] = None,
+):
+    """Helper function to upload a file and wait for processing to complete"""
+    from letta_client import DuplicateFileHandling as ClientDuplicateFileHandling
+
+    with open(file_path, "rb") as f:
+        if duplicate_handling:
+            # handle both client and server enum types
+            if hasattr(duplicate_handling, "value"):
+                # server enum type
+                duplicate_handling = ClientDuplicateFileHandling(duplicate_handling.value)
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
+        else:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
+
+    # wait for the file to be processed
+    start_time = time.time()
+    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+        if time.time() - start_time > max_wait:
+            raise TimeoutError(f"File processing timed out after {max_wait} seconds")
+        time.sleep(1)
+        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
+        print("Waiting for file processing to complete...", file_metadata.processing_status)
+
+    if file_metadata.processing_status == "error":
+        raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
+
+    return file_metadata

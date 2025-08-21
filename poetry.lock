@@ -3473,13 +3473,13 @@ vcr = ["vcrpy (>=7.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.271"
+version = "0.1.272"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "letta_client-0.1.271-py3-none-any.whl", hash = "sha256:edbf6323e472202090113147b1c9ed280151d4966999686046d48c50c19c74fc"},
-    {file = "letta_client-0.1.271.tar.gz", hash = "sha256:ae7944e594fe87dd80ce5057c42806e8c24b55e11f8fe6d05420fbc5af9b4180"},
+    {file = "letta_client-0.1.272-py3-none-any.whl", hash = "sha256:ed5afffce9431e9dd1170c642efc68b1b5edadfe1923a467f017588dd371447e"},
+    {file = "letta_client-0.1.272.tar.gz", hash = "sha256:40bb1e802aeabbb9cb6eaa2105eff7e8a704ac0962623e4b27d6320e57029dcc"},
 ]
 
 [package.dependencies]
