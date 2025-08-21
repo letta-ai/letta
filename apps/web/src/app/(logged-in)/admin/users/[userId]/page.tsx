@@ -181,17 +181,6 @@ function UserProperties() {
           </HStack>
         ),
       },
-      {
-        name: 'Mixpanel',
-        value: (
-          <Button
-            size="small"
-            href={`https://mixpanel.com/project/3410168/view/3914804/app/profile#distinct_id=${user.id}`}
-            target="_blank"
-            label="View in Mixpanel"
-          />
-        ),
-      },
       // TODO: ADD POSTHOG
       {
         name: 'Letta Agents User ID',

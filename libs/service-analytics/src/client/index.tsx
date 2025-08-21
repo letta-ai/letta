@@ -1,5 +1,5 @@
 'use client';
-import React, { type PropsWithChildren, useEffect, useRef } from 'react';
+import React, { type PropsWithChildren, useEffect } from 'react';
 import { environment } from '@letta-cloud/config-environment-variables';
 import type { AnalyticsEvent } from '../events';
 import type { AnalyticsEventProperties } from '../events';
@@ -7,7 +7,6 @@ import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
 import { usePostHog } from 'posthog-js/react';
 import { ErrorBoundary } from 'react-error-boundary';
-import mixpanel from 'mixpanel-browser';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
 declare global {
@@ -34,61 +33,6 @@ function getPlatformType() {
   return 'cloud';
 }
 
-function LoadMixpanelAnalyticsInner() {
-  const mounted = useRef(false);
-
-  useEffect(() => {
-    if (mounted.current) {
-      return;
-    }
-
-    if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
-      return;
-    }
-
-    mounted.current = true;
-    mixpanel.init(environment.NEXT_PUBLIC_MIXPANEL_TOKEN, {
-      api_host: 'https://robots.letta.com',
-    });
-  }, []);
-
-  return null;
-}
-
-function LogErrorLoadingMixpanelAnalytics() {
-  useEffect(() => {
-    console.error(
-      'Mixpanel token not found. Please set the MIXPANEL_TOKEN environment variable.',
-    );
-  }, []);
-
-  return null;
-}
-
-export function IdentifyUserForMixpanel(props: IdentifyUserProps) {
-  const { userId } = props;
-
-  useEffect(() => {
-    try {
-      if (!environment.NEXT_PUBLIC_MIXPANEL_TOKEN) {
-        return;
-      }
-
-      mixpanel.identify(userId);
-    } catch (error) {
-      console.error('Error identifying user on Mixpanel', error);
-    }
-  }, [userId]);
-  return null;
-}
-
-export function LoadMixpanelAnalytics() {
-  return (
-    <ErrorBoundary fallback={<LogErrorLoadingMixpanelAnalytics />}>
-      <LoadMixpanelAnalyticsInner />
-    </ErrorBoundary>
-  );
-}
 
 type ProvidersProps = PropsWithChildren<Record<never, string>>;
 
@@ -163,9 +107,4 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
     console.error('Error tracking PostHog event', error);
   }
 
-  try {
-    mixpanel.track(eventName, properties);
-  } catch (error) {
-    console.error('Error tracking Mixpanel event', error);
-  }
 }

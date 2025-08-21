@@ -76,8 +76,6 @@ locals {
     "dev_letta-web_POSTHOG_KEY" = var.dev_letta_web_POSTHOG_KEY
     "dev_letta-web_POSTHOG_HOST" = var.dev_letta_web_POSTHOG_HOST
     "dev_letta-web_NEXT_PUBLIC_POSTHOG_KEY" = var.dev_letta_web_NEXT_PUBLIC_POSTHOG_KEY
-    "dev_letta-web_NEXT_PUBLIC_MIXPANEL_TOKEN" = var.dev_letta_web_NEXT_PUBLIC_MIXPANEL_TOKEN
-    "dev_letta-web_MIXPANEL_TOKEN" = var.dev_letta_web_MIXPANEL_TOKEN
 
     # lettuce secrets
     "dev_lettuce_DATABASE_URL" = var.dev_lettuce_DATABASE_URL

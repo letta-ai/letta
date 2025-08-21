@@ -11,7 +11,6 @@ import { cookies } from 'next/headers';
 import { QueryClientProviders } from './_components/ClientSideProviders/QueryClientProviders/QueryClientProviders';
 import './global.scss';
 import { VStack } from '@letta-cloud/ui-component-library';
-import { LoadMixpanelAnalytics } from '@letta-cloud/service-analytics/client';
 
 export const metadata = {
   title: 'Letta',
@@ -61,7 +60,6 @@ export default async function RootLayout({
       </head>
       <QueryClientProviders>
         <Body>
-          <LoadMixpanelAnalytics />
           <NextIntlClientProvider messages={messages}>
             <ClientSideProviders>
               <VStack fullWidth fullHeight>

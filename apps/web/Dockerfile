@@ -26,7 +26,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_PUBLIC_CURRENT_HOST="https://app.letta.com"
-ENV NEXT_PUBLIC_MIXPANEL_TOKEN="0790fe817b0407efb691ea896533d3ae"
 ENV NEXT_PUBLIC_STRIPE_PUBLISH_KEY="pk_live_51QiNygIITVhFnB4Wq0vmV0wljCqjps1FJZgDEpEQOYBbmpZQt1pgmmngsEQj8JWiUQatbTPweEWXFiKqhEsn0VCq00OZjwM2PE"
 ENV NEXT_PUBLIC_POSTHOG_KEY="phc_FzkA3UcqiUXxOiBe3Iuvlh1o5HgAaRpK1FDUvi2zcoR"
 ENV NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com"

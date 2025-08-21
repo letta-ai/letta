@@ -6,7 +6,7 @@
     "start": "node ./dist/main.js",
     "test:e2e": "jest --detectOpenHandles --forceExit --config=jest.config.ts -- e2e/default.test.ts e2e/templates.test.ts",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register ./src/main.ts",
-    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:mixpanel --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp --external:date-fns --external:@clickhouse/client --external:posthog-node",
+    "build": "npx esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:pg --external:lodash --external:jsonrepair --external:@t3-oss/env-nextjs --external:@tanstack/react-query --external:@ts-rest/core --external:unique-names-generator --external:lru-cache --external:axios --external:@anatine/zod-openapi --external:react --external:@react-email/components --external:js-tiktoken --external:lodash-es --external:stripe --external:resend --external:@ts-rest/react-query --external:@launchdarkly/node-server-sdk --external:nanoid --external:@temporalio/workflow --external:@temporalio/client --external:path-to-regexp --external:date-fns --external:@clickhouse/client --external:posthog-node",
     "test:branch-regression": "jest --detectOpenHandles --forceExit -- e2e/database-compatibility.test.ts"
   },
   "devDependencies": {
@@ -59,7 +59,6 @@
     "jsonrepair": "^3.12.0",
     "lodash-es": "^4.17.21",
     "lru-cache": "^11.1.0",
-    "mixpanel": "^0.18.1",
     "nanoid": "^5.1.5",
     "path-to-regexp": "0.1.12",
     "pg": "^8.13.3",

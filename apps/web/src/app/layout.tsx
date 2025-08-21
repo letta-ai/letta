@@ -10,7 +10,6 @@ import 'array.prototype.tosorted';
 import { cookies } from 'next/headers';
 import { CookieNames } from '$web/server/cookies/types';
 import { QueryClientProviders } from './_components/ClientSideProviders/QueryClientProviders/QueryClientProviders';
-import { LoadMixpanelAnalytics } from '@letta-cloud/service-analytics/client';
 
 export const metadata = {
   title: 'Letta',
@@ -60,7 +59,6 @@ export default async function RootLayout({
       </head>
       <QueryClientProviders>
         <Body>
-          <LoadMixpanelAnalytics />
           <NextIntlClientProvider messages={messages}>
             <ClientSideProviders>{children}</ClientSideProviders>
           </NextIntlClientProvider>

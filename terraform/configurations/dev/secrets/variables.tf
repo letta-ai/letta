@@ -250,17 +250,6 @@ variable "dev_letta_web_NEXT_PUBLIC_POSTHOG_KEY" {
   sensitive   = true
 }
 
-variable "dev_letta_web_NEXT_PUBLIC_MIXPANEL_TOKEN" {
-  description = "Next public mixpanel token for letta-web service"
-  type        = string
-  sensitive   = true
-}
-
-variable "dev_letta_web_MIXPANEL_TOKEN" {
-  description = "Mixpanel token for letta-web service"
-  type        = string
-  sensitive   = true
-}
 
 # variable "dev_letta_web_HUBSPOT_API_KEY" {
 #   description = "HubSpot API Key for letta-web service"

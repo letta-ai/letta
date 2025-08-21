@@ -4,21 +4,7 @@
 import { environment } from '@letta-cloud/config-environment-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 import { PostHog } from 'posthog-node';
-import * as mixpanel from 'mixpanel';
 
-let mixpanelSingleton: mixpanel.Mixpanel | null = null;
-
-function getMixpanel() {
-  if (!environment.MIXPANEL_TOKEN) {
-    return null;
-  }
-
-  if (!mixpanelSingleton) {
-    mixpanelSingleton = mixpanel.init(environment.MIXPANEL_TOKEN);
-  }
-
-  return mixpanelSingleton;
-}
 
 export interface TrackUserPayload {
   userId: string;
@@ -55,16 +41,6 @@ export function trackUserOnServer(user: TrackUserPayload) {
     console.error('Failed to identify user on PostHog', error);
   }
 
-  try {
-    const mixpanel = getMixpanel();
-
-    mixpanel?.people.set(user.userId, {
-      $name: user.name,
-      $email: user.email,
-    });
-  } catch (error) {
-    console.error('Failed to identify user on Mixpanel', error);
-  }
 }
 
 export async function trackServerSideEvent<Event extends AnalyticsEvent>(
@@ -94,19 +70,4 @@ export async function trackServerSideEvent<Event extends AnalyticsEvent>(
     console.error('Failed to track event on PostHog', error);
   }
 
-  try {
-    const mixpanel = getMixpanel();
-
-    if (properties) {
-      mixpanel?.track(eventName, {
-        ...('userId' in properties ? { distinct_id: properties.userId } : {}),
-        ...properties,
-      });
-      return;
-    }
-
-    mixpanel?.track(eventName);
-  } catch (error) {
-    console.error('Failed to track event on Mixpanel', error);
-  }
 }
