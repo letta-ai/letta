@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
 import {
   Alert,
   Badge,
@@ -303,7 +304,6 @@ function Message({ message, disableInteractivity }: MessageProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
-
   return (
     <VStack gap={false} fullWidth>
       <div
@@ -332,6 +332,8 @@ function Message({ message, disableInteractivity }: MessageProps) {
   );
 }
 
+const MemoizedMessage = React.memo(Message);
+
 interface MessageGroupType {
   group: AgentSimulatorMessageGroupType;
   dataAnchor?: string;
@@ -341,9 +343,10 @@ interface MessageGroupType {
 function MessageGroup({ group, dataAnchor, disableInteractivity }: MessageGroupType) {
   const { name, messages } = group;
 
-  const sortedMessages = messages.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  );
+  const sortedMessages = useMemo(() =>
+    messages.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    ), [messages]);
 
   const textColor = useMemo(() => {
     if (name === 'Agent') {
@@ -443,7 +446,7 @@ function MessageGroup({ group, dataAnchor, disableInteractivity }: MessageGroupT
         data-testid={`${name.toLowerCase()}-message-content`}
       >
         {sortedMessages.map((message, index) => (
-          <Message
+          <MemoizedMessage
             disableInteractivity={disableInteractivity}
             key={`${message.id}_${index}`} message={message} />
         ))}
@@ -451,6 +454,8 @@ function MessageGroup({ group, dataAnchor, disableInteractivity }: MessageGroupT
     </VStack>
   );
 }
+
+const MemoizedMessageGroup = React.memo(MessageGroup);
 
 const MESSAGE_LIMIT = 50;
 
@@ -664,6 +669,44 @@ export function Messages(props: MessagesProps) {
     }
   }, [data?.pages, lastMessageReceived?.id, getIsAutoScrollEnabled, forceScrollToBottom]);
 
+  // Memoize expensive JSON parsing operations
+  const parseJsonSafely = useCallback((str: string) => {
+    try {
+      return JSON.parse(str);
+    } catch {
+      return tryFallbackParseJson(str);
+    }
+  }, []);
+
+  // Cache JSON parsing results to avoid re-parsing the same strings
+  const jsonParseCache = useMemo(() => new Map<string, unknown>(), []);
+
+  const parseJsonWithCache = useCallback((str: string) => {
+    // Skip caching for very short strings
+    if (str.length < 10) {
+      return parseJsonSafely(str);
+    }
+
+    // Check cache first
+    if (jsonParseCache.has(str)) {
+      return jsonParseCache.get(str);
+    }
+
+    // Parse and cache result
+    const result = parseJsonSafely(str);
+    jsonParseCache.set(str, result);
+
+    // Limit cache size to prevent memory leaks
+    if (jsonParseCache.size > 1000) {
+      const firstKey = jsonParseCache.keys().next().value;
+      if (firstKey) {
+        jsonParseCache.delete(firstKey);
+      }
+    }
+
+    return result;
+  }, [parseJsonSafely, jsonParseCache]);
+
   const extractMessage = useCallback(
     function extractMessage(
       agentMessage: AgentMessage,
@@ -672,6 +715,8 @@ export function Messages(props: MessagesProps) {
     ): AgentSimulatorMessageType | null | undefined {
       const isErroredMessage =
         'is_err' in agentMessage && agentMessage.is_err === true;
+
+      // Early return for debug mode
       if (mode === 'debug') {
         return {
           type: agentMessage.message_type,
@@ -762,7 +807,7 @@ export function Messages(props: MessagesProps) {
                   code={JSON.stringify(
                     {
                       ...agentMessage,
-                      tool_return: tryFallbackParseJson(
+                      tool_return: parseJsonWithCache(
                         agentMessage.tool_return,
                       ),
                     },
@@ -779,7 +824,7 @@ export function Messages(props: MessagesProps) {
             isError: isErroredMessage,
           };
         case 'tool_call_message': {
-          const parsedFunctionCallArguments = tryFallbackParseJson(
+          const parsedFunctionCallArguments = parseJsonWithCache(
             agentMessage.tool_call.arguments || '',
           );
 
@@ -794,7 +839,7 @@ export function Messages(props: MessagesProps) {
             ) {
               try {
                 const out = SendMessageFunctionCallSchema.safeParse(
-                  tryFallbackParseJson(agentMessage.tool_call.arguments || ''),
+                  parseJsonWithCache(agentMessage.tool_call.arguments || ''),
                 );
 
                 if (!out.success) {
@@ -837,7 +882,7 @@ export function Messages(props: MessagesProps) {
                   message.message_type === 'tool_return_message' &&
                   get(message, 'tool_call_id') ===
                     agentMessage.tool_call.tool_call_id,
-              );
+              ) as ToolReturnMessageSchemaType | undefined;
               return {
                 stepId: agentMessage.step_id,
                 type: agentMessage.message_type,
@@ -849,7 +894,7 @@ export function Messages(props: MessagesProps) {
                     key={`${agentMessage.id}-${agentMessage.message_type}`}
                     name={agentMessage.tool_call.name || ''}
                     inputs={agentMessage.tool_call.arguments || ''}
-                    response={functionResponse as ToolReturnMessageSchemaType}
+                    response={functionResponse}
                     status={get(functionResponse, 'status')}
                   />
                 ),
@@ -1047,7 +1092,7 @@ export function Messages(props: MessagesProps) {
           } else {
             let parsedJSON: object | undefined;
             try {
-              parsedJSON = JSON.parse(content);
+              parsedJSON = parseJsonWithCache(content) as object;
 
               if (!isObject(parsedJSON)) {
                 parsedJSON = undefined;
@@ -1113,7 +1158,7 @@ export function Messages(props: MessagesProps) {
             }
 
             if (parsedJSON) {
-              const tryParseResp = tryFallbackParseJson(content);
+              const tryParseResp = parseJsonWithCache(content);
 
               if (tryParseResp) {
                 return {
@@ -1380,7 +1425,7 @@ export function Messages(props: MessagesProps) {
         {AutoLoadIndicator}
         {injectSpaceForHeader && <div style={{ minHeight: 35 }} />}
         {messageGroups.map((group, index) => (
-          <MessageGroup
+          <MemoizedMessageGroup
             disableInteractivity={disableInteractivity}
             key={group.id}
             group={group}
