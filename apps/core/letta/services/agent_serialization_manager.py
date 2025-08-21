@@ -428,6 +428,8 @@ class AgentSerializationManager:
         self,
         schema: AgentFileSchema,
         actor: User,
+        append_copy_suffix: bool = False,
+        override_existing_tools: bool = True,
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
     ) -> ImportResult:
@@ -489,7 +491,9 @@ class AgentSerializationManager:
                     pydantic_tools.append(Tool(**tool_schema.model_dump(exclude={"id"})))
 
                 # bulk upsert all tools at once
-                created_tools = await self.tool_manager.bulk_upsert_tools_async(pydantic_tools, actor)
+                created_tools = await self.tool_manager.bulk_upsert_tools_async(
+                    pydantic_tools, actor, override_existing_tools=override_existing_tools
+                )
 
                 # map file ids to database ids
                 # note: tools are matched by name during upsert, so we need to match by name here too
@@ -611,6 +615,8 @@ class AgentSerializationManager:
             for agent_schema in schema.agents:
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
+                if append_copy_suffix:
+                    agent_data["name"] = agent_data.get("name") + "_copy"
 
                 # Remap tool_ids from file IDs to database IDs
                 if agent_data.get("tool_ids"):
