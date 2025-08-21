@@ -299,6 +299,8 @@ export type LLMConfigPropertiesForAgentTemplateType = z.infer<
 
 /* the schema is purposly not structured as to allow for more flexibility in the agent template */
 export const AgentTemplateProperties = z.object({
+  enable_reasoner: z.boolean().nullable(),
+  put_inner_thoughts_in_kwargs: z.boolean().nullable(),
   context_window_limit: z.number().nullable(),
   max_tokens: z.number().nullable(),
   max_reasoning_tokens: z.number().nullable(),

@@ -33,6 +33,8 @@ describe('generateTemplateSnapshot', () => {
   };
 
   const mockAgentProperties: AgentTemplatePropertiesType = {
+    enable_reasoner: false,
+    put_inner_thoughts_in_kwargs: true,
     context_window_limit: 4000,
     max_tokens: 1000,
     max_reasoning_tokens: 500,

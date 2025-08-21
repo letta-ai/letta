@@ -5,6 +5,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
   const mockLLMConfig = {
     model: 'gpt-4',
     model_endpoint_type: 'openai' as const,
+    enable_reasoner: false,
+    put_inner_thoughts_in_kwargs: true,
     context_window: 8192,
     handle: 'openai/gpt-4',
     max_tokens: 1000,
@@ -115,6 +117,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         version: '1',
       },
       properties: {
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
         context_window_limit: 8192,
         max_tokens: 1000,
         max_reasoning_tokens: 2000,
@@ -155,6 +159,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         model_endpoint_type: 'openai',
         context_window: 4096,
         handle: 'openai/gpt-3.5-turbo',
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
       },
       memory: {
         blocks: [],
@@ -180,6 +186,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       systemPrompt: 'Basic system',
       toolVariables: null,
       properties: {
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
         context_window_limit: 4096,
         max_tokens: null,
         max_reasoning_tokens: null,
@@ -199,6 +207,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       llm_config: {
         model: 'gpt-4',
         model_endpoint_type: 'openai',
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
         context_window: 8192,
         handle: 'openai/gpt-4',
         max_tokens: null,
@@ -226,6 +236,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
     const result = synchronizeSimulatedAgentWithAgentTemplate(agentWithNulls);
 
     expect(result.agentTemplate.properties).toEqual({
+      enable_reasoner: false,
+      put_inner_thoughts_in_kwargs: true,
       context_window_limit: 8192,
       max_tokens: null,
       max_reasoning_tokens: null,

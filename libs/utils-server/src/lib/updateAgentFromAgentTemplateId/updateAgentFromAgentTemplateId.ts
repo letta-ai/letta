@@ -348,8 +348,17 @@ export async function updateAgentFromAgentTemplateId(
       agentTemplate.properties.context_window_limit;
   }
 
+  if (agentTemplate.properties?.enable_reasoner !== null && agentTemplate.properties?.enable_reasoner !== undefined) {
+    nextLLMConfig.enable_reasoner = agentTemplate.properties.enable_reasoner;
+  }
+
+  if (agentTemplate.properties?.put_inner_thoughts_in_kwargs !== null && agentTemplate.properties?.put_inner_thoughts_in_kwargs !== undefined) {
+    nextLLMConfig.put_inner_thoughts_in_kwargs = agentTemplate.properties.put_inner_thoughts_in_kwargs;
+  }
+
 
   requestBody.llm_config = nextLLMConfig;
+  requestBody.reasoning = nextLLMConfig.enable_reasoner || nextLLMConfig.put_inner_thoughts_in_kwargs;
 
 
   // Update the agent with the template schema

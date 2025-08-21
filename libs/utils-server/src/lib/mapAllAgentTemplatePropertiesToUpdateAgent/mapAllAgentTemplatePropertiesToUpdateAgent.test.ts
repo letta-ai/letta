@@ -34,6 +34,7 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
     'max_tokens', // No equivalent in UpdateAgent
     'max_reasoning_tokens', // No equivalent in UpdateAgent
     'enable_reasoner', // Different from 'reasoning' field
+    'put_inner_thoughts_in_kwargs', // Different from 'reasoning' field
     'timezone',
     'reasoning',
   ]);
@@ -102,6 +103,8 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
       identityIds: ['identity1', 'identity2'],
       model: 'gpt-4',
       properties: {
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
         message_buffer_autoclear: true,
         max_files_open: 10,
         per_file_view_window_char_limit: 1000,
@@ -254,6 +257,8 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
       identityIds: ['identity1', 'identity2'],
       model: 'gpt-4',
       properties: {
+        enable_reasoner: false,
+        put_inner_thoughts_in_kwargs: true,
         message_buffer_autoclear: true,
         max_files_open: 10,
         per_file_view_window_char_limit: 1000,

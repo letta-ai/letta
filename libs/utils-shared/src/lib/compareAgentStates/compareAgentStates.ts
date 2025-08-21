@@ -51,6 +51,8 @@ export function stateCleaner(state: AgentState): CleanedAgentState {
       model_endpoint: state.llm_config.model_endpoint,
       model_wrapper: state.llm_config.model_wrapper,
       context_window: state.llm_config.context_window,
+      enable_reasoner: state.llm_config.enable_reasoner,
+      put_inner_thoughts_in_kwargs: state.llm_config.put_inner_thoughts_in_kwargs,
       temperature: state.llm_config.temperature,
       max_tokens: state.llm_config.max_tokens,
       max_reasoning_tokens: state.llm_config.max_reasoning_tokens,
