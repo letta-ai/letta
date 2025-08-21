@@ -5699,6 +5699,59 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
 
 
 @pytest.mark.asyncio
+async def test_get_existing_source_names(server: SyncServer, default_user, event_loop):
+    """Test the fast batch check for existing source names."""
+    # Create some test sources
+    source1 = PydanticSource(
+        name="test_source_1",
+        embedding_config=EmbeddingConfig(
+            embedding_endpoint_type="openai",
+            embedding_endpoint="https://api.openai.com/v1",
+            embedding_model="text-embedding-ada-002",
+            embedding_dim=1536,
+            embedding_chunk_size=300,
+        ),
+    )
+    source2 = PydanticSource(
+        name="test_source_2",
+        embedding_config=EmbeddingConfig(
+            embedding_endpoint_type="openai",
+            embedding_endpoint="https://api.openai.com/v1",
+            embedding_model="text-embedding-ada-002",
+            embedding_dim=1536,
+            embedding_chunk_size=300,
+        ),
+    )
+
+    # Create the sources
+    created_source1 = await server.source_manager.create_source(source1, default_user)
+    created_source2 = await server.source_manager.create_source(source2, default_user)
+
+    # Test batch check - mix of existing and non-existing names
+    names_to_check = ["test_source_1", "test_source_2", "non_existent_source", "another_non_existent"]
+    existing_names = await server.source_manager.get_existing_source_names(names_to_check, default_user)
+
+    # Verify results
+    assert len(existing_names) == 2
+    assert "test_source_1" in existing_names
+    assert "test_source_2" in existing_names
+    assert "non_existent_source" not in existing_names
+    assert "another_non_existent" not in existing_names
+
+    # Test with empty list
+    empty_result = await server.source_manager.get_existing_source_names([], default_user)
+    assert len(empty_result) == 0
+
+    # Test with all non-existing names
+    non_existing_result = await server.source_manager.get_existing_source_names(["fake1", "fake2"], default_user)
+    assert len(non_existing_result) == 0
+
+    # Cleanup
+    await server.source_manager.delete_source(created_source1.id, default_user)
+    await server.source_manager.delete_source(created_source2.id, default_user)
+
+
+@pytest.mark.asyncio
 async def test_create_source(server: SyncServer, default_user, event_loop):
     """Test creating a new source."""
     source_pydantic = PydanticSource(

@@ -129,7 +129,7 @@ class AgentSchema(CreateAgent):
             memory_blocks=[],  # TODO: Convert from agent_state.memory if needed
             tools=[],
             tool_ids=[tool.id for tool in agent_state.tools] if agent_state.tools else [],
-            source_ids=[],  # [source.id for source in agent_state.sources] if agent_state.sources else [],
+            source_ids=[source.id for source in agent_state.sources] if agent_state.sources else [],
             block_ids=[block.id for block in agent_state.memory.blocks],
             tool_rules=agent_state.tool_rules,
             tags=agent_state.tags,

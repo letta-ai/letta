@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -519,8 +520,20 @@ class AgentSerializationManager:
             if schema.sources:
                 # convert source schemas to pydantic sources
                 pydantic_sources = []
+
+                # First, do a fast batch check for existing source names to avoid conflicts
+                source_names_to_check = [s.name for s in schema.sources]
+                existing_source_names = await self.source_manager.get_existing_source_names(source_names_to_check, actor)
+
                 for source_schema in schema.sources:
                     source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
+
+                    # Check if source name already exists, if so add unique suffix
+                    original_name = source_data["name"]
+                    if original_name in existing_source_names:
+                        unique_suffix = uuid.uuid4().hex[:8]
+                        source_data["name"] = f"{original_name}_{unique_suffix}"
+
                     pydantic_sources.append(Source(**source_data))
 
                 # bulk upsert all sources at once
@@ -529,13 +542,15 @@ class AgentSerializationManager:
                 # map file ids to database ids
                 # note: sources are matched by name during upsert, so we need to match by name here too
                 created_sources_by_name = {source.name: source for source in created_sources}
-                for source_schema in schema.sources:
-                    created_source = created_sources_by_name.get(source_schema.name)
+                for i, source_schema in enumerate(schema.sources):
+                    # Use the pydantic source name (which may have been modified for uniqueness)
+                    source_name = pydantic_sources[i].name
+                    created_source = created_sources_by_name.get(source_name)
                     if created_source:
                         file_to_db_ids[source_schema.id] = created_source.id
                         imported_count += 1
                     else:
-                        logger.warning(f"Source {source_schema.name} was not created during bulk upsert")
+                        logger.warning(f"Source {source_name} was not created during bulk upsert")
 
             # 4. Create files (depends on sources)
             for file_schema in schema.files:
@@ -595,6 +610,10 @@ class AgentSerializationManager:
                 if agent_data.get("block_ids"):
                     agent_data["block_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["block_ids"]]
 
+                # Remap source_ids from file IDs to database IDs
+                if agent_data.get("source_ids"):
+                    agent_data["source_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["source_ids"]]
+
                 if env_vars:
                     for var in agent_data["tool_exec_environment_variables"]:
                         var["value"] = env_vars.get(var["key"], "")
@@ -641,14 +660,16 @@ class AgentSerializationManager:
                     for file_agent_schema in agent_schema.files_agents:
                         file_db_id = file_to_db_ids[file_agent_schema.file_id]
 
-                        # Use cached file metadata if available
+                        # Use cached file metadata if available (with content)
                         if file_db_id not in file_metadata_cache:
-                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
+                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(
+                                file_db_id, actor, include_content=True
+                            )
                         file_metadata = file_metadata_cache[file_db_id]
                         files_for_agent.append(file_metadata)
 
                         if file_agent_schema.visible_content:
-                            visible_content_map[file_db_id] = file_agent_schema.visible_content
+                            visible_content_map[file_metadata.file_name] = file_agent_schema.visible_content
 
                     # Bulk attach files to agent
                     await self.file_agent_manager.attach_files_bulk(

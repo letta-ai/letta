@@ -4,11 +4,10 @@ import tempfile
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import CreateBlock, DuplicateFileHandling
+from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import LettaRequest
 from letta_client import MessageCreate as ClientMessageCreate
@@ -19,6 +18,7 @@ from letta.schemas.enums import FileProcessingStatus, ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 from letta.settings import settings
+from tests.helpers.utils import upload_file_and_wait
 from tests.utils import wait_for_server
 
 # Constants
@@ -70,36 +70,6 @@ def client() -> LettaSDKClient:
     client = LettaSDKClient(base_url=server_url, token=None)
     client.tools.upsert_base_tools()
     yield client
-
-
-def upload_file_and_wait(
-    client: LettaSDKClient,
-    source_id: str,
-    file_path: str,
-    name: Optional[str] = None,
-    max_wait: int = 60,
-    duplicate_handling: DuplicateFileHandling = None,
-):
-    """Helper function to upload a file and wait for processing to complete"""
-    with open(file_path, "rb") as f:
-        if duplicate_handling:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
-        else:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
-
-    # Wait for the file to be processed
-    start_time = time.time()
-    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
-        if time.time() - start_time > max_wait:
-            pytest.fail(f"File processing timed out after {max_wait} seconds")
-        time.sleep(1)
-        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
-        print("Waiting for file processing to complete...", file_metadata.processing_status)
-
-    if file_metadata.processing_status == "error":
-        pytest.fail(f"File processing failed: {file_metadata.error_message}")
-
-    return file_metadata
 
 
 @pytest.fixture

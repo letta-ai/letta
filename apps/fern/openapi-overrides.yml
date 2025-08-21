@@ -996,3 +996,9 @@ paths:
         - agents
         - files
       x-fern-sdk-method-name: close_all
+  /v1/agents/{agent_id}/files:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - files
+      x-fern-sdk-method-name: list
