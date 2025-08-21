@@ -10,6 +10,7 @@ class EmbeddingConfig(BaseModel):
 
     embedding_endpoint_type: Literal[
         "openai",
+        "openai_compatible",
         "anthropic",
         "bedrock",
         "google_ai",
@@ -35,6 +36,12 @@ class EmbeddingConfig(BaseModel):
     embedding_chunk_size: Optional[int] = Field(300, description="The chunk size of the embedding.")
     handle: Optional[str] = Field(None, description="The handle for this config, in the format provider/model-name.")
     batch_size: int = Field(32, description="The maximum batch size for processing embeddings.")
+    # Optional per-embedding API key for openai-compatible providers
+    embedding_api_key: Optional[str] = Field(
+        None,
+        description="Per-embedding API key (takes precedence if provided).",
+        exclude=True,  # avoid persisting secrets when serializing/storing
+    )
 
     # azure only
     azure_endpoint: Optional[str] = Field(None, description="The Azure endpoint for the model.")
@@ -43,6 +50,11 @@ class EmbeddingConfig(BaseModel):
 
     @classmethod
     def default_config(cls, model_name: Optional[str] = None, provider: Optional[str] = None):
+        # Strict rule: openai_compatible requires explicit config; do not auto-complete
+        if provider == "openai_compatible":
+            raise ValueError(
+                "Provider 'openai_compatible' requires explicit embedding_model, embedding_endpoint, and embedding_dim."
+            )
 
         if model_name == "text-embedding-ada-002" and provider == "openai":
             return cls(
