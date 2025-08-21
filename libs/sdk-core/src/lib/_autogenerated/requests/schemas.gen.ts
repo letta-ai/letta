@@ -2394,7 +2394,28 @@ export const $ChatCompletionMessageCustomToolCallParam = {
   title: 'ChatCompletionMessageCustomToolCallParam',
 } as const;
 
-export const $ChatCompletionMessageFunctionToolCall = {
+export const $ChatCompletionMessageFunctionToolCall_Input = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    function: {
+      $ref: '#/components/schemas/openai__types__chat__chat_completion_message_function_tool_call__Function',
+    },
+    type: {
+      type: 'string',
+      const: 'function',
+      title: 'Type',
+    },
+  },
+  additionalProperties: true,
+  type: 'object',
+  required: ['id', 'function', 'type'],
+  title: 'ChatCompletionMessageFunctionToolCall',
+} as const;
+
+export const $ChatCompletionMessageFunctionToolCall_Output = {
   properties: {
     id: {
       type: 'string',
@@ -8645,7 +8666,7 @@ export const $Message = {
       anyOf: [
         {
           items: {
-            $ref: '#/components/schemas/ChatCompletionMessageFunctionToolCall',
+            $ref: '#/components/schemas/ChatCompletionMessageFunctionToolCall-Output',
           },
           type: 'array',
         },
@@ -15327,6 +15348,55 @@ export const $letta__schemas__agent_file__MessageSchema = {
       title: 'Agent Id',
       description: 'The unique identifier of the agent',
     },
+    tool_calls: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/ChatCompletionMessageFunctionToolCall-Input',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Calls',
+      description:
+        'The list of tool calls requested. Only applicable for role assistant.',
+    },
+    tool_call_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Call Id',
+      description: 'The ID of the tool call. Only applicable for role tool.',
+    },
+    tool_returns: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/ToolReturn',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Returns',
+      description: 'Tool execution return information for prior tool calls',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The timestamp when the object was created.',
+    },
   },
   type: 'object',
   required: ['role', 'content', 'id'],
@@ -15889,6 +15959,24 @@ export const $openai__types__chat__chat_completion_message_custom_tool_call_para
     type: 'object',
     required: ['input', 'name'],
     title: 'Custom',
+  } as const;
+
+export const $openai__types__chat__chat_completion_message_function_tool_call__Function =
+  {
+    properties: {
+      arguments: {
+        type: 'string',
+        title: 'Arguments',
+      },
+      name: {
+        type: 'string',
+        title: 'Name',
+      },
+    },
+    additionalProperties: true,
+    type: 'object',
+    required: ['arguments', 'name'],
+    title: 'Function',
   } as const;
 
 export const $openai__types__chat__chat_completion_message_function_tool_call_param__Function =

@@ -842,7 +842,18 @@ export type ChatCompletionMessageCustomToolCallParam = {
   type: 'custom';
 };
 
-export type ChatCompletionMessageFunctionToolCall = {
+export type ChatCompletionMessageFunctionToolCall_Input = {
+  id: string;
+  function: openai__types__chat__chat_completion_message_function_tool_call__Function;
+  type: 'function';
+  [key: string]:
+    | unknown
+    | string
+    | openai__types__chat__chat_completion_message_function_tool_call__Function
+    | 'function';
+};
+
+export type ChatCompletionMessageFunctionToolCall_Output = {
   id: string;
   function: Function_Output;
   type: 'function';
@@ -3208,7 +3219,7 @@ export type Message = {
   /**
    * The list of tool calls requested. Only applicable for role assistant.
    */
-  tool_calls?: Array<ChatCompletionMessageFunctionToolCall> | null;
+  tool_calls?: Array<ChatCompletionMessageFunctionToolCall_Output> | null;
   /**
    * The ID of the tool call. Only applicable for role tool.
    */
@@ -5683,6 +5694,22 @@ export type letta__schemas__agent_file__MessageSchema = {
    * The unique identifier of the agent
    */
   agent_id?: string | null;
+  /**
+   * The list of tool calls requested. Only applicable for role assistant.
+   */
+  tool_calls?: Array<ChatCompletionMessageFunctionToolCall_Input> | null;
+  /**
+   * The ID of the tool call. Only applicable for role tool.
+   */
+  tool_call_id?: string | null;
+  /**
+   * Tool execution return information for prior tool calls
+   */
+  tool_returns?: Array<ToolReturn> | null;
+  /**
+   * The timestamp when the object was created.
+   */
+  created_at?: string;
 };
 
 /**
@@ -5826,6 +5853,13 @@ export type openai__types__chat__chat_completion_message_custom_tool_call_param_
   {
     input: string;
     name: string;
+  };
+
+export type openai__types__chat__chat_completion_message_function_tool_call__Function =
+  {
+    arguments: string;
+    name: string;
+    [key: string]: unknown | string;
   };
 
 export type openai__types__chat__chat_completion_message_function_tool_call_param__Function =

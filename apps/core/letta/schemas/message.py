@@ -414,6 +414,8 @@ class Message(BaseMessage):
         except json.JSONDecodeError:
             raise ValueError(f"Failed to decode function return: {text_content}")
 
+        # if self.tool_call_id is None:
+        #     import pdb;pdb.set_trace()
         assert self.tool_call_id is not None
 
         return ToolReturnMessage(

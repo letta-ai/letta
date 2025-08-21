@@ -1,15 +1,17 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
 from pydantic import BaseModel, Field
 
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.block import Block, CreateBlock
 from letta.schemas.enums import MessageRole
 from letta.schemas.file import FileAgent, FileAgentBase, FileMetadata, FileMetadataBase
 from letta.schemas.group import Group, GroupCreate
 from letta.schemas.mcp import MCPServer
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, ToolReturn
 from letta.schemas.source import Source, SourceCreate
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
@@ -46,6 +48,15 @@ class MessageSchema(MessageCreate):
     role: MessageRole = Field(..., description="The role of the participant.")
     model: Optional[str] = Field(None, description="The model used to make the function call")
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent")
+    tool_calls: Optional[List[OpenAIToolCall]] = Field(
+        default=None, description="The list of tool calls requested. Only applicable for role assistant."
+    )
+    tool_call_id: Optional[str] = Field(default=None, description="The ID of the tool call. Only applicable for role tool.")
+    tool_returns: Optional[List[ToolReturn]] = Field(default=None, description="Tool execution return information for prior tool calls")
+    created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
+
+    # TODO: Should we also duplicate the steps here?
+    # TODO: What about tool_return?
 
     @classmethod
     def from_message(cls, message: Message) -> "MessageSchema":
@@ -64,6 +75,10 @@ class MessageSchema(MessageCreate):
             group_id=message.group_id,
             model=message.model,
             agent_id=message.agent_id,
+            tool_calls=message.tool_calls,
+            tool_call_id=message.tool_call_id,
+            tool_returns=message.tool_returns,
+            created_at=message.created_at,
         )
 
 

@@ -735,6 +735,57 @@ export const MessageRole = z.union([
   z.literal('system'),
 ]);
 
+export type openai__types__chat__chat_completion_message_function_tool_call__Function =
+  z.infer<
+    typeof openai__types__chat__chat_completion_message_function_tool_call__Function
+  >;
+export const openai__types__chat__chat_completion_message_function_tool_call__Function =
+  z.intersection(
+    z.object({
+      arguments: z.string(),
+      name: z.string(),
+    }),
+    z.object({
+      string: z.any(),
+    }),
+  );
+
+export type ChatCompletionMessageFunctionToolCall_Input = z.infer<
+  typeof ChatCompletionMessageFunctionToolCall_Input
+>;
+export const ChatCompletionMessageFunctionToolCall_Input = z.intersection(
+  z.object({
+    id: z.string(),
+    function:
+      openai__types__chat__chat_completion_message_function_tool_call__Function,
+    type: z.string(),
+  }),
+  z.object({
+    string: z.any(),
+  }),
+);
+
+export type ToolReturn = z.infer<typeof ToolReturn>;
+export const ToolReturn = z.object({
+  status: z.union([z.literal('success'), z.literal('error')]),
+  stdout: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  stderr: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type letta__schemas__agent_file__MessageSchema = z.infer<
   typeof letta__schemas__agent_file__MessageSchema
 >;
@@ -802,6 +853,36 @@ export const letta__schemas__agent_file__MessageSchema = z.object({
       z.undefined(),
     ])
     .optional(),
+  tool_calls: z
+    .union([
+      z.array(ChatCompletionMessageFunctionToolCall_Input),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(ChatCompletionMessageFunctionToolCall_Input),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_call_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_returns: z
+    .union([
+      z.array(ToolReturn),
+      z.null(),
+      z.array(z.union([z.array(ToolReturn), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z.union([z.string(), z.undefined()]).optional(),
 });
 
 export type FileAgentSchema = z.infer<typeof FileAgentSchema>;
@@ -3318,10 +3399,10 @@ export const Function_Output = z.intersection(
   }),
 );
 
-export type ChatCompletionMessageFunctionToolCall = z.infer<
-  typeof ChatCompletionMessageFunctionToolCall
+export type ChatCompletionMessageFunctionToolCall_Output = z.infer<
+  typeof ChatCompletionMessageFunctionToolCall_Output
 >;
-export const ChatCompletionMessageFunctionToolCall = z.intersection(
+export const ChatCompletionMessageFunctionToolCall_Output = z.intersection(
   z.object({
     id: z.string(),
     function: Function_Output,
@@ -4506,27 +4587,6 @@ export const FunctionTool = z.intersection(
   }),
 );
 
-export type ToolReturn = z.infer<typeof ToolReturn>;
-export const ToolReturn = z.object({
-  status: z.union([z.literal('success'), z.literal('error')]),
-  stdout: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  stderr: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-});
-
 export type Message = z.infer<typeof Message>;
 export const Message = z.object({
   created_by_id: z
@@ -4615,10 +4675,13 @@ export const Message = z.object({
     .optional(),
   tool_calls: z
     .union([
-      z.array(ChatCompletionMessageFunctionToolCall),
+      z.array(ChatCompletionMessageFunctionToolCall_Output),
       z.null(),
       z.array(
-        z.union([z.array(ChatCompletionMessageFunctionToolCall), z.null()]),
+        z.union([
+          z.array(ChatCompletionMessageFunctionToolCall_Output),
+          z.null(),
+        ]),
       ),
       z.undefined(),
     ])
