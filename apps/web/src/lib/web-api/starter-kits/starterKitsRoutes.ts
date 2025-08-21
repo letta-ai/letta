@@ -328,6 +328,7 @@ async function createTemplateFromStarterKit(
         ...toolIdsForStarterKit,
       ],
       llm_config: {
+        enable_reasoner: true,
         handle:
           'model' in starterKit.agentState
             ? starterKit.agentState.model
