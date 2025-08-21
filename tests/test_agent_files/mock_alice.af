@@ -1,0 +1,458 @@
+{
+  "agent_type": "memgpt_agent",
+  "core_memory": [
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "The results from Knowledge Base research flow",
+      "is_template": false,
+      "label": "knowledge_base_research",
+      "limit": 200000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T22:49:59.570989+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "LinkedIn Post Activity of the Lead retrieved from the internet. We use the recent activity to infer sales context.",
+      "is_template": false,
+      "label": "linkedin_activity",
+      "limit": 200000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T18:46:32.342802+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "A comprehensive step-by-step plan for the deep research flow for gathering information about the current lead.",
+      "is_template": false,
+      "label": "research_plan",
+      "limit": 20000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T22:49:43.752176+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "Queries for conducting web research on topics related to the lead's company, position, recent events.",
+      "is_template": false,
+      "label": "web_research_queries",
+      "limit": 20000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-13T20:41:10.474057+00:00",
+      "value": ""
+    }
+  ],
+  "created_at": "2025-08-13T20:41:10.539393+00:00",
+  "description": null,
+  "embedding_config": {
+    "embedding_endpoint_type": "openai",
+    "embedding_endpoint": "https://api.openai.com/v1",
+    "embedding_model": "text-embedding-3-small",
+    "embedding_dim": 2000,
+    "embedding_chunk_size": 300,
+    "handle": "openai/text-embedding-3-small",
+    "batch_size": 32,
+    "azure_endpoint": null,
+    "azure_version": null,
+    "azure_deployment": null
+  },
+  "llm_config": {
+    "model": "gpt-4.1",
+    "model_endpoint_type": "openai",
+    "model_endpoint": "https://api.openai.com/v1",
+    "provider_name": "OpenAI",
+    "provider_category": "byok",
+    "model_wrapper": null,
+    "context_window": 120000,
+    "put_inner_thoughts_in_kwargs": true,
+    "handle": "OpenAI/gpt-4.1",
+    "temperature": 0.15,
+    "max_tokens": 32000,
+    "enable_reasoner": true,
+    "reasoning_effort": null,
+    "max_reasoning_tokens": 0,
+    "frequency_penalty": null,
+    "compatibility_type": null
+  },
+  "message_buffer_autoclear": false,
+  "in_context_message_indices": [
+    0,
+    1
+  ],
+  "messages": [
+    {
+      "created_at": "2025-08-13T20:41:10.642754+00:00",
+      "group_id": null,
+      "model": "gpt-4.1",
+      "name": null,
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are a truth seeking deep researcher who is responsible for crafting a comprehensive research report containing in depth analysis of both prospect, their company, their position, and themselves. \nIt also includes insights from the customer's Knowledge base. \nYou are a part of an AI SDR product \"Alice\" where people upload all the documents, pdfs, emails, webpages, etc. that they would give to an SDR to train them for creating the most effective outbound email campaigns.\n\n**Reasoning**\n- you must reason with first principles and ground your hypothesis in common sense\n- you MUST keep your tone neutral and grounded, don't make exclamations or assume any sentiments \n- YOU MUST your reasoning to less than 10 words\n- you reasoning MUST be to the point and precise\n\n**Research Plan**\n- Come up with a comprehensive step-by-step research plan starting with the web research on the lead and their company.\n- First do a LinkedIn Search to gather recent professional activity\n- Gather as much information as possible that would help in crafting personalized emails that are likely to catch the lead's attention.\n- Start with Web Research to gather as much information about the lead as possible\n- Leverage the Web Research to understand the unique challenges that the lead's company or division faces and tie them with recent events and signals to get a clear picture of what the sender can help with.\n- Then once you are done with Web Research, move on to Knowledge Base research to learn more about the sender's company and positioning.\n- Leverage Knowledge Base to understand how the sender's company and products can help solve the lead company's problems.\n- If you discover things in the Knowledge Base that require more web research feel free to add it to the Research Plan and revisit prior research.\n- Finally codify your research plan or any changes you make throughout the process using the `codify_research` tool.\n\n**LinkedIn Search**\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Alice\" has access to.\n- knowledge base is used for storing the seller info so use it to discover potential solutions and resources that can help create the perfect research report and position the seller in the best way possible to the buyer.\n- the knowledge base is stored in the form of vector embeddings\n- the documents, pdfs, pages, etc. are chunked before they get upserted into the vector db\n- the chunking strategy involves splitting the text on headers\n- the embedding model used is `llama-text-embed-v2` \n\n**Web Research **\n- you have access to the `web_search_custom_beta` tool that lets you conduct web research for topics related to the lead's company, position, recent events.\n- web research is for looking up the lead, their company , the unique challenges that they're facing, any current events etc.\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You MUST go as broad and as deep as needed to collect as much information as needed\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n\nResearch Best Practices:\n- Start with broad context, then focus on specific insights\n- Prioritize recent (last 90 days) developments\n- Look for concrete metrics and specific examples\n- Focus on business-critical information\n- Identify unique angles for meaningful engagement\n- Verify information across multiple sources\n- Note any potential timing triggers or urgency drivers\n- Try to gather as much info as possible in as little tool calls as possible we MUST be fast\n\n**FINAL RESEARCH REPORT**\n- Come up with a detailed report based on the findings from the full research plan so far.\n- Make sure the research report is highly detailed  and cites the relevant web research links and knowledge base resources that you discovered as a part of the research. \n- Make sure the final report covers all the relevant information from the perspective of the seller and buyer\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your task is to come up with a detailed research report on a particular lead that also contains positioning from the seller company's perspective.\n- This report is to be used in generating personalized outbound messaging for the lead so we want the report to be hyper relevant.\n- Come up with queries and use the web_search_custom_beta tool to do your discovery.\n- Think deeply about the queries you craft because they will determine the quality of the responses.\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Once you're finished with the lead discovery you should search the seller company's knowledge base for relevant information that will help craft hyper personalized outbound messaging to the lead later on.\n- Use the knowledge_base_research_executor tool to search the knowledge base\n- Once you are satisfied with the results use the `summarize_research` to summarize the findings and return.\n\n**Tools ** \ncodify_research: Use this tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n- Update the research plan as you progress through the steps.\n- Mark the steps as done and mark the current step as pending.\n- Make sure you end the research when all steps get marked done.\n\nlinkedin_activity_search:\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n- you should only include posts from the last 3 months in the research report. Ignore or de-prioritize older posts unless specifically relevant.\n\nknowledge_base_research_executor:  a tool that will allow you to search the user's Pinecone database, and will store the results (the search + the results) in your memory\n- the user will provide a lead profile and you have access to the web research results which you use to come up with the queries to pinecone\n- before calling that tool you must come up with multiple queries to send to pinecone which would get the most relevant chunks from the index for a given user profile\n- YOU MUST MAKE AT LEAST 5 CALLS TO THE KNOWLEDGE BASE AND STORE THE RESULTS BEFORE YOU MAKE A JUDGEMENT  TO PROCEED OR RETRY\n- once you get the results from pinecone reflect on their relevance re: the lead profile \n- redo the search if you think the results are not relevant (if you use an identical search, the search/result pair in your memory will be replaced)\n\nweb_search_custom_beta: Use this tool for discovery and broad information gathering\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You should make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Gather a deeper understanding of the company and the person you are researching\n- Find recent news, press releases, reviews, and public information\n- Use the lead's current role, career trajectory, and notable achievements as levers to base your web research on.\n- Use the company overview: mission, products/services, market position to help research additional context about the company\n- Find recent information and developments about the lead's company by including the company domain in the web search tool\n- Broader recent news search for: funding, product launches, expansions, job openings\n\nsummarize_research: A tool for organizing the research results of the prior tool calls to knowledge_base_research_executor and web_search_custom_beta and returning the results and the subsequent analysis.\n- This tool will return the result of your research to the user. \n- Only call this tool once you are finished with your research.\n- MAKE SURE THE RESEARCH IS CITING EVERY SINGLE SOURCE THAT WAS USED FROM THE KNOWLEDGE BASE OR WEB RESEARCH\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- you MUST end every section with a list of citations FOR THAT SECTION\n- you must delimit the citations using the <citations> tag\n- YOU MUST INCLUDE CITATIONS FOR EVERY SECTION\n- for knowledge base resources you MUST include the `knowledge_base_resource.id` for the resource in the citation\n- Your citations MUST be in the form of an array e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n- Your citations MUST not have any delimiters or quotes.\n\nThe user will now provide you with the lead information:\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<knowledge_base_research>\n<description>\nThe results from Knowledge Base research flow\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n\n</value>\n</knowledge_base_research>\n\n<linkedin_activity>\n<description>\nLinkedIn Post Activity of the Lead retrieved from the internet. We use the recent activity to infer sales context.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n\n</value>\n</linkedin_activity>\n\n<research_plan>\n<description>\nA comprehensive step-by-step plan for the deep research flow for gathering information about the current lead.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n\n</value>\n</research_plan>\n\n<web_research_queries>\n<description>\nQueries for conducting web research on topics related to the lead's company, position, recent events.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n\n</value>\n</web_research_queries>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\ncodify_research requires continuing your response when called\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor requires continuing your response when called\n</tool_rule>\n<tool_rule>\nweb_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message requires continuing your response when called\n</tool_rule>\n<tool_rule>\nlinkedin_activity_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nAfter using codify_research, you must use one of these tools: web_search, knowledge_base_research_executor, summarize_research, linkedin_activity_search\n</tool_rule>\n<tool_rule>\nsend_message: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nAfter using knowledge_base_research_executor, you must use one of these tools: knowledge_base_research_executor, summarize_research\n</tool_rule>\n<tool_rule>\n: at most 1 use(s) per response\n</tool_rule>\n<tool_rule>\nsummarize_research ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n\n\n<memory_metadata>\n- The current time is: 2025-08-14 10:49:59 PM \n- Memory blocks were last modified: 2025-08-13 08:41:10 PM UTC+0000\n- 0 previous messages between you and the user are stored in recall memory (use tools to access them)\n</memory_metadata>"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-14T22:50:00.019808+00:00"
+    },
+    {
+      "created_at": "2025-08-14T22:49:28.835099+00:00",
+      "group_id": null,
+      "model": "gpt-4.1",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-08-14 10:49:28 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-14T22:49:28.903960+00:00"
+    }
+  ],
+  "metadata_": null,
+  "multi_agent_group": null,
+  "name": "mocking_alice",
+  "system": "You are a truth seeking deep researcher who is responsible for crafting a comprehensive research report containing in depth analysis of both prospect, their company, their position, and themselves. \nIt also includes insights from the customer's Knowledge base. \nYou are a part of an AI SDR product \"Alice\" where people upload all the documents, pdfs, emails, webpages, etc. that they would give to an SDR to train them for creating the most effective outbound email campaigns.\n\n**Reasoning**\n- you must reason with first principles and ground your hypothesis in common sense\n- you MUST keep your tone neutral and grounded, don't make exclamations or assume any sentiments \n- YOU MUST your reasoning to less than 10 words\n- you reasoning MUST be to the point and precise\n\n**Research Plan**\n- Come up with a comprehensive step-by-step research plan starting with the web research on the lead and their company.\n- First do a LinkedIn Search to gather recent professional activity\n- Gather as much information as possible that would help in crafting personalized emails that are likely to catch the lead's attention.\n- Start with Web Research to gather as much information about the lead as possible\n- Leverage the Web Research to understand the unique challenges that the lead's company or division faces and tie them with recent events and signals to get a clear picture of what the sender can help with.\n- Then once you are done with Web Research, move on to Knowledge Base research to learn more about the sender's company and positioning.\n- Leverage Knowledge Base to understand how the sender's company and products can help solve the lead company's problems.\n- If you discover things in the Knowledge Base that require more web research feel free to add it to the Research Plan and revisit prior research.\n- Finally codify your research plan or any changes you make throughout the process using the `codify_research` tool.\n\n**LinkedIn Search**\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Alice\" has access to.\n- knowledge base is used for storing the seller info so use it to discover potential solutions and resources that can help create the perfect research report and position the seller in the best way possible to the buyer.\n- the knowledge base is stored in the form of vector embeddings\n- the documents, pdfs, pages, etc. are chunked before they get upserted into the vector db\n- the chunking strategy involves splitting the text on headers\n- the embedding model used is `llama-text-embed-v2` \n\n**Web Research **\n- you have access to the `web_search_custom_beta` tool that lets you conduct web research for topics related to the lead's company, position, recent events.\n- web research is for looking up the lead, their company , the unique challenges that they're facing, any current events etc.\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You MUST go as broad and as deep as needed to collect as much information as needed\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n\nResearch Best Practices:\n- Start with broad context, then focus on specific insights\n- Prioritize recent (last 90 days) developments\n- Look for concrete metrics and specific examples\n- Focus on business-critical information\n- Identify unique angles for meaningful engagement\n- Verify information across multiple sources\n- Note any potential timing triggers or urgency drivers\n- Try to gather as much info as possible in as little tool calls as possible we MUST be fast\n\n**FINAL RESEARCH REPORT**\n- Come up with a detailed report based on the findings from the full research plan so far.\n- Make sure the research report is highly detailed  and cites the relevant web research links and knowledge base resources that you discovered as a part of the research. \n- Make sure the final report covers all the relevant information from the perspective of the seller and buyer\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your task is to come up with a detailed research report on a particular lead that also contains positioning from the seller company's perspective.\n- This report is to be used in generating personalized outbound messaging for the lead so we want the report to be hyper relevant.\n- Come up with queries and use the web_search_custom_beta tool to do your discovery.\n- Think deeply about the queries you craft because they will determine the quality of the responses.\n- You MUST make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Once you're finished with the lead discovery you should search the seller company's knowledge base for relevant information that will help craft hyper personalized outbound messaging to the lead later on.\n- Use the knowledge_base_research_executor tool to search the knowledge base\n- Once you are satisfied with the results use the `summarize_research` to summarize the findings and return.\n\n**Tools ** \ncodify_research: Use this tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n- Update the research plan as you progress through the steps.\n- Mark the steps as done and mark the current step as pending.\n- Make sure you end the research when all steps get marked done.\n\nlinkedin_activity_search:\n- you have access to the `linkedin_activity_search` tool that lets you retrieve the lead's linkedin activity which you can use for crafting the broader set of web queries in your research\n- you MUST call this before the web_search_custom_beta to ensure you have some context on the person's linkedin activity.\n- you should only include posts from the last 3 months in the research report. Ignore or de-prioritize older posts unless specifically relevant.\n\nknowledge_base_research_executor:  a tool that will allow you to search the user's Pinecone database, and will store the results (the search + the results) in your memory\n- the user will provide a lead profile and you have access to the web research results which you use to come up with the queries to pinecone\n- before calling that tool you must come up with multiple queries to send to pinecone which would get the most relevant chunks from the index for a given user profile\n- YOU MUST MAKE AT LEAST 5 CALLS TO THE KNOWLEDGE BASE AND STORE THE RESULTS BEFORE YOU MAKE A JUDGEMENT  TO PROCEED OR RETRY\n- once you get the results from pinecone reflect on their relevance re: the lead profile \n- redo the search if you think the results are not relevant (if you use an identical search, the search/result pair in your memory will be replaced)\n\nweb_search_custom_beta: Use this tool for discovery and broad information gathering\n- It takes a list of queries to run so make use of it to be as broad or deep as needed.\n- You should make your queries detailed with expressive keywords to make the most out of SEO from the web.\n- Gather a deeper understanding of the company and the person you are researching\n- Find recent news, press releases, reviews, and public information\n- Use the lead's current role, career trajectory, and notable achievements as levers to base your web research on.\n- Use the company overview: mission, products/services, market position to help research additional context about the company\n- Find recent information and developments about the lead's company by including the company domain in the web search tool\n- Broader recent news search for: funding, product launches, expansions, job openings\n\nsummarize_research: A tool for organizing the research results of the prior tool calls to knowledge_base_research_executor and web_search_custom_beta and returning the results and the subsequent analysis.\n- This tool will return the result of your research to the user. \n- Only call this tool once you are finished with your research.\n- MAKE SURE THE RESEARCH IS CITING EVERY SINGLE SOURCE THAT WAS USED FROM THE KNOWLEDGE BASE OR WEB RESEARCH\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- you MUST end every section with a list of citations FOR THAT SECTION\n- you must delimit the citations using the <citations> tag\n- YOU MUST INCLUDE CITATIONS FOR EVERY SECTION\n- for knowledge base resources you MUST include the `knowledge_base_resource.id` for the resource in the citation\n- Your citations MUST be in the form of an array e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n- Your citations MUST not have any delimiters or quotes.\n\nThe user will now provide you with the lead information:",
+  "tags": [],
+  "tool_exec_environment_variables": [
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_NAMESPACE",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "FIRECRAWL_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "KNOWLEDGE_BASE_RESOURCES",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_INDEX_HOST",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PROAPIS_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "OPENAI_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    }
+  ],
+  "tool_rules": [
+    {
+      "tool_name": "codify_research",
+      "type": "run_first"
+    },
+    {
+      "tool_name": "codify_research",
+      "type": "constrain_child_tools",
+      "children": [
+        "web_search",
+        "knowledge_base_research_executor",
+        "summarize_research",
+        "linkedin_activity_search"
+      ]
+    },
+    {
+      "tool_name": "codify_research",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "web_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "send_message",
+      "type": "max_count_per_step",
+      "max_count_limit": 2
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "max_count_per_step",
+      "max_count_limit": 2
+    },
+    {
+      "tool_name": "summarize_research",
+      "type": "exit_loop"
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "constrain_child_tools",
+      "children": [
+        "knowledge_base_research_executor",
+        "summarize_research"
+      ]
+    },
+    {
+      "tool_name": "send_message",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "summarize_research",
+      "type": "required_before_exit"
+    },
+    {
+      "tool_name": "linkedin_activity_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "linkedin_activity_search",
+      "type": "required_before_exit"
+    },
+    {
+      "tool_name": "",
+      "type": "max_count_per_step",
+      "max_count_limit": 1
+    }
+  ],
+  "tools": [
+    {
+      "args_json_schema": null,
+      "created_at": "2025-08-13T21:04:36.008421+00:00",
+      "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+      "json_schema": {
+        "name": "web_search_custom_beta",
+        "description": "Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "array",
+              "description": "A list of SearchTask objects, each specifying a search query and a question to answer."
+            }
+          },
+          "required": [
+            "tasks"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "web_search_custom_beta",
+      "return_char_limit": 100000,
+      "source_code": "import json\nimport os\nimport time\nimport concurrent.futures as cf\nfrom collections import defaultdict\nfrom typing import List, Dict, Any\n\nfrom pydantic import BaseModel, Field\n\n\nclass SearchTask(BaseModel):\n    query: str = Field(description=\"Search query\")\n    question: str = Field(description=\"Question to answer\")\n\ndef web_search_custom_beta(tasks: List[SearchTask]) -> str:\n    \"\"\"\n    Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.\n\n    Args:\n        tasks (List[SearchTask]): A list of SearchTask objects, each specifying a search query and a question to answer.\n\n    Returns:\n        str: A JSON-formatted string containing the results for each query, keyed by the query string.\n    \"\"\"\n    import time\n    time.sleep(60 * 2)\n",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T23:18:45.566799+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:01.599449+00:00",
+      "description": "A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.",
+      "json_schema": {
+        "name": "codify_research",
+        "description": "A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "research_plan": {
+              "type": "string",
+              "description": "A step-by-step comprehensive research plan that includes the flow for deep researching the current prospect. Should include all the intermediate tool calls."
+            }
+          },
+          "required": [
+            "research_plan"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "codify_research",
+      "return_char_limit": 100000,
+      "source_code": "def codify_research(agent_state: \"AgentState\", research_plan: str) -> str:\n    \"\"\"\n    A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n    Args:\n        research_plan (str): A step-by-step comprehensive research plan that includes the flow for deep researching the current prospect. Should include all the intermediate tool calls.\n    \"\"\"\n    agent_state.memory.update_block_value(label=\"research_plan\", value=research_plan)\n    \n    return 'Research Updated'\n",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T22:43:59.002306+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:02.845968+00:00",
+      "description": "A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.",
+      "json_schema": {
+        "name": "summarize_research",
+        "description": "A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "web_research_result": {
+              "type": "string",
+              "description": "The web research queries and the results that you found."
+            },
+            "final_research_report": {
+              "type": "string",
+              "description": "Final research report made up of the deep research flow components from both web research and the knowledge base research results that you found. Make sure to use citations from the web links and the knowledge base resources that you had access to. "
+            }
+          },
+          "required": [
+            "web_research_result",
+            "final_research_report"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "summarize_research",
+      "return_char_limit": 1000000,
+      "source_code": "def summarize_research(agent_state: \"AgentState\", web_research_result: str, final_research_report: str) -> str:\n    \"\"\"\n    A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.\n    \n    Args:\n        web_research_result (str): The web research queries and the results that you found.\n        final_research_report (str): Final research report made up of the deep research flow components from both web research and the knowledge base research results that you found. Make sure to use citations from the web links and the knowledge base resources that you had access to. \n\n    Returns\n        str: A formatted JSON strign of queries and the reasoning behind them\n    \"\"\"\n    import json\n    \n    knowledge_base_research_str = agent_state.memory.get_block(\"knowledge_base_research\").value\n    knowledge_base_research = json.loads(knowledge_base_research_str) if len(knowledge_base_research_str) > 0 else {}\n    \n    research_plan = agent_state.memory.get_block(\"research_plan\").value\n    \n    final_return = {\"final_research_report\":final_research_report, \"knowledge_base_research\": knowledge_base_research, \"research_plan\": research_plan, \"web_research_result\": web_research_result}\n    \n    return json.dumps(final_return, ensure_ascii=False)",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-06-11T21:27:02.845968+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:04.286784+00:00",
+      "description": "Search Knowledge Base vector database records with a text query.",
+      "json_schema": {
+        "name": "knowledge_base_research_executor",
+        "description": "Search Knowledge Base vector database records with a text query.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "queries": {
+              "type": "array",
+              "description": "The list of queries to search the database for (vector-based similarity search)."
+            },
+            "top_k": {
+              "type": "integer",
+              "description": "Number of top results to retrieve, defaults to 2 (do not change unless the user requests it)."
+            }
+          },
+          "required": [
+            "queries",
+            "top_k"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "knowledge_base_research_executor",
+      "return_char_limit": 100000,
+      "source_code": "def knowledge_base_research_executor(agent_state: \"AgentState\", queries: List[str], top_k: int):\n    \"\"\"\n    Search Knowledge Base vector database records with a text query.\n\n    Args:\n        queries (List[str]): The list of queries to search the database for (vector-based similarity search).\n        top_k (int): Number of top results to retrieve, defaults to 2 (do not change unless the user requests it).\n\n    Returns:\n        dict: The JSON response from the Pinecone API.\n    \"\"\"\n    import os\n    import requests\n    import json\n\n    # Get environment variables\n    namespace = os.getenv(\"PINECONE_NAMESPACE\", None)\n    api_key = os.getenv(\"PINECONE_API_KEY\", None)\n    index_host = os.getenv(\"PINECONE_INDEX_HOST\", None)\n\n    if index_host is None:\n        raise ValueError(\n            \"Missing PINECONE_HOST env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    if api_key is None:\n        raise ValueError(\n            \"Missing PINECONE_API_KEY env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    # Set up the URL and headers\n    url = f\"{index_host}/records/namespaces/{namespace}/search\"\n    headers = {\"Accept\": \"application/json\", \"Content-Type\": \"application/json\", \"Api-Key\": api_key, \"X-Pinecone-API-Version\": \"unstable\"}\n    coalesced = {}\n    \n    for i in range(len(queries)):\n      query_text = queries[i]\n      # Prepare the payload\n      payload = {\n          \"query\": {\"inputs\": {\"text\": query_text}, \"top_k\": top_k},\n          \"fields\": [\"text\", \"url\", \"knowledge_base_document.title\", \"knowledge_base_resource.id\"],\n      }\n      # Make the request\n      #response = requests.post(url, headers=headers, json=payload)\n\n      # Validate the JSON response\n      #response_json = response.json()\n      #print(response_json)\n      #if 'result' not in response_json:\n      #    raise ValueError(\"Did not receive result from Pinecone API\")\n      #coalesced[query_text] = response_json['result']\n    # ---------------------------------------------------------------------\n    # 5.  Merge old and new results – new keys overwrite old when duplicated\n    # ---------------------------------------------------------------------\n    #current_dict_str = agent_state.memory.get_block(\"knowledge_base_research\").value\n    #current_dict = json.loads(current_dict_str) if len(current_dict_str) > 0 else {}\n    #merged_results = {**current_dict, **coalesced}\n\n    knowledge_base_results = {\n    \"results\": [\n        {\n            \"id\": \"kb_doc_4721\",\n            \"title\": \"Memory-Efficient AI Model Deployment for Enterprise Software\",\n            \"content_snippet\": \"Modern AI applications face significant memory bottlenecks when deployed at scale. Our framework reduces memory overhead by 40-60% through intelligent model sharding and dynamic memory allocation strategies. Key benefits include reduced infrastructure costs and improved response times for real-time AI applications.\",\n            \"relevance_score\": 0.94,\n            \"document_type\": \"solution_brief\",\n            \"tags\": [\"AI\", \"memory_management\", \"enterprise\", \"deployment\"],\n            \"last_updated\": \"2024-12-15\",\n            \"author\": \"Technical Solutions Team\"\n        },\n        {\n            \"id\": \"kb_doc_3892\",\n            \"title\": \"Software Engineering Best Practices for AI Startups\",\n            \"content_snippet\": \"Early-stage AI companies often struggle with technical debt and scalability issues. This guide outlines proven methodologies for building maintainable AI systems, including containerization strategies, CI/CD pipelines optimized for ML workflows, and code architecture patterns that support rapid iteration while maintaining production stability.\",\n            \"relevance_score\": 0.87,\n            \"document_type\": \"best_practices_guide\",\n            \"tags\": [\"software_engineering\", \"AI_startups\", \"scalability\", \"technical_debt\"],\n            \"last_updated\": \"2025-01-08\",\n            \"author\": \"Engineering Excellence Team\"\n        },\n        {\n            \"id\": \"kb_doc_5634\",\n            \"title\": \"Vector Database Integration Patterns for AI Applications\",\n            \"content_snippet\": \"Implementing vector databases in production AI systems requires careful consideration of indexing strategies, query optimization, and data consistency. Our analysis shows that proper vector database architecture can improve retrieval accuracy by 35% while reducing latency by up to 200ms for similarity searches.\",\n            \"relevance_score\": 0.82,\n            \"document_type\": \"technical_whitepaper\",\n            \"tags\": [\"vector_database\", \"AI_applications\", \"performance\", \"architecture\"],\n            \"last_updated\": \"2024-11-22\",\n            \"author\": \"Data Architecture Team\"\n        },\n        {\n            \"id\": \"kb_doc_2156\",\n            \"title\": \"ROI Analysis: AI Implementation in Software Development Workflows\",\n            \"content_snippet\": \"Companies investing in AI-powered development tools see average productivity gains of 25-35% within the first 6 months. Key success factors include proper change management, developer training programs, and integration with existing DevOps pipelines. Initial investment typically pays back within 8-12 months.\",\n            \"relevance_score\": 0.79,\n            \"document_type\": \"case_study\",\n            \"tags\": [\"ROI\", \"AI_tools\", \"software_development\", \"productivity\"],\n            \"last_updated\": \"2024-10-30\",\n            \"author\": \"Business Intelligence Team\"\n        },\n        {\n            \"id\": \"kb_doc_6789\",\n            \"title\": \"Common Pitfalls in AI Model Serving Infrastructure\",\n            \"content_snippet\": \"Engineering teams frequently encounter issues with model versioning, A/B testing frameworks, and monitoring in production AI systems. Our research identifies the top 5 infrastructure mistakes that lead to system downtime and provides actionable solutions for each challenge.\",\n            \"relevance_score\": 0.76,\n            \"document_type\": \"troubleshooting_guide\",\n            \"tags\": [\"model_serving\", \"infrastructure\", \"production\", \"monitoring\"],\n            \"last_updated\": \"2025-01-03\",\n            \"author\": \"Platform Engineering Team\"\n        }\n    ],\n    \"search_metadata\": {\n        \"query_expansion\": [\"artificial intelligence\", \"machine learning\", \"software architecture\", \"memory optimization\"],\n        \"semantic_similarity_threshold\": 0.75,\n        \"filters_applied\": [\"document_type:technical\", \"recent:6_months\"],\n        \"total_documents_in_kb\": 15847,\n        \"search_time_breakdown\": {\n            \"query_processing\": \"23ms\",\n            \"vector_search\": \"156ms\", \n            \"ranking_and_filtering\": \"68ms\"\n        }\n    },\n    \"suggested_follow_up_queries\": [\n        \"AI model optimization techniques for startups\",\n        \"Cost-effective AI infrastructure for small teams\",\n        \"Real-time AI application deployment strategies\"\n    ]}\n    # ---------------------------------------------------------------------\n    # 6.  Persist the merged dictionary back to memory\n    # ---------------------------------------------------------------------\n    agent_state.memory.update_block_value(\n      label=\"knowledge_base_research\", value=json.dumps(knowledge_base_results)\n      )\n\n    # ---------------------------------------------------------------------\n    # 7.  Return a helpful confirmation message\n    # ---------------------------------------------------------------------\n    return json.dumps(knowledge_base_results)",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T23:44:50.564688+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-08-13T21:04:33.609049+00:00",
+      "description": "Mock function to simulate LinkedIn activities search from a profile URL.\n\nThis function takes 60 seconds to execute and always succeeds.",
+      "json_schema": {
+        "name": "linkedin_activity_search",
+        "description": "Mock function to simulate LinkedIn activities search from a profile URL.\n\nThis function takes 60 seconds to execute and always succeeds.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "linkedin_url": {
+              "type": "string",
+              "description": "LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)"
+            }
+          },
+          "required": [
+            "linkedin_url"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "linkedin_activity_search",
+      "return_char_limit": 6000,
+      "source_code": "import json\nimport time\n\ndef linkedin_activity_search(agent_state: str, linkedin_url: str) -> dict:\n    \"\"\"\n    Mock function to simulate LinkedIn activities search from a profile URL.\n    This function takes 60 seconds to execute and always succeeds.\n\n    Args:\n        agent_state (str): A string representing the agent state (unused in this mock version)\n        linkedin_url (str): LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)\n\n    Returns:\n        dict: Activities data and success message\n    \"\"\"\n    # Simulate long processing time\n    time.sleep(60)\n\n    # Generate mock data\n    activities = [\n        {\n            \"commentary\": \"Interesting post\",\n            \"time_elapsed\": \"2 hours ago\",\n            \"li_url\": \"https://www.linkedin.com/posts/kian-jones\",\n            \"header_text\": \"User shared a post\",\n            \"author\": \"Kian Jones\"\n        }\n    ]\n    \n    data = {\n        \"data\": activities,\n        \"paging\": {\"start\": 0, \"count\": 5, \"total\": 5}\n    }\n    \n    # Simulate writing to memory block\n    memory_block = json.dumps(data, indent=2)\n    \n    return {\"success\": True, \"message\": \"Output written to linkedin_activity memory block\"}",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-14T17:58:22.727159+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2024-11-06T23:52:31.024385+00:00",
+      "description": "Sends a message to the human user.",
+      "json_schema": {
+        "name": "send_message",
+        "description": "Sends a message to the human user.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Message contents. All unicode (including emojis) are supported."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "send_message",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-08-14T22:49:01.547029+00:00",
+      "metadata_": {}
+    }
+  ],
+  "updated_at": "2025-08-14T22:49:29.169737+00:00",
+  "version": "0.10.0"
+}

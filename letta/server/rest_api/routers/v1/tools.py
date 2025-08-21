@@ -486,6 +486,20 @@ async def add_mcp_tool(
                 },
             )
 
+        # Check tool health - reject only INVALID tools
+        if mcp_tool.health:
+            if mcp_tool.health.status == "INVALID":
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "code": "MCPToolSchemaInvalid",
+                        "message": f"Tool {mcp_tool_name} has an invalid schema and cannot be attached",
+                        "mcp_tool_name": mcp_tool_name,
+                        "health_status": mcp_tool.health.status,
+                        "reasons": mcp_tool.health.reasons,
+                    },
+                )
+
         tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
         # For config-based servers, use the server name as ID since they don't have database IDs
         mcp_server_id = mcp_server_name
@@ -608,7 +622,7 @@ async def delete_mcp_server_from_config(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Add a new MCP server to the Letta MCP server config
+    Delete a MCP server configuration
     """
     if tool_settings.mcp_read_from_config:
         # write to config file
@@ -774,7 +788,8 @@ async def connect_mcp_server(
 
 
 class CodeInput(BaseModel):
-    code: str = Field(..., description="Python source code to parse for JSON schema")
+    code: str = Field(..., description="Source code to parse for JSON schema")
+    source_type: Optional[str] = Field("python", description="The source type of the code (python or typescript)")
 
 
 @router.post("/generate-schema", response_model=Dict[str, Any], operation_id="generate_json_schema")
@@ -784,14 +799,88 @@ async def generate_json_schema(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Generate a JSON schema from the given Python source code defining a function or class.
+    Generate a JSON schema from the given source code defining a function or class.
+    Supports both Python and TypeScript source code.
     """
     try:
-        schema = derive_openai_json_schema(source_code=request.code)
+        if request.source_type == "typescript":
+            from letta.functions.typescript_parser import derive_typescript_json_schema
+
+            schema = derive_typescript_json_schema(source_code=request.code)
+        else:
+            # Default to Python for backwards compatibility
+            schema = derive_openai_json_schema(source_code=request.code)
         return schema
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to generate schema: {str(e)}")
+
+
+# TODO: @jnjpng move this and other models above to appropriate file for schemas
+class MCPToolExecuteRequest(BaseModel):
+    args: Dict[str, Any] = Field(default_factory=dict, description="Arguments to pass to the MCP tool")
+
+
+@router.post("/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute", operation_id="execute_mcp_tool")
+async def execute_mcp_tool(
+    mcp_server_name: str,
+    tool_name: str,
+    request: MCPToolExecuteRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+):
+    """
+    Execute a specific MCP tool from a configured server.
+    Returns the tool execution result.
+    """
+    client = None
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+        # Get the MCP server by name
+        mcp_server = await server.mcp_manager.get_mcp_server(mcp_server_name, actor)
+        if not mcp_server:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "MCPServerNotFound",
+                    "message": f"MCP server '{mcp_server_name}' not found",
+                    "server_name": mcp_server_name,
+                },
+            )
+
+        # Create client and connect
+        server_config = mcp_server.to_config()
+        server_config.resolve_environment_variables()
+        client = await server.mcp_manager.get_mcp_client(server_config, actor)
+        await client.connect_to_server()
+
+        # Execute the tool
+        result, success = await client.execute_tool(tool_name, request.args)
+
+        return {
+            "result": result,
+            "success": success,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Error executing MCP tool: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "MCPToolExecutionError",
+                "message": f"Failed to execute MCP tool: {str(e)}",
+                "server_name": mcp_server_name,
+                "tool_name": tool_name,
+            },
+        )
+    finally:
+        if client:
+            try:
+                await client.cleanup()
+            except Exception as cleanup_error:
+                logger.warning(f"Error during MCP client cleanup: {cleanup_error}")
 
 
 # TODO: @jnjpng need to route this through cloud API for production
@@ -855,6 +944,8 @@ async def generate_tool_from_prompt(
     """
     Generate a tool from the given user prompt.
     """
+    response_data = None
+
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or "anthropic/claude-3-5-sonnet-20240620")
@@ -917,5 +1008,5 @@ async def generate_tool_from_prompt(
             response=response.choices[0].message.content,
         )
     except Exception as e:
-        logger.error(f"Failed to generate tool: {str(e)}")
+        logger.error(f"Failed to generate tool: {str(e)}. Raw response: {response_data}")
         raise HTTPException(status_code=500, detail=f"Failed to generate tool: {str(e)}")

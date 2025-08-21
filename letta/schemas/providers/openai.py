@@ -12,7 +12,7 @@ from letta.schemas.providers.base import Provider
 logger = get_logger(__name__)
 
 ALLOWED_PREFIXES = {"gpt-4", "gpt-5", "o1", "o3", "o4"}
-DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro"}
+DISALLOWED_KEYWORDS = {"transcribe", "search", "realtime", "tts", "audio", "computer", "o1-mini", "o1-preview", "o1-pro", "chat"}
 DEFAULT_EMBEDDING_BATCH_SIZE = 1024
 
 
@@ -20,10 +20,10 @@ class OpenAIProvider(Provider):
     provider_type: Literal[ProviderType.openai] = Field(ProviderType.openai, description="The type of the provider.")
     provider_category: ProviderCategory = Field(ProviderCategory.base, description="The category of the provider (base or byok)")
     api_key: str = Field(..., description="API key for the OpenAI API.")
-    base_url: str = Field(..., description="Base URL for the OpenAI API.")
+    base_url: str = Field("https://api.openai.com/v1", description="Base URL for the OpenAI API.")
 
     async def check_api_key(self):
-        from letta.llm_api.openai import openai_check_valid_api_key
+        from letta.llm_api.openai import openai_check_valid_api_key  # TODO: DO NOT USE THIS - old code path
 
         openai_check_valid_api_key(self.base_url, self.api_key)
 
@@ -142,7 +142,7 @@ class OpenAIProvider(Provider):
         """This function is used to tune LLMConfig parameters to improve model performance."""
 
         # gpt-4o-mini has started to regress with pretty bad emoji spam loops (2025-07)
-        if "gpt-4o-mini" in model_name or "gpt-4.1-mini" in model_name:
+        if "gpt-4o" in model_name or "gpt-4.1-mini" in model_name or model_name == "letta-free":
             llm_config.frequency_penalty = 1.0
         return llm_config
 

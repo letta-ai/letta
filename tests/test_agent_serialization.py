@@ -655,14 +655,15 @@ def test_agent_download_upload_flow(server, server_url, serialize_test_agent, de
 
     # Sanity checks
     copied_agent = upload_response.json()
-    copied_agent_id = copied_agent["id"]
+    copied_agent_id = copied_agent["agent_ids"][0]
     assert copied_agent_id != agent_id, "Copied agent should have a different ID"
+
+    agent_copy = server.agent_manager.get_agent_by_id(agent_id=copied_agent_id, actor=other_user)
     if append_copy_suffix:
-        assert copied_agent["name"] == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
+        assert agent_copy.name == serialize_test_agent.name + "_copy", "Copied agent name should have '_copy' suffix"
 
     # Step 3: Retrieve the copied agent
     serialize_test_agent = server.agent_manager.get_agent_by_id(agent_id=serialize_test_agent.id, actor=default_user)
-    agent_copy = server.agent_manager.get_agent_by_id(agent_id=copied_agent_id, actor=other_user)
 
     print_dict_diff(json.loads(serialize_test_agent.model_dump_json()), json.loads(agent_copy.model_dump_json()))
     assert compare_agent_state(server, serialize_test_agent, agent_copy, append_copy_suffix, default_user, other_user)
@@ -702,9 +703,8 @@ def test_upload_agentfile_from_disk(server, server_url, disable_e2b_api_key, oth
 
     assert response.status_code == 200, f"Failed to upload {filename}: {response.text}"
     json_response = response.json()
-    assert "id" in json_response and json_response["id"].startswith("agent-"), "Uploaded agent response is malformed"
 
-    copied_agent_id = json_response["id"]
+    copied_agent_id = json_response["agent_ids"][0]
 
     server.send_messages(
         actor=other_user,
@@ -735,7 +735,7 @@ def test_serialize_with_max_steps(server, server_url, default_user, other_user):
 
     assert response.status_code == 200, f"Failed to upload agent: {response.text}"
     agent_data = response.json()
-    agent_id = agent_data["id"]
+    agent_id = agent_data["agent_ids"][0]
 
     # test with default max_steps (should use None, returning all messages)
     full_result = server.agent_manager.serialize(agent_id=agent_id, actor=default_user)

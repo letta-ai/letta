@@ -252,7 +252,7 @@ class DatabasePoolMonitor:
                 logger.info(f"Failed to record detach event metric: {e}")
 
         @event.listens_for(pool, "reset")
-        def on_reset(dbapi_connection: DBAPIConnection, connection_record: ConnectionPoolEntry):
+        def on_reset(dbapi_connection: DBAPIConnection, connection_record: ConnectionPoolEntry, reset_state):
             """Called when a connection is reset."""
             try:
                 from letta.otel.metric_registry import MetricRegistry

@@ -49,9 +49,13 @@ async def create_provider(
     Create a new custom provider
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    for field_name in request.model_fields:
+        value = getattr(request, field_name, None)
+        if isinstance(value, str) and value == "":
+            setattr(request, field_name, None)
 
-    provider = ProviderCreate(**request.model_dump())
-
+    request_data = request.model_dump(exclude_unset=True, exclude_none=True)
+    provider = ProviderCreate(**request_data)
     provider = await server.provider_manager.create_provider_async(provider, actor=actor)
     return provider
 
@@ -70,12 +74,15 @@ async def modify_provider(
     return await server.provider_manager.update_provider_async(provider_id=provider_id, provider_update=request, actor=actor)
 
 
-@router.get("/check", response_model=None, operation_id="check_provider")
+@router.post("/check", response_model=None, operation_id="check_provider")
 async def check_provider(
     request: ProviderCheck = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     try:
+        if request.base_url and len(request.base_url) == 0:
+            # set to null if empty string
+            request.base_url = None
         await server.provider_manager.check_provider_api_key(provider_check=request)
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"message": f"Valid api key for provider_type={request.provider_type.value}"}

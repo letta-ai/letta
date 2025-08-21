@@ -404,7 +404,37 @@ class ToolManager:
         updated_tool_type: Optional[ToolType] = None,
         bypass_name_check: bool = False,
     ) -> PydanticTool:
-        """Update a tool by its ID with the given ToolUpdate object."""
+        """
+        Update a tool with complex validation and schema derivation logic.
+
+        This method handles updates differently based on tool type:
+        - MCP tools: JSON schema is trusted, no Python source derivation
+        - Python/TypeScript tools: Schema derived from source code if provided
+        - Name conflicts are checked unless bypassed
+
+        Args:
+            tool_id: The UUID of the tool to update
+            tool_update: Partial update data (only changed fields)
+            actor: User performing the update (for permissions)
+            updated_tool_type: Optional new tool type (e.g., converting custom to builtin)
+            bypass_name_check: Skip name conflict validation (use with caution)
+
+        Returns:
+            Updated tool as Pydantic model
+
+        Raises:
+            LettaToolNameConflictError: If new name conflicts with existing tool
+            NoResultFound: If tool doesn't exist or user lacks access
+
+        Side Effects:
+            - Updates tool in database
+            - May change tool name if source code is modified
+            - Recomputes JSON schema from source for non-MCP tools
+
+        Important:
+            When source_code is provided for Python/TypeScript tools, the name
+            MUST match the function name in the code, overriding any name in json_schema
+        """
         # First, check if source code update would cause a name conflict
         update_data = tool_update.model_dump(to_orm=True, exclude_none=True)
         new_name = None
@@ -429,7 +459,16 @@ class ToolManager:
         else:
             # For non-MCP tools, preserve existing behavior
             if "source_code" in update_data.keys() and not bypass_name_check:
-                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                # Check source type to use appropriate parser
+                source_type = update_data.get("source_type", current_tool.source_type)
+                if source_type == "typescript":
+                    from letta.functions.typescript_parser import derive_typescript_json_schema
+
+                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+                else:
+                    # Default to Python for backwards compatibility
+                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+
                 new_name = derived_schema["name"]
                 if "json_schema" not in update_data.keys():
                     new_schema = derived_schema
@@ -503,8 +542,15 @@ class ToolManager:
             # TODO: I feel like it's bad if json_schema strays from source code so
             # if source code is provided, always derive the name from it
             if "source_code" in update_data.keys() and not bypass_name_check:
-                # derive the schema from source code to get the function name
-                derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
+                # Check source type to use appropriate parser
+                source_type = update_data.get("source_type", current_tool.source_type)
+                if source_type == "typescript":
+                    from letta.functions.typescript_parser import derive_typescript_json_schema
+
+                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+                else:
+                    # Default to Python for backwards compatibility
+                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
                 new_name = derived_schema["name"]
 
                 # if json_schema wasn't provided, use the derived schema
@@ -570,7 +616,38 @@ class ToolManager:
     @enforce_types
     @trace_method
     def upsert_base_tools(self, actor: PydanticUser) -> List[PydanticTool]:
-        """Add default tools in base.py and multi_agent.py"""
+        """
+        Initialize or update all built-in Letta tools for a user.
+
+        This method scans predefined modules to discover and register all base tools
+        that ship with Letta. Tools are categorized by type (core, memory, multi-agent, etc.)
+        and tagged appropriately for filtering.
+
+        Args:
+            actor: The user to create/update tools for
+
+        Returns:
+            List of all base tools that were created or updated
+
+        Tool Categories Created:
+            - LETTA_CORE: Basic conversation tools (send_message)
+            - LETTA_MEMORY_CORE: Memory management (core_memory_append/replace)
+            - LETTA_MULTI_AGENT_CORE: Multi-agent communication tools
+            - LETTA_SLEEPTIME_CORE: Sleeptime agent tools
+            - LETTA_VOICE_SLEEPTIME_CORE: Voice agent specific tools
+            - LETTA_BUILTIN: Additional built-in utilities
+            - LETTA_FILES_CORE: File handling tools
+
+        Side Effects:
+            - Creates or updates tools in database
+            - Tools are marked with appropriate type and tags
+            - Existing custom tools with same names are NOT overwritten
+
+        Note:
+            This is typically called during user initialization or system upgrade
+            to ensure all base tools are available. Custom tools take precedence
+            over base tools with the same name.
+        """
         functions_to_schema = {}
 
         for module_name in LETTA_TOOL_MODULE_NAMES:

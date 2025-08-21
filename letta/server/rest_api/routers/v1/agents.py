@@ -8,13 +8,14 @@ from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException,
 from fastapi.responses import JSONResponse
 from marshmallow import ValidationError
 from orjson import orjson
-from pydantic import Field
+from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
-from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
+from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import get_redis_client
+from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -22,7 +23,9 @@ from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
+from letta.schemas.enums import JobType
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
@@ -144,29 +147,143 @@ class IndentedORJSONResponse(Response):
 
 
 @router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
-def export_agent_serialized(
+async def export_agent_serialized(
     agent_id: str,
     max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
+    use_legacy_format: bool = Query(
+        True,
+        description="If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.",
+    ),
     # do not remove, used to autogeneration of spec
-    # TODO: Think of a better way to export AgentSchema
-    spec: AgentSchema | None = None,
+    # TODO: Think of a better way to export AgentFileSchema
+    spec: AgentFileSchema | None = None,
+    legacy_spec: AgentSchema | None = None,
 ) -> JSONResponse:
     """
     Export the serialized JSON representation of an agent, formatted with indentation.
+
+    Supports two export formats:
+    - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
+    - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
+    if use_legacy_format:
+        # Use the legacy serialization method
+        try:
+            agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
+            return agent.model_dump()
+        except NoResultFound:
+            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+    else:
+        # Use the new multi-entity export format
+        try:
+            agent_file_schema = await server.agent_serialization_manager.export(agent_ids=[agent_id], actor=actor)
+            return agent_file_schema.model_dump()
+        except AgentNotFoundForExportError:
+            raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+        except AgentExportIdMappingError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Internal error during export: ID mapping failed for {e.entity_type} ID '{e.db_id}'"
+            )
+        except AgentExportProcessingError as e:
+            raise HTTPException(status_code=500, detail=f"Export processing failed: {str(e.original_error)}")
+
+
+class ImportedAgentsResponse(BaseModel):
+    """Response model for imported agents"""
+
+    agent_ids: List[str] = Field(..., description="List of IDs of the imported agents")
+
+
+def import_agent_legacy(
+    agent_json: dict,
+    server: "SyncServer",
+    actor: User,
+    append_copy_suffix: bool = True,
+    override_existing_tools: bool = True,
+    project_id: str | None = None,
+    strip_messages: bool = False,
+    env_vars: Optional[dict[str, Any]] = None,
+) -> List[str]:
+    """
+    Import an agent using the legacy AgentSchema format.
+    """
     try:
-        agent = server.agent_manager.serialize(agent_id=agent_id, actor=actor, max_steps=max_steps)
-        return agent.model_dump()
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+        # Validate the JSON against AgentSchema before passing it to deserialize
+        agent_schema = AgentSchema.model_validate(agent_json)
+
+        new_agent = server.agent_manager.deserialize(
+            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
+            strip_messages=strip_messages,
+            env_vars=env_vars,
+        )
+        return [new_agent.id]
+
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e!s}")
+
+    except IntegrityError as e:
+        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
+
+    except OperationalError as e:
+        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
 
 
-@router.post("/import", response_model=AgentState, operation_id="import_agent_serialized")
-def import_agent_serialized(
+async def import_agent(
+    agent_file_json: dict,
+    server: "SyncServer",
+    actor: User,
+    # TODO: Support these fields for new agent file
+    append_copy_suffix: bool = True,
+    override_existing_tools: bool = True,
+    project_id: str | None = None,
+    strip_messages: bool = False,
+) -> List[str]:
+    """
+    Import an agent using the new AgentFileSchema format.
+    """
+    try:
+        agent_schema = AgentFileSchema.model_validate(agent_file_json)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
+
+    try:
+        import_result = await server.agent_serialization_manager.import_file(schema=agent_schema, actor=actor)
+
+        if not import_result.success:
+            raise HTTPException(
+                status_code=500, detail=f"Import failed: {import_result.message}. Errors: {', '.join(import_result.errors)}"
+            )
+
+        return import_result.imported_agent_ids
+
+    except AgentFileImportError as e:
+        raise HTTPException(status_code=400, detail=f"Agent file import error: {str(e)}")
+
+    except IntegrityError as e:
+        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
+
+    except OperationalError as e:
+        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
+
+
+@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent_serialized")
+async def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
@@ -183,19 +300,35 @@ def import_agent_serialized(
     env_vars: Optional[Dict[str, Any]] = Form(None, description="Environment variables to pass to the agent for tool execution."),
 ):
     """
-    Import a serialized agent file and recreate the agent in the system.
+    Import a serialized agent file and recreate the agent(s) in the system.
+    Returns the IDs of all imported agents.
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     try:
         serialized_data = file.file.read()
         agent_json = json.loads(serialized_data)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
-        # Validate the JSON against AgentSchema before passing it to deserialize
-        agent_schema = AgentSchema.model_validate(agent_json)
-
-        new_agent = server.agent_manager.deserialize(
-            serialized_agent=agent_schema,  # Ensure we're passing a validated AgentSchema
+    # Check if the JSON is AgentFileSchema or AgentSchema
+    # TODO: This is kind of hacky, but should work as long as dont' change the schema
+    if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
+        # This is an AgentFileSchema
+        agent_ids = await import_agent(
+            agent_file_json=agent_json,
+            server=server,
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            project_id=project_id,
+            strip_messages=strip_messages,
+        )
+    else:
+        # This is a legacy AgentSchema
+        agent_ids = import_agent_legacy(
+            agent_json=agent_json,
+            server=server,
             actor=actor,
             append_copy_suffix=append_copy_suffix,
             override_existing_tools=override_existing_tools,
@@ -203,23 +336,8 @@ def import_agent_serialized(
             strip_messages=strip_messages,
             env_vars=env_vars,
         )
-        return new_agent
 
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Corrupted agent file format.")
-
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid agent schema: {e!s}")
-
-    except IntegrityError as e:
-        raise HTTPException(status_code=409, detail=f"Database integrity error: {e!s}")
-
-    except OperationalError as e:
-        raise HTTPException(status_code=503, detail=f"Database connection error. Please try again later: {e!s}")
-
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
+    return ImportedAgentsResponse(agent_ids=agent_ids)
 
 
 @router.get("/{agent_id}/context", response_model=ContextWindowOverview, operation_id="retrieve_agent_context_window")
@@ -555,6 +673,10 @@ async def retrieve_agent(
     """
     Get the state of the agent.
     """
+    # Check if agent_id matches uuid4 format
+    if not AGENT_ID_PATTERN.match(agent_id):
+        raise HTTPException(status_code=400, detail=f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
@@ -876,6 +998,8 @@ async def send_message(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     # Create a new run for execution tracking
@@ -1018,6 +1142,8 @@ async def send_message_streaming(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
 
@@ -1153,10 +1279,14 @@ async def send_message_streaming(
             )
 
 
+class CancelAgentRunRequest(BaseModel):
+    run_ids: list[str] | None = Field(None, description="Optional list of run IDs to cancel")
+
+
 @router.post("/{agent_id}/messages/cancel", operation_id="cancel_agent_run")
 async def cancel_agent_run(
     agent_id: str,
-    run_ids: list[str] | None = None,
+    request: CancelAgentRunRequest = Body(None),
     server: SyncServer = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
 ) -> dict:
@@ -1165,17 +1295,24 @@ async def cancel_agent_run(
 
     Note to cancel active runs associated with an agent, redis is required.
     """
-
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
+    run_ids = request.run_ids if request else None
     if not run_ids:
         redis_client = await get_redis_client()
         run_id = await redis_client.get(f"{REDIS_RUN_ID_PREFIX}:{agent_id}")
         if run_id is None:
-            logger.warning("Cannot find run associated with agent to cancel.")
-            return {}
-        run_ids = [run_id]
+            logger.warning("Cannot find run associated with agent to cancel in redis, fetching from db.")
+            job_ids = await server.job_manager.list_jobs_async(
+                actor=actor,
+                statuses=[JobStatus.created, JobStatus.running],
+                job_type=JobType.RUN,
+                ascending=False,
+            )
+            run_ids = [Run.from_job(job).id for job in job_ids]
+        else:
+            run_ids = [run_id]
 
     results = {}
     for run_id in run_ids:
@@ -1400,6 +1537,8 @@ async def preview_raw_payload(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     if agent_eligible and model_compatible:
@@ -1468,6 +1607,8 @@ async def summarize_agent_conversation(
         "google_vertex",
         "bedrock",
         "ollama",
+        "azure",
+        "together",
     ]
 
     if agent_eligible and model_compatible:

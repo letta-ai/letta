@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Tuple
 
 from letta.helpers import ToolRulesSolver
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_response import LettaResponse
@@ -14,6 +15,8 @@ from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.server.rest_api.utils import create_input_messages
 from letta.services.message_manager import MessageManager
+
+logger = get_logger(__name__)
 
 
 def _create_letta_response(
@@ -222,6 +225,7 @@ def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
             # Load it again - this is due to sometimes Anthropic returning weird json @caren
             tool_args = json.loads(tool_args)
     except json.JSONDecodeError:
+        logger.error("Failed to JSON decode tool call argument string: %s", tool_call_args_str)
         tool_args = {}
 
     return tool_args

@@ -6,6 +6,7 @@ import random
 import re
 import string
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
 from unittest.mock import Mock
@@ -848,7 +849,7 @@ async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncS
         memory_blocks=memory_blocks,
         llm_config=LLMConfig(
             model="llama-3.1-8b-instruct",
-            model_endpoint_type="together",  # Not in EXCLUDED_PROVIDERS_FROM_BASE_TOOL_RULES
+            model_endpoint_type="together",  # Model doesn't match EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES
             model_endpoint="https://api.together.xyz",
             context_window=8192,
         ),
@@ -8340,6 +8341,74 @@ async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sa
         assert status_counts[status] >= 1, f"No steps found with status {status}"
 
 
+async def test_step_manager_record_metrics(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+    """Test recording step metrics functionality."""
+    step_manager = server.step_manager
+
+    # Create a step first
+    step = await step_manager.log_step_async(
+        agent_id=sarah_agent.id,
+        provider_name="openai",
+        provider_category="base",
+        model="gpt-4o-mini",
+        model_endpoint="https://api.openai.com/v1",
+        context_window_limit=8192,
+        job_id=default_job.id,
+        usage=UsageStatistics(
+            completion_tokens=10,
+            prompt_tokens=20,
+            total_tokens=30,
+        ),
+        actor=default_user,
+        project_id=sarah_agent.project_id,
+        status=StepStatus.PENDING,
+    )
+
+    # Record metrics for the step
+    llm_request_ns = 1_500_000_000  # 1.5 seconds
+    tool_execution_ns = 500_000_000  # 0.5 seconds
+    step_ns = 2_100_000_000  # 2.1 seconds
+
+    metrics = await step_manager.record_step_metrics_async(
+        actor=default_user,
+        step_id=step.id,
+        llm_request_ns=llm_request_ns,
+        tool_execution_ns=tool_execution_ns,
+        step_ns=step_ns,
+        agent_id=sarah_agent.id,
+        job_id=default_job.id,
+        project_id=sarah_agent.project_id,
+        template_id="template-id",
+        base_template_id="base-template-id",
+    )
+
+    # Verify the metrics were recorded correctly
+    assert metrics.id == step.id
+    assert metrics.llm_request_ns == llm_request_ns
+    assert metrics.tool_execution_ns == tool_execution_ns
+    assert metrics.step_ns == step_ns
+    assert metrics.agent_id == sarah_agent.id
+    assert metrics.job_id == default_job.id
+    assert metrics.project_id == sarah_agent.project_id
+    assert metrics.template_id == "template-id"
+    assert metrics.base_template_id == "base-template-id"
+
+
+async def test_step_manager_record_metrics_nonexistent_step(server: SyncServer, default_user, event_loop):
+    """Test recording metrics for a nonexistent step."""
+    step_manager = server.step_manager
+
+    # Try to record metrics for a step that doesn't exist
+    with pytest.raises(NoResultFound):
+        await step_manager.record_step_metrics_async(
+            actor=default_user,
+            step_id="nonexistent-step-id",
+            llm_request_ns=1_000_000_000,
+            tool_execution_ns=500_000_000,
+            step_ns=1_600_000_000,
+        )
+
+
 def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
     """Test getting usage statistics for a nonexistent job."""
     job_manager = server.job_manager
@@ -9166,6 +9235,177 @@ async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
 
     # All fetched servers should belong to the same organization
     assert all(s.organization_id == default_user.organization_id for s in bulk_fetched)
+
+
+# Additional MCPManager OAuth session tests
+@pytest.mark.asyncio
+async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organization, default_user, event_loop):
+    """Deleting an MCP server deletes associated OAuth sessions (same user + URL)."""
+
+    from letta.schemas.mcp import MCPOAuthSessionCreate
+    from letta.schemas.mcp import MCPServer as PydanticMCPServer
+    from letta.schemas.mcp import MCPServerType
+
+    test_server_url = "https://test.example.com/mcp"
+
+    # Create orphaned OAuth sessions (no server id) for same user and URL
+    created_session_ids: list[str] = []
+    for i in range(3):
+        session = await server.mcp_manager.create_oauth_session(
+            MCPOAuthSessionCreate(
+                server_url=test_server_url,
+                server_name=f"test_mcp_server_{i}",
+                user_id=default_user.id,
+                organization_id=default_organization.id,
+            ),
+            actor=default_user,
+        )
+        created_session_ids.append(session.id)
+
+    # Create the MCP server with the same URL
+    created_server = await server.mcp_manager.create_mcp_server(
+        PydanticMCPServer(
+            server_name=f"test_mcp_server_{str(uuid.uuid4().hex[:8])}",  # ensure unique name
+            server_type=MCPServerType.SSE,
+            server_url=test_server_url,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Now delete the server via manager
+    await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+    # Verify all sessions are gone
+    for sid in created_session_ids:
+        session = await server.mcp_manager.get_oauth_session_by_id(sid, actor=default_user)
+        assert session is None, f"OAuth session {sid} should be deleted"
+
+
+@pytest.mark.asyncio
+async def test_oauth_sessions_with_different_url_persist(server, default_organization, default_user, event_loop):
+    """Sessions with different URL should not be deleted when deleting the server for another URL."""
+
+    from letta.schemas.mcp import MCPOAuthSessionCreate
+    from letta.schemas.mcp import MCPServer as PydanticMCPServer
+    from letta.schemas.mcp import MCPServerType
+
+    server_url = "https://test.example.com/mcp"
+    other_url = "https://other.example.com/mcp"
+
+    # Create a session for other_url (should persist)
+    other_session = await server.mcp_manager.create_oauth_session(
+        MCPOAuthSessionCreate(
+            server_url=other_url,
+            server_name="standalone_oauth",
+            user_id=default_user.id,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Create the MCP server at server_url
+    created_server = await server.mcp_manager.create_mcp_server(
+        PydanticMCPServer(
+            server_name=f"test_mcp_server_{str(uuid.uuid4().hex[:8])}",
+            server_type=MCPServerType.SSE,
+            server_url=server_url,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Delete the server at server_url
+    await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+    # Verify the session at other_url still exists
+    persisted = await server.mcp_manager.get_oauth_session_by_id(other_session.id, actor=default_user)
+    assert persisted is not None, "OAuth session with different URL should persist"
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_creation_links_orphaned_sessions(server, default_organization, default_user, event_loop):
+    """Creating a server should link any existing orphaned sessions (same user + URL)."""
+
+    from letta.schemas.mcp import MCPOAuthSessionCreate
+    from letta.schemas.mcp import MCPServer as PydanticMCPServer
+    from letta.schemas.mcp import MCPServerType
+
+    server_url = "https://test-atomic-create.example.com/mcp"
+
+    # Pre-create orphaned sessions (no server_id) for same user + URL
+    orphaned_ids: list[str] = []
+    for i in range(3):
+        session = await server.mcp_manager.create_oauth_session(
+            MCPOAuthSessionCreate(
+                server_url=server_url,
+                server_name=f"atomic_session_{i}",
+                user_id=default_user.id,
+                organization_id=default_organization.id,
+            ),
+            actor=default_user,
+        )
+        orphaned_ids.append(session.id)
+
+    # Create server
+    created_server = await server.mcp_manager.create_mcp_server(
+        PydanticMCPServer(
+            server_name=f"test_atomic_server_{str(uuid.uuid4().hex[:8])}",
+            server_type=MCPServerType.SSE,
+            server_url=server_url,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Sessions should still be retrievable via manager API
+    for sid in orphaned_ids:
+        s = await server.mcp_manager.get_oauth_session_by_id(sid, actor=default_user)
+        assert s is not None
+
+    # Indirect verification: deleting the server removes sessions for that URL+user
+    await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+    for sid in orphaned_ids:
+        assert await server.mcp_manager.get_oauth_session_by_id(sid, actor=default_user) is None
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, default_organization, default_user, event_loop):
+    """Deleting a server removes both linked and orphaned sessions for same user+URL."""
+
+    from letta.schemas.mcp import MCPOAuthSessionCreate
+    from letta.schemas.mcp import MCPServer as PydanticMCPServer
+    from letta.schemas.mcp import MCPServerType
+
+    server_url = "https://test-atomic-cleanup.example.com/mcp"
+
+    # Create orphaned session
+    orphaned = await server.mcp_manager.create_oauth_session(
+        MCPOAuthSessionCreate(
+            server_url=server_url,
+            server_name="orphaned",
+            user_id=default_user.id,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Create server
+    created_server = await server.mcp_manager.create_mcp_server(
+        PydanticMCPServer(
+            server_name=f"cleanup_server_{str(uuid.uuid4().hex[:8])}",
+            server_type=MCPServerType.SSE,
+            server_url=server_url,
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+
+    # Delete server
+    await server.mcp_manager.delete_mcp_server_by_id(created_server.id, actor=default_user)
+
+    # Both orphaned and any linked sessions for that URL+user should be gone
+    assert await server.mcp_manager.get_oauth_session_by_id(orphaned.id, actor=default_user) is None
 
 
 # ======================================================================================================================

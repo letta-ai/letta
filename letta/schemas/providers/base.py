@@ -24,6 +24,7 @@ class Provider(ProviderBase):
     base_url: str | None = Field(None, description="Base URL for the provider.")
     access_key: str | None = Field(None, description="Access key used for requests to the provider.")
     region: str | None = Field(None, description="Region used for requests to the provider.")
+    api_version: str | None = Field(None, description="API version used for requests to the provider.")
     organization_id: str | None = Field(None, description="The organization id of the user")
     updated_at: datetime | None = Field(None, description="The last update timestamp of the provider.")
 
@@ -126,7 +127,6 @@ class Provider(ProviderBase):
             AzureProvider,
             BedrockProvider,
             CerebrasProvider,
-            CohereProvider,
             DeepSeekProvider,
             GoogleAIProvider,
             GoogleVertexProvider,
@@ -140,6 +140,9 @@ class Provider(ProviderBase):
             VLLMProvider,
             XAIProvider,
         )
+
+        if self.base_url == "":
+            self.base_url = None
 
         match self.provider_type:
             case ProviderType.letta:
@@ -174,8 +177,6 @@ class Provider(ProviderBase):
                 return LMStudioOpenAIProvider(**self.model_dump(exclude_none=True))
             case ProviderType.bedrock:
                 return BedrockProvider(**self.model_dump(exclude_none=True))
-            case ProviderType.cohere:
-                return CohereProvider(**self.model_dump(exclude_none=True))
             case _:
                 raise ValueError(f"Unknown provider type: {self.provider_type}")
 
@@ -186,12 +187,16 @@ class ProviderCreate(ProviderBase):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
     access_key: str | None = Field(None, description="Access key used for requests to the provider.")
     region: str | None = Field(None, description="Region used for requests to the provider.")
+    base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
+    api_version: str | None = Field(None, description="API version used for requests to the provider.")
 
 
 class ProviderUpdate(ProviderBase):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
     access_key: str | None = Field(None, description="Access key used for requests to the provider.")
     region: str | None = Field(None, description="Region used for requests to the provider.")
+    base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
+    api_version: str | None = Field(None, description="API version used for requests to the provider.")
 
 
 class ProviderCheck(BaseModel):
@@ -199,3 +204,5 @@ class ProviderCheck(BaseModel):
     api_key: str = Field(..., description="API key or secret key used for requests to the provider.")
     access_key: str | None = Field(None, description="Access key used for requests to the provider.")
     region: str | None = Field(None, description="Region used for requests to the provider.")
+    base_url: str | None = Field(None, description="Base URL used for requests to the provider.")
+    api_version: str | None = Field(None, description="API version used for requests to the provider.")

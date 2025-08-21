@@ -425,56 +425,6 @@ def test_get_recall_memory(server, org_id, user, agent_id):
         assert message_id in message_ids, f"{message_id} not in {message_ids}"
 
 
-# @pytest.mark.order(6)
-# def test_get_archival_memory(server, user, agent_id):
-#    # test archival memory cursor pagination
-#    actor = user
-#
-#    # List latest 2 passages
-#    passages_1 = server.agent_manager.list_passages(
-#        actor=actor,
-#        agent_id=agent_id,
-#        ascending=False,
-#        limit=2,
-#    )
-#    assert len(passages_1) == 2, f"Returned {[p.text for p in passages_1]}, not equal to 2"
-#
-#    # List next 3 passages (earliest 3)
-#    cursor1 = passages_1[-1].id
-#    passages_2 = server.agent_manager.list_passages(
-#        actor=actor,
-#        agent_id=agent_id,
-#        ascending=False,
-#        before=cursor1,
-#    )
-#
-#    # List all 5
-#    cursor2 = passages_1[0].created_at
-#    passages_3 = server.agent_manager.list_passages(
-#        actor=actor,
-#        agent_id=agent_id,
-#        ascending=False,
-#        end_date=cursor2,
-#        limit=1000,
-#    )
-#    assert len(passages_2) in [3, 4]  # NOTE: exact size seems non-deterministic, so loosen test
-#    assert len(passages_3) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
-#
-#    latest = passages_1[0]
-#    earliest = passages_2[-1]
-#
-#    # test archival memory
-#    passage_1 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, limit=1, ascending=True)
-#    assert len(passage_1) == 1
-#    assert passage_1[0].text == "alpha"
-#    passage_2 = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=earliest.id, limit=1000, ascending=True)
-#    assert len(passage_2) in [4, 5]  # NOTE: exact size seems non-deterministic, so loosen test
-#    assert all("alpha" not in passage.text for passage in passage_2)
-#    # test safe empty return
-#    passage_none = server.agent_manager.list_passages(actor=actor, agent_id=agent_id, after=latest.id, limit=1000, ascending=True)
-#    assert len(passage_none) == 0
-
-
 @pytest.mark.asyncio
 async def test_get_context_window_overview(server: SyncServer, user, agent_id):
     """Test that the context window overview fetch works"""

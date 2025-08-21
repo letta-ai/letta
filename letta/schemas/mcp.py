@@ -81,29 +81,6 @@ class MCPServer(BaseMCPServer):
             raise ValueError(f"Unsupported server type: {self.server_type}")
 
 
-class RegisterSSEMCPServer(LettaBase):
-    server_name: str = Field(..., description="The name of the server")
-    server_type: MCPServerType = MCPServerType.SSE
-    server_url: str = Field(..., description="The URL of the server (MCP SSE client will connect to this URL)")
-    token: Optional[str] = Field(None, description="The access token or API key for the MCP server used for authentication")
-    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
-
-
-class RegisterStdioMCPServer(LettaBase):
-    server_name: str = Field(..., description="The name of the server")
-    server_type: MCPServerType = MCPServerType.STDIO
-    stdio_config: StdioServerConfig = Field(..., description="The configuration for the server (MCP 'local' client will run this command)")
-
-
-class RegisterStreamableHTTPMCPServer(LettaBase):
-    server_name: str = Field(..., description="The name of the server")
-    server_type: MCPServerType = MCPServerType.STREAMABLE_HTTP
-    server_url: str = Field(..., description="The URL path for the streamable HTTP server (e.g., 'example/mcp')")
-    auth_header: Optional[str] = Field(None, description="The name of the authentication header (e.g., 'Authorization')")
-    auth_token: Optional[str] = Field(None, description="The authentication token or API key value")
-    custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
-
-
 class UpdateSSEMCPServer(LettaBase):
     """Update an SSE MCP server"""
 
@@ -133,7 +110,6 @@ class UpdateStreamableHTTPMCPServer(LettaBase):
 
 
 UpdateMCPServer = Union[UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer]
-RegisterMCPServer = Union[RegisterSSEMCPServer, RegisterStdioMCPServer, RegisterStreamableHTTPMCPServer]
 
 
 # OAuth-related schemas

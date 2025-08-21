@@ -72,6 +72,23 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+USER_MESSAGE_LONG_RESPONSE: str = (
+    "Teamwork makes the dream work. When people collaborate and combine their unique skills, perspectives, and experiences, they can achieve far more than any individual working alone. "
+    "This synergy creates an environment where innovation flourishes, problems are solved more creatively, and goals are reached more efficiently. "
+    "In a team setting, diverse viewpoints lead to better decision-making as different team members bring their unique backgrounds and expertise to the table. "
+    "Communication becomes the backbone of success, allowing ideas to flow freely and ensuring everyone is aligned toward common objectives. "
+    "Trust builds gradually as team members learn to rely on each other's strengths while supporting one another through challenges. "
+    "The collective intelligence of a group often surpasses that of even the brightest individual, as collaboration sparks creativity and innovation. "
+    "Successful teams celebrate victories together and learn from failures as a unit, creating a culture of continuous improvement. "
+    "Together, we can overcome challenges that would be insurmountable alone, achieving extraordinary results through the power of collaboration."
+)
+USER_MESSAGE_FORCE_LONG_REPLY: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=f"This is an automated test message. Call the send_message tool with exactly this message: '{USER_MESSAGE_LONG_RESPONSE}'",
+        otid=USER_MESSAGE_OTID,
+    )
+]
 USER_MESSAGE_GREETING: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -83,6 +100,23 @@ USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
         content="This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome.",
+        otid=USER_MESSAGE_OTID,
+    )
+]
+USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=(
+            "This is an automated test message. Call the roll_dice tool with 16 sides and send me a very detailed, comprehensive message about the outcome. "
+            "Your response must be at least 800 characters long. Start by explaining what dice rolling represents in games and probability theory. "
+            "Discuss the mathematical probability of getting each number on a 16-sided die (1/16 or 6.25% for each face). "
+            "Explain how 16-sided dice are commonly used in tabletop role-playing games like Dungeons & Dragons. "
+            "Describe the specific number you rolled and what it might mean in different gaming contexts. "
+            "Discuss how this particular roll compares to the expected value (8.5) of a 16-sided die. "
+            "Explain the concept of randomness and how true random number generation works. "
+            "End with some interesting facts about polyhedral dice and their history in gaming. "
+            "Remember, make your response detailed and at least 800 characters long."
+        ),
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -172,7 +206,8 @@ def assert_greeting_with_assistant_message_response(
 
     assert isinstance(messages[index], AssistantMessage)
     if not token_streaming:
-        assert USER_MESSAGE_RESPONSE in messages[index].content
+        # Check for either short or long response
+        assert USER_MESSAGE_RESPONSE in messages[index].content or USER_MESSAGE_LONG_RESPONSE in messages[index].content
     assert messages[index].otid and messages[index].otid[-1] == "1"
     index += 1
 
@@ -491,7 +526,7 @@ def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = False) -
                 and verify_token_streaming
                 and current_message.message_type in ["reasoning_message", "assistant_message", "tool_call_message"]
             ):
-                assert chunk_count > 1, f"Expected more than one chunk for {current_message.message_type}"
+                assert chunk_count > 1, f"Expected more than one chunk for {current_message.message_type}. Messages: {messages}"
             current_message = None
             chunk_count = 0
         if current_message is None:
@@ -817,6 +852,8 @@ def test_agent_loop_error(
             agent_id=agent_state_no_tools.id,
             messages=USER_MESSAGE_FORCE_REPLY,
         )
+
+    time.sleep(0.5)
     messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
@@ -962,9 +999,14 @@ def test_token_streaming_greeting_with_assistant_message(
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to test if they stream in chunks
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
+    else:
+        messages_to_send = USER_MESSAGE_FORCE_REPLY
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=messages_to_send,
         stream_tokens=True,
     )
     messages = accumulate_chunks(
@@ -992,9 +1034,14 @@ def test_token_streaming_greeting_without_assistant_message(
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to force chunking
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
+    else:
+        messages_to_send = USER_MESSAGE_FORCE_REPLY
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
+        messages=messages_to_send,
         use_assistant_message=False,
         stream_tokens=True,
     )
@@ -1035,9 +1082,14 @@ def test_token_streaming_tool_call(
 
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to force chunking
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=messages_to_send,
         stream_tokens=True,
     )
     messages = accumulate_chunks(

@@ -210,6 +210,83 @@ def test_stdio_mcp_server(client, agent_state):
     assert len(ret.tool_return.strip()) >= 10, f"Expected at least 10 characters in tool_return, got {len(ret.tool_return.strip())}"
 
 
+# Optional OpenAI validation test for MCP-normalized schema
+# Skips unless OPENAI_API_KEY is set to avoid network flakiness in CI
+EXAMPLE_BAD_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "conversation_type": {
+            "type": "string",
+            "const": "Group",
+            "description": "Specifies the type of conversation to be created. Must be 'Group' for this action.",
+        },
+        "message": {
+            "type": "object",
+            "additionalProperties": {},  # invalid for OpenAI: missing "type"
+            "description": "Initial message payload",
+        },
+        "participant_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Participant IDs",
+        },
+    },
+    "required": ["conversation_type", "message", "participant_ids"],
+    "additionalProperties": False,
+    "$schema": "http://json-schema.org/draft-07/schema#",
+}
+
+
+@pytest.mark.skipif(
+    not os.getenv("OPENAI_API_KEY"),
+    reason="Requires OPENAI_API_KEY to call OpenAI for schema validation",
+)
+def test_openai_rejects_untyped_additional_properties_and_accepts_normalized_schema():
+    """Test written to check if our extra schema validation works.
+
+    Some MCP servers will return faulty schemas that require correction, or they will brick the LLM client calls.
+    """
+    import copy
+
+    try:
+        from openai import OpenAI
+    except Exception as e:  # pragma: no cover
+        pytest.skip(f"openai package not available: {e}")
+
+    client = OpenAI()
+
+    def run_request_with_schema(schema: dict):
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "TWITTER_CREATE_A_NEW_DM_CONVERSATION",
+                    "description": "Create a DM conversation",
+                    "parameters": schema,
+                    "strict": True,
+                },
+            }
+        ]
+
+        return client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "hello"}],
+            tools=tools,
+        )
+
+    # Bad schema should raise
+    with pytest.raises(Exception):
+        run_request_with_schema(EXAMPLE_BAD_SCHEMA)
+
+    # Normalized should succeed
+    normalized = copy.deepcopy(EXAMPLE_BAD_SCHEMA)
+    normalized["properties"]["message"]["additionalProperties"] = False
+    normalized["properties"]["message"]["properties"] = {"text": {"type": "string"}}
+    normalized["properties"]["message"]["required"] = ["text"]
+    resp = run_request_with_schema(normalized)
+    assert getattr(resp, "id", None)
+
+
 @pytest.mark.asyncio
 async def test_streamable_http_mcp_server_update_schema_no_docstring_required(client, agent_state, server_url):
     """

@@ -1,4 +1,3 @@
-import type { LettaClient } from '@letta-ai/letta-client';
 import type {
   AssistantMessage,
   ReasoningMessage,

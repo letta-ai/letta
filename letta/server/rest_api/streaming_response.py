@@ -6,6 +6,7 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 
+import anyio
 from fastapi.responses import StreamingResponse
 from starlette.types import Send
 
@@ -15,6 +16,7 @@ from letta.schemas.letta_ping import LettaPing
 from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.job_manager import JobManager
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -175,8 +177,24 @@ class StreamingResponseWithStatusCode(StreamingResponse):
 
     body_iterator: AsyncIterator[str | bytes]
     response_started: bool = False
+    _client_connected: bool = True
 
     async def stream_response(self, send: Send) -> None:
+        if settings.use_asyncio_shield:
+            try:
+                await asyncio.shield(self._protected_stream_response(send))
+            except asyncio.CancelledError:
+                logger.info(f"Stream response was cancelled, but shielded task should continue")
+            except anyio.ClosedResourceError:
+                logger.info("Client disconnected, but shielded task should continue")
+                self._client_connected = False
+            except Exception as e:
+                logger.error(f"Error in protected stream response: {e}")
+                raise
+        else:
+            await self._protected_stream_response(send)
+
+    async def _protected_stream_response(self, send: Send) -> None:
         more_body = True
         try:
             first_chunk = await self.body_iterator.__anext__()
@@ -188,21 +206,25 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             if isinstance(first_chunk_content, str):
                 first_chunk_content = first_chunk_content.encode(self.charset)
 
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": self.status_code,
-                    "headers": self.raw_headers,
-                }
-            )
-            self.response_started = True
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": first_chunk_content,
-                    "more_body": more_body,
-                }
-            )
+            try:
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": self.status_code,
+                        "headers": self.raw_headers,
+                    }
+                )
+                self.response_started = True
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": first_chunk_content,
+                        "more_body": more_body,
+                    }
+                )
+            except anyio.ClosedResourceError:
+                logger.info("Client disconnected during initial response, continuing processing without sending more chunks")
+                self._client_connected = False
 
             async for chunk in self.body_iterator:
                 if isinstance(chunk, tuple):
@@ -219,13 +241,21 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                 if isinstance(content, str):
                     content = content.encode(self.charset)
                 more_body = True
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": content,
-                        "more_body": more_body,
-                    }
-                )
+
+                # Only attempt to send if client is still connected
+                if self._client_connected:
+                    try:
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": content,
+                                "more_body": more_body,
+                            }
+                        )
+                    except anyio.ClosedResourceError:
+                        logger.info("Client disconnected, continuing processing without sending more data")
+                        self._client_connected = False
+                        # Continue processing but don't try to send more data
 
         # Handle explicit job cancellations (should not throw error)
         except JobCancelledException as exc:
@@ -243,13 +273,17 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": cancellation_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": cancellation_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
             return
 
         # Handle client timeouts (should throw error to inform user)
@@ -268,13 +302,17 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": error_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": error_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
             capture_sentry_exception(exc)
             return
 
@@ -293,14 +331,22 @@ class StreamingResponseWithStatusCode(StreamingResponse):
                     }
                 )
                 raise
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": error_event,
-                    "more_body": more_body,
-                }
-            )
+            if self._client_connected:
+                try:
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": error_event,
+                            "more_body": more_body,
+                        }
+                    )
+                except anyio.ClosedResourceError:
+                    self._client_connected = False
+
             capture_sentry_exception(exc)
             return
-        if more_body:
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
+        if more_body and self._client_connected:
+            try:
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
+            except anyio.ClosedResourceError:
+                self._client_connected = False

@@ -12,7 +12,6 @@ class EmbeddingConfig(BaseModel):
         "openai",
         "anthropic",
         "bedrock",
-        "cohere",
         "google_ai",
         "google_vertex",
         "azure",
@@ -63,11 +62,11 @@ class EmbeddingConfig(BaseModel):
             )
         elif model_name == "letta":
             return cls(
-                embedding_endpoint="https://bun-function-production-e310.up.railway.app/v1",
-                embedding_model="BAAI/bge-large-en-v1.5",
-                embedding_dim=1024,
+                embedding_endpoint="https://embeddings.letta.com/",
+                embedding_model="letta-free",
+                embedding_dim=1536,
                 embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
-                embedding_endpoint_type="hugging-face",
+                embedding_endpoint_type="openai",
             )
         elif provider == "pinecone":
             # default config for pinecone with empty endpoint

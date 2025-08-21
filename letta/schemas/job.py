@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.enums import JobStatus, JobType
@@ -81,8 +81,7 @@ class BatchJob(JobBase):
 class JobUpdate(JobBase):
     status: Optional[JobStatus] = Field(None, description="The status of the job.")
 
-    class Config:
-        extra = "ignore"  # Ignores extra fields
+    model_config = ConfigDict(extra="ignore")  # Ignores extra fields
 
 
 class LettaRequestConfig(BaseModel):

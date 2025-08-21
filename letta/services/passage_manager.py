@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import List, Optional
@@ -7,8 +6,9 @@ from openai import AsyncOpenAI, OpenAI
 from sqlalchemy import select
 
 from letta.constants import MAX_EMBEDDING_DIM
-from letta.embeddings import embedding_model, parse_and_chunk_text
+from letta.embeddings import parse_and_chunk_text
 from letta.helpers.decorators import async_redis_cache
+from letta.llm_api.llm_client import LLMClient
 from letta.orm import ArchivesAgents
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import ArchivalPassage, SourcePassage
@@ -460,7 +460,7 @@ class PassageManager:
 
     @enforce_types
     @trace_method
-    def insert_passage(
+    async def insert_passage(
         self,
         agent_state: AgentState,
         text: str,
@@ -469,45 +469,32 @@ class PassageManager:
         """Insert passage(s) into archival memory"""
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
+        embedding_client = LLMClient.create(
+            provider_type=agent_state.embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
 
-        # TODO eventually migrate off of llama-index for embeddings?
-        # Already causing pain for OpenAI proxy endpoints like LM Studio...
-        if agent_state.embedding_config.embedding_endpoint_type != "openai":
-            embed_model = embedding_model(agent_state.embedding_config)
+        # Get or create the default archive for the agent
+        archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(
+            agent_id=agent_state.id, agent_name=agent_state.name, actor=actor
+        )
 
-        passages = []
+        text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
+
+        if not text_chunks:
+            return []
 
         try:
-            # breakup string into passages
-            for text in parse_and_chunk_text(text, embedding_chunk_size):
-                if agent_state.embedding_config.embedding_endpoint_type != "openai":
-                    embedding = embed_model.get_text_embedding(text)
-                else:
-                    # TODO should have the settings passed in via the server call
-                    embedding = get_openai_embedding(
-                        text,
-                        agent_state.embedding_config.embedding_model,
-                        agent_state.embedding_config.embedding_endpoint,
-                    )
+            # Generate embeddings for all chunks using the new async API
+            embeddings = await embedding_client.request_embeddings(text_chunks, agent_state.embedding_config)
 
-                if isinstance(embedding, dict):
-                    try:
-                        embedding = embedding["data"][0]["embedding"]
-                    except (KeyError, IndexError):
-                        # TODO as a fallback, see if we can find any lists in the payload
-                        raise TypeError(
-                            f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
-                        )
-                # Get or create the default archive for the agent
-                archive = self.archive_manager.get_or_create_default_archive_for_agent(
-                    agent_id=agent_state.id, agent_name=agent_state.name, actor=actor
-                )
-
-                passage = self.create_agent_passage(
+            passages = []
+            for chunk_text, embedding in zip(text_chunks, embeddings):
+                passage = await self.create_agent_passage_async(
                     PydanticPassage(
                         organization_id=actor.organization_id,
                         archive_id=archive.id,
-                        text=text,
+                        text=chunk_text,
                         embedding=embedding,
                         embedding_config=agent_state.embedding_config,
                     ),
@@ -520,84 +507,16 @@ class PassageManager:
         except Exception as e:
             raise e
 
-    @enforce_types
-    @trace_method
-    async def insert_passage_async(
-        self,
-        agent_state: AgentState,
-        text: str,
-        actor: PydanticUser,
-        image_ids: Optional[List[str]] = None,
-    ) -> List[PydanticPassage]:
-        """Insert passage(s) into archival memory"""
-        # Get or create default archive for the agent
-        archive = await self.archive_manager.get_or_create_default_archive_for_agent_async(
-            agent_id=agent_state.id,
-            agent_name=agent_state.name,
+    async def _generate_embeddings_concurrent(self, text_chunks: List[str], embedding_config, actor: PydanticUser) -> List[List[float]]:
+        """Generate embeddings for all text chunks concurrently using LLMClient"""
+
+        embedding_client = LLMClient.create(
+            provider_type=embedding_config.embedding_endpoint_type,
             actor=actor,
         )
-        archive_id = archive.id
 
-        embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
-        text_chunks = list(parse_and_chunk_text(text, embedding_chunk_size))
-
-        if not text_chunks:
-            return []
-
-        try:
-            embeddings = await self._generate_embeddings_concurrent(text_chunks, agent_state.embedding_config)
-
-            passages = [
-                PydanticPassage(
-                    organization_id=actor.organization_id,
-                    archive_id=archive_id,
-                    text=chunk_text,
-                    embedding=embedding,
-                    embedding_config=agent_state.embedding_config,
-                )
-                for chunk_text, embedding in zip(text_chunks, embeddings)
-            ]
-
-            passages = await self.create_many_archival_passages_async(passages=passages, actor=actor)
-
-            return passages
-
-        except Exception as e:
-            raise e
-
-    async def _generate_embeddings_concurrent(self, text_chunks: List[str], embedding_config) -> List[List[float]]:
-        """Generate embeddings for all text chunks concurrently"""
-
-        if embedding_config.embedding_endpoint_type != "openai":
-            embed_model = embedding_model(embedding_config)
-            loop = asyncio.get_event_loop()
-
-            tasks = [loop.run_in_executor(None, embed_model.get_text_embedding, text) for text in text_chunks]
-            embeddings = await asyncio.gather(*tasks)
-        else:
-            tasks = [
-                get_openai_embedding_async(
-                    text,
-                    embedding_config.embedding_model,
-                    embedding_config.embedding_endpoint,
-                )
-                for text in text_chunks
-            ]
-            embeddings = await asyncio.gather(*tasks)
-
-        processed_embeddings = []
-        for embedding in embeddings:
-            if isinstance(embedding, dict):
-                try:
-                    processed_embeddings.append(embedding["data"][0]["embedding"])
-                except (KeyError, IndexError):
-                    raise TypeError(
-                        f"Got back an unexpected payload from text embedding function, type={type(embedding)}, value={embedding}"
-                    )
-            else:
-                processed_embeddings.append(embedding)
-
-        return processed_embeddings
+        embeddings = await embedding_client.request_embeddings(text_chunks, embedding_config)
+        return embeddings
 
     @enforce_types
     @trace_method

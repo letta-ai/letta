@@ -7,13 +7,6 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
-from letta.llm_api.anthropic import (
-    anthropic_bedrock_chat_completions_request,
-    anthropic_chat_completions_process_stream,
-    anthropic_chat_completions_request,
-)
-from letta.llm_api.aws_bedrock import has_valid_aws_credentials
-from letta.llm_api.azure_openai import azure_openai_chat_completions_request
 from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
@@ -30,14 +23,14 @@ from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import ProviderCategory
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
 from letta.settings import ModelSettings
 from letta.streaming_interface import AgentChunkStreamingInterface, AgentRefreshStreamingInterface
 
-LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "cohere", "local", "groq", "deepseek"]
+LLM_API_PROVIDER_OPTIONS = ["openai", "azure", "anthropic", "google_ai", "local", "groq", "deepseek"]
 
 
 def retry_with_exponential_backoff(
@@ -312,153 +305,6 @@ def create(
 
         return response
 
-    # azure
-    elif llm_config.model_endpoint_type == "azure":
-        if stream:
-            raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-
-        if model_settings.azure_api_key is None:
-            raise LettaConfigurationError(
-                message="Azure API key is missing. Did you set AZURE_API_KEY in your env?", missing_fields=["azure_api_key"]
-            )
-
-        if model_settings.azure_base_url is None:
-            raise LettaConfigurationError(
-                message="Azure base url is missing. Did you set AZURE_BASE_URL in your env?", missing_fields=["azure_base_url"]
-            )
-
-        if model_settings.azure_api_version is None:
-            raise LettaConfigurationError(
-                message="Azure API version is missing. Did you set AZURE_API_VERSION in your env?", missing_fields=["azure_api_version"]
-            )
-
-        # Set the llm config model_endpoint from model_settings
-        # For Azure, this model_endpoint is required to be configured via env variable, so users don't need to provide it in the LLM config
-        llm_config.model_endpoint = model_settings.azure_base_url
-        chat_completion_request = build_openai_chat_completions_request(
-            llm_config, messages, user_id, functions, function_call, use_tool_naming
-        )
-
-        response = azure_openai_chat_completions_request(
-            model_settings=model_settings,
-            llm_config=llm_config,
-            chat_completion_request=chat_completion_request,
-        )
-
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-
-        return response
-
-    elif llm_config.model_endpoint_type == "anthropic":
-        if not use_tool_naming:
-            raise NotImplementedError("Only tool calling supported on Anthropic API requests")
-
-        if llm_config.enable_reasoner:
-            llm_config.put_inner_thoughts_in_kwargs = False
-
-        # Force tool calling
-        tool_call = None
-        if functions is None:
-            # Special case for summarization path
-            tools = None
-            tool_choice = None
-        elif force_tool_call is not None:
-            # tool_call = {"type": "function", "function": {"name": force_tool_call}}
-            tool_choice = {"type": "tool", "name": force_tool_call}
-            tools = [{"type": "function", "function": f} for f in functions if f["name"] == force_tool_call]
-            assert functions is not None
-
-            # need to have this setting to be able to put inner thoughts in kwargs
-            llm_config.put_inner_thoughts_in_kwargs = True
-        else:
-            if llm_config.put_inner_thoughts_in_kwargs:
-                # tool_choice_type other than "auto" only plays nice if thinking goes inside the tool calls
-                tool_choice = {"type": "any", "disable_parallel_tool_use": True}
-            else:
-                tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
-            tools = [{"type": "function", "function": f} for f in functions] if functions is not None else None
-
-        chat_completion_request = ChatCompletionRequest(
-            model=llm_config.model,
-            messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-            tools=tools,
-            tool_choice=tool_choice,
-            max_tokens=llm_config.max_tokens,  # Note: max_tokens is required for Anthropic API
-            temperature=llm_config.temperature,
-            stream=stream,
-        )
-
-        # Handle streaming
-        if stream:  # Client requested token streaming
-            assert isinstance(stream_interface, (AgentChunkStreamingInterface, AgentRefreshStreamingInterface)), type(stream_interface)
-
-            stream_interface.inner_thoughts_in_kwargs = True
-            response = anthropic_chat_completions_process_stream(
-                chat_completion_request=chat_completion_request,
-                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-                stream_interface=stream_interface,
-                extended_thinking=llm_config.enable_reasoner,
-                max_reasoning_tokens=llm_config.max_reasoning_tokens,
-                provider_name=llm_config.provider_name,
-                provider_category=llm_config.provider_category,
-                name=name,
-                user_id=user_id,
-            )
-
-        else:
-            # Client did not request token streaming (expect a blocking backend response)
-            response = anthropic_chat_completions_request(
-                data=chat_completion_request,
-                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-                extended_thinking=llm_config.enable_reasoner,
-                max_reasoning_tokens=llm_config.max_reasoning_tokens,
-                provider_name=llm_config.provider_name,
-                provider_category=llm_config.provider_category,
-                user_id=user_id,
-            )
-
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-
-        telemetry_manager.create_provider_trace(
-            actor=actor,
-            provider_trace_create=ProviderTraceCreate(
-                request_json=chat_completion_request.model_json_schema(),
-                response_json=response.model_json_schema(),
-                step_id=step_id,
-                organization_id=actor.organization_id,
-            ),
-        )
-
-        return response
-
-    # elif llm_config.model_endpoint_type == "cohere":
-    #     if stream:
-    #         raise NotImplementedError(f"Streaming not yet implemented for {llm_config.model_endpoint_type}")
-    #     if not use_tool_naming:
-    #         raise NotImplementedError("Only tool calling supported on Cohere API requests")
-    #
-    #     if functions is not None:
-    #         tools = [{"type": "function", "function": f} for f in functions]
-    #         tools = [Tool(**t) for t in tools]
-    #     else:
-    #         tools = None
-    #
-    #     return cohere_chat_completions_request(
-    #         # url=llm_config.model_endpoint,
-    #         url="https://api.cohere.ai/v1",  # TODO
-    #         api_key=os.getenv("COHERE_API_KEY"),  # TODO remove
-    #         chat_completion_request=ChatCompletionRequest(
-    #             model="command-r-plus",  # TODO
-    #             messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-    #             tools=tools,
-    #             tool_choice=function_call,
-    #             # user=str(user_id),
-    #             # NOTE: max_tokens is required for Anthropic API
-    #             # max_tokens=1024,  # TODO make dynamic
-    #         ),
-    #     )
     elif llm_config.model_endpoint_type == "groq":
         if stream:
             raise NotImplementedError("Streaming not yet implemented for Groq.")
@@ -509,67 +355,6 @@ def create(
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
 
         return response
-
-    elif llm_config.model_endpoint_type == "together":
-        """TogetherAI endpoint that goes via /completions instead of /chat/completions"""
-
-        if stream:
-            raise NotImplementedError("Streaming not yet implemented for TogetherAI (via the /completions endpoint).")
-
-        if model_settings.together_api_key is None and (
-            llm_config.model_endpoint == "https://api.together.ai/v1/completions"
-            or llm_config.model_endpoint == "https://api.together.xyz/v1/completions"
-        ):
-            raise LettaConfigurationError(message="TogetherAI key is missing from letta config file", missing_fields=["together_api_key"])
-
-        return get_chat_completion(
-            model=llm_config.model,
-            messages=messages,
-            functions=functions,
-            functions_python=functions_python,
-            function_call=function_call,
-            context_window=llm_config.context_window,
-            endpoint=llm_config.model_endpoint,
-            endpoint_type="vllm",  # NOTE: use the vLLM path through /completions
-            wrapper=llm_config.model_wrapper,
-            user=str(user_id),
-            # hint
-            first_message=first_message,
-            # auth-related
-            auth_type="bearer_token",  # NOTE: Together expects bearer token auth
-            auth_key=model_settings.together_api_key,
-        )
-
-    elif llm_config.model_endpoint_type == "bedrock":
-        """Anthropic endpoint that goes via /embeddings instead of /chat/completions"""
-
-        if stream:
-            raise NotImplementedError("Streaming not yet implemented for Anthropic (via the /embeddings endpoint).")
-        if not use_tool_naming:
-            raise NotImplementedError("Only tool calling supported on Anthropic API requests")
-
-        if not has_valid_aws_credentials():
-            raise LettaConfigurationError(message="Invalid or missing AWS credentials. Please configure valid AWS credentials.")
-
-        tool_call = None
-        if force_tool_call is not None:
-            tool_call = {"type": "function", "function": {"name": force_tool_call}}
-            assert functions is not None
-
-        return anthropic_bedrock_chat_completions_request(
-            data=ChatCompletionRequest(
-                model=llm_config.model,
-                messages=[cast_message_to_subtype(m.to_openai_dict()) for m in messages],
-                tools=[{"type": "function", "function": f} for f in functions] if functions else None,
-                tool_choice=tool_call,
-                # user=str(user_id),
-                # NOTE: max_tokens is required for Anthropic API
-                max_tokens=llm_config.max_tokens,
-            ),
-            provider_name=llm_config.provider_name,
-            provider_category=llm_config.provider_category,
-            user_id=user_id,
-        )
 
     elif llm_config.model_endpoint_type == "deepseek":
         if model_settings.deepseek_api_key is None and llm_config.model_endpoint == "":
