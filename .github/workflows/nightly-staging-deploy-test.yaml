@@ -186,6 +186,7 @@ jobs:
         env:
           # Point tests to staging environment
           LETTA_API_URL: "https://api-dev.letta.com"
+          # needs to be commented out to ensure we go through cloud-api?
           # LETTA_SERVER_URL: "https://api-dev.letta.com"
           LETTA_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
 
@@ -219,7 +220,7 @@ jobs:
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: |
           poetry run pip install letta
-          poetry run pytest -svv tests/${{ matrix.test_suite }} --maxfail=1 --durations=10
+          poetry run pytest -svv tests/${{ matrix.test_suite }}
 
   publish-artifacts:
     name: 📦 Publish Test Results & Artifacts
