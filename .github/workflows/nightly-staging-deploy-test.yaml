@@ -186,6 +186,7 @@ jobs:
         env:
           # Point tests to staging environment
           LETTA_API_URL: "https://api-dev.letta.com"
+          LETTA_API_KEY: ${{ env.LETTA_API_KEY }}
           # needs to be commented out to ensure we go through cloud-api?
           # LETTA_SERVER_URL: "https://api-dev.letta.com"
           LETTA_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}

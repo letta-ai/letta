@@ -97,6 +97,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.git_hash || github.event.inputs.branch || github.sha }}
           submodules: recursive
+      - name: Load secrets
+        run: |
+          while IFS= read -r line; do
+            if [[ $line == *"="* ]]; then
+              key="${line%%=*}"
+              value="${line#*=}"
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service cypress)
       - name: Install python dependencies
         shell: bash
         working-directory: apps/core

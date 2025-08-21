@@ -91,6 +91,73 @@ variable "dev_ci_FIRECRAWL_API_KEY" {
   sensitive   = true
 }
 
+variable "dev_ci_LETTA_API_KEY" {
+  description = "Letta API Key for dev CI"
+  type        = string
+  sensitive   = true
+}
+
+# Cypress test secrets
+variable "dev_cypress_ANTHROPIC_API_KEY" {
+  description = "Anthropic API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_OPENAI_API_KEY" {
+  description = "OpenAI API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_GEMINI_API_KEY" {
+  description = "Gemini API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_BEDROCK_API_KEY" {
+  description = "AWS Bedrock API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_BEDROCK_ACCESS_KEY_ID" {
+  description = "AWS Bedrock Access Key ID for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_BEDROCK_ACCESS_KEY" {
+  description = "AWS Bedrock Access Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_AZURE_API_KEY" {
+  description = "Azure API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_AZURE_BASE_URL" {
+  description = "Azure Base URL for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_AZURE_API_VERSION" {
+  description = "Azure API Version for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_cypress_TOGETHER_API_KEY" {
+  description = "Together API Key for Cypress tests"
+  type        = string
+  sensitive   = true
+}
+
 variable "dev_model_proxy_OPENAI_API_KEY" {
   description = "OpenAI API key for model-proxy"
   type        = string

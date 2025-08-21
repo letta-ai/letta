@@ -38,6 +38,19 @@ locals {
     "dev_ci_SERPAPI_API_KEY"     = var.dev_ci_SERPAPI_API_KEY
     "dev_ci_TOGETHER_API_KEY"    = var.dev_ci_TOGETHER_API_KEY
     "dev_ci_FIRECRAWL_API_KEY"   = var.dev_ci_FIRECRAWL_API_KEY
+    "dev_ci_LETTA_API_KEY"       = var.dev_ci_LETTA_API_KEY
+
+    # Cypress test secrets
+    "dev_cypress_ANTHROPIC_API_KEY"      = var.dev_cypress_ANTHROPIC_API_KEY
+    "dev_cypress_OPENAI_API_KEY"         = var.dev_cypress_OPENAI_API_KEY
+    "dev_cypress_GEMINI_API_KEY"         = var.dev_cypress_GEMINI_API_KEY
+    "dev_cypress_BEDROCK_API_KEY"        = var.dev_cypress_BEDROCK_API_KEY
+    "dev_cypress_BEDROCK_ACCESS_KEY_ID"  = var.dev_cypress_BEDROCK_ACCESS_KEY_ID
+    "dev_cypress_BEDROCK_ACCESS_KEY"     = var.dev_cypress_BEDROCK_ACCESS_KEY
+    "dev_cypress_AZURE_API_KEY"          = var.dev_cypress_AZURE_API_KEY
+    "dev_cypress_AZURE_BASE_URL"         = var.dev_cypress_AZURE_BASE_URL
+    "dev_cypress_AZURE_API_VERSION"      = var.dev_cypress_AZURE_API_VERSION
+    "dev_cypress_TOGETHER_API_KEY"       = var.dev_cypress_TOGETHER_API_KEY
 
     # model-proxy secrets
     "dev_model-proxy_OPENAI_API_KEY" = var.dev_model_proxy_OPENAI_API_KEY
