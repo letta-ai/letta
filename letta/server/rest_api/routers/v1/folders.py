@@ -267,6 +267,7 @@ async def upload_file_to_folder(
         original_filename=original_filename, source_id=folder_id, actor=actor
     )
 
+    unique_filename = None
     if existing_file:
         # Duplicate found, handle based on strategy
         if duplicate_handling == DuplicateFileHandling.ERROR:

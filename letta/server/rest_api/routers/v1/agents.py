@@ -26,6 +26,7 @@ from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import JobType
+from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
@@ -726,6 +727,49 @@ async def list_agent_folders(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
+
+
+@router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
+async def list_agent_files(
+    agent_id: str,
+    cursor: Optional[str] = Query(None, description="Pagination cursor from previous response"),
+    limit: int = Query(20, ge=1, le=100, description="Number of items to return (1-100)"),
+    is_open: Optional[bool] = Query(None, description="Filter by open status (true for open files, false for closed files)"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Get the files attached to an agent with their open/closed status (paginated).
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # get paginated file-agent relationships for this agent
+    file_agents, next_cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=agent_id, actor=actor, cursor=cursor, limit=limit, is_open=is_open
+    )
+
+    # enrich with file and source metadata
+    enriched_files = []
+    for fa in file_agents:
+        # get source/folder metadata
+        source = await server.source_manager.get_source_by_id(source_id=fa.source_id, actor=actor)
+
+        # build response object
+        attachment = AgentFileAttachment(
+            id=fa.id,
+            file_id=fa.file_id,
+            file_name=fa.file_name,
+            folder_id=fa.source_id,
+            folder_name=source.name if source else "Unknown",
+            is_open=fa.is_open,
+            last_accessed_at=fa.last_accessed_at,
+            visible_content=fa.visible_content,
+            start_line=fa.start_line,
+            end_line=fa.end_line,
+        )
+        enriched_files.append(attachment)
+
+    return PaginatedAgentFiles(files=enriched_files, next_cursor=next_cursor, has_more=has_more)
 
 
 # TODO: remove? can also get with agent blocks
