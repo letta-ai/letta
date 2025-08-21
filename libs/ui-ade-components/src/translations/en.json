@@ -4,6 +4,10 @@
       "title": "Internet chatbot",
       "description": "A general purpose chatbot designed to answer queries via the internet"
     },
+    "deepThought": {
+      "title": "Deep Thought",
+      "description": "A deep research agent designed to assist with comprehensive research by pulling many sources from online"
+    },
     "characterRoleplay": {
       "title": "Character roleplay",
       "description": "Create an agent to roleplay as a character from a fantasy world"

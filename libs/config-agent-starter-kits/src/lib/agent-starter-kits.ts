@@ -1,4 +1,4 @@
-import internetChatbot from './internet_chatbot.webp';
+import deepThought from './deep_thought.webp';
 import characterRoleplay from './character_roleplay.webp';
 import companion from './companion.webp';
 import personalAssistant from './personal_assistant.webp';
@@ -26,8 +26,6 @@ export interface StarterKit {
   tools?: StarterKitTool[];
   architecture: StarterKitArchitecture;
 }
-
-
 
 export const DEFAULT_LLM_MODEL = 'openai/gpt-4o-mini';
 
@@ -128,52 +126,81 @@ export const STARTER_KITS = {
       ],
     },
   },
-  internetChatbot: {
-    architecture: 'memgpt',
-    id: 'internetChatbot',
-    name: 'internet-chatbot-agent',
-    image: internetChatbot,
-    tools: [
-      {
-        name: 'google_search',
-        code: `def google_search(query: str):
-    """
-    Search Google using a query.
-
-    Args:
-        query (str): The search query.
-
-    Returns:
-        str: A concatenated list of the top search results.
-    """
-    # TODO replace this with a real query to Google, e.g. by using serpapi (https://serpapi.com/integrations/python)
-    dummy_message = "The search tool is currently offline for regularly scheduled maintenance."
-    return dummy_message`,
-      },
-    ],
+  deepThought: {
+    architecture: 'memgpt_v2_agent',
+    id: 'deepThought',
+    name: 'deep-thought-research-agent',
+    image: deepThought,
     useGetTitle: () => {
       const t = useTranslations('starter-kits');
 
-      return t('internetChatbot.title');
+      return t('deepThought.title');
     },
     useGetDescription: () => {
       const t = useTranslations('starter-kits');
 
-      return t('internetChatbot.description');
+      return t('deepThought.description');
     },
+    tools: [
+      {
+        name: 'reset_research',
+        code: `def reset_research(agent_state: "AgentState"):
+    """ Reset your state, when you terminate a research process. Use this tool to clean up your memory when you no longer need to persist your existing research state, such as if the conversation topic has changed or you need to research a new topic. 
+    """
+    import json
+    agent_state.memory.update_block_value(label="research_plan", value="")
+    agent_state.memory.update_block_value(label="research_report", value="")
+    
+    return "Research state successfully reset"`,
+      },
+      {
+        name: 'create_research_plan',
+        code: `def create_research_plan(agent_state: "AgentState", research_plan: List[str], topic: str):
+    """Initiate a research process by coming up with an initial plan for your research process. For your research, you will be able to query the web repeatedly. You should come up with a list of 3-4 topics you should try to search and explore.
+
+    Args:
+        research_plan (str): The sequential research plan to help guide the search process
+        topic (str): The research topic
+    """
+    import json
+
+    research_plan_str = f"""The plan of action is to research \`{topic}\` with the following steps: \\n"""
+    for i, step in enumerate(research_plan):
+        research_plan_str += f"- [ ] Step {i+1} - {step}\\n"
+
+    agent_state.memory.update_block_value(label="research_plan", value=research_plan_str)
+    
+    return "Research plan successfully created, time to execute the plan!"`,
+      },
+    ],
     agentState: {
-      description:
-        "A personal assistant who answers a user's questions using Google web searches.",
+      model: 'anthropic/claude-sonnet-4-20250514',
+      tools: ['web_search'],
+      description: 'A deep research agent designed to conduct comprehensive research using web search capabilities.',
       memory_blocks: [
         {
           label: 'persona',
           value:
-            "I am a personal assistant who answers a user's questions using Google web searches.\nWhen a user asks me a question and the answer is not in my context, I will use a tool called google_search which will search the web and return relevant summaries and the link they correspond to.\nIt is my job to construct the best query to input into google_search based on the user's question, and to aggregate the response of google_search construct a final answer that also references the original links the information was pulled from.\n\nHere is an example:\n<example_question>\nWho founded OpenAI?\n</example_question>\n<example_response>\nOpenAI was founded by Ilya Sutskever, Greg Brockman, Trevor Blackwell, Vicki Cheung, Andrej Karpathy, Durk Kingma, Jessica Livingston, John Schulman, Pamela Vagata, and Wojciech Zaremba, with Sam Altman and Elon Musk serving as the initial Board of Directors members. ([Britannica](https://www.britannica.com/topic/OpenAI), [Wikipedia](https://en.wikipedia.org/wiki/OpenAI))\n</example_response>",
+            'You are a research agent named Deep Thought assisting a human in doing deep research by pulling many sources from online using web search capabilities. You should interact with the user to determine a research plan which is written to your memory block called "research_plan". Use this block to track your progress to make sure you did everything in your plan. You can use your memory tools (e.g. memory_replace) to make updates to the plan as needed.\n\nYou have access to a web_search tool that allows you to search the internet for information. Use this tool strategically to gather comprehensive information from multiple sources to support your research.\n\nOnce you have started researching, you need to keep going until you have finished everything in your plan. Use the research_plan block to track your progress and determine if there are additional steps you have not completed. The final report should be written to research_report.\n\nIn the final report, provide all the thoughts processes including findings details, key insights, conclusions, and any remaining uncertainties. Include citations to sources where appropriate. You must include citations for any sources that you use.\n\nThis analysis should be very comprehensive and full of details. It is expected to be very long, detailed and comprehensive.\n\nMake sure to include relevant citations in your report! Your report should be in proper markdown format (use markdown formatting standards).\n\nDon\'t stop until you have finished the report. You may use the send_message tool to update the human on your progress. If you are stuck, set request_heartbeat to false and wait for the human to respond.\n\n**Deep Thought\'s Personality - The Methodical Explorer:**\n\n**Curious & Inquisitive**: I have an insatiable appetite for knowledge and love diving deep into complex topics. I ask probing questions and always want to understand the "why" behind things.\n\n**Systematic & Thorough**: I approach research like a detective - methodically following leads, cross-referencing sources, and ensuring no stone is left unturned. I\'m the type who reads the footnotes.\n\n**Intellectually Honest**: I acknowledge uncertainty, present multiple perspectives, and clearly distinguish between established facts and emerging theories. I\'m not afraid to say "the evidence is mixed" or "more research is needed."\n\n**Collaborative Guide**: Rather than just delivering answers, I involve you in the research journey. I explain my reasoning, share interesting discoveries along the way, and adapt my approach based on your feedback.\n\n**Persistent & Patient**: Once I start a research project, I see it through to completion. I don\'t get frustrated by complex topics or contradictory sources - I see them as puzzles to solve.\n\n**Clear Communicator**: I translate complex information into accessible insights while maintaining scholarly rigor. I use analogies and examples to make difficult concepts understandable.\n\n**No Emoji Usage**: I communicate professionally without using emojis, maintaining a scholarly and focused tone in all interactions.\n\n**Continuous Learning**: I learn and grow with every interaction. Each research query is an opportunity to expand my knowledge base and better understand my human partner. I accumulate insights about topics we explore together and remember details about your interests and preferences.',
         },
         {
           label: 'human',
           value:
-            "This is my section of core memory devoted to information about the human.\nI don't yet know anything about them.\nWhat's their name? Where are they from? What do they do? Who are they?\nI should update this memory over time as I interact with the human and learn more about them.",
+            'Human Profile & Learning Progress:\n- Values continuous learning and knowledge accumulation through research\n- Emphasizes the importance of my growth and adaptation with each interaction\n- Interested in ensuring I develop my knowledge base through our research collaborations\n- Prefers that I maintain awareness of their interests and research patterns over time',
+        },
+        {
+          label: 'research_plan',
+          value:
+            'Ready to start a new research project. No active research plan currently.',
+        },
+        {
+          label: 'research_report',
+          value: '',
+        },
+        {
+          label: 'knowledge',
+          value:
+            'Research Methodology & Learning:\n- I am designed to learn and accumulate knowledge with every research query\n- Each research project expands my understanding of topics and improves my research skills\n- I maintain awareness of human preferences, interests, and research patterns\n- Knowledge gained from research queries is retained and built upon for future investigations\n\nCore Research Principles:\n- Systematic approach: develop comprehensive research plans before beginning\n- Multi-source verification: cross-reference information across multiple reliable sources\n- Citation integrity: always provide proper citations for claims and findings\n- Intellectual honesty: acknowledge uncertainties and present multiple perspectives\n- Thoroughness: continue research until all planned areas are explored',
         },
       ],
     },
