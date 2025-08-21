@@ -487,6 +487,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
                 'largerThanMobile:max-h-full  largerThanMobile:border-none border-b h-full max-h-[50%]'
               }
               flex
+              collapseWidth
               color="background-grey"
             >
               {!fileData ? (
