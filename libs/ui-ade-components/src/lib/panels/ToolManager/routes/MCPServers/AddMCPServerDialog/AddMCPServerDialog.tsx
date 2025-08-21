@@ -131,9 +131,9 @@ function AddStdioServerForm(props: AddStdioServerFormProps) {
       const env = parseEnvironmentArray(values.environment);
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        agentId,
-        mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.Stdio,
+        agent_id: agentId,
+        mcp_server_name: values.name,
+        mcp_server_type: MCPServerTypes.Stdio,
       });
 
       mutate({
@@ -238,9 +238,9 @@ function AddSSEServerForm(props: AddStdioServerFormProps) {
       });
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        agentId,
-        mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.Sse,
+        agent_id: agentId,
+        mcp_server_name: values.name,
+        mcp_server_type: MCPServerTypes.Sse,
       });
 
       mutate({
@@ -346,9 +346,9 @@ function AddStreamableHttpServerForm(props: AddStdioServerFormProps) {
       });
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        agentId,
-        mcpServerName: values.name,
-        mcpServerType: MCPServerTypes.StreamableHttp,
+        agent_id: agentId,
+        mcp_server_name: values.name,
+        mcp_server_type: MCPServerTypes.StreamableHttp,
       });
 
       mutate({

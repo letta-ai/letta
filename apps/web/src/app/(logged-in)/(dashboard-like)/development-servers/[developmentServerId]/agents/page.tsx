@@ -266,7 +266,7 @@ function LocalProjectPage() {
           <Button
             onClick={() => {
               trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_VISITED, {
-                userId: user?.id || '',
+                user_id: user?.id || '',
               });
             }}
             href={`/development-servers/${

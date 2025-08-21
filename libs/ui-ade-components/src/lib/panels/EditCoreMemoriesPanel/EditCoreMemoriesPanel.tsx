@@ -359,8 +359,8 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
             trackClientSideEvent(
               AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
               {
-                onboardingStep: 'view_core_memory_panel',
-                onboardingType: 'create:new_agent',
+                onboarding_step: 'view_core_memory_panel',
+                onboarding_type: 'create:new_agent',
               },
             );
 

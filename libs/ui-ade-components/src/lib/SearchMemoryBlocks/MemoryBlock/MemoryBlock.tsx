@@ -49,7 +49,7 @@ function AttachMemoryBlockButton(props: AttachMemoryBlockButtonProps) {
     if (!agent || isMemoryBlockAttached) return;
 
     trackClientSideEvent(AnalyticsEvent.ATTACH_BLOCK_TO_CORE_MEMORY, {
-      agentId: agent.id,
+      agent_id: agent.id,
     });
 
     mutate(

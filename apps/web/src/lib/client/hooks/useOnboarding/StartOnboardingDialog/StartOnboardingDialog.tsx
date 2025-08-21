@@ -37,7 +37,7 @@ export function StartOnboardingDialog() {
 
   const handleCreateAgent = useCallback(() => {
     trackClientSideEvent(AnalyticsEvent.ONBOARDING_NEW_USER, {
-      onboardingType: 'create:new_agent',
+      onboarding_type: 'create:new_agent',
     });
 
     mutate(

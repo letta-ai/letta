@@ -403,11 +403,11 @@ export async function findOrCreateUserAndOrganizationFromProviderLogin(
   if (trackServerSideEvent) {
     if (isNewUser) {
       void trackServerSideEvent(AnalyticsEvent.USER_CREATED, {
-        userId: user.id,
+        user_id: user.id,
       });
     } else {
       void trackServerSideEvent(AnalyticsEvent.USER_LOGGED_IN, {
-        userId: user.id,
+        user_id: user.id,
       });
     }
   }

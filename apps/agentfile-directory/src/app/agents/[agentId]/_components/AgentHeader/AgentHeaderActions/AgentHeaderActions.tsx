@@ -22,7 +22,7 @@ function DownloadAgentButton(props: DownloadAgentButtonProps) {
 
   function handleDownloadClick() {
     trackClientSideEvent(AnalyticsEvent.AGENTFILE_DOWNLOAD, {
-      agentId,
+      agent_id: agentId,
     });
     // Open the download link
     window.open(
@@ -68,7 +68,7 @@ export function AgentHeaderActions(props: AgentHeaderActionsProps) {
 
   function handleUseInCloudClick() {
     trackClientSideEvent(AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD, {
-      agentId,
+      agent_id: agentId,
     });
     // Open the import link
     window.open(

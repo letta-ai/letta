@@ -71,8 +71,8 @@ export function GitHubSetupServer(props: GitHubSetupServerProps) {
       };
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        mcpServerName: serverName,
-        mcpServerType: MCPServerTypes.StreamableHttp,
+        mcp_server_name: serverName,
+        mcp_server_type: MCPServerTypes.StreamableHttp,
       });
 
       const requestBody = {

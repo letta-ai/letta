@@ -51,7 +51,7 @@ function CreateAPIKeyDialog() {
   const { mutate, isPending, error } = webApi.apiKeys.createAPIKey.useMutation({
     onSuccess: (response) => {
       trackClientSideEvent(AnalyticsEvent.CREATE_API_KEY, {
-        activeOrganizationId: user?.activeOrganizationId || '',
+        active_organization_id: user?.activeOrganizationId || '',
       });
 
       setGeneratedKey(response.body.apiKey);

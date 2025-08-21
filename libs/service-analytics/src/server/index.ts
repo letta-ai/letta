@@ -5,7 +5,6 @@ import { environment } from '@letta-cloud/config-environment-variables';
 import type { AnalyticsEvent, AnalyticsEventProperties } from '../events';
 import { PostHog } from 'posthog-node';
 
-
 export interface TrackUserPayload {
   userId: string;
   name: string;
@@ -40,7 +39,6 @@ export function trackUserOnServer(user: TrackUserPayload) {
   } catch (error) {
     console.error('Failed to identify user on PostHog', error);
   }
-
 }
 
 export async function trackServerSideEvent<Event extends AnalyticsEvent>(
@@ -53,7 +51,7 @@ export async function trackServerSideEvent<Event extends AnalyticsEvent>(
 
     if (properties) {
       posthog?.capture({
-        distinctId: 'userId' in properties ? properties.userId : '',
+        distinctId: 'user_id' in properties ? properties.user_id : '',
         event: eventName,
         properties: {
           ...properties,
@@ -69,5 +67,4 @@ export async function trackServerSideEvent<Event extends AnalyticsEvent>(
   } catch (error) {
     console.error('Failed to track event on PostHog', error);
   }
-
 }

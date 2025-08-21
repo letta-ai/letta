@@ -76,7 +76,7 @@ function AgentfileViewer() {
 
   const handleAsyncDownload = useCallback(async () => {
     trackClientSideEvent(AnalyticsEvent.AGENTFILE_DOWNLOAD, {
-      agentId,
+      agent_id: agentId,
     });
 
     const downloadURL = `/api/agentfiles/${agentId}/download`;
@@ -107,7 +107,7 @@ function AgentfileViewer() {
 
   const handleUseInCloudClick = useCallback(() => {
     trackClientSideEvent(AnalyticsEvent.AGENTFILE_USE_IN_LETTA_CLOUD, {
-      agentId,
+      agent_id: agentId,
     });
     window.open(`/projects?import-agent=${agentId}`, '_blank');
   }, [agentId]);

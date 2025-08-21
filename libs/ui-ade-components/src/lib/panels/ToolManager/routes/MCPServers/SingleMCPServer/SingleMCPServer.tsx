@@ -49,7 +49,6 @@ import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { MCPToolSimulator } from '../MCPToolSimulator/MCPToolSimulator';
 
-
 interface RemoveMCPServerDialogProps {
   serverName: string;
   serverType?: string;
@@ -66,8 +65,8 @@ function RemoveMCPServerDialog(props: RemoveMCPServerDialogProps) {
   const { mutate, isError, isPending } = useToolsServiceDeleteMcpServer({
     onSuccess: () => {
       trackClientSideEvent(AnalyticsEvent.DELETE_MCP_SERVER, {
-        mcpServerName: serverName,
-        mcpServerType: serverType,
+        mcp_server_name: serverName,
+        mcp_server_type: serverType,
       });
 
       setIsOpen(false);
@@ -209,14 +208,20 @@ function ServerToolsList(props: ServerToolsListProps) {
                     healthBadge = {
                       variant: 'warning',
                       label: t('ServerToolsList.schemaHealth.notStrict.label'),
-                      tooltip: t('ServerToolsList.schemaHealth.notStrict.tooltip')
+                      tooltip: t(
+                        'ServerToolsList.schemaHealth.notStrict.tooltip',
+                      ),
                     };
                     break;
                   case 'INVALID':
                     healthBadge = {
                       variant: 'destructive',
-                      label: t('ServerToolsList.schemaHealth.invalidSchema.label'),
-                      tooltip: t('ServerToolsList.schemaHealth.invalidSchema.tooltip')
+                      label: t(
+                        'ServerToolsList.schemaHealth.invalidSchema.label',
+                      ),
+                      tooltip: t(
+                        'ServerToolsList.schemaHealth.invalidSchema.tooltip',
+                      ),
                     };
                     break;
                   case 'STRICT_COMPLIANT':
@@ -234,10 +239,10 @@ function ServerToolsList(props: ServerToolsListProps) {
                   align="center"
                   justify="spaceBetween"
                   className={cn(
-                    "w-full",
+                    'w-full',
                     selectedTool?.name === tool.name
-                      ? "bg-secondary-active"
-                      : ""
+                      ? 'bg-secondary-active'
+                      : '',
                   )}
                 >
                   <button
@@ -247,7 +252,14 @@ function ServerToolsList(props: ServerToolsListProps) {
                     className="flex-1 flex items-center gap-2 text-left cursor-pointer overflow-hidden min-w-0"
                   >
                     <ToolsIcon className="flex-shrink-0" />
-                    <HStack gap="medium" align="end" flex collapseWidth overflow="hidden" paddingRight="xsmall">
+                    <HStack
+                      gap="medium"
+                      align="end"
+                      flex
+                      collapseWidth
+                      overflow="hidden"
+                      paddingRight="xsmall"
+                    >
                       <Typography
                         overflow="ellipsis"
                         bold
@@ -290,7 +302,7 @@ function ServerToolsList(props: ServerToolsListProps) {
         <PanelResizeHandle
           className="w-[1px] h-full bg-border"
           /* eslint-disable-next-line react/forbid-component-props */
-          style={{ cursor: "col-resize" }}
+          style={{ cursor: 'col-resize' }}
         />
         <Panel
           defaultSize={70}
@@ -420,10 +432,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                   {t('command')}
                 </Typography>
                 <div>
-                  <Badge
-                    content={server.command}
-                    size="small"
-                  />
+                  <Badge content={server.command} size="small" />
                 </div>
               </VStack>
             )}
@@ -443,10 +452,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
                 {t('authentication')}
               </Typography>
               <div>
-                <Badge
-                  content={authType}
-                  size="small"
-                />
+                <Badge content={authType} size="small" />
               </div>
             </VStack>
           </HStack>

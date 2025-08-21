@@ -441,10 +441,10 @@ async function setUserAsOnboarded(
           .where(eq(userMarketingDetails.userId, user.id));
 
         void trackServerSideEvent(AnalyticsEvent.ANSWERED_ONBOARDING_SURVEY, {
-          consentedToEmailMarketing: !!emailConsent,
-          reasonsForUsingLetta: reasons,
-          usecasesForUsingLetta: useCases,
-          userId: user.id,
+          consented_to_email_marketing: !!emailConsent,
+          reasons_for_using_letta: reasons,
+          usecases_for_using_letta: useCases,
+          user_id: user.id,
         });
       })
       .catch((e) => {
@@ -707,13 +707,13 @@ async function updateUserOnboardingStep(
   if (stepToClaim) {
     void trackServerSideEvent(AnalyticsEvent.MOVED_ONBOARDING_STEP, {
       step: stepToClaim,
-      userId: user.id,
+      user_id: user.id,
     });
   }
 
   if (stepToClaim === 'completed') {
     void trackServerSideEvent(AnalyticsEvent.COMPLETED_ONBOARDING, {
-      userId: user.id,
+      user_id: user.id,
     });
   }
 
@@ -892,7 +892,7 @@ async function pauseUserOnboarding(): Promise<PauseUserOnboardingResponse> {
   }
 
   void trackServerSideEvent(AnalyticsEvent.PAUSED_ONBOARDING, {
-    userId: user.id,
+    user_id: user.id,
   });
 
   await db

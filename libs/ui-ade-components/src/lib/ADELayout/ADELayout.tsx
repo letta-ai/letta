@@ -506,8 +506,8 @@ function QuickADEOnboarding() {
           <Button
             onClick={() => {
               trackClientSideEvent(AnalyticsEvent.USER_ONBOARDING_COMPLETED, {
-                onboardingType: 'create:new_agent',
-                onboardingStep: 'finish_tour',
+                onboarding_type: 'create:new_agent',
+                onboarding_step: 'finish_tour',
               });
               resetTour();
             }}
@@ -538,8 +538,8 @@ function QuickADEOnboarding() {
                       trackClientSideEvent(
                         AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED,
                         {
-                          onboardingType: 'create:new_agent',
-                          resourceName: 'versioning_templates',
+                          onboarding_type: 'create:new_agent',
+                          resource_name: 'versioning_templates',
                         },
                       );
                     }}
@@ -556,8 +556,8 @@ function QuickADEOnboarding() {
                       trackClientSideEvent(
                         AnalyticsEvent.USER_ONBOARDING_RESOURCE_CLICKED,
                         {
-                          onboardingType: 'create:new_agent',
-                          resourceName: 'sdk_quickstart',
+                          onboarding_type: 'create:new_agent',
+                          resource_name: 'sdk_quickstart',
                         },
                       );
                     }}
@@ -618,7 +618,6 @@ function ADEOnboarding() {
 }
 
 export function ADELayout() {
-
   useGlobalNetworkInterceptor();
 
   return (

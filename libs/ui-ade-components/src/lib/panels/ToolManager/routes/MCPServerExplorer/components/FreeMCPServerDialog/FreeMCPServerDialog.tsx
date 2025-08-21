@@ -57,9 +57,9 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
   const handleAddServer = useCallback(
     (formData: z.infer<typeof freeServerSchema>) => {
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER_TO_AGENT, {
-        agentId,
-        mcpServerName: serverName,
-        mcpServerType: MCPServerTypes.StreamableHttp, // TODO: change this after we expand support for free mcp server
+        agent_id: agentId,
+        mcp_server_name: serverName,
+        mcp_server_type: MCPServerTypes.StreamableHttp, // TODO: change this after we expand support for free mcp server
       });
 
       const requestBody = {

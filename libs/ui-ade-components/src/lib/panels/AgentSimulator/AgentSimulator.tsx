@@ -139,18 +139,17 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         setErrorCode(errorCode);
 
         trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE_FAILED, {
-          agentId,
-          messageSendingType: 'streaming',
-          messageType:
+          agent_id: agentId,
+          message_sending_type: 'streaming',
+          message_type:
             role.value === 'system' ? 'system_message' : 'user_message',
           location: 'ade:agent_simulator',
-          errorType: errorCode || 'UNKNOWN',
-          errorMessage: JSON.stringify(responseData),
+          error_type: errorCode || 'UNKNOWN',
+          error_message: JSON.stringify(responseData),
         });
 
         // Log INTERNAL_SERVER_ERROR to Sentry
         if (errorCode === 'INTERNAL_SERVER_ERROR') {
-
           Sentry.captureException(
             new Error('AgentSimulator: Internal server error occurred'),
             {
@@ -252,10 +251,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       );
 
       trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE, {
-        agentId,
-        messageType:
+        agent_id: agentId,
+        message_type:
           role.value === 'system' ? 'system_message' : 'user_message',
-        messageSendingType: 'streaming',
+        message_sending_type: 'streaming',
         location: 'ade:agent_simulator',
       });
 
@@ -571,26 +570,37 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   );
 
   const { mutateAsync: cancelAgentRun } = useAgentsServiceCancelAgentRun();
-  const { data: isAgentRunCancellationV2Enabled } = useFeatureFlag('AGENT_RUN_CANCELLATION_V2');
-  const stopMessage = useCallback(async (agentId: string) => {
-    if (isAgentRunCancellationV2Enabled) {
-      await cancelAgentRun({agentId},
-        {
-          onSuccess: () => {
-            if (abortController.current) {
-              abortController.current.abort();
-              setIsPending(false);
-            }
+  const { data: isAgentRunCancellationV2Enabled } = useFeatureFlag(
+    'AGENT_RUN_CANCELLATION_V2',
+  );
+  const stopMessage = useCallback(
+    async (agentId: string) => {
+      if (isAgentRunCancellationV2Enabled) {
+        await cancelAgentRun(
+          { agentId },
+          {
+            onSuccess: () => {
+              if (abortController.current) {
+                abortController.current.abort();
+                setIsPending(false);
+              }
+            },
           },
-        },
-      );
-    } else {
-      if (abortController.current) {
-        abortController.current.abort();
-        setIsPending(false);
+        );
+      } else {
+        if (abortController.current) {
+          abortController.current.abort();
+          setIsPending(false);
+        }
       }
-    }
-  }, [abortController, cancelAgentRun, isAgentRunCancellationV2Enabled, setIsPending]);
+    },
+    [
+      abortController,
+      cancelAgentRun,
+      isAgentRunCancellationV2Enabled,
+      setIsPending,
+    ],
+  );
 
   return {
     isPending,
@@ -662,8 +672,8 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
             trackClientSideEvent(
               AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
               {
-                onboardingType: 'create:new_agent',
-                onboardingStep: 'view_agent_simulator',
+                onboarding_type: 'create:new_agent',
+                onboarding_step: 'view_agent_simulator',
               },
             );
 
@@ -737,7 +747,9 @@ export function AgentSimulator() {
 
   const { isLocal } = useCurrentAgentMetaData();
   const { id: agentIdToUse } = useCurrentSimulatedAgent();
-  const { data: isPollActiveRunsEnabled } = useFeatureFlag('POLL_ACTIVE_RUNS_IN_SIMULATOR');
+  const { data: isPollActiveRunsEnabled } = useFeatureFlag(
+    'POLL_ACTIVE_RUNS_IN_SIMULATOR',
+  );
   const { hasActiveRuns, setOptimisticActiveRun, clearOptimisticActiveRuns } =
     useCurrentAgentActiveRuns();
 
@@ -923,8 +935,8 @@ export function AgentSimulator() {
     function handleOnboardingStepChange() {
       if (currentStep === 'message') {
         trackClientSideEvent(AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED, {
-          onboardingType: 'create:new_agent',
-          onboardingStep: 'message_agent',
+          onboarding_type: 'create:new_agent',
+          onboarding_step: 'message_agent',
         });
 
         setStep('simulator');
@@ -1013,7 +1025,9 @@ export function AgentSimulator() {
                     handleOnboardingStepChange();
                   }}
                   onStopMessage={() => stopMessage(agentIdToUse || '')}
-                  isSendingMessage={isPending || (!!isPollActiveRunsEnabled && hasActiveRuns)}
+                  isSendingMessage={
+                    isPending || (!!isPollActiveRunsEnabled && hasActiveRuns)
+                  }
                 />
               </QuickAgentSimulatorOnboarding>
             </VStack>

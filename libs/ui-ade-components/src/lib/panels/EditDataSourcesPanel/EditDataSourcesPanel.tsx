@@ -666,11 +666,11 @@ function DetachDataSourceConfirmDialog(
     onSuccess: (_, variables: { agentId: string; sourceId: string }) => {
       if (isLocal) {
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DATA_SOURCE_ATTACHED, {
-          userId: '',
+          user_id: '',
         });
       } else {
         trackClientSideEvent(AnalyticsEvent.CLOUD_DATA_SOURCE_ATTACHED, {
-          userId: '',
+          user_id: '',
         });
       }
 

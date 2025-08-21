@@ -44,7 +44,7 @@ export function DetachMemoryBlock(props: DetachMemoryBlockDialogProps) {
 
   const handleDetachBlock = useCallback(() => {
     trackClientSideEvent(AnalyticsEvent.DETACH_BLOCK_FROM_CORE_MEMORY, {
-      agentId,
+      agent_id: agentId,
     });
 
     detachBlock(

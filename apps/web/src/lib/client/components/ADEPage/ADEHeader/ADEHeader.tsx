@@ -30,9 +30,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   adeKeyMap,
-  DeleteAgentDialog, DeleteTemplateDialog,
+  DeleteAgentDialog,
+  DeleteTemplateDialog,
   ExportAgentButton,
-  useCurrentAgentMetaData
+  useCurrentAgentMetaData,
 } from '@letta-cloud/ui-ade-components';
 import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
 import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
@@ -149,13 +150,13 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
   const handleDeleteAgentSuccess = useCallback(() => {
     if (isLocal) {
       trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_DELETED, {
-        userId: user?.id || '',
+        user_id: user?.id || '',
       });
 
       window.location.href = `/development-servers/local/dashboard`;
     } else {
       trackClientSideEvent(AnalyticsEvent.CLOUD_AGENT_DELETED, {
-        userId: user?.id || '',
+        user_id: user?.id || '',
       });
 
       window.location.href = `/projects/${projectSlug}`;
@@ -234,7 +235,6 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             }
             onSuccess={handleDeleteAgentSuccess}
           />
-
         )}
         <DropdownMenuSeparator />
         {showShareAgentFile && (
@@ -449,7 +449,7 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
             color="tertiary"
           />
           <HStack align="center">
-            {(mounted && agentTemplateVersion && !isTemplate) && (
+            {mounted && agentTemplateVersion && !isTemplate && (
               <>
                 <Typography variant="body2">
                   <Link

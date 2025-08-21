@@ -388,7 +388,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
         } else {
           if (user) {
             trackClientSideEvent(AnalyticsEvent.ATTEMPTED_UPGRADE, {
-              userId: user.id,
+              user_id: user.id,
             });
           }
         }
@@ -422,7 +422,7 @@ export function UpgradePlanDialog(props: UpgradeToProPlanProps) {
                 if (user) {
                   trackClientSideEvent(AnalyticsEvent.UPGRADE_SELECTED_PLAN, {
                     plan,
-                    userId: user.id,
+                    user_id: user.id,
                   });
                 }
               }}

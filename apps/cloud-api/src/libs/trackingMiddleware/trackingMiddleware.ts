@@ -140,8 +140,8 @@ export async function trackingMiddleware(
 
     if (req.actor.source === 'api') {
       void trackServerSideEvent(AnalyticsEvent.API_VISIT, {
-        userId: req.actor.cloudUserId,
-        organizationId: req.actor.cloudOrganizationId || '',
+        user_id: req.actor.cloudUserId,
+        organization_id: req.actor.cloudOrganizationId || '',
         endpoint: normalizeEndpointPath(req.path) || '',
         method: req.method || '',
         body: req.body || '', // Relevant to track things like message roles

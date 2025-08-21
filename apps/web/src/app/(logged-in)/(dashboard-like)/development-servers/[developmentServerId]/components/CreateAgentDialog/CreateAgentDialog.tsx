@@ -120,7 +120,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
         });
 
         trackClientSideEvent(AnalyticsEvent.LOCAL_AGENT_CREATED, {
-          starterKitId: starterKit.id,
+          starter_kit_id: starterKit.id,
         });
 
         push(

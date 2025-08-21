@@ -49,21 +49,21 @@ export enum AnalyticsEvent {
 }
 
 export interface BaseProperty {
-  userId: string;
+  user_id: string;
 }
 
 export interface OrganizationProperty {
-  activeOrganizationId: string;
+  active_organization_id: string;
 }
 
 interface LocalAgentCreatedProperty {
-  starterKitId: string;
+  starter_kit_id: string;
 }
 
 interface AnsweredOnboardingSurveyProperty extends BaseProperty {
-  consentedToEmailMarketing: boolean;
-  reasonsForUsingLetta: string[];
-  usecasesForUsingLetta: string[];
+  consented_to_email_marketing: boolean;
+  reasons_for_using_letta: string[];
+  usecases_for_using_letta: string[];
 }
 
 interface MovedOnboardingStepProperty extends BaseProperty {
@@ -75,69 +75,69 @@ interface UpgradePlanProperty extends BaseProperty {
 }
 
 interface CloutAgentMessageCreatedInApiProperty {
-  organizationId: string;
+  organization_id: string;
 }
 
 interface SubscriptionChangedProperty {
   tier: string;
-  organizationId: string;
+  organization_id: string;
 }
 
 interface CreateAgentProperty {
   origin: string;
-  starterKitId: string;
+  starter_kit_id: string;
 }
 
 interface ToolProperty {
-  toolType: ToolType;
+  tool_type: ToolType;
 }
 
 interface CreateToolProperty extends ToolProperty {
-  sourceType: string;
+  source_type: string;
 }
 
 interface AttachDetachToolProperty extends ToolProperty {
-  toolId: string;
-  agentId: string;
+  tool_id: string;
+  agent_id: string;
 }
 
 interface McpServer {
-  agentId?: string;
-  mcpServerName: string;
-  mcpServerType?: string;
+  agent_id?: string;
+  mcp_server_name: string;
+  mcp_server_type?: string;
 }
 
 interface McpAttachDetachToolProperty {
-  agentId: string;
-  mcpServerName: string;
-  mcpToolName: string;
+  agent_id: string;
+  mcp_server_name: string;
+  mcp_tool_name: string;
 }
 
 interface CoreMemoryProperty {
-  agentId: string;
+  agent_id: string;
 }
 
 interface CreateCoreMemoryBlockProperty extends CoreMemoryProperty {
-  blockType: string;
+  block_type: string;
 }
 
 interface MessageProperty {
-  agentId: string;
-  messageType: string;
-  messageSendingType: string;
+  agent_id: string;
+  message_type: string;
+  message_sending_type: string;
   location: string;
 }
 
 interface OnboardingProperty {
-  onboardingType: string;
+  onboarding_type: string;
 }
 
 interface OnboardingStepProperty extends OnboardingProperty {
-  onboardingStep: string;
+  onboarding_step: string;
 }
 
 interface ResourceProperty {
-  resourceName: string;
+  resource_name: string;
 }
 
 interface OnboardingResourceProperty
@@ -145,16 +145,16 @@ interface OnboardingResourceProperty
     OnboardingProperty {}
 
 interface AgentFileProperty {
-  agentId: string;
+  agent_id: string;
 }
 
 interface SendMessageFailedProperty extends MessageProperty {
-  errorType: string;
-  errorMessage: string;
+  error_type: string;
+  error_message: string;
 }
 
 interface ApiVisitProperty extends BaseProperty {
-  organizationId: string;
+  organization_id: string;
   endpoint: string;
   method: string;
   route: string;

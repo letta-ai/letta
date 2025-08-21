@@ -182,7 +182,7 @@ export async function createProject(
   }
 
   void trackServerSideEvent(AnalyticsEvent.CREATED_PROJECT, {
-    userId: user.id,
+    user_id: user.id,
   });
 
   let projectSlug = generateSlug(name);

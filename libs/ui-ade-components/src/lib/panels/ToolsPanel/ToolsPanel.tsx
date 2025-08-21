@@ -303,7 +303,6 @@ function ToolAccordion(props: ToolAccordionProps) {
   const { tools, label, id, defaultOpen } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
 
-
   return (
     <Accordion
       defaultOpen={defaultOpen}
@@ -344,8 +343,14 @@ function ToolAccordion(props: ToolAccordionProps) {
                 {tool.name}
               </Typography>
               {tool.isNonStrict && (
-                <Tooltip content={t('ServerToolsList.schemaHealth.notStrict.tooltip')}>
-                  <Badge variant="warning" size="small" content={t('ServerToolsList.schemaHealth.notStrict.label')} />
+                <Tooltip
+                  content={t('ServerToolsList.schemaHealth.notStrict.tooltip')}
+                >
+                  <Badge
+                    variant="warning"
+                    size="small"
+                    content={t('ServerToolsList.schemaHealth.notStrict.label')}
+                  />
                 </Tooltip>
               )}
             </HStack>
@@ -386,8 +391,8 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
               trackClientSideEvent(
                 AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
                 {
-                  onboardingType: 'create:new_agent',
-                  onboardingStep: 'view_tools_panel',
+                  onboarding_type: 'create:new_agent',
+                  onboarding_step: 'view_tools_panel',
                 },
               );
 
@@ -421,8 +426,8 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
               trackClientSideEvent(
                 AnalyticsEvent.USER_ONBOARDING_STEP_COMPLETED,
                 {
-                  onboardingType: 'create:new_agent',
-                  onboardingStep: 'view_tools_panel',
+                  onboarding_type: 'create:new_agent',
+                  onboarding_step: 'view_tools_panel',
                 },
               );
 

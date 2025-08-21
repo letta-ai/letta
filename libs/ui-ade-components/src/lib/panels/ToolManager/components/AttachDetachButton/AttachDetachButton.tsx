@@ -163,9 +163,9 @@ function AttachMCPTool(props: AttachMCPToolProps) {
     } | null = null;
 
     trackClientSideEvent(AnalyticsEvent.ATTACH_MCP_SERVER_TOOL, {
-      agentId,
-      mcpServerName,
-      mcpToolName,
+      agent_id: agentId,
+      mcp_server_name: mcpServerName,
+      mcp_tool_name: mcpToolName,
     });
 
     try {
@@ -266,9 +266,9 @@ function AttachLocalTool(props: AttachLocalToolProps) {
 
   const handleAttach = useCallback(async () => {
     trackClientSideEvent(AnalyticsEvent.ATTACH_TOOL, {
-      toolType: toolType,
-      agentId,
-      toolId: idToAttach,
+      tool_type: toolType,
+      agent_id: agentId,
+      tool_id: idToAttach,
     });
 
     mutate({
@@ -318,7 +318,14 @@ function AttachToolToAgentButton(props: AttachToolToAgentButtonProps) {
       );
 
     case 'external_mcp':
-      return <AttachMCPTool idToAttach={idToAttach} size={size} disabled={disabled} hideLabel={hideLabel} />;
+      return (
+        <AttachMCPTool
+          idToAttach={idToAttach}
+          size={size}
+          disabled={disabled}
+          hideLabel={hideLabel}
+        />
+      );
 
     default:
       return null;
@@ -334,7 +341,7 @@ interface DetachToolDialogProps {
 }
 
 function DetachToolDialog(props: DetachToolDialogProps) {
-  const { idToDetach, toolType, size, disabled, hideLabel} = props;
+  const { idToDetach, toolType, size, disabled, hideLabel } = props;
   const { id: agentId } = useCurrentAgent();
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
@@ -394,17 +401,17 @@ function DetachToolDialog(props: DetachToolDialogProps) {
   const handleDetach = useCallback(() => {
     if (toolType !== 'external_mcp') {
       trackClientSideEvent(AnalyticsEvent.DETACH_TOOL, {
-        toolType,
-        agentId,
-        toolId: idToDetach,
+        tool_type: toolType,
+        agent_id: agentId,
+        tool_id: idToDetach,
       });
     } else {
       const tool = getToolToRestore(idToDetach);
       if (tool) {
         trackClientSideEvent(AnalyticsEvent.DETACH_MCP_SERVER_TOOL, {
-          agentId,
-          mcpServerName: tool.metadata_?.mcp?.server_name ?? '',
-          mcpToolName: tool.name ?? '',
+          agent_id: agentId,
+          mcp_server_name: tool.metadata_?.mcp?.server_name ?? '',
+          mcp_tool_name: tool.name ?? '',
         });
       }
     }
@@ -450,7 +457,15 @@ interface AttachDetachButtonProps {
 }
 
 export function AttachDetachButton(props: AttachDetachButtonProps) {
-  const { idToAttach, toolType, attachedId, toolName, size, disabled, hideLabel} = props;
+  const {
+    idToAttach,
+    toolType,
+    attachedId,
+    toolName,
+    size,
+    disabled,
+    hideLabel,
+  } = props;
 
   const { agentId } = useCurrentAgentMetaData();
 
@@ -461,7 +476,13 @@ export function AttachDetachButton(props: AttachDetachButtonProps) {
   return (
     <HStack>
       {attachedId ? (
-        <DetachToolDialog toolType={toolType} idToDetach={attachedId} size={size} disabled={disabled} hideLabel={hideLabel} />
+        <DetachToolDialog
+          toolType={toolType}
+          idToDetach={attachedId}
+          size={size}
+          disabled={disabled}
+          hideLabel={hideLabel}
+        />
       ) : (
         <AttachToolToAgentButton
           toolType={toolType}

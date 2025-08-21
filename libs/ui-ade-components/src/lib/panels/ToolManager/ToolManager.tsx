@@ -114,7 +114,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
         language: 'python',
       });
       reset();
-      
+
       setDialogOpen(false);
       setPath('/my-tools');
 
@@ -190,11 +190,11 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
   const handleSubmit = useCallback(
     (values: CreateToolType) => {
       const language = values.language || 'python';
-      
+
       trackClientSideEvent(AnalyticsEvent.CREATE_TOOL, {
-        toolType: 'custom' as ToolType,
-        sourceType: language,
-      })
+        tool_type: 'custom' as ToolType,
+        source_type: language,
+      });
 
       mutate({
         requestBody: {
@@ -243,8 +243,10 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
                   { label: 'Python', value: 'python' },
                   { label: 'TypeScript', value: 'typescript' },
                 ];
-                const selectedOption = options.find(opt => opt.value === (field.value || 'python'));
-                
+                const selectedOption = options.find(
+                  (opt) => opt.value === (field.value || 'python'),
+                );
+
                 return (
                   <Select
                     fullWidth

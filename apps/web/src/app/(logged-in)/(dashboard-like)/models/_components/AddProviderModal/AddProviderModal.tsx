@@ -122,7 +122,14 @@ function TestConnectionButton() {
           event.stopPropagation();
           const isValid = await trigger();
           if (isValid) {
-            void testConnection({ providerType, apiKey, accessKey, region, baseUrl, apiVersion });
+            void testConnection({
+              providerType,
+              apiKey,
+              accessKey,
+              region,
+              baseUrl,
+              apiVersion,
+            });
           }
         }}
       />
@@ -170,23 +177,35 @@ interface CreateProviderModalProps {
   trigger: React.ReactNode;
 }
 
-const AddModelProviderSchema = z.object({
-  providerType: z.enum(['anthropic', 'openai', 'google_ai', 'bedrock', 'azure', 'together']),
-  name: z.string().min(1),
-  apiKey: z.string().min(1),
-  accessKey: z.string().optional(),
-  region: z.string().optional(),
-  baseUrl: z.string().optional(),
-  apiVersion: z.string().optional(),
-}).refine((data) => {
-  if (data.providerType === 'azure') {
-    return data.baseUrl && data.baseUrl.length >= 1;
-  }
-  return true;
-}, {
-  message: 'Base URL is required for Azure provider',
-  path: ['baseUrl'],
-});
+const AddModelProviderSchema = z
+  .object({
+    providerType: z.enum([
+      'anthropic',
+      'openai',
+      'google_ai',
+      'bedrock',
+      'azure',
+      'together',
+    ]),
+    name: z.string().min(1),
+    apiKey: z.string().min(1),
+    accessKey: z.string().optional(),
+    region: z.string().optional(),
+    baseUrl: z.string().optional(),
+    apiVersion: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.providerType === 'azure') {
+        return data.baseUrl && data.baseUrl.length >= 1;
+      }
+      return true;
+    },
+    {
+      message: 'Base URL is required for Azure provider',
+      path: ['baseUrl'],
+    },
+  );
 
 type AddModelProviderSchema = z.infer<typeof AddModelProviderSchema>;
 
@@ -218,51 +237,48 @@ export function AddProviderModal(props: CreateProviderModalProps) {
   const { data: isAzureEnabled } = useFeatureFlag('BYOK_AZURE');
   const { data: isTogetherEnabled } = useFeatureFlag('BYOK_TOGETHER');
 
-  const providerItems = useMemo(
-    () => {
-      const items = [
-        {
-          label: brandKeyToName('openai'),
-          value: 'openai',
-          icon: brandKeyToLogo('openai'),
-        },
-        {
-          label: brandKeyToName('anthropic'),
-          value: 'anthropic',
-          icon: brandKeyToLogo('claude'),
-        },
-        {
-          label: brandKeyToName('google_ai'),
-          value: 'google_ai',
-          icon: brandKeyToLogo('google_ai'),
-        },
-        {
-          label: brandKeyToName('bedrock'),
-          value: 'bedrock',
-          icon: brandKeyToLogo('bedrock'),
-        },
-      ];
+  const providerItems = useMemo(() => {
+    const items = [
+      {
+        label: brandKeyToName('openai'),
+        value: 'openai',
+        icon: brandKeyToLogo('openai'),
+      },
+      {
+        label: brandKeyToName('anthropic'),
+        value: 'anthropic',
+        icon: brandKeyToLogo('claude'),
+      },
+      {
+        label: brandKeyToName('google_ai'),
+        value: 'google_ai',
+        icon: brandKeyToLogo('google_ai'),
+      },
+      {
+        label: brandKeyToName('bedrock'),
+        value: 'bedrock',
+        icon: brandKeyToLogo('bedrock'),
+      },
+    ];
 
-      if (isAzureEnabled) {
-        items.push({
-          label: brandKeyToName('azure'),
-          value: 'azure',
-          icon: brandKeyToLogo('azure'),
-        });
-      }
+    if (isAzureEnabled) {
+      items.push({
+        label: brandKeyToName('azure'),
+        value: 'azure',
+        icon: brandKeyToLogo('azure'),
+      });
+    }
 
-      if (isTogetherEnabled) {
-        items.push({
-          label: brandKeyToName('together'),
-          value: 'together',
-          icon: brandKeyToLogo('together'),
-        });
-      }
+    if (isTogetherEnabled) {
+      items.push({
+        label: brandKeyToName('together'),
+        value: 'together',
+        icon: brandKeyToLogo('together'),
+      });
+    }
 
-      return items;
-    },
-    [isAzureEnabled, isTogetherEnabled],
-  )
+    return items;
+  }, [isAzureEnabled, isTogetherEnabled]);
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -291,7 +307,7 @@ export function AddProviderModal(props: CreateProviderModalProps) {
         {
           onSuccess: (response) => {
             trackClientSideEvent(AnalyticsEvent.ADDED_OWN_EXTERNAL_KEY, {
-              userId: user?.id || '',
+              user_id: user?.id || '',
             });
             queryClient.setQueriesData<ListProvidersResponse | undefined>(
               {

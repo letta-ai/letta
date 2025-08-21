@@ -47,7 +47,7 @@ async function trackSubscriptionChange(organizationId: string) {
 
   void trackServerSideEvent(AnalyticsEvent.SUBSCRIPTION_CHANGED, {
     tier: subscriptionTier.tier,
-    organizationId,
+    organization_id: organizationId,
   });
 }
 

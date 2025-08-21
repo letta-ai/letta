@@ -132,8 +132,8 @@ function DeployFromTemplate(props: DeployFromTemplateProps) {
                 </Card>
               ))
             : Array.from({ length: 4 }, (_, index) => (
-                  <ActionCard title="" key={index} isSkeleton />
-                ))}
+                <ActionCard title="" key={index} isSkeleton />
+              ))}
         </NiceGridDisplay>
       )}
     </Section>
@@ -176,7 +176,7 @@ function FromStarterKit(props: FromStarterKitProps) {
 
       trackClientSideEvent(AnalyticsEvent.CREATE_AGENT, {
         origin: 'starter_kit:deploy_agent_dialog',
-        starterKitId: starterKitId,
+        starter_kit_id: starterKitId,
       });
 
       mutate({

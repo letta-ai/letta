@@ -1,8 +1,4 @@
-import {
-  db,
-  lettaTemplates,
-  projects,
-} from '@letta-cloud/service-database';
+import { db, lettaTemplates, projects } from '@letta-cloud/service-database';
 import { findUniqueAgentTemplateName } from '../findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 import { and, eq } from 'drizzle-orm';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
@@ -106,7 +102,7 @@ export async function createTemplateFromAgentState(
   }
 
   void trackServerSideEvent(AnalyticsEvent.CREATED_TEMPLATE, {
-    userId: userId,
+    user_id: userId,
   });
 
   if (preName) {
@@ -168,7 +164,6 @@ export async function createTemplateFromAgentState(
       message: 'Init',
       tx,
     });
-
   });
 
   return {

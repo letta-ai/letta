@@ -68,8 +68,8 @@ export function CustomSetupServer(props: CustomSetupServerProps) {
       const serverName = generateServerName(baseName, existingServers);
 
       trackClientSideEvent(AnalyticsEvent.ADD_MCP_SERVER, {
-        mcpServerName: serverName,
-        mcpServerType: serverType,
+        mcp_server_name: serverName,
+        mcp_server_type: serverType,
       });
 
       const requestBody = {

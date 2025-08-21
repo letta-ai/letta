@@ -273,8 +273,8 @@ export function CreateNewMemoryBlockDialog(
       }
 
       trackClientSideEvent(AnalyticsEvent.CREATE_BLOCK_IN_CORE_MEMORY, {
-        agentId: agent.id,
-        blockType,
+        agent_id: agent.id,
+        block_type: blockType,
       });
 
       handleCreate({
