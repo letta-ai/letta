@@ -217,7 +217,7 @@ function MessageContent({ message, showEdit, setShowEdit, disableInteractivity }
   }
 
   // Special handling for reasoning messages to place edit button inline with text
-  if (message.type === 'reasoning_message' && message.raw) {
+  if (message.type === 'reasoning_message' && message.raw && message.raw.trim()) {
     return (
       <BlockQuote fullWidth>
         <VStack gap="small">
@@ -900,6 +900,10 @@ export function Messages(props: MessagesProps) {
         }
         case 'reasoning_message':
           if (mode === 'simple') {
+            return null;
+          }
+
+          if (!agentMessage.reasoning || !agentMessage.reasoning.trim()) {
             return null;
           }
 
