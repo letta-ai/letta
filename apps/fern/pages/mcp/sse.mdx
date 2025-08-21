@@ -15,30 +15,36 @@ Recommended transport with Bearer token auth support.
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
-from letta_client.types import StreamableHTTPServerConfig
+from letta_client.types import StreamableHTTPServerConfig, MCPServerType
 
 client = Letta(token="LETTA_API_KEY")
 
-# Connect a Streamable HTTP server
+# Connect a Streamable HTTP server with Bearer token auth
 streamable_config = StreamableHTTPServerConfig(
     server_name="my-server",
+    type=MCPServerType.STREAMABLE_HTTP,
     server_url="https://mcp-server.example.com/mcp",
-    auth_token="your-token",  # Optional: Authorization: Bearer your-token
-    custom_headers={"X-API-Version": "v1"}  # Optional: additional headers
+    auth_header="Authorization",
+    auth_token="Bearer your-token",  # Include "Bearer " prefix
+    custom_headers={"X-API-Version": "v1"}  # Additional custom headers
 )
 client.tools.add_mcp_server(request=streamable_config)
 ```
 ```typescript title="node.js" maxLines=50
-import { LettaClient } from '@letta-ai/letta-client'
+import { LettaClient, Letta } from '@letta-ai/letta-client';
 
 const client = new LettaClient({ token: "LETTA_API_KEY" });
 
-// Connect a Streamable HTTP server
-const streamableConfig = {
-    server_name: "my-server",
-    server_url: "https://mcp-server.example.com/mcp",
-    auth_token: "your-token",  // Optional: Authorization: Bearer your-token
-    custom_headers: {"X-API-Version": "v1"}  // Optional: additional headers
+// Connect a Streamable HTTP server with Bearer token auth
+const streamableConfig: Letta.StreamableHttpServerConfig = {
+    serverName: "my-server",
+    type: Letta.McpServerType.StreamableHttp,
+    serverUrl: "https://mcp-server.example.com/mcp",
+    authHeader: "Authorization",
+    authToken: "Bearer your-token",  // Include "Bearer " prefix
+    customHeaders: {
+        "X-API-Version": "v1"  // Additional custom headers
+    }
 };
 
 await client.tools.addMcpServer(streamableConfig);
@@ -57,28 +63,32 @@ For legacy MCP servers that only support SSE.
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
-from letta_client.types import SseServerConfig
+from letta_client.types import SseServerConfig, MCPServerType
 
 client = Letta(token="LETTA_API_KEY")
 
 # Connect a SSE server (legacy)
 sse_config = SseServerConfig(
     server_name="legacy-server",
+    type=MCPServerType.SSE,
     server_url="https://legacy-mcp.example.com/sse",
-    auth_token="optional-token"  # Optional: Authorization: Bearer optional-token
+    auth_header="Authorization",
+    auth_token="Bearer optional-token"  # Include "Bearer " prefix
 )
 client.tools.add_mcp_server(request=sse_config)
 ```
 ```typescript title="node.js" maxLines=50
-import { LettaClient } from '@letta-ai/letta-client'
+import { LettaClient, Letta } from '@letta-ai/letta-client';
 
 const client = new LettaClient({ token: "LETTA_API_KEY" });
 
-// Connect an SSE server (legacy)
-const sseConfig = {
-    server_name: "legacy-server",
-    server_url: "https://legacy-mcp.example.com/sse",
-    auth_token: "optional-token"  // Optional: Authorization: Bearer optional-token
+// Connect a SSE server (legacy)
+const sseConfig: Letta.SseServerConfig = {
+    serverName: "legacy-server",
+    type: Letta.McpServerType.Sse,
+    serverUrl: "https://legacy-mcp.example.com/sse",
+    authHeader: "Authorization",
+    authToken: "Bearer optional-token"  // Include "Bearer " prefix
 };
 
 await client.tools.addMcpServer(sseConfig);
