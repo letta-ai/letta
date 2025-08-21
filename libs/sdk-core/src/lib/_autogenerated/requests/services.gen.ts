@@ -148,6 +148,8 @@ import type {
   ListAgentSourcesResponse,
   ListAgentFoldersData,
   ListAgentFoldersResponse,
+  ListAgentFilesData,
+  ListAgentFilesResponse,
   RetrieveAgentMemoryData,
   RetrieveAgentMemoryResponse,
   RetrieveCoreMemoryBlockData,
@@ -2367,6 +2369,40 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/folders',
       path: {
         agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Agent Files
+   * Get the files attached to an agent with their open/closed status (paginated).
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.cursor Pagination cursor from previous response
+   * @param data.limit Number of items to return (1-100)
+   * @param data.isOpen Filter by open status (true for open files, false for closed files)
+   * @param data.userId
+   * @returns PaginatedAgentFiles Successful Response
+   * @throws ApiError
+   */
+  public static listAgentFiles(
+    data: ListAgentFilesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListAgentFilesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/files',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        cursor: data.cursor,
+        limit: data.limit,
+        is_open: data.isOpen,
       },
       errors: {
         422: 'Validation Error',

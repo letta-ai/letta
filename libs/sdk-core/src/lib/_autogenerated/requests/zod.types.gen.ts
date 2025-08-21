@@ -132,6 +132,48 @@ export const AgentEnvironmentVariable = z.object({
   agent_id: z.string(),
 });
 
+export type AgentFileAttachment = z.infer<typeof AgentFileAttachment>;
+export const AgentFileAttachment = z.object({
+  id: z.string(),
+  file_id: z.string(),
+  file_name: z.string(),
+  folder_id: z.string(),
+  folder_name: z.string(),
+  is_open: z.boolean(),
+  last_accessed_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  visible_content: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  start_line: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  end_line: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type CreateBlock = z.infer<typeof CreateBlock>;
 export const CreateBlock = z.object({
   value: z.string(),
@@ -6354,6 +6396,20 @@ export const OrganizationUpdate = z.object({
     .optional(),
 });
 
+export type PaginatedAgentFiles = z.infer<typeof PaginatedAgentFiles>;
+export const PaginatedAgentFiles = z.object({
+  files: z.array(AgentFileAttachment),
+  next_cursor: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  has_more: z.boolean(),
+});
+
 export type Passage = z.infer<typeof Passage>;
 export const Passage = z.object({
   created_by_id: z
@@ -9432,6 +9488,37 @@ export const get_List_agent_folders = {
   response: z.array(Source),
 };
 
+export type get_List_agent_files = typeof get_List_agent_files;
+export const get_List_agent_files = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/files'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      cursor: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z.number().optional(),
+      is_open: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: PaginatedAgentFiles,
+};
+
 export type get_Retrieve_agent_memory = typeof get_Retrieve_agent_memory;
 export const get_Retrieve_agent_memory = {
   method: z.literal('GET'),
@@ -11749,6 +11836,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/tools': get_List_agent_tools,
     '/v1/agents/{agent_id}/sources': get_List_agent_sources,
     '/v1/agents/{agent_id}/folders': get_List_agent_folders,
+    '/v1/agents/{agent_id}/files': get_List_agent_files,
     '/v1/agents/{agent_id}/core-memory': get_Retrieve_agent_memory,
     '/v1/agents/{agent_id}/core-memory/blocks/{block_label}':
       get_Retrieve_core_memory_block,

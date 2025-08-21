@@ -807,6 +807,33 @@ export const UseAgentsServiceListAgentFoldersKeyFn = (
   useAgentsServiceListAgentFoldersKey,
   ...(queryKey ?? [{ agentId, userId }]),
 ];
+export type AgentsServiceListAgentFilesDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.listAgentFiles>
+>;
+export type AgentsServiceListAgentFilesQueryResult<
+  TData = AgentsServiceListAgentFilesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceListAgentFilesKey = 'AgentsServiceListAgentFiles';
+export const UseAgentsServiceListAgentFilesKeyFn = (
+  {
+    agentId,
+    cursor,
+    isOpen,
+    limit,
+    userId,
+  }: {
+    agentId: string;
+    cursor?: string;
+    isOpen?: boolean;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceListAgentFilesKey,
+  ...(queryKey ?? [{ agentId, cursor, isOpen, limit, userId }]),
+];
 export type AgentsServiceRetrieveAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentMemory>
 >;

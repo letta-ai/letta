@@ -9645,6 +9645,200 @@ async def test_list_files_and_agents(
 
 
 @pytest.mark.asyncio
+async def test_list_files_for_agent_paginated_basic(
+    server,
+    default_user,
+    sarah_agent,
+    default_source,
+):
+    """Test basic pagination functionality."""
+    # create 5 files and attach them to sarah
+    for i in range(5):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"paginated_file_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=sarah_agent.max_files_open,
+        )
+
+    # get first page
+    page1, cursor1, has_more1 = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        limit=3,
+    )
+    assert len(page1) == 3
+    assert has_more1 is True
+    assert cursor1 is not None
+
+    # get second page using cursor
+    page2, cursor2, has_more2 = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        cursor=cursor1,
+        limit=3,
+    )
+    assert len(page2) == 2  # only 2 files left (5 total - 3 already fetched)
+    assert has_more2 is False
+    assert cursor2 is not None
+
+    # verify no overlap between pages
+    page1_ids = {fa.id for fa in page1}
+    page2_ids = {fa.id for fa in page2}
+    assert page1_ids.isdisjoint(page2_ids)
+
+
+@pytest.mark.asyncio
+async def test_list_files_for_agent_paginated_filter_open(
+    server,
+    default_user,
+    sarah_agent,
+    default_source,
+):
+    """Test pagination with is_open=True filter."""
+    # create files: 3 open, 2 closed
+    for i in range(5):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"filter_file_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            is_open=(i < 3),  # first 3 are open
+            max_files_open=sarah_agent.max_files_open,
+        )
+
+    # get only open files
+    open_files, cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        is_open=True,
+        limit=10,
+    )
+    assert len(open_files) == 3
+    assert has_more is False
+    assert all(fa.is_open for fa in open_files)
+
+
+@pytest.mark.asyncio
+async def test_list_files_for_agent_paginated_filter_closed(
+    server,
+    default_user,
+    sarah_agent,
+    default_source,
+):
+    """Test pagination with is_open=False filter."""
+    # create files: 2 open, 4 closed
+    for i in range(6):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"closed_file_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            is_open=(i < 2),  # first 2 are open, rest are closed
+            max_files_open=sarah_agent.max_files_open,
+        )
+
+    # paginate through closed files
+    page1, cursor1, has_more1 = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        is_open=False,
+        limit=2,
+    )
+    assert len(page1) == 2
+    assert has_more1 is True
+    assert all(not fa.is_open for fa in page1)
+
+    # get second page of closed files
+    page2, cursor2, has_more2 = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        is_open=False,
+        cursor=cursor1,
+        limit=3,
+    )
+    assert len(page2) == 2  # only 2 closed files left
+    assert has_more2 is False
+    assert all(not fa.is_open for fa in page2)
+
+
+@pytest.mark.asyncio
+async def test_list_files_for_agent_paginated_empty(
+    server,
+    default_user,
+    charles_agent,
+):
+    """Test pagination with agent that has no files."""
+    # charles_agent has no files attached in this test
+    result, cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=charles_agent.id,
+        actor=default_user,
+        limit=10,
+    )
+    assert len(result) == 0
+    assert cursor is None
+    assert has_more is False
+
+
+@pytest.mark.asyncio
+async def test_list_files_for_agent_paginated_large_limit(
+    server,
+    default_user,
+    sarah_agent,
+    default_source,
+):
+    """Test that large limit returns all files without pagination."""
+    # create 3 files
+    for i in range(3):
+        file_metadata = PydanticFileMetadata(
+            file_name=f"all_files_{i}.txt",
+            source_id=default_source.id,
+            organization_id=default_user.organization_id,
+        )
+        file = await server.file_manager.create_file(file_metadata, actor=default_user)
+        await server.file_agent_manager.attach_file(
+            agent_id=sarah_agent.id,
+            file_id=file.id,
+            file_name=file.file_name,
+            source_id=file.source_id,
+            actor=default_user,
+            max_files_open=sarah_agent.max_files_open,
+        )
+
+    # request with large limit
+    all_files, cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        limit=100,
+    )
+    assert len(all_files) == 3
+    assert has_more is False
+    assert cursor is not None  # cursor is still set to last item
+
+
+@pytest.mark.asyncio
 async def test_detach_file(server, file_attachment, default_user):
     await server.file_agent_manager.detach_file(
         agent_id=file_attachment.agent_id,

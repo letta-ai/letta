@@ -288,6 +288,103 @@ export const $AgentEnvironmentVariable = {
   title: 'AgentEnvironmentVariable',
 } as const;
 
+export const $AgentFileAttachment = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+      description: 'Unique identifier of the file-agent relationship',
+    },
+    file_id: {
+      type: 'string',
+      title: 'File Id',
+      description: 'Unique identifier of the file',
+    },
+    file_name: {
+      type: 'string',
+      title: 'File Name',
+      description: 'Name of the file',
+    },
+    folder_id: {
+      type: 'string',
+      title: 'Folder Id',
+      description: 'Unique identifier of the folder/source',
+    },
+    folder_name: {
+      type: 'string',
+      title: 'Folder Name',
+      description: 'Name of the folder/source',
+    },
+    is_open: {
+      type: 'boolean',
+      title: 'Is Open',
+      description: "Whether the file is currently open in the agent's context",
+    },
+    last_accessed_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Accessed At',
+      description: 'Timestamp of last access by the agent',
+    },
+    visible_content: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Visible Content',
+      description: 'Portion of the file visible to the agent if open',
+    },
+    start_line: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Start Line',
+      description: 'Starting line number if file was opened with line range',
+    },
+    end_line: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'End Line',
+      description: 'Ending line number if file was opened with line range',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: [
+    'id',
+    'file_id',
+    'file_name',
+    'folder_id',
+    'folder_name',
+    'is_open',
+  ],
+  title: 'AgentFileAttachment',
+  description:
+    'Response model for agent file attachments showing file status in agent context',
+} as const;
+
 export const $AgentFileSchema = {
   properties: {
     agents: {
@@ -9147,6 +9244,42 @@ export const $OrganizationUpdate = {
   additionalProperties: false,
   type: 'object',
   title: 'OrganizationUpdate',
+} as const;
+
+export const $PaginatedAgentFiles = {
+  properties: {
+    files: {
+      items: {
+        $ref: '#/components/schemas/AgentFileAttachment',
+      },
+      type: 'array',
+      title: 'Files',
+      description: 'List of file attachments for the agent',
+    },
+    next_cursor: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Next Cursor',
+      description:
+        'Cursor for fetching the next page (file-agent relationship ID)',
+    },
+    has_more: {
+      type: 'boolean',
+      title: 'Has More',
+      description: 'Whether more results exist after this page',
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['files', 'has_more'],
+  title: 'PaginatedAgentFiles',
+  description: 'Paginated response for agent files',
 } as const;
 
 export const $ParameterProperties = {

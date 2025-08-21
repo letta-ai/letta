@@ -3866,6 +3866,97 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/files": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "List Agent Files",
+        "description": "Get the files attached to an agent with their open/closed status (paginated).",
+        "operationId": "list_agent_files",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor from previous response",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor from previous response"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of items to return (1-100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Number of items to return (1-100)"
+          },
+          {
+            "name": "is_open",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by open status (true for open files, false for closed files)",
+              "title": "Is Open"
+            },
+            "description": "Filter by open status (true for open files, false for closed files)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAgentFiles"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/core-memory": {
       "get": {
         "tags": ["agents"],
@@ -11455,6 +11546,101 @@
         "type": "object",
         "required": ["key", "value", "agent_id"],
         "title": "AgentEnvironmentVariable"
+      },
+      "AgentFileAttachment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier of the file-agent relationship"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "Unique identifier of the file"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Name of the file"
+          },
+          "folder_id": {
+            "type": "string",
+            "title": "Folder Id",
+            "description": "Unique identifier of the folder/source"
+          },
+          "folder_name": {
+            "type": "string",
+            "title": "Folder Name",
+            "description": "Name of the folder/source"
+          },
+          "is_open": {
+            "type": "boolean",
+            "title": "Is Open",
+            "description": "Whether the file is currently open in the agent's context"
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At",
+            "description": "Timestamp of last access by the agent"
+          },
+          "visible_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible Content",
+            "description": "Portion of the file visible to the agent if open"
+          },
+          "start_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Line",
+            "description": "Starting line number if file was opened with line range"
+          },
+          "end_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Line",
+            "description": "Ending line number if file was opened with line range"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "file_name",
+          "folder_id",
+          "folder_name",
+          "is_open"
+        ],
+        "title": "AgentFileAttachment",
+        "description": "Response model for agent file attachments showing file status in agent context"
       },
       "AgentFileSchema": {
         "properties": {
@@ -19884,6 +20070,40 @@
         "additionalProperties": false,
         "type": "object",
         "title": "OrganizationUpdate"
+      },
+      "PaginatedAgentFiles": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/AgentFileAttachment"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "List of file attachments for the agent"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Cursor for fetching the next page (file-agent relationship ID)"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "Whether more results exist after this page"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["files", "has_more"],
+        "title": "PaginatedAgentFiles",
+        "description": "Paginated response for agent files"
       },
       "ParameterProperties": {
         "properties": {

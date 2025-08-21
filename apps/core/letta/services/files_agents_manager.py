@@ -295,6 +295,66 @@ class FileAgentManager:
 
     @enforce_types
     @trace_method
+    async def list_files_for_agent_paginated(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        cursor: Optional[str] = None,
+        limit: int = 20,
+        is_open: Optional[bool] = None,
+    ) -> tuple[List[PydanticFileAgent], Optional[str], bool]:
+        """
+        Return paginated file associations for an agent.
+
+        Args:
+            agent_id: The agent ID to get files for
+            actor: User performing the action
+            cursor: Pagination cursor (file-agent ID to start after)
+            limit: Maximum number of results to return
+            is_open: Optional filter for open/closed status (None = all, True = open only, False = closed only)
+
+        Returns:
+            Tuple of (file_agents, next_cursor, has_more)
+        """
+        async with db_registry.async_session() as session:
+            conditions = [
+                FileAgentModel.agent_id == agent_id,
+                FileAgentModel.organization_id == actor.organization_id,
+                FileAgentModel.is_deleted == False,
+            ]
+
+            # apply is_open filter if specified
+            if is_open is not None:
+                conditions.append(FileAgentModel.is_open == is_open)
+
+            # apply cursor if provided (get records after this ID)
+            if cursor:
+                conditions.append(FileAgentModel.id > cursor)
+
+            query = select(FileAgentModel).where(and_(*conditions))
+
+            # order by ID for stable pagination
+            query = query.order_by(FileAgentModel.id)
+
+            # fetch limit + 1 to check if there are more results
+            query = query.limit(limit + 1)
+
+            result = await session.execute(query)
+            rows = result.scalars().all()
+
+            # check if we got more records than requested (meaning there are more pages)
+            has_more = len(rows) > limit
+            if has_more:
+                # trim back to the requested limit
+                rows = rows[:limit]
+
+            # get cursor for next page (ID of last item in current page)
+            next_cursor = rows[-1].id if rows else None
+
+            return [r.to_pydantic() for r in rows], next_cursor, has_more
+
+    @enforce_types
+    @trace_method
     async def list_agents_for_file(
         self,
         file_id: str,

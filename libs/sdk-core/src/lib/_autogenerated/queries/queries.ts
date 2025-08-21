@@ -1348,6 +1348,54 @@ export const useAgentsServiceListAgentFolders = <
     ...options,
   });
 /**
+ * List Agent Files
+ * Get the files attached to an agent with their open/closed status (paginated).
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.cursor Pagination cursor from previous response
+ * @param data.limit Number of items to return (1-100)
+ * @param data.isOpen Filter by open status (true for open files, false for closed files)
+ * @param data.userId
+ * @returns PaginatedAgentFiles Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceListAgentFiles = <
+  TData = Common.AgentsServiceListAgentFilesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    cursor,
+    isOpen,
+    limit,
+    userId,
+  }: {
+    agentId: string;
+    cursor?: string;
+    isOpen?: boolean;
+    limit?: number;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceListAgentFilesKeyFn(
+      { agentId, cursor, isOpen, limit, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.listAgentFiles({
+        agentId,
+        cursor,
+        isOpen,
+        limit,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
  * Retrieve Agent Memory
  * Retrieve the memory state of a specific agent.
  * This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.

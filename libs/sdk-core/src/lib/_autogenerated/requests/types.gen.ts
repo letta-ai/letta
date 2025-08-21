@@ -88,6 +88,52 @@ export type AgentEnvironmentVariable = {
 };
 
 /**
+ * Response model for agent file attachments showing file status in agent context
+ */
+export type AgentFileAttachment = {
+  /**
+   * Unique identifier of the file-agent relationship
+   */
+  id: string;
+  /**
+   * Unique identifier of the file
+   */
+  file_id: string;
+  /**
+   * Name of the file
+   */
+  file_name: string;
+  /**
+   * Unique identifier of the folder/source
+   */
+  folder_id: string;
+  /**
+   * Name of the folder/source
+   */
+  folder_name: string;
+  /**
+   * Whether the file is currently open in the agent's context
+   */
+  is_open: boolean;
+  /**
+   * Timestamp of last access by the agent
+   */
+  last_accessed_at?: string | null;
+  /**
+   * Portion of the file visible to the agent if open
+   */
+  visible_content?: string | null;
+  /**
+   * Starting line number if file was opened with line range
+   */
+  start_line?: number | null;
+  /**
+   * Ending line number if file was opened with line range
+   */
+  end_line?: number | null;
+};
+
+/**
  * Schema for serialized agent file that can be exported to JSON and imported into agent server.
  */
 export type AgentFileSchema = {
@@ -3403,6 +3449,24 @@ export type OrganizationUpdate = {
   privileged_tools?: boolean | null;
 };
 
+/**
+ * Paginated response for agent files
+ */
+export type PaginatedAgentFiles = {
+  /**
+   * List of file attachments for the agent
+   */
+  files: Array<AgentFileAttachment>;
+  /**
+   * Cursor for fetching the next page (file-agent relationship ID)
+   */
+  next_cursor?: string | null;
+  /**
+   * Whether more results exist after this page
+   */
+  has_more: boolean;
+};
+
 export type ParameterProperties = {
   type: string;
   description?: string | null;
@@ -6613,6 +6677,25 @@ export type ListAgentFoldersData = {
 
 export type ListAgentFoldersResponse = Array<Source>;
 
+export type ListAgentFilesData = {
+  agentId: string;
+  /**
+   * Pagination cursor from previous response
+   */
+  cursor?: string | null;
+  /**
+   * Filter by open status (true for open files, false for closed files)
+   */
+  isOpen?: boolean | null;
+  /**
+   * Number of items to return (1-100)
+   */
+  limit?: number;
+  userId?: string | null;
+};
+
+export type ListAgentFilesResponse = PaginatedAgentFiles;
+
 export type RetrieveAgentMemoryData = {
   agentId: string;
   userId?: string | null;
@@ -8808,6 +8891,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Source>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/files': {
+    get: {
+      req: ListAgentFilesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: PaginatedAgentFiles;
         /**
          * Validation Error
          */
