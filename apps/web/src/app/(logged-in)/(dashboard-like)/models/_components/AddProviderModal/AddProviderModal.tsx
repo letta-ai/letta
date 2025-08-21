@@ -45,7 +45,7 @@ function TestConnectionButton() {
   >(null);
   const t = useTranslations('pages/models/CreateProviderModal');
 
-  const { watch } = useFormContext();
+  const { watch, trigger } = useFormContext();
 
   const testConnection = useCallback(
     async ({
@@ -117,10 +117,13 @@ function TestConnectionButton() {
         color="secondary"
         busy={isTesting}
         label={t('TestConnectionButton.label')}
-        onClick={(event) => {
+        onClick={async (event) => {
           event.preventDefault();
           event.stopPropagation();
-          void testConnection({ providerType, apiKey, accessKey, region, baseUrl, apiVersion });
+          const isValid = await trigger();
+          if (isValid) {
+            void testConnection({ providerType, apiKey, accessKey, region, baseUrl, apiVersion });
+          }
         }}
       />
       <HStack>
@@ -175,6 +178,14 @@ const AddModelProviderSchema = z.object({
   region: z.string().optional(),
   baseUrl: z.string().optional(),
   apiVersion: z.string().optional(),
+}).refine((data) => {
+  if (data.providerType === 'azure') {
+    return data.baseUrl && data.baseUrl.length >= 1;
+  }
+  return true;
+}, {
+  message: 'Base URL is required for Azure provider',
+  path: ['baseUrl'],
 });
 
 type AddModelProviderSchema = z.infer<typeof AddModelProviderSchema>;
