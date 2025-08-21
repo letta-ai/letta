@@ -148,9 +148,21 @@ class SSEServerConfig(BaseServerConfig):
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with SSE requests")
 
     def resolve_token(self) -> Optional[str]:
-        if self.auth_token and self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
-            return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
-        return self.auth_token
+        """
+        Extract token for storage if auth_header/auth_token are provided
+        and not already in custom_headers.
+
+        Returns:
+            The resolved token (without Bearer prefix) if it should be stored separately, None otherwise
+        """
+        if self.auth_token and self.auth_header:
+            # Check if custom_headers already has the auth header
+            if not self.custom_headers or self.auth_header not in self.custom_headers:
+                # Strip Bearer prefix if present
+                if self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
+                    return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
+                return self.auth_token
+        return None
 
     def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
         if self.auth_token and super().is_templated_tool_variable(self.auth_token):
@@ -217,9 +229,21 @@ class StreamableHTTPServerConfig(BaseServerConfig):
     custom_headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include with streamable HTTP requests")
 
     def resolve_token(self) -> Optional[str]:
-        if self.auth_token and self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
-            return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
-        return self.auth_token
+        """
+        Extract token for storage if auth_header/auth_token are provided
+        and not already in custom_headers.
+
+        Returns:
+            The resolved token (without Bearer prefix) if it should be stored separately, None otherwise
+        """
+        if self.auth_token and self.auth_header:
+            # Check if custom_headers already has the auth header
+            if not self.custom_headers or self.auth_header not in self.custom_headers:
+                # Strip Bearer prefix if present
+                if self.auth_token.startswith(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} "):
+                    return self.auth_token[len(f"{MCP_AUTH_TOKEN_BEARER_PREFIX} ") :]
+                return self.auth_token
+        return None
 
     def resolve_environment_variables(self, environment_variables: Optional[Dict[str, str]] = None) -> None:
         if self.auth_token and super().is_templated_tool_variable(self.auth_token):
