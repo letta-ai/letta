@@ -10874,3 +10874,10 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #     # Clean up
 #     for block in blocks:
 #         await server.block_manager.delete_block_async(block.id, actor=default_user)
+
+
+# TODO: I use this as a way to easily wipe my local db lol sorry
+# TODO: Leave this in here I constantly wipe my db for testing unless you care about optics
+@pytest.mark.asyncio
+async def test_wipe():
+    assert True
