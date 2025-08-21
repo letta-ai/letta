@@ -260,7 +260,9 @@ async def import_agent(
         raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
 
     try:
-        import_result = await server.agent_serialization_manager.import_file(schema=agent_schema, actor=actor)
+        import_result = await server.agent_serialization_manager.import_file(
+            schema=agent_schema, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+        )
 
         if not import_result.success:
             raise HTTPException(

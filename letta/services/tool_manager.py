@@ -184,7 +184,9 @@ class ToolManager:
 
     @enforce_types
     @trace_method
-    async def bulk_upsert_tools_async(self, pydantic_tools: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
+    async def bulk_upsert_tools_async(
+        self, pydantic_tools: List[PydanticTool], actor: PydanticUser, override_existing_tools: bool = True
+    ) -> List[PydanticTool]:
         """
         Bulk create or update multiple tools in a single database transaction.
 
@@ -227,10 +229,10 @@ class ToolManager:
         if settings.letta_pg_uri_no_default:
             # use optimized postgresql bulk upsert
             async with db_registry.async_session() as session:
-                return await self._bulk_upsert_postgresql(session, pydantic_tools, actor)
+                return await self._bulk_upsert_postgresql(session, pydantic_tools, actor, override_existing_tools)
         else:
             # fallback to individual upserts for sqlite
-            return await self._upsert_tools_individually(pydantic_tools, actor)
+            return await self._upsert_tools_individually(pydantic_tools, actor, override_existing_tools)
 
     @enforce_types
     @trace_method
@@ -784,8 +786,10 @@ class ToolManager:
             return await self._upsert_tools_individually(tool_data_list, actor)
 
     @trace_method
-    async def _bulk_upsert_postgresql(self, session, tool_data_list: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
-        """hyper-optimized postgresql bulk upsert using on_conflict_do_update."""
+    async def _bulk_upsert_postgresql(
+        self, session, tool_data_list: List[PydanticTool], actor: PydanticUser, override_existing_tools: bool = True
+    ) -> List[PydanticTool]:
+        """hyper-optimized postgresql bulk upsert using on_conflict_do_update or on_conflict_do_nothing."""
         from sqlalchemy import func, select
         from sqlalchemy.dialects.postgresql import insert
 
@@ -809,32 +813,51 @@ class ToolManager:
         # use postgresql's native bulk upsert
         stmt = insert(table).values(insert_data)
 
-        # on conflict, update all columns except id, created_at, and _created_by_id
-        excluded = stmt.excluded
-        update_dict = {}
-        for col in table.columns:
-            if col.name not in ("id", "created_at", "_created_by_id"):
-                if col.name == "updated_at":
-                    update_dict[col.name] = func.now()
-                else:
-                    update_dict[col.name] = excluded[col.name]
+        if override_existing_tools:
+            # on conflict, update all columns except id, created_at, and _created_by_id
+            excluded = stmt.excluded
+            update_dict = {}
+            for col in table.columns:
+                if col.name not in ("id", "created_at", "_created_by_id"):
+                    if col.name == "updated_at":
+                        update_dict[col.name] = func.now()
+                    else:
+                        update_dict[col.name] = excluded[col.name]
 
-        upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
+            upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
+        else:
+            # on conflict, do nothing (skip existing tools)
+            upsert_stmt = stmt.on_conflict_do_nothing(index_elements=["name", "organization_id"])
 
         await session.execute(upsert_stmt)
         await session.commit()
 
-        # fetch results
+        # fetch results (includes both inserted and skipped tools)
         tool_names = [tool.name for tool in tool_data_list]
         result_query = select(ToolModel).where(ToolModel.name.in_(tool_names), ToolModel.organization_id == actor.organization_id)
         result = await session.execute(result_query)
         return [tool.to_pydantic() for tool in result.scalars()]
 
     @trace_method
-    async def _upsert_tools_individually(self, tool_data_list: List[PydanticTool], actor: PydanticUser) -> List[PydanticTool]:
+    async def _upsert_tools_individually(
+        self, tool_data_list: List[PydanticTool], actor: PydanticUser, override_existing_tools: bool = True
+    ) -> List[PydanticTool]:
         """fallback to individual upserts for sqlite (original approach)."""
         tools = []
         for tool in tool_data_list:
-            upserted_tool = await self.create_or_update_tool_async(tool, actor)
-            tools.append(upserted_tool)
+            if override_existing_tools:
+                # update existing tools if they exist
+                upserted_tool = await self.create_or_update_tool_async(tool, actor)
+                tools.append(upserted_tool)
+            else:
+                # skip existing tools, only create new ones
+                existing_tool_id = await self.get_tool_id_by_name_async(tool_name=tool.name, actor=actor)
+                if existing_tool_id:
+                    # tool exists, fetch and return it without updating
+                    existing_tool = await self.get_tool_by_id_async(existing_tool_id, actor=actor)
+                    tools.append(existing_tool)
+                else:
+                    # tool doesn't exist, create it
+                    created_tool = await self.create_tool_async(tool, actor=actor)
+                    tools.append(created_tool)
         return tools

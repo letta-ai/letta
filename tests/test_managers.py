@@ -3969,7 +3969,7 @@ async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user)
         name="unique_name_tool",
         description="Original description",
         tags=["original"],
-        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'",
+        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'`",
         source_type="python",
     )
 
@@ -4085,6 +4085,146 @@ async def test_bulk_upsert_tools_mixed_create_update(server: SyncServer, default
     assert tool_2.name == "existing_tool_2"
     assert tool_2.description == "Existing tool 2"
     assert tool_2.tags == ["existing"]
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_override_existing_true(server: SyncServer, default_user):
+    """Test bulk_upsert_tools_async with override_existing_tools=True (default behavior)"""
+
+    # create some existing tools
+    existing_tool = PydanticTool(
+        name="test_override_tool",
+        description="Original description",
+        tags=["original"],
+        source_code="def test_override_tool():\n    '''Original'''\n    return 'original'",
+        source_type="python",
+    )
+    created = await server.tool_manager.create_tool_async(existing_tool, default_user)
+    original_id = created.id
+
+    # prepare updated version of the tool
+    updated_tool = PydanticTool(
+        name="test_override_tool",
+        description="Updated description",
+        tags=["updated"],
+        source_code="def test_override_tool():\n    '''Updated'''\n    return 'updated'",
+        source_type="python",
+    )
+
+    # bulk upsert with override_existing_tools=True (default)
+    result = await server.tool_manager.bulk_upsert_tools_async([updated_tool], default_user, override_existing_tools=True)
+
+    assert len(result) == 1
+    assert result[0].id == original_id  # id should remain the same
+    assert result[0].description == "Updated description"  # description should be updated
+    assert result[0].tags == ["updated"]  # tags should be updated
+
+    # verify the tool was actually updated in the database
+    fetched = await server.tool_manager.get_tool_by_id_async(original_id, default_user)
+    assert fetched.description == "Updated description"
+    assert fetched.tags == ["updated"]
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_override_existing_false(server: SyncServer, default_user):
+    """Test bulk_upsert_tools_async with override_existing_tools=False (skip existing)"""
+
+    # create some existing tools
+    existing_tool = PydanticTool(
+        name="test_no_override_tool",
+        description="Original description",
+        tags=["original"],
+        source_code="def test_no_override_tool():\n    '''Original'''\n    return 'original'",
+        source_type="python",
+    )
+    created = await server.tool_manager.create_tool_async(existing_tool, default_user)
+    original_id = created.id
+
+    # prepare updated version of the tool
+    updated_tool = PydanticTool(
+        name="test_no_override_tool",
+        description="Should not be updated",
+        tags=["should_not_update"],
+        source_code="def test_no_override_tool():\n    '''Should not update'''\n    return 'should_not_update'",
+        source_type="python",
+    )
+
+    # bulk upsert with override_existing_tools=False
+    result = await server.tool_manager.bulk_upsert_tools_async([updated_tool], default_user, override_existing_tools=False)
+
+    assert len(result) == 1
+    assert result[0].id == original_id  # id should remain the same
+    assert result[0].description == "Original description"  # description should NOT be updated
+    assert result[0].tags == ["original"]  # tags should NOT be updated
+
+    # verify the tool was NOT updated in the database
+    fetched = await server.tool_manager.get_tool_by_id_async(original_id, default_user)
+    assert fetched.description == "Original description"
+    assert fetched.tags == ["original"]
+
+
+@pytest.mark.asyncio
+async def test_bulk_upsert_tools_override_mixed_scenario(server: SyncServer, default_user):
+    """Test bulk_upsert_tools_async with override_existing_tools=False in mixed create/update scenario"""
+
+    # create some existing tools
+    existing_tools = []
+    for i in range(2):
+        tool = PydanticTool(
+            name=f"mixed_existing_{i}",
+            description=f"Original {i}",
+            tags=["original"],
+            source_code=f"def mixed_existing_{i}():\n    '''Original {i}'''\n    return 'original_{i}'",
+            source_type="python",
+        )
+        created = await server.tool_manager.create_tool_async(tool, default_user)
+        existing_tools.append(created)
+
+    # prepare bulk tools: 2 updates (that should be skipped) + 3 new creations
+    bulk_tools = []
+
+    # these should be skipped when override_existing_tools=False
+    for i in range(2):
+        bulk_tools.append(
+            PydanticTool(
+                name=f"mixed_existing_{i}",
+                description=f"Should not update {i}",
+                tags=["should_not_update"],
+                source_code=f"def mixed_existing_{i}():\n    '''Should not update {i}'''\n    return 'should_not_update_{i}'",
+                source_type="python",
+            )
+        )
+
+    # these should be created
+    for i in range(3):
+        bulk_tools.append(
+            PydanticTool(
+                name=f"mixed_new_{i}",
+                description=f"New tool {i}",
+                tags=["new"],
+                source_code=f"def mixed_new_{i}():\n    '''New {i}'''\n    return 'new_{i}'",
+                source_type="python",
+            )
+        )
+
+    # bulk upsert with override_existing_tools=False
+    result = await server.tool_manager.bulk_upsert_tools_async(bulk_tools, default_user, override_existing_tools=False)
+
+    assert len(result) == 5  # 2 existing (not updated) + 3 new
+
+    # verify existing tools were NOT updated
+    for i in range(2):
+        tool = await server.tool_manager.get_tool_by_name_async(f"mixed_existing_{i}", default_user)
+        assert tool.description == f"Original {i}"  # should remain original
+        assert tool.tags == ["original"]  # should remain original
+        assert tool.id == existing_tools[i].id  # id should remain same
+
+    # verify new tools were created
+    for i in range(3):
+        new_tool = await server.tool_manager.get_tool_by_name_async(f"mixed_new_{i}", default_user)
+        assert new_tool is not None
+        assert new_tool.description == f"New tool {i}"
+        assert new_tool.tags == ["new"]
 
 
 @pytest.mark.asyncio
