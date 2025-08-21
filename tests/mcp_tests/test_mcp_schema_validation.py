@@ -113,10 +113,8 @@ def test_empty_object_in_required_marked_invalid():
 
 
 @pytest.mark.asyncio
-async def test_add_mcp_tool_rejects_non_strict_schemas():
-    """Test that adding MCP tools with non-strict schemas is rejected."""
-    from fastapi import HTTPException
-
+async def test_add_mcp_tool_accepts_non_strict_schemas():
+    """Test that adding MCP tools with non-strict schemas is allowed."""
     from letta.server.rest_api.routers.v1.tools import add_mcp_tool
     from letta.settings import tool_settings
 
@@ -138,15 +136,19 @@ async def test_add_mcp_tool_rejects_non_strict_schemas():
             mock_server = AsyncMock()
             mock_server.get_tools_from_mcp_server = AsyncMock(return_value=[non_strict_tool])
             mock_server.user_manager.get_user_or_default = MagicMock()
+            mock_server.tool_manager.create_mcp_tool_async = AsyncMock(return_value=non_strict_tool)
             mock_get_server.return_value = mock_server
 
-            # Should raise HTTPException for non-strict schema
-            with pytest.raises(HTTPException) as exc_info:
-                await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, actor_id=None)
+            # Should accept non-strict schema without raising an exception
+            result = await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, actor_id=None)
 
-            assert exc_info.value.status_code == 400
-            assert "non-strict schema" in exc_info.value.detail["message"].lower()
-            assert exc_info.value.detail["health_status"] == SchemaHealth.NON_STRICT_ONLY.value
+            # Verify the tool was added successfully
+            assert result is not None
+
+            # Verify create_mcp_tool_async was called with the right parameters
+            mock_server.tool_manager.create_mcp_tool_async.assert_called_once()
+            call_args = mock_server.tool_manager.create_mcp_tool_async.call_args
+            assert call_args.kwargs["mcp_server_name"] == "test_server"
 
 
 @pytest.mark.asyncio
