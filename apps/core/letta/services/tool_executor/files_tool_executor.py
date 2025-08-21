@@ -151,16 +151,16 @@ class LettaFileToolExecutor(ToolExecutor):
             offset = file_request.offset
             length = file_request.length
 
-            # Convert 1-indexed offset/length to 0-indexed start/end for LineChunker
+            # Use 0-indexed offset/length directly for LineChunker
             start, end = None, None
             if offset is not None or length is not None:
-                if offset is not None and offset < 1:
-                    raise ValueError(f"Offset for file {file_name} must be >= 1 (1-indexed), got {offset}")
+                if offset is not None and offset < 0:
+                    raise ValueError(f"Offset for file {file_name} must be >= 0 (0-indexed), got {offset}")
                 if length is not None and length < 1:
                     raise ValueError(f"Length for file {file_name} must be >= 1, got {length}")
 
-                # Convert to 0-indexed for LineChunker
-                start = (offset - 1) if offset is not None else None
+                # Use offset directly as it's already 0-indexed
+                start = offset if offset is not None else None
                 if start is not None and length is not None:
                     end = start + length
                 else:
@@ -193,7 +193,7 @@ class LettaFileToolExecutor(ToolExecutor):
                 visible_content=visible_content,
                 max_files_open=agent_state.max_files_open,
                 start_line=start + 1 if start is not None else None,  # convert to 1-indexed for user display
-                end_line=end if end is not None else None,  # end is already exclusive in slicing, so this is correct
+                end_line=end if end is not None else None,  # end is already exclusive, shows as 1-indexed inclusive
             )
 
             opened_files.append(file_name)
@@ -220,10 +220,14 @@ class LettaFileToolExecutor(ToolExecutor):
         for req in file_requests:
             previous_info = format_previous_range(req.file_name)
             if req.offset is not None and req.length is not None:
-                end_line = req.offset + req.length - 1
-                file_summaries.append(f"{req.file_name} (lines {req.offset}-{end_line}){previous_info}")
+                # Display as 1-indexed for user readability: (offset+1) to (offset+length)
+                start_line = req.offset + 1
+                end_line = req.offset + req.length
+                file_summaries.append(f"{req.file_name} (lines {start_line}-{end_line}){previous_info}")
             elif req.offset is not None:
-                file_summaries.append(f"{req.file_name} (lines {req.offset}-end){previous_info}")
+                # Display as 1-indexed
+                start_line = req.offset + 1
+                file_summaries.append(f"{req.file_name} (lines {start_line}-end){previous_info}")
             else:
                 file_summaries.append(f"{req.file_name}{previous_info}")
 

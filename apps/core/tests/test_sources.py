@@ -424,7 +424,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
         assert initial_content_length > 10, f"Expected file content > 10 chars, got {initial_content_length}"
 
     # Ask agent to open the file for a specific range using offset/length
-    offset, length = 1, 5  # 1-indexed offset, 5 lines
+    offset, length = 0, 5  # 0-indexed offset, 5 lines
     print(f"Requesting agent to open file with offset={offset}, length={length}")
     open_response1 = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -453,7 +453,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert "5: " in old_value, f"Expected line 5 to be present, got: {old_value}"
 
     # Ask agent to open the file for a different range
-    offset, length = 6, 5  # Different offset, same length
+    offset, length = 5, 5  # Different offset, same length
     open_response2 = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
@@ -482,8 +482,8 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert "10: " in new_value, f"Expected line 10 to be present, got: {new_value}"
 
     print(f"Comparing content ranges:")
-    print(f"  First range (offset=1, length=5):  '{old_value}'")
-    print(f"  Second range (offset=6, length=5): '{new_value}'")
+    print(f"  First range (offset=0, length=5):  '{old_value}'")
+    print(f"  Second range (offset=5, length=5): '{new_value}'")
 
     assert new_value != old_value, f"Different view ranges should have different content. New: '{new_value}', Old: '{old_value}'"
 
@@ -703,7 +703,7 @@ def test_view_ranges_have_metadata(disable_pinecone, client: LettaSDKClient, age
     assert block.value.startswith("[Viewing file start (out of 100 lines)]")
 
     # Open a specific range using offset/length
-    offset = 50  # 1-indexed line 50
+    offset = 49  # 0-indexed for line 50
     length = 5  # 5 lines (50-54)
     open_response = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -960,9 +960,9 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     # Check that examples are included
     assert "Examples:" in description
     assert 'FileOpenRequest(file_name="project_utils/config.py")' in description
-    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50)' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=0, length=50)' in description
     assert "# Lines 1-50" in description
-    assert "# Lines 100-199" in description
+    assert "# Lines 101-200" in description
     assert "# Entire file" in description
     assert "close_all_others=True" in description
     assert "View specific portions of large files (e.g. functions or definitions)" in description
@@ -1009,7 +1009,7 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     # Check offset field
     assert "offset" in file_request_properties
     offset_prop = file_request_properties["offset"]
-    expected_offset_desc = "Optional starting line number (1-indexed). If not specified, starts from beginning of file."
+    expected_offset_desc = "Optional offset for starting line number (0-indexed). If not specified, starts from beginning of file."
     assert offset_prop["description"] == expected_offset_desc
     assert offset_prop["type"] == "integer"
 

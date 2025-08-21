@@ -11,7 +11,7 @@ class SearchTask(BaseModel):
 class FileOpenRequest(BaseModel):
     file_name: str = Field(description="Name of the file to open")
     offset: Optional[int] = Field(
-        default=None, description="Optional starting line number (1-indexed). If not specified, starts from beginning of file."
+        default=None, description="Optional offset for starting line number (0-indexed). If not specified, starts from beginning of file."
     )
     length: Optional[int] = Field(
         default=None, description="Optional number of lines to view from offset (inclusive). If not specified, views to end of file."
