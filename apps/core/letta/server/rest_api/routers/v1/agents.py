@@ -1000,6 +1000,7 @@ async def send_message(
         "ollama",
         "azure",
         "xai",
+        "groq",
     ]
 
     # Create a new run for execution tracking
@@ -1144,6 +1145,7 @@ async def send_message_streaming(
         "ollama",
         "azure",
         "xai",
+        "groq",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
 
@@ -1350,6 +1352,7 @@ async def _process_message_background(
             "google_vertex",
             "bedrock",
             "ollama",
+            "groq",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1539,6 +1542,7 @@ async def preview_raw_payload(
         "ollama",
         "azure",
         "xai",
+        "groq",
     ]
 
     if agent_eligible and model_compatible:
@@ -1609,6 +1613,7 @@ async def summarize_agent_conversation(
         "ollama",
         "azure",
         "xai",
+        "groq",
     ]
 
     if agent_eligible and model_compatible:

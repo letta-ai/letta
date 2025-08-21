@@ -144,7 +144,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 ]
 
 # configs for models that are to dumb to do much other than messaging
-limited_configs = ["ollama.json", "together-qwen-2.5-72b-instruct.json", "vllm.json", "lmstudio.json"]
+limited_configs = ["ollama.json", "together-qwen-2.5-72b-instruct.json", "vllm.json", "lmstudio.json", "groq.json"]
 
 all_configs = [
     "openai-gpt-4o-mini.json",
@@ -161,6 +161,7 @@ all_configs = [
     "gemini-2.5-pro-vertex.json",
     "ollama.json",
     "together-qwen-2.5-72b-instruct.json",
+    "groq.json",
 ]
 
 reasoning_configs = [

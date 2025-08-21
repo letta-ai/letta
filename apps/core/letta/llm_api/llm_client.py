@@ -86,5 +86,12 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.groq:
+                from letta.llm_api.groq_client import GroqClient
+
+                return GroqClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case _:
                 return None
