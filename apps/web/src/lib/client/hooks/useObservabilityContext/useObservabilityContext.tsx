@@ -9,7 +9,7 @@ import { getTimeConfig, computeStartEndDates } from './timeConfig';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
-const DEFAULT_TIME_RANGE: TimeRange = '1d';
+const DEFAULT_TIME_RANGE: TimeRange = '4h';
 
 interface ObservabilityContextType {
   startDate: string;
