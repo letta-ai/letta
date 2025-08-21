@@ -90,6 +90,7 @@ firecrawl-py = "^2.8.0"
 apscheduler = "^3.11.0"
 aiomultiprocess = "^0.9.1"
 matplotlib = "^3.10.1"
+restrictedpython = "^8.0.0"
 asyncpg = {version = "^0.30.0", optional = true}
 tavily-python = "^0.7.2"
 mistralai = "^1.8.1"
