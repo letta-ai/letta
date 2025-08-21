@@ -20,11 +20,15 @@ class OpenAICompatibleClient(OpenAIClient):
         Required: embedding_model, embedding_endpoint, embedding_dim (>0)
         Optional: embedding_chunk_size (schema provides default)
         """
+        from letta.settings import model_settings
+
         missing_fields = []
         if not embedding_config.embedding_model:
             missing_fields.append("embedding_model")
-        if not embedding_config.embedding_endpoint:
-            missing_fields.append("embedding_endpoint")
+
+        # embedding_endpoint is required only if no embedding base URL is provided via settings/env
+        if not (model_settings.openai_embedding_api_base or embedding_config.embedding_endpoint):
+            missing_fields.append("embedding_endpoint (or set OPENAI_EMBEDDING_BASE_URL)")
         try:
             dim_valid = isinstance(embedding_config.embedding_dim, int) and embedding_config.embedding_dim > 0
         except Exception:
@@ -41,14 +45,24 @@ class OpenAICompatibleClient(OpenAIClient):
         # Validate required fields (chunk size is intentionally optional)
         self._validate_required_embedding_config(embedding_config)
 
-        # Priority: embedding_config.embedding_api_key -> model_settings.openai_api_key -> env OPENAI_API_KEY -> DUMMY
-        api_key = embedding_config.embedding_api_key
-        if not api_key:
-            from letta.settings import model_settings
+        # Priority (embedding-specific override supported):
+        # 1) model_settings.openai_embedding_api_key
+        # 2) env OPENAI_EMBEDDING_API_KEY
+        # 3) model_settings.openai_api_key
+        # 4) env OPENAI_API_KEY
+        # 5) DUMMY
+        from letta.settings import model_settings
 
-            api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY") or "DUMMY_API_KEY"
+        api_key = (
+            model_settings.openai_embedding_api_key
+            or os.environ.get("OPENAI_EMBEDDING_API_KEY")
+            or model_settings.openai_api_key
+            or os.environ.get("OPENAI_API_KEY")
+            or "DUMMY_API_KEY"
+        )
 
-        base_url = embedding_config.embedding_endpoint
+        # Base URL priority: model_settings.openai_embedding_api_base -> embedding_config.embedding_endpoint
+        base_url = model_settings.openai_embedding_api_base or embedding_config.embedding_endpoint
         return {"api_key": api_key, "base_url": base_url}
 
     @trace_method
