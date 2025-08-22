@@ -1,7 +1,4 @@
-import {
-  webApi,
-  webApiQueryKeys,
-} from '@letta-cloud/sdk-web';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import type { MemoryType } from '@letta-cloud/ui-component-library';
 import {
   type Block,
@@ -56,18 +53,27 @@ function useListAgentMemories(
       return [];
     }
     // Transform agent blocks to ensure consistent structure
-    return agentData.memory.blocks.map(
-      (block): Block => ({
-        ...block,
-        id: block.id || '',
-        label: block.label || '',
-        value: block.value || '',
-        limit: block.limit || 1,
-        description: block.description || '',
-        preserve_on_migration: block.preserve_on_migration || false,
-        read_only: block.read_only || false,
-      }),
-    );
+    return agentData.memory.blocks
+      .toSorted((a, b) => {
+        if (!a.label && !b.label) return 0;
+
+        if (!a.label) return 1;
+        if (!b.label) return -1;
+
+        return a.label.localeCompare(b.label);
+      })
+      .map(
+        (block): Block => ({
+          ...block,
+          id: block.id || '',
+          label: block.label || '',
+          value: block.value || '',
+          limit: block.limit || 1,
+          description: block.description || '',
+          preserve_on_migration: block.preserve_on_migration || false,
+          read_only: block.read_only || false,
+        }),
+      );
   }, [agentData]);
 
   return {
@@ -113,7 +119,7 @@ function useListTemplateMemories(
     if (!templateId || !agentTemplateBlocksData) {
       return [];
     }
-    return agentTemplateBlocksData.body.blockTemplates.map(block => ({
+    return agentTemplateBlocksData.body.blockTemplates.map((block) => ({
       id: block.id || '',
       label: block.label || '',
       value: block.value || '',
@@ -121,7 +127,7 @@ function useListTemplateMemories(
       description: block.description || '',
       preserve_on_migration: block.preserveOnMigration || false,
       read_only: block.readOnly || false,
-    }))
+    }));
   }, [templateId, agentTemplateBlocksData]);
 
   return {

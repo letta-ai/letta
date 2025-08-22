@@ -41,7 +41,9 @@ interface UseUpdateAgentMemoryBlockOptions {
   agentId?: string;
 }
 
-export function useUpdateAgentMemoryBlock(options: UseUpdateAgentMemoryBlockOptions) {
+export function useUpdateAgentMemoryBlock(
+  options: UseUpdateAgentMemoryBlockOptions,
+) {
   const { label, agentId } = options;
   const [canUpdateAgent] = useADEPermissions(ApplicationServices.UPDATE_AGENT);
 
@@ -67,31 +69,30 @@ export function useUpdateAgentMemoryBlock(options: UseUpdateAgentMemoryBlockOpti
       const requestBody = {
         ...(values.description
           ? {
-            description: values.description,
-          }
+              description: values.description,
+            }
           : {}),
         ...(values.readOnly
           ? {
-            read_only: values.readOnly,
-          }
+              read_only: values.readOnly,
+            }
           : {}),
         ...(values.preserveOnMigration
           ? {
-            preserve_on_migration: values.preserveOnMigration,
-          }
+              preserve_on_migration: values.preserveOnMigration,
+            }
           : {}),
-        label: values.label,
         ...(values.value
           ? {
-            value: values.value,
-          }
+              value: values.value,
+            }
           : {}),
         ...(values.limit
           ? {
-            limit: values.limit,
-          }
+              limit: values.limit,
+            }
           : {}),
-      }
+      };
 
       mutate({
         agentId: agentId,
@@ -116,6 +117,7 @@ export function useUpdateAgentMemoryBlock(options: UseUpdateAgentMemoryBlockOpti
               ...oldData.memory,
               blocks: oldData.memory.blocks.map((block) => {
                 if (block.label === label) {
+                  console.log(requestBody);
                   return {
                     ...block,
                     ...requestBody,
@@ -202,21 +204,21 @@ function useUpdateTemplateMemoryBlock(
             blockTemplateId: blockId,
           },
           body: {
-            ...typeof values.value === 'string'
+            ...(typeof values.value === 'string'
               ? { value: values.value }
-              : {},
-            ...typeof values.limit === 'number'
+              : {}),
+            ...(typeof values.limit === 'number'
               ? { limit: values.limit }
-              : {},
-            ...typeof values.description === 'string'
+              : {}),
+            ...(typeof values.description === 'string'
               ? { description: values.description }
-              : {},
-            ...typeof values.preserveOnMigration === 'boolean'
+              : {}),
+            ...(typeof values.preserveOnMigration === 'boolean'
               ? { preserveOnMigration: values.preserveOnMigration }
-              : {},
-            ...typeof values.readOnly === 'boolean'
+              : {}),
+            ...(typeof values.readOnly === 'boolean'
               ? { readOnly: values.readOnly }
-              : {},
+              : {}),
           },
         },
         {
