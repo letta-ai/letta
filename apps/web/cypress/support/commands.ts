@@ -283,7 +283,7 @@ Cypress.Commands.add('ensureDefaultAgent', () => {
     } else {
       // Create agent from template (like createAgent command)
       cy.useDefaultProject();
-      cy.findAllByTestId('nav-button-agents', { timeout: 50000 })
+      cy.findAllByTestId('nav-button-project-agents', { timeout: 50000 })
         .first()
         .click();
       cy.findAllByTestId('deploy-agent-dialog-start', { timeout: 50000 })
@@ -508,7 +508,7 @@ Cypress.Commands.add(
 );
 
 Cypress.Commands.add('createAgent', () => {
-  cy.findAllByTestId('nav-button-agents', { timeout: 50000 }).first().click();
+  cy.findAllByTestId('nav-button-project-agents', { timeout: 50000 }).first().click();
   cy.findAllByTestId('deploy-agent-dialog-start', { timeout: 50000 })
     .first()
     .click();

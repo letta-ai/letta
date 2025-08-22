@@ -40,6 +40,60 @@
     },
     "resetDate": "Your limits will reset on {date}"
   },
+  "DashboardNavigation": {
+    "NavigationFooter": {
+      "profile": "Profile",
+      "billing": "Billing",
+      "settings": "Settings"
+    },
+    "SettingsMenu": {
+      "profile": "Profile",
+      "organization": "Organization",
+      "allProjects": "All projects",
+      "account": "Account",
+      "general": "General",
+      "user": "User settings",
+      "members": "Members",
+      "billing": "Billing",
+      "integrations": "Integrations",
+      "environmentVariables": "Tool variables"
+    },
+    "allProjects": "All projects",
+    "RootNavigationItems": {
+      "filesystem": "Filesystem",
+      "apiKeys": "API Keys",
+      "mcp": "MCP Servers",
+      "models": "Models",
+      "all": "Global"
+    },
+    "ToolsNavigationItems": {
+      "tools": "Tools",
+      "createTool": "Create tool"
+    },
+    "SelfHostedServerNavigation": {
+      "agents": "Agents",
+      "identities": "Identities",
+      "blocks": "Blocks",
+      "settings": "Configuration",
+      "dashboard": "Dashboard",
+      "tools": "Custom Tools",
+      "mcpServers": "MCP Servers"
+    },
+    "SectionHeader": {
+      "loading": "Loading..."
+    },
+    "ProjectSpecificNavigation": {
+      "dashboard": "Dashboard",
+      "templates": "Templates",
+      "agents": "Agents",
+      "identities": "Identities",
+      "memoryBlocks": "Memory blocks",
+      "settings": "Configuration",
+      "monitoring": "Monitoring",
+      "observability": "Observability",
+      "responses": "Responses"
+    }
+  },
   "onboarding/StartOnboardingDialog": {
     "loadingMessages": {
       "creatingAgent": "Creating your first agent...",
@@ -1405,7 +1459,67 @@
       "label": "Search projects"
     }
   },
+  "projects/page/CloudProjectsList": {
+    "projectsList": {
+      "loadingMessage": "Loading projects...",
+      "noProjects": "You have no projects, create one below",
+      "noSearchResults": "We couldn't find any projects matching your search",
+      "projectItem": {
+        "lastUpdatedAt": "Updated at {date}",
+        "agents": "Agents",
+        "totalMessages": "Total Messages",
+        "viewButton": "View Project",
+        "noLastUpdatedAt": "Local",
+        "addToFavorites": "Favorite",
+        "removeFromFavorites": "Remove from Favorites"
+      }
+    }
+  },
+  "projects/page/SelfHostedProjectsList": {
+    "developmentServersList": {
+      "loading": "Loading development servers...",
+      "noDevelopmentServers": "You have no development servers, create one below",
+      "noSearchResults": "We couldn't find any development servers matching your search",
+      "developmentServerItem": {
+        "lastUpdatedAt": "Updated at {date}",
+        "noLastUpdatedAt": "No update time available"
+      }
+    },
+    "createDevelopmentServerDialog": {
+      "title": "Connect to Self-Hosted Server",
+      "description": "Connect to your self-hosted Letta server by providing the server details.",
+      "nameLabel": "Server Name",
+      "namePlaceholder": "Enter server name",
+      "urlLabel": "Server URL",
+      "urlPlaceholder": "https://your-server.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter server password",
+      "createButton": "Connect Server",
+      "cancelButton": "Cancel",
+      "validation": {
+        "nameMinLength": "Server name must be at least 3 characters",
+        "nameMaxLength": "Server name must be at most 50 characters",
+        "urlInvalid": "Please enter a valid URL",
+        "passwordRequired": "Password is required"
+      },
+      "errors": {
+        "default": "There was an error connecting to the server, please try again or contact support."
+      }
+    },
+    "createDevelopmentServerButton": {
+      "label": "Connect to Server"
+    }
+  },
   "projects/page": {
+    "connectToSelfHosted": "Connect to a self-hosted server",
+    "ProjectsPageInner": {
+      "search": "Search...",
+      "viewMode": {
+        "cloud": "Letta cloud",
+        "selfHosted": "Self hosted"
+      }
+    },
+
     "title": "Projects",
     "loading": "Loading agentfile...",
     "errorLoadingAgentfile": "Error loading agentfile",
@@ -1420,22 +1534,9 @@
         "projectLimitReached": "You have reached your organization's project limit, please <link>upgrade your plan</link> or contact support."
       },
       "createButton": "Create project",
-      "triggerButton": "Create project"
+      "triggerButton": "Create cloud project"
     },
-    "projectsList": {
-      "loadingMessage": "Loading projects...",
-      "noProjects": "You have no projects, create one below",
-      "noSearchResults": "We couldn't find any projects matching your search",
-      "projectItem": {
-        "lastUpdatedAt": "Updated at {date}",
-        "agents": "Agents",
-        "totalMessages": "Total Messages",
-        "viewButton": "View Project",
-        "noLastUpdatedAt": "Local",
-        "addToFavorites": "Favorite",
-        "removeFromFavorites": "Remove from Favorites"
-      }
-    },
+
     "searchInput": {
       "placeholder": "Search projects"
     }
@@ -2457,7 +2558,7 @@
       "description": "Once you delete a development server connection, there is no going back. Please be certain.",
       "trigger": "Delete"
     },
-    "title": "Local agents",
+    "title": "Local server",
     "description": "View your available agents running inside the Letta server",
     "createAgent": "Create a new agent",
     "importAgent": "Import agent file (.af)",
@@ -3130,6 +3231,7 @@
     "description": "Migrations are a way to update your agent templates to the latest version of Letta. This is useful when you want to take advantage of new features or bug fixes."
   },
   "data-sources/files/page": {
+    "returnButtonText": "Return to all folders",
     "menuLabel": "Options",
     "title": "Source files",
     "emptyMessage": "This source has no files",

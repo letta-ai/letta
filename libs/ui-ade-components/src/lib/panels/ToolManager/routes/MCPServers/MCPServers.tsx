@@ -226,7 +226,7 @@ export function MCPServers() {
           emptyAction={
             <Button
               onClick={() => {
-                setPath('/add-mcp-servers');
+                setPath('/mcp-servers/new');
               }}
               label={t('connect')}
               color="primary"

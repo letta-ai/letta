@@ -22,7 +22,7 @@ function Title({ title }: TitleProps) {
 
   if (typeof title === 'string') {
     return (
-      <Typography align="left" variant="heading2" overrideEl="h1">
+      <Typography align="left" variant="heading3" overrideEl="h1">
         {title}
       </Typography>
     );
@@ -72,7 +72,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
       <VStack fullWidth gap={false} className="max-w-[1398px] mx-auto" flex>
         <VStack
           gap="small"
-          paddingX="large"
+          paddingX="small"
           paddingTop="xxlarge"
           paddingBottom={headerBottomPadding === 'large' ? 'xxlarge' : 'small'}
         >

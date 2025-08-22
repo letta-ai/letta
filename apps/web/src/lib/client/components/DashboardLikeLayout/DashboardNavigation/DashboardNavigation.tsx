@@ -1,123 +1,54 @@
 'use client';
 import React, {
-  Fragment,
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import {
   DiscordLogoMarkDynamic,
-  ProjectsIcon,
-  isSubNavigationGroup,
   Breadcrumb,
-  isSubNavigationOverride,
-  TokenIcon,
   GroupAddIcon,
   BetaTag,
-  ToolsIcon,
 } from '@letta-cloud/ui-component-library';
 import { HiddenOnMobile } from '@letta-cloud/ui-component-library';
 import {
   AccountIcon,
   Avatar,
   Button,
-  BarChartIcon,
-  CogIcon,
   CloseIcon,
   LogoutIcon,
   BirdIcon,
-  DatabaseIcon,
   KeyIcon,
   Frame,
   HamburgerMenuIcon,
   HStack,
   Logo,
-  PersonIcon,
   Popover,
   Typography,
-  useDashboardNavigationItems,
   VStack,
   SwitchOrganizationIcon,
-  ChevronLeftIcon,
-  LaptopIcon,
 } from '@letta-cloud/ui-component-library';
-import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
-import { usePathname } from 'next/navigation';
+import { useCurrentUser } from '$web/client/hooks';
 import { webApi, webApiQueryKeys } from '$web/client';
 import { CurrentUserDetailsBlock } from '$web/client/components';
 import { cn } from '@letta-cloud/ui-styles';
 import { useTranslations } from '@letta-cloud/translations';
-import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
 import { useCurrentProject } from '../../../hooks/useCurrentProject/useCurrentProject';
-import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
-import { ApplicationServices } from '@letta-cloud/service-rbac';
 import './DashboardNavigation.scss';
 import { OrganizationUsageBlock } from '$web/client/components/OrganizationUsageBlock/OrganizationUsageBlock';
 import { useGlobalSystemWarning } from '$web/client/hooks/useGlobalSystemWarning/useGlobalSystemWarning';
 import { show as startIntercom } from '@intercom/messenger-js-sdk';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import {
+  DashboardNavigationButton
+} from './DashboardNavigationButton/DashboardNavigationButton';
+import {
+  NavigationMenu
+} from '$web/client/components/DashboardLikeLayout/DashboardNavigation/NavigationMenu/NavigationMenu';
+import { ThemeSelector } from '$web/client/components/ThemeSelector/ThemeSelector';
+import { LocaleSelector } from '$web/client/components/LocaleSelector/LocaleSelector';
 
-interface NavButtonProps {
-  href: string;
-  preload?: boolean;
-  label: string;
-  id: string;
-  active?: boolean;
-  onClick?: () => void;
-  hideLabel?: boolean;
-  icon?: React.ReactNode;
-  disabled?: boolean;
-}
-
-function NavButton(props: NavButtonProps) {
-  const {
-    href,
-    preload,
-    onClick,
-    active,
-    disabled,
-    hideLabel,
-    label,
-    id,
-    icon,
-  } = props;
-  const pathname = usePathname();
-
-  const isActive = useMemo(() => {
-    if (active) {
-      return true;
-    }
-
-    return pathname === href;
-  }, [active, pathname, href]);
-
-  return (
-    <Button
-      animate
-      disabled={disabled}
-      data-testid={`nav-button-${id}`}
-      preload={preload}
-      _use_rarely_className={cn(
-        'font-medium',
-        hideLabel ? '' : 'px-2',
-        !isActive ? 'text-text-lighter' : '',
-      )}
-      onClick={onClick}
-      active={isActive}
-      href={href}
-      square={hideLabel}
-      hideLabel={hideLabel}
-      fullWidth
-      color={isActive ? 'brand' : 'tertiary'}
-      align="left"
-      label={label}
-      preIcon={icon}
-    />
-  );
-}
 
 function AdminNav() {
   const t = useTranslations(
@@ -135,7 +66,7 @@ function AdminNav() {
   }
 
   return (
-    <NavButton
+    <DashboardNavigationButton
       id="admin"
       href="/admin"
       label={t('nav.admin')}
@@ -144,371 +75,6 @@ function AdminNav() {
   );
 }
 
-interface GroupHeaderProps {
-  title: string;
-}
-
-function GroupHeader(props: GroupHeaderProps) {
-  const { title } = props;
-  return (
-    <Frame borderBottom padding="small">
-      <Typography bold variant="body2">
-        {title}
-      </Typography>
-    </Frame>
-  );
-}
-
-interface MainNavigationItemsProps {
-  isMobile?: boolean;
-}
-
-function MainNavigationItems(props: MainNavigationItemsProps) {
-  const { isMobile } = props;
-  const t = useTranslations(
-    'components/DashboardLikeLayout/DashboardNavigation',
-  );
-
-  const pathname = usePathname();
-
-  const { subnavigationData } = useDashboardNavigationItems();
-
-  const { data: areToolsOnDashboardEnabled } =
-    useFeatureFlag('TOOLS_ON_DASHBOARD');
-
-  const pathroot = pathname.split('/')[1];
-
-  const [canReadAPIKeys] = useUserHasPermission(
-    ApplicationServices.READ_API_KEYS,
-  );
-
-  const baseNavItems = useMemo(() => {
-    return [
-      {
-        label: t('nav.projects'),
-        href: '/projects',
-        id: 'projects',
-        icon: <ProjectsIcon />,
-      },
-      ...(areToolsOnDashboardEnabled
-        ? [
-            {
-              label: t('nav.tools'),
-              href: '/tools',
-              id: 'tools',
-              icon: <ToolsIcon />,
-            },
-          ]
-        : []),
-      {
-        label: t('nav.dataSources'),
-        href: '/data-sources',
-        id: 'data-sources',
-        icon: <DatabaseIcon />,
-      },
-      {
-        label: t('nav.models'),
-        href: '/models',
-        id: 'models',
-        icon: <TokenIcon />,
-      },
-
-      ...(canReadAPIKeys
-        ? [
-            {
-              label: t('nav.apiKeys'),
-              href: '/api-keys',
-              id: 'api-keys',
-              icon: <KeyIcon />,
-            },
-          ]
-        : []),
-      {
-        borderTop: true,
-        label: t('nav.localDev'),
-        href: '/development-servers',
-        id: 'development-servers',
-        icon: <LaptopIcon />,
-        doesNotNeedCloudAccess: true,
-      },
-    ];
-  }, [t, areToolsOnDashboardEnabled, canReadAPIKeys]);
-
-  const baseNavBottomItems = [
-    {
-      label: t('nav.account'),
-      href: '/settings/profile',
-      id: 'usage',
-      icon: <PersonIcon />,
-      doesNotNeedCloudAccess: true,
-    },
-    {
-      label: t('nav.billing'),
-      href: '/settings/organization/billing',
-      id: 'billing',
-      icon: <BarChartIcon />,
-    },
-    {
-      label: t('nav.settings'),
-      href: '/settings/organization/account',
-      id: 'usage',
-      icon: <CogIcon />,
-    },
-  ];
-  const isBaseNav = useMemo(() => {
-    const isBase = baseNavItems.some((item) => item.href === pathname);
-
-    if (pathname.includes('settings')) {
-      return false;
-    }
-
-    if (pathname.includes('tools')) {
-      return false;
-    }
-
-    return isBase;
-  }, [baseNavItems, pathname]);
-
-  const specificSubNavigationData = useMemo(() => {
-    const baseRoute = pathname.split('/');
-
-    if (baseRoute.length <= 2) {
-      return null;
-    }
-
-    return subnavigationData[`/${baseRoute[1]}`];
-  }, [pathname, subnavigationData]);
-
-  const subNavItems = useMemo(() => {
-    if (!specificSubNavigationData) {
-      return [];
-    }
-
-    return specificSubNavigationData.items;
-  }, [specificSubNavigationData]);
-
-  const title = useMemo(() => {
-    if (!specificSubNavigationData) {
-      return '';
-    }
-
-    return specificSubNavigationData.title;
-  }, [specificSubNavigationData]);
-
-  const returnText = useMemo(() => {
-    if (!specificSubNavigationData) {
-      return t('back');
-    }
-
-    return specificSubNavigationData.returnText || t('back');
-  }, [specificSubNavigationData, t]);
-
-  return (
-    <VStack fullHeight={!isMobile} gap={false}>
-      <HStack
-        fullHeight={!isMobile}
-        paddingTop={isMobile ? 'large' : false}
-        gap={false}
-      >
-        {!isMobile && (
-          <VStack
-            fullWidth={isBaseNav}
-            padding={isBaseNav ? 'small' : 'xsmall'}
-            paddingY="small"
-            borderRight={!isBaseNav}
-            justify="spaceBetween"
-            /*eslint-disable-next-line react/forbid-component-props*/
-            className={!isBaseNav ? 'border-r-background-grey3-border' : ''}
-            /*eslint-disable-next-line react/forbid-component-props*/
-            style={{ minWidth: '56px' }}
-          >
-            <VStack gap={false}>
-              {baseNavItems.map((item) => {
-                if (item.id === 'development-servers') {
-                  return (
-                    <VStack
-                      key={item.href}
-                      fullWidth
-                      borderTop
-                      paddingY="xsmall"
-                      /*eslint-disable-next-line react/forbid-component-props*/
-                      className="border-t-background-grey3-border"
-                    >
-                      <NavButton
-                        id={item.id}
-                        key={item.href}
-                        href={item.href}
-                        active={pathroot === item.id}
-                        label={item.label}
-                        icon={item.icon}
-                        hideLabel={!isBaseNav}
-                      />
-                    </VStack>
-                  );
-                }
-
-                return (
-                  <NavButton
-                    id={item.id}
-                    key={item.href}
-                    href={item.href}
-                    active={pathroot === item.id}
-                    label={item.label}
-                    icon={item.icon}
-                    hideLabel={!isBaseNav}
-                  />
-                );
-              })}
-            </VStack>
-            <VStack>
-              {baseNavBottomItems.map((item) => (
-                <NavButton
-                  id={item.id}
-                  key={item.href}
-                  href={item.href}
-                  active={pathroot === item.id}
-                  label={item.label}
-                  icon={item.icon}
-                  hideLabel={!isBaseNav}
-                />
-              ))}
-            </VStack>
-          </VStack>
-        )}
-        {!isBaseNav && (
-          <VStack fullWidth>
-            <VStack padding={isMobile ? undefined : 'small'} fullWidth>
-              {!isMobile && (
-                <HStack
-                  align="start"
-                  borderBottom
-                  paddingBottom="small"
-                  fullWidth
-                  /*eslint-disable-next-line react/forbid-component-props*/
-                  className="border-b-background-grey3-border"
-                >
-                  <Button
-                    size="small"
-                    color="tertiary"
-                    preIcon={<ChevronLeftIcon />}
-                    label={returnText}
-                    align="left"
-                    fullWidth
-                    href={specificSubNavigationData?.returnPath || '/'}
-                  />
-                </HStack>
-              )}
-              {title && (
-                <HStack
-                  justify="start"
-                  align="center"
-                  paddingX={isMobile ? 'small' : undefined}
-                >
-                  {title}
-                </HStack>
-              )}
-              <VStack gap={false}>
-                {subNavItems.map((item, index) => {
-                  if (isSubNavigationGroup(item)) {
-                    const { title, titleOverride, items: groupItems } = item;
-
-                    return (
-                      <VStack key={title} gap="small" paddingBottom="small">
-                        <Frame
-                          borderTop={index !== 0}
-                          paddingTop={false}
-                          padding="small"
-                          /*eslint-disable-next-line react/forbid-component-props*/
-                          className={
-                            index !== 0
-                              ? 'border-t-background-grey3-border'
-                              : ''
-                          }
-                        >
-                          {titleOverride ? (
-                            titleOverride
-                          ) : (
-                            <Typography bold variant="body2">
-                              {title}
-                            </Typography>
-                          )}
-                        </Frame>
-                        <VStack gap="small">
-                          {groupItems.map((item, index) => {
-                            if (isSubNavigationOverride(item)) {
-                              return (
-                                <Fragment key={index}>{item.override}</Fragment>
-                              );
-                            }
-
-                            return (
-                              <NavButton
-                                id={item.id}
-                                key={item.href}
-                                href={item.href}
-                                icon={item.icon}
-                                label={item.label}
-                              />
-                            );
-                          })}
-                        </VStack>
-                      </VStack>
-                    );
-                  }
-
-                  if (isSubNavigationOverride(item)) {
-                    return item.override;
-                  }
-
-                  return (
-                    <NavButton
-                      id={item.id}
-                      key={item.href}
-                      href={item.href}
-                      icon={item.icon}
-                      label={item.label}
-                    />
-                  );
-                })}
-              </VStack>
-            </VStack>
-          </VStack>
-        )}
-      </HStack>
-      {isMobile && (
-        <VStack gap="small">
-          {isMobile && !isBaseNav && <GroupHeader title={t('rootTitle')} />}
-          <VStack
-            paddingX="small"
-            fullWidth
-            paddingTop={!isBaseNav ? 'small' : undefined}
-            paddingBottom="small"
-            gap="small"
-          >
-            {baseNavItems.map((item) => (
-              <NavButton
-                id={item.id}
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-              />
-            ))}
-            {baseNavBottomItems.map((item) => (
-              <NavButton
-                id={item.id}
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-              />
-            ))}
-          </VStack>
-        </VStack>
-      )}
-    </VStack>
-  );
-}
 
 interface SecondaryMenuItemsProps {
   isMobile?: boolean;
@@ -523,9 +89,9 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
   return (
     <VStack gap="medium">
       <VStack gap={false}>
-        <VStack borderBottom gap={false} padding="small">
+        <VStack borderBottom gap={false}>
           {!isMobile && (
-            <NavButton
+            <DashboardNavigationButton
               id="settings"
               href="/settings/organization/account"
               label={t('secondaryNav.account')}
@@ -533,25 +99,25 @@ function SecondaryMenuItems(props: SecondaryMenuItemsProps) {
             />
           )}
           <AdminNav />
-          <NavButton
+          <DashboardNavigationButton
             id="api-keys"
             href="/api-keys"
             label={t('secondaryNav.apiKeys')}
             icon={<KeyIcon />}
           />
-          <NavButton
+          <DashboardNavigationButton
             id="select-organization"
             href="/settings/organization/members"
             label={t('secondaryNav.addMembers')}
             icon={<GroupAddIcon />}
           />
-          <NavButton
+          <DashboardNavigationButton
             id="select-organization"
             href="/select-organization"
             label={t('secondaryNav.switchOrganizations')}
             icon={<SwitchOrganizationIcon />}
           />
-          <NavButton
+          <DashboardNavigationButton
             id="sign-out"
             preload={false}
             href="/signout"
@@ -574,7 +140,7 @@ export function NavigationSidebar() {
   return (
     <>
       {/* eslint-disable-next-line react/forbid-component-props */}
-      <VStack className="min-w-sidebar max-w-sidebar hidden visibleSidebar:block" />
+      <VStack className="min-w-[180px] h-full max-w-[180px] hidden visibleSidebar:block" />
       <VStack
         overflowY="auto"
         position="fixed"
@@ -583,7 +149,7 @@ export function NavigationSidebar() {
         fullHeight
         zIndex="rightAboveZero"
         /* eslint-disable-next-line react/forbid-component-props */
-        className={`top-0 min-w-sidebar h-full max-w-sidebar invisible visibleSidebar:visible ${systemWarning ? 'system-warning-sidebar' : ''}`}
+        className={`top-0 min-w-[180px] h-full max-w-[180px] invisible visibleSidebar:visible ${systemWarning ? 'system-warning-sidebar' : ''}`}
       >
         <VStack fullHeight gap="small" paddingY="xxsmall" paddingLeft="xxsmall">
           {/* eslint-disable-next-line react/forbid-component-props */}
@@ -595,7 +161,7 @@ export function NavigationSidebar() {
             /* eslint-disable-next-line react/forbid-component-props */
             className="main-sidebar border-background-grey3-border"
           >
-            <MainNavigationItems />
+            <NavigationMenu />
           </VStack>
         </VStack>
       </VStack>
@@ -705,7 +271,7 @@ function NavigationOverlay() {
               <VStack gap="small">
                 <div className="h-header" />
                 <VStack>
-                  <MainNavigationItems isMobile />
+                  <NavigationMenu isMobile />
                 </VStack>
                 <HStack fullWidth borderBottom />
                 <SecondaryMenuItems isMobile />

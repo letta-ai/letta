@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Frame,
   HStack,
-  UseDashboardNavigationItemsProvider,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import './DashboardLike.scss';
@@ -24,7 +23,7 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
   const { children, hideSidebar } = props;
 
   return (
-    <UseDashboardNavigationItemsProvider>
+    <>
       <IntercomSetup showLauncher={true} />
       <div className="pageFadeIn overflow-x-hidden">
         <div className="dashboard h-full fixed z-[-1]"></div>
@@ -42,6 +41,6 @@ export async function DashboardLikeLayout(props: DashboardLikeLayoutProps) {
           <div id={SIDEBAR_OVERLAY_MOUNT_POINT_ID} />
         </VStack>
       </div>
-    </UseDashboardNavigationItemsProvider>
+    </>
   );
 }

@@ -72,7 +72,6 @@ export * from './lib/core/Breadcrumb/Breadcrumb';
 
 export * from './lib/core/TextArea/TextArea';
 
-export * from './lib/reusable/DashboardWithSidebarWrapper/DashboardWithSidebarWrapper';
 
 export * from './lib/core/SingleFileUpload/SingleFileUpload';
 
@@ -83,7 +82,6 @@ export * from './lib/core/IndeterminateProgress/IndeterminateProgress';
 export * from './lib/core/Badge/Badge';
 
 export * from './lib/core/InputFilter/InputFilter';
-export * from './lib/reusable/DashboardWithSidebarWrapper/useDashboardNavigationItems/useDashboardNavigationItems';
 
 export * from './lib/core/Tooltip/Tooltip';
 

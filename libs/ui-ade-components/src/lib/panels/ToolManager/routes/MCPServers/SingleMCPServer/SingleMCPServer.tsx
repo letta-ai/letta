@@ -189,11 +189,11 @@ function ServerToolsList(props: ServerToolsListProps) {
           minSize={20}
         >
           <VStack
-            gap="small"
             padding="small"
             fullHeight
             color="background"
             overflowY="auto"
+            gap={false}
           >
             {data.map((tool) => {
               let healthBadge: {
@@ -234,7 +234,6 @@ function ServerToolsList(props: ServerToolsListProps) {
               return (
                 <HStack
                   key={tool.name}
-                  padding="small"
                   gap="small"
                   align="center"
                   justify="spaceBetween"
@@ -249,7 +248,7 @@ function ServerToolsList(props: ServerToolsListProps) {
                     onClick={() => {
                       onToolSelect(tool);
                     }}
-                    className="flex-1 flex items-center gap-2 text-left cursor-pointer overflow-hidden min-w-0"
+                    className="flex-1 px-2 py-2 flex items-center gap-2 text-left cursor-pointer overflow-hidden min-w-0"
                   >
                     <ToolsIcon className="flex-shrink-0" />
                     <HStack
@@ -458,7 +457,7 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
           </HStack>
         </VStack>
       </HStack>
-      <VStack fullWidth flex fullHeight borderTop>
+      <VStack fullWidth flex collapseHeight borderTop>
         <ServerToolsList
           ref={ref}
           serverName={server.server_name}

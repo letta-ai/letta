@@ -22,7 +22,6 @@ import {
 } from './components';
 import { SERVER_CONFIGS } from './constants';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
-import { useRouter, usePathname } from 'next/navigation';
 
 function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   const config = SERVER_CONFIGS[server.id];
@@ -42,26 +41,10 @@ function ServerSetupDialog({ server }: { server: CustomUrlRecommendedServer }) {
   }
 }
 
-function useContextAwareNavigation() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const toolManagerState = useToolManagerState();
-  const isInToolsPages = pathname.startsWith('/tools');
-
-  function navigateToMCPServers() {
-    if (isInToolsPages) {
-      router.push('/tools/mcp-servers');
-    } else {
-      toolManagerState.setPath('/mcp-servers');
-    }
-  }
-
-  return { navigateToMCPServers };
-}
 
 export function MCPServerExplorer() {
   const t = useTranslations('ToolsEditor/MCPServerExplorer');
-  const { navigateToMCPServers } = useContextAwareNavigation();
+  const toolManagerState = useToolManagerState();
   const recommendedServers = useRecommendedMCPServers();
   const [search, setSearch] = useState('');
 
@@ -114,7 +97,9 @@ export function MCPServerExplorer() {
             icon={<McpIcon />}
             title={t('types.connected.label')}
             description={t('types.connected.description')}
-            onClick={navigateToMCPServers}
+            onClick={() => {
+              toolManagerState.setPath('/mcp-servers');
+            }}
           />
           <AddServerDialog
             trigger={

@@ -59,7 +59,7 @@ export const toolManagerRoutes = [
     component: <LettaTools types={['letta_builtin']} />,
   },
   {
-    path: '/add-mcp-servers',
+    path: '/mcp-servers/new',
     key: 'addMCPServers',
     component: (
       <ToolManagerPage>

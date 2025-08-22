@@ -465,16 +465,18 @@
       "createButton": "Créer un projet",
       "triggerButton": "Créer un projet"
     },
-    "projectsList": {
-      "loadingMessage": "Chargement des projets...",
-      "noProjects": "Vous n'avez aucun projet, créez-en un ci-dessous",
-      "noSearchResults": "Nous n'avons trouvé aucun projet correspondant à votre recherche",
-      "projectItem": {
-        "lastUpdatedAt": "Mis à jour le {date}",
-        "agents": "Agents",
-        "totalMessages": "Total des messages",
-        "viewButton": "Voir le projet",
-        "noLastUpdatedAt": "Locale"
+    "CloudProjectsList": {
+      "projectsList": {
+        "loadingMessage": "Chargement des projets...",
+        "noProjects": "Vous n'avez aucun projet, créez-en un ci-dessous",
+        "noSearchResults": "Nous n'avons trouvé aucun projet correspondant à votre recherche",
+        "projectItem": {
+          "lastUpdatedAt": "Mis à jour le {date}",
+          "agents": "Agents",
+          "totalMessages": "Total des messages",
+          "viewButton": "Voir le projet",
+          "noLastUpdatedAt": "Locale"
+        }
       }
     },
     "searchInput": {

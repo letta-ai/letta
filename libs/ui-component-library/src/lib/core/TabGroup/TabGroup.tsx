@@ -20,7 +20,7 @@ const listVariant = cva('flex items-center gap-2 flex-row', {
   variants: {
     variant: {
       default:
-        'border-b-[2px] border-[hsl(var(--panel-input-background))] pb-2 data-[state=active]:border-[hsl(var(--text-lighter))] pt-2',
+        'border-b pb-2 data-[state=active]:border-[hsl(var(--text-lighter))] pt-2',
       chips: ' font-medium',
     },
     color: {

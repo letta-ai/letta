@@ -202,7 +202,7 @@ describe('credit usage', () => {
 
     cy.findByTestId('create-project-dialog-confirm-button').click();
 
-    cy.findAllByTestId('nav-button-agents', { timeout: 50000 }).first().click();
+    cy.findAllByTestId('nav-button-project-agents', { timeout: 50000 }).first().click();
 
     // creates an agent
     cy.findAllByTestId('deploy-agent-dialog-start', { timeout: 50000 })

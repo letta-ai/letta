@@ -10,7 +10,6 @@ import {
   SourcesService,
   UseSourcesServiceRetrieveSourceKeyFn,
 } from '@letta-cloud/sdk-core';
-import { DataSourceClientLayout } from './_components/DataSourceClientLayout/DataSourceClientLayout';
 import { getUser } from '$web/server/auth';
 
 interface ProjectPageWrapperProps {
@@ -55,7 +54,7 @@ async function DataSourcePageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DataSourceClientLayout>{props.children}</DataSourceClientLayout>
+      {props.children}
     </HydrationBoundary>
   );
 }

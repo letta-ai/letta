@@ -504,7 +504,11 @@ function DataSourceFilesPage() {
             )}
           </HStack>
         }
-        title={t('title')}
+        returnButton={{
+          href: '/data-sources',
+          text: t('returnButtonText'),
+        }}
+        title={source?.name || ''}
         encapsulatedFullHeight
       >
         <DashboardPageSection fullHeight>

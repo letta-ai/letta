@@ -7,7 +7,6 @@ import {
 } from '@tanstack/react-query';
 import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
-import { ProjectLayoutInner } from './_components/ProjectLayoutInner/ProjectLayoutInner';
 import { cookies } from 'next/headers';
 import { getADEConfigConstants } from '@letta-cloud/utils-shared';
 
@@ -59,7 +58,7 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ProjectLayoutInner>{props.children}</ProjectLayoutInner>
+      {props.children}
     </HydrationBoundary>
   );
 }

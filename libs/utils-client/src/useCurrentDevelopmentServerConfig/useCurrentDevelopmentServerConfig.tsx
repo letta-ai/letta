@@ -28,7 +28,7 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
         developmentServerId,
       },
     },
-    enabled: !isLocal && !!developmentServerId,
+    enabled: !isLocal && !!developmentServerId && developmentServerId !== 'local',
   });
 
   if (isLocal) {

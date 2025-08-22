@@ -1270,16 +1270,18 @@
     "createButton": "创建项目",
     "triggerButton": "创建项目"
   },
-  "projectsList": {
-    "loadingMessage": "正在加载项目...",
-    "noProjects": "您没有项目，在下方创建一个",
-    "noSearchResults": "我们找不到与您搜索匹配的任何项目",
-    "projectItem": {
-      "lastUpdatedAt": "更新于{date}",
-      "agents": "智能体",
-      "totalMessages": "总消息数",
-      "viewButton": "查看项目",
-      "noLastUpdatedAt": "本地"
+  "CloudProjectsList": {
+    "projectsList": {
+      "loadingMessage": "正在加载项目...",
+      "noProjects": "您没有项目，在下方创建一个",
+      "noSearchResults": "我们找不到与您搜索匹配的任何项目",
+      "projectItem": {
+        "lastUpdatedAt": "更新于{date}",
+        "agents": "智能体",
+        "totalMessages": "总消息数",
+        "viewButton": "查看项目",
+        "noLastUpdatedAt": "本地"
+      }
     }
   },
   "searchInput": {

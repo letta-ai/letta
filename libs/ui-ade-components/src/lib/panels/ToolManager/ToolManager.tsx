@@ -243,6 +243,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
                   { label: 'Python', value: 'python' },
                   { label: 'TypeScript', value: 'typescript' },
                 ];
+
                 const selectedOption = options.find(
                   (opt) => opt.value === (field.value || 'python'),
                 );
@@ -573,7 +574,7 @@ function ToolManagerNavigationSidebar() {
               hideLabel={!isExpanded}
               preIcon={<PlusIcon />}
               onClick={() => {
-                setPath('/add-mcp-servers');
+                setPath('/mcp-servers/new');
               }}
               label={t('ToolManagerNavigationSidebar.createServer')}
               color="secondary"

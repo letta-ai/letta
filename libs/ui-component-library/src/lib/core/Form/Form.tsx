@@ -356,6 +356,7 @@ const omitProps = [
   'rightOfLabelContent',
   'infoTooltip',
   'errorMessage',
+  'labelFontVariant',
   'labelBadge',
 ];
 

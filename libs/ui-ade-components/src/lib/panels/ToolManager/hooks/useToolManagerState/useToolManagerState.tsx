@@ -8,6 +8,7 @@ import {
 } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ToolManagerPaths } from '../../toolManagerRoutes';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 
 interface ToolManagerState {
   requireConfirmation: boolean;
@@ -64,6 +65,20 @@ function useToolManagerContext() {
 export function useToolManagerState() {
   const { toolManagerState, setToolManagerState } = useToolManagerContext();
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const { developmentServerId } = useParams<{ developmentServerId?: string }>();
+
+
+
+  const isInStandaloneToolManager = useMemo(() => {
+    return !(pathname.includes('agents') || pathname.includes('templates'))
+  }, [pathname]);
+
+  const isInSelfHostedServers = useMemo(() => {
+    return pathname.includes('development-servers');
+  }, [pathname]);
+
   const closeToolManager = useCallback(
     (confirmed?: boolean) => {
       if (toolManagerState.requireConfirmation && !confirmed) {
@@ -105,9 +120,26 @@ export function useToolManagerState() {
 
   const setPath = useCallback(
     (path: string) => {
+      if (isInStandaloneToolManager) {
+        let basePath = '';
+        if (isInSelfHostedServers) {
+          basePath = `/development-servers/${developmentServerId}`;
+        }
+
+        if (path.includes('mcp')) {
+
+          // mcp has its own route
+          router.push(`${basePath}${path}`);
+          return;
+        }
+
+        router.push(`${basePath}/tools${path}`);
+        return;
+      }
+
       setToolManagerState((prev) => ({ ...prev, path }));
     },
-    [setToolManagerState],
+    [isInStandaloneToolManager, isInSelfHostedServers, developmentServerId, router, setToolManagerState]
   );
 
   const setSelectedToolId = useCallback(

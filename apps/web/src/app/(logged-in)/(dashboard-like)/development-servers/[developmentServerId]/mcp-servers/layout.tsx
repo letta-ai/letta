@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { ToolsPageLayout } from './_components/ToolsPageLayout/ToolsPageLayout';
+import { ToolsPageLayout } from '../../../tools/_components/ToolsPageLayout/ToolsPageLayout';
 
 interface ToolsLayoutProps {
   children: React.ReactNode;
@@ -9,5 +9,9 @@ interface ToolsLayoutProps {
 export default function ToolsLayout(props: ToolsLayoutProps) {
   const { children } = props;
 
-  return <ToolsPageLayout>{children}</ToolsPageLayout>;
+
+  return (
+    <ToolsPageLayout>{children}</ToolsPageLayout>
+
+  );
 }

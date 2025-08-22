@@ -64,8 +64,8 @@ export function DashboardPageSection(props: DashboardPageSectionProps) {
   return (
     <VStack
       gap="large"
-      paddingX="large"
-      paddingTop="medium"
+      paddingX="small"
+      paddingTop="xsmall"
       paddingBottom="large"
       fullHeight={fullHeight}
       flex={fullHeight}

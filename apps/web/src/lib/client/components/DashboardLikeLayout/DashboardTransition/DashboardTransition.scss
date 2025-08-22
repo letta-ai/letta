@@ -1,6 +1,6 @@
 .transition-box {
   height: calc(100dvh - var(--header-height) - 8px);
-  width: calc(100cqw - var(--sidebar-width));
+  width: calc(100cqw - 180px);
   position: fixed;
   z-index: 0;
   background: transparent;
