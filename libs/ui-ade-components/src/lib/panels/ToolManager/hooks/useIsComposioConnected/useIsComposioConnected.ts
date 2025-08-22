@@ -1,4 +1,4 @@
-import { useCurrentAgentMetaData } from '../../../../hooks';
+import { useADEState } from '../../../../hooks/useADEState/useADEState';
 import {
   COMPOSIO_KEY_NAME,
   webApi,
@@ -8,7 +8,7 @@ import { useToolsServiceListComposioApps } from '@letta-cloud/sdk-core';
 import { useMemo } from 'react';
 
 export function useIsComposioConnected() {
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const { data: keyExistence, isLoading: isLoadingKey } =
     webApi.environmentVariables.getEnvironmentVariableByKey.useQuery({

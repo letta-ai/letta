@@ -1,10 +1,10 @@
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../useADEState/useADEState';
 import { useModelsServiceListEmbeddingModels } from '@letta-cloud/sdk-core';
 import { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 export function useEmbeddingModels() {
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const { data: localModelsList } = useModelsServiceListEmbeddingModels(
     {},

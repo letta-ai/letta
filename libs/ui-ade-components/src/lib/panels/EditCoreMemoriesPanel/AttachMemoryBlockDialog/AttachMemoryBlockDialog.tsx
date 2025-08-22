@@ -4,7 +4,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { SearchMemoryBlocks } from '../../../SearchMemoryBlocks/SearchMemoryBlocks';
 import { useADEAppContext } from '../../../AppContext/AppContext';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
-import { useCurrentAgentMetaData } from '../../../hooks';
+import { useADEState } from '../../../hooks/useADEState/useADEState';
 
 interface AttachMemoryBlockDialogProps {
   trigger: React.ReactNode;
@@ -17,7 +17,7 @@ export function AttachMemoryBlockDialog(props: AttachMemoryBlockDialogProps) {
 
   const { projectId } = useADEAppContext();
   const { data: enabled } = useFeatureFlag('MEMORY_BLOCK_VIEWER');
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate } = useADEState();
 
   if (!enabled || isTemplate) {
     return null;

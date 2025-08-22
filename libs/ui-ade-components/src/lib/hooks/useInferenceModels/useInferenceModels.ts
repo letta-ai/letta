@@ -1,10 +1,10 @@
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../useADEState/useADEState';
 import { useModelsServiceListModels } from '@letta-cloud/sdk-core';
 import { useMemo } from 'react';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 export function useInferenceModels() {
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const { data: localModelsList } = useModelsServiceListModels({}, undefined, {
     enabled: isLocal,

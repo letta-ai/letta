@@ -1,5 +1,6 @@
 'use client';
 export * from './useADESidebarContext/useADESidebarContext';
+export * from './useADEState/useADEState';
 export * from './useSyncUpdateCurrentAgent/useSyncUpdateCurrentAgent';
 export * from './useUpdateMemoryBlock/useUpdateMemoryBlock';
 export * from './useADESidebarContext/useADESidebarContext';

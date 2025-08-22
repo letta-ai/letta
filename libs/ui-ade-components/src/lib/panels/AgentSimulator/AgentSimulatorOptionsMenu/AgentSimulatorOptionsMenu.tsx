@@ -1,5 +1,5 @@
 import { useTranslations } from '@letta-cloud/translations';
-import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../../../hooks/useADEState/useADEState';
 import {
   Button,
   Checkbox,
@@ -111,7 +111,7 @@ function AgentResetMessagesDialog() {
 
 export function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator');
-  const { isLocal, isTemplate } = useCurrentAgentMetaData();
+  const { isLocal, isTemplate } = useADEState();
 
   return (
     <>

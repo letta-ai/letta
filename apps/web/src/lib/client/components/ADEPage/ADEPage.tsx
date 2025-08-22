@@ -72,8 +72,19 @@ function AgentPageError() {
   );
 }
 
-export function ADEPage(props: ADEPageProps) {
+function RetrieveAgentComponent() {
   const { agentId } = useCurrentAgentMetaData();
+
+  useAgentsServiceRetrieveAgent({
+    agentId: agentId || '',
+  }, undefined, {
+    enabled: !!agentId
+  });
+
+  return null;
+}
+
+export function ADEPage(props: ADEPageProps) {
 
   const { children } = props;
   const t = useTranslations(
@@ -82,9 +93,6 @@ export function ADEPage(props: ADEPageProps) {
 
   const systemWarning = useGlobalSystemWarning();
 
-  useAgentsServiceRetrieveAgent({
-    agentId,
-  });
 
   const isAgentConvertingToTemplate = useAtomValue(
     isAgentConvertingToTemplateAtom,
@@ -122,6 +130,7 @@ export function ADEPage(props: ADEPageProps) {
       fullWidth
       gap={false}
     >
+      <RetrieveAgentComponent />
       <ADEHeader />
       <HStack collapseHeight overflowY="auto" fullWidth gap={false}>
         <TemplateNavigationSidebar />

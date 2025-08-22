@@ -22,7 +22,8 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
+import { useCurrentAgent } from '../../../../hooks';
+import { useADEState } from '../../../../hooks/useADEState/useADEState';
 
 interface CreateDataSourceModalProps {
   trigger: React.ReactNode;
@@ -76,7 +77,7 @@ export function CreateDataSourceModal(props: CreateDataSourceModalProps) {
     [form, reset],
   );
 
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const errorMessage = useMemo(() => {
     if (error) {

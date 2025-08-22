@@ -16,9 +16,9 @@ import React, { useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { getMergedLLMConfig } from '../utils/getMergedLLMConfig/getMergedLLMConfig';
 import {
-  useCurrentAgentMetaData,
   useSyncUpdateCurrentAgent,
 } from '../../../hooks';
+import { useADEState } from '../../../hooks/useADEState/useADEState';
 import { useModelsOptions } from './hooks/useModelsOptions/useModelsOptions';
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 
@@ -28,7 +28,7 @@ interface LocalModelSelectorProps {
 
 export function ModelSelector(props: LocalModelSelectorProps) {
   const { llmConfig } = props;
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
   const { getLLMConfigFromHandle, getSelectedOption, options, isLoading } =
     useModelsOptions({
       isLocal,

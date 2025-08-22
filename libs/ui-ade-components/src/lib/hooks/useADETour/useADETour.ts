@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useShouldUserSeeOnboarding } from '@letta-cloud/utils-client';
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../useADEState/useADEState';
 import { useLocalStorage } from '@mantine/hooks';
 
 type Steps = 'chat' | 'core_memories' | 'template' | 'tools' | 'welcome';
@@ -16,7 +16,7 @@ export function useADETourStep() {
 export function useADETour() {
   const [step, setStep] = useADETourStep();
   const user = useADEAppContext();
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate } = useADEState();
   const showOnboarding = useShouldUserSeeOnboarding(user.user, 'explore_ade');
 
   const currentStep = useMemo(() => {

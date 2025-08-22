@@ -19,7 +19,7 @@ import {
   useFormatters,
 } from '@letta-cloud/utils-client';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
-import { useCurrentAgentMetaData } from '../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../hooks/useADEState/useADEState';
 import { useNetworkInspectorVisibility } from '../hooks/useNetworkInspectorVisibility/useNetworkInspectorVisibility';
 import {
   useNetworkRequest,
@@ -76,7 +76,7 @@ function RequestSection(props: RequestSectionProps) {
 function RequestItem(props: RequestItemProps) {
   const { request, expanded, onToggle } = props;
 
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const { formatTime } = useFormatters();
   const t = useTranslations('ADE/NetworkInspector');

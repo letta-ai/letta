@@ -21,6 +21,8 @@ const manrope = Manrope({
   subsets: ['latin'],
 });
 
+const PERFORMANCE_ANALYZER = process.env.PERFORMANCE_ANALYZER;
+
 export default async function RootLayout({
   children,
 }: {
@@ -39,6 +41,12 @@ export default async function RootLayout({
       className={cn(manrope.className, 'overflow-x-hidden', theme?.value)}
     >
       <head>
+        {PERFORMANCE_ANALYZER === 'true' && (
+          <script
+            crossOrigin="anonymous"
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+          />
+        )}
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
           rel="icon"

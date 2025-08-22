@@ -15,8 +15,8 @@ import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAside
 import {
   useAgentBaseTypeName,
   useCurrentAgent,
-  useCurrentAgentMetaData,
 } from '../../hooks';
+import { useADEState } from '../../hooks/useADEState/useADEState';
 import { useTranslations } from '@letta-cloud/translations';
 import { UpdateNameDialog } from '../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useADETour } from '../../hooks/useADETour/useADETour';
@@ -28,7 +28,7 @@ import { ReasoningSwitch } from '../AdvancedSettingsPanel/components/ReasoningSw
 
 function AgentIdentifierToCopy() {
   const currentAgent = useCurrentAgent();
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate } = useADEState();
 
   const t = useTranslations('ADE/AgentSettingsPanel');
 

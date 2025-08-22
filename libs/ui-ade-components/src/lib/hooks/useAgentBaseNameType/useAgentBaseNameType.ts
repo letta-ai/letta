@@ -1,8 +1,8 @@
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../useADEState/useADEState';
 import { useTranslations } from '@letta-cloud/translations';
 
 export function useAgentBaseTypeName() {
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate } = useADEState();
   const t = useTranslations('agentBaseType');
 
   if (isTemplate) {

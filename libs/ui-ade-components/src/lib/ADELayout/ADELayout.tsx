@@ -29,7 +29,7 @@ import {
   AgentSettingsPanel,
 } from '../panels/AgentSettingsPanel/AgentSettingsPanel';
 import { useTranslations } from '@letta-cloud/translations';
-import { useAgentBaseTypeName, useCurrentAgentMetaData } from '../hooks';
+import { useAgentBaseTypeName } from '../hooks';
 import {
   ToolsPanel,
   useToolsPanelTitle,
@@ -73,6 +73,7 @@ import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPau
 import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { useADEState } from '../hooks/useADEState/useADEState';
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -100,7 +101,7 @@ function DesktopLayout() {
     archivalMemoriesTitle,
   } = useADETitleTranslations();
 
-  const { isTemplate } = useCurrentAgentMetaData();
+  const { isTemplate } = useADEState();
 
   const {
     layoutConfig,
@@ -108,6 +109,7 @@ function DesktopLayout() {
     leftPanelToggleId,
     rightPanelToggleId,
   } = useADELayoutConfig();
+
 
   const leftSidebarRef = useRef<ImperativePanelHandle>(null);
   const rightSidebarRef = useRef<ImperativePanelHandle>(null);

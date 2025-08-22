@@ -11,9 +11,9 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   useCurrentAgent,
-  useCurrentAgentMetaData,
   useSyncUpdateCurrentAgent,
 } from '../../../../hooks';
+import { useADEState } from '../../../../hooks/useADEState/useADEState';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { useEmbeddingModels } from '../../../../hooks/useEmbeddingModels/useEmbeddingModels';
@@ -146,7 +146,7 @@ function EmbeddingSelectorWrapper(props: EmbeddingSelectorWrapperProps) {
 
 export function EmbeddingConfiguration() {
   const currentAgent = useCurrentAgent();
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
   const t = useTranslations('ADE/EmbeddingConfiguration');
 
 

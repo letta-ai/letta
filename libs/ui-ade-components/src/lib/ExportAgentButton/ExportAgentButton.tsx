@@ -5,7 +5,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { toast } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentAgent } from '../hooks';
-import { useCurrentAgentMetaData } from '../hooks';
+import { useADEState } from '../hooks/useADEState/useADEState';
 
 interface ExportAgentButtonProps {
   trigger: React.ReactNode;
@@ -15,7 +15,7 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
   const { trigger } = props;
 
   const t = useTranslations('ExportAgentButton');
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
   const { id: agentId, name } = useCurrentAgent();
   const config = useCurrentAPIHostConfig({
     isLocal,

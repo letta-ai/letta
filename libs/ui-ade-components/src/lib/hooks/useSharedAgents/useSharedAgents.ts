@@ -2,7 +2,7 @@ import { useBlocksServiceListAgentsForBlock } from '@letta-cloud/sdk-core';
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
-import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../useADEState/useADEState';
 import { useADEAppContext } from '../../AppContext/AppContext';
 import { useCurrentAgent } from '../useCurrentAgent/useCurrentAgent';
 
@@ -10,7 +10,7 @@ export function useSharedAgents(blockId: string) {
   const { push } = useRouter();
   const { id } = useCurrentAgent();
 
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
   const { projectSlug } = useADEAppContext();
 
   const handleMoveToAgent = useCallback(

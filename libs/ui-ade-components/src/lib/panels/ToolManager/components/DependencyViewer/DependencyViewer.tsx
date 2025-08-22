@@ -20,7 +20,7 @@ import type { Dependency } from './types';
 import { CustomDependencyForm } from '../CustomDependencyForm/CustomDependencyForm';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { CLOUD_INCLUDED_DEPENDENCIES, CLOUD_INCLUDED_NPM_DEPENDENCIES } from './useManageDependencies/constants';
-import { useCurrentAgentMetaData } from '../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useADEState } from '../../../../hooks/useADEState/useADEState';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface DependencyViewerProps {
@@ -34,10 +34,10 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterOption>('all');
   const { stagedTool } = useStagedCode(tool);
-  const { isLocal } = useCurrentAgentMetaData();
+  const { isLocal } = useADEState();
 
   const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
-  
+
   // Determine if we're working with TypeScript or Python
   const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
 
@@ -49,14 +49,14 @@ export function DependencyViewer({ tool }: DependencyViewerProps) {
   }, [stagedTool.pip_requirements, stagedTool.npm_requirements, isTypeScript]);
 
   const filteredRequirements = useMemo(() => {
-    const currentRequirements = isTypeScript 
+    const currentRequirements = isTypeScript
       ? stagedTool.npm_requirements || []
       : stagedTool.pip_requirements || [];
-      
+
     const cloudIncluded = isTypeScript
       ? CLOUD_INCLUDED_NPM_DEPENDENCIES
       : CLOUD_INCLUDED_DEPENDENCIES;
-      
+
     const mergedRequirements = [
       ...currentRequirements,
       ...(!isLocal
