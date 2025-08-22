@@ -10,7 +10,6 @@ import {
   UseAgentsServiceRetrieveAgentKeyFn,
   useIdentitiesServiceListIdentities,
   useIdentitiesServiceRetrieveIdentity,
-  UseIdentitiesServiceRetrieveIdentityKeyFn,
 } from '@letta-cloud/sdk-core';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -88,15 +87,6 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
 
   const mapIdentityToOption = useCallback(
     (identity: Identity) => {
-      queryClient.setQueriesData(
-        {
-          queryKey: UseIdentitiesServiceRetrieveIdentityKeyFn({
-            identityId: identity.id || '',
-          }),
-        },
-        identity,
-      );
-
       return {
         label: `${identity.name}${identity.identifier_key ? ` (${identity.identifier_key})` : ''}`,
         icon: <Avatar name={identity.name} />,
@@ -108,7 +98,7 @@ function IdentitiesEditorDialog(props: IdentitiesEditorDialogProps) {
         value: identity.id,
       };
     },
-    [queryClient, identityTypeToTranslationMap],
+    [identityTypeToTranslationMap],
   );
 
   const { data: defaultIdentities } = useIdentitiesServiceListIdentities({
