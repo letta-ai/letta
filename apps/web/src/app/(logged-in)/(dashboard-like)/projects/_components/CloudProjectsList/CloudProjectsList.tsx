@@ -13,7 +13,6 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useDebouncedValue } from '@mantine/hooks';
-import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { useFormatters } from '@letta-cloud/utils-client';
@@ -52,7 +51,6 @@ function ProjectCard(props: ProjectCardProps) {
   } = props;
   const t = useTranslations('projects/page/CloudProjectsList');
   const { formatDateAndTime } = useFormatters();
-  const router = useRouter();
 
   function handleFavoriteClick(e: React.MouseEvent) {
     e.preventDefault();
@@ -62,73 +60,64 @@ function ProjectCard(props: ProjectCardProps) {
     }
   }
 
-  function handleCardClick(e: React.MouseEvent) {
-    // Only navigate if the click wasn't on the favorite button
-    const target = e.target as HTMLElement;
-    if (!target.closest('button')) {
-      router.push(url);
-    }
-  }
-
   return (
-    <div onClick={handleCardClick} style={{ cursor: 'pointer' }}>
-      {/* eslint-disable-next-line react/forbid-component-props */}
-      <Card className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 relative">
-        {showFavoriteButton && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '0.5rem',
-              right: '0.5rem',
-              zIndex: 10,
-            }}
-          >
-            <Button
-              color="tertiary"
-              size="small"
-              hideLabel
-              onClick={handleFavoriteClick}
-              preIcon={
-                isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
+    <Card
+      href={url}
+      className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 relative">
+      {showFavoriteButton && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '0.5rem',
+            right: '0.5rem',
+            zIndex: 10,
+          }}
+        >
+          <Button
+            color="tertiary"
+            size="small"
+            hideLabel
+            onClick={handleFavoriteClick}
+            preIcon={
+              isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
+            }
+            label={
+              isFavorited
+                ? t('projectsList.projectItem.removeFromFavorites')
+                : t('projectsList.projectItem.addToFavorites')
+            }
+          />
+        </div>
+      )}
+      <VStack fullWidth>
+        <VStack gap="medium" fullWidth>
+          <Avatar size="medium" name={projectName} />
+          <VStack gap="text">
+            <Typography
+              bold
+              align="left"
+              variant="body"
+              noWrap
+              fullWidth
+              overflow="ellipsis"
+            >
+              {projectName}
+            </Typography>
+            <HStack>
+              {
+                <Typography variant="body" color="muted">
+                  {lastUpdatedAt
+                    ? t('projectsList.projectItem.lastUpdatedAt', {
+                      date: formatDateAndTime(lastUpdatedAt),
+                    })
+                    : t('projectsList.projectItem.noLastUpdatedAt')}
+                </Typography>
               }
-              label={
-                isFavorited
-                  ? t('projectsList.projectItem.removeFromFavorites')
-                  : t('projectsList.projectItem.addToFavorites')
-              }
-            />
-          </div>
-        )}
-        <VStack fullWidth>
-          <VStack gap="medium" fullWidth>
-            <Avatar size="medium" name={projectName} />
-            <VStack gap="text">
-              <Typography
-                bold
-                align="left"
-                variant="body"
-                noWrap
-                fullWidth
-                overflow="ellipsis"
-              >
-                {projectName}
-              </Typography>
-              <HStack>
-                {
-                  <Typography variant="body" color="muted">
-                    {lastUpdatedAt
-                      ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: formatDateAndTime(lastUpdatedAt),
-                        })
-                      : t('projectsList.projectItem.noLastUpdatedAt')}
-                  </Typography>
-                }
-              </HStack>
-            </VStack>
+            </HStack>
           </VStack>
         </VStack>
-      </Card>
-    </div>
+      </VStack>
+    </Card>
   );
 }
 
