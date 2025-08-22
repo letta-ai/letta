@@ -16,6 +16,7 @@ import { VStack } from '../../framing/VStack/VStack';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../../core/Button/Button';
 import {
+  ArrowUpIcon,
   CancelIcon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -580,6 +581,22 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   })}
                 </HStack>
               )}
+
+              {shine && (
+                <div className="flex items-center justify-end mb-2 animate-bounce">
+                  <Typography variant="heading5" color="positive">
+                    {t('clickHere')}
+                  </Typography>
+                  <div className="flex items-center gap-1 text-primary w-[34px] justify-center">
+                    <ArrowUpIcon
+                      size="large"
+                      className="transform rotate-180"
+                      color="positive"
+                    />
+                  </div>
+                </div>
+              )}
+
               <HStack justify="spaceBetween">
                 <Button
                   type="button"

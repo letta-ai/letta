@@ -1038,7 +1038,8 @@
       "fileTooLarge": "File too large (max 5MB)",
       "uploadFailed": "Upload failed",
       "modelDoesNotSupportImages": "The model does not support image input, but you can still send this message."
-    }
+    },
+    "clickHere": "Click here"
   },
   "ui-component-library/core/Code": {
     "errorResponse": "Error response",
