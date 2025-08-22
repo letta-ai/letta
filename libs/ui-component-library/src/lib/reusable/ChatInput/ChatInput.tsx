@@ -465,6 +465,15 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       return (images.length > 0 || isDraggedOver) && !modelSupportsImages;
     }, [images.length, isDraggedOver, modelSupportsImages]);
 
+    const shouldDisableSend = useMemo(() => {
+      return (
+        disabled ||
+        isSendingMessage ||
+        hasImageErrors ||
+        (!text.trim() && images.length === 0)
+      );
+    }, [disabled, isSendingMessage, hasImageErrors, text, images.length]);
+
     return (
       <Frame position="relative" paddingX="medium" paddingBottom>
         <HStack
@@ -595,7 +604,14 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                       roles={roles}
                       disabled={disabled || isDraggedOver}
                     />
-                    {isSendingMessage ? (
+                    <HStack
+                      // to avoid weird UI for border
+                      style={{ marginLeft: '-1px' }}
+                      className={cn(
+                        isSendingMessage ? 'w-[36px]' : 'w-0',
+                        'transition-width duration-500 overflow-hidden',
+                      )}
+                    >
                       <Button
                         data-testid="chat-simulator-stop"
                         type="button"
@@ -607,24 +623,18 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                         hideLabel
                         square={true}
                       />
-                    ) : (
-                      <Button
-                        data-testid="chat-simulator-send"
-                        type="submit"
-                        color="primary"
-                        _use_rarely_className={shine ? 'shine' : ''}
-                        preIcon={<SendIcon />}
-                        disabled={
-                          disabled ||
-                          isDraggedOver ||
-                          hasImageErrors ||
-                          (!text.trim() && images.length === 0)
-                        }
-                        label={t('send')}
-                        hideLabel
-                        square={true}
-                      />
-                    )}
+                    </HStack>
+                    <Button
+                      data-testid="chat-simulator-send"
+                      type="submit"
+                      color="primary"
+                      _use_rarely_className={shine ? 'shine' : ''}
+                      preIcon={<SendIcon />}
+                      disabled={shouldDisableSend}
+                      label={t('send')}
+                      hideLabel
+                      square={true}
+                    />
                   </HStack>
                 </HStack>
               </HStack>
@@ -661,7 +671,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   placeholder={t('placeholder')}
                 />
               </HStack>
-              {isSendingMessage ? (
+              {isSendingMessage && (
                 <Button
                   data-testid="chat-simulator-stop"
                   type="button"
@@ -672,17 +682,20 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                   disabled={disabled}
                   label={t('stop')}
                 />
-              ) : (
-                <Button
-                  data-testid="chat-simulator-send"
-                  type="submit"
-                  color="secondary"
-                  hideLabel
-                  preIcon={<SendIcon />}
-                  disabled={disabled || (!text.trim() && images.length === 0)}
-                  label={t('send')}
-                />
               )}
+              <Button
+                data-testid="chat-simulator-send"
+                type="submit"
+                color="secondary"
+                hideLabel
+                preIcon={<SendIcon />}
+                disabled={
+                  disabled ||
+                  isSendingMessage ||
+                  (!text.trim() && images.length === 0)
+                }
+                label={t('send')}
+              />
             </VStack>
           </VisibleOnMobile>
         </VStack>

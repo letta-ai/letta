@@ -110,8 +110,29 @@ async function handleStream(req: NextRequest) {
         return;
       }
 
+      let isWriterClosed = false;
+
+      writer.closed.then(() => {
+        isWriterClosed = true;
+        if (!reader) {
+          return;
+        }
+
+
+        // If the writer is closed, we stop reading
+        reader.cancel();
+      });
+
       void reader.read().then(({ done, value }) => {
         if (done) {
+          if (!writer) {
+            return;
+          }
+
+          if (isWriterClosed) {
+            return;
+          }
+
           void writer.close();
           return;
         }
