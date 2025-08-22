@@ -608,6 +608,20 @@ def generate_tool_schema_for_mcp(
     # Normalise so downstream code can treat it consistently.
     parameters_schema.setdefault("required", [])
 
+    # Process properties to handle anyOf types
+    if "properties" in parameters_schema:
+        for field_name, field_props in parameters_schema["properties"].items():
+            # Handle anyOf types by flattening to type array
+            if "anyOf" in field_props and "type" not in field_props:
+                types = []
+                for option in field_props["anyOf"]:
+                    if "type" in option:
+                        types.append(option["type"])
+                if types:
+                    field_props["type"] = types
+                    # Remove the anyOf since we've flattened it
+                    del field_props["anyOf"]
+
     # Add the optional heartbeat parameter
     if append_heartbeat:
         parameters_schema["properties"][REQUEST_HEARTBEAT_PARAM] = {
