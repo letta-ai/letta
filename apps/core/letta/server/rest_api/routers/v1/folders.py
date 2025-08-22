@@ -139,8 +139,11 @@ async def create_folder(
     # TODO: need to asyncify this
     if not folder_create.embedding_config:
         if not folder_create.embedding:
-            # TODO: modify error type
-            raise ValueError("Must specify either embedding or embedding_config in request")
+            if settings.default_embedding_handle is None:
+                # TODO: modify error type
+                raise ValueError("Must specify either embedding or embedding_config in request")
+            else:
+                folder_create.embedding = settings.default_embedding_handle
         folder_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=folder_create.embedding,
             embedding_chunk_size=folder_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
