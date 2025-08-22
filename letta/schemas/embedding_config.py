@@ -46,9 +46,7 @@ class EmbeddingConfig(BaseModel):
     def default_config(cls, model_name: Optional[str] = None, provider: Optional[str] = None):
         # Strict rule: openai_compatible requires explicit config; do not auto-complete
         if provider == "openai_compatible":
-            raise ValueError(
-                "Provider 'openai_compatible' requires explicit embedding_model, embedding_endpoint, and embedding_dim."
-            )
+            raise ValueError("Provider 'openai_compatible' requires explicit embedding_model, embedding_endpoint, and embedding_dim.")
 
         if model_name == "text-embedding-ada-002" and provider == "openai":
             return cls(

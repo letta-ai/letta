@@ -37,9 +37,7 @@ class OpenAICompatibleClient(OpenAIClient):
             missing_fields.append("embedding_dim")
 
         if missing_fields:
-            raise ValueError(
-                f"Provider 'openai_compatible' requires fields: {', '.join(missing_fields)}"
-            )
+            raise ValueError(f"Provider 'openai_compatible' requires fields: {', '.join(missing_fields)}")
 
     def _prepare_client_kwargs_embedding(self, embedding_config: EmbeddingConfig) -> dict:  # type: ignore[override]
         # Validate required fields (chunk size is intentionally optional)
@@ -72,5 +70,3 @@ class OpenAICompatibleClient(OpenAIClient):
         client = AsyncOpenAI(**kwargs)
         response = await client.embeddings.create(model=embedding_config.embedding_model, input=inputs)
         return [r.embedding for r in response.data]
-
-

@@ -118,7 +118,6 @@ class ModelSettings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("OPENAI_EMBEDDING_BASE_URL", "OPENAI_EMBEDDING_API_BASE"),
     )
-    
 
     # deepseek
     deepseek_api_key: Optional[str] = None
