@@ -125,6 +125,14 @@ def validate_complete_json_schema(schema: Dict[str, Any]) -> Tuple[SchemaHealth,
                 required = []
 
             # OpenAI strict-mode extra checks:
+            # Check that all properties are in required array (applies to all levels)
+            if props:
+                for prop_name in props.keys():
+                    if prop_name not in required:
+                        mark_non_strict(
+                            f"{path}: property '{prop_name}' is not in required array (OpenAI strict mode requires all properties to be required)"
+                        )
+
             for req_key in required:
                 if props and req_key not in props:
                     mark_invalid(f"{path}: required contains '{req_key}' not found in properties")

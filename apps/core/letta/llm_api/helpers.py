@@ -133,7 +133,6 @@ def convert_to_structured_output(openai_function: dict, allow_optional: bool = F
         structured_output["parameters"]["required"] = list(structured_output["parameters"]["properties"].keys())
     else:
         raise NotImplementedError("Optional parameter handling is not implemented.")
-
     return structured_output
 
 

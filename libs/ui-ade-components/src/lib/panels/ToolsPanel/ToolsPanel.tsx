@@ -204,7 +204,7 @@ function ToolsList(props: ToolsListProps) {
               sourceType={tool.source_type}
             />
           ),
-          nonStrict: isNonStrict,
+          isNonStrict: isNonStrict,
           actionNode: (
             <HStack gap={false}>
               <Button

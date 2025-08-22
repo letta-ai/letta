@@ -68,7 +68,6 @@ class MCPManager:
 
             # list tools
             tools = await mcp_client.list_tools()
-
             # Add health information to each tool
             for tool in tools:
                 if tool.inputSchema:
@@ -129,7 +128,6 @@ class MCPManager:
             raise ValueError(f"MCP server '{mcp_server_name}' not found")
 
         mcp_tools = await self.list_mcp_server_tools(mcp_server_name, actor=actor)
-
         for mcp_tool in mcp_tools:
             # TODO: @jnjpng move health check to tool class
             if mcp_tool.name == mcp_tool_name:
