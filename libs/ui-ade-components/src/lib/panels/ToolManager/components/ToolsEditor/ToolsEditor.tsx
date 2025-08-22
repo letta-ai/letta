@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   HiddenOnMobile,
   HStack,
+  LoadingEmptyStatusComponent,
   Popover,
   Typography,
   VisibleOnMobile,
@@ -22,6 +23,7 @@ import { LettaToolViewer } from '../LettaToolViewer/LettaToolViewer';
 import { MCPToolViewer } from '../MCPToolViewer/MCPToolViewer';
 import { isLettaTool } from '@letta-cloud/sdk-core';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { CreateToolDialog } from '../../ToolManager';
 
 interface ToolButtonProps {
   tool: Tool;
@@ -55,14 +57,19 @@ function ToolButton(props: ToolButtonProps) {
     >
       <HStack gap="small" align="center" overflow="hidden">
         <div className="min-w-[20px] h-[24px] items-center justify-center">
-          <SpecificToolIcon toolType={tool.tool_type} sourceType={tool.source_type} />
+          <SpecificToolIcon
+            toolType={tool.tool_type}
+            sourceType={tool.source_type}
+          />
         </div>
         <Typography fullWidth overflow="ellipsis" noWrap variant="body2">
           {tool.name || 'unnamed'}
           {getFileExtension()}
         </Typography>
       </HStack>
-      {isDirty && tool.tool_type === 'custom' && <div className="w-[8px] h-[8px] bg-primary rounded-full" />}
+      {isDirty && tool.tool_type === 'custom' && (
+        <div className="w-[8px] h-[8px] bg-primary rounded-full" />
+      )}
     </HStack>
   );
 }
@@ -134,9 +141,17 @@ interface SelectedToolViewerProps {
 
 function SelectedToolViewer(props: SelectedToolViewerProps) {
   const { selectedTool } = props;
+  const t = useTranslations('ToolsEditor');
 
   if (!selectedTool) {
-    return null;
+    return (
+      <LoadingEmptyStatusComponent
+        emptyMessage={t('emptyMessage')}
+        emptyAction={
+          <CreateToolDialog trigger={<Button label={t('createTool')} />} />
+        }
+      />
+    );
   }
 
   if (isLettaTool(selectedTool.tool_type)) {
@@ -241,7 +256,10 @@ export function ToolsEditor(props: ToolsEditorProps) {
                     color="tertiary"
                     preIcon={
                       selectedTool?.tool_type && (
-                        <SpecificToolIcon toolType={selectedTool.tool_type} sourceType={selectedTool.source_type} />
+                        <SpecificToolIcon
+                          toolType={selectedTool.tool_type}
+                          sourceType={selectedTool.source_type}
+                        />
                       )
                     }
                     postIcon={<ChevronDownIcon />}

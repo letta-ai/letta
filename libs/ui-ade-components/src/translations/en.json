@@ -2077,6 +2077,8 @@
       "none": "Select a tool"
     },
     "selectTool": "Select a tool",
+    "emptyMessage": "No tools found in this category",
+    "createTool": "Create tool",
     "search": {
       "label": "Search tools",
       "placeholder": "Search tools"
