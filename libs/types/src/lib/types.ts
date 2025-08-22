@@ -246,6 +246,7 @@ export const AgentFileAccessLevels = z.enum([
 ]);
 
 export const DEFAULT_EMBEDDING_MODEL = 'openai/text-embedding-3-small';
+export const DEFAULT_LLM_MODEL = 'openai/gpt-4o-mini';
 
 // Tool rule schemas - manually created to match exact SDK types
 export const ChildToolRuleSchema = z.object({

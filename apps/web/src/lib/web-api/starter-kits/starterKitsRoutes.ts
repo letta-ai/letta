@@ -1,7 +1,6 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
-  DEFAULT_LLM_MODEL,
   isAStarterKitName,
   STARTER_KITS,
 } from '@letta-cloud/config-agent-starter-kits';
@@ -17,7 +16,7 @@ import {
 } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getDefaultProject } from '@letta-cloud/utils-server';
-import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
+import { DEFAULT_EMBEDDING_MODEL, DEFAULT_LLM_MODEL } from '@letta-cloud/types';
 import { createTemplateFromAgentState } from '@letta-cloud/utils-server';
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<

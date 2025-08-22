@@ -340,25 +340,4 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
 
     expect(result.agentTemplate.toolRules).toEqual(customToolRules);
   });
-
-  it('should throw error when llm_config.handle is missing', () => {
-    const agentWithoutHandle: AgentStateForSynchronization = {
-      system: 'System',
-      agent_type: 'memgpt_agent' as any,
-      llm_config: {
-        model: 'gpt-4',
-        model_endpoint_type: 'openai',
-        context_window: 8192,
-        // handle is missing
-      },
-      memory: { blocks: [] },
-      tools: [],
-      sources: [],
-      tags: [],
-    };
-
-    expect(() => {
-      synchronizeSimulatedAgentWithAgentTemplate(agentWithoutHandle);
-    }).toThrow('Agent state must have a valid llm_config.handle');
-  });
 });

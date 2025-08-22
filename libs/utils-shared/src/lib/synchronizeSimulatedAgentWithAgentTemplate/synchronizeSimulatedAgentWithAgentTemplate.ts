@@ -5,6 +5,7 @@ import type {
 } from '@letta-cloud/service-database';
 import { convertRecordMemoryVariablesToMemoryVariablesV1 } from '../convertRecordMemoryVariablesToMemoryVariablesV1/convertRecordMemoryVariablesToMemoryVariablesV1';
 import { findMemoryBlockVariables } from '../findMemoryBlockVariables/findMemoryBlockVariables';
+import { DEFAULT_LLM_MODEL } from '@letta-cloud/types';
 
 type AgentTemplateDBSchema = typeof agentTemplateV2.$inferSelect;
 type BlockTemplateDBSchema = typeof blockTemplate.$inferSelect;
@@ -73,7 +74,7 @@ export function synchronizeSimulatedAgentWithAgentTemplate(
   agentState: AgentStateForSynchronization,
 ): SynchronizeSimulatedAgentWithTemplateOutput {
   if (!agentState.llm_config.handle) {
-    throw new Error('Agent state must have a valid llm_config.handle');
+    agentState.llm_config.handle = DEFAULT_LLM_MODEL;
   }
 
   const toolVariablesAsKeyValue =
