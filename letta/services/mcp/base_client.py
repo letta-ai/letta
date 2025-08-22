@@ -14,9 +14,15 @@ logger = get_logger(__name__)
 
 # TODO: Get rid of Async prefix on this class name once we deprecate old sync code
 class AsyncBaseMCPClient:
-    def __init__(self, server_config: BaseServerConfig, oauth_provider: Optional[OAuthClientProvider] = None):
+    # HTTP headers
+    AGENT_ID_HEADER = "X-Agent-Id"
+
+    def __init__(
+        self, server_config: BaseServerConfig, oauth_provider: Optional[OAuthClientProvider] = None, agent_id: Optional[str] = None
+    ):
         self.server_config = server_config
         self.oauth_provider = oauth_provider
+        self.agent_id = agent_id
         self.exit_stack = AsyncExitStack()
         self.session: Optional[ClientSession] = None
         self.initialized = False

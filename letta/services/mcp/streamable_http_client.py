@@ -12,8 +12,13 @@ logger = get_logger(__name__)
 
 
 class AsyncStreamableHTTPMCPClient(AsyncBaseMCPClient):
-    def __init__(self, server_config: StreamableHTTPServerConfig, oauth_provider: Optional[OAuthClientProvider] = None):
-        super().__init__(server_config, oauth_provider)
+    def __init__(
+        self,
+        server_config: StreamableHTTPServerConfig,
+        oauth_provider: Optional[OAuthClientProvider] = None,
+        agent_id: Optional[str] = None,
+    ):
+        super().__init__(server_config, oauth_provider, agent_id)
 
     async def _initialize_connection(self, server_config: BaseServerConfig) -> None:
         if not isinstance(server_config, StreamableHTTPServerConfig):
@@ -27,6 +32,10 @@ class AsyncStreamableHTTPMCPClient(AsyncBaseMCPClient):
             # Add auth header if specified
             if server_config.auth_header and server_config.auth_token:
                 headers[server_config.auth_header] = server_config.auth_token
+
+            # Add agent ID header if provided
+            if self.agent_id:
+                headers[self.AGENT_ID_HEADER] = self.agent_id
 
             # Use OAuth provider if available, otherwise use regular headers
             if self.oauth_provider:

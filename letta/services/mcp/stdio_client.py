@@ -1,3 +1,5 @@
+from typing import Optional
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -10,6 +12,9 @@ logger = get_logger(__name__)
 
 # TODO: Get rid of Async prefix on this class name once we deprecate old sync code
 class AsyncStdioMCPClient(AsyncBaseMCPClient):
+    def __init__(self, server_config: StdioServerConfig, oauth_provider=None, agent_id: Optional[str] = None):
+        super().__init__(server_config, oauth_provider, agent_id)
+
     async def _initialize_connection(self, server_config: StdioServerConfig) -> None:
         args = [arg.split() for arg in server_config.args]
         # flatten
