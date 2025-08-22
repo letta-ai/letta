@@ -139,8 +139,11 @@ async def create_source(
     # TODO: need to asyncify this
     if not source_create.embedding_config:
         if not source_create.embedding:
-            # TODO: modify error type
-            raise ValueError("Must specify either embedding or embedding_config in request")
+            if settings.default_embedding_handle is None:
+                # TODO: modify error type
+                raise ValueError("Must specify either embedding or embedding_config in request")
+            else:
+                source_create.embedding = settings.default_embedding_handle
         source_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=source_create.embedding,
             embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
