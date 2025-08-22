@@ -13,7 +13,7 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
     cy.clearAllCachedData();
     cy.cleanupTestData();
     cy.seedTestData();
-    cy.ensureDefaultProject('CYDOGGTestProject');
+    cy.seedDefaultProject('CYDOGGTestProject');
     cy.ensureDefaultAgent('CYDOGGTestAgent');
   });
 
@@ -123,5 +123,154 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
         cy.findByText(TOOLS.ROLL_D20, { timeout: 50000 }).should('not.exist');
       });
     });
+  });
+
+  describe('Memory Block Management', () => {
+    it(
+      'should edit memory block content',
+      { tags: ['@memory-blocks'] },
+      () => {
+        cy.testStep('Verify agent structure', () => {
+          cy.findAllByTestId('accordion-trigger-core-tools', {
+            timeout: 50000
+          }).first().should('exist');
+          cy.findByTestId('edit-memory-block-human-content', {
+            timeout: 50000,
+          }).should('exist');
+        });
+
+        cy.testStep('Edit memory block content', () => {
+          cy.clearPointerEventLock();
+          cy.waitForMemoryBlockReady();
+
+          cy.findAllByTestId('edit-memory-block-human-content', {
+            timeout: 50000,
+          })
+            .first()
+            .dblclick({ force: true });
+
+          cy.findAllByTestId('edit-memory-block-human-content', {
+            timeout: 50000,
+          })
+            .first()
+            .should('have.prop', 'tagName', 'TEXTAREA')
+            .clear()
+            .type(
+              'This is updated memory block content. The user is a helpful assistant.',
+              { parseSpecialCharSequences: false },
+            );
+
+          cy.findByTestId('edit-memory-block-human-content-save').click();
+          cy.findByTestId('edit-memory-block-human-content-lock', {
+            timeout: 5000,
+          }).click();
+        });
+
+        cy.testStep('Verify memory content updated', () => {
+          cy.findByTestId('edit-memory-block-human-content', {
+            timeout: 50000,
+          }).should('contain', 'This is updated memory block content');
+        });
+      },
+    );
+
+    it(
+      'should create and delete a memory block through the advanced editor',
+      { tags: ['@memory-blocks', '@advanced-editor'] },
+      () => {
+        cy.testStep('Open the Advanced Core Memory Editor', () => {
+          cy.findByTestId('open-advanced-memory-editor', {
+            timeout: 50000,
+          }).click();
+        });
+
+        cy.testStep('Create a new memory block', () => {
+          // Click the create new memory block button in the sidebar
+          cy.findAllByTestId('create-new-memory-block-item', { timeout: 10000 })
+            .first()
+            .click();
+
+          // Fill in the basic memory block details
+          cy.findByTestId('memory-block-label-input').type(
+            'cypress_test_block',
+          );
+          cy.findByTestId('memory-block-description-input').type(
+            'A test memory block created by Cypress automation',
+          );
+
+          // Expand advanced section with predictable testId
+          cy.findByTestId(
+            'accordion-trigger-memory-block-advanced-options',
+          ).click();
+
+          // Set advanced field values
+          cy.findByTestId('memory-block-value-input').type(
+            'This is test content for the cypress memory block. It contains important information that will be used during testing.',
+          );
+          cy.findByTestId('memory-block-character-limit-input')
+            .clear()
+            .type('2000');
+
+
+          // Submit the form using the dialog's confirm button
+          cy.findByTestId('create-new-memory-block-dialog-confirm-button', {
+            timeout: 5000,
+          }).click();
+        });
+
+        cy.testStep('Verify memory block was created', () => {
+          // Check that the new memory block appears in the sidebar
+          cy.findByTestId('memory-block-cypress_test_block', {
+            timeout: 50000,
+          })
+            .should('exist')
+            .and('be.visible');
+
+          // Click on the memory block to select it
+          cy.findByTestId('memory-block-cypress_test_block').click();
+
+          // Verify the content is displayed in the advanced editor
+          cy.findByTestId('advanced-memory-editor-description', {
+            timeout: 5000,
+          }).should(
+            'contain.value',
+            'A test memory block created by Cypress automation',
+          );
+
+          cy.findByTestId('advanced-memory-editor-value').should(
+            'contain.value',
+            'This is test content for the cypress memory block',
+          );
+        });
+
+        cy.testStep('Test readOnly functionality and modify block', () => {
+          // Select the memory block
+          cy.findByTestId('memory-block-cypress_test_block').click();
+
+          // Enable readOnly checkbox to test this functionality
+          cy.findByTestId('advanced-memory-editor-readonly-checkbox').click();
+
+          // Update the memory block with readOnly enabled
+          cy.findByTestId('advanced-memory-editor-update').click();
+
+          // Wait for the update to complete
+          cy.wait(2000);
+        });
+
+        cy.testStep('Delete the memory block', () => {
+          // Now delete the memory block
+          cy.findByTestId('memory-block-cypress_test_block').click();
+          cy.findByTestId('delete-memory-block', { timeout: 5000 }).click();
+          cy.findByTestId('delete-memory-block-dialog-confirm-button').click();
+        });
+
+        cy.testStep('Verify memory block was deleted from UI', () => {
+          // Verify the memory block no longer exists in the sidebar
+          cy.findByTestId('memory-block-cypress_test_block', {
+            timeout: 5000,
+          }).should('not.exist');
+        });
+      },
+    );
   });
 });
