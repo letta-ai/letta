@@ -528,6 +528,11 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
         }
       } catch (error) {
+        if (error instanceof TypeError && error.message === 'network error') {
+          // Network error, allow backend request to continue
+          return;
+        }
+
         if (error instanceof Error && error.name === 'AbortError') {
           // Request was aborted, don't treat as error
           setIsPending(false);
