@@ -252,8 +252,6 @@ function RequestList(props: RequestListProps) {
 export function NetworkInspector() {
   const { networkRequests } = useNetworkRequest();
 
-
-
   const t = useTranslations('ADE/NetworkInspector');
 
   const [networkInspectorState, setNetworkInspectorState] =

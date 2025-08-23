@@ -1892,7 +1892,8 @@
       "outputLabel": "Response"
     },
     "SaveToolButton": {
-      "label": "Save"
+      "label": "Save",
+      "success": "Tool saved successfully!"
     },
     "EditModes": {
       "label": "Edit mode",

@@ -30,6 +30,7 @@ import {
   VStack,
   WarningIcon,
   WrapNotificationDot,
+  toast,
 } from '@letta-cloud/ui-component-library';
 import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
@@ -565,12 +566,7 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
   );
 }
 
-type EditMode =
-  | 'code'
-  | 'dependencies'
-  | 'errors'
-  | 'settings'
-  | 'simulator';
+type EditMode = 'code' | 'dependencies' | 'errors' | 'settings' | 'simulator';
 
 function EditModes() {
   const { mode, setMode } = useEditMode();
@@ -635,12 +631,12 @@ function SaveToolButton(props: SaveToolButtonProps) {
   const { tool } = props;
   const { setMode } = useEditMode();
   const { setError } = useToolErrors();
-  const { isDirty, stagedTool, setStagedTool } = useStagedCode(tool);
+  const { stagedTool, setStagedTool } = useStagedCode(tool);
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
 
   const queryClient = useQueryClient();
-  const { mutate, isPending } = useToolsServiceModifyTool({
+  const { mutate, isPending, isSuccess } = useToolsServiceModifyTool({
     onError: (error) => {
       let message: unknown = '';
 
@@ -688,12 +684,19 @@ function SaveToolButton(props: SaveToolButtonProps) {
     },
   });
 
-  const handleSubmit = useCallback(() => {
-    if (isDirty) {
-      const isTypeScript = typescriptToolsEnabled && stagedTool.source_type === 'typescript';
+  const handleSubmit = useCallback(
+    (
+      event?:
+        | React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>
+        | KeyboardEvent,
+    ) => {
+      event?.preventDefault();
+      const isTypeScript =
+        typescriptToolsEnabled && stagedTool.source_type === 'typescript';
 
       const descriptionValue = get(stagedTool.json_schema, 'description', '');
-      const description = typeof descriptionValue === 'string' ? descriptionValue : '';
+      const description =
+        typeof descriptionValue === 'string' ? descriptionValue : '';
 
       const requestBody: ToolUpdate = {
         description,
@@ -714,8 +717,31 @@ function SaveToolButton(props: SaveToolButtonProps) {
         toolId: tool.id || '',
         requestBody,
       });
+    },
+    [mutate, stagedTool, tool.id, typescriptToolsEnabled],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault();
+        handleSubmit(event);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleSubmit]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(t('SaveToolButton.success'));
+      setError(null);
     }
-  }, [isDirty, mutate, stagedTool, tool.id, typescriptToolsEnabled]);
+  }, [isSuccess, setError]);
 
   return (
     <Button
@@ -723,7 +749,6 @@ function SaveToolButton(props: SaveToolButtonProps) {
       color="primary"
       busy={isPending}
       onClick={handleSubmit}
-      disabled={!isDirty}
     />
   );
 }
@@ -952,7 +977,6 @@ function CodeButton() {
     />
   );
 }
-
 
 interface LocalToolsViewerProps {
   tool: Tool;
