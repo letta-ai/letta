@@ -27,7 +27,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { DashboardNavigationButton } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigationButton/DashboardNavigationButton';
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
@@ -178,80 +178,81 @@ function ToolsNavigationItems() {
   const copy = useToolManagerRouteCopy();
   const pathname = usePathname();
 
-  const isOnToolsRoute = useMemo(() => {
-    return pathname.startsWith('/tools') || pathname === '/tools';
+  // Track expansion state locally
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Auto-expand when on tools route, collapse when navigating away
+  React.useEffect(() => {
+    if (pathname.startsWith('/tools')) {
+      setIsExpanded(true);
+    } else {
+      setIsExpanded(false);
+    }
   }, [pathname]);
 
-  if (!isOnToolsRoute) {
-    return (
-      <>
-        <Divider />
-
-        <DashboardNavigationButton
-          href="/tools/custom"
-          id="tools"
-          label={t('tools')}
-          postIcon={<ChevronRightIcon color="muted" size="xsmall" />}
-          icon={<ToolsIcon />}
-        />
-        <Divider />
-      </>
-    );
-  }
+  const handleToolsClick = useCallback(() => {
+    setIsExpanded(!isExpanded);
+  }, [isExpanded]);
 
   return (
-    <NavigationSection>
+    <>
       <Divider />
-
       <DashboardNavigationButton
-        href="/tools"
+        href="javascript:void(0)"
         id="tools"
         label={t('tools')}
-        postIcon={<ChevronDownIcon color="muted" size="xsmall" />}
+        postIcon={isExpanded ? <ChevronDownIcon color="muted" size="xsmall" /> : <ChevronRightIcon color="muted" size="xsmall" />}
         icon={<ToolsIcon />}
-        disabled
+        onClick={handleToolsClick}
       />
-      <DashboardNavigationButton
-        href="/tools/custom"
-        id="tools-custom"
-        label={copy.customTools.title}
-        icon={copy.customTools.icon}
-      />
-      <DashboardNavigationButton
-        href="/tools/multi-agent"
-        id="tools-multi-agent"
-        label={copy.multiAgentTools.title}
-        icon={copy.multiAgentTools.icon}
-      />
-      <DashboardNavigationButton
-        href="/tools/utility"
-        id="tools-utility"
-        label={copy.utilityTools.title}
-        icon={copy.utilityTools.icon}
-      />
-      <DashboardNavigationButton
-        href="/tools/base"
-        id="tools-base"
-        label={copy.lettaTools.title}
-        icon={copy.lettaTools.icon}
-      />
-      <HStack paddingX="large" paddingBottom="xsmall" paddingTop="xxsmall">
-        <CreateToolDialog
-          trigger={
-            <Button
-              align="left"
-              size="xsmall"
-              data-testid="start-create-tool"
-              preIcon={<PlusIcon />}
-              label={t('createTool')}
-              color="secondary"
-              bold
-            />
-          }
+      <div
+        className={cn(
+          'transition-all overflow-hidden duration-500',
+          isExpanded ? 'max-h-[500px]' : 'max-h-0'
+        )}
+      >
+        <DashboardNavigationButton
+          href="/tools/custom"
+          id="tools-custom"
+          label={copy.customTools.title}
+          icon={copy.customTools.icon}
         />
-      </HStack>
+        <DashboardNavigationButton
+          href="/tools/multi-agent"
+          id="tools-multi-agent"
+          label={copy.multiAgentTools.title}
+          icon={copy.multiAgentTools.icon}
+        />
+        <DashboardNavigationButton
+          href="/tools/utility"
+          id="tools-utility"
+          label={copy.utilityTools.title}
+          icon={copy.utilityTools.icon}
+        />
+        <DashboardNavigationButton
+          href="/tools/base"
+          id="tools-base"
+          label={copy.lettaTools.title}
+          icon={copy.lettaTools.icon}
+        />
+        <HStack paddingX="large" paddingBottom="xsmall" paddingTop="xxsmall">
+          <CreateToolDialog
+            trigger={
+              <Button
+                align="left"
+                size="xsmall"
+                data-testid="start-create-tool"
+                preIcon={<PlusIcon />}
+                label={t('createTool')}
+                color="secondary"
+                bold
+              />
+            }
+          />
+        </HStack>
+      </div>
       <Divider />
-    </NavigationSection>
+    </>
   );
 }
 
