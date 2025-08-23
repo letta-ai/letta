@@ -125,6 +125,8 @@ navigation:
             path: pages/agents/filesystem.mdx
           - page: Streaming Responses
             path: pages/agents/streaming.mdx
+          - page: Long-Running Executions
+            path: pages/agents/long_running.mdx
           - page: JSON Mode & Structured Output
             path: pages/agents/json_mode.mdx
           - page: Multi-Modal

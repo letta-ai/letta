@@ -9,6 +9,11 @@ If you're building a UI on the Letta API, enabling streaming allows your UI to u
 There are two kinds of streaming you can enable: **streaming agent steps** and **streaming tokens**.
 To enable streaming (either mode), you need to use the [`/v1/agent/messages/stream`](/api-reference/agents/messages/stream) API route instead of the [`/v1/agent/messages`](/api-reference/agents/messages) API route.
 
+<Warning>
+When working with agents that execute long-running operations (e.g., complex tool calls, extensive searches, or code execution), you may encounter timeouts with the message routes.
+See our [tips on handling long-running tasks](/guides/agents/long-running) for more info.
+</Warning>
+
 ## Streaming agent steps
 
 When you send a message to the Letta server, the agent may run multiple steps while generating a response.
