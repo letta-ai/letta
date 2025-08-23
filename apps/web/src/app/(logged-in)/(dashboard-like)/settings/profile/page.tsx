@@ -80,7 +80,7 @@ function UpdateUserProfileForm(props: UpdateUserProfileFormProps) {
         />
         <div>
           <Button
-            color="primary"
+            color="secondary"
             type="submit"
             label={t('form.submitButton')}
             busy={isPending}

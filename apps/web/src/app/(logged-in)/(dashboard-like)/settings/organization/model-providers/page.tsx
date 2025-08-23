@@ -429,7 +429,7 @@ function ModelProvidersPage() {
       title={t('title')}
       subtitle={t('description')}
     >
-      <DashboardPageSection fullHeight>
+      <DashboardPageSection fullHeight width="capped">
         <DataTable
           isLoading={isFetching}
           limit={limit}

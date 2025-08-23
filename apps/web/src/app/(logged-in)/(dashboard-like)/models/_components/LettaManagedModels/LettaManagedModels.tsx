@@ -175,7 +175,7 @@ export function LettaManagedModels() {
   );
 
   return (
-    <DashboardPageSection title={t('title')} description={t('description')}>
+    <DashboardPageSection width="capped" title={t('title')} description={t('description')}>
       {selectedModel && (
         <ModelDetailsOverlay
           model={selectedModel}

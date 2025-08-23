@@ -3,7 +3,6 @@ import {
   FolderIcon,
   HR,
   KeyIcon,
-  TokenIcon,
   ProjectsIcon,
   ToolsIcon,
   Typography,
@@ -267,23 +266,17 @@ function RootNavigationItems() {
     <NavigationSection>
       <SectionHeader title={t('all')} />
       <DashboardNavigationButton
+        href="/mcp-servers"
+        id="mcp-servers"
+        label={t('mcp')}
+        icon={<McpIcon size="small" />}
+      />
+      <ToolsNavigationItems />
+      <DashboardNavigationButton
         href="/data-sources"
         id="filesystem"
         label={t('filesystem')}
         icon={<FolderIcon />}
-      />
-      <ToolsNavigationItems />
-      <DashboardNavigationButton
-        href="/mcp-servers"
-        id="models"
-        label={t('mcp')}
-        icon={<McpIcon size="small" />}
-      />
-      <DashboardNavigationButton
-        href="/models"
-        id="models"
-        label={t('models')}
-        icon={<TokenIcon />}
       />
       {canReadAPIKeys && (
         <DashboardNavigationButton
@@ -387,6 +380,7 @@ function NavigationFooter() {
 
 function SettingsMenu() {
   const t = useTranslations('DashboardNavigation.SettingsMenu');
+  const tRoot = useTranslations('DashboardNavigation.RootNavigationItems');
   const baseUrl = '/settings';
   const lastActiveProject = useLastActiveProject();
   const developmentServer = useCurrentDevelopmentServerConfig();
@@ -440,10 +434,16 @@ function SettingsMenu() {
         label={t('billing')}
       />
       <DashboardNavigationButton
+        href={`${baseUrl}/organization/models`}
+        id="settings-models"
+        label={tRoot('models')}
+      />
+      {/* Hidden for now - page still accessible via direct URL */}
+      {/* <DashboardNavigationButton
         href={`${baseUrl}/organization/integrations`}
         id="settings-integrations"
         label={t('integrations')}
-      />
+      /> */}
       <DashboardNavigationButton
         href={`${baseUrl}/organization/environment-variables`}
         id="settings-environmentVariables"

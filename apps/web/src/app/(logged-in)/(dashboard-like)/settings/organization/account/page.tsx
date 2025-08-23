@@ -23,6 +23,7 @@ import { useCallback } from 'react';
 import type { GetCurrentOrganizationSuccessResponse } from '$web/web-api/contracts';
 import { useCurrentOrganization } from '$web/client/hooks';
 import { CurrentPlan } from './CurrentPlan/CurrentPlan';
+import { BYOKModels } from '../../../models/_components/BYOKModels/BYOKModels';
 
 const EditOrganizationSettingsSchema = z.object({
   name: z.string(),
@@ -132,14 +133,15 @@ function MembershipRules() {
     <Section
       title={t('MembershipRules.title')}
       description={t('MembershipRules.description')}
-      actions={
+    >
+      <div>
         <Button
           color="secondary"
           label={t('MembershipRules.actions')}
           href="/settings/organization/members/invite-rules"
         />
-      }
-    ></Section>
+      </div>
+    </Section>
   );
 }
 
@@ -174,6 +176,9 @@ function OrganizationSettingsPage() {
 
               <HR />
               <DeleteOrganizationSettings />
+
+              <HR />
+              <BYOKModels />
             </VStack>
           </DashboardPageSection>
         )}

@@ -5,7 +5,7 @@ import {
   brandKeyToOwnerMap,
   Button,
   ChevronRightIcon,
-  DashboardPageSection,
+  Section,
   DataTable,
   HStack,
   isBrandKey,
@@ -13,6 +13,7 @@ import {
   ModelsIcon,
   PlusIcon,
   Typography,
+  VStack,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { AddProviderModal } from '../AddProviderModal/AddProviderModal';
@@ -166,22 +167,24 @@ export function BYOKModels() {
   const t = useTranslations('pages/models/BYOKModels');
 
   return (
-    <DashboardPageSection
-      actions={
-        <AddProviderModal
-          trigger={
-            <Button
-              preIcon={<PlusIcon />}
-              label={t('actions.addProvider')}
-              color="secondary"
-            />
-          }
-        />
-      }
+    <Section
       description={t('description')}
       title={t('title')}
     >
-      <ProvidersView />
-    </DashboardPageSection>
+      <VStack gap="medium">
+        <ProvidersView />
+        <div>
+          <AddProviderModal
+            trigger={
+              <Button
+                preIcon={<PlusIcon />}
+                label={t('actions.addProvider')}
+                color="secondary"
+              />
+            }
+          />
+        </div>
+      </VStack>
+    </Section>
   );
 }

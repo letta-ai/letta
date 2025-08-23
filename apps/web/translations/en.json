@@ -61,8 +61,8 @@
     "allProjects": "All projects",
     "RootNavigationItems": {
       "filesystem": "Filesystem",
-      "apiKeys": "API Keys",
-      "mcp": "MCP Servers",
+      "apiKeys": "API keys",
+      "mcp": "MCP servers",
       "models": "Models",
       "all": "Global"
     },
@@ -76,8 +76,8 @@
       "blocks": "Blocks",
       "settings": "Configuration",
       "dashboard": "Dashboard",
-      "tools": "Custom Tools",
-      "mcpServers": "MCP Servers"
+      "tools": "Custom tools",
+      "mcpServers": "MCP servers"
     },
     "SectionHeader": {
       "loading": "Loading..."
@@ -460,7 +460,7 @@
     "actions": {
       "addProvider": "Add API key"
     },
-    "title": "Bring your own key",
+    "title": "Add your own provider API keys",
     "description": "You can provide your own API keys for OpenAI, Anthropic, and Google Gemini. When using models tied to your own API keys, you will be billed directly by the model provider for your usage (subject to their own pricing).",
     "columns": {
       "name": "Name",
@@ -1515,8 +1515,8 @@
     "ProjectsPageInner": {
       "search": "Search...",
       "viewMode": {
-        "cloud": "Letta cloud",
-        "selfHosted": "Self hosted"
+        "cloud": "Letta Cloud",
+        "selfHosted": "Self-hosted"
       }
     },
 
