@@ -67,9 +67,6 @@ describe(
           });
 
           cy.testStep('Verify template structure', () => {
-            cy.findAllByTestId('accordion-trigger-core-tools', {
-              timeout: 50000
-            }).first().should('exist');
             cy.findByTestId('edit-memory-block-human-content', {
               timeout: 50000,
             }).should('exist');
@@ -85,15 +82,7 @@ describe(
       });
 
       it('should have attached the correct tools by default', () => {
-        cy.testStep('Open core tools accordion', () => {
-          cy.findAllByTestId('accordion-trigger-core-tools', {
-            timeout: 50000,
-          })
-            .first()
-            .click({
-              force: true,
-            });
-        });
+      
 
         cy.testStep('Verify core tools are attached', () => {
           cy.findByTestId('tool-attached:send_message')

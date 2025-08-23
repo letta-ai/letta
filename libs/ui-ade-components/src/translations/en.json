@@ -2343,6 +2343,9 @@
       "openExplorer": "Tool Manager",
       "openRules": "Rules",
       "openVariables": "Env Vars",
+      "emptyAction": "Discover tools",
+      "emptySearch": "No tools found matching your search",
+      "empty": "This agent has no tools attached to it",
       "search": {
         "trigger": "Search tools",
         "placeholder": "Search tools",

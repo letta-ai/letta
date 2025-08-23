@@ -131,9 +131,6 @@ describe('Test the ADE with a template', { tags: ['@ade', '@agents', '@critical'
       { tags: ['@memory-blocks'] },
       () => {
         cy.testStep('Verify agent structure', () => {
-          cy.findAllByTestId('accordion-trigger-core-tools', {
-            timeout: 50000
-          }).first().should('exist');
           cy.findByTestId('edit-memory-block-human-content', {
             timeout: 50000,
           }).should('exist');

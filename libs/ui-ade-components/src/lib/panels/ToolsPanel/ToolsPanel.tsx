@@ -1,19 +1,18 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Accordion,
   Badge,
   EditIcon,
-  ExternalLinkIcon,
+  EyeOpenIcon,
   HStack,
-  LinkOffIcon,
+  LinkOffIcon, LoadingEmptyStatusComponent,
   RuleIcon,
   SearchIcon,
   ToolManagerIcon,
   Tooltip,
   Typography,
   VariableIcon,
-  WarningIcon,
+  WarningIcon
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
 import { SearchOverlay } from '../../shared/SearchOverlay';
@@ -182,6 +181,16 @@ function ToolsList(props: ToolsListProps) {
         return toolName.includes(searchLower);
       })
       .toSorted((a, b) => {
+        // if tool_type includes letta, it should be sorted first
+        if (isLettaTool(a.tool_type) && !isLettaTool(b.tool_type)) {
+          return -1;
+        }
+
+        if (!isLettaTool(a.tool_type) && isLettaTool(b.tool_type)) {
+          return 1;
+        }
+
+        // Otherwise, sort by name
         return a.name?.localeCompare(b.name || '') || 0;
       })
       .map((tool) => {
@@ -211,7 +220,7 @@ function ToolsList(props: ToolsListProps) {
                 hideLabel
                 size="xsmall"
                 color="tertiary"
-                preIcon={isReadOnlyTool ? <ExternalLinkIcon /> : <EditIcon />}
+                preIcon={isReadOnlyTool ? <EyeOpenIcon /> : <EditIcon />}
                 label={
                   isReadOnlyTool
                     ? t('ToolsList.viewDetails')
@@ -241,21 +250,8 @@ function ToolsList(props: ToolsListProps) {
       });
   }, [currentTools, openToolManager, search, t]);
 
-  const coreTools = useMemo(() => {
-    return toolsList.filter((tool) => tool.type !== 'custom');
-  }, [toolsList]);
-
-  const customTools = useMemo(() => {
-    return toolsList.filter((tool) => tool.type === 'custom');
-  }, [toolsList]);
-
   return (
-    <VStack
-      gap="medium"
-      paddingX="medium"
-      paddingY="xsmall"
-      paddingBottom="small"
-    >
+    <VStack gap="medium" paddingX="medium" paddingBottom="small">
       {removeToolPayload && (
         <RemoveToolDialog
           toolId={removeToolPayload.toolId}
@@ -265,18 +261,25 @@ function ToolsList(props: ToolsListProps) {
           }}
         />
       )}
-      <ToolAccordion
-        id="core-tools"
-        defaultOpen={false}
-        label={t('ToolsList.lettaTools', { count: coreTools.length })}
-        tools={coreTools}
-      />
-      <ToolAccordion
-        id="custom-tools"
-        defaultOpen
-        label={t('ToolsList.customTools', { count: customTools.length })}
-        tools={customTools}
-      />
+      {(toolsList.length === 0) ? (
+        <LoadingEmptyStatusComponent
+          className="min-h-[250px]"
+          emptyMessage={search ? t('ToolsListPage.emptySearch') : t('ToolsListPage.empty')}
+          emptyAction={(
+            <Button
+              label={t('ToolsListPage.emptyAction')}
+              color="secondary"
+              size="xsmall"
+              bold
+              onClick={() => {
+                openToolManager('/letta-tools');
+              }}
+            />
+          )}
+        />
+      ) : (
+        <ToolListInner tools={toolsList} />
+      )}
     </VStack>
   );
 }
@@ -294,71 +297,65 @@ interface ParsedTool {
 
 interface ToolAccordionProps {
   tools: ParsedTool[];
-  label: string;
-  defaultOpen?: boolean;
-  id: string;
 }
 
-function ToolAccordion(props: ToolAccordionProps) {
-  const { tools, label, id, defaultOpen } = props;
+function ToolListInner(props: ToolAccordionProps) {
+  const { tools } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
 
   return (
-    <Accordion
-      defaultOpen={defaultOpen}
-      id={id}
-      caretType="arrow"
-      trigger={
-        <HStack>
-          <Typography variant="body3">{label}</Typography>
-        </HStack>
-      }
-    >
-      <VStack paddingY="xsmall" gap="small">
-        {tools.map((tool) => (
+    <VStack paddingY="xsmall" gap="small">
+      {tools.map((tool) => (
+        <HStack
+          justify="spaceBetween"
+          color="background-grey2"
+          align="center"
+          paddingLeft="small"
+          paddingRight="xxsmall"
+          paddingY="xxsmall"
+          border
+          key={tool.id}
+        >
           <HStack
-            justify="spaceBetween"
-            color="background-grey2"
+            fullHeight
+            onClick={tool.onClick}
+            as="button"
             align="center"
-            paddingLeft="small"
-            paddingRight="xxsmall"
-            paddingY="xxsmall"
-            border
-            key={tool.id}
+            collapseWidth
+            flex
+            gap="small"
           >
-            <HStack collapseWidth flex gap="small">
-              <SpecificToolIcon
-                size="xsmall"
-                toolType={tool.type}
-                sourceType={tool.sourceType}
-              />
-              <Typography
-                noWrap
-                fullWidth
-                overflow="ellipsis"
-                bold
-                variant="body3"
-                data-testid={`tool-attached:${tool.name}`}
+            <SpecificToolIcon
+              size="xsmall"
+              toolType={tool.type}
+              sourceType={tool.sourceType}
+            />
+            <Typography
+              noWrap
+              fullWidth
+              overflow="ellipsis"
+              bold
+              variant="body3"
+              data-testid={`tool-attached:${tool.name}`}
+            >
+              {tool.name}
+            </Typography>
+            {tool.isNonStrict && (
+              <Tooltip
+                content={t('ServerToolsList.schemaHealth.notStrict.tooltip')}
               >
-                {tool.name}
-              </Typography>
-              {tool.isNonStrict && (
-                <Tooltip
-                  content={t('ServerToolsList.schemaHealth.notStrict.tooltip')}
-                >
-                  <Badge
-                    variant="warning"
-                    size="small"
-                    content={t('ServerToolsList.schemaHealth.notStrict.label')}
-                  />
-                </Tooltip>
-              )}
-            </HStack>
-            <HStack>{tool.actionNode}</HStack>
+                <Badge
+                  variant="warning"
+                  size="small"
+                  content={t('ServerToolsList.schemaHealth.notStrict.label')}
+                />
+              </Tooltip>
+            )}
           </HStack>
-        ))}
-      </VStack>
-    </Accordion>
+          <HStack>{tool.actionNode}</HStack>
+        </HStack>
+      ))}
+    </VStack>
   );
 }
 
