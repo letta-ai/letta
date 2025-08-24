@@ -95,6 +95,7 @@ class MCPManager:
         agent_id: Optional[str] = None,
     ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
+        mcp_client = None
         try:
             if not tool_settings.mcp_read_from_config:
                 # read from DB
@@ -117,7 +118,8 @@ class MCPManager:
             # TODO: change to pydantic tool
             return result, success
         finally:
-            await mcp_client.cleanup()
+            if mcp_client:
+                await mcp_client.cleanup()
 
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
