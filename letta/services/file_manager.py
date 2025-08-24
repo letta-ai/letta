@@ -174,6 +174,10 @@ class FileManager:
         if processing_status is None and error_message is None and total_chunks is None and chunks_embedded is None:
             raise ValueError("Nothing to update")
 
+        # validate that ERROR status must have an error message
+        if processing_status == FileProcessingStatus.ERROR and not error_message:
+            raise ValueError("Error message is required when setting processing status to ERROR")
+
         values: dict[str, object] = {"updated_at": datetime.utcnow()}
         if processing_status is not None:
             values["processing_status"] = processing_status

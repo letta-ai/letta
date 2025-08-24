@@ -286,17 +286,11 @@ def upload_file_and_wait(
     file_path: str,
     name: Optional[str] = None,
     max_wait: int = 60,
-    duplicate_handling: Optional["DuplicateFileHandling"] = None,
+    duplicate_handling: Optional[str] = None,
 ):
     """Helper function to upload a file and wait for processing to complete"""
-    from letta_client import DuplicateFileHandling as ClientDuplicateFileHandling
-
     with open(file_path, "rb") as f:
         if duplicate_handling:
-            # handle both client and server enum types
-            if hasattr(duplicate_handling, "value"):
-                # server enum type
-                duplicate_handling = ClientDuplicateFileHandling(duplicate_handling.value)
             file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
         else:
             file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
