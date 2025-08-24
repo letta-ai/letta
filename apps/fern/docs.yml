@@ -680,3 +680,7 @@ redirects:
     destination: "/guides/agents/filesystem"
   - source: "/guides/desktop/install"
     destination: "/guides/ade/desktop"
+  - source: "/api-reference/agents/cancel-agent-run"
+    destination: "/api-reference/agents/messages/cancel"
+  - source: "/api-reference/messages/cancel-batch-run"
+    destination: "/api-reference/batches/cancel"
