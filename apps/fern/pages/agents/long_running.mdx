@@ -100,7 +100,6 @@ from letta_client import Letta
 
 client = Letta(
     base_url="http://localhost:8283",
-    timeout=600,  # 10 minutes timeout for long operations
 )
 
 # Enable pings to prevent timeout during long operations
@@ -113,6 +112,7 @@ stream = client.agents.messages.create_stream(
       }
     ],
     include_pings=True,  # Sends periodic keepalive messages
+    request_options={"timeout_in_seconds": 600}  # 10 min timeout
 )
 
 # Process the stream (pings will keep connection alive)
@@ -128,7 +128,6 @@ import { Letta } from '@letta/sdk';
 
 const client = new Letta({
     baseUrl: 'http://localhost:8283',
-    timeout: 600000,  // 10 minutes timeout in milliseconds
 });
 
 // Enable pings to prevent timeout during long operations
@@ -142,6 +141,8 @@ const stream = await client.agents.createAgentMessageStream({
             }
         ],
         include_pings: true  // Sends periodic keepalive messages
+    }, {
+        timeoutInSeconds: 600,  // 10 minutes timeout in seconds
     }
 });
 
