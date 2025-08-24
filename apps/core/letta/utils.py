@@ -1103,6 +1103,43 @@ def safe_create_task(coro, logger: Logger, label: str = "background task"):
     return asyncio.create_task(wrapper())
 
 
+def safe_create_file_processing_task(coro, file_metadata, server, actor, logger: Logger, label: str = "file processing task"):
+    """
+    Create a task for file processing that updates file status on failure.
+
+    This is a specialized version of safe_create_task that ensures file
+    status is properly updated to ERROR with a meaningful message if the
+    task fails.
+
+    Args:
+        coro: The coroutine to execute
+        file_metadata: FileMetadata object being processed
+        server: Server instance with file_manager
+        actor: User performing the operation
+        logger: Logger instance for error logging
+        label: Description of the task for logging
+    """
+    from letta.schemas.enums import FileProcessingStatus
+
+    async def wrapper():
+        try:
+            await coro
+        except Exception as e:
+            logger.exception(f"{label} failed for file {file_metadata.file_name} with {type(e).__name__}: {e}")
+            # update file status to ERROR with a meaningful message
+            try:
+                await server.file_manager.update_file_status(
+                    file_id=file_metadata.id,
+                    actor=actor,
+                    processing_status=FileProcessingStatus.ERROR,
+                    error_message=f"Processing failed: {str(e)}" if str(e) else "Processing failed due to an unexpected error",
+                )
+            except Exception as update_error:
+                logger.error(f"Failed to update file status to ERROR for {file_metadata.id}: {update_error}")
+
+    return asyncio.create_task(wrapper())
+
+
 class CancellationSignal:
     """
     A signal that can be checked for cancellation during streaming operations.

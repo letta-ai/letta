@@ -35,7 +35,7 @@ from letta.services.file_processor.file_types import get_allowed_media_types, ge
 from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
-from letta.utils import safe_create_task, sanitize_filename
+from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
@@ -312,8 +312,11 @@ async def upload_file_to_folder(
 
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")
-    safe_create_task(
+    safe_create_file_processing_task(
         load_file_to_source_cloud(server, agent_states, content, folder_id, actor, folder.embedding_config, file_metadata),
+        file_metadata=file_metadata,
+        server=server,
+        actor=actor,
         logger=logger,
         label="file_processor.process",
     )
