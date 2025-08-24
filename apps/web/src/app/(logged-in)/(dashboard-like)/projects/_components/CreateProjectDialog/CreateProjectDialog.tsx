@@ -29,7 +29,11 @@ const createProjectFormSchema = z.object({
   name: z.string(),
 });
 
-export function CreateProjectDialog() {
+interface CreateProjectDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function CreateProjectDialog(props: CreateProjectDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('projects/page');
   const { push } = useRouter();
@@ -97,12 +101,14 @@ export function CreateProjectDialog() {
         isConfirmBusy={isPending || isSuccess}
         onSubmit={form.handleSubmit(handleSubmit)}
         trigger={
-          <Button
-            data-testid="create-project-button"
-            preIcon={<PlusIcon />}
-            color="primary"
-            label={t('createProjectDialog.triggerButton')}
-          />
+          props.trigger || (
+            <Button
+              data-testid="create-project-button"
+              preIcon={<PlusIcon />}
+              color="primary"
+              label={t('createProjectDialog.triggerButton')}
+            />
+          )
         }
       >
         <VStack gap="form">

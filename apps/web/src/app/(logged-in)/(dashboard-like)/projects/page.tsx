@@ -27,17 +27,13 @@ function isProjectViewMode(mode: string): mode is ProjectViewMode {
   return mode === 'cloud' || mode === 'selfHosted';
 }
 
-function ProjectsPageInner() {
-  const searchParams = useSearchParams();
-  const defaultMode = searchParams.get('view-mode');
+interface ProjectsPageInnerProps {
+  mode: ProjectViewMode;
+  setMode: (mode: ProjectViewMode) => void;
+}
 
-  const [mode, setMode] = useState<ProjectViewMode>(() => {
-    if (defaultMode && isProjectViewMode(defaultMode)) {
-      return defaultMode;
-    }
-    return 'cloud'; // Default to 'cloud' if no valid mode is provided
-  });
-
+function ProjectsPageInner(props: ProjectsPageInnerProps) {
+  const { mode, setMode } = props;
   const t = useTranslations('projects/page.ProjectsPageInner');
 
   const [search, setSearch] = useState('');
@@ -46,11 +42,6 @@ function ProjectsPageInner() {
     if (mode) {
       setSearch('');
     }
-
-    // Update the URL search params to reflect the current mode
-    const url = new URL(window.location.href);
-    url.searchParams.set('view-mode', mode);
-    window.history.replaceState({}, '', url.toString());
   }, [mode]);
 
   return (
@@ -106,6 +97,14 @@ function ProjectsPage() {
   const importDialogTriggerRef = React.useRef<HTMLButtonElement>(null);
 
   const targetAgentId = searchParams.get('import-agent');
+  const defaultMode = searchParams.get('view-mode');
+
+  const [mode, setMode] = useState<ProjectViewMode>(() => {
+    if (defaultMode && isProjectViewMode(defaultMode)) {
+      return defaultMode;
+    }
+    return 'cloud'; // Default to 'cloud' if no valid mode is provided
+  });
 
   const {
     data: targetAgentfile,
@@ -132,6 +131,13 @@ function ProjectsPage() {
       importDialogTriggerRef.current?.click();
     }
   }, [targetAgentId, targetAgentfile]);
+
+  useEffect(() => {
+    // Update the URL search params to reflect the current mode
+    const url = new URL(window.location.href);
+    url.searchParams.set('view-mode', mode);
+    window.history.replaceState({}, '', url.toString());
+  }, [mode]);
 
   if (isLoading) {
     return (
@@ -166,18 +172,27 @@ function ProjectsPage() {
       <DashboardPageLayout
         title={t('title')}
         actions={
-          <HStack>
-            <ConnectToSelfHostedProjectDialog
+          mode === 'cloud' ? (
+            <CreateProjectDialog
               trigger={
-                <Button color="tertiary" label={t('connectToSelfHosted')} />
+                <Button
+                  data-testid="create-project-button"
+                  color="primary"
+                  label={t('createProject')}
+                />
               }
             />
-            <CreateProjectDialog />
-          </HStack>
+          ) : (
+            <ConnectToSelfHostedProjectDialog
+              trigger={
+                <Button color="primary" label={t('connectToServer')} />
+              }
+            />
+          )
         }
       >
         <DashboardPageSection>
-          <ProjectsPageInner />
+          <ProjectsPageInner mode={mode} setMode={setMode} />
         </DashboardPageSection>
       </DashboardPageLayout>
     </>
