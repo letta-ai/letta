@@ -528,7 +528,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
         }
       } catch (error) {
-        if (error instanceof TypeError && error.message === 'network error') {
+        if (error instanceof TypeError && (error.message === 'network error' || error.message === 'Load failed')) {
           // Network error, allow backend request to continue
           return;
         }
