@@ -288,6 +288,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       });
 
       let allText = '';
+      let data = '';
 
       try {
         const response = await fetch(
@@ -406,7 +407,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             if (line.trim() === '') continue;
 
             // Parse SSE format: "data: {json}" or just "{json}"
-            let data = line;
+            data = line;
             allText += `${data}\n`;
             if (line.startsWith('data: ')) {
               data = line.substring(6);
@@ -556,6 +557,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             userMessageOtid,
             url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
             streamData: allText || 'No stream data available',
+            chunkData: data || 'No chunk data available',
             requestBody,
           },
         });
