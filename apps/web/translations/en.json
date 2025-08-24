@@ -1588,7 +1588,7 @@
       "createdAt": "Updated at {date}",
       "viewAllTemplates": "View all"
     },
-    "subtitle": "Create, manage and monitor agents in this project",
+    "subtitle": "Create, manage, and monitor your agents",
     "QuickActions": {
       "subtitle": "Get started with these quick actions",
       "title": "Quick actions",
@@ -2504,7 +2504,72 @@
   "client/hooks/useWelcomeText": {
     "goodMorning": "Good morning, {firstName} ☀\uFE0F",
     "goodAfternoon": "Good afternoon, {firstName} ☀\uFE0F",
-    "goodEvening": "Good evening, {firstName} \uD83C\uDF15"
+    "goodEvening": "Good evening, {firstName} \uD83C\uDF15",
+    "lateNight": {
+      "1": "Hello, {firstName} \uD83C\uDF19",
+      "2": "Burning the midnight oil, {firstName}? \uD83C\uDF19",
+      "3": "Welcome back, {firstName} \uD83C\uDF19",
+      "4": "Still up, {firstName}? \uD83C\uDF19",
+      "5": "Good to see you, {firstName} \uD83C\uDF19",
+      "6": "Working late, {firstName}? \uD83C\uDF19",
+      "7": "Hey there, {firstName} \uD83C\uDF19",
+      "8": "The night is yours, {firstName} \uD83C\uDF19",
+      "9": "Greetings, {firstName} \uD83C\uDF19",
+      "10": "Hello night owl \uD83E\uDD89",
+      "count": "10"
+    },
+    "earlyMorning": {
+      "1": "You're up early, {firstName} ☀\uFE0F",
+      "2": "Rise and shine, {firstName} ☀\uFE0F",
+      "3": "Early bird gets the worm \uD83D\uDC26",
+      "4": "Starting the day bright and early, {firstName} ☀\uFE0F",
+      "5": "Hello, {firstName} ☀\uFE0F",
+      "6": "Early start today, {firstName}? ☀\uFE0F",
+      "7": "Welcome to a new day, {firstName} ☀\uFE0F",
+      "8": "Morning, {firstName} ☀\uFE0F",
+      "9": "Seizing the day, {firstName}? ☀\uFE0F",
+      "10": "Great to see you this morning, {firstName} ☀\uFE0F",
+      "count": "10"
+    },
+    "morning": {
+      "1": "Good morning, {firstName} ☀\uFE0F",
+      "2": "Morning, {firstName} ☀\uFE0F",
+      "3": "Hello, {firstName} ☀\uFE0F",
+      "4": "Welcome back, {firstName} ☀\uFE0F",
+      "5": "Great to see you, {firstName} ☀\uFE0F",
+      "6": "Nice to see you this morning, {firstName} ☀\uFE0F",
+      "7": "Hey there {firstName} ☀\uFE0F",
+      "8": "Greetings, {firstName} ☀\uFE0F",
+      "9": "Another cup of coffee, {firstName}? ☀\uFE0F",
+      "10": "Ready to get started, {firstName}? ☀\uFE0F",
+      "count": "10"
+    },
+    "afternoon": {
+      "1": "Good afternoon, {firstName} ☀\uFE0F",
+      "2": "Afternoon, {firstName} ☀\uFE0F",
+      "3": "Hello, {firstName} ☀\uFE0F",
+      "4": "Welcome back, {firstName} ☀\uFE0F",
+      "5": "Hope your day is going well, {firstName} ☀\uFE0F",
+      "6": "Great to see you, {firstName} ☀\uFE0F",
+      "7": "Hey there, {firstName} ☀\uFE0F",
+      "8": "Back again, {firstName}? ☀\uFE0F",
+      "9": "Good afternoon, {firstName} ☀\uFE0F",
+      "10": "Ready to continue, {firstName}? ☀\uFE0F",
+      "count": "10"
+    },
+    "evening": {
+      "1": "Good evening, {firstName} \uD83C\uDF15",
+      "2": "Evening, {firstName} \uD83C\uDF15",
+      "3": "Hello, {firstName} \uD83C\uDF15",
+      "4": "Welcome back, {firstName} \uD83C\uDF15",
+      "5": "Hope you had a great day, {firstName} \uD83C\uDF15",
+      "6": "Great to see you tonight, {firstName} \uD83C\uDF15",
+      "7": "Hey there, {firstName} \uD83C\uDF15",
+      "8": "Winding down for the day, {firstName}? \uD83C\uDF15",
+      "9": "How was your day, {firstName}? \uD83C\uDF15",
+      "10": "Back for more, {firstName}? \uD83C\uDF15",
+      "count": "10"
+    }
   },
   "projects/hooks": {
     "remoteDevelopment": "Self-hosted"
