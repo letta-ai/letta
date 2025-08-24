@@ -1512,8 +1512,8 @@
   },
   "projects/page": {
     "connectToSelfHosted": "Connect to a self-hosted server",
-    "connectToServer": "Connect to server",
-    "createProject": "Create project",
+    "connectToServer": "Connect to a server",
+    "createProject": "Create new project",
     "ProjectsPageInner": {
       "search": "Search...",
       "viewMode": {

@@ -39,6 +39,7 @@ import {
   isMultiValue,
   KeyValueEditor,
   MiddleTruncate,
+  PlusIcon,
   Select,
   SideOverlay,
   SideOverlayHeader,
@@ -758,6 +759,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
             trigger={
               <Button
                 data-testid="start-create-identity"
+                preIcon={<PlusIcon />}
                 label={t('createIdentity')}
                 color="primary"
               />
@@ -782,6 +784,7 @@ export function IdentitiesTable(props: IdentitiesTableProps) {
           trigger={
             <Button
               data-testid="start-create-identity"
+              preIcon={<PlusIcon />}
               label={t('createIdentity')}
               color="primary"
             />

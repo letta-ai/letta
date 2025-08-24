@@ -177,7 +177,7 @@ function ProjectsPage() {
               trigger={
                 <Button
                   data-testid="create-project-button"
-                  color="primary"
+                  color="secondary"
                   label={t('createProject')}
                 />
               }
@@ -185,7 +185,7 @@ function ProjectsPage() {
           ) : (
             <ConnectToSelfHostedProjectDialog
               trigger={
-                <Button color="primary" label={t('connectToServer')} />
+                <Button color="secondary" label={t('connectToServer')} />
               }
             />
           )

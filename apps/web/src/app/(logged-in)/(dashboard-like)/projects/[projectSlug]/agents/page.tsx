@@ -1025,7 +1025,7 @@ function DeployedAgentsPage() {
             supportTemplateUploading
             projectId={currentProjectId}
             trigger={
-              <Button label={t('importAgents.title')} color="tertiary" />
+              <Button label={t('importAgents.title')} color="secondary" />
             }
           />
           <DeployAgentDialog />

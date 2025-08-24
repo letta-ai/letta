@@ -5,7 +5,6 @@ import {
   VStack,
   Button,
   ChevronRightIcon,
-  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
@@ -75,20 +74,18 @@ export function OrganizationUsageBlock() {
   return (
     <VStack fullWidth padding>
       <HStack fullWidth align="center">
-        <Tooltip content={t('tooltip')}>
-          <Link
-            target="_blank"
-            href="/settings/organization/billing"
-            color="tertiary"
-          >
-            <HStack gap="small">
-              <Typography overrideEl="span" variant="body2" bold>
-                {t('title')}
-              </Typography>
-              <ChevronRightIcon />
-            </HStack>
-          </Link>
-        </Tooltip>
+        <Link
+          target="_blank"
+          href="/settings/organization/billing"
+          color="tertiary"
+        >
+          <HStack gap="small">
+            <Typography overrideEl="span" variant="body2" bold>
+              {t('title')}
+            </Typography>
+            <ChevronRightIcon />
+          </HStack>
+        </Link>
       </HStack>
       <Row
         label={t('premiumModels.label')}

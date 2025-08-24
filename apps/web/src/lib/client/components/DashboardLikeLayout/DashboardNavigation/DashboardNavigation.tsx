@@ -190,8 +190,9 @@ export function ProfilePopover(props: ProfilePopoverProps) {
       trigger={
         <Button
           color="tertiary"
-          label="Settings"
+          label=""
           hideLabel
+          _use_rarely_disableTooltip
           preIcon={
             <Avatar
               imageSrc={user?.imageUrl || ''}
