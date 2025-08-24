@@ -195,17 +195,41 @@ const AddModelProviderSchema = z
     apiVersion: z.string().optional(),
   })
   .refine(
-    (data) => {
-      if (data.providerType === 'azure') {
-        return data.baseUrl && data.baseUrl.length >= 1;
-      }
-      return true;
-    },
-    {
-      message: 'Base URL is required for Azure provider',
-      path: ['baseUrl'],
-    },
-  );
+  (data) => {
+    if (data.providerType === 'azure') {
+      return data.baseUrl && data.baseUrl.length >= 1;
+    }
+    return true;
+  },
+  {
+    message: 'Base URL is required for Azure provider',
+    path: ['baseUrl'],
+  },
+)
+.refine(
+  (data) => {
+    if (data.providerType === 'bedrock') {
+      return data.accessKey && data.accessKey.length >= 1;
+    }
+    return true;
+  },
+  {
+    message: 'Access Key is required for Bedrock provider',
+    path: ['accessKey'],
+  },
+)
+.refine(
+  (data) => {
+    if (data.providerType === 'bedrock') {
+      return data.region && data.region.length >= 1;
+    }
+    return true;
+  },
+  {
+    message: 'Region is required for Bedrock provider',
+    path: ['region'],
+  },
+);
 
 type AddModelProviderSchema = z.infer<typeof AddModelProviderSchema>;
 
