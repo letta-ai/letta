@@ -460,6 +460,7 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @param data.limit Number of files to return
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.includeContent Whether to include full file content
+ * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -468,12 +469,14 @@ export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient: QueryClient,
   {
     after,
+    checkStatusUpdates,
     includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
@@ -483,6 +486,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn({
       after,
+      checkStatusUpdates,
       includeContent,
       limit,
       sourceId,
@@ -491,6 +495,7 @@ export const prefetchUseSourcesServiceListSourceFiles = (
     queryFn: () =>
       SourcesService.listSourceFiles({
         after,
+        checkStatusUpdates,
         includeContent,
         limit,
         sourceId,

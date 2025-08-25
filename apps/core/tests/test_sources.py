@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import tempfile
@@ -14,11 +15,12 @@ from letta_client import MessageCreate as ClientMessageCreate
 from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
+from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.schemas.enums import FileProcessingStatus, ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 from letta.settings import settings
-from tests.helpers.utils import upload_file_and_wait
+from tests.helpers.utils import upload_file_and_wait, upload_file_and_wait_list_files
 from tests.utils import wait_for_server
 
 # Constants
@@ -1131,10 +1133,43 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     ), f"Search results should contain relevant content: {search_results}"
 
 
+def test_pinecone_list_files_status(client: LettaSDKClient):
+    """Test that list_source_files properly syncs embedding status with Pinecone"""
+    if not should_use_pinecone():
+        pytest.skip("Pinecone not configured (missing API key or disabled), skipping Pinecone-specific tests")
+
+    # create source
+    source = client.sources.create(name="test_list_files_status", embedding="openai/text-embedding-3-small")
+
+    file_paths = ["tests/data/long_test.txt"]
+    uploaded_files = []
+    for file_path in file_paths:
+        # use the new helper that polls via list_files
+        file_metadata = upload_file_and_wait_list_files(client, source.id, file_path)
+        uploaded_files.append(file_metadata)
+        assert file_metadata.processing_status == "completed", f"File {file_path} should be completed"
+
+    # now get files using list_source_files to verify status checking works
+    files_list = client.sources.files.list(source_id=source.id, limit=100)
+
+    # verify all files show completed status and have proper embedding counts
+    assert len(files_list) == len(uploaded_files), f"Expected {len(uploaded_files)} files, got {len(files_list)}"
+
+    for file_metadata in files_list:
+        assert file_metadata.processing_status == "completed", f"File {file_metadata.file_name} should show completed status"
+
+        # verify embedding counts for files that have chunks
+        if file_metadata.total_chunks and file_metadata.total_chunks > 0:
+            assert (
+                file_metadata.chunks_embedded == file_metadata.total_chunks
+            ), f"File {file_metadata.file_name} should have all chunks embedded: {file_metadata.chunks_embedded}/{file_metadata.total_chunks}"
+
+    # cleanup
+    client.sources.delete(source_id=source.id)
+
+
 def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     """Test that file and source deletion removes records from Pinecone"""
-    import asyncio
-
     from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
 
     if not should_use_pinecone():
@@ -1202,8 +1237,6 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     assert (
         len(records_after) == 0
     ), f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
-
-    print("✓ Pinecone lifecycle verified - namespace is clean after source deletion")
 
 
 def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):

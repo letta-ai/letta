@@ -1304,6 +1304,7 @@ export class SourcesService {
    * @param data.limit Number of files to return
    * @param data.after Pagination cursor to fetch the next set of results
    * @param data.includeContent Whether to include full file content
+   * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
    * @param data.userId
    * @returns FileMetadata Successful Response
    * @throws ApiError
@@ -1322,6 +1323,7 @@ export class SourcesService {
         limit: data.limit,
         after: data.after,
         include_content: data.includeContent,
+        check_status_updates: data.checkStatusUpdates,
       },
       errors: {
         422: 'Validation Error',

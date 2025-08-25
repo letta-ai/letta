@@ -556,6 +556,7 @@ export const useSourcesServiceListSourcePassagesSuspense = <
  * @param data.limit Number of files to return
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.includeContent Whether to include full file content
+ * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
  * @param data.userId
  * @returns FileMetadata Successful Response
  * @throws ApiError
@@ -567,12 +568,14 @@ export const useSourcesServiceListSourceFilesSuspense = <
 >(
   {
     after,
+    checkStatusUpdates,
     includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
@@ -583,12 +586,13 @@ export const useSourcesServiceListSourceFilesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
-      { after, includeContent, limit, sourceId, userId },
+      { after, checkStatusUpdates, includeContent, limit, sourceId, userId },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.listSourceFiles({
         after,
+        checkStatusUpdates,
         includeContent,
         limit,
         sourceId,

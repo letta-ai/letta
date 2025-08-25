@@ -8849,6 +8849,7 @@ export const get_List_source_files = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       include_content: z.boolean().optional(),
+      check_status_updates: z.boolean().optional(),
     }),
     path: z.object({
       source_id: z.string(),

@@ -2,7 +2,6 @@ import asyncio
 import mimetypes
 import os
 import tempfile
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -14,7 +13,6 @@ import letta.constants as constants
 from letta.helpers.pinecone_utils import (
     delete_file_records_from_pinecone_index,
     delete_source_records_from_pinecone_index,
-    list_pinecone_index_for_files,
     should_use_pinecone,
 )
 from letta.log import get_logger
@@ -366,6 +364,10 @@ async def list_source_files(
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     include_content: bool = Query(False, description="Whether to include full file content"),
+    check_status_updates: bool = Query(
+        True,
+        description="Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.",
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -380,6 +382,7 @@ async def list_source_files(
         actor=actor,
         include_content=include_content,
         strip_directory_prefix=True,  # TODO: Reconsider this. This is purely for aesthetics.
+        check_status_updates=check_status_updates,
     )
 
 
@@ -408,51 +411,8 @@ async def get_file_metadata(
     if file_metadata.source_id != source_id:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
 
-    # Check for timeout if status is not terminal
-    if not file_metadata.processing_status.is_terminal_state():
-        if file_metadata.created_at:
-            # Handle timezone differences between PostgreSQL (timezone-aware) and SQLite (timezone-naive)
-            if settings.letta_pg_uri_no_default:
-                # PostgreSQL: both datetimes are timezone-aware
-                timeout_threshold = datetime.now(timezone.utc) - timedelta(minutes=settings.file_processing_timeout_minutes)
-                file_created_at = file_metadata.created_at
-            else:
-                # SQLite: both datetimes should be timezone-naive
-                timeout_threshold = datetime.utcnow() - timedelta(minutes=settings.file_processing_timeout_minutes)
-                file_created_at = file_metadata.created_at
-
-            if file_created_at < timeout_threshold:
-                # Move file to error status with timeout message
-                timeout_message = settings.file_processing_timeout_error_message.format(settings.file_processing_timeout_minutes)
-                try:
-                    file_metadata = await server.file_manager.update_file_status(
-                        file_id=file_metadata.id, actor=actor, processing_status=FileProcessingStatus.ERROR, error_message=timeout_message
-                    )
-                except ValueError as e:
-                    # state transition was blocked - log it but don't fail the request
-                    logger.warning(f"Could not update file to timeout error state: {str(e)}")
-                    # continue with existing file_metadata
-
-    if should_use_pinecone() and file_metadata.processing_status == FileProcessingStatus.EMBEDDING:
-        ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor)
-        logger.info(
-            f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} ({file_metadata.file_name}) in organization {actor.organization_id}"
-        )
-
-        if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
-            if len(ids) != file_metadata.total_chunks:
-                file_status = file_metadata.processing_status
-            else:
-                file_status = FileProcessingStatus.COMPLETED
-            try:
-                file_metadata = await server.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
-                )
-            except ValueError as e:
-                # state transition was blocked - this is a race condition
-                # log it but don't fail the request since we're just reading metadata
-                logger.warning(f"Race condition detected in get_file_metadata: {str(e)}")
-                # return the current file state without updating
+    # Check and update file status (timeout check and pinecone embedding sync)
+    file_metadata = await server.file_manager.check_and_update_file_status(file_metadata, actor)
 
     return file_metadata
 

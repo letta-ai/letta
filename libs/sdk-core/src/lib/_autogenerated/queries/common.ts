@@ -365,12 +365,14 @@ export const useSourcesServiceListSourceFilesKey =
 export const UseSourcesServiceListSourceFilesKeyFn = (
   {
     after,
+    checkStatusUpdates,
     includeContent,
     limit,
     sourceId,
     userId,
   }: {
     after?: string;
+    checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
@@ -379,7 +381,9 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourceFilesKey,
-  ...(queryKey ?? [{ after, includeContent, limit, sourceId, userId }]),
+  ...(queryKey ?? [
+    { after, checkStatusUpdates, includeContent, limit, sourceId, userId },
+  ]),
 ];
 export type SourcesServiceGetFileMetadataDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getFileMetadata>

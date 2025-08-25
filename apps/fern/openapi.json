@@ -1787,6 +1787,18 @@
               "title": "Include Content"
             },
             "description": "Whether to include full file content"
+          },
+          {
+            "name": "check_status_updates",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.",
+              "default": true,
+              "title": "Check Status Updates"
+            },
+            "description": "Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains."
           }
         ],
         "responses": {

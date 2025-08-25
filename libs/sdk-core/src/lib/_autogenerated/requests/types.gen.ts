@@ -6329,6 +6329,10 @@ export type ListSourceFilesData = {
    */
   after?: string | null;
   /**
+   * Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
+   */
+  checkStatusUpdates?: boolean;
+  /**
    * Whether to include full file content
    */
   includeContent?: boolean;
