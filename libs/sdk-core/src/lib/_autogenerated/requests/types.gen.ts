@@ -442,6 +442,7 @@ export type AssistantMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   /**
    * The message content sent by the agent (can be a string or an array of content parts)
    */
@@ -2332,6 +2333,7 @@ export type HiddenReasoningMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   state: 'redacted' | 'omitted';
   hidden_reasoning?: string | null;
 };
@@ -3905,6 +3907,7 @@ export type ReasoningMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   source?: 'reasoner_model' | 'non_reasoner_model';
   reasoning: string;
   signature?: string | null;
@@ -4667,6 +4670,7 @@ export type SystemMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   /**
    * The message content sent by the system
    */
@@ -4866,6 +4870,7 @@ export type ToolCallMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   tool_call: ToolCall | ToolCallDelta;
 };
 
@@ -4993,6 +4998,7 @@ export type ToolReturnMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   tool_return: string;
   status: 'success' | 'error';
   tool_call_id: string;
@@ -5435,6 +5441,7 @@ export type UserMessage = {
   step_id?: string | null;
   is_err?: boolean | null;
   seq_id?: number | null;
+  run_id?: string | null;
   /**
    * The message content sent by the user (can be a string or an array of multi-modal content parts)
    */

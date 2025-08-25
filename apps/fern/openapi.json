@@ -12500,6 +12500,17 @@
             ],
             "title": "Seq Id"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
           "content": {
             "anyOf": [
               {
@@ -17729,6 +17740,17 @@
             ],
             "title": "Seq Id"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
           "state": {
             "type": "string",
             "enum": ["redacted", "omitted"],
@@ -21112,6 +21134,17 @@
             ],
             "title": "Seq Id"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
           "source": {
             "type": "string",
             "enum": ["reasoner_model", "non_reasoner_model"],
@@ -22938,6 +22971,17 @@
             ],
             "title": "Seq Id"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
           "content": {
             "type": "string",
             "title": "Content",
@@ -23437,6 +23481,17 @@
             ],
             "title": "Seq Id"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
           "tool_call": {
             "anyOf": [
               {
@@ -23788,6 +23843,17 @@
               }
             ],
             "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
           },
           "tool_return": {
             "type": "string",
@@ -25015,6 +25081,17 @@
               }
             ],
             "title": "Seq Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
           },
           "content": {
             "anyOf": [

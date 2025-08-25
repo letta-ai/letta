@@ -1262,6 +1262,17 @@ export const $AssistantMessage = {
       ],
       title: 'Seq Id',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+    },
     content: {
       anyOf: [
         {
@@ -6714,6 +6725,17 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Seq Id',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+    },
     state: {
       type: 'string',
       enum: ['redacted', 'omitted'],
@@ -10376,6 +10398,17 @@ export const $ReasoningMessage = {
       ],
       title: 'Seq Id',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+    },
     source: {
       type: 'string',
       enum: ['reasoner_model', 'non_reasoner_model'],
@@ -12370,6 +12403,17 @@ export const $SystemMessage = {
       ],
       title: 'Seq Id',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+    },
     content: {
       type: 'string',
       title: 'Content',
@@ -12905,6 +12949,17 @@ export const $ToolCallMessage = {
       ],
       title: 'Seq Id',
     },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
+    },
     tool_call: {
       anyOf: [
         {
@@ -13271,6 +13326,17 @@ export const $ToolReturnMessage = {
         },
       ],
       title: 'Seq Id',
+    },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
     },
     tool_return: {
       type: 'string',
@@ -14568,6 +14634,17 @@ export const $UserMessage = {
         },
       ],
       title: 'Seq Id',
+    },
+    run_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Run Id',
     },
     content: {
       anyOf: [
