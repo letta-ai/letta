@@ -660,7 +660,7 @@ Cypress.Commands.add('getTemplateSnapshot', (templateVersion: string) => {
 Cypress.Commands.add('getCurrentTemplateFromUrl', () => {
   return cy.url().then((url) => {
     // Match pattern: /projects/{projectSlug}/templates/{templateName}
-    const match = url.match(/\/projects\/([^\/]+)\/templates\/([^\/\?]+)/);
+    const match = url.match(/\/projects\/([^/]+)\/templates\/([^/?]+)/);
 
     if (!match) {
       throw new Error('Current URL is not a template page. Expected format: /projects/{projectSlug}/templates/{templateName}');

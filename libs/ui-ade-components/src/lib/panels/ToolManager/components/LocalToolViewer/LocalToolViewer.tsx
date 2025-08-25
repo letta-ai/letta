@@ -741,7 +741,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
       toast.success(t('SaveToolButton.success'));
       setError(null);
     }
-  }, [isSuccess, setError]);
+  }, [isSuccess, t, setError]);
 
   return (
     <Button

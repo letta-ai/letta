@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
@@ -18,6 +19,7 @@ interface UseCurrentAgentMetaDataResponse {
   templateId?: string;
   isSleeptimeAgent: boolean;
 }
+
 // Helper hook for determining page context
 function usePageContext() {
   const pathname = usePathname();
@@ -45,12 +47,9 @@ function useLocalAgentData(agentId: string, enabled: boolean) {
 
 // Hook for template agent data
 function useTemplateAgentData() {
-
   const agentTemplate = useCurrentTemplate();
-
   const agentTemplateQuery = useCurrentAgentTemplate();
   const agentTemplateId = agentTemplateQuery.data?.body.id || '';
-
 
   const { data: agentSession } =
     webApi.simulatedAgents.getDefaultSimulatedAgent.useQuery({
@@ -136,56 +135,75 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
     !isChatPage && !isLocal && !templateName,
   );
 
-  // Early return for chat page
-  if (isChatPage) {
-    return {
-      agentId: preAgentId,
-      agentName: '',
-      agentType: '',
-      isTemplate: false,
-      isLocal: false,
-      isFromTemplate: false,
-      isSleeptimeAgent: false,
-    };
-  }
+  return useMemo((): UseCurrentAgentMetaDataResponse => {
+    // Early return for chat page
+    if (isChatPage) {
+      return {
+        agentId: preAgentId,
+        agentName: '',
+        agentType: '',
+        isTemplate: false,
+        isLocal: false,
+        isFromTemplate: false,
+        isSleeptimeAgent: false,
+      };
+    }
 
-  // Return local agent data
-  if (isLocal) {
-    return {
-      agentId: preAgentId,
-      agentName: localAgentData.agentName,
-      agentType: localAgentData.agentType,
-      isTemplate: false,
-      isLocal: true,
-      isFromTemplate: false,
-      isSleeptimeAgent: localAgentData.isSleeptimeAgent,
-    };
-  }
+    // Return local agent data
+    if (isLocal) {
+      return {
+        agentId: preAgentId,
+        agentName: localAgentData.agentName,
+        agentType: localAgentData.agentType,
+        isTemplate: false,
+        isLocal: true,
+        isFromTemplate: false,
+        isSleeptimeAgent: localAgentData.isSleeptimeAgent,
+      };
+    }
 
-  // Return template data
-  if (templateName) {
+    // Return template data
+    if (templateName) {
+      return {
+        templateId: templateData.templateId,
+        agentId: templateData.agentId,
+        agentName: templateData.agentName,
+        agentType: templateData.agentType,
+        templateName,
+        isTemplate: true,
+        isFromTemplate: false,
+        isSleeptimeAgent: false,
+        isLocal: false,
+      };
+    }
+
+    // Return deployed agent data
     return {
-      templateId: templateData.templateId,
-      agentId: templateData.agentId,
-      agentName: templateData.agentName,
-      agentType: templateData.agentType,
+      agentId: deployedData.agentId,
+      agentName: deployedData.agentName,
+      agentType: deployedData.agentType,
       templateName,
-      isTemplate: true,
-      isFromTemplate: false,
-      isSleeptimeAgent: false,
+      isTemplate: false,
+      isFromTemplate: deployedData.isFromTemplate,
+      isSleeptimeAgent: deployedData.isSleeptimeAgent,
       isLocal: false,
     };
-  }
-
-  // Return deployed agent data
-  return {
-    agentId: deployedData.agentId,
-    agentName: deployedData.agentName,
-    agentType: deployedData.agentType,
+  }, [
+    isChatPage,
+    isLocal,
+    preAgentId,
     templateName,
-    isTemplate: false,
-    isFromTemplate: deployedData.isFromTemplate,
-    isSleeptimeAgent: deployedData.isSleeptimeAgent,
-    isLocal: false,
-  };
+    localAgentData.agentName,
+    localAgentData.agentType,
+    localAgentData.isSleeptimeAgent,
+    templateData.templateId,
+    templateData.agentId,
+    templateData.agentName,
+    templateData.agentType,
+    deployedData.agentId,
+    deployedData.agentName,
+    deployedData.agentType,
+    deployedData.isFromTemplate,
+    deployedData.isSleeptimeAgent,
+  ]);
 }

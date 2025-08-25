@@ -1188,6 +1188,9 @@
     "deleteDefinition": "Delete",
     "overrides": "Show overrides"
   },
+  "components/Messages/InteractiveAgentMessage": {
+    "noContent": "This message returned with no content"
+  },
   "components/Messages": {
     "stepWasCancelled": "Step was cancelled by user",
     "exploreStopReason": "Click to view error",
@@ -1215,6 +1218,7 @@
       "hide": "Details"
     },
     "tokens": "{count} Tokens",
+    "loadingOldMessages": "Loading...",
     "loadingMessages": "Connecting to agent...",
     "noMessages": "There are no messages for this agent, chat below",
     "toolReturn": "Tool response",

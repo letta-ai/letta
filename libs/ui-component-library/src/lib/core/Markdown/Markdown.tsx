@@ -30,7 +30,6 @@ export function Markdown(props: MarkdownProps) {
 
   return (
     <ReactMarkdown
-      children={processedText}
       remarkPlugins={[remarkGfm]}
       className="text-sm"
       components={{
@@ -145,6 +144,8 @@ export function Markdown(props: MarkdownProps) {
           );
         },
       }}
-    />
+    >
+      {processedText}
+    </ReactMarkdown>
   );
 }

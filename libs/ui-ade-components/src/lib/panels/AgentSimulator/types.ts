@@ -1,4 +1,4 @@
-import type { MessageType } from '@letta-cloud/sdk-core';
+import type { ListMessagesResponse, MessageType } from '@letta-cloud/sdk-core';
 
 export interface AgentSimulatorMessageType {
   id: string;
@@ -16,5 +16,5 @@ export interface AgentSimulatorMessageType {
 export interface AgentSimulatorMessageGroupType {
   name: string;
   id: string;
-  messages: AgentSimulatorMessageType[];
+  messages: ListMessagesResponse;
 }

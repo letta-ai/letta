@@ -54,6 +54,7 @@
         "sort-imports": "off",
         "sort-keys": "off",
         "no-magic-numbers": "off",
+        "exhaustive-deps": "error",
         "no-ternary": "off",
         "unicorn/filename-case": "off"
       }

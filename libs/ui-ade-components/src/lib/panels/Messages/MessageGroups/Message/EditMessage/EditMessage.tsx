@@ -1,4 +1,3 @@
-import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
 import {
   Badge,
   Button,
@@ -24,10 +23,11 @@ import {
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
-import { useCurrentSimulatedAgent } from '../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { useCurrentSimulatedAgent } from '../../../../../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
+import { useRawMessageContent } from '../../../hooks/useRawMessageContent/useRawMessageContent';
 
 interface EditMessageProps {
-  message: AgentSimulatorMessageType;
+  message: LettaMessageUnion;
   onSuccess: VoidFunction;
   onClose: VoidFunction;
 }
@@ -45,10 +45,13 @@ export function EditMessage(props: EditMessageProps) {
 
   type EditMessageType = z.infer<typeof EditMessageSchema>;
 
+
+  const raw = useRawMessageContent(message);
+
   const form = useForm<EditMessageType>({
     resolver: zodResolver(EditMessageSchema),
     defaultValues: {
-      text: message.raw || '',
+      text: raw || '',
     },
   });
 
@@ -64,12 +67,12 @@ export function EditMessage(props: EditMessageProps) {
 
   const onSubmit = useCallback(
     (submitData: EditMessageType) => {
-      switch (message.type) {
+      switch (message.message_type) {
         case 'tool_call_message': {
           mutate(
             {
               agentId,
-              messageId: message.id.split('-tool')[0],
+              messageId: message.id,
               requestBody: {
                 message_type: 'assistant_message',
                 content: submitData.text,
@@ -94,7 +97,7 @@ export function EditMessage(props: EditMessageProps) {
                         return messages.map((m) => {
                           if (
                             m.message_type === 'tool_call_message' &&
-                            m.tool_call.tool_call_id === message.editId
+                            m.tool_call.tool_call_id === message.tool_call.tool_call_id
                           ) {
                             return {
                               ...m,
@@ -125,7 +128,7 @@ export function EditMessage(props: EditMessageProps) {
           mutate(
             {
               agentId,
-              messageId: message.editId || '',
+              messageId: message.id || '',
               requestBody: {
                 message_type: 'reasoning_message',
                 reasoning: submitData.text,
@@ -149,8 +152,8 @@ export function EditMessage(props: EditMessageProps) {
 
                         return messages.map((m) => {
                           if (
-                            m.id === message.editId &&
-                            message.type === 'reasoning_message'
+                            m.id === message.id &&
+                            message.message_type === 'reasoning_message'
                           ) {
                             return {
                               ...m,
@@ -175,7 +178,7 @@ export function EditMessage(props: EditMessageProps) {
           mutate(
             {
               agentId,
-              messageId: message.editId || '',
+              messageId: message.id || '',
               requestBody: {
                 message_type: 'user_message',
                 content: submitData.text,
@@ -199,8 +202,8 @@ export function EditMessage(props: EditMessageProps) {
 
                         return messages.map((m) => {
                           if (
-                            m.id === message.editId &&
-                            message.type === 'user_message'
+                            m.id === message.id &&
+                            message.message_type === 'user_message'
                           ) {
                             console.log(m);
                             return {
@@ -226,9 +229,7 @@ export function EditMessage(props: EditMessageProps) {
     },
     [
       agentId,
-      message.editId,
-      message.id,
-      message.type,
+      message,
       mutate,
       onSuccess,
       queryClient,
@@ -237,7 +238,7 @@ export function EditMessage(props: EditMessageProps) {
 
   const error = form.formState.errors.text;
 
-  if (!message.raw) {
+  if (!raw) {
     return null;
   }
 

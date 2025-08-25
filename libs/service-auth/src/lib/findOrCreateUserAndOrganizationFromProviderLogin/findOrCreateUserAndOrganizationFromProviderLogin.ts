@@ -170,22 +170,20 @@ async function createUserAndOrganization(
     throw new Error('Failed to create user from Letta Agents Service');
   }
 
-  const [[createdUser]] = await Promise.all([
-    db
-      .insert(users)
-      .values({
-        activeOrganizationId: organizationId,
-        name: userData.name || 'New User',
-        lettaAgentsId: lettaAgentsUser.id,
-        imageUrl: userData.imageUrl,
-        verifiedAt: userData.isVerified ? new Date() : null,
-        email: userData.email,
-        submittedOnboardingAt: userData.skipOnboarding ? new Date() : null,
-        providerId: userData.uniqueId,
-        signupMethod: userData.provider,
-      })
-      .returning({ userId: users.id }),
-  ]);
+  const [createdUser] = await db
+    .insert(users)
+    .values({
+      activeOrganizationId: organizationId,
+      name: userData.name || 'New User',
+      lettaAgentsId: lettaAgentsUser.id,
+      imageUrl: userData.imageUrl,
+      verifiedAt: userData.isVerified ? new Date() : null,
+      email: userData.email,
+      submittedOnboardingAt: userData.skipOnboarding ? new Date() : null,
+      providerId: userData.uniqueId,
+      signupMethod: userData.provider,
+    })
+    .returning({ userId: users.id });
 
   await AdminService.updateUser({
     requestBody: {

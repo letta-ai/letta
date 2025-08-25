@@ -121,10 +121,11 @@ const DialogContent = React.forwardRef<
                   <Alert
                     fullWidth
                     title={errorMessage}
-                    children={errorAdditionalMessage}
                     variant="destructive"
                     action={errorMessageAction}
-                  />
+                  >
+                    {errorAdditionalMessage}
+                  </Alert>
                 )}
                 <VStack
                   flex

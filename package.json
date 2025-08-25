@@ -123,6 +123,7 @@
     "drizzle-orm": "^0.38.3",
     "echarts": "^5.5.1",
     "express": "4.21.2",
+    "fast-equals": "^5.2.2",
     "fern-api": "^0.46.13",
     "fix-path": "^3.0.0",
     "gsap": "^3.12.5",

@@ -13,26 +13,29 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
-import { FeedbackButtons } from '../FeedbackButtons/FeedbackButtons';
-import { useStepsServiceRetrieveStep } from '@letta-cloud/sdk-core';
+import { FeedbackButtons } from '../../../FeedbackButtons/FeedbackButtons';
+import {
+  type LettaMessageUnion,
+  useStepsServiceRetrieveStep,
+} from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
-import type { AgentSimulatorMessageType } from '../../AgentSimulator/types';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
-import { useCurrentAgentMetaData } from '../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
-import { useTraceStepDetails } from '../useTraceStepDetails/useTraceStepDetails';
+import { useCurrentAgentMetaData } from '../../../../../hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
+import { useTraceStepDetails } from '../../../useTraceStepDetails/useTraceStepDetails';
 import { useStepDuration } from '@letta-cloud/utils-client';
 import {
   getLLMDurationFromTrace,
   getToolDurationFromTrace,
 } from '@letta-cloud/utils-shared';
-import { ModifyToolBehaviorPopover } from '../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
-import { CopyMessageContentButton } from '../CopyMessageContentButton/CopyMessageContentButton';
-import { ViewMessageTrace } from '../../../ViewMessageTrace/ViewMessageTrace';
+import { ModifyToolBehaviorPopover } from '../../../ModifyToolBehaviorPopover/ModifyToolBehaviorPopover';
+import { CopyMessageContentButton } from '../../../CopyMessageContentButton/CopyMessageContentButton';
+import { ViewMessageTrace } from '../../../../../ViewMessageTrace/ViewMessageTrace';
+import { useRawMessageContent } from '../../../hooks/useRawMessageContent/useRawMessageContent';
 
 interface StepDetailBarProps {
-  message: AgentSimulatorMessageType;
+  message: LettaMessageUnion;
   showDetails: boolean;
   setShowDetails: (show: boolean) => void;
 }
@@ -42,7 +45,11 @@ export function StepDetailBar(props: StepDetailBarProps) {
   const t = useTranslations('components/Messages');
   const { isLocal, agentId } = useCurrentAgentMetaData();
 
-  const { stepId, timestamp } = message;
+  const { step_id: stepId, date } = message;
+
+  const timestamp = useMemo(() => {
+    return date || new Date().toISOString();
+  }, [date]);
 
   const { data: stepDetails } = useStepsServiceRetrieveStep(
     {
@@ -78,7 +85,9 @@ export function StepDetailBar(props: StepDetailBarProps) {
     return getToolDurationFromTrace(traceDetails);
   }, [traceDetails]);
 
-  if (!message.stepId) {
+  const rawMessage = useRawMessageContent(message);
+
+  if (!stepId) {
     return null;
   }
 
@@ -115,12 +124,15 @@ export function StepDetailBar(props: StepDetailBarProps) {
               </HStack>
             )}
             <HStack gap="small">
-              {!!message.toolName && (
-                <ModifyToolBehaviorPopover toolName={message.toolName} />
-              )}
-              {message.raw && (
-                <CopyMessageContentButton message={message.raw} />
-              )}
+              {message.message_type === 'tool_call_message' &&
+                message.tool_call.name && (
+                  <ModifyToolBehaviorPopover
+                    toolName={message.tool_call.name}
+                  />
+                )}
+              {(message.message_type === 'user_message' ||
+                message.message_type === 'tool_return_message') &&
+                rawMessage && <CopyMessageContentButton message={rawMessage} />}
             </HStack>
           </HStack>
 

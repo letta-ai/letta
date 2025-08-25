@@ -1,4 +1,3 @@
-import type { MessagesDisplayMode } from '../../Messages/Messages';
 import type { Dispatch, SetStateAction } from 'react';
 import React from 'react';
 import { useTranslations } from '@letta-cloud/translations';
@@ -8,6 +7,7 @@ import {
   CodeIcon,
   RawToggleGroup,
 } from '@letta-cloud/ui-component-library';
+import type { MessagesDisplayMode } from '../../Messages/types';
 
 interface ChatroomContextType {
   renderMode: MessagesDisplayMode;

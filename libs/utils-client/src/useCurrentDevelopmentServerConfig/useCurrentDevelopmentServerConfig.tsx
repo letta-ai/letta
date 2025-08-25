@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
@@ -31,23 +32,25 @@ export function useCurrentDevelopmentServerConfig(): DevelopmentServerConfig | n
     enabled: !isLocal && !!developmentServerId && developmentServerId !== 'local',
   });
 
-  if (isLocal) {
+  return useMemo((): DevelopmentServerConfig | null => {
+    if (isLocal) {
+      return {
+        id: 'local',
+        name: t('localAgents'),
+        url: 'http://localhost:8283',
+        password: '',
+      };
+    }
+
+    if (!data) {
+      return null;
+    }
+
     return {
-      id: 'local',
-      name: t('localAgents'),
-      url: 'http://localhost:8283',
-      password: '',
+      id: data.body.developmentServer.id,
+      name: data.body.developmentServer.name,
+      url: data.body.developmentServer.url,
+      password: data.body.developmentServer.password || '',
     };
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  return {
-    id: data.body.developmentServer.id,
-    name: data.body.developmentServer.name,
-    url: data.body.developmentServer.url,
-    password: data.body.developmentServer.password || '',
-  };
+  }, [data, isLocal, t]);
 }

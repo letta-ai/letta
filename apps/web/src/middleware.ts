@@ -19,8 +19,7 @@ async function handleStream(req: NextRequest) {
         cookie: req.headers.get('cookie') || '',
         'Content-Type': 'application/json',
       },
-
-      body: req.body,
+      ...(req.method !== 'GET' && { body: req.body }),
     });
 
     if (!response.ok) {

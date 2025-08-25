@@ -124,12 +124,11 @@ export const EventSequence: Story = {
             125ms
           </Typography>
         }
-        children={
-          <Typography variant="body2" color="muted">
-            Fetched user preferences and settings
-          </Typography>
-        }
-      />
+      >
+        <Typography variant="body2" color="muted">
+          Fetched user preferences and settings
+        </Typography>
+      </EventItem>
       <EventItem
         name="Initialize Session"
         icon={<StartIcon />}

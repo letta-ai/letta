@@ -56,7 +56,6 @@ import { useCurrentSimulatedAgent } from '../../hooks/useCurrentSimulatedAgent/u
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { jsonToCurl } from '@letta-cloud/utils-shared';
-import type { MessagesDisplayMode } from '../Messages/Messages';
 import { Messages } from '../Messages/Messages';
 import {
   useCurrentAPIHostConfig,
@@ -70,6 +69,7 @@ import { useQuickADETour } from '../../hooks/useQuickADETour/useQuickADETour';
 import { ChatroomContext } from './ChatroomContext/ChatroomContext';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 import { useAtom } from 'jotai';
+import type { MessagesDisplayMode } from '../Messages/types';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
@@ -746,7 +746,9 @@ function useBillingTier() {
       enabled: !isLocal,
     });
 
-  return data?.body.billingTier || 'enterprise';
+  return useMemo(() => {
+    return data?.body.billingTier || 'enterprise'
+  }, [data?.body.billingTier]);
 }
 
 export function AgentSimulator() {

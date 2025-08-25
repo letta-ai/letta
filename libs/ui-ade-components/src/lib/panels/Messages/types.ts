@@ -6,3 +6,5 @@ export interface GetMessagesWorkerPayload {
   headers?: Record<string, string>;
   includeErr?: boolean;
 }
+
+export type MessagesDisplayMode = 'debug' | 'interactive' | 'simple';
