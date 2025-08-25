@@ -287,12 +287,26 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
+        thinking_enabled = False
+        if messages:
+            for message in messages:
+                if isinstance(message.get("content"), list):
+                    for content_block in message["content"]:
+                        if content_block.get("type") == "thinking":
+                            thinking_enabled = True
+                            break
+
         try:
-            result = await client.beta.messages.count_tokens(
-                model=model or "claude-3-7-sonnet-20250219",
-                messages=messages or [{"role": "user", "content": "hi"}],
-                tools=anthropic_tools or [],
-            )
+            count_params = {
+                "model": model or "claude-3-7-sonnet-20250219",
+                "messages": messages or [{"role": "user", "content": "hi"}],
+                "tools": anthropic_tools or [],
+            }
+
+            if thinking_enabled:
+                count_params["thinking"] = {"type": "enabled", "budget_tokens": 16000}
+
+            result = await client.beta.messages.count_tokens(**count_params)
         except:
             raise
 

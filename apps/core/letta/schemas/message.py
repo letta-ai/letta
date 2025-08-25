@@ -846,7 +846,7 @@ class Message(BaseMessage):
             }
             content = []
             # COT / reasoning / thinking
-            if self.content is not None and len(self.content) > 1:
+            if self.content is not None and len(self.content) >= 1:
                 for content_part in self.content:
                     if isinstance(content_part, ReasoningContent):
                         content.append(
