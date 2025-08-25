@@ -64,7 +64,7 @@ export function ExecuteToolEvent(props: SendMessageEventProps) {
             date: new Date(event.timestamp).toLocaleString(),
             tool_return: funcReturn,
             tool_call_id: event.stepId,
-            status: status,
+            status: status === 'success' ? 'success' : 'error',
             id: event.stepId,
             stderr: [stdErr],
             stdout: [stdOut],

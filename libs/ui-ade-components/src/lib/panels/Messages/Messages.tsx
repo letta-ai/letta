@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   VStack,
   LoadingEmptyStatusComponent,
@@ -89,7 +89,7 @@ export function Messages(props: MessagesProps) {
   const queryClient = useQueryClient();
   const { data: includeErr = false } = useFeatureFlag('SHOW_ERRORED_MESSAGES');
 
-  const { data, hasNextPage, fetchNextPage, isFetching } = useInfiniteQuery<
+  const { data, hasNextPage, fetchNextPage, isFetching, isFetchingNextPage } = useInfiniteQuery<
     LettaMessageUnion[],
     Error,
     InfiniteData<ListMessagesResponse>,
@@ -180,6 +180,59 @@ export function Messages(props: MessagesProps) {
     }
   }, [data?.pages, lastMessageReceived?.id]);
 
+  const shouldRenderMessage = useCallback(
+    function shouldRenderMessage(message: LettaMessageUnion) {
+      switch (mode) {
+        case 'interactive': {
+          if (!message.message_type) {
+            return false;
+          }
+
+          if (['system_message'].includes(message.message_type )) {
+            return false;
+          }
+
+          if (message.message_type === 'user_message') {
+
+            // we should hide user_messages with `"type": "login" json (do not parse)
+            if (typeof  message.content === 'string') {
+              if (message.content?.includes('"type": "login"')) {
+                return false;
+              }
+
+              // hides if type is system_alert
+              if (message.content?.includes('"type": "system_alert"')) {
+                return false;
+              }
+
+              if (message.content?.includes('"type": "heartbeat"')) {
+                return false;
+              }
+            }
+
+
+            return true;
+          }
+
+          return true;
+        }
+        case 'debug':
+          return true;
+        case 'simple': {
+          if (
+            message.message_type === 'tool_call_message' &&
+            message.tool_call.name === 'send_message'
+          ) {
+            return true;
+          }
+
+          return message.message_type === 'user_message';
+        }
+      }
+    },
+    [mode],
+  );
+
   // Memoize the raw messages array to prevent unnecessary recalculations
   const messages = useMemo(() => {
     if (!data) {
@@ -192,8 +245,8 @@ export function Messages(props: MessagesProps) {
 
     const messages = data.pages.flat();
 
-    return removeDuplicateMessages(messages);
-  }, [data]);
+    return removeDuplicateMessages(messages).filter(shouldRenderMessage)
+  }, [data, shouldRenderMessage]);
 
   const { scrollRef } = useManageMessageScroller({
     isSendingMessage,
@@ -232,7 +285,7 @@ export function Messages(props: MessagesProps) {
                   width: 28
                 }}
                 className={cn(
-                  isFetching ? 'opacity-100' : 'opacity-0',
+                  isFetchingNextPage ? 'opacity-100' : 'opacity-0',
                   'transition-opacity duration-500',
                 )}
                 fullHeight
@@ -245,7 +298,7 @@ export function Messages(props: MessagesProps) {
               >
                 <Spinner size="small" />
               </HStack>
-              <div style={{ width: 209 }} />
+              <div style={{ width: 220 }} />
             </div>
           )}
           <MessageGroups messages={messages} hasNextPage={hasNextPage} />
@@ -253,14 +306,13 @@ export function Messages(props: MessagesProps) {
         <div
           className={cn(
             'absolute w-full overflow-hidden h-full top-0 left-0 items-center justify-center transition-opacity duration-500',
-            data ? 'opacity-0 pointer-events-none' : '',
+            messages.length > 0 ? 'opacity-0 pointer-events-none' : '',
           )}
         >
           <LoadingEmptyStatusComponent
             isLoading={!data}
             emptyMessage={t('noMessages')}
             loaderFillColor="background-grey"
-            hideText
             loaderVariant="spinner"
           />
         </div>

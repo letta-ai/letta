@@ -15,7 +15,7 @@ import { RawCodeEditor } from '../../core/Code/Code';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
-import type { ToolReturnMessageSchemaType } from '@letta-cloud/sdk-core';
+import type { ToolReturnMessage } from '@letta-cloud/sdk-core';
 import { TabGroup } from '../../core/TabGroup/TabGroup';
 import { functionCallOpenStatusAtom } from './functionCallOpenStatusAtom';
 import { Dialog } from '../../core/Dialog/Dialog';
@@ -62,7 +62,7 @@ interface FunctionCallProps {
   name: string;
   variant?: FunctionCallVariants;
   inputs: string;
-  response?: ToolReturnMessageSchemaType;
+  response?: ToolReturnMessage;
   status?: string;
   id: string;
   actions?: React.ReactNode;

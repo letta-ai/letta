@@ -1,16 +1,10 @@
-import {
-  type ToolCallMessage,
-  type ToolReturnMessageSchemaType,
-} from '@letta-cloud/sdk-core';
+import type { ToolCallMessage, ToolReturnMessage } from '@letta-cloud/sdk-core';
 import { FunctionCall } from '@letta-cloud/ui-component-library';
 import React from 'react';
 
-
-
-
 interface InteractiveToolCallMessageProps {
   message: ToolCallMessage;
-  toolReturnMessage?: ToolReturnMessageSchemaType;
+  toolReturnMessage?: ToolReturnMessage;
 }
 
 export function InteractiveToolCallMessage(
@@ -18,7 +12,6 @@ export function InteractiveToolCallMessage(
 ) {
   const { message, toolReturnMessage } = props;
   const { tool_call, name, id } = message;
-
 
   return (
     <FunctionCall

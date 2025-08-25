@@ -1,12 +1,11 @@
-import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
+import type {
+  LettaMessageUnion,
+  ToolReturnMessage,
+} from '@letta-cloud/sdk-core';
 import { InteractiveMessage } from './InteractiveMessage/InteractiveMessage';
 import { useMessagesContext } from '../../hooks/useMessagesContext/useMessagesContext';
 import React, { memo, useMemo, useState } from 'react';
-import {
-  HStack,
-  JSONViewer,
-  VStack,
-} from '@letta-cloud/ui-component-library';
+import { HStack, JSONViewer, VStack } from '@letta-cloud/ui-component-library';
 import { cn } from '@letta-cloud/ui-styles';
 import { StepDetailBar } from './StepDetailBar/StepDetailBar';
 import { EditMessage } from './EditMessage/EditMessage';
@@ -15,79 +14,75 @@ import { useMessageContext, MessageContextProvider } from './MessageContext';
 
 interface MessageProps {
   message: LettaMessageUnion;
+  toolReturnMessage?: ToolReturnMessage;
 }
 
-const MessageInner = memo(
-  function MessageInner(props: MessageProps) {
-    const { message } = props;
-    const { mode } = useMessagesContext();
+function MessageInner(props: MessageProps) {
+  const { message, toolReturnMessage } = props;
+  const { mode } = useMessagesContext();
 
-    switch (mode) {
-      case 'simple':
-        return <InteractiveMessage message={message} />;
-      case 'interactive':
-        return <InteractiveMessage message={message} />;
-      case 'debug':
-        return (
-          <VStack
-            overflowX="auto"
-            fullWidth
-            color="background-grey"
-            border
-            padding="xsmall"
-          >
-            <JSONViewer noWrap data={message} />
-          </VStack>
-        );
-
-      default:
-        return null;
-    }
-  },
-  (prevProps, nextProps) => {
-    return deepEqual(prevProps.message, nextProps.message);
-  },
-);
-
-interface MessageContentProps {
-  message: LettaMessageUnion;
-}
-
-const MessageContent = memo(
-  function MessageContent(props: MessageContentProps) {
-    const { message } = props;
-    const { isEditing, setIsEditing } = useMessageContext();
-
-    if (isEditing) {
+  switch (mode) {
+    case 'simple':
+      return <InteractiveMessage message={message} />;
+    case 'interactive':
       return (
-        <EditMessage
-          onClose={() => {
-            setIsEditing(false);
-          }}
-          onSuccess={() => {
-            setIsEditing(false);
-          }}
+        <InteractiveMessage
+          toolReturnMessage={toolReturnMessage}
           message={message}
         />
       );
-    }
+    case 'debug':
+      return (
+        <VStack
+          overflowX="auto"
+          fullWidth
+          color="background-grey"
+          border
+          padding="xsmall"
+        >
+          <JSONViewer noWrap data={message} />
+        </VStack>
+      );
 
-    // Default handling for other message types
+    default:
+      return null;
+  }
+}
+
+interface MessageContentProps {
+  message: LettaMessageUnion;
+  toolReturnMessage?: ToolReturnMessage;
+}
+
+function MessageContent(props: MessageContentProps) {
+  const { message, toolReturnMessage } = props;
+  const { isEditing, setIsEditing } = useMessageContext();
+
+  if (isEditing) {
     return (
-      <HStack justify="spaceBetween" align="start">
-        <MessageInner message={message} />
-
-      </HStack>
+      <EditMessage
+        onClose={() => {
+          setIsEditing(false);
+        }}
+        onSuccess={() => {
+          setIsEditing(false);
+        }}
+        message={message}
+      />
     );
-  },
-  (prevProps, nextProps) => {
-    return deepEqual(prevProps.message, nextProps.message);
-  },
-);
+  }
+
+  // Default handling for other message types
+  return (
+    <HStack justify="spaceBetween" align="start">
+      <MessageInner message={message} toolReturnMessage={toolReturnMessage} />
+    </HStack>
+  );
+}
 
 export const Message = memo(
   function Message(props: MessageProps) {
-    const { message } = props;
+    const { message, toolReturnMessage } = props;
     const { disableInteractivity, mode } = useMessagesContext();
 
     const isInteractiveMode = useMemo(() => mode === 'interactive', [mode]);
@@ -109,7 +104,10 @@ export const Message = memo(
           )}
         >
           <MessageContextProvider>
-            <MessageContent message={message} />
+            <MessageContent
+              message={message}
+              toolReturnMessage={toolReturnMessage}
+            />
           </MessageContextProvider>
           {!disableInteractivity && isInteractiveMode && (
             <StepDetailBar

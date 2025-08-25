@@ -11,7 +11,7 @@ import {
 import React, { memo, useMemo } from 'react';
 import { useGroupedMessages } from '../hooks/useGroupedMessages/useGroupedMessages';
 import { useMessagesContext } from '../hooks/useMessagesContext/useMessagesContext';
-import type { ListMessagesResponse } from '@letta-cloud/sdk-core';
+import type { ListMessagesResponse, ToolReturnMessage } from '@letta-cloud/sdk-core';
 import type { AgentSimulatorMessageGroupType } from '../../AgentSimulator/types';
 import { Message } from './Message/Message';
 import { deepEqual } from 'fast-equals';
@@ -31,6 +31,20 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       ),
     [messages],
+  );
+
+  const toolReturnMessages = useMemo(
+    () =>
+      sortedMessages
+        .filter((message) => message.message_type === 'tool_return_message')
+        .reduce((acc, message) => {
+          if (message.message_type === 'tool_return_message') {
+            acc[message.tool_call_id] = message;
+          }
+
+          return acc;
+        }, {} as Record<string, ToolReturnMessage>),
+    [sortedMessages],
   );
 
   const textColor = useMemo(() => {
@@ -111,9 +125,22 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
         gap="medium"
         data-testid={`${name.toLowerCase()}-message-content`}
       >
-        {sortedMessages.map((message, index) => (
-          <Message key={`${message.id}_${index}`} message={message} />
-        ))}
+        {sortedMessages.map((message, index) => {
+          const toolReturnMessage =
+            message.message_type === 'tool_call_message' &&
+            'tool_call_id' in message.tool_call
+              ? toolReturnMessages[message.tool_call.tool_call_id || '']
+              : undefined;
+
+
+          return (
+            <Message
+              key={`${message.id}_${index}`}
+              message={message}
+              toolReturnMessage={toolReturnMessage}
+            />
+          );
+        })}
       </VStack>
     </VStack>
   );
@@ -126,10 +153,7 @@ interface MessageGroupsProps {
 
 export const MessageGroups = memo(
   function MessageGroups(props: MessageGroupsProps) {
-    const {
-      messages,
-      hasNextPage = false,
-    } = props;
+    const { messages, hasNextPage = false } = props;
 
     const { mode } = useMessagesContext();
 
@@ -137,7 +161,6 @@ export const MessageGroups = memo(
 
     const messageGroups = useGroupedMessages({
       messages,
-      mode,
     });
 
     return (
