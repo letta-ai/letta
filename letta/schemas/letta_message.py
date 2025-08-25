@@ -52,6 +52,7 @@ class LettaMessage(BaseModel):
     sender_id: str | None = None
     step_id: str | None = None
     is_err: bool | None = None
+    seq_id: int | None = None
 
     @field_serializer("date")
     def serialize_datetime(self, dt: datetime, _info):
