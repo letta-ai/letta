@@ -5083,8 +5083,8 @@ export const useProvidersServiceCheckProvider = <
  * Retrieve Stream
  * @param data The data for the request.
  * @param data.runId
- * @param data.requestBody
  * @param data.userId
+ * @param data.requestBody
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -5098,7 +5098,7 @@ export const useRunsServiceRetrieveStream = <
       TData,
       TError,
       {
-        requestBody: RetrieveStreamRequest;
+        requestBody?: RetrieveStreamRequest;
         runId: string;
         userId?: string;
       },
@@ -5111,7 +5111,7 @@ export const useRunsServiceRetrieveStream = <
     TData,
     TError,
     {
-      requestBody: RetrieveStreamRequest;
+      requestBody?: RetrieveStreamRequest;
       runId: string;
       userId?: string;
     },

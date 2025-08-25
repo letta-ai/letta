@@ -7633,7 +7633,7 @@ export type ListRunStepsData = {
 export type ListRunStepsResponse = Array<Step>;
 
 export type RetrieveStreamData = {
-  requestBody: RetrieveStreamRequest;
+  requestBody?: RetrieveStreamRequest;
   runId: string;
   userId?: string | null;
 };
