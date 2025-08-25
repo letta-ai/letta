@@ -86,10 +86,13 @@ export function StarterKitSelector(props: StarterKitSelectorProps) {
     Object.entries(STARTER_KITS).forEach(([id, starterKit]) => {
       const architecture = starterKit.architecture;
       if (architecture) {
-        if (!map[architecture]) {
-          map[architecture] = [];
+        // Merge memgpt_v2_agent into memgpt group for display purposes
+        const displayArchitecture = architecture === 'memgpt_v2_agent' ? 'memgpt' : architecture;
+
+        if (!map[displayArchitecture]) {
+          map[displayArchitecture] = [];
         }
-        map[architecture].push([id, starterKit]);
+        map[displayArchitecture].push([id, starterKit]);
       }
     });
 
