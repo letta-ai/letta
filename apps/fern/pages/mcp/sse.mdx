@@ -8,9 +8,25 @@ Remote MCP servers work with both Letta Cloud and self-hosted deployments. Strea
 
 ## Streamable HTTP
 
-Recommended transport with Bearer token auth support.
+Streamable HTTP is the recommended transport with support for MCP servers that use Bearer authorization, API keys, or OAuth 2.1. Letta also supports passing in custom headers for additional configuration.
+<img src="../../images/ade_mcp.png" />
 
 **ADE**: Tool Manager → Add MCP Server → Streamable HTTP
+
+### Agent Id Header
+
+When Letta makes tool calls to an MCP server, it includes the following in the HTTP request header:
+
+- **`x-agent-id`**: The ID of the agent making the tool call
+
+If you're implementing your own MCP server, this can be used to make requests against your Letta Agent via our API/SDK.
+
+### Agent Scoped Variables
+
+Letta recognizes templated variables in the custom header and auth token fields to allow for agent-scoped parameters defined in your [tool variables](/guides/agents/tool-variables):
+- For example, **`{{ AGENT_API_KEY }}`** will use the `AGENT_API_KEY` tool variable if available.
+- To provide a default value, **`{{ AGENT_API_KEY | api_key }}`** will fallback to `api_key` if `AGENT_API_KEY` is not set.
+- This is supported in the ADE as well when configuring API key/access tokens and custom headers.
 
 <CodeGroup>
 ```python title="python" maxLines=50
@@ -28,7 +44,23 @@ streamable_config = StreamableHTTPServerConfig(
     auth_token="Bearer your-token",  # Include "Bearer " prefix
     custom_headers={"X-API-Version": "v1"}  # Additional custom headers
 )
+
 client.tools.add_mcp_server(request=streamable_config)
+
+# Example with templated variables for agent-scoped authentication
+agent_scoped_config = StreamableHTTPServerConfig(
+    server_name="user-specific-server",
+    type=MCPServerType.STREAMABLE_HTTP,
+    server_url="https://api.example.com/mcp",
+    auth_header="Authorization",
+    auth_token="Bearer {{AGENT_API_KEY | api_key}}",  # Agent-specific API key
+    custom_headers={
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  # Agent-specific user ID
+        "X-API-Version": "v2"
+    }
+)
+
+client.tools.add_mcp_server(request=agent_scoped_config)
 ```
 ```typescript title="node.js" maxLines=50
 import { LettaClient, Letta } from '@letta-ai/letta-client';
@@ -48,18 +80,49 @@ const streamableConfig: Letta.StreamableHttpServerConfig = {
 };
 
 await client.tools.addMcpServer(streamableConfig);
+
+// Example with templated variables for agent-scoped authentication
+const agentScopedConfig: Letta.StreamableHttpServerConfig = {
+    serverName: "user-specific-server",
+    type: Letta.McpServerType.StreamableHttp,
+    serverUrl: "https://api.example.com/mcp",
+    authHeader: "Authorization",
+    authToken: "Bearer {{AGENT_API_KEY | api_key}}",  // Agent-specific API key
+    customHeaders: {
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  // Agent-specific user ID
+        "X-API-Version": "v2"
+    }
+};
+
+await client.tools.addMcpServer(agentScopedConfig);
 ```
 </CodeGroup>
 
 ## SSE (Deprecated)
 
 <Warning>
-SSE is deprecated. Use Streamable HTTP for new integrations.
+SSE is deprecated. Use Streamable HTTP for new integrations if available.
 </Warning>
 
 For legacy MCP servers that only support SSE.
 
 **ADE**: Tool Manager → Add MCP Server → SSE
+
+### Agent Id Header
+
+When Letta makes tool calls to an MCP server, it includes the following in the HTTP request header:
+
+- **`x-agent-id`**: The ID of the agent making the tool call
+
+If you're implementing your own MCP server, this can be used to make requests against your Letta Agent via our API/SDK.
+
+### Agent Scoped Variables
+
+Letta recognizes templated variables in the custom header and auth token fields to allow for agent-scoped parameters defined in your [tool variables](/guides/agents/tool-variables):
+- For example, **`{{ AGENT_API_KEY }}`** will use the `AGENT_API_KEY` tool variable if available.
+- To provide a default value, **`{{ AGENT_API_KEY | api_key }}`** will fallback to `api_key` if `AGENT_API_KEY` is not set.
+- This is supported in the ADE as well when configuring API key/access tokens and custom headers.
+
 <CodeGroup>
 ```python title="python" maxLines=50
 from letta_client import Letta
@@ -74,7 +137,12 @@ sse_config = SseServerConfig(
     server_url="https://legacy-mcp.example.com/sse",
     auth_header="Authorization",
     auth_token="Bearer optional-token"  # Include "Bearer " prefix
+    custom_headers={
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  # Agent-specific user ID
+        "X-API-Version": "v2"
+    }
 )
+
 client.tools.add_mcp_server(request=sse_config)
 ```
 ```typescript title="node.js" maxLines=50
@@ -89,6 +157,10 @@ const sseConfig: Letta.SseServerConfig = {
     serverUrl: "https://legacy-mcp.example.com/sse",
     authHeader: "Authorization",
     authToken: "Bearer optional-token"  // Include "Bearer " prefix
+    customHeaders: {
+        "X-User-ID": "{{AGENT_API_KEY | user_id}}",  // Agent-specific user ID
+        "X-API-Version": "v2"
+    }
 };
 
 await client.tools.addMcpServer(sseConfig);
@@ -96,7 +168,7 @@ await client.tools.addMcpServer(sseConfig);
 </CodeGroup>
 
 
-## Using Tools
+## Using MCP Tools
 
 **ADE**: Agent → Tools → Select MCP tools
 
@@ -115,11 +187,17 @@ tool = client.tools.add_mcp_tool(
     mcp_tool_name="get_weather"
 )
 
-# Create agent with MCP tool
+# Create agent with MCP tool attached
 agent_state = client.agents.create(
     model="openai/gpt-4o-mini",
     embedding="openai/text-embedding-3-small",
     tool_ids=[tool.id]
+)
+
+# Or attach tools to an existing agent
+client.agents.tool.attach(
+    agent_id=agent_state.id
+    tool_id=tool.id
 )
 
 # Use the agent with MCP tools
