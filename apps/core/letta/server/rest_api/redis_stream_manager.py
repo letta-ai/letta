@@ -28,7 +28,7 @@ class RedisSSEStreamWriter:
         redis_client: AsyncRedisClient,
         flush_interval: float = 0.5,
         flush_size: int = 50,
-        stream_ttl_seconds: int = 21600,  # 6 hours default
+        stream_ttl_seconds: int = 10800,  # 3 hours default
         max_stream_length: int = 10000,  # Max entries per stream
     ):
         """
