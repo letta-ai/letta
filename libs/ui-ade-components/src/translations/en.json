@@ -936,8 +936,8 @@
       "settings": "Settings",
       "advancedSettings": "Advanced",
       "tools": "Tools",
-      "datasources": "Datasources",
-      "agentSimulator": "Simulator",
+      "datasources": "Data Sources",
+      "agentSimulator": "Agent Simulator",
       "contextWindow": "Context Window",
       "coreMemories": "Core Memory",
       "archivalMemories": "Archival Memory"

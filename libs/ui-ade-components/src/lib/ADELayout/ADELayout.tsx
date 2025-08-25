@@ -1,8 +1,7 @@
 'use client';
 import {
-  AppsIcon,
   Button,
-  CloseIcon,
+  ChevronDownIcon,
   CodeIcon,
   CogIcon,
   ContextWindowIcon,
@@ -13,7 +12,6 @@ import {
   HStack,
   LettaInvaderIcon,
   Logo,
-  NiceGridDisplay,
   OnboardingPrimaryDialog,
   OnboardingPrimaryHeading,
   OnboardingSteps,
@@ -23,6 +21,7 @@ import {
   Typography,
   VisibleOnMobile,
   VStack,
+  Popover,
 } from '@letta-cloud/ui-component-library';
 import {
   AgentSettingsOnboarding,
@@ -55,12 +54,12 @@ import WelcomeWebp from './welcome-to-ade.webp';
 
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Slot } from '@radix-ui/react-slot';
-import { createPortal } from 'react-dom';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import { useGlobalNetworkInterceptor } from '../hooks';
+import {
+  useGlobalNetworkInterceptor,
+} from '../hooks';
 import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
 import { LLMConfigPanel } from '../panels/LLMConfigPanel/LLMConfigPanel';
 import { EmbeddingConfigPanel } from '../panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
@@ -369,127 +368,109 @@ function useAppPanels(): Record<string, AppPanel> {
   );
 }
 
-interface MobileAppSelectorProps {
-  selectedAppId: string;
-  setSelectedAppId: (appId: string) => void;
-  onClose: VoidFunction;
+interface MobileAppPopoverOption {
+  value: string;
+  label: string;
+  icon: React.ReactNode;
 }
 
-function MobileAppSelector(props: MobileAppSelectorProps) {
-  const { onClose, selectedAppId, setSelectedAppId } = props;
+interface MobileAppPopoverNavProps {
+  options: MobileAppPopoverOption[];
+  selectedOption: MobileAppPopoverOption | undefined;
+  onSelect: (option: MobileAppPopoverOption) => void;
+}
 
-  const t = useTranslations('ADELayout');
-  const appPanels = useAppPanels();
-
-  return createPortal(
-    <div
-      className="
-    bg-background
-    overflow-hidden
-    w-dvw
-    h-dvh
-    fade-in-0 animate-in
-    p-2
-    fixed top-0 left-0 z-miniapp"
-    >
-      <VStack
-        gap="large"
-        overflow="hidden"
-        align="center"
-        justify="center"
-        fullWidth
-        fullHeight
-      >
-        <VStack paddingX overflowY="auto" justify="center" fullHeight fullWidth>
-          <NiceGridDisplay itemWidth="100px" itemHeight="100px">
-            {Object.entries(appPanels).map(([appId, appPanel]) => (
-              <VStack
-                fullHeight
-                fullWidth
-                className="min-h-[100px]"
-                align="center"
-                justify="center"
-                color={selectedAppId === appId ? 'primary' : 'background'}
-                key={appId}
-                onClick={() => {
-                  onClose();
-                  setSelectedAppId(appId);
-                }}
-              >
-                <Slot className="w-8 h-8">{appPanel.icon}</Slot>
-                <Typography>{appPanel.mobileTitle}</Typography>
-              </VStack>
-            ))}
-          </NiceGridDisplay>
-        </VStack>
-        <HStack
-          color="background-grey"
-          onClick={() => {
-            onClose();
-          }}
-          as="button"
-          align="center"
-          padding
-          className="min-h-[56px] mb-[-7px]"
+function MobileAppPopoverNav({
+  options,
+  selectedOption,
+  onSelect,
+}: MobileAppPopoverNavProps) {
+  const [open, setOpen] = useState(false);
+  const t = useTranslations('ADELayout.MobileAppSelector');
+  return (
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      triggerAsChild
+      trigger={
+        <Button
           fullWidth
-          justify="spaceBetween"
-        >
-          <HStack align="center">
-            <AppsIcon />
-            <Typography bold className="mt-0.5">
-              {t('MobileAppSelector.apps')}
-            </Typography>
-          </HStack>
-          <div className="sr-only">{t('MobileAppSelector.close')}</div>
-          <CloseIcon />
-        </HStack>
+          color="grey2"
+          preIcon={selectedOption?.icon}
+          postIcon={<ChevronDownIcon />}
+          label={selectedOption?.label || t('apps')}
+          align="left"
+          _use_rarely_className="border border-border"
+        />
+      }
+      align="center"
+      side="bottom"
+      offset={4}
+    >
+      <VStack gap={false}>
+        {options.map((option) => (
+          <Button
+            key={option.value}
+            color={
+              option.value === selectedOption?.value ? 'brand' : 'secondary'
+            }
+            preIcon={option.icon}
+            label={option.label}
+            fullWidth
+            onClick={() => {
+              onSelect(option);
+              setOpen(false);
+            }}
+            align="left"
+            _use_rarely_className="border-none font-normal"
+          />
+        ))}
       </VStack>
-    </div>,
-    document.body,
+    </Popover>
   );
 }
 
 function MobileLayout() {
   const [selectedAppId, setSelectedAppId] = useState('agentSimulator');
-  const [isMobileAppSelectorOpen, setIsMobileAppSelectorOpen] = useState(false);
   const appPanels = useAppPanels();
   const selectedApp = appPanels[selectedAppId];
-  const t = useTranslations('ADELayout');
+
+  const options = useMemo(
+    () =>
+      Object.entries(appPanels).map(([appId, appPanel]) => ({
+        value: appId,
+        label: appPanel.mobileTitle,
+        icon: appPanel.icon,
+      })),
+    [appPanels],
+  );
+
+  const selectedOption = useMemo(
+    () => options.find((option) => option.value === selectedAppId),
+    [options, selectedAppId],
+  );
 
   return (
     <VStack gap={false} fullWidth fullHeight overflow="hidden">
+      <MobileAppPopoverNav
+        options={options}
+        selectedOption={selectedOption}
+        onSelect={(option) => {
+          if (
+            option &&
+            !Array.isArray(option) &&
+            'value' in option &&
+            option.value
+          ) {
+            setSelectedAppId(option.value);
+          }
+        }}
+      />
       <VStack gap={false} overflow="hidden" fullWidth flex collapseHeight>
         <VStack border fullWidth flex color="background-grey" collapseHeight>
           {selectedApp.content}
         </VStack>
-        <HStack
-          as="button"
-          onClick={() => {
-            setIsMobileAppSelectorOpen(true);
-          }}
-          fullWidth
-          justify="spaceBetween"
-          className="min-h-[56px] mb-[-7px]"
-          padding
-          align="center"
-        >
-          <HStack align="center">
-            <Slot className="w-5 h-5">{selectedApp.icon}</Slot>
-            <Typography bold>{selectedApp.title}</Typography>
-          </HStack>
-          <div className={'sr-only'}>{t('MobileAppSelector.open')}</div>
-          <AppsIcon />
-        </HStack>
       </VStack>
-      {isMobileAppSelectorOpen && (
-        <MobileAppSelector
-          onClose={() => {
-            setIsMobileAppSelectorOpen(false);
-          }}
-          selectedAppId={selectedAppId}
-          setSelectedAppId={setSelectedAppId}
-        />
-      )}
     </VStack>
   );
 }
