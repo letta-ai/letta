@@ -4,7 +4,7 @@ import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import type { SDKContext } from '../types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { db, projects } from '@letta-cloud/service-database';
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, desc } from 'drizzle-orm';
 type ListProjectsRequest = ServerInferRequest<
   typeof cloudContracts.projects.listProjects
 >;
@@ -31,6 +31,7 @@ async function listProjects(
 
   const projectsResponse = await db.query.projects.findMany({
     where: and(...where),
+    orderBy: [desc(projects.createdAt)],
     offset,
     limit: limit + 1,
   });
