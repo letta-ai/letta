@@ -350,7 +350,8 @@
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Not Compatible",
-        "details": "This folder's embedding model is not compatible with your current model."
+        "details": "This folder's embedding model is not compatible with your current model.",
+        "tooltip": "This folder uses <folder></folder>"
       },
       "emptyMessage": "You have not created any folders yet",
       "emptySearchMessage": "No folders found",
@@ -414,7 +415,8 @@
     "EditDataSourcesContent": {
       "notCompatible": {
         "details": "This folder's embedding config does not match the agent config, this may lead to the agent not remembering data properly",
-        "title": "Not Compatible"
+        "title": "Not Compatible",
+        "tooltip": "This folder uses <folder></folder>"
       },
       "processing": "This folder is being processed, please wait...",
       "delete": "Delete file",
@@ -495,7 +497,8 @@
       "attached": "Attached",
       "notCompatible": {
         "title": "Not Compatible",
-        "details": "This folder's embedding model is not compatible with your current model."
+        "details": "This folder's embedding model is not compatible with your current model.",
+        "tooltip": "This folder uses <folder></folder>"
       }
     },
     "NoFilesView": {
@@ -568,6 +571,7 @@
     "DataSourceSelector": {
       "createNewDataSource": "Create new folder",
       "incompatibleWarningTooltip": "This folder's embedding config does not match the agent config, this may lead to the agent not remembering data properly. Open this folder to see more details.",
+      "incompatibleWarningTooltipWithModels": "This folder uses <folder></folder>. Open this folder to see more details.",
       "attachExistingDataSource": "Attach existing folder"
     },
     "UploadFileModal": {

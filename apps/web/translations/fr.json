@@ -638,7 +638,8 @@
     "AttachDataSourceView": {
       "notCompatible": {
         "title": "Non compatible",
-        "details": "Le modèle d'intégration de cette source de données n'est pas compatible avec votre modèle actuel."
+        "details": "Le modèle d'intégration de cette source de données n'est pas compatible avec votre modèle actuel.",
+        "tooltip": "Ce dossier utilise le modèle d'intégration <folder></folder>."
       },
       "emptyMessage": "Vous n'avez pas encore créé de sources de données",
       "emptySearchMessage": "Aucune source de données trouvée",
@@ -689,7 +690,8 @@
     "EditDataSourcesContent": {
       "notCompatible": {
         "details": "La configuration d'intégration de cette source de données ne correspond pas à la configuration de l'agent. Cela peut empêcher l'agent de mémoriser correctement les données.",
-        "title": "Non compatible"
+        "title": "Non compatible",
+        "tooltip": "Ce dossier utilise le modèle d'intégration <folder></folder>."
       },
       "processing": "Cette source de données est en cours de traitement, veuillez patienter...",
       "delete": "Supprimer le fichier",

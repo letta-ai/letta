@@ -78,7 +78,12 @@ function DataSourceItem(props: DataSourceItemProps) {
       </HStack>
 
       {!isCompatible ? (
-        <Tooltip asChild content={t('notCompatible.details')}>
+        <Tooltip
+          asChild
+          content={t.rich('notCompatible.tooltip', {
+            folder: () => source.embedding_config?.embedding_model || '',
+          })}
+        >
           <Button
             color="primary"
             size="xsmall"

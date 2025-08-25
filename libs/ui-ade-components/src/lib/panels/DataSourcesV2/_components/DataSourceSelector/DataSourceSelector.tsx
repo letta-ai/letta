@@ -45,7 +45,11 @@ export function DataSourceButton(props: DataSourceButtonProps) {
         label={source.name}
         postIcon={
           !isCompatible && (
-            <Tooltip content={t('incompatibleWarningTooltip')}>
+            <Tooltip
+              content={t.rich('incompatibleWarningTooltipWithModels', {
+                folder: () => source.embedding_config?.embedding_model || '',
+              })}
+            >
               <WarningIcon size="xsmall" color="destructive" />
             </Tooltip>
           )

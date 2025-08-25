@@ -120,7 +120,9 @@ function AttachDataSourceAction(props: AttachDataSourceActionProps) {
     return (
       <Tooltip
         asChild
-        content={t('AttachDataSourceView.notCompatible.details')}
+        content={t.rich('AttachDataSourceView.notCompatible.tooltip', {
+          folder: () => source.embedding_config?.embedding_model || '',
+        })}
       >
         <Button
           color="primary"
@@ -1179,7 +1181,9 @@ function EditDataSourcesContent(props: EditDataSourcesContentProps) {
         return {
           badge: !isCompatible && (
             <Tooltip
-              content={t('EditDataSourcesContent.notCompatible.details')}
+              content={t.rich('EditDataSourcesContent.notCompatible.tooltip', {
+                folder: () => source.embedding_config?.embedding_model || '',
+              })}
             >
               <Badge
                 preIcon={<WarningIcon />}
