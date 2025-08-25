@@ -1251,6 +1251,17 @@ export const $AssistantMessage = {
       ],
       title: 'Is Err',
     },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
+    },
     content: {
       anyOf: [
         {
@@ -6692,6 +6703,17 @@ export const $HiddenReasoningMessage = {
       ],
       title: 'Is Err',
     },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
+    },
     state: {
       type: 'string',
       enum: ['redacted', 'omitted'],
@@ -10337,6 +10359,17 @@ export const $ReasoningMessage = {
       ],
       title: 'Is Err',
     },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
+    },
     source: {
       type: 'string',
       enum: ['reasoner_model', 'non_reasoner_model'],
@@ -12320,6 +12353,17 @@ export const $SystemMessage = {
       ],
       title: 'Is Err',
     },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
+    },
     content: {
       type: 'string',
       title: 'Content',
@@ -12844,6 +12888,17 @@ export const $ToolCallMessage = {
       ],
       title: 'Is Err',
     },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
+    },
     tool_call: {
       anyOf: [
         {
@@ -13199,6 +13254,17 @@ export const $ToolReturnMessage = {
         },
       ],
       title: 'Is Err',
+    },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
     },
     tool_return: {
       type: 'string',
@@ -14485,6 +14551,17 @@ export const $UserMessage = {
         },
       ],
       title: 'Is Err',
+    },
+    seq_id: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Seq Id',
     },
     content: {
       anyOf: [

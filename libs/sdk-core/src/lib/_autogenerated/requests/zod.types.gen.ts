@@ -2637,6 +2637,14 @@ export const AssistantMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   content: z.union([
     z.array(TextContent),
     z.string(),
@@ -5536,6 +5544,14 @@ export const HiddenReasoningMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   state: z.union([z.literal('redacted'), z.literal('omitted')]),
   hidden_reasoning: z
     .union([
@@ -5876,6 +5892,14 @@ export const SystemMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   content: z.string(),
 });
 
@@ -5932,6 +5956,14 @@ export const UserMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   content: z.union([
     z.array(LettaUserMessageContentUnion),
     z.string(),
@@ -5981,6 +6013,14 @@ export const ReasoningMessage = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -6067,6 +6107,14 @@ export const ToolCallMessage = z.object({
       z.undefined(),
     ])
     .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   tool_call: z.union([
     ToolCall,
     ToolCallDelta,
@@ -6116,6 +6164,14 @@ export const ToolReturnMessage = z.object({
       z.boolean(),
       z.null(),
       z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
       z.undefined(),
     ])
     .optional(),

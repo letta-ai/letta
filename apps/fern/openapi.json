@@ -12489,6 +12489,17 @@
             ],
             "title": "Is Err"
           },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
           "content": {
             "anyOf": [
               {
@@ -17707,6 +17718,17 @@
             ],
             "title": "Is Err"
           },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
           "state": {
             "type": "string",
             "enum": ["redacted", "omitted"],
@@ -21073,6 +21095,17 @@
             ],
             "title": "Is Err"
           },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
           "source": {
             "type": "string",
             "enum": ["reasoner_model", "non_reasoner_model"],
@@ -22888,6 +22921,17 @@
             ],
             "title": "Is Err"
           },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
           "content": {
             "type": "string",
             "title": "Content",
@@ -23376,6 +23420,17 @@
             ],
             "title": "Is Err"
           },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
+          },
           "tool_call": {
             "anyOf": [
               {
@@ -23716,6 +23771,17 @@
               }
             ],
             "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
           },
           "tool_return": {
             "type": "string",
@@ -24932,6 +24998,17 @@
               }
             ],
             "title": "Is Err"
+          },
+          "seq_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq Id"
           },
           "content": {
             "anyOf": [
