@@ -50,7 +50,7 @@ class RedisSSEStreamWriter:
         # Buffer for batching: run_id -> list of chunks
         self.buffer: Dict[str, List[Dict]] = defaultdict(list)
         # Track sequence IDs per run
-        self.seq_counters: Dict[str, int] = defaultdict(int)
+        self.seq_counters: Dict[str, int] = defaultdict(lambda: 1)
         # Track last flush time per run
         self.last_flush: Dict[str, float] = defaultdict(float)
 
@@ -237,7 +237,7 @@ async def create_background_stream_processor(
 async def redis_sse_stream_generator(
     redis_client: AsyncRedisClient,
     run_id: str,
-    start_cursor: Optional[int] = None,
+    starting_after: Optional[int] = None,
     poll_interval: float = 0.1,
     batch_size: int = 100,
 ) -> AsyncIterator[str]:
@@ -250,7 +250,7 @@ async def redis_sse_stream_generator(
     Args:
         redis_client: Redis client instance
         run_id: The run ID to read chunks for
-        start_cursor: Sequential ID (integer) to start reading from (default: 0 for beginning)
+        starting_after: Sequential ID (integer) to start reading from (default: None for beginning)
         poll_interval: Seconds to wait between polls when no new data (default: 0.1)
         batch_size: Number of entries to read per batch (default: 100)
 
@@ -259,7 +259,7 @@ async def redis_sse_stream_generator(
     """
     stream_key = f"sse:run:{run_id}"
     last_redis_id = "-"
-    cursor_seq_id = start_cursor or 0
+    cursor_seq_id = starting_after or 0
 
     logger.debug(f"Starting redis_sse_stream_generator for run_id={run_id}, stream_key={stream_key}")
 
@@ -273,7 +273,7 @@ async def redis_sse_stream_generator(
                     continue
 
                 chunk_seq_id = int(fields.get("seq_id", 0))
-                if chunk_seq_id >= cursor_seq_id:
+                if chunk_seq_id > cursor_seq_id:
                     data = fields.get("data", "")
                     if not data:
                         logger.debug(f"No data found for chunk {chunk_seq_id} in run {run_id}")

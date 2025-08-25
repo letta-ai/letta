@@ -1167,6 +1167,25 @@ def test_background_token_streaming_greeting_with_assistant_message(
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
 
+    run_id = messages[0].run_id
+    assert run_id is not None
+
+    response = client.runs.stream(run_id=run_id, starting_after=0)
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
+
+    last_message_cursor = messages[-3].seq_id - 1
+    response = client.runs.stream(run_id=run_id, starting_after=last_message_cursor)
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert len(messages) == 3
+    assert messages[0].message_type == "assistant_message" and messages[0].seq_id == last_message_cursor + 1
+    assert messages[1].message_type == "stop_reason"
+    assert messages[2].message_type == "usage_statistics"
+
 
 @pytest.mark.parametrize(
     "llm_config",

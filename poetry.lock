@@ -3708,14 +3708,14 @@ vcr = ["vcrpy (>=7.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.276"
+version = "0.1.277"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.276-py3-none-any.whl", hash = "sha256:6b5472bc9090265ee4ec832a6002eadf3e5dfd4fd2d229393a8e77930f3821fd"},
-    {file = "letta_client-0.1.276.tar.gz", hash = "sha256:23f992dc8714cfec857d5ae209d495a5a5911da285d06bdc6f4d1c744e27ebf1"},
+    {file = "letta_client-0.1.277-py3-none-any.whl", hash = "sha256:2428ee84ff3cf582c935623dd7678845bfe46e79c75cb9a1a1b6efe284c5bc16"},
+    {file = "letta_client-0.1.277.tar.gz", hash = "sha256:112837705c43c7c2c9a6baa99c38a0ad390f8bcb7ad0de5e3b9556990b898427"},
 ]
 
 [package.dependencies]
@@ -9231,4 +9231,4 @@ tests = ["wikipedia"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.11"
-content-hash = "7cfed00763e8850c5b92a42969920b6793aedba88d4dfe268d85c6f529de7060"
+content-hash = "db92e7562fa04425478033ae7f63ac7d8741192015ea0d4d970d2f1d47881c76"

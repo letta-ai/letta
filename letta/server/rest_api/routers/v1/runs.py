@@ -235,7 +235,7 @@ async def delete_run(
 )
 async def retrieve_stream(
     run_id: str,
-    request: RetrieveStreamRequest = Body(...),
+    request: RetrieveStreamRequest = Body(None),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -244,7 +244,7 @@ async def retrieve_stream(
     stream = redis_sse_stream_generator(
         redis_client=redis_client,
         run_id=run_id,
-        start_cursor=request.starting_after,
+        starting_after=request.starting_after,
         poll_interval=request.poll_interval,
         batch_size=request.batch_size,
     )
