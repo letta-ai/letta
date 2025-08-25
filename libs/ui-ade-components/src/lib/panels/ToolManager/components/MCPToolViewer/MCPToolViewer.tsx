@@ -49,7 +49,7 @@ function MCPToolContent(props: MCPToolContentProps) {
   }
 
   return (
-    <VStack fullWidth gap="large" padding>
+    <VStack fullWidth fullHeight gap="large" padding overflow="auto">
       <VStack gap="small" width="contained">
         <Typography variant="body3" bold>
           {t('description')}

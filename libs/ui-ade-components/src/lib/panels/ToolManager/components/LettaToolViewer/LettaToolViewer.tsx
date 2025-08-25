@@ -80,7 +80,7 @@ function LettaToolContent(props: LettaToolContentProps) {
   switch (mode) {
     case 'details':
       return (
-        <VStack gap="xlarge" fullWidth padding>
+        <VStack gap="xlarge" fullWidth fullHeight padding overflow="auto">
           <VStack gap="small" width="contained">
             <Typography variant="body3" bold>
               {t('description')}
