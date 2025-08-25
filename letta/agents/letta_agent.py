@@ -137,6 +137,10 @@ class LettaAgent(BaseAgent):
             message_buffer_limit=message_buffer_limit,
             message_buffer_min=message_buffer_min,
             partial_evict_summarizer_percentage=partial_evict_summarizer_percentage,
+            agent_manager=self.agent_manager,
+            message_manager=self.message_manager,
+            actor=self.actor,
+            agent_id=self.agent_id,
         )
 
     async def _check_run_cancellation(self) -> bool:
