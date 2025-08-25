@@ -1,6 +1,6 @@
 import asyncio
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from sqlalchemy import func, select, update
@@ -9,6 +9,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from letta.constants import MAX_FILENAME_LENGTH
+from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
+from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.file import FileContent as FileContentModel
 from letta.orm.file import FileMetadata as FileMetadataModel
@@ -20,7 +22,10 @@ from letta.schemas.source import Source as PydanticSource
 from letta.schemas.source_metadata import FileStats, OrganizationSourcesStats, SourceStats
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
+
+logger = get_logger(__name__)
 
 
 class DuplicateFileError(Exception):
@@ -279,6 +284,79 @@ class FileManager:
 
     @enforce_types
     @trace_method
+    async def check_and_update_file_status(
+        self,
+        file_metadata: PydanticFileMetadata,
+        actor: PydanticUser,
+    ) -> PydanticFileMetadata:
+        """
+        Check and update file status for timeout and embedding completion.
+
+        This method consolidates logic for:
+        1. Checking if a file has timed out during processing
+        2. Checking Pinecone embedding status and updating counts
+
+        Args:
+            file_metadata: The file metadata to check
+            actor: User performing the check
+
+        Returns:
+            Updated file metadata with current status
+        """
+        # check for timeout if status is not terminal
+        if not file_metadata.processing_status.is_terminal_state():
+            if file_metadata.created_at:
+                # handle timezone differences between PostgreSQL (timezone-aware) and SQLite (timezone-naive)
+                if settings.letta_pg_uri_no_default:
+                    # postgresql: both datetimes are timezone-aware
+                    timeout_threshold = datetime.now(timezone.utc) - timedelta(minutes=settings.file_processing_timeout_minutes)
+                    file_created_at = file_metadata.created_at
+                else:
+                    # sqlite: both datetimes should be timezone-naive
+                    timeout_threshold = datetime.utcnow() - timedelta(minutes=settings.file_processing_timeout_minutes)
+                    file_created_at = file_metadata.created_at
+
+                if file_created_at < timeout_threshold:
+                    # move file to error status with timeout message
+                    timeout_message = settings.file_processing_timeout_error_message.format(settings.file_processing_timeout_minutes)
+                    try:
+                        file_metadata = await self.update_file_status(
+                            file_id=file_metadata.id,
+                            actor=actor,
+                            processing_status=FileProcessingStatus.ERROR,
+                            error_message=timeout_message,
+                        )
+                    except ValueError as e:
+                        # state transition was blocked - log it but don't fail
+                        logger.warning(f"Could not update file to timeout error state: {str(e)}")
+                        # continue with existing file_metadata
+
+        # check pinecone embedding status
+        if should_use_pinecone() and file_metadata.processing_status == FileProcessingStatus.EMBEDDING:
+            ids = await list_pinecone_index_for_files(file_id=file_metadata.id, actor=actor)
+            logger.info(
+                f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_metadata.id} ({file_metadata.file_name}) in organization {actor.organization_id}"
+            )
+
+            if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
+                if len(ids) != file_metadata.total_chunks:
+                    file_status = file_metadata.processing_status
+                else:
+                    file_status = FileProcessingStatus.COMPLETED
+                try:
+                    file_metadata = await self.update_file_status(
+                        file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
+                    )
+                except ValueError as e:
+                    # state transition was blocked - this is a race condition
+                    # log it but don't fail since we're just checking status
+                    logger.warning(f"Race condition detected in check_and_update_file_status: {str(e)}")
+                    # return the current file state without updating
+
+        return file_metadata
+
+    @enforce_types
+    @trace_method
     async def upsert_file_content(
         self,
         *,
@@ -332,8 +410,22 @@ class FileManager:
         limit: Optional[int] = 50,
         include_content: bool = False,
         strip_directory_prefix: bool = False,
+        check_status_updates: bool = False,
     ) -> List[PydanticFileMetadata]:
-        """List all files with optional pagination."""
+        """List all files with optional pagination and status checking.
+
+        Args:
+            source_id: Source to list files from
+            actor: User performing the request
+            after: Pagination cursor
+            limit: Maximum number of files to return
+            include_content: Whether to include file content
+            strip_directory_prefix: Whether to strip directory prefix from filenames
+            check_status_updates: Whether to check and update status for timeout and embedding completion
+
+        Returns:
+            List of file metadata
+        """
         async with db_registry.async_session() as session:
             options = [selectinload(FileMetadataModel.content)] if include_content else None
 
@@ -345,10 +437,19 @@ class FileManager:
                 source_id=source_id,
                 query_options=options,
             )
-            return [
-                await file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix)
-                for file in files
-            ]
+
+            # convert all files to pydantic models
+            file_metadatas = await asyncio.gather(
+                *[file.to_pydantic_async(include_content=include_content, strip_directory_prefix=strip_directory_prefix) for file in files]
+            )
+
+            # if status checking is enabled, check all files concurrently
+            if check_status_updates:
+                file_metadatas = await asyncio.gather(
+                    *[self.check_and_update_file_status(file_metadata, actor) for file_metadata in file_metadatas]
+                )
+
+            return file_metadatas
 
     @enforce_types
     @trace_method

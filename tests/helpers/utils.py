@@ -308,3 +308,43 @@ def upload_file_and_wait(
         raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
 
     return file_metadata
+
+
+def upload_file_and_wait_list_files(
+    client: Letta,
+    source_id: str,
+    file_path: str,
+    name: Optional[str] = None,
+    max_wait: int = 60,
+    duplicate_handling: Optional[str] = None,
+):
+    """Helper function to upload a file and wait for processing using list_files instead of get_file_metadata"""
+    with open(file_path, "rb") as f:
+        if duplicate_handling:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
+        else:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
+
+    # wait for the file to be processed using list_files
+    start_time = time.time()
+    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+        if time.time() - start_time > max_wait:
+            raise TimeoutError(f"File processing timed out after {max_wait} seconds")
+        time.sleep(1)
+
+        # use list_files to get all files and find our specific file
+        files = client.sources.files.list(source_id=source_id, limit=100)
+        # find the file with matching id
+        for file in files:
+            if file.id == file_metadata.id:
+                file_metadata = file
+                break
+        else:
+            raise RuntimeError(f"File {file_metadata.id} not found in source files list")
+
+        print("Waiting for file processing to complete (via list_files)...", file_metadata.processing_status)
+
+    if file_metadata.processing_status == "error":
+        raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
+
+    return file_metadata
