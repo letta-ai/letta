@@ -41,6 +41,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       # Ensure secrets don't leak
@@ -138,6 +147,8 @@ jobs:
           LETTA_PG_PASSWORD: postgres
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
+          LETTA_REDIS_HOST: localhost
+          LETTA_REDIS_PORT: 6379
           LETTA_SERVER_PASS: test_server_token
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

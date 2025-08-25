@@ -18,10 +18,11 @@ jobs:
         apps/core/**
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/send-message-integration-tests.yml
-      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google'
+      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google -E redis'
       timeout-minutes: 15
       runner: '["self-hosted", "medium"]'
       ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      use-redis: true
       # TODO: "azure-gpt-4o-mini.json" add back later, getting content violation
       matrix-strategy: |
         {
