@@ -311,7 +311,7 @@ export function Messages(props: MessagesProps) {
         >
           <LoadingEmptyStatusComponent
             isLoading={!data}
-            emptyMessage={t('noMessages')}
+            emptyMessage={disableInteractivity ? t('noMessagesPreviewTab') : t('noMessages')}
             loaderFillColor="background-grey"
             loaderVariant="spinner"
           />
