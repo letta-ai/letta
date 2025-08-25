@@ -8209,6 +8209,12 @@ export const $LettaStreamingRequest = {
         'Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.',
       default: false,
     },
+    background: {
+      type: 'boolean',
+      title: 'Background',
+      description: 'Whether to process the request in the background.',
+      default: false,
+    },
   },
   type: 'object',
   required: ['messages'],

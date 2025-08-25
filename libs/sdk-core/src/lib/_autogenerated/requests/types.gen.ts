@@ -3017,6 +3017,10 @@ export type LettaStreamingRequest = {
    * Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.
    */
   include_pings?: boolean;
+  /**
+   * Whether to process the request in the background.
+   */
+  background?: boolean;
 };
 
 /**

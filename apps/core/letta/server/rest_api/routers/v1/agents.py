@@ -14,7 +14,7 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
-from letta.data_sources.redis_client import get_redis_client
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -40,6 +40,7 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
+from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.summarizer.enums import SummarizationMode
@@ -1259,7 +1260,42 @@ async def send_message_streaming(
                         else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
                     ),
                 )
+
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
+
+            if request.background and request.stream_tokens and settings.track_agent_run:
+                if isinstance(redis_client, NoopAsyncRedisClient):
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Background streaming is not available: Redis is not configured. Please ensure Redis is properly configured and running.",
+                    )
+
+                asyncio.create_task(
+                    create_background_stream_processor(
+                        stream_generator=agent_loop.step_stream(
+                            input_messages=request.messages,
+                            max_steps=request.max_steps,
+                            use_assistant_message=request.use_assistant_message,
+                            request_start_timestamp_ns=request_start_timestamp_ns,
+                            include_return_message_types=request.include_return_message_types,
+                        ),
+                        redis_client=redis_client,
+                        run_id=run.id,
+                    )
+                )
+
+                stream = redis_sse_stream_generator(
+                    redis_client=redis_client,
+                    run_id=run.id,
+                )
+
+                if request.include_pings and settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval)
+
+                return StreamingResponseWithStatusCode(
+                    stream,
+                    media_type="text/event-stream",
+                )
 
             if request.stream_tokens and model_compatible_token_streaming:
                 raw_stream = agent_loop.step_stream(
