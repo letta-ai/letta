@@ -2185,6 +2185,9 @@ export type ProvidersServiceCreateProviderMutationResult = Awaited<
 export type ProvidersServiceCheckProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.checkProvider>
 >;
+export type RunsServiceRetrieveStreamMutationResult = Awaited<
+  ReturnType<typeof RunsService.retrieveStream>
+>;
 export type AdminServiceCreateUserMutationResult = Awaited<
   ReturnType<typeof AdminService.createUser>
 >;

@@ -763,6 +763,29 @@ paths:
         - runs
         - steps
       x-fern-sdk-method-name: list
+  /v1/runs/{run_id}/stream:
+    post:
+      x-fern-streaming:
+        format: sse
+      x-fern-sdk-group-name:
+        - runs
+      x-fern-sdk-method-name: stream
+      responses:
+        '200':
+          content:
+            text/event-stream:
+              schema:
+                x-fern-type-name: LettaStreamingResponse
+                oneOf:
+                  - $ref: '#/components/schemas/SystemMessage'
+                  - $ref: '#/components/schemas/UserMessage'
+                  - $ref: '#/components/schemas/ReasoningMessage'
+                  - $ref: '#/components/schemas/ToolCallMessage'
+                  - $ref: '#/components/schemas/ToolReturnMessage'
+                  - $ref: '#/components/schemas/AssistantMessage'
+                  - $ref: '#/components/schemas/LettaPing'
+                  - $ref: '#/components/schemas/LettaStopReason'
+                  - $ref: '#/components/schemas/LettaUsageStatistics'
   /v1/health/:
     get:
       x-fern-sdk-group-name:

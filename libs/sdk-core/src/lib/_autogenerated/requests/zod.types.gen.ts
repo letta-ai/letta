@@ -6969,6 +6969,20 @@ export const ProviderUpdate = z.object({
     .optional(),
 });
 
+export type RetrieveStreamRequest = z.infer<typeof RetrieveStreamRequest>;
+export const RetrieveStreamRequest = z.object({
+  starting_after: z.number().optional(),
+  include_pings: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
+    .optional(),
+  poll_interval: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+  batch_size: z
+    .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+    .optional(),
+});
+
 export type Run = z.infer<typeof Run>;
 export const Run = z.object({
   created_by_id: z
@@ -11431,6 +11445,25 @@ export const get_List_run_steps = {
   response: z.array(Step),
 };
 
+export type post_Retrieve_stream = typeof post_Retrieve_stream;
+export const post_Retrieve_stream = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/runs/{run_id}/stream'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      run_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: RetrieveStreamRequest,
+  }),
+  response: z.unknown(),
+};
+
 export type get_List_steps = typeof get_List_steps;
 export const get_List_steps = {
   method: z.literal('GET'),
@@ -12086,6 +12119,7 @@ export const EndpointByMethod = {
       post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
     '/v1/providers/': post_Create_provider,
     '/v1/providers/check': post_Check_provider,
+    '/v1/runs/{run_id}/stream': post_Retrieve_stream,
     '/v1/messages/batches': post_Create_messages_batch,
     '/v1/voice-beta/{agent_id}/chat/completions':
       post_Create_voice_chat_completions,

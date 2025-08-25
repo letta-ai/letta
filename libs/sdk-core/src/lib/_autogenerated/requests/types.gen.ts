@@ -3954,6 +3954,25 @@ export type ResponseFormatText = {
   type: 'text';
 };
 
+export type RetrieveStreamRequest = {
+  /**
+   * Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id
+   */
+  starting_after?: number;
+  /**
+   * Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.
+   */
+  include_pings?: boolean | null;
+  /**
+   * Seconds to wait between polls when no new data.
+   */
+  poll_interval?: number | null;
+  /**
+   * Number of entries to read per batch.
+   */
+  batch_size?: number | null;
+};
+
 export type RoundRobinManager = {
   manager_type?: 'round_robin';
   max_turns?: number | null;
@@ -7613,6 +7632,14 @@ export type ListRunStepsData = {
 
 export type ListRunStepsResponse = Array<Step>;
 
+export type RetrieveStreamData = {
+  requestBody: RetrieveStreamRequest;
+  runId: string;
+  userId?: string | null;
+};
+
+export type RetrieveStreamResponse = unknown;
+
 export type ListStepsData = {
   /**
    * Return steps after this step ID
@@ -10061,6 +10088,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Step>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/runs/{run_id}/stream': {
+    post: {
+      req: RetrieveStreamData;
+      res: {
+        /**
+         * Successful response
+         */
+        200: unknown;
         /**
          * Validation Error
          */

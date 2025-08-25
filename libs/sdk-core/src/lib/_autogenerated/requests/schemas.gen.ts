@@ -10546,6 +10546,60 @@ export const $ResponseFormatText = {
   title: 'ResponseFormatText',
 } as const;
 
+export const $RetrieveStreamRequest = {
+  properties: {
+    starting_after: {
+      type: 'integer',
+      title: 'Starting After',
+      description:
+        'Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id',
+      default: 0,
+    },
+    include_pings: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Pings',
+      description:
+        'Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.',
+      default: false,
+    },
+    poll_interval: {
+      anyOf: [
+        {
+          type: 'number',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Poll Interval',
+      description: 'Seconds to wait between polls when no new data.',
+      default: 0.1,
+    },
+    batch_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Batch Size',
+      description: 'Number of entries to read per batch.',
+      default: 100,
+    },
+  },
+  type: 'object',
+  title: 'RetrieveStreamRequest',
+} as const;
+
 export const $RoundRobinManager = {
   properties: {
     manager_type: {

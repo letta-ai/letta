@@ -70,6 +70,7 @@ import {
   ProviderCreate,
   ProviderType,
   ProviderUpdate,
+  RetrieveStreamRequest,
   SSEServerConfig,
   SandboxConfigCreate,
   SandboxConfigUpdate,
@@ -5075,6 +5076,52 @@ export const useProvidersServiceCheckProvider = <
     mutationFn: ({ requestBody }) =>
       ProvidersService.checkProvider({
         requestBody,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Retrieve Stream
+ * @param data The data for the request.
+ * @param data.runId
+ * @param data.requestBody
+ * @param data.userId
+ * @returns unknown Successful response
+ * @throws ApiError
+ */
+export const useRunsServiceRetrieveStream = <
+  TData = Common.RunsServiceRetrieveStreamMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: RetrieveStreamRequest;
+        runId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: RetrieveStreamRequest;
+      runId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, runId, userId }) =>
+      RunsService.retrieveStream({
+        requestBody,
+        runId,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

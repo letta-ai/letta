@@ -305,6 +305,8 @@ import type {
   RetrieveRunUsageResponse,
   ListRunStepsData,
   ListRunStepsResponse,
+  RetrieveStreamData,
+  RetrieveStreamResponse,
   ListStepsData,
   ListStepsResponse,
   RetrieveStepData,
@@ -4730,6 +4732,34 @@ export class RunsService {
         limit: data.limit,
         order: data.order,
       },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Retrieve Stream
+   * @param data The data for the request.
+   * @param data.runId
+   * @param data.requestBody
+   * @param data.userId
+   * @returns unknown Successful response
+   * @throws ApiError
+   */
+  public static retrieveStream(
+    data: RetrieveStreamData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveStreamResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/runs/{run_id}/stream',
+      path: {
+        run_id: data.runId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },
