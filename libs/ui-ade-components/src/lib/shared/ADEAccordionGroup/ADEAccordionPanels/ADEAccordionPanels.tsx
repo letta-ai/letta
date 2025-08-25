@@ -43,6 +43,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
       data-testid={id}
     >
       <button
+        data-testid={`accordion-trigger:${id}`}
         onClick={() => {
           onOpenChange(!open);
         }}

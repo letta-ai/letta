@@ -356,6 +356,10 @@ export async function updateAgentFromAgentTemplateId(
     nextLLMConfig.put_inner_thoughts_in_kwargs = agentTemplate.properties.put_inner_thoughts_in_kwargs;
   }
 
+  if (agentTemplate.properties?.temperature) {
+    nextLLMConfig.temperature = agentTemplate.properties.temperature;
+  }
+
 
   requestBody.llm_config = nextLLMConfig;
   requestBody.reasoning = nextLLMConfig.enable_reasoner || nextLLMConfig.put_inner_thoughts_in_kwargs;

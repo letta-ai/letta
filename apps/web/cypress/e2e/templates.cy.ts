@@ -82,7 +82,7 @@ describe(
       });
 
       it('should have attached the correct tools by default', () => {
-      
+
 
         cy.testStep('Verify core tools are attached', () => {
           cy.findByTestId('tool-attached:send_message')
@@ -229,6 +229,82 @@ describe(
           });
         },
       );
+
+      it('should allow users to update llm config properties', () => {
+        let initialAgent: AgentState;
+        let templateInfo: { projectSlug: string; templateName: string; templateVersion: string; fullTemplateVersion: string };
+
+        // PHASE 1: Initial state verification
+        cy.testStep('Phase 1: Create initial agent from current template state', () => {
+          cy.getCurrentTemplateFromUrl().then((template) => {
+            templateInfo = template;
+            return cy.createEntitiesFromTemplate({
+              templateVersion: template.fullTemplateVersion,
+              agentName: 'AdvancedEditorTestAgent',
+              tags: ['advanced-editor-test']
+            });
+          }).then((response) => {
+            expect(response.agents).to.be.an('array');
+            expect(response.agents[0]).to.have.property('id');
+
+            initialAgent = response.agents[0];
+            expect(initialAgent.name).to.eq('AdvancedEditorTestAgent');
+
+            // Verify initial state has default llm_config
+            expect(initialAgent.llm_config.temperature).to.eq(0.7);
+            expect(initialAgent.llm_config.max_tokens).to.eq(4096);
+            expect(initialAgent.llm_config.context_window).to.eq(128000);
+          });
+        });
+
+        cy.testStep('Phase 1: Update llm_config properties in template editor', () => {
+          // Open LLM configuration panel
+          cy.findByTestId('accordion-trigger:llm-config', {
+            timeout: 50000,
+          }).click();
+
+          // Update properties
+          cy.findByTestId('slider-input:context-window-slider').clear().type('16000');
+          cy.findByTestId('slider-input:temperature-slider').clear().type('0.3');
+          cy.findByTestId('slider-input:max-tokens-slider').clear().type('2000');
+
+          // should automatically update
+        });
+
+        cy.testStep('Phase 2: Save template version with migration enabled', () => {
+          cy.get('body').click({ force: true });
+          cy.stageAndDeployAgent();
+        });
+
+        cy.testStep('Phase 2: Verify initial agent was migrated to new llm_config values', () => {
+          // Retrieve the updated initial agent using the API
+          cy.request(`/v1/agents/${initialAgent.id}`)
+            .its('body')
+            .then((updatedAgent: AgentState) => {
+              expect(updatedAgent.llm_config).to.be.an('object');
+              expect(updatedAgent.llm_config.temperature).to.eq(0.3);
+              expect(updatedAgent.llm_config.max_tokens).to.eq(2000);
+              expect(updatedAgent.llm_config.context_window).to.eq(16000);
+            });
+        });
+
+        cy.testStep('Phase 2: Create new agent and verify it gets updated llm_config values', () => {
+          cy.createEntitiesFromTemplate({
+            templateVersion: `${templateInfo.templateVersion.replace(':current', ':latest')}`,
+            agentName: 'NewAgentWithUpdatedLLMConfig',
+            tags: ['new-test-with-updated-llm']
+          }).then((response) => {
+            expect(response.agents).to.be.an('array');
+
+            const newAgent = response.agents[0];
+            expect(newAgent.llm_config).to.be.an('object');
+            expect(newAgent.name).to.eq('NewAgentWithUpdatedLLMConfig');
+            expect(newAgent.llm_config.temperature).to.eq(0.3);
+            expect(newAgent.llm_config.max_tokens).to.eq(2000);
+            expect(newAgent.llm_config.context_window).to.eq(16000);
+          });
+        });
+      })
 
       it(
         'should create and delete a memory block through the advanced editor with migration verification',

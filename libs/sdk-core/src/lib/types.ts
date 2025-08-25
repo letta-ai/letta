@@ -307,6 +307,7 @@ export const AgentTemplateProperties = z.object({
   max_files_open: z.number().nullable(),
   message_buffer_autoclear: z.boolean().nullable(),
   per_file_view_window_char_limit: z.number().nullable(),
+  temperature: z.number().nullable(),
 });
 
 export type AgentTemplatePropertiesType = z.infer<

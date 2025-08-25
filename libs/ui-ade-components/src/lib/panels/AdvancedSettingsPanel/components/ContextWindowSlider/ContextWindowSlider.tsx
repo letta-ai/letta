@@ -46,6 +46,7 @@ export function ContextWindowSlider(props: ContextWindowSliderProps) {
   return (
     <RawSlider
       fullWidth
+      id="context-window-slider"
       label={t('ContextWindowSlider.label')}
       errorMessage={
         parsedDraftContextWindow === false

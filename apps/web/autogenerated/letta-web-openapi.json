@@ -10431,6 +10431,10 @@
                               "per_file_view_window_char_limit": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "temperature": {
+                                "type": "number",
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -10441,7 +10445,8 @@
                               "max_reasoning_tokens",
                               "max_files_open",
                               "message_buffer_autoclear",
-                              "per_file_view_window_char_limit"
+                              "per_file_view_window_char_limit",
+                              "temperature"
                             ],
                             "nullable": true
                           },

@@ -53,6 +53,7 @@ export function TemperatureSlider(props: TemperatureSliderProps) {
   return (
     <RawSlider
       fullWidth
+      id="temperature-slider"
       label={t('TemperatureSlider.label')}
       value={draftTemperature}
       errorMessage={

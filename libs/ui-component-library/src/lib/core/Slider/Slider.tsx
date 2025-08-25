@@ -73,6 +73,7 @@ function SliderInput(props: SliderProps) {
         {...sliderProps}
       />
       <input
+        data-testid={sliderProps.id ? `slider-input:${sliderProps.id}` : undefined}
         className={cn(
           'w-[75px] bg-panel-input-background text-panel-input-background-content border text-xs px-1 py-1',
           !isSliderValueValid && 'border-destructive',

@@ -123,6 +123,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         max_tokens: 1000,
         max_reasoning_tokens: 2000,
         max_files_open: 10,
+          temperature: 0.7,
         per_file_view_window_char_limit: 2000,
         message_buffer_autoclear: null,
       },
@@ -186,6 +187,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       systemPrompt: 'Basic system',
       toolVariables: null,
       properties: {
+        temperature: 0.7,
         enable_reasoner: false,
         put_inner_thoughts_in_kwargs: true,
         context_window_limit: 4096,
@@ -213,6 +215,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         handle: 'openai/gpt-4',
         max_tokens: null,
         max_reasoning_tokens: undefined,
+        temperature: 0.7,
       },
       memory: {
         blocks: [
@@ -243,6 +246,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       max_reasoning_tokens: null,
       max_files_open: null,
       per_file_view_window_char_limit: null,
+      temperature: 0.7,
       message_buffer_autoclear: null,
     });
 

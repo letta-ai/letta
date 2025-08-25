@@ -10,9 +10,10 @@ import {
   db,
 } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
+import { AgentsService } from '@letta-cloud/sdk-core';
+import { LlmsService } from '@letta-cloud/sdk-core';
 import type { CreateAgentRequest, CreateBlock } from '@letta-cloud/sdk-core';
 import { isAPIError } from '@letta-cloud/sdk-core';
-import { AgentsService } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/node';
 
 import {
@@ -113,6 +114,24 @@ export async function createEntitiesFromTemplate(
     ...overrides.toolVariables,
   };
 
+  const llms = await LlmsService.listModels({}, {
+    user_id: lettaAgentsId,
+  })
+
+  const llmConfig = llms.find(
+    (model) => model.handle === agentTemplate.model,
+  );
+
+
+  if (!llmConfig) {
+    throw new Error(CreateEntitiesFromTemplateErrors.CORE_ERROR);
+  }
+
+  llmConfig.max_tokens = agentTemplate.properties?.max_tokens || llmConfig.max_tokens;
+  llmConfig.temperature = agentTemplate.properties?.temperature || llmConfig.temperature;
+  llmConfig.context_window = agentTemplate.properties?.context_window_limit || llmConfig.context_window;
+  llmConfig.max_reasoning_tokens = agentTemplate.properties?.max_reasoning_tokens || llmConfig.max_reasoning_tokens;
+
   // Create the agent
   const createAgentRequest: CreateAgentRequest = {
     project_id: projectId,
@@ -124,7 +143,7 @@ export async function createEntitiesFromTemplate(
         separator: '-',
       }),
     system: agentTemplate.systemPrompt,
-    model: agentTemplate.model,
+    llm_config: llmConfig,
     tool_ids: agentTemplate.toolIds || [],
     tool_rules: agentTemplate.toolRules || [],
     source_ids: agentTemplate.sourceIds || [],
@@ -141,9 +160,6 @@ export async function createEntitiesFromTemplate(
     embedding: DEFAULT_EMBEDDING_MODEL,
     max_files_open: agentTemplate.properties?.max_files_open,
     reasoning: agentTemplate.properties?.enable_reasoner || agentTemplate.properties?.put_inner_thoughts_in_kwargs,
-    context_window_limit: agentTemplate.properties?.context_window_limit,
-    max_tokens: agentTemplate.properties?.max_tokens,
-    max_reasoning_tokens: agentTemplate.properties?.max_reasoning_tokens,
     per_file_view_window_char_limit:
       agentTemplate.properties?.per_file_view_window_char_limit,
     template_id: template.id,

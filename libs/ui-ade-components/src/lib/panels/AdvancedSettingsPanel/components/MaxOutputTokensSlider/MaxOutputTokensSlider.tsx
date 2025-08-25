@@ -53,6 +53,7 @@ export function MaxTokensSlider(props: MaxTokensSliderProps) {
 
   return (
     <RawSlider
+      id="max-tokens-slider"
       fullWidth
       label={t('MaxTokensSlider.label')}
       value={draftMaxTokens}

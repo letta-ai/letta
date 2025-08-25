@@ -137,6 +137,7 @@ export function synchronizeSimulatedAgentWithAgentTemplate(
 
     // Other Properties - map relevant agent properties
     properties: {
+      temperature: agentState.llm_config?.temperature ?? 0.7,
       enable_reasoner: agentState.llm_config?.enable_reasoner ?? false,
       put_inner_thoughts_in_kwargs: agentState.llm_config?.put_inner_thoughts_in_kwargs ?? false,
       context_window_limit: agentState.llm_config?.context_window ?? null,
