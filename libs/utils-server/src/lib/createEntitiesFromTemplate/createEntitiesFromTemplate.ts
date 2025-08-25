@@ -11,7 +11,9 @@ import {
 } from '@letta-cloud/service-database';
 import { and, eq } from 'drizzle-orm';
 import type { CreateAgentRequest, CreateBlock } from '@letta-cloud/sdk-core';
+import { isAPIError } from '@letta-cloud/sdk-core';
 import { AgentsService } from '@letta-cloud/sdk-core';
+import * as Sentry from '@sentry/node';
 
 import {
   adjectives,
@@ -155,7 +157,23 @@ export async function createEntitiesFromTemplate(
     {
       user_id: lettaAgentsId,
     },
-  ).catch((_error) => {
+  ).catch((error) => {
+    if (isAPIError(error)) {
+      Sentry.captureException(error, {
+        extra: {
+          template: template.name,
+          body: error.body,
+        }
+      })
+    } else {
+      Sentry.captureException(error, {
+        extra: {
+          template: template.name,
+        }
+      })
+    }
+
+
     return null
   });
 
