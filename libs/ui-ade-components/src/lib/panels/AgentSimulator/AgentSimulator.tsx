@@ -84,6 +84,7 @@ export type SendMessageType = (payload: SendMessagePayload) => void;
 
 interface UseSendMessageOptions {
   onFailedToSendMessage?: (existingMessage: string) => void;
+  onStreamCompletion?: () => void;
 }
 
 function extractMessageTextFromContent(
@@ -418,6 +419,11 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
                 status: 200,
                 response: allText,
               });
+
+              if (options?.onStreamCompletion) {
+                options.onStreamCompletion();
+              }
+
               continue;
             }
 
@@ -775,6 +781,7 @@ export function AgentSimulator() {
         clearOptimisticActiveRuns();
       }
     },
+    onStreamCompletion: isPollActiveRunsEnabled ? clearOptimisticActiveRuns : undefined,
   });
 
   const hasFailedToSendMessageText = useMemo(() => {
