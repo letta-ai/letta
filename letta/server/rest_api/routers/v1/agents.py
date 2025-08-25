@@ -1263,22 +1263,33 @@ async def send_message_streaming(
 
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
-            if request.background and request.stream_tokens and settings.track_agent_run:
+            if request.background and settings.track_agent_run:
                 if isinstance(redis_client, NoopAsyncRedisClient):
                     raise HTTPException(
                         status_code=503,
                         detail="Background streaming is not available: Redis is not configured. Please ensure Redis is properly configured and running.",
                     )
 
+                if request.stream_tokens and model_compatible_token_streaming:
+                    raw_stream = agent_loop.step_stream(
+                        input_messages=request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    )
+                else:
+                    raw_stream = agent_loop.step_stream_no_tokens(
+                        request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    )
+
                 asyncio.create_task(
                     create_background_stream_processor(
-                        stream_generator=agent_loop.step_stream(
-                            input_messages=request.messages,
-                            max_steps=request.max_steps,
-                            use_assistant_message=request.use_assistant_message,
-                            request_start_timestamp_ns=request_start_timestamp_ns,
-                            include_return_message_types=request.include_return_message_types,
-                        ),
+                        stream_generator=raw_stream,
                         redis_client=redis_client,
                         run_id=run.id,
                     )
