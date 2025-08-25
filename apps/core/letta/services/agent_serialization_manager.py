@@ -936,7 +936,10 @@ class AgentSerializationManager:
             # update file status to ERROR
             try:
                 await self.file_manager.update_file_status(
-                    file_id=file_id, actor=actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
+                    file_id=file_id,
+                    actor=actor,
+                    processing_status=FileProcessingStatus.ERROR,
+                    error_message=str(e) if str(e) else f"Agent serialization failed: {type(e).__name__}",
                 )
             except Exception as update_error:
                 logger.error(f"Failed to update file status to ERROR for {file_id}: {update_error}")

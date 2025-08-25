@@ -1132,7 +1132,7 @@ def safe_create_file_processing_task(coro, file_metadata, server, actor, logger:
                     file_id=file_metadata.id,
                     actor=actor,
                     processing_status=FileProcessingStatus.ERROR,
-                    error_message=f"Processing failed: {str(e)}" if str(e) else "Processing failed due to an unexpected error",
+                    error_message=f"Processing failed: {str(e)}" if str(e) else f"Processing failed: {type(e).__name__}",
                 )
             except Exception as update_error:
                 logger.error(f"Failed to update file status to ERROR for {file_metadata.id}: {update_error}")
