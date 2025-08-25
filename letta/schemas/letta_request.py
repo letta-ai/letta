@@ -46,6 +46,10 @@ class LettaStreamingRequest(LettaRequest):
         default=False,
         description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
     )
+    background: bool = Field(
+        default=False,
+        description="Whether to process the request in the background.",
+    )
 
 
 class LettaAsyncRequest(LettaRequest):
