@@ -263,9 +263,6 @@ async def redis_sse_stream_generator(
 
     logger.debug(f"Starting redis_sse_stream_generator for run_id={run_id}, stream_key={stream_key}")
 
-    # Add a small initial delay to allow background task to start writing
-    await asyncio.sleep(0.05)
-
     while True:
         entries = await redis_client.xrange(stream_key, start=last_redis_id, count=batch_size)
 
