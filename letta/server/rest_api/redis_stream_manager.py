@@ -282,6 +282,9 @@ async def redis_sse_stream_generator(
                         logger.debug(f"No data found for chunk {chunk_seq_id} in run {run_id}")
                         continue
 
+                    if '"seq_id":null' in data:
+                        data = data.replace('"seq_id":null', f'"seq_id":{chunk_seq_id}')
+
                     yield data
                     yielded_any = True
 
