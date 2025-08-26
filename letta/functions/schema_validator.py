@@ -116,22 +116,20 @@ def validate_complete_json_schema(schema: Dict[str, Any]) -> Tuple[SchemaHealth,
 
             required = node.get("required")
             if required is None:
+                # TODO: @jnjpng skip this check for now, seems like OpenAI strict mode doesn't enforce this
                 # Only mark as non-strict for nested objects, not root
-                if not is_root:
-                    mark_non_strict(f"{path}: 'required' not specified for object")
+                # if not is_root:
+                #     mark_non_strict(f"{path}: 'required' not specified for object")
                 required = []
             elif not isinstance(required, list):
                 mark_invalid(f"{path}: 'required' must be a list if present")
                 required = []
 
             # OpenAI strict-mode extra checks:
-            # Check that all properties are in required array (applies to all levels)
-            if props:
-                for prop_name in props.keys():
-                    if prop_name not in required:
-                        mark_non_strict(
-                            f"{path}: property '{prop_name}' is not in required array (OpenAI strict mode requires all properties to be required)"
-                        )
+            # NOTE: We no longer flag properties not in required array as non-strict
+            # because we can heal these schemas by adding null to the type union
+            # This allows MCP tools with optional fields to be used with strict mode
+            # The healing happens in generate_tool_schema_for_mcp() when strict=True
 
             for req_key in required:
                 if props and req_key not in props:
@@ -168,6 +166,15 @@ def validate_complete_json_schema(schema: Dict[str, Any]) -> Tuple[SchemaHealth,
         elif node_type in ["string", "number", "integer", "boolean", "null"]:
             # These are generally fine, but check for specific constraints
             pass
+
+        # TYPE ARRAYS (e.g., ["string", "null"] for optional fields)
+        elif isinstance(node_type, list):
+            # Type arrays are allowed in OpenAI strict mode
+            # They represent union types (e.g., string | null)
+            for t in node_type:
+                # TODO: @jnjpng handle enum types?
+                if t not in ["string", "number", "integer", "boolean", "null", "array", "object"]:
+                    mark_invalid(f"{path}: Invalid type '{t}' in type array")
 
         # UNION TYPES
         for kw in ("anyOf", "oneOf", "allOf"):
