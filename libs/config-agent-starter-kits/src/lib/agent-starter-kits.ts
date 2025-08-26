@@ -52,6 +52,12 @@ export const STARTER_KITS = {
       description:
         'A blank slate for you to create your own agent from scratch.',
       memory_blocks: [],
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
     },
     architecture: 'memgpt',
   },
@@ -75,6 +81,12 @@ export const STARTER_KITS = {
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -110,6 +122,12 @@ export const STARTER_KITS = {
       agent_type: 'voice_convo_agent',
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -175,6 +193,12 @@ export const STARTER_KITS = {
       model: 'anthropic/claude-sonnet-4-20250514',
       tools: ['web_search'],
       description: 'A deep research agent designed to conduct comprehensive research using web search capabilities.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -221,6 +245,12 @@ export const STARTER_KITS = {
 
     agentState: {
       description: 'Act as a roleplay character in a fantasy setting.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -272,6 +302,12 @@ export const STARTER_KITS = {
     agentState: {
       description:
         'Act as a personal assistant to help users with tasks and answer questions.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -305,6 +341,12 @@ export const STARTER_KITS = {
     agentState: {
       description:
         'Act as a customer support agent to help users with their issues.',
+      tool_rules: [
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
+        },
+      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -408,6 +450,10 @@ export const STARTER_KITS = {
         {
           tool_name: 'memory_rethink',
           type: 'run_first',
+        },
+        {
+          tool_name: 'send_message',
+          type: 'exit_loop',
         },
       ],
       description:

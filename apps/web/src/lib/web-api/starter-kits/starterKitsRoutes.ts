@@ -315,10 +315,10 @@ async function createTemplateFromStarterKit(
       memory: {
         blocks: starterKit.agentState.memory_blocks,
       },
-
-      tool_rules: [
+      // Use tool rules from the starter kit if defined, otherwise default to terminal rule for send_message
+      tool_rules: starterKit.agentState.tool_rules || [
         {
-          type: 'required_before_exit',
+          type: 'exit_loop',
           tool_name: 'send_message',
         },
       ],
