@@ -251,6 +251,7 @@ async def import_agent(
     override_existing_tools: bool = True,
     project_id: str | None = None,
     strip_messages: bool = False,
+    env_vars: Optional[dict[str, Any]] = None,
 ) -> List[str]:
     """
     Import an agent using the new AgentFileSchema format.
@@ -262,7 +263,11 @@ async def import_agent(
 
     try:
         import_result = await server.agent_serialization_manager.import_file(
-            schema=agent_schema, actor=actor, append_copy_suffix=append_copy_suffix, override_existing_tools=override_existing_tools
+            schema=agent_schema,
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            env_vars=env_vars,
         )
 
         if not import_result.success:
@@ -340,6 +345,7 @@ async def import_agent_serialized(
             override_existing_tools=override_existing_tools,
             project_id=project_id,
             strip_messages=strip_messages,
+            env_vars=env_vars,
         )
     else:
         # This is a legacy AgentSchema
