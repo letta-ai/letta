@@ -404,7 +404,11 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
         const url = new URL(window.location.href);
         url.searchParams.delete('message');
         window.history.replaceState({}, '', url.toString());
-        onSendMessage(role, createContentFromChatInput(text, images));
+
+        // Ensure URL clearing happens first before sending message
+        setTimeout(() => {
+          onSendMessage(role, createContentFromChatInput(text, images));
+        }, 0);
       }
     }, [isSendingMessage, disabled, text, onSendMessage, role, images]);
 
