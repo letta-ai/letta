@@ -331,8 +331,13 @@ class Agent(BaseAgent):
                 return None
 
         allowed_functions = [func for func in agent_state_tool_jsons if func["name"] in allowed_tool_names]
+        # Extract terminal tool names from tool rules
+        terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
         allowed_functions = runtime_override_tool_json_schema(
-            tool_list=allowed_functions, response_format=self.agent_state.response_format, request_heartbeat=True
+            tool_list=allowed_functions,
+            response_format=self.agent_state.response_format,
+            request_heartbeat=True,
+            terminal_tools=terminal_tool_names,
         )
 
         # For the first message, force the initial tool if one is specified

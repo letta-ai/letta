@@ -1459,8 +1459,10 @@ class LettaAgent(BaseAgent):
             force_tool_call = valid_tool_names[0]
 
         allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        # Extract terminal tool names from tool rules
+        terminal_tool_names = {rule.tool_name for rule in tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
-            tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True
+            tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True, terminal_tools=terminal_tool_names
         )
 
         return (
