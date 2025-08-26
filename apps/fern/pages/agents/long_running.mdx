@@ -140,9 +140,9 @@ const stream = await client.agents.createAgentMessageStream({
                 content: "Execute this long-running analysis"
             }
         ],
-        include_pings: true  // Sends periodic keepalive messages
+        includePings: true  // Sends periodic keepalive messages
     }, {
-        timeoutInSeconds: 600,  // 10 minutes timeout in seconds
+        timeoutInSeconds: 600  // 10 minutes timeout in seconds
     }
 });
 
