@@ -39,3 +39,20 @@ export const Primary: Story = {
     },
   },
 };
+
+
+export const Large: Story = {
+  ...Primary,
+  args: {
+    size: 'large',
+    label: 'Large Switch',
+  },
+}
+
+export const Small: Story = {
+  ...Primary,
+  args: {
+    size: 'small',
+    label: 'Small Switch',
+  },
+}

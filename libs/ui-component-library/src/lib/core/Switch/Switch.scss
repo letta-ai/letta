@@ -1,0 +1,13 @@
+.switch-thumb[data-state='checked'] .switch-thumb-on {
+  display: block;
+}
+
+.switch-thumb[data-state='checked'] .switch-thumb-off {
+  display: none;
+}
+.switch-thumb[data-state='unchecked'] .switch-thumb-on {
+  display: none;
+}
+.switch-thumb[data-state='unchecked'] .switch-thumb-off {
+  display: block;
+}

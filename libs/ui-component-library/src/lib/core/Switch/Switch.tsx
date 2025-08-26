@@ -9,9 +9,10 @@ import {
   makeRawInput,
 } from '../Form/Form';
 import { cva, type VariantProps } from 'class-variance-authority';
+import './Switch.scss';
 
 const switchVariants = cva(
-  'peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-brand data-[state=unchecked]:bg-input',
+  'peer inline-flex shrink-0 p-[2px] border border-button-border bg-background-grey2 cursor-pointer items-center rounded-[2px]  transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       size: {
@@ -27,13 +28,13 @@ const switchVariants = cva(
 );
 
 const thumbVariants = cva(
-  'pointer-events-none block rounded-full bg-background dark:bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0',
+  'pointer-events-none h-full block uppercase items-center rounded-[2px] justify-center flex bg-primary text-primary-content data-[state=unchecked]:opacity-60 ring-0 transition-transform   data-[state=unchecked]:translate-x-0',
   {
     variants: {
       size: {
-        default: 'h-4 w-4',
-        small: 'h-3 w-3',
-        large: 'h-5 w-5',
+        default: ' w-5 text-[8px] data-[state=checked]:translate-x-[10px]',
+        small: ' w-4 text-[6px] data-[state=checked]:translate-x-[10px] ',
+        large: ' w-6 text-[10px] data-[state=checked]:translate-x-[18px]',
       },
     },
     defaultVariants: {
@@ -64,7 +65,14 @@ function SwitchPrimitive({
       {...rest}
       ref={ref}
     >
-      <SwitchPrimitives.Thumb className={cn(thumbVariants(props))} />
+      <SwitchPrimitives.Thumb className={cn(thumbVariants(props), 'switch-thumb')}>
+        <div className="switch-thumb-on">
+          On
+        </div>
+        <div className="switch-thumb-off">
+          Off
+        </div>
+      </SwitchPrimitives.Thumb>
     </SwitchPrimitives.Root>
   );
 }
