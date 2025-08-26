@@ -49,14 +49,6 @@ EXPECTED_ROLES = ["system", "assistant", "tool", "user", "user"]
 # --------------------------------------------------------------------------- #
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    """Use a single asyncio loop for the entire test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture
 def weather_tool(server):
     def get_weather(location: str) -> str:

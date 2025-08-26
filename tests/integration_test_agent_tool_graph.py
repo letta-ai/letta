@@ -26,13 +26,6 @@ agent_uuid = str(uuid.uuid5(namespace, "test_agent_tool_graph"))
 config_file = "tests/configs/llm_model_configs/openai-gpt-4o.json"
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture()
 def server():
     config = LettaConfig.load()

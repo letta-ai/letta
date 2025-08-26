@@ -1,10 +1,12 @@
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Generator
 
 import pytest
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
 
+from letta.server.db import db_registry
 from letta.services.organization_manager import OrganizationManager
 from letta.services.user_manager import UserManager
 from letta.settings import tool_settings
@@ -12,6 +14,36 @@ from letta.settings import tool_settings
 
 def pytest_configure(config):
     logging.basicConfig(level=logging.DEBUG)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_db_pooling_for_tests():
+    """Disable database connection pooling for the entire test session."""
+    os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"] = "true"
+    yield
+    if "LETTA_DISABLE_SQLALCHEMY_POOLING" in os.environ:
+        del os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"]
+
+
+@pytest.fixture(autouse=True)
+async def cleanup_db_connections():
+    """Cleanup database connections after each test."""
+    yield
+    try:
+        if hasattr(db_registry, "_async_engines"):
+            for engine in db_registry._async_engines.values():
+                if engine:
+                    try:
+                        await engine.dispose()
+                    except Exception:
+                        # Suppress common teardown errors that don't affect test validity
+                        pass
+        db_registry._initialized["async"] = False
+        db_registry._async_engines.clear()
+        db_registry._async_session_factories.clear()
+    except Exception:
+        # Suppress all cleanup errors to avoid confusing test failures
+        pass
 
 
 @pytest.fixture

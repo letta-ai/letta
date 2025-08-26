@@ -32,20 +32,6 @@ from letta.services.tool_sandbox.modal_sandbox_v2 import AsyncToolSandboxModalV2
 from letta.services.tool_sandbox.modal_version_manager import ModalVersionManager, get_version_manager
 from letta.services.user_manager import UserManager
 
-
-@pytest.fixture
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    # Cleanup tasks before closing loop
-    pending = asyncio.all_tasks(loop)
-    for task in pending:
-        task.cancel()
-    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-    loop.close()
-
-
 # ============================================================================
 # SHARED FIXTURES
 # ============================================================================
@@ -90,12 +76,12 @@ def basic_tool(test_user):
         source_code="""
 def calculate(operation: str, a: float, b: float) -> float:
     '''Perform a calculation on two numbers.
-    
+
     Args:
         operation: The operation to perform (add, subtract, multiply, divide)
         a: The first number
         b: The second number
-    
+
     Returns:
         float: The result of the calculation
     '''
@@ -145,11 +131,11 @@ import asyncio
 
 async def fetch_data(url: str, delay: float = 0.1) -> Dict:
     '''Simulate fetching data from a URL.
-    
+
     Args:
         url: The URL to fetch data from
         delay: The delay in seconds before returning
-    
+
     Returns:
         Dict: A dictionary containing the fetched data
     '''
@@ -194,17 +180,17 @@ import hashlib
 
 def process_json(data: str) -> Dict:
     '''Process JSON data and return metadata.
-    
+
     Args:
         data: The JSON string to process
-    
+
     Returns:
         Dict: Metadata about the JSON data
     '''
     try:
         parsed = json.loads(data)
         data_hash = hashlib.md5(data.encode()).hexdigest()
-        
+
         return {
             "valid": True,
             "keys": list(parsed.keys()) if isinstance(parsed, dict) else None,

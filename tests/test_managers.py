@@ -569,7 +569,7 @@ async def default_archive(server, default_user):
 
 @pytest.fixture
 @pytest.mark.asyncio
-async def agent_passages_setup(server, default_archive, default_source, default_file, default_user, sarah_agent, event_loop):
+async def agent_passages_setup(server, default_archive, default_source, default_file, default_user, sarah_agent):
     """Setup fixture for agent passages tests"""
     agent_id = sarah_agent.id
     actor = default_user
@@ -752,7 +752,7 @@ async def test_validate_agent_exists_async(server: SyncServer, comprehensive_tes
 
 
 @pytest.mark.asyncio
-async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     # Test agent creation
     created_agent, create_agent_request = comprehensive_test_agent_fixture
     comprehensive_agent_checks(created_agent, create_agent_request, actor=default_user)
@@ -777,7 +777,7 @@ async def test_create_get_list_agent(server: SyncServer, comprehensive_test_agen
 
 
 @pytest.mark.asyncio
-async def test_create_agent_include_base_tools(server: SyncServer, default_user, event_loop):
+async def test_create_agent_include_base_tools(server: SyncServer, default_user):
     """Test agent creation with include_default_source=True"""
     # Upsert base tools
     server.tool_manager.upsert_base_tools(actor=default_user)
@@ -806,7 +806,7 @@ async def test_create_agent_include_base_tools(server: SyncServer, default_user,
 
 
 @pytest.mark.asyncio
-async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServer, default_user, event_loop):
+async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServer, default_user):
     """Test that include_base_tool_rules is overridden to False for excluded providers"""
     # Upsert base tools
     server.tool_manager.upsert_base_tools(actor=default_user)
@@ -835,7 +835,7 @@ async def test_create_agent_base_tool_rules_excluded_providers(server: SyncServe
 
 
 @pytest.mark.asyncio
-async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncServer, default_user, event_loop):
+async def test_create_agent_base_tool_rules_non_excluded_providers(server: SyncServer, default_user):
     """Test that include_base_tool_rules is NOT overridden for non-excluded providers"""
     # Upsert base tools
     server.tool_manager.upsert_base_tools(actor=default_user)
@@ -893,7 +893,7 @@ def test_calculate_multi_agent_tools(set_letta_environment):
         assert "send_message_to_agent_async" in result, "Local-only tools should be in non-production"
 
 
-async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncServer, default_user, set_letta_environment, event_loop):
+async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncServer, default_user, set_letta_environment):
     """Test that upsert_base_tools excludes local-only multi-agent tools in production."""
     # Upsert all base tools
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
@@ -914,7 +914,7 @@ async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncS
             assert tool in tool_names, f"Multi-agent tool '{tool}' should be upserted in non-production"
 
 
-async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, set_letta_environment, event_loop):
+async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, set_letta_environment):
     """Test that upserting only multi-agent tools respects production filtering."""
     from letta.schemas.enums import ToolType
 
@@ -934,7 +934,7 @@ async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, s
 
 
 @pytest.mark.asyncio
-async def test_create_agent_with_default_source(server: SyncServer, default_user, print_tool, default_block, event_loop):
+async def test_create_agent_with_default_source(server: SyncServer, default_user, print_tool, default_block):
     """Test agent creation with include_default_source=True"""
     memory_blocks = [CreateBlock(label="human", value="TestUser"), CreateBlock(label="persona", value="I am a test assistant")]
 
@@ -1042,7 +1042,7 @@ async def test_get_context_window_basic(
 
 
 @pytest.mark.asyncio
-async def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block, event_loop):
+async def test_create_agent_passed_in_initial_messages(server: SyncServer, default_user, default_block):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
         system="test system",
@@ -1071,7 +1071,7 @@ async def test_create_agent_passed_in_initial_messages(server: SyncServer, defau
 
 
 @pytest.mark.asyncio
-async def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block, event_loop):
+async def test_create_agent_default_initial_message(server: SyncServer, default_user, default_block):
     memory_blocks = [CreateBlock(label="human", value="BananaBoy"), CreateBlock(label="persona", value="I am a helpful assistant")]
     create_agent_request = CreateAgent(
         system="test system",
@@ -1095,7 +1095,7 @@ async def test_create_agent_default_initial_message(server: SyncServer, default_
 
 
 @pytest.mark.asyncio
-async def test_create_agent_with_json_in_system_message(server: SyncServer, default_user, default_block, event_loop):
+async def test_create_agent_with_json_in_system_message(server: SyncServer, default_user, default_block):
     system_prompt = (
         "You are an expert teaching agent with encyclopedic knowledge. "
         "When you receive a topic, query the external database for more "
@@ -1154,7 +1154,7 @@ async def test_update_agent(
 
 
 @pytest.mark.asyncio
-async def test_agent_file_defaults_based_on_context_window(server: SyncServer, default_user, default_block, event_loop):
+async def test_agent_file_defaults_based_on_context_window(server: SyncServer, default_user, default_block):
     """Test that file-related defaults are set based on the model's context window size"""
 
     # test with small context window model (8k)
@@ -1219,7 +1219,7 @@ async def test_agent_file_defaults_based_on_context_window(server: SyncServer, d
 
 
 @pytest.mark.asyncio
-async def test_agent_file_defaults_explicit_values(server: SyncServer, default_user, default_block, event_loop):
+async def test_agent_file_defaults_explicit_values(server: SyncServer, default_user, default_block):
     """Test that explicitly set file-related values are respected"""
 
     llm_config_explicit = LLMConfig.default_config("gpt-4o-mini")
@@ -1244,7 +1244,7 @@ async def test_agent_file_defaults_explicit_values(server: SyncServer, default_u
 
 
 @pytest.mark.asyncio
-async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     """Test updating file-related fields on an existing agent"""
 
     agent, _ = comprehensive_test_agent_fixture
@@ -1266,7 +1266,7 @@ async def test_update_agent_file_fields(server: SyncServer, comprehensive_test_a
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_empty(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_empty(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     # Create an agent using the comprehensive fixture.
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
@@ -1284,7 +1284,7 @@ async def test_list_agents_select_fields_empty(server: SyncServer, comprehensive
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_none(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_none(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     # Create an agent using the comprehensive fixture.
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
@@ -1302,7 +1302,7 @@ async def test_list_agents_select_fields_none(server: SyncServer, comprehensive_
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_specific(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_specific(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
     # Choose a subset of valid relationship fields.
@@ -1319,7 +1319,7 @@ async def test_list_agents_select_fields_specific(server: SyncServer, comprehens
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_invalid(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_invalid(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
     # Provide field names that are not recognized.
@@ -1334,7 +1334,7 @@ async def test_list_agents_select_fields_invalid(server: SyncServer, comprehensi
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_duplicates(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_duplicates(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
     # Provide duplicate valid field names.
@@ -1349,7 +1349,7 @@ async def test_list_agents_select_fields_duplicates(server: SyncServer, comprehe
 
 
 @pytest.mark.asyncio
-async def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive_test_agent_fixture, default_user, event_loop):
+async def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     created_agent, create_agent_request = comprehensive_test_agent_fixture
 
     # Mix valid fields with an invalid one.
@@ -1365,7 +1365,7 @@ async def test_list_agents_select_fields_mixed(server: SyncServer, comprehensive
 
 
 @pytest.mark.asyncio
-async def test_list_agents_ascending(server: SyncServer, default_user, event_loop):
+async def test_list_agents_ascending(server: SyncServer, default_user):
     # Create two agents with known names
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -1398,7 +1398,7 @@ async def test_list_agents_ascending(server: SyncServer, default_user, event_loo
 
 
 @pytest.mark.asyncio
-async def test_list_agents_descending(server: SyncServer, default_user, event_loop):
+async def test_list_agents_descending(server: SyncServer, default_user):
     # Create two agents with known names
     agent1 = await server.agent_manager.create_agent_async(
         agent_create=CreateAgent(
@@ -1431,7 +1431,7 @@ async def test_list_agents_descending(server: SyncServer, default_user, event_lo
 
 
 @pytest.mark.asyncio
-async def test_list_agents_ordering_and_pagination(server: SyncServer, default_user, event_loop):
+async def test_list_agents_ordering_and_pagination(server: SyncServer, default_user):
     names = ["alpha_agent", "beta_agent", "gamma_agent"]
     created_agents = []
 
@@ -1496,7 +1496,7 @@ async def test_list_agents_ordering_and_pagination(server: SyncServer, default_u
 
 
 @pytest.mark.asyncio
-async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_user):
     """Test attaching a tool to an agent."""
     # Attach the tool
     await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
@@ -1512,7 +1512,7 @@ async def test_attach_tool(server: SyncServer, sarah_agent, print_tool, default_
 
 
 @pytest.mark.asyncio
-async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_user):
     """Test detaching a tool from an agent."""
     # Attach the tool first
     await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
@@ -1533,7 +1533,7 @@ async def test_detach_tool(server: SyncServer, sarah_agent, print_tool, default_
 
 
 @pytest.mark.asyncio
-async def test_bulk_detach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_detach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test bulk detaching multiple tools from an agent."""
     # First attach both tools
     tool_ids = [print_tool.id, other_tool.id]
@@ -1554,7 +1554,7 @@ async def test_bulk_detach_tools(server: SyncServer, sarah_agent, print_tool, ot
 
 
 @pytest.mark.asyncio
-async def test_bulk_detach_tools_partial(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_detach_tools_partial(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test bulk detaching tools when some are not attached."""
     # Only attach one tool
     await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
@@ -1570,7 +1570,7 @@ async def test_bulk_detach_tools_partial(server: SyncServer, sarah_agent, print_
 
 
 @pytest.mark.asyncio
-async def test_bulk_detach_tools_empty_list(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+async def test_bulk_detach_tools_empty_list(server: SyncServer, sarah_agent, print_tool, default_user):
     """Test bulk detaching empty list of tools."""
     # Attach a tool first
     await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
@@ -1584,7 +1584,7 @@ async def test_bulk_detach_tools_empty_list(server: SyncServer, sarah_agent, pri
 
 
 @pytest.mark.asyncio
-async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test that bulk detach is idempotent."""
     # Attach both tools
     tool_ids = [print_tool.id, other_tool.id]
@@ -1606,7 +1606,7 @@ async def test_bulk_detach_tools_idempotent(server: SyncServer, sarah_agent, pri
 
 
 @pytest.mark.asyncio
-async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user):
     """Test bulk detaching tools from a nonexistent agent."""
     nonexistent_agent_id = "nonexistent-agent-id"
     tool_ids = [print_tool.id, other_tool.id]
@@ -1637,7 +1637,7 @@ async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, def
 
 
 @pytest.mark.asyncio
-async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test listing tools attached to an agent."""
     # Initially should have no tools
     agent = await server.agent_manager.get_agent_by_id_async(sarah_agent.id, actor=default_user)
@@ -1656,7 +1656,7 @@ async def test_list_attached_tools(server: SyncServer, sarah_agent, print_tool, 
 
 
 @pytest.mark.asyncio
-async def test_bulk_attach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_attach_tools(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test bulk attaching multiple tools to an agent."""
     # Bulk attach both tools
     tool_ids = [print_tool.id, other_tool.id]
@@ -1670,7 +1670,7 @@ async def test_bulk_attach_tools(server: SyncServer, sarah_agent, print_tool, ot
 
 
 @pytest.mark.asyncio
-async def test_bulk_attach_tools_with_duplicates(server: SyncServer, sarah_agent, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_attach_tools_with_duplicates(server: SyncServer, sarah_agent, print_tool, other_tool, default_user):
     """Test bulk attaching tools handles duplicates correctly."""
     # First attach one tool
     await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=print_tool.id, actor=default_user)
@@ -1690,7 +1690,7 @@ async def test_bulk_attach_tools_with_duplicates(server: SyncServer, sarah_agent
 
 
 @pytest.mark.asyncio
-async def test_bulk_attach_tools_empty_list(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_bulk_attach_tools_empty_list(server: SyncServer, sarah_agent, default_user):
     """Test bulk attaching empty list of tools."""
     # Bulk attach empty list
     await server.agent_manager.bulk_attach_tools_async(agent_id=sarah_agent.id, tool_ids=[], actor=default_user)
@@ -1701,7 +1701,7 @@ async def test_bulk_attach_tools_empty_list(server: SyncServer, sarah_agent, def
 
 
 @pytest.mark.asyncio
-async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agent, print_tool, default_user):
     """Test bulk attaching tools with a nonexistent tool ID."""
     # Try to bulk attach with one valid and one invalid tool ID
     nonexistent_id = "nonexistent-tool-id"
@@ -1719,7 +1719,7 @@ async def test_bulk_attach_tools_nonexistent_tool(server: SyncServer, sarah_agen
 
 
 @pytest.mark.asyncio
-async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user, event_loop):
+async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_tool, other_tool, default_user):
     """Test bulk attaching tools to a nonexistent agent."""
     nonexistent_agent_id = "nonexistent-agent-id"
     tool_ids = [print_tool.id, other_tool.id]
@@ -1729,7 +1729,7 @@ async def test_bulk_attach_tools_nonexistent_agent(server: SyncServer, print_too
 
 
 @pytest.mark.asyncio
-async def test_attach_missing_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_attach_missing_files_tools_async(server: SyncServer, sarah_agent, default_user):
     """Test attaching missing file tools to an agent."""
     # First ensure file tools exist in the system
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1750,7 +1750,7 @@ async def test_attach_missing_files_tools_async(server: SyncServer, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_attach_missing_files_tools_async_partial(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_attach_missing_files_tools_async_partial(server: SyncServer, sarah_agent, default_user):
     """Test attaching missing file tools when some are already attached."""
     # First ensure file tools exist in the system
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1779,7 +1779,7 @@ async def test_attach_missing_files_tools_async_partial(server: SyncServer, sara
 
 
 @pytest.mark.asyncio
-async def test_attach_missing_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_attach_missing_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user):
     """Test that attach_missing_files_tools is idempotent."""
     # First ensure file tools exist in the system
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1803,7 +1803,7 @@ async def test_attach_missing_files_tools_async_idempotent(server: SyncServer, s
 
 
 @pytest.mark.asyncio
-async def test_detach_all_files_tools_async(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_detach_all_files_tools_async(server: SyncServer, sarah_agent, default_user):
     """Test detaching all file tools from an agent."""
     # First ensure file tools exist and attach them
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1829,7 +1829,7 @@ async def test_detach_all_files_tools_async(server: SyncServer, sarah_agent, def
 
 
 @pytest.mark.asyncio
-async def test_detach_all_files_tools_async_empty(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_detach_all_files_tools_async_empty(server: SyncServer, sarah_agent, default_user):
     """Test detaching all file tools when no file tools are attached."""
     # Get agent state (should have no file tools initially)
     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
@@ -1848,7 +1848,7 @@ async def test_detach_all_files_tools_async_empty(server: SyncServer, sarah_agen
 
 
 @pytest.mark.asyncio
-async def test_detach_all_files_tools_async_with_other_tools(server: SyncServer, sarah_agent, print_tool, default_user, event_loop):
+async def test_detach_all_files_tools_async_with_other_tools(server: SyncServer, sarah_agent, print_tool, default_user):
     """Test detaching all file tools preserves non-file tools."""
     # First ensure file tools exist
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1876,7 +1876,7 @@ async def test_detach_all_files_tools_async_with_other_tools(server: SyncServer,
 
 
 @pytest.mark.asyncio
-async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah_agent, default_user):
     """Test that detach_all_files_tools is idempotent."""
     # First ensure file tools exist and attach them
     await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_FILES_CORE})
@@ -1906,7 +1906,7 @@ async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah
 
 
 @pytest.mark.asyncio
-async def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
+async def test_attach_source(server: SyncServer, sarah_agent, default_source, default_user):
     """Test attaching a source to an agent."""
     # Attach the source
     await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id=default_source.id, actor=default_user)
@@ -1922,7 +1922,7 @@ async def test_attach_source(server: SyncServer, sarah_agent, default_source, de
 
 
 @pytest.mark.asyncio
-async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_source, other_source, default_user, event_loop):
+async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default_source, other_source, default_user):
     """Test listing source IDs attached to an agent."""
     # Initially should have no sources
     sources = await server.agent_manager.list_attached_sources_async(sarah_agent.id, actor=default_user)
@@ -1941,7 +1941,7 @@ async def test_list_attached_source_ids(server: SyncServer, sarah_agent, default
 
 
 @pytest.mark.asyncio
-async def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user, event_loop):
+async def test_detach_source(server: SyncServer, sarah_agent, default_source, default_user):
     """Test detaching a source from an agent."""
     # Attach source
     await server.agent_manager.attach_source_async(sarah_agent.id, default_source.id, actor=default_user)
@@ -1962,35 +1962,35 @@ async def test_detach_source(server: SyncServer, sarah_agent, default_source, de
 
 
 @pytest.mark.asyncio
-async def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
+async def test_attach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
     """Test attaching a source to a nonexistent agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.attach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
-async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_attach_source_nonexistent_source(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent source to an agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.attach_source_async(agent_id=sarah_agent.id, source_id="nonexistent-source-id", actor=default_user)
 
 
 @pytest.mark.asyncio
-async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user, event_loop):
+async def test_detach_source_nonexistent_agent(server: SyncServer, default_source, default_user):
     """Test detaching a source from a nonexistent agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.detach_source_async(agent_id="nonexistent-agent-id", source_id=default_source.id, actor=default_user)
 
 
 @pytest.mark.asyncio
-async def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, default_user, event_loop):
+async def test_list_attached_source_ids_nonexistent_agent(server: SyncServer, default_user):
     """Test listing sources for a nonexistent agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.list_attached_sources_async(agent_id="nonexistent-agent-id", actor=default_user)
 
 
 @pytest.mark.asyncio
-async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, default_source, default_user, event_loop):
+async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_agent, default_source, default_user):
     """Test listing agents that have a particular source attached."""
     # Initially should have no attached agents
     attached_agents = await server.source_manager.list_attached_agents(source_id=default_source.id, actor=default_user)
@@ -2036,7 +2036,7 @@ async def test_list_attached_agents_nonexistent_source(server: SyncServer, defau
 
 
 @pytest.mark.asyncio
-async def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+async def test_list_agents_matching_all_tags(server: SyncServer, default_user, agent_with_tags):
     agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
@@ -2047,7 +2047,7 @@ async def test_list_agents_matching_all_tags(server: SyncServer, default_user, a
 
 
 @pytest.mark.asyncio
-async def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+async def test_list_agents_matching_some_tags(server: SyncServer, default_user, agent_with_tags):
     agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent"],
@@ -2058,7 +2058,7 @@ async def test_list_agents_matching_some_tags(server: SyncServer, default_user, 
 
 
 @pytest.mark.asyncio
-async def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+async def test_list_agents_matching_all_and_some_tags(server: SyncServer, default_user, agent_with_tags):
     agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "benefit_1"],
@@ -2069,7 +2069,7 @@ async def test_list_agents_matching_all_and_some_tags(server: SyncServer, defaul
 
 
 @pytest.mark.asyncio
-async def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags, event_loop):
+async def test_list_agents_matching_no_tags(server: SyncServer, default_user, agent_with_tags):
     agents = await server.agent_manager.list_agents_matching_tags_async(
         actor=default_user,
         match_all=["primary_agent", "nonexistent_tag"],
@@ -2079,7 +2079,7 @@ async def test_list_agents_matching_no_tags(server: SyncServer, default_user, ag
 
 
 @pytest.mark.asyncio
-async def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, charles_agent, default_user):
     """Test listing agents that have ALL specified tags."""
     # Create agents with multiple tags
     await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(tags=["test", "production", "gpt4"]), actor=default_user)
@@ -2099,7 +2099,7 @@ async def test_list_agents_by_tags_match_all(server: SyncServer, sarah_agent, ch
 
 
 @pytest.mark.asyncio
-async def test_list_agents_by_tags_match_any(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_list_agents_by_tags_match_any(server: SyncServer, sarah_agent, charles_agent, default_user):
     """Test listing agents that have ANY of the specified tags."""
     # Create agents with different tags
     await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(tags=["production", "gpt4"]), actor=default_user)
@@ -2119,7 +2119,7 @@ async def test_list_agents_by_tags_match_any(server: SyncServer, sarah_agent, ch
 
 
 @pytest.mark.asyncio
-async def test_list_agents_by_tags_no_matches(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_list_agents_by_tags_no_matches(server: SyncServer, sarah_agent, charles_agent, default_user):
     """Test listing agents when no tags match."""
     # Create agents with tags
     await server.agent_manager.update_agent_async(sarah_agent.id, UpdateAgent(tags=["production", "gpt4"]), actor=default_user)
@@ -2134,7 +2134,7 @@ async def test_list_agents_by_tags_no_matches(server: SyncServer, sarah_agent, c
 
 
 @pytest.mark.asyncio
-async def test_list_agents_by_tags_with_other_filters(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_list_agents_by_tags_with_other_filters(server: SyncServer, sarah_agent, charles_agent, default_user):
     """Test combining tag search with other filters."""
     # Create agents with specific names and tags
     await server.agent_manager.update_agent_async(
@@ -2153,7 +2153,7 @@ async def test_list_agents_by_tags_with_other_filters(server: SyncServer, sarah_
 
 
 @pytest.mark.asyncio
-async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, default_organization, event_loop):
+async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, default_organization):
     """Test pagination when listing agents by tags."""
     # Create first agent
     agent1 = await server.agent_manager.create_agent_async(
@@ -2211,7 +2211,7 @@ async def test_list_agents_by_tags_pagination(server: SyncServer, default_user, 
 
 
 @pytest.mark.asyncio
-async def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization, event_loop):
+async def test_list_agents_query_text_pagination(server: SyncServer, default_user, default_organization):
     """Test listing agents with query text filtering and pagination."""
     # Create test agents with specific names and descriptions
     agent1 = await server.agent_manager.create_agent_async(
@@ -2300,7 +2300,7 @@ async def test_list_agents_query_text_pagination(server: SyncServer, default_use
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
@@ -2317,7 +2317,7 @@ async def test_reset_messages_no_messages(server: SyncServer, sarah_agent, defau
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages on an agent that has zero messages
     does not fail and clears out message_ids if somehow it's non-empty.
@@ -2339,7 +2339,7 @@ async def test_reset_messages_default_messages(server: SyncServer, sarah_agent, 
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages on an agent with actual messages
     deletes them from the database and clears message_ids.
@@ -2379,7 +2379,7 @@ async def test_reset_messages_with_existing_messages(server: SyncServer, sarah_a
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, default_user):
     """
     Test that calling reset_messages multiple times has no adverse effect.
     """
@@ -2407,7 +2407,7 @@ async def test_reset_messages_idempotency(server: SyncServer, sarah_agent, defau
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_preserves_system_message_id(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_preserves_system_message_id(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages preserves the original system message ID.
     """
@@ -2438,7 +2438,7 @@ async def test_reset_messages_preserves_system_message_id(server: SyncServer, sa
 
 
 @pytest.mark.asyncio
-async def test_reset_messages_preserves_system_message_content(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_reset_messages_preserves_system_message_content(server: SyncServer, sarah_agent, default_user):
     """
     Test that resetting messages preserves the original system message content.
     """
@@ -2471,7 +2471,7 @@ async def test_reset_messages_preserves_system_message_content(server: SyncServe
 
 
 @pytest.mark.asyncio
-async def test_modify_letta_message(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_modify_letta_message(server: SyncServer, sarah_agent, default_user):
     """
     Test updating a message.
     """
@@ -2544,7 +2544,7 @@ async def test_modify_letta_message(server: SyncServer, sarah_agent, default_use
 
 
 @pytest.mark.asyncio
-async def test_attach_block(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
+async def test_attach_block(server: SyncServer, sarah_agent, default_block, default_user):
     """Test attaching a block to an agent."""
     # Attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -2572,7 +2572,7 @@ def test_attach_block_duplicate_label(server: SyncServer, sarah_agent, default_b
 
 
 @pytest.mark.asyncio
-async def test_detach_block(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
+async def test_detach_block(server: SyncServer, sarah_agent, default_block, default_user):
     """Test detaching a block by ID."""
     # Set up: attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -2596,7 +2596,7 @@ def test_detach_nonexistent_block(server: SyncServer, sarah_agent, default_user)
 
 
 @pytest.mark.asyncio
-async def test_update_block_label(server: SyncServer, sarah_agent, default_block, default_user, event_loop):
+async def test_update_block_label(server: SyncServer, sarah_agent, default_block, default_user):
     """Test updating a block's label updates the relationship."""
     # Attach block
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -2613,7 +2613,7 @@ async def test_update_block_label(server: SyncServer, sarah_agent, default_block
 
 
 @pytest.mark.asyncio
-async def test_update_block_label_multiple_agents(server: SyncServer, sarah_agent, charles_agent, default_block, default_user, event_loop):
+async def test_update_block_label_multiple_agents(server: SyncServer, sarah_agent, charles_agent, default_block, default_user):
     """Test updating a block's label updates relationships for all agents."""
     # Attach block to both agents
     server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=default_block.id, actor=default_user)
@@ -2644,7 +2644,7 @@ def test_get_block_with_label(server: SyncServer, sarah_agent, default_block, de
 
 
 @pytest.mark.asyncio
-async def test_refresh_memory_async(server: SyncServer, default_user, event_loop):
+async def test_refresh_memory_async(server: SyncServer, default_user):
     block = server.block_manager.create_or_update_block(
         PydanticBlock(
             label="test",
@@ -2690,7 +2690,7 @@ async def test_refresh_memory_async(server: SyncServer, default_user, event_loop
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup, event_loop):
+async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup):
     """Test basic listing functionality of agent passages"""
 
     all_passages = await server.agent_manager.list_passages_async(actor=default_user, agent_id=sarah_agent.id)
@@ -2704,7 +2704,7 @@ async def test_agent_list_passages_basic(server, default_user, sarah_agent, agen
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup, event_loop):
+async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup):
     """Test ordering of agent passages"""
 
     # Test ascending order
@@ -2721,7 +2721,7 @@ async def test_agent_list_passages_ordering(server, default_user, sarah_agent, a
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup, event_loop):
+async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup):
     """Test pagination of agent passages"""
 
     # Test limit
@@ -2762,7 +2762,7 @@ async def test_agent_list_passages_pagination(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup, event_loop):
+async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup):
     """Test text search functionality of agent passages"""
 
     # Test text search for source passages
@@ -2779,7 +2779,7 @@ async def test_agent_list_passages_text_search(server, default_user, sarah_agent
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup, event_loop):
+async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup):
     """Test text search functionality of agent passages"""
 
     # Test text search for agent passages
@@ -2788,7 +2788,7 @@ async def test_agent_list_passages_agent_only(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup, event_loop):
+async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup):
     """Test filtering functionality of agent passages"""
 
     # Test source filtering
@@ -2908,7 +2908,7 @@ async def test_agent_list_passages_vector_search(
 
 
 @pytest.mark.asyncio
-async def test_list_source_passages_only(server: SyncServer, default_user, default_source, agent_passages_setup, event_loop):
+async def test_list_source_passages_only(server: SyncServer, default_user, default_source, agent_passages_setup):
     """Test listing passages from a source without specifying an agent."""
 
     # List passages by source_id without agent_id
@@ -2927,7 +2927,7 @@ async def test_list_source_passages_only(server: SyncServer, default_user, defau
 # Organization Manager Tests
 # ======================================================================================================================
 @pytest.mark.asyncio
-async def test_list_organizations(server: SyncServer, event_loop):
+async def test_list_organizations(server: SyncServer):
     # Create a new org and confirm that it is created correctly
     org_name = "test"
     org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
@@ -2943,14 +2943,14 @@ async def test_list_organizations(server: SyncServer, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_create_default_organization(server: SyncServer, event_loop):
+async def test_create_default_organization(server: SyncServer):
     await server.organization_manager.create_default_organization_async()
     retrieved = await server.organization_manager.get_default_organization_async()
     assert retrieved.name == DEFAULT_ORG_NAME
 
 
 @pytest.mark.asyncio
-async def test_update_organization_name(server: SyncServer, event_loop):
+async def test_update_organization_name(server: SyncServer):
     org_name_a = "a"
     org_name_b = "b"
     org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name_a))
@@ -2960,7 +2960,7 @@ async def test_update_organization_name(server: SyncServer, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_update_organization_privileged_tools(server: SyncServer, event_loop):
+async def test_update_organization_privileged_tools(server: SyncServer):
     org_name = "test"
     org = await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name=org_name))
     assert org.privileged_tools == False
@@ -2969,7 +2969,7 @@ async def test_update_organization_privileged_tools(server: SyncServer, event_lo
 
 
 @pytest.mark.asyncio
-async def test_list_organizations_pagination(server: SyncServer, event_loop):
+async def test_list_organizations_pagination(server: SyncServer):
     await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="a"))
     await server.organization_manager.create_organization_async(pydantic_org=PydanticOrganization(name="b"))
 
@@ -3020,7 +3020,7 @@ def test_passage_create_source(server: SyncServer, source_passage_fixture, defau
 
 
 @pytest.mark.asyncio
-async def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user, event_loop):
+async def test_passage_create_invalid(server: SyncServer, agent_passage_fixture, default_user):
     """Test creating an agent passage."""
     assert agent_passage_fixture is not None
     assert agent_passage_fixture.text == "Hello, I am an agent passage"
@@ -3414,7 +3414,7 @@ def test_delete_source_passage_specific(server: SyncServer, default_user, defaul
 
 
 @pytest.mark.asyncio
-async def test_create_many_agent_passages_async(server: SyncServer, default_user, sarah_agent, event_loop):
+async def test_create_many_agent_passages_async(server: SyncServer, default_user, sarah_agent):
     """Test creating multiple agent passages using the new batch method."""
     # Get or create default archive for the agent
     archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
@@ -3442,7 +3442,7 @@ async def test_create_many_agent_passages_async(server: SyncServer, default_user
 
 
 @pytest.mark.asyncio
-async def test_create_many_source_passages_async(server: SyncServer, default_user, default_file, default_source, event_loop):
+async def test_create_many_source_passages_async(server: SyncServer, default_user, default_file, default_source):
     """Test creating multiple source passages using the new batch method."""
     passages = [
         PydanticPassage(
@@ -3534,7 +3534,7 @@ def test_deprecated_methods_show_warnings(server: SyncServer, default_user, sara
 # User Manager Tests
 # ======================================================================================================================
 @pytest.mark.asyncio
-async def test_list_users(server: SyncServer, event_loop):
+async def test_list_users(server: SyncServer):
     # Create default organization
     org = await server.organization_manager.create_default_organization_async()
 
@@ -3551,7 +3551,7 @@ async def test_list_users(server: SyncServer, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_create_default_user(server: SyncServer, event_loop):
+async def test_create_default_user(server: SyncServer):
     org = await server.organization_manager.create_default_organization_async()
     await server.user_manager.create_default_actor_async(org_id=org.id)
     retrieved = await server.user_manager.get_default_actor_async()
@@ -3559,7 +3559,7 @@ async def test_create_default_user(server: SyncServer, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_update_user(server: SyncServer, event_loop):
+async def test_update_user(server: SyncServer):
     # Create default organization
     default_org = server.organization_manager.create_default_organization()
     test_org = server.organization_manager.create_organization(PydanticOrganization(name="test_org"))
@@ -3684,7 +3684,7 @@ def test_get_tool_with_actor(server: SyncServer, print_tool, default_user):
 
 
 @pytest.mark.asyncio
-async def test_list_tools(server: SyncServer, print_tool, default_user, event_loop):
+async def test_list_tools(server: SyncServer, print_tool, default_user):
     # List tools (should include the one created by the fixture)
     tools = await server.tool_manager.list_tools_async(actor=default_user, upsert_base_tools=False)
 
@@ -3811,7 +3811,7 @@ def test_update_tool_multi_user(server: SyncServer, print_tool, default_user, ot
 
 
 @pytest.mark.asyncio
-async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, event_loop):
+async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user):
     # Delete the print_tool using the manager method
     server.tool_manager.delete_tool_by_id(print_tool.id, actor=default_user)
 
@@ -3820,7 +3820,7 @@ async def test_delete_tool_by_id(server: SyncServer, print_tool, default_user, e
 
 
 @pytest.mark.asyncio
-async def test_upsert_base_tools(server: SyncServer, default_user, event_loop):
+async def test_upsert_base_tools(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
 
     # Calculate expected tools accounting for production filtering
@@ -4670,7 +4670,7 @@ async def test_batch_create_blocks_async(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_get_blocks(server, default_user, event_loop):
+async def test_get_blocks(server, default_user):
     block_manager = BlockManager()
 
     # Create blocks to retrieve later
@@ -4691,7 +4691,7 @@ async def test_get_blocks(server, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_get_blocks_comprehensive(server, default_user, other_user_different_org, event_loop):
+async def test_get_blocks_comprehensive(server, default_user, other_user_different_org):
     def random_label(prefix="label"):
         return f"{prefix}_{''.join(random.choices(string.ascii_lowercase, k=6))}"
 
@@ -4800,7 +4800,7 @@ def test_update_block_limit_does_not_reset(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_delete_block(server: SyncServer, default_user, event_loop):
+async def test_delete_block(server: SyncServer, default_user):
     block_manager = BlockManager()
 
     # Create and delete a block
@@ -4813,7 +4813,7 @@ async def test_delete_block(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent, default_user):
     # Create and delete a block
     block = server.block_manager.create_or_update_block(PydanticBlock(label="human", value="Sample content"), actor=default_user)
     agent_state = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
@@ -4834,7 +4834,7 @@ async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_agent, default_user):
     # Create and delete a block
     block = server.block_manager.create_or_update_block(PydanticBlock(label="alien", value="Sample content"), actor=default_user)
     sarah_agent = server.agent_manager.attach_block(agent_id=sarah_agent.id, block_id=block.id, actor=default_user)
@@ -4855,7 +4855,7 @@ async def test_get_agents_for_block(server: SyncServer, sarah_agent, charles_age
 
 
 @pytest.mark.asyncio
-async def test_batch_create_multiple_blocks(server: SyncServer, default_user, event_loop):
+async def test_batch_create_multiple_blocks(server: SyncServer, default_user):
     block_manager = BlockManager()
     num_blocks = 10
 
@@ -4920,7 +4920,7 @@ async def test_bulk_update_skips_missing_and_truncates_then_returns_none(
 
 @pytest.mark.asyncio
 @pytest.mark.skip(reason="TODO: implement for async")
-async def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser, event_loop):
+async def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser):
     mgr = BlockManager()
 
     # create a block
@@ -5546,7 +5546,7 @@ def test_redo_concurrency_stale(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_create_and_upsert_identity(server: SyncServer, default_user, event_loop):
+async def test_create_and_upsert_identity(server: SyncServer, default_user):
     identity_create = IdentityCreate(
         identifier_key="1234",
         name="caren",
@@ -5614,7 +5614,7 @@ async def test_get_identities(server, default_user):
 
 
 @pytest.mark.asyncio
-async def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_update_identity(server: SyncServer, sarah_agent, charles_agent, default_user):
     identity = await server.identity_manager.create_identity_async(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
     )
@@ -5642,7 +5642,7 @@ async def test_update_identity(server: SyncServer, sarah_agent, charles_agent, d
 
 
 @pytest.mark.asyncio
-async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent, default_user):
     # Create an identity
     identity = await server.identity_manager.create_identity_async(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user), actor=default_user
@@ -5667,7 +5667,7 @@ async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent
 
 
 @pytest.mark.asyncio
-async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_agent, default_user, event_loop):
+async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, charles_agent, default_user):
     identity = await server.identity_manager.create_identity_async(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, agent_ids=[sarah_agent.id, charles_agent.id]),
         actor=default_user,
@@ -5732,7 +5732,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
 
 
 @pytest.mark.asyncio
-async def test_upsert_properties(server: SyncServer, default_user, event_loop):
+async def test_upsert_properties(server: SyncServer, default_user):
     identity_create = IdentityCreate(
         identifier_key="1234",
         name="caren",
@@ -5761,7 +5761,7 @@ async def test_upsert_properties(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user, event_loop):
+async def test_attach_detach_identity_from_block(server: SyncServer, default_block, default_user):
     # Create an identity
     identity = await server.identity_manager.create_identity_async(
         IdentityCreate(name="caren", identifier_key="1234", identity_type=IdentityType.user, block_ids=[default_block.id]),
@@ -5785,7 +5785,7 @@ async def test_attach_detach_identity_from_block(server: SyncServer, default_blo
 
 
 @pytest.mark.asyncio
-async def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user, event_loop):
+async def test_get_set_blocks_for_identities(server: SyncServer, default_block, default_user):
     block_manager = BlockManager()
     block_with_identity = block_manager.create_or_update_block(PydanticBlock(label="persona", value="Original Content"), actor=default_user)
     block_without_identity = block_manager.create_or_update_block(PydanticBlock(label="user", value="Original Content"), actor=default_user)
@@ -5839,7 +5839,7 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
 
 
 @pytest.mark.asyncio
-async def test_get_existing_source_names(server: SyncServer, default_user, event_loop):
+async def test_get_existing_source_names(server: SyncServer, default_user):
     """Test the fast batch check for existing source names."""
     # Create some test sources
     source1 = PydanticSource(
@@ -5892,7 +5892,7 @@ async def test_get_existing_source_names(server: SyncServer, default_user, event
 
 
 @pytest.mark.asyncio
-async def test_create_source(server: SyncServer, default_user, event_loop):
+async def test_create_source(server: SyncServer, default_user):
     """Test creating a new source."""
     source_pydantic = PydanticSource(
         name="Test Source",
@@ -5968,7 +5968,7 @@ async def test_delete_source(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_delete_attached_source(server: SyncServer, sarah_agent, default_user, event_loop):
+async def test_delete_attached_source(server: SyncServer, sarah_agent, default_user):
     """Test deleting a source."""
     source_pydantic = PydanticSource(
         name="To Delete", description="This source will be deleted.", embedding_config=DEFAULT_EMBEDDING_CONFIG
@@ -7240,7 +7240,7 @@ async def test_get_organization_sources_metadata(server, default_user):
 
 
 @pytest.mark.asyncio
-async def test_create_or_update_sandbox_config(server: SyncServer, default_user, event_loop):
+async def test_create_or_update_sandbox_config(server: SyncServer, default_user):
     sandbox_config_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
     )
@@ -7253,7 +7253,7 @@ async def test_create_or_update_sandbox_config(server: SyncServer, default_user,
 
 
 @pytest.mark.asyncio
-async def test_create_local_sandbox_config_defaults(server: SyncServer, default_user, event_loop):
+async def test_create_local_sandbox_config_defaults(server: SyncServer, default_user):
     sandbox_config_create = SandboxConfigCreate(
         config=LocalSandboxConfig(),
     )
@@ -7267,7 +7267,7 @@ async def test_create_local_sandbox_config_defaults(server: SyncServer, default_
 
 
 @pytest.mark.asyncio
-async def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user, event_loop):
+async def test_default_e2b_settings_sandbox_config(server: SyncServer, default_user):
     created_config = await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(
         sandbox_type=SandboxType.E2B, actor=default_user
     )
@@ -7279,7 +7279,7 @@ async def test_default_e2b_settings_sandbox_config(server: SyncServer, default_u
 
 
 @pytest.mark.asyncio
-async def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+async def test_update_existing_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
     update_data = SandboxConfigUpdate(config=E2BSandboxConfig(template="template_2", timeout=120))
     updated_config = await server.sandbox_config_manager.update_sandbox_config_async(
         sandbox_config_fixture.id, update_data, actor=default_user
@@ -7291,7 +7291,7 @@ async def test_update_existing_sandbox_config(server: SyncServer, sandbox_config
 
 
 @pytest.mark.asyncio
-async def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+async def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture, default_user):
     deleted_config = await server.sandbox_config_manager.delete_sandbox_config_async(sandbox_config_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
@@ -7303,7 +7303,7 @@ async def test_delete_sandbox_config(server: SyncServer, sandbox_config_fixture,
 
 
 @pytest.mark.asyncio
-async def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+async def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fixture, default_user):
     retrieved_config = await server.sandbox_config_manager.get_sandbox_config_by_type_async(sandbox_config_fixture.type, actor=default_user)
 
     # Assertions to verify correct retrieval
@@ -7312,7 +7312,7 @@ async def test_get_sandbox_config_by_type(server: SyncServer, sandbox_config_fix
 
 
 @pytest.mark.asyncio
-async def test_list_sandbox_configs(server: SyncServer, default_user, event_loop):
+async def test_list_sandbox_configs(server: SyncServer, default_user):
     # Creating multiple sandbox configs
     config_e2b_create = SandboxConfigCreate(
         config=E2BSandboxConfig(),
@@ -7353,7 +7353,7 @@ async def test_list_sandbox_configs(server: SyncServer, default_user, event_loop
 
 
 @pytest.mark.asyncio
-async def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+async def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture, default_user):
     env_var_create = SandboxEnvironmentVariableCreate(key="TEST_VAR", value="test_value", description="A test environment variable.")
     created_env_var = await server.sandbox_config_manager.create_sandbox_env_var_async(
         env_var_create, sandbox_config_id=sandbox_config_fixture.id, actor=default_user
@@ -7366,7 +7366,7 @@ async def test_create_sandbox_env_var(server: SyncServer, sandbox_config_fixture
 
 
 @pytest.mark.asyncio
-async def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
+async def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixture, default_user):
     update_data = SandboxEnvironmentVariableUpdate(value="updated_value")
     updated_env_var = await server.sandbox_config_manager.update_sandbox_env_var_async(
         sandbox_env_var_fixture.id, update_data, actor=default_user
@@ -7378,7 +7378,7 @@ async def test_update_sandbox_env_var(server: SyncServer, sandbox_env_var_fixtur
 
 
 @pytest.mark.asyncio
-async def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user, event_loop):
+async def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture, sandbox_env_var_fixture, default_user):
     deleted_env_var = await server.sandbox_config_manager.delete_sandbox_env_var_async(sandbox_env_var_fixture.id, actor=default_user)
 
     # Assertions to verify deletion
@@ -7392,7 +7392,7 @@ async def test_delete_sandbox_env_var(server: SyncServer, sandbox_config_fixture
 
 
 @pytest.mark.asyncio
-async def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user, event_loop):
+async def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture, default_user):
     # Creating multiple environment variables
     env_var_create_a = SandboxEnvironmentVariableCreate(key="VAR1", value="value1")
     env_var_create_b = SandboxEnvironmentVariableCreate(key="VAR2", value="value2")
@@ -7425,7 +7425,7 @@ async def test_list_sandbox_env_vars(server: SyncServer, sandbox_config_fixture,
 
 
 @pytest.mark.asyncio
-async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user, event_loop):
+async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fixture, default_user):
     retrieved_env_var = await server.sandbox_config_manager.get_sandbox_env_var_by_key_and_sandbox_config_id_async(
         sandbox_env_var_fixture.key, sandbox_env_var_fixture.sandbox_config_id, actor=default_user
     )
@@ -7441,7 +7441,7 @@ async def test_get_sandbox_env_var_by_key(server: SyncServer, sandbox_env_var_fi
 
 
 @pytest.mark.asyncio
-async def test_create_job(server: SyncServer, default_user, event_loop):
+async def test_create_job(server: SyncServer, default_user):
     """Test creating a job."""
     job_data = PydanticJob(
         status=JobStatus.created,
@@ -7457,7 +7457,7 @@ async def test_create_job(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_get_job_by_id(server: SyncServer, default_user, event_loop):
+async def test_get_job_by_id(server: SyncServer, default_user):
     """Test fetching a job by ID."""
     # Create a job
     job_data = PydanticJob(
@@ -7476,7 +7476,7 @@ async def test_get_job_by_id(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_list_jobs(server: SyncServer, default_user, event_loop):
+async def test_list_jobs(server: SyncServer, default_user):
     """Test listing jobs."""
     # Create multiple jobs
     for i in range(3):
@@ -7496,7 +7496,7 @@ async def test_list_jobs(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_with_metadata(server: SyncServer, default_user, event_loop):
+async def test_list_jobs_with_metadata(server: SyncServer, default_user):
     for i in range(3):
         job_data = PydanticJob(status=JobStatus.created, metadata={"source_id": f"source-test-{i}"})
         await server.job_manager.create_job_async(pydantic_job=job_data, actor=default_user)
@@ -7506,7 +7506,7 @@ async def test_list_jobs_with_metadata(server: SyncServer, default_user, event_l
 
 
 @pytest.mark.asyncio
-async def test_update_job_by_id(server: SyncServer, default_user, event_loop):
+async def test_update_job_by_id(server: SyncServer, default_user):
     """Test updating a job by its ID."""
     # Create a job
     job_data = PydanticJob(
@@ -7527,7 +7527,7 @@ async def test_update_job_by_id(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_delete_job_by_id(server: SyncServer, default_user, event_loop):
+async def test_delete_job_by_id(server: SyncServer, default_user):
     """Test deleting a job by its ID."""
     # Create a job
     job_data = PydanticJob(
@@ -7545,7 +7545,7 @@ async def test_delete_job_by_id(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_update_job_auto_complete(server: SyncServer, default_user, event_loop):
+async def test_update_job_auto_complete(server: SyncServer, default_user):
     """Test that updating a job's status to 'completed' automatically sets completed_at."""
     # Create a job
     job_data = PydanticJob(
@@ -7564,7 +7564,7 @@ async def test_update_job_auto_complete(server: SyncServer, default_user, event_
 
 
 @pytest.mark.asyncio
-async def test_get_job_not_found(server: SyncServer, default_user, event_loop):
+async def test_get_job_not_found(server: SyncServer, default_user):
     """Test fetching a non-existent job."""
     non_existent_job_id = "nonexistent-id"
     with pytest.raises(NoResultFound):
@@ -7572,7 +7572,7 @@ async def test_get_job_not_found(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_delete_job_not_found(server: SyncServer, default_user, event_loop):
+async def test_delete_job_not_found(server: SyncServer, default_user):
     """Test deleting a non-existent job."""
     non_existent_job_id = "nonexistent-id"
     with pytest.raises(NoResultFound):
@@ -7580,7 +7580,7 @@ async def test_delete_job_not_found(server: SyncServer, default_user, event_loop
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_pagination(server: SyncServer, default_user, event_loop):
+async def test_list_jobs_pagination(server: SyncServer, default_user):
     """Test listing jobs with pagination."""
     # Create multiple jobs
     for i in range(10):
@@ -7634,7 +7634,7 @@ async def test_list_jobs_pagination(server: SyncServer, default_user, event_loop
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_by_status(server: SyncServer, default_user, event_loop):
+async def test_list_jobs_by_status(server: SyncServer, default_user):
     """Test listing jobs filtered by status."""
     # Create multiple jobs with different statuses
     job_data_created = PydanticJob(
@@ -7671,7 +7671,7 @@ async def test_list_jobs_by_status(server: SyncServer, default_user, event_loop)
 
 
 @pytest.mark.asyncio
-async def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job, event_loop):
+async def test_list_jobs_filter_by_type(server: SyncServer, default_user, default_job):
     """Test that list_jobs correctly filters by job_type."""
     # Create a run job
     run_pydantic = PydanticJob(
@@ -8106,7 +8106,7 @@ def test_get_run_messages_with_assistant_message(server: SyncServer, default_use
 
 
 @pytest.mark.asyncio
-async def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_job_usage_stats_add_and_get(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding and retrieving job usage statistics."""
     job_manager = server.job_manager
     step_manager = server.step_manager
@@ -8160,7 +8160,7 @@ def test_job_usage_stats_get_no_stats(server: SyncServer, default_job, default_u
 
 
 @pytest.mark.asyncio
-async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, default_job, default_user):
     """Test adding multiple usage statistics entries for a job."""
     job_manager = server.job_manager
     step_manager = server.step_manager
@@ -8233,7 +8233,7 @@ async def test_job_usage_stats_add_multiple(server: SyncServer, sarah_agent, def
 
 
 @pytest.mark.asyncio
-async def test_step_manager_error_tracking(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_step_manager_error_tracking(server: SyncServer, sarah_agent, default_job, default_user):
     """Test step manager error tracking functionality."""
     step_manager = server.step_manager
 
@@ -8354,7 +8354,7 @@ async def test_step_manager_error_tracking(server: SyncServer, sarah_agent, defa
 
 
 @pytest.mark.asyncio
-async def test_step_manager_error_tracking_edge_cases(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_step_manager_error_tracking_edge_cases(server: SyncServer, sarah_agent, default_job, default_user):
     """Test edge cases for step manager error tracking."""
     step_manager = server.step_manager
 
@@ -8489,7 +8489,7 @@ async def test_step_manager_error_tracking_edge_cases(server: SyncServer, sarah_
 
 
 @pytest.mark.asyncio
-async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sarah_agent, default_job, default_user):
     """Test listing steps with status filters."""
     step_manager = server.step_manager
 
@@ -8534,7 +8534,7 @@ async def test_step_manager_list_steps_with_status_filter(server: SyncServer, sa
         assert status_counts[status] >= 1, f"No steps found with status {status}"
 
 
-async def test_step_manager_record_metrics(server: SyncServer, sarah_agent, default_job, default_user, event_loop):
+async def test_step_manager_record_metrics(server: SyncServer, sarah_agent, default_job, default_user):
     """Test recording step metrics functionality."""
     step_manager = server.step_manager
 
@@ -8587,7 +8587,7 @@ async def test_step_manager_record_metrics(server: SyncServer, sarah_agent, defa
     assert metrics.base_template_id == "base-template-id"
 
 
-async def test_step_manager_record_metrics_nonexistent_step(server: SyncServer, default_user, event_loop):
+async def test_step_manager_record_metrics_nonexistent_step(server: SyncServer, default_user):
     """Test recording metrics for a nonexistent step."""
     step_manager = server.step_manager
 
@@ -8611,7 +8611,7 @@ def test_job_usage_stats_get_nonexistent_job(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_record_ttft(server: SyncServer, default_user, event_loop):
+async def test_record_ttft(server: SyncServer, default_user):
     """Test recording time to first token for a job."""
     # Create a job
     job_data = PydanticJob(
@@ -8630,7 +8630,7 @@ async def test_record_ttft(server: SyncServer, default_user, event_loop):
 
 
 @pytest.mark.asyncio
-async def test_record_response_duration(server: SyncServer, default_user, event_loop):
+async def test_record_response_duration(server: SyncServer, default_user):
     """Test recording total response duration for a job."""
     # Create a job
     job_data = PydanticJob(
@@ -8649,7 +8649,7 @@ async def test_record_response_duration(server: SyncServer, default_user, event_
 
 
 @pytest.mark.asyncio
-async def test_record_timing_metrics_together(server: SyncServer, default_user, event_loop):
+async def test_record_timing_metrics_together(server: SyncServer, default_user):
     """Test recording both TTFT and response duration for a job."""
     # Create a job
     job_data = PydanticJob(
@@ -8672,7 +8672,7 @@ async def test_record_timing_metrics_together(server: SyncServer, default_user, 
 
 
 @pytest.mark.asyncio
-async def test_record_timing_invalid_job(server: SyncServer, default_user, event_loop):
+async def test_record_timing_invalid_job(server: SyncServer, default_user):
     """Test recording timing metrics for non-existent job fails gracefully."""
     # Try to record TTFT for non-existent job - should not raise exception but log warning
     await server.job_manager.record_ttft("nonexistent_job_id", 1_000_000_000, default_user)
@@ -8741,7 +8741,7 @@ def test_list_tags(server: SyncServer, default_user, default_organization):
 
 
 @pytest.mark.asyncio
-async def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+async def test_create_and_get_batch_request(server, default_user, dummy_beta_message_batch, letta_batch_job):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
@@ -8756,7 +8756,7 @@ async def test_create_and_get_batch_request(server, default_user, dummy_beta_mes
 
 
 @pytest.mark.asyncio
-async def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+async def test_update_batch_status(server, default_user, dummy_beta_message_batch, letta_batch_job):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
@@ -8882,7 +8882,7 @@ async def test_delete_batch_item(
 
 
 @pytest.mark.asyncio
-async def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+async def test_list_running_batches(server, default_user, dummy_beta_message_batch, letta_batch_job):
     # Create recent running batches
     num_running = 3
 
@@ -8929,7 +8929,7 @@ async def test_list_running_batches(server, default_user, dummy_beta_message_bat
 
 
 @pytest.mark.asyncio
-async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job, event_loop):
+async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_message_batch, letta_batch_job):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
         status=JobStatus.created,
@@ -9301,7 +9301,7 @@ async def test_count_batch_items(
 
 
 @pytest.mark.asyncio
-async def test_create_mcp_server(server, default_user, event_loop):
+async def test_create_mcp_server(server, default_user):
     from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
     from letta.settings import tool_settings
 
@@ -9353,7 +9353,7 @@ async def test_create_mcp_server(server, default_user, event_loop):
     print("TAGS", tool.tags)
 
 
-async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
+async def test_get_mcp_servers_by_ids(server, default_user):
     from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
     from letta.settings import tool_settings
 
@@ -9432,7 +9432,7 @@ async def test_get_mcp_servers_by_ids(server, default_user, event_loop):
 
 # Additional MCPManager OAuth session tests
 @pytest.mark.asyncio
-async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organization, default_user, event_loop):
+async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organization, default_user):
     """Deleting an MCP server deletes associated OAuth sessions (same user + URL)."""
 
     from letta.schemas.mcp import MCPOAuthSessionCreate
@@ -9476,7 +9476,7 @@ async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organ
 
 
 @pytest.mark.asyncio
-async def test_oauth_sessions_with_different_url_persist(server, default_organization, default_user, event_loop):
+async def test_oauth_sessions_with_different_url_persist(server, default_organization, default_user):
     """Sessions with different URL should not be deleted when deleting the server for another URL."""
 
     from letta.schemas.mcp import MCPOAuthSessionCreate
@@ -9517,7 +9517,7 @@ async def test_oauth_sessions_with_different_url_persist(server, default_organiz
 
 
 @pytest.mark.asyncio
-async def test_mcp_server_creation_links_orphaned_sessions(server, default_organization, default_user, event_loop):
+async def test_mcp_server_creation_links_orphaned_sessions(server, default_organization, default_user):
     """Creating a server should link any existing orphaned sessions (same user + URL)."""
 
     from letta.schemas.mcp import MCPOAuthSessionCreate
@@ -9563,7 +9563,7 @@ async def test_mcp_server_creation_links_orphaned_sessions(server, default_organ
 
 
 @pytest.mark.asyncio
-async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, default_organization, default_user, event_loop):
+async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, default_organization, default_user):
     """Deleting a server removes both linked and orphaned sessions for same user+URL."""
 
     from letta.schemas.mcp import MCPOAuthSessionCreate
@@ -10971,7 +10971,7 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #
 #
 # @pytest.mark.asyncio
-# async def test_high_concurrency_stress_test(server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser, event_loop):
+# async def test_high_concurrency_stress_test(server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser):
 #     """Stress test with high concurrency to catch race conditions."""
 #     agent, _ = comprehensive_test_agent_fixture
 #

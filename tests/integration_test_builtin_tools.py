@@ -70,7 +70,7 @@ def client(server_url: str) -> Letta:
     yield client_instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def agent_state(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
@@ -333,7 +333,7 @@ def test_web_search(
     ], f"Invalid api_key_source: {response_json['api_key_source']}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="function")
 async def test_web_search_uses_agent_env_var_model():
     """Test that web search uses the model specified in agent tool exec env vars."""
 
