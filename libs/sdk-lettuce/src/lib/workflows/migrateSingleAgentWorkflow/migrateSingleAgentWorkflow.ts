@@ -76,6 +76,7 @@ export async function migrateSingleAgentWorkflow(
       preserveCoreMemories,
       organizationId,
       lettaAgentsId,
+      templateId: template.id,
     };
 
     // Call the updateAgentFromAgentTemplateId activity directly

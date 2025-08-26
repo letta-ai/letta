@@ -90,9 +90,11 @@ const SearchByAgentTag = z.object({
 
 const SearchByTemplateNameSchema = z.object({
   field: z.literal('templateName'),
-  operator: z.enum(['eq', 'neq']),
+  operator: z.enum(['eq']),
   value: z.string(),
 });
+
+
 
 export const OrderByValuesEnum = z.enum(['created_at', 'updated_at']);
 

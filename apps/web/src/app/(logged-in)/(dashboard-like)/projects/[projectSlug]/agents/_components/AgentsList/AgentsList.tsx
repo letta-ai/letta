@@ -331,14 +331,14 @@ function useQueryDefinition() {
 
     const arr = templateData.body.templates.map((template) => ({
       label: template.name,
-      value: template.id,
+      value: `${slug}/${template.name}`,
     }));
 
     // Add "(Any Family)" option at the beginning
     arr.unshift({ label: t('anyFamily'), value: '' });
 
     return arr;
-  }, [templateData?.body, t]);
+  }, [templateData?.body, t, slug]);
 
   const handleLoadTemplateNames = useCallback(
     async (query: string) => {
@@ -357,7 +357,7 @@ function useQueryDefinition() {
 
       const options = response.body.templates.map((template) => ({
         label: template.name,
-        value: template.id,
+        value: `${slug}/${template.name}`,
       }));
 
       // Add "(Any Family)" option at the beginning
@@ -365,7 +365,7 @@ function useQueryDefinition() {
 
       return options;
     },
-    [currentProjectId, t],
+    [currentProjectId, t, slug]
   );
 
   return useMemo(() => {
@@ -544,13 +544,7 @@ function useQueryDefinition() {
                     'useQueryDefinition.templateFamily.operator.operators.equals',
                   ),
                   value: 'eq',
-                },
-                {
-                  label: t(
-                    'useQueryDefinition.templateFamily.operator.operators.notEquals',
-                  ),
-                  value: 'neq',
-                },
+                }
               ],
             },
           },
@@ -654,7 +648,6 @@ function TagsShorthand(props: TagsShorthandProps) {
 export function AgentsList() {
   const { fieldDefinitions, initialQuery } = useQueryDefinition();
 
-  const [draftQuery, setDraftQuery] = useState<QueryBuilderQuery>(initialQuery);
   const [query, setQuery] = useState<QueryBuilderQuery>(initialQuery);
   const t = useTranslations('projects/(projectSlug)/agents/page');
 
@@ -671,13 +664,13 @@ export function AgentsList() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams();
-    searchParams.set('query', JSON.stringify(draftQuery));
+    searchParams.set('query', JSON.stringify(query));
     window.history.replaceState(
       {},
       '',
       `${window.location.pathname}?${searchParams}`,
     );
-  }, [draftQuery]);
+  }, [query]);
 
   const [limit, setLimit] = useState(0);
   const [page, setPage] = useState<number>(0);
@@ -692,12 +685,20 @@ export function AgentsList() {
       combinator: 'AND' as const,
     };
 
-    if (SearchDeployedAgentsSchema.safeParse(val).success) {
-      return val;
+    const output = SearchDeployedAgentsSchema.safeParse(val);
+
+    if (output.success) {
+      return output.data;
     }
 
-    return {};
-  }, [currentProjectId, limit, query.root.items]);
+    return {
+      limit,
+      project_id: currentProjectId,
+      combinator: 'AND' as const,
+
+    };
+  }, [currentProjectId, limit, query]);
+
 
   const { data, isFetchingNextPage, fetchNextPage, refetch } = useInfiniteQuery<
     ServerInferResponses<
@@ -816,7 +817,6 @@ export function AgentsList() {
       } satisfies QueryBuilderQuery;
 
       setQuery(nextQuery);
-      setDraftQuery(nextQuery);
     },
     [
       fieldDefinitions.version.id,
@@ -1011,16 +1011,14 @@ export function AgentsList() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          setQuery(draftQuery);
+          refetch();
         }}
       >
         <QueryBuilderWrapper label={t('search.label')}>
           <QueryBuilder
             key={queryBuilderKey}
-            query={draftQuery}
-            onSetQuery={(query) => {
-              setDraftQuery(query);
-            }}
+            query={query}
+            onSetQuery={setQuery}
             definition={fieldDefinitions}
           />
         </QueryBuilderWrapper>

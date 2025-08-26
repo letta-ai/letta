@@ -12,6 +12,7 @@ export async function updateAgentFromAgentTemplateIdActivity(
     preserveToolVariables,
     preserveCoreMemories,
     organizationId,
+    templateId,
     lettaAgentsId,
   } = payload;
 
@@ -33,6 +34,7 @@ export async function updateAgentFromAgentTemplateIdActivity(
       memoryVariables: deployedAgent?.value || {},
       preserveCoreMemories,
       preserveToolVariables,
+      templateId,
       lettaAgentsUserId: lettaAgentsId,
       organizationId,
     });

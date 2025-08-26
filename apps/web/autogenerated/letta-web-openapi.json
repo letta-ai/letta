@@ -113,7 +113,7 @@
                             },
                             "operator": {
                               "type": "string",
-                              "enum": ["eq", "neq"]
+                              "enum": ["eq"]
                             },
                             "value": {
                               "type": "string"

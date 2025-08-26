@@ -472,7 +472,30 @@ async function searchDeployedAgents(
       }
 
       if (searchTerm.field === 'templateName') {
-        query.baseTemplateId = searchTerm.value;
+        const { organizationId, lettaAgentsUserId } = getContextDataHack(req, context);
+
+        // remove version part if it exists
+        const [name] = searchTerm.value.split(':');
+
+        const versionString = `${name}:current`;
+
+        if (!validateVersionString(versionString)) {
+          return;
+        }
+
+
+        const templateFamily = await getTemplateByName({
+          versionString,
+          organizationId: organizationId,
+          lettaAgentsId: lettaAgentsUserId,
+        });
+
+        if (!templateFamily) {
+          return;
+        }
+
+        query.baseTemplateId = templateFamily.id;
+
         return;
       }
     }),

@@ -2320,8 +2320,7 @@
         "name": "Template Family",
         "operator": {
           "operators": {
-            "equals": "equals",
-            "notEquals": "does not equal"
+            "equals": "equals"
           },
           "label": "Operator"
         },

@@ -46,6 +46,7 @@ export interface UpdateAgentFromAgentTemplateIdPayload {
   preserveCoreMemories?: boolean;
   organizationId: string;
   lettaAgentsId: string;
+  templateId: string;
 }
 
 export interface DeleteExpiredTokensAndUsersResult {
