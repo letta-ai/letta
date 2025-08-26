@@ -133,11 +133,20 @@ export function useManageMessageScroller(
   // on mode change or if isSendingMessage starts, scroll to bottom
   useEffect(() => {
     // release scroll lock
-    scrollLock.current = false;
+    if (!scrollLock.current || isSendingMessage) {
+      scrollToBottom();
+    }
 
+    scrollLock.current = false;
     fetchNextPageLock.current = false;
+
+  }, [isSendingMessage, scrollToBottom]);
+
+  useEffect(() => {
     scrollToBottom();
-  }, [mode, isSendingMessage, scrollToBottom]);
+    scrollLock.current = false;
+    fetchNextPageLock.current = false;
+  }, [mode, scrollToBottom]);
 
   // set up scroll lock ref
   useEffect(() => {
@@ -145,16 +154,21 @@ export function useManageMessageScroller(
       return;
     }
 
-    // check if user is scrolling in viewport
+    // check if user is scrolling in viewport, and its the user not the program
+    // basically if they're scrolling up, enable scroll lock, if they're scrolling down, disable it
     function scrollHandler() {
+      if (!scrollRef.current) {
+        return;
+      }
+
       scrollLock.current = true;
     }
 
     const currentScrollRef = scrollRef.current;
-    currentScrollRef.addEventListener('scroll', scrollHandler);
+    currentScrollRef.addEventListener('wheel', scrollHandler);
 
     return () => {
-      currentScrollRef.removeEventListener('scroll', scrollHandler);
+      currentScrollRef.removeEventListener('wheel', scrollHandler);
     };
   }, [scrollRef]);
 

@@ -8,13 +8,15 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, { memo, useMemo } from 'react';
+import React, {  useMemo } from 'react';
 import { useGroupedMessages } from '../hooks/useGroupedMessages/useGroupedMessages';
 import { useMessagesContext } from '../hooks/useMessagesContext/useMessagesContext';
-import type { ListMessagesResponse, ToolReturnMessage } from '@letta-cloud/sdk-core';
+import type {
+  ListMessagesResponse,
+  ToolReturnMessage,
+} from '@letta-cloud/sdk-core';
 import type { AgentSimulatorMessageGroupType } from '../../AgentSimulator/types';
 import { Message } from './Message/Message';
-import { deepEqual } from 'fast-equals';
 import { useTranslations } from '@letta-cloud/translations';
 
 interface MessageGroupType {
@@ -24,27 +26,37 @@ interface MessageGroupType {
 
 function MessageGroup({ group, dataAnchor }: MessageGroupType) {
   const { name, messages } = group;
+  const { mode } = useMessagesContext();
 
-  const sortedMessages = useMemo(
-    () =>
-      messages.sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-      ),
-    [messages],
-  );
+  const sortedMessages = useMemo(() => {
+    let nextMessages = messages.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+
+    if (mode !== 'debug') {
+      return nextMessages.filter(
+        (m) => m.message_type !== 'tool_return_message',
+      );
+    }
+
+    return nextMessages;
+  }, [messages, mode]);
 
   const toolReturnMessages = useMemo(
     () =>
-      sortedMessages
+      messages
         .filter((message) => message.message_type === 'tool_return_message')
-        .reduce((acc, message) => {
-          if (message.message_type === 'tool_return_message') {
-            acc[message.tool_call_id] = message;
-          }
+        .reduce(
+          (acc, message) => {
+            if (message.message_type === 'tool_return_message') {
+              acc[message.tool_call_id] = message;
+            }
 
-          return acc;
-        }, {} as Record<string, ToolReturnMessage>),
-    [sortedMessages],
+            return acc;
+          },
+          {} as Record<string, ToolReturnMessage>,
+        ),
+    [messages],
   );
 
   const textColor = useMemo(() => {
@@ -132,11 +144,19 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
               ? toolReturnMessages[message.tool_call.tool_call_id || '']
               : undefined;
 
+          const messageToSet = message;
+
+          if (message.message_type === 'tool_call_message') {
+            // set the stepId of the tool_call_message to the tool_return_message's stepId if it exists
+            if (toolReturnMessage && toolReturnMessage.step_id) {
+              messageToSet.step_id = toolReturnMessage.step_id;
+            }
+          }
 
           return (
             <Message
               key={`${message.id}_${index}`}
-              message={message}
+              message={messageToSet}
               toolReturnMessage={toolReturnMessage}
             />
           );
@@ -151,34 +171,29 @@ interface MessageGroupsProps {
   hasNextPage?: boolean;
 }
 
-export const MessageGroups = memo(
-  function MessageGroups(props: MessageGroupsProps) {
-    const { messages, hasNextPage = false } = props;
+export function MessageGroups(props: MessageGroupsProps) {
+  const { messages, hasNextPage = false } = props;
 
-    const { mode } = useMessagesContext();
+  const { mode } = useMessagesContext();
 
-    const t = useTranslations('components/Messages');
+  const t = useTranslations('components/Messages');
 
-    const messageGroups = useGroupedMessages({
-      messages,
-    });
+  const messageGroups = useGroupedMessages({
+    messages,
+  });
 
-    return (
-      <>
-        {messageGroups.map((group, index) => (
-          <MessageGroup
-            key={index}
-            group={group}
-            dataAnchor={index === 0 ? 'old-first' : undefined}
-          />
-        ))}
-        {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
-          <Alert variant="info" title={t('noParsableMessages')} />
-        )}
-      </>
-    );
-  },
-  (prevProps, nextProps) => {
-    return deepEqual(prevProps, nextProps);
-  },
-);
+  return (
+    <>
+      {messageGroups.map((group, index) => (
+        <MessageGroup
+          key={index}
+          group={group}
+          dataAnchor={index === 0 ? 'old-first' : undefined}
+        />
+      ))}
+      {hasNextPage && messageGroups.length === 0 && mode === 'simple' && (
+        <Alert variant="info" title={t('noParsableMessages')} />
+      )}
+    </>
+  );
+}

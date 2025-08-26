@@ -298,7 +298,7 @@ export function Messages(props: MessagesProps) {
               >
                 <Spinner size="small" />
               </HStack>
-              <div style={{ width: 220 }} />
+              <div style={{ width: 209 }} />
             </div>
           )}
           <MessageGroups messages={messages} hasNextPage={hasNextPage} />
