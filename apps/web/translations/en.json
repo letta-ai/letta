@@ -2382,8 +2382,7 @@
   },
   "development-servers/components/UserIsNotConnectedComponent": {
     "connecting": "Attempting to connect to your server...",
-    "start": "Enter the command below to start your server",
-    "trouble": "Still trouble connecting or using Safari? Follow our <link>troubleshooting guide</link>."
+    "issuesConnecting": "Issues connecting? Check our <link>self-hosting guide</link>."
   },
   "development-servers/layout": {
     "title": "Local Project",
@@ -2479,7 +2478,7 @@
       "description": "Build a chatbot that can adapt over time using long-term memory"
     },
     "buildMultiAgentSystems": {
-      "title": "Built a multi-agent system",
+      "title": "Build a multi-agent system",
       "description": "Create a multi-agent system with an orchestrator and multiple workers"
     },
     "discord": {

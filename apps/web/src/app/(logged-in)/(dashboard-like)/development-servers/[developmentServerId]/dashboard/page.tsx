@@ -5,7 +5,6 @@ import {
   CTACard,
   DashboardPageLayout,
   DashboardPageSection,
-  HStack,
   LettaLoader,
   NiceGridDisplay,
   LettaInvaderOutlineIcon,
@@ -15,7 +14,7 @@ import {
   PlusIcon,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
-import { ConnectToLocalServerCommand, Tutorials } from '$web/client/components';
+import { Tutorials } from '$web/client/components';
 import React, { useEffect, useMemo, useState } from 'react';
 import { SUPPORTED_LETTA_AGENTS_VERSIONS } from '$web/constants';
 import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
@@ -60,30 +59,20 @@ function UserIsNotConnectedComponent() {
         <Typography align="center" fullWidth variant="heading5">
           {t('connecting')}
         </Typography>
-        <VStack align="center">
-          <Typography align="center" fullWidth variant="heading6">
-            {t('start')}
-          </Typography>
-          <HStack>
-            <ConnectToLocalServerCommand />
-          </HStack>
-          <HStack paddingTop>
-            <Typography variant="body">
-              {t.rich('trouble', {
-                link: (chunks) => (
-                  <Typography overrideEl="span" underline>
-                    <Link
-                      target="_blank"
-                      href="https://docs.letta.com/guides/ade/troubleshooting"
-                    >
-                      {chunks}
-                    </Link>
-                  </Typography>
-                ),
-              })}
-            </Typography>
-          </HStack>
-        </VStack>
+        <Typography align="center" fullWidth variant="body">
+          {t.rich('issuesConnecting', {
+            link: (chunks) => (
+              <Typography overrideEl="span" underline>
+                <Link
+                  target="_blank"
+                  href="https://docs.letta.com/guides/selfhosting"
+                >
+                  {chunks}
+                </Link>
+              </Typography>
+            ),
+          })}
+        </Typography>
       </VStack>
     </VStack>
   );
