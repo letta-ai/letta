@@ -2,9 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
-  Button,
   Dialog,
-  FlushIcon,
   Typography,
 } from '@letta-cloud/ui-component-library';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -13,12 +11,13 @@ import { useQueryClient } from '@tanstack/react-query';
 interface FlushSimulationSessionDialogProps {
   templateId: string;
   simulatedAgentId: string;
+  trigger: React.ReactNode;
 }
 
 export function FlushSimulationSessionDialog(
   props: FlushSimulationSessionDialogProps,
 ) {
-  const { templateId, simulatedAgentId } = props;
+  const { templateId, simulatedAgentId, trigger } = props;
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
 
@@ -70,13 +69,7 @@ export function FlushSimulationSessionDialog(
       isOpen={isOpen}
       errorMessage={isError ? t('FlushSimulationSessionDialog.error') : ''}
       trigger={
-        <Button
-          size="small"
-          color="tertiary"
-          preIcon={<FlushIcon />}
-          hideLabel
-          label={t('FlushSimulationSessionDialog.trigger')}
-        />
+        trigger
       }
       onSubmit={(e) => {
         e.preventDefault();

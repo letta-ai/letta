@@ -1,6 +1,9 @@
 import {
   Badge,
   Button,
+  DropdownMenu,
+  DropdownMenuItem,
+  FlushIcon,
   HStack,
   InfoTooltip,
   Spinner,
@@ -22,7 +25,10 @@ import { useTranslations } from '@letta-cloud/translations';
 import { FlushSimulationSessionDialog } from '../FlushAgentSimulationDialog/FlushAgentSimulationDialog';
 import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
 import { ControlChatroomRenderMode } from '../ChatroomContext/ChatroomContext';
-import { AgentSimulatorOptionsMenu } from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
+import {
+  AgentResetMessagesDialog,
+  AgentSimulatorOptionsMenu,
+} from '../AgentSimulatorOptionsMenu/AgentSimulatorOptionsMenu';
 
 function AgentVariablesContainer() {
   const agentState = useCurrentAgent();
@@ -102,17 +108,36 @@ function AgentStatus() {
 
 function AgentSimulatedStatus() {
   const { simulatedAgentId } = useCurrentSimulatedAgent();
-  const { agentId: templateId } = useCurrentAgentMetaData();
+  const { templateId } = useCurrentAgentMetaData();
+  const t = useTranslations('ADE/AgentSimulator.AgentSimulatedStatus');
 
   if (!simulatedAgentId) {
     return <Spinner size="small" />;
   }
 
   return (
-    <FlushSimulationSessionDialog
-      simulatedAgentId={simulatedAgentId}
-      templateId={templateId}
-    />
+    <DropdownMenu
+      triggerAsChild
+      align="end"
+      trigger={
+        <Button
+          size="xsmall"
+          color="tertiary"
+          preIcon={<FlushIcon />}
+          hideLabel
+          label={t('trigger')}
+        />
+      }
+    >
+      <AgentResetMessagesDialog />
+      <FlushSimulationSessionDialog
+        templateId={templateId || ''}
+        simulatedAgentId={simulatedAgentId}
+        trigger={
+          <DropdownMenuItem label={t('flushAgent')} doNotCloseOnSelect />
+        }
+      />
+    </DropdownMenu>
   );
 }
 

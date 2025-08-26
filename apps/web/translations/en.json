@@ -1983,6 +1983,9 @@
       "delete": "Delete simulated session",
       "trigger": "Actions"
     },
+    "TemplateChatSimulator": {
+      "reset": "Reset agent state"
+    },
     "ABTestHeaderActions": {
       "trigger": "Actions",
       "deleteABTest": "Delete A/B test",

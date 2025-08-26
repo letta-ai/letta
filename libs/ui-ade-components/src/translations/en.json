@@ -1351,6 +1351,10 @@
     }
   },
   "ADE/AgentSimulator": {
+    "AgentSimulatedStatus": {
+      "trigger": "Reset options",
+      "flushAgent": "Reload agent state"
+    },
     "simulated": {
       "label": "Simulated",
       "tooltip": "The agent you are interacting with is a 'simulated agent', that represents the output state of your template"
@@ -1428,9 +1432,9 @@
       "error": "There was an error flushing the simulation, please try again or contact support."
     },
     "AgentResetMessagesDialog": {
-      "title": "Reset Message History",
+      "title": "Reset message history",
       "addDefaultInitialMessages": "Add default initial messages to starting state?",
-      "trigger": "Reset Message History",
+      "trigger": "Reset message history",
       "description": "Are you sure you want to reset the messages? This will clear all messages for your current agent. It will not affect the agent's memory or state.",
       "confirm": "Reset",
       "success": "Messages have been reset",

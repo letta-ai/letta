@@ -31,7 +31,7 @@ const AgentResetMessagesSchema = z.object({
 
 type AgentResetMessagesPayload = z.infer<typeof AgentResetMessagesSchema>;
 
-function AgentResetMessagesDialog() {
+export function AgentResetMessagesDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const t = useTranslations('ADE/AgentSimulator');
 
@@ -114,7 +114,6 @@ export function AgentSimulatorOptionsMenu() {
   const { isLocal, isTemplate } = useADEState();
 
   return (
-    <>
       <DropdownMenu
         triggerAsChild
         align="end"
@@ -131,6 +130,5 @@ export function AgentSimulatorOptionsMenu() {
         <AgentResetMessagesDialog />
         {!isLocal && !isTemplate && <ShareAgentDialog />}
       </DropdownMenu>
-    </>
   );
 }
