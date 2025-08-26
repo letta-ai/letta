@@ -93,5 +93,12 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
+            case ProviderType.deepseek:
+                from letta.llm_api.deepseek_client import DeepseekClient
+
+                return DeepseekClient(
+                    put_inner_thoughts_first=put_inner_thoughts_first,
+                    actor=actor,
+                )
             case _:
                 return None
