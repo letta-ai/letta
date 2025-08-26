@@ -15,6 +15,7 @@ from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.services.telemetry_manager import TelemetryManager
+from letta.settings import settings
 
 if TYPE_CHECKING:
     from letta.orm import User
@@ -90,15 +91,16 @@ class LLMClientBase:
         try:
             log_event(name="llm_request_sent", attributes=request_data)
             response_data = await self.request_async(request_data, llm_config)
-            await telemetry_manager.create_provider_trace_async(
-                actor=self.actor,
-                provider_trace_create=ProviderTraceCreate(
-                    request_json=request_data,
-                    response_json=response_data,
-                    step_id=step_id,
-                    organization_id=self.actor.organization_id,
-                ),
-            )
+            if settings.track_provider_trace and telemetry_manager:
+                await telemetry_manager.create_provider_trace_async(
+                    actor=self.actor,
+                    provider_trace_create=ProviderTraceCreate(
+                        request_json=request_data,
+                        response_json=response_data,
+                        step_id=step_id,
+                        organization_id=self.actor.organization_id,
+                    ),
+                )
 
             log_event(name="llm_response_received", attributes=response_data)
         except Exception as e:
