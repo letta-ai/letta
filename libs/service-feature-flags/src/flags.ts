@@ -146,7 +146,12 @@ export const featureFlags = {
     description: 'Enable groups UI',
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
-  }
+  },
+  RECENT_AGENTS_AND_TEMPLATES: {
+    description: 'Enable recent agents and templates in the Projects dashboard',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
