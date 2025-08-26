@@ -863,6 +863,13 @@ class Message(BaseMessage):
                                 "data": content_part.data,
                             }
                         )
+                    if isinstance(content_part, TextContent):
+                        content.append(
+                            {
+                                "type": "text",
+                                "text": content_part.text,
+                            }
+                        )
             elif text_content is not None:
                 content.append(
                     {

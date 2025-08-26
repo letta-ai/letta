@@ -399,7 +399,7 @@ def validate_openai_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
             assert content is None
 
 
-def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
+def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]], reasoning_enabled: bool) -> None:
     """
     Validate that Anthropic/Claude format assistant messages with tool_use have no <thinking> tags.
     Args:
@@ -433,10 +433,12 @@ def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
         # Verify that the message only contains tool_use items
         tool_use_items = [item for item in content_list if item.get("type") == "tool_use"]
         assert len(tool_use_items) > 0, "Assistant message should have at least one tool_use item"
-        assert len(content_list) == len(tool_use_items), (
-            f"Assistant message should ONLY contain tool_use items when reasoning is disabled. "
-            f"Found {len(content_list)} total items but only {len(tool_use_items)} are tool_use items."
-        )
+
+        if not reasoning_enabled:
+            assert len(content_list) == len(tool_use_items), (
+                f"Assistant message should ONLY contain tool_use items when reasoning is disabled. "
+                f"Found {len(content_list)} total items but only {len(tool_use_items)} are tool_use items."
+            )
 
 
 def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
@@ -1983,7 +1985,7 @@ def test_inner_thoughts_toggle_interleaved(
         validate_openai_format_scrubbing(messages)
     elif llm_config.model_endpoint_type == "anthropic":
         messages = response["messages"]
-        validate_anthropic_format_scrubbing(messages)
+        validate_anthropic_format_scrubbing(messages, llm_config.enable_reasoner)
     elif llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
         # Google uses 'contents' instead of 'messages'
         contents = response.get("contents", response.get("messages", []))
