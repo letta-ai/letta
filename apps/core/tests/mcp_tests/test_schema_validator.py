@@ -236,21 +236,21 @@ class TestSchemaValidator:
         assert any("dict" in reason for reason in reasons)
 
     def test_schema_with_defaults_non_strict(self):
-        """Test that root-level schemas without required field are NON_STRICT_ONLY."""
+        """Test that root-level schemas without required field are STRICT_COMPLIANT (validator is relaxed)."""
         schema = {
             "type": "object",
             "properties": {"name": {"type": "string"}, "optional": {"type": "string"}},
-            # Missing "required" field at root level - all properties must be required for strict mode
+            # Missing "required" field at root level - validator now accepts this
             "additionalProperties": False,
         }
 
         status, reasons = validate_complete_json_schema(schema)
-        # Root level without all properties required should be NON_STRICT_ONLY
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        assert any("not in required array" in reason for reason in reasons)
+        # Validator is relaxed - schemas with optional fields are now STRICT_COMPLIANT
+        assert status == SchemaHealth.STRICT_COMPLIANT
+        assert reasons == []
 
     def test_composio_schema_with_optional_root_properties_non_strict(self):
-        """Test that Composio-like schemas with optional root properties are NON_STRICT_ONLY."""
+        """Test that Composio-like schemas with optional root properties are STRICT_COMPLIANT (validator is relaxed)."""
         schema = {
             "type": "object",
             "properties": {
@@ -264,28 +264,28 @@ class TestSchemaValidator:
         }
 
         status, reasons = validate_complete_json_schema(schema)
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        assert any("not in required array" in reason for reason in reasons)
+        assert status == SchemaHealth.STRICT_COMPLIANT
+        assert reasons == []
 
     def test_root_level_without_required_non_strict(self):
-        """Test that root-level objects without 'required' field are NON_STRICT_ONLY."""
+        """Test that root-level objects without 'required' field are STRICT_COMPLIANT (validator is relaxed)."""
         schema = {
             "type": "object",
             "properties": {
                 "name": {"type": "string"},
                 "age": {"type": "integer"},
             },
-            # No "required" field at root level - all properties must be required for strict mode
+            # No "required" field at root level - validator now accepts this
             "additionalProperties": False,
         }
 
         status, reasons = validate_complete_json_schema(schema)
-        # Root level without required should be NON_STRICT_ONLY
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        assert any("not in required array" in reason for reason in reasons)
+        # Validator is relaxed - accepts schemas without required field
+        assert status == SchemaHealth.STRICT_COMPLIANT
+        assert reasons == []
 
     def test_nested_object_without_required_non_strict(self):
-        """Test that nested objects without 'required' remain NON_STRICT_ONLY."""
+        """Test that nested objects without 'required' are STRICT_COMPLIANT (validator is relaxed)."""
         schema = {
             "type": "object",
             "properties": {
@@ -309,12 +309,11 @@ class TestSchemaValidator:
         }
 
         status, reasons = validate_complete_json_schema(schema)
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        # Should have warning about nested preferences object missing 'required'
-        assert any("required" in reason and "preferences" in reason for reason in reasons)
+        assert status == SchemaHealth.STRICT_COMPLIANT
+        assert reasons == []
 
     def test_user_example_schema_non_strict(self):
-        """Test the user's example schema with optional properties - should be NON_STRICT_ONLY."""
+        """Test the user's example schema with optional properties - now STRICT_COMPLIANT (validator is relaxed)."""
         schema = {
             "type": "object",
             "properties": {
@@ -326,8 +325,8 @@ class TestSchemaValidator:
         }
 
         status, reasons = validate_complete_json_schema(schema)
-        assert status == SchemaHealth.NON_STRICT_ONLY
-        assert any("property 'b' is not in required array" in reason for reason in reasons)
+        assert status == SchemaHealth.STRICT_COMPLIANT
+        assert reasons == []
 
     def test_all_properties_required_strict_compliant(self):
         """Test that schemas with all properties required are STRICT_COMPLIANT."""
