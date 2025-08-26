@@ -7832,7 +7832,7 @@ export type RetrieveProviderTraceData = {
   userId?: string | null;
 };
 
-export type RetrieveProviderTraceResponse = ProviderTrace;
+export type RetrieveProviderTraceResponse = ProviderTrace | null;
 
 export type CreateMessagesBatchData = {
   requestBody: CreateBatch;
@@ -10341,7 +10341,7 @@ export type $OpenApiTs = {
         /**
          * Successful Response
          */
-        200: ProviderTrace;
+        200: ProviderTrace | null;
         /**
          * Validation Error
          */

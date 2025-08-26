@@ -3226,7 +3226,7 @@ export const useAdminServiceListOrgs = <
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
- * @returns ProviderTrace Successful Response
+ * @returns unknown Successful Response
  * @throws ApiError
  */
 export const useTelemetryServiceRetrieveProviderTrace = <

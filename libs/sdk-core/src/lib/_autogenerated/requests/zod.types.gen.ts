@@ -11683,7 +11683,11 @@ export const get_Retrieve_provider_trace = {
         .optional(),
     }),
   }),
-  response: ProviderTrace,
+  response: z.union([
+    ProviderTrace,
+    z.null(),
+    z.array(z.union([ProviderTrace, z.null()])),
+  ]),
 };
 
 export type post_Create_messages_batch = typeof post_Create_messages_batch;

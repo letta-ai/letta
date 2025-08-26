@@ -8981,7 +8981,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProviderTrace"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProviderTrace"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Retrieve Provider Trace"
                 }
               }
             }

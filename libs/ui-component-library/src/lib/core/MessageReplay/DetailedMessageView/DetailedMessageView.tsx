@@ -38,6 +38,8 @@ export function TelemetryDetailsViewer(props: TelemetryDetailsViewerProps) {
   });
 
   const inputTokens = useMemo(() => {
+    if (!data) return undefined;
+
     const maybeInputTokens = get(
       data,
       'response_json.usage.input_tokens',
