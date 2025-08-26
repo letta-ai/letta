@@ -282,7 +282,7 @@ function ServerToolsList(props: ServerToolsListProps) {
                       </VStack>
                     </HStack>
                   </button>
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 p-2">
                     <AttachDetachButton
                       attachedId={getAttachedId(tool.name) || undefined}
                       toolType="external_mcp"
