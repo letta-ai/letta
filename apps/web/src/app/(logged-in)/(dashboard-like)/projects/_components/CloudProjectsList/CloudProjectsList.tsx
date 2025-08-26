@@ -61,9 +61,7 @@ function ProjectCard(props: ProjectCardProps) {
   }
 
   return (
-    <Card
-      href={url}
-      className="bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 relative">
+    <div className="relative">
       {showFavoriteButton && (
         <div
           style={{
@@ -89,35 +87,39 @@ function ProjectCard(props: ProjectCardProps) {
           />
         </div>
       )}
-      <VStack fullWidth>
-        <VStack gap="medium" fullWidth>
-          <Avatar size="medium" name={projectName} />
-          <VStack gap="text">
-            <Typography
-              bold
-              align="left"
-              variant="body"
-              noWrap
-              fullWidth
-              overflow="ellipsis"
-            >
-              {projectName}
-            </Typography>
-            <HStack>
-              {
-                <Typography variant="body" color="muted">
-                  {lastUpdatedAt
-                    ? t('projectsList.projectItem.lastUpdatedAt', {
-                      date: formatDateAndTime(lastUpdatedAt),
-                    })
-                    : t('projectsList.projectItem.noLastUpdatedAt')}
-                </Typography>
-              }
-            </HStack>
+      <Card
+        href={url}
+        className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer">
+        <VStack fullWidth>
+          <VStack gap="medium" fullWidth>
+            <Avatar size="medium" name={projectName} />
+            <VStack gap="text">
+              <Typography
+                bold
+                align="left"
+                variant="body"
+                noWrap
+                fullWidth
+                overflow="ellipsis"
+              >
+                {projectName}
+              </Typography>
+              <HStack>
+                {
+                  <Typography variant="body" color="muted">
+                    {lastUpdatedAt
+                      ? t('projectsList.projectItem.lastUpdatedAt', {
+                        date: formatDateAndTime(lastUpdatedAt),
+                      })
+                      : t('projectsList.projectItem.noLastUpdatedAt')}
+                  </Typography>
+                }
+              </HStack>
+            </VStack>
           </VStack>
         </VStack>
-      </VStack>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
