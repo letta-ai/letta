@@ -35,7 +35,7 @@ export const toolManagerRoutes = [
     ),
   },
   {
-    path: '/my-tools',
+    path: '/custom',
     key: 'customTools',
     component: <MyTools />,
   },

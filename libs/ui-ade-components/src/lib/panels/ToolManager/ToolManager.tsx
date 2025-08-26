@@ -116,7 +116,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
       reset();
 
       setDialogOpen(false);
-      setPath('/my-tools');
+      setPath('/custom');
 
       queryClient.setQueriesData<Tool[]>(
         {
@@ -534,7 +534,7 @@ function ToolManagerNavigationSidebar() {
           <SidebarButton
             hideLabel={!isExpanded}
             label={details.customTools.title}
-            path="/my-tools"
+            path="/custom"
             hasSubmenu
             icon={details.customTools.icon}
             isExpanded={isExpanded}
