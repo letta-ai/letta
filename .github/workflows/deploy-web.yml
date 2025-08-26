@@ -186,6 +186,15 @@ jobs:
           deployment-id: ${{ steps.deployment.outputs.deployment_id }}
           state: success
 
+      - name: Update Linear tickets to Done
+        if: success()
+        run: |
+          cd scripts/linear-deployment-automation
+          npm install
+          node linear-automation.js
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+
       - name: Update deployment status to failure
         if: failure()
         uses: chrnorm/deployment-status@v2

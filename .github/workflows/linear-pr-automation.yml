@@ -1,0 +1,68 @@
+name: 🎯 Linear PR Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+
+jobs:
+  update-pr-with-linear-info:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Check if branch follows Linear format and update PR
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Branch name: $BRANCH_NAME"
+
+          # Check if branch matches Linear format (e.g., username/LET-123-feature-description or username/let-123-feature-description)
+          if [[ $BRANCH_NAME =~ ^[^/]+/([A-Za-z]{1,4}-[0-9]+) ]]; then
+            LINEAR_ID_RAW="${BASH_REMATCH[1]}"
+            # Convert to uppercase for consistency
+            LINEAR_ID=$(echo "$LINEAR_ID_RAW" | tr '[:lower:]' '[:upper:]')
+            echo "Found Linear ID: $LINEAR_ID_RAW -> $LINEAR_ID"
+
+            CURRENT_TITLE="${{ github.event.pull_request.title }}"
+            CURRENT_BODY="${{ github.event.pull_request.body }}"
+
+            # Check if Linear ID is already in the title
+            if [[ ! "$CURRENT_TITLE" =~ $LINEAR_ID ]]; then
+              NEW_TITLE="$LINEAR_ID: $CURRENT_TITLE"
+              echo "Updating title to: $NEW_TITLE"
+            else
+              NEW_TITLE="$CURRENT_TITLE"
+              echo "Title already contains Linear ID"
+            fi
+
+            # Build new body with Linear info
+            if [[ ! "$CURRENT_BODY" =~ "Linear:" ]] && [[ ! "$CURRENT_BODY" =~ $LINEAR_ID ]]; then
+              LINEAR_SECTION="## Linear Issue"$'\n\n'"**$LINEAR_ID**: https://linear.app/letta/issue/$LINEAR_ID"
+
+              if [ -z "$CURRENT_BODY" ] || [ "$CURRENT_BODY" = "null" ]; then
+                NEW_BODY="$LINEAR_SECTION"
+              else
+                NEW_BODY="$LINEAR_SECTION"$'\n\n'"---"$'\n\n'"$CURRENT_BODY"
+              fi
+              echo "Updating description with Linear info"
+            else
+              NEW_BODY="$CURRENT_BODY"
+              echo "Description already contains Linear info"
+            fi
+
+            # Update PR using GitHub API
+            curl -s -X PATCH \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"title\": \"$NEW_TITLE\",
+                \"body\": $(echo "$NEW_BODY" | jq -R -s .)
+              }" \
+              "${{ github.event.pull_request.url }}"
+
+            echo "PR updated successfully"
+          else
+            echo "Branch does not follow Linear format, skipping automation"
+          fi
