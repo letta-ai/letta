@@ -54,7 +54,7 @@ sudo -u ci-runner mkdir -p /home/ci-runner/.local/bin
 
 # Install tools using pipx as the ci-runner user, explicitly setting PATH for each
 echo "Installing Python tools..."
-sudo -u ci-runner pipx install poetry==1.8.3
+sudo -u ci-runner pipx install poetry==2.1.3
 sudo -u ci-runner pipx install pytest
 
 # Install UV
