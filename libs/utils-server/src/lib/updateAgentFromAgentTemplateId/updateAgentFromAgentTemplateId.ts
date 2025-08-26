@@ -316,7 +316,9 @@ export async function updateAgentFromAgentTemplateId(
 
 
   if (agentTemplate.model) {
-    const llms = await LlmsService.listModels({}, {
+    const llms = await LlmsService.listModels({
+
+    }, {
       user_id: lettaAgentsUserId,
     })
 

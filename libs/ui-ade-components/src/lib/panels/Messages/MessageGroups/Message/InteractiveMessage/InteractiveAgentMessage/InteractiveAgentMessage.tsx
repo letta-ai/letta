@@ -5,35 +5,11 @@ import { HStack, Markdown, Typography, VStack } from '@letta-cloud/ui-component-
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useTranslations } from '@letta-cloud/translations';
 import { EditMessageButton } from '../../EditMessageButton/EditMessageButton';
-import { jsonrepair } from 'jsonrepair';
-import { get } from 'lodash-es';
+import { parseMessageFromPartialJson } from '@letta-cloud/utils-client';
 
 interface InteractiveAgentMessageProps {
   message: ToolCallMessage
 }
-
-function tryFallbackParseJson(str: string): unknown {
-  let trimmed = str;
-
-  while (trimmed.length > 0) {
-    try {
-      return JSON.parse(jsonrepair(trimmed));
-    } catch (_e) {
-      trimmed = trimmed.slice(0, -1);
-    }
-  }
-
-  return null;
-}
-
-function safeParseJSON(str: string): unknown {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return tryFallbackParseJson(str);
-  }
-}
-
 
 export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
 
@@ -61,7 +37,7 @@ export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
       return null;
     }
 
-    return get(safeParseJSON(message.tool_call.arguments), 'message');
+    return parseMessageFromPartialJson(message.tool_call.arguments);
   }, [message.tool_call.arguments]);
 
 

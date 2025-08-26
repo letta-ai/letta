@@ -381,7 +381,6 @@ function NavigationFooter() {
 
 function SettingsMenu() {
   const t = useTranslations('DashboardNavigation.SettingsMenu');
-  const tRoot = useTranslations('DashboardNavigation.RootNavigationItems');
   const baseUrl = '/settings';
   const lastActiveProject = useLastActiveProject();
   const developmentServer = useCurrentDevelopmentServerConfig();
@@ -437,14 +436,8 @@ function SettingsMenu() {
       <DashboardNavigationButton
         href={`${baseUrl}/organization/models`}
         id="settings-models"
-        label={tRoot('models')}
+        label={t('models')}
       />
-      {/* Hidden for now - page still accessible via direct URL */}
-      {/* <DashboardNavigationButton
-        href={`${baseUrl}/organization/integrations`}
-        id="settings-integrations"
-        label={t('integrations')}
-      /> */}
       <DashboardNavigationButton
         href={`${baseUrl}/organization/environment-variables`}
         id="settings-environmentVariables"

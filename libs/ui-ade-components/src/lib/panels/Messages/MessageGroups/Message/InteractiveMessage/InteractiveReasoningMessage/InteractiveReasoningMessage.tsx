@@ -22,8 +22,8 @@ export function InteractiveReasoningMessage(props: InteractiveReasoningMessagePr
   const { reasoning, source } = message;
   return (
     <BlockQuote fullWidth>
-      <HStack align="start">
-        <VStack gap="small">
+      <HStack fullWidth align="start">
+        <VStack fullWidth gap="small">
           <HStack align="center" justify="spaceBetween">
             <HStack align="center" gap="small">
               <InnerMonologueIcon color="violet" size="small" />

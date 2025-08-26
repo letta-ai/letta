@@ -167,12 +167,16 @@ export function useManageMessageScroller(
 
     // check if user is scrolling in viewport, and its the user not the program
     // basically if they're scrolling up, enable scroll lock, if they're scrolling down, disable it
-    function scrollHandler() {
+    function scrollHandler(e: WheelEvent) {
       if (!scrollRef.current) {
         return;
       }
 
-      scrollLock.current = true;
+      // if user is scrolling up we should enable scroll lock
+      if (e.deltaY < 100) {
+        scrollLock.current = true;
+        return;
+      }
     }
 
     const currentScrollRef = scrollRef.current;
