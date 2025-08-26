@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useMessagesContext } from '../useMessagesContext/useMessagesContext';
 import type { InfiniteData } from '@tanstack/query-core';
-import type { LettaMessageUnion, ListMessagesResponse } from '@letta-cloud/sdk-core';
+import type {
+  LettaMessageUnion,
+  ListMessagesResponse,
+} from '@letta-cloud/sdk-core';
 import { deepEqual } from 'fast-equals';
 
 interface ManageMessageScrollerOptions {
@@ -85,7 +88,16 @@ export function useManageMessageScroller(
         const element =
           document.getElementById(messageId)?.parentElement?.parentElement;
         if (element) {
-          element.scrollIntoView({ behavior: 'instant', block: 'start' });
+          if (!element.classList.contains('message-group')) {
+            return;
+          }
+
+          // scroll into view, but dont use the function since that can scroll the whole page
+          const elementTop = element.offsetTop;
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = elementTop;
+          }
+
           // and add 35px
           if (scrollRef.current) {
             scrollRef.current.scrollTop -= 43;
@@ -139,7 +151,6 @@ export function useManageMessageScroller(
 
     scrollLock.current = false;
     fetchNextPageLock.current = false;
-
   }, [isSendingMessage, scrollToBottom]);
 
   useEffect(() => {

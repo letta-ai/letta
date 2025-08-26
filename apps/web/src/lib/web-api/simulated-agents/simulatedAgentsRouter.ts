@@ -127,6 +127,29 @@ async function getDefaultSimulatedAgent(
           isDefault: true,
         });
 
+        if (!response.simulatedAgentRecord) {
+          const record = await db.query.simulatedAgent.findFirst({
+            where: and(
+              eq(simulatedAgent.agentTemplateId, agentTemplateId),
+              eq(simulatedAgent.isDefault, true),
+              eq(simulatedAgent.organizationId, activeOrganizationId),
+            ),
+          });
+
+          if (record) {
+            response.simulatedAgentRecord = record;
+          }
+
+          if (!response.simulatedAgentRecord) {
+            return {
+              status: 500,
+              body: {
+                message: 'Failed to create default simulated agent',
+              },
+            };
+          }
+        }
+
         simulatedAgentResponse = {
           id: response.simulatedAgentRecord.id,
           agentId: response.agent.id,
