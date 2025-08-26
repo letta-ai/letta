@@ -85,6 +85,15 @@ export function Message(props: MessageProps) {
 
   const isInteractiveMode = useMemo(() => mode === 'interactive', [mode]);
 
+  const canShowDetails = useMemo(() => {
+    // if type is tool_call_message we can show details
+    if (message.message_type === 'tool_call_message') {
+      return true;
+    }
+
+    return false;
+  }, [message]);
+
   const [showDetails, setShowDetails] = useState(false);
 
 
@@ -108,7 +117,7 @@ export function Message(props: MessageProps) {
             toolReturnMessage={toolReturnMessage}
           />
         </MessageContextProvider>
-        {!disableInteractivity && isInteractiveMode && (
+        {!disableInteractivity && isInteractiveMode && canShowDetails && (
           <StepDetailBar
             showDetails={showDetails}
             setShowDetails={setShowDetails}
