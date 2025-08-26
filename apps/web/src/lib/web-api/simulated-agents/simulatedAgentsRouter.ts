@@ -105,6 +105,15 @@ async function getDefaultSimulatedAgent(
               {},
             ),
           })
+          .onConflictDoUpdate({
+            target: [
+              simulatedAgent.agentTemplateId,
+              simulatedAgent.isDefault,
+            ],
+            set: {
+              agentId: existingSimulatedAgent.agentId,
+            },
+          })
           .returning();
 
         simulatedAgentResponse = {
