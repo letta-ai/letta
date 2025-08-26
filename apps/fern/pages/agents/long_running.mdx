@@ -4,15 +4,202 @@ slug: guides/agents/long-running
 subtitle: How to handle long-running agent executions
 ---
 
-For agents that may take a long time to complete their response due to many chained tool calls (for example, a deep research agent), we recommended two approaches:
+When agents need to execute multiple tool calls or perform complex operations (like deep research, data analysis, or multi-step workflows), processing time can vary significantly.
 
-## Option 1: Use Async SDK with Polling
+Letta supports various ways to handle long-running agents, so you can choose the approach that best fits your use case:
 
-For truly long-running operations, use the [async SDK method](/api-reference/agents/messages/create-async) which returns immediately and allows you to poll for results:
+| Use Case | Duration | Recommendedation | Key Benefits |
+|----------|----------|---------------------|-------------|
+| Few-step invocations | < 1 minute | [Standard streaming](/guides/agents/streaming) | Simplest approach |
+| Variable length runs | 1-10 minutes | **Background mode** (Keepalive + Timeout as a second choice) | Easy way to reduce timeouts |
+| Deep research | 10+ minutes | **Background mode**, or async polling | Survives disconnects, resumable streams |
+| Batch jobs | Any | **Async polling** | Fire-and-forget, check results later |
+
+## Option 1: Background Mode with Resumable Streaming
+
+<Note>
+**Best for:** Operations exceeding 10 minutes, unreliable network connections, or critical workflows that must complete regardless of client connectivity.
+
+**Trade-off:** Slightly higher latency to first token due to background task initialization.
+</Note>
+
+Background mode decouples agent execution from your client connection. The agent processes your request on the server while streaming results to a persistent store, allowing you to reconnect and resume from any point — even if your application crashes or network fails.
 
 <CodeGroup>
-```curl curl
-# Create async message (returns immediately with run ID)
+```curl curl maxLines=50
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run comprehensive analysis on this dataset"
+    }
+  ],
+  "stream_tokens": true,
+  "background": true
+}'
+
+# Response stream includes run_id and seq_id for each chunk:
+data: {"run_id":"run-123","seq_id":0,"message_type":"reasoning_message","reasoning":"Analyzing"}
+data: {"run_id":"run-123","seq_id":1,"message_type":"reasoning_message","reasoning":" the dataset"}
+data: {"run_id":"run-123","seq_id":2,"message_type":"tool_call","tool_call":{...}}
+# ... stream continues
+
+# Step 2: If disconnected, resume from last received seq_id
+curl --request GET \
+  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --header 'Accept: text/event-stream' \
+  --data '{
+  "starting_after": 57
+}'
+```
+```python python maxLines=50
+stream = client.agents.messages.create_stream(
+    agent_id=agent_state.id,
+    messages=[
+      {
+        "role": "user",
+        "content": "Run comprehensive analysis on this dataset"
+      }
+    ],
+    stream_tokens=True,
+    background=True,
+)
+run_id = None
+last_seq_id = None
+for chunk in stream:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id       # Save this to reconnect if your connection drops
+        last_seq_id = chunk.seq_id  # Save this as your resumption point for cursor-based pagination
+    print(chunk)
+
+# If disconnected, resume from last received seq_id:
+for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
+    print(chunk)
+```
+```typescript node.js maxLines=50
+const stream = await client.agents.messages.createStream({
+    agentId: agentState.id,
+    requestBody: {
+        messages: [
+            {
+                role: "user",
+                content: "Run comprehensive analysis on this dataset"
+            }
+        ],
+        streamTokens: true,
+        background: true,
+    }
+});
+
+let runId = null;
+let lastSeqId = null;
+for await (const chunk of stream) {
+    if (chunk.run_id && chunk.seq_id) {
+        runId = chunk.run_id;      // Save this to reconnect if your connection drops
+        lastSeqId = chunk.seq_id; // Save this as your resumption point for cursor-based pagination
+    }
+    console.log(chunk);
+}
+
+// If disconnected, resume from last received seq_id
+for await (const chunk of client.runs.stream(runId, {startingAfter: lastSeqId})) {
+    console.log(chunk);
+}
+```
+</CodeGroup>
+
+### Discovering and Resuming Active Streams
+
+When your application starts or recovers from a crash, you can check for any active background streams and resume them. This is particularly useful for:
+- **Application restarts**: Resume processing after deployments or crashes
+- **Load balancing**: Pick up streams started by other instances
+- **Monitoring**: Check progress of long-running operations from different clients
+
+<CodeGroup>
+```curl curl maxLines=50
+# Step 1: Find active background streams for your agents
+curl --request GET \
+  --url http://localhost:8283/v1/runs/active \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "agent_ids": [
+    "agent-123",
+    "agent-456"
+  ],
+  "background": true
+}'
+# Returns: [{"run_id": "run-abc", "agent_id": "agent-123", "status": "processing", ...}]
+
+# Step 2: Resume streaming from the beginning (or any specified seq_id)
+curl --request GET \
+  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --header 'Accept: text/event-stream' \
+  --data '{
+  "starting_after": 0, # Start from beginning
+  "batch_size": 1000   # Fetch historical chunks in larger batches
+}'
+```
+```python python maxLines=50
+# Find and resume active background streams
+active_runs = client.runs.active(
+    agent_ids=["agent-123", "agent-456"],
+    background=True,
+)
+
+if active_runs:
+    # Resume the first active stream from the beginning
+    run = active_runs[0]
+    print(f"Resuming stream for run {run.id}, status: {run.status}")
+
+    stream = client.runs.stream(
+        run_id=run.id,
+        starting_after=0,  # Start from beginning
+        batch_size=1000    # Fetch historical chunks in larger batches
+    )
+
+    # Each historical chunk is streamed one at a time, followed by new chunks as they become available
+    for chunk in stream:
+        print(chunk)
+```
+```typescript node.js maxLines=50
+// Find and resume active background streams
+const activeRuns = await client.runs.active({
+    agentIds: ["agent-123", "agent-456"],
+    background: true,
+});
+
+if (activeRuns.length > 0) {
+    // Resume the first active stream from the beginning
+    const run = activeRuns[0];
+    console.log(`Resuming stream for run ${run.id}, status: ${run.status}`);
+
+    const stream = await client.runs.stream(run.id, {
+        startingAfter: 0,   // Start from beginning
+        batchSize: 1000     // Fetch historical chunks in larger batches
+    });
+
+    // Each historical chunk is streamed one at a time, followed by new chunks as they become available
+    for await (const chunk of stream) {
+        console.log(chunk);
+    }
+}
+```
+</CodeGroup>
+
+## Option 2: Async Operations with Polling
+
+<Note>
+**Best for:** Usecases where you don't need real-time token streaming.
+</Note>
+
+Ideal for batch processing, scheduled jobs, or when you don't need real-time updates. The [async SDK method](/api-reference/agents/messages/create-async) queues your request and returns immediately, letting you check results later:
+
+<CodeGroup>
+```curl curl maxLines=50
+# Start async operation (returns immediately with run ID)
 curl --request POST \
   --url http://localhost:8283/v1/agents/$AGENT_ID/messages/async \
   --header 'Content-Type: application/json' \
@@ -29,8 +216,8 @@ curl --request POST \
 curl --request GET \
   --url http://localhost:8283/v1/runs/$RUN_ID
 ```
-```python title="python" maxLines=50
-# Use create_async for long-running operations
+```python python maxLines=50
+# Start async operation (returns immediately with run ID)
 run = client.agents.messages.create_async(
     agent_id=agent_state.id,
     messages=[
@@ -50,8 +237,8 @@ while run.status != "completed":
 # Get the messages once complete
 messages = client.runs.messages.list(run_id=run.id)
 ```
-```typescript maxLines=50 title="node.js"
-// Use createAgentMessageAsync for long-running operations
+```typescript node.js maxLines=50
+// Start async operation (returns immediately with run ID)
 const run = await client.agents.createAgentMessageAsync({
     agentId: agentState.id,
     requestBody: {
@@ -75,12 +262,25 @@ const messages = await client.runs.listRunMessages({ runId: run.id });
 ```
 </CodeGroup>
 
-## Option 2: Configure Streaming with Keepalive Pings and Longer Timeouts
+## Option 3: Configure Streaming with Keepalive Pings and Longer Timeouts
 
-Alternatively, you can configure certain parameters on the POST SSE streaming request to prevent connection timeouts:
+<Note>
+**Best for:** Usecases where you are already using the standard [streaming code](/guides/agents/streaming), but are experiencing issues with timeouts or disconnects (e.g. due to network interruptions or hanging tool executions).
+
+**Trade-off:** Not as reliable as background mode, and does not support resuming a disconnected stream/request.
+</Note>
+
+<Warning>
+This approach assumes a persistent HTTP connection. We highly recommend using **background mode** (or async polling) for long-running jobs, especially when:
+- Your infrastructure uses aggressive proxy timeouts
+- You need to handle network interruptions gracefully
+- Operations might exceed 10 minutes
+</Warning>
+
+For operations under 10 minutes that need real-time updates without the complexity of background processing. Configure keepalive pings and timeouts to maintain stable connections:
 
 <CodeGroup>
-```curl curl
+```curl curl maxLines=50
 curl --request POST \
   --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
   --header 'Content-Type: application/json' \
@@ -94,8 +294,8 @@ curl --request POST \
   "include_pings": true
 }'
 ```
-```python title="python" maxLines=50
-# Configure client with longer timeout (default is 60 seconds)
+```python python
+# Configure client with extended timeout
 from letta_client import Letta
 
 client = Letta(
@@ -122,8 +322,8 @@ for chunk in stream:
         continue
     print(chunk)
 ```
-```typescript maxLines=50 title="node.js"
-// Configure client with longer timeout (default is 60 seconds)
+```typescript node.js maxLines=50
+// Configure client with extended timeout
 import { Letta } from '@letta/sdk';
 
 const client = new Letta({
@@ -157,8 +357,9 @@ for await (const chunk of stream) {
 ```
 </CodeGroup>
 
-The combination of a longer timeout and the `include_pings` flag ensures robust handling of long-running operations:
-- **Timeout**: Extends the overall request timeout (default is 60 seconds). Set this based on your expected maximum operation time.
-- **Include Pings**: Sends periodic keepalive messages to prevent the connection from being dropped due to inactivity, even if the agent takes a long time between outputs (e.g., when running complex tools or waiting for external services).
+### Configuration Guidelines
 
-For very long-running tasks (e.g. user inputs that trigger 10+ minutes of agent steps), we highly recommend using the async SDK methods for increased reliability.
+| Parameter | Purpose | When to Use |
+|-----------|---------|------------|
+| Timeout in seconds | Extends request timeout beyond 60s default | Set to 1.5x your expected max duration |
+| Include pings | Sends keepalive messages every ~30s | Enable for operations with long gaps between outputs |
