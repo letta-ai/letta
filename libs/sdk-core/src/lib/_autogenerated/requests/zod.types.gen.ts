@@ -3073,11 +3073,11 @@ export const Body_import_agent_serialized = z.object({
     ])
     .optional(),
   strip_messages: z.union([z.boolean(), z.undefined()]).optional(),
-  env_vars: z
+  env_vars_json: z
     .union([
-      z.unknown(),
+      z.string(),
       z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
+      z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
     .optional(),

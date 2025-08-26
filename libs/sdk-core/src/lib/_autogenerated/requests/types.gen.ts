@@ -767,11 +767,9 @@ export type Body_import_agent_serialized = {
    */
   strip_messages?: boolean;
   /**
-   * Environment variables to pass to the agent for tool execution.
+   * Environment variables as a JSON string to pass to the agent for tool execution.
    */
-  env_vars?: {
-    [key: string]: unknown;
-  } | null;
+  env_vars_json?: string | null;
 };
 
 export type Body_upload_file_to_folder = {

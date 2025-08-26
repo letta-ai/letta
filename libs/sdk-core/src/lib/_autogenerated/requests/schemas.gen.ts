@@ -2092,19 +2092,18 @@ export const $Body_import_agent_serialized = {
         'If set to True, strips all messages from the agent before importing.',
       default: false,
     },
-    env_vars: {
+    env_vars_json: {
       anyOf: [
         {
-          additionalProperties: true,
-          type: 'object',
+          type: 'string',
         },
         {
           type: 'null',
         },
       ],
-      title: 'Env Vars',
+      title: 'Env Vars Json',
       description:
-        'Environment variables to pass to the agent for tool execution.',
+        'Environment variables as a JSON string to pass to the agent for tool execution.',
     },
   },
   type: 'object',
