@@ -85,63 +85,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.git_hash || github.event.inputs.branch || github.sha }}
-          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-      - name: Restore node_modules cache if exist
-        id: cache-nodemodules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules-${{ env.node-version }}
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
-      - name: Restore nextjs cache if exist
-        id: cache-nextjs
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-nextjs-${{ env.node-version }}
-        with:
-          path: apps/web/.next/cache
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('package-lock.json') }}
-      - name: Restore NPM cache if exist
-        id: cache-npm
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-npm-${{ env.node-version }}
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-${{ env.cache-name }}
       - name: Set up python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: 2.1.3
           virtualenvs-create: true
           virtualenvs-in-project: true
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: apps/core/.venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('apps/core/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-          restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
       - name: Install just
-        uses: extractions/setup-just@v3 
+        uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
       - name: Authenticate to Google Cloud
@@ -172,7 +131,6 @@ jobs:
           done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
 
       - name: Install python dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
         run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
@@ -199,18 +157,14 @@ jobs:
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         run: poetry run letta server &
       - name: Install Dependencies
-        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
         run: npm ci
       - name: Migrate web database
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5433/postgres
         run: npm run web:database:migrate
-      - name: Cache npm dependencies
-        id: cache-main
-        uses: actions/cache@v3
-        with:
-          path: ./apps/cloud-api/node_modules
-          key: modules-${{ hashFiles('./apps/cloud-api/package-lock.json') }}
+      - name: Install deps
+        working-directory: apps/cloud-api
+        run: just setup-cloud-api
       - name: Install deps
         working-directory: apps/cloud-api
         run: just setup-cloud-api

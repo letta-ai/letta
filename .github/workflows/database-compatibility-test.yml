@@ -115,7 +115,7 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
       - name: Install just
-        uses: extractions/setup-just@v3 
+        uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
       - name: Load cached venv

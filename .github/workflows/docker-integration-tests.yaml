@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: 'docker'
-      install-args: '-E dev -E postgres'
+      install-args: '--extra dev --extra postgres'
       timeout-minutes: 15
       use-docker: true
       runner: '["self-hosted", "medium"]'

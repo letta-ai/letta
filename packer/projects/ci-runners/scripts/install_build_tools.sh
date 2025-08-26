@@ -57,7 +57,12 @@ echo "Installing Python tools..."
 sudo -u ci-runner pipx install poetry==1.8.3
 sudo -u ci-runner pipx install pytest
 
+# Install UV
+echo "Installing uv..."
+curl -LsSf https://astral.sh/uv/install.sh | sudo -u ci-runner sh
+
 sudo ln -s /home/ci-runner/.local/bin/poetry /usr/local/bin/poetry
 sudo ln -s /home/ci-runner/.local/bin/pytest /usr/local/bin/pytest
+sudo ln -s /home/ci-runner/.local/bin/uv /usr/local/bin/uv
 
 echo "Build tools installation completed"

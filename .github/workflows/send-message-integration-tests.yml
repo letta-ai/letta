@@ -18,7 +18,7 @@ jobs:
         apps/core/**
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/send-message-integration-tests.yml
-      install-args: '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google -E redis'
+      install-args: '--extra dev --extra postgres --extra external-tools --extra tests --extra cloud-tool-sandbox --extra google --extra redis'
       timeout-minutes: 15
       runner: '["self-hosted", "medium"]'
       ref: ${{ github.event.pull_request.head.sha || github.sha }}

@@ -6,7 +6,7 @@ from letta.settings import settings
 
 
 @pytest.mark.asyncio
-async def test_default_experimental_decorator(event_loop):
+async def test_default_experimental_decorator():
     settings.plugin_register = "experimental_check=tests.helpers.plugins_helper:is_experimental_okay"
 
     @experimental("test_just_pass", fallback_function=lambda: False, kwarg1=3)
@@ -18,7 +18,7 @@ async def test_default_experimental_decorator(event_loop):
 
 
 @pytest.mark.asyncio
-async def test_overwrite_arg_success(event_loop):
+async def test_overwrite_arg_success():
     settings.plugin_register = "experimental_check=tests.helpers.plugins_helper:is_experimental_okay"
 
     @experimental("test_override_kwarg", fallback_function=lambda *args, **kwargs: False, bool_val=True)
@@ -31,7 +31,7 @@ async def test_overwrite_arg_success(event_loop):
 
 
 @pytest.mark.asyncio
-async def test_overwrite_arg_fail(event_loop):
+async def test_overwrite_arg_fail():
     # Should fallback to lambda
     settings.plugin_register = "experimental_check=tests.helpers.plugins_helper:is_experimental_okay"
 
@@ -61,7 +61,7 @@ async def test_overwrite_arg_fail(event_loop):
 
 
 @pytest.mark.asyncio
-async def test_redis_flag(event_loop):
+async def test_redis_flag():
     settings.plugin_register = "experimental_check=tests.helpers.plugins_helper:is_experimental_okay"
 
     @experimental("test_redis_flag", fallback_function=lambda *args, **kwargs: _raise())
