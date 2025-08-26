@@ -7550,6 +7550,10 @@ export type ListRunsData = {
    * The unique identifier of the agent associated with the run.
    */
   agentIds?: Array<string> | null;
+  /**
+   * If True, filters for runs that were created in background mode.
+   */
+  background?: boolean | null;
   userId?: string | null;
 };
 
@@ -7560,6 +7564,10 @@ export type ListActiveRunsData = {
    * The unique identifier of the agent associated with the run.
    */
   agentIds?: Array<string> | null;
+  /**
+   * If True, filters for runs that were created in background mode.
+   */
+  background?: boolean | null;
   userId?: string | null;
 };
 

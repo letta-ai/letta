@@ -4519,6 +4519,7 @@ export class RunsService {
    * List all runs.
    * @param data The data for the request.
    * @param data.agentIds The unique identifier of the agent associated with the run.
+   * @param data.background If True, filters for runs that were created in background mode.
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -4532,6 +4533,7 @@ export class RunsService {
       url: '/v1/runs/',
       query: {
         agent_ids: data.agentIds,
+        background: data.background,
       },
       errors: {
         422: 'Validation Error',
@@ -4545,6 +4547,7 @@ export class RunsService {
    * List all active runs.
    * @param data The data for the request.
    * @param data.agentIds The unique identifier of the agent associated with the run.
+   * @param data.background If True, filters for runs that were created in background mode.
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -4558,6 +4561,7 @@ export class RunsService {
       url: '/v1/runs/active',
       query: {
         agent_ids: data.agentIds,
+        background: data.background,
       },
       errors: {
         422: 'Validation Error',

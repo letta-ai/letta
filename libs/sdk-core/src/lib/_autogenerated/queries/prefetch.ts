@@ -2173,6 +2173,7 @@ export const prefetchUseProvidersServiceListProviders = (
  * List all runs.
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2181,21 +2182,28 @@ export const prefetchUseRunsServiceListRuns = (
   queryClient: QueryClient,
   {
     agentIds,
+    background,
     userId,
   }: {
     agentIds?: string[];
+    background?: boolean;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceListRunsKeyFn({ agentIds, userId }),
-    queryFn: () => RunsService.listRuns({ agentIds, userId }),
+    queryKey: Common.UseRunsServiceListRunsKeyFn({
+      agentIds,
+      background,
+      userId,
+    }),
+    queryFn: () => RunsService.listRuns({ agentIds, background, userId }),
   });
 /**
  * List Active Runs
  * List all active runs.
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2204,15 +2212,21 @@ export const prefetchUseRunsServiceListActiveRuns = (
   queryClient: QueryClient,
   {
     agentIds,
+    background,
     userId,
   }: {
     agentIds?: string[];
+    background?: boolean;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({ agentIds, userId }),
-    queryFn: () => RunsService.listActiveRuns({ agentIds, userId }),
+    queryKey: Common.UseRunsServiceListActiveRunsKeyFn({
+      agentIds,
+      background,
+      userId,
+    }),
+    queryFn: () => RunsService.listActiveRuns({ agentIds, background, userId }),
   });
 /**
  * Retrieve Run

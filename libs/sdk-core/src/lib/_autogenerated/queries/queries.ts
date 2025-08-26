@@ -2633,6 +2633,7 @@ export const useProvidersServiceListProviders = <
  * List all runs.
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2644,9 +2645,11 @@ export const useRunsServiceListRuns = <
 >(
   {
     agentIds,
+    background,
     userId,
   }: {
     agentIds?: string[];
+    background?: boolean;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -2654,10 +2657,11 @@ export const useRunsServiceListRuns = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunsKeyFn(
-      { agentIds, userId },
+      { agentIds, background, userId },
       queryKey,
     ),
-    queryFn: () => RunsService.listRuns({ agentIds, userId }) as TData,
+    queryFn: () =>
+      RunsService.listRuns({ agentIds, background, userId }) as TData,
     ...options,
   });
 /**
@@ -2665,6 +2669,7 @@ export const useRunsServiceListRuns = <
  * List all active runs.
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2676,9 +2681,11 @@ export const useRunsServiceListActiveRuns = <
 >(
   {
     agentIds,
+    background,
     userId,
   }: {
     agentIds?: string[];
+    background?: boolean;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -2686,10 +2693,11 @@ export const useRunsServiceListActiveRuns = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListActiveRunsKeyFn(
-      { agentIds, userId },
+      { agentIds, background, userId },
       queryKey,
     ),
-    queryFn: () => RunsService.listActiveRuns({ agentIds, userId }) as TData,
+    queryFn: () =>
+      RunsService.listActiveRuns({ agentIds, background, userId }) as TData,
     ...options,
   });
 /**

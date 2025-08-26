@@ -11291,6 +11291,13 @@ export const get_List_runs = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      background: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
     }),
     header: z.object({
       user_id: z
@@ -11313,6 +11320,13 @@ export const get_List_active_runs = {
           z.array(z.string()),
           z.null(),
           z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+      background: z
+        .union([
+          z.boolean(),
+          z.null(),
+          z.array(z.union([z.boolean(), z.null()])),
         ])
         .optional(),
     }),

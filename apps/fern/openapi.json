@@ -7835,6 +7835,25 @@
               "title": "Agent Ids"
             },
             "description": "The unique identifier of the agent associated with the run."
+          },
+          {
+            "name": "background",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "If True, filters for runs that were created in background mode.",
+              "default": false,
+              "title": "Background"
+            },
+            "description": "If True, filters for runs that were created in background mode."
           }
         ],
         "responses": {
@@ -7892,6 +7911,25 @@
               "title": "Agent Ids"
             },
             "description": "The unique identifier of the agent associated with the run."
+          },
+          {
+            "name": "background",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "If True, filters for runs that were created in background mode.",
+              "default": false,
+              "title": "Background"
+            },
+            "description": "If True, filters for runs that were created in background mode."
           }
         ],
         "responses": {
