@@ -94,6 +94,9 @@ const PublicTemplateDetails = z.object({
     description:
       'The full name of the template, including version and project slug',
   }),
+  updated_at: z.string().openapi({
+    description: 'When the template was last updated',
+  }),
 });
 
 export type PublicTemplateDetailsType = z.infer<typeof PublicTemplateDetails>;
@@ -112,6 +115,7 @@ const templatesQuery = z.object({
   search: z.string().optional(),
   project_slug: z.string().optional(),
   project_id: z.string().optional(),
+  sort_by: z.enum(['updated_at', 'created_at']).optional(),
 });
 
 const listTemplates = c.query({

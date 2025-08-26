@@ -9860,6 +9860,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["updated_at", "created_at"]
+            }
           }
         ],
         "operationId": "templates.listTemplates",
@@ -9899,6 +9907,10 @@
                           "template_deployment_slug": {
                             "type": "string",
                             "description": "The full name of the template, including version and project slug"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "description": "When the template was last updated"
                           }
                         },
                         "required": [
@@ -9907,7 +9919,8 @@
                           "project_id",
                           "project_slug",
                           "latest_version",
-                          "template_deployment_slug"
+                          "template_deployment_slug",
+                          "updated_at"
                         ]
                       }
                     },
@@ -10008,6 +10021,10 @@
                     "template_deployment_slug": {
                       "type": "string",
                       "description": "The full name of the template, including version and project slug"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "When the template was last updated"
                     }
                   },
                   "required": [
@@ -10016,7 +10033,8 @@
                     "project_id",
                     "project_slug",
                     "latest_version",
-                    "template_deployment_slug"
+                    "template_deployment_slug",
+                    "updated_at"
                   ]
                 }
               }
@@ -10659,6 +10677,10 @@
                     "template_deployment_slug": {
                       "type": "string",
                       "description": "The full name of the template, including version and project slug"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "When the template was last updated"
                     }
                   },
                   "required": [
@@ -10667,7 +10689,8 @@
                     "project_id",
                     "project_slug",
                     "latest_version",
-                    "template_deployment_slug"
+                    "template_deployment_slug",
+                    "updated_at"
                   ]
                 }
               }
@@ -10777,6 +10800,10 @@
                     "template_deployment_slug": {
                       "type": "string",
                       "description": "The full name of the template, including version and project slug"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "When the template was last updated"
                     }
                   },
                   "required": [
@@ -10785,7 +10812,8 @@
                     "project_id",
                     "project_slug",
                     "latest_version",
-                    "template_deployment_slug"
+                    "template_deployment_slug",
+                    "updated_at"
                   ]
                 }
               }

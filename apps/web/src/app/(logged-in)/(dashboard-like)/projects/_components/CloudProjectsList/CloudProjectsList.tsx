@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Avatar,
   Button,
@@ -22,11 +22,26 @@ import {
   webApiQueryKeys,
   useFeatureFlag,
 } from '@letta-cloud/sdk-web';
+import type { AgentState } from '@letta-cloud/sdk-core';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { CreateProjectDialog } from '../CreateProjectDialog/CreateProjectDialog';
+import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
+import {
+  cloudAPI,
+  cloudQueryKeys,
+  type PublicTemplateDetailsType,
+} from '@letta-cloud/sdk-cloud-api';
 
 interface ProjectsListProps {
   search: string;
+}
+
+interface CombinedItem {
+  id: string;
+  name: string;
+  url: string;
+  isTemplate: boolean;
+  updatedAt: string | null | undefined;
 }
 
 interface ProjectCardProps {
@@ -52,6 +67,10 @@ function ProjectCard(props: ProjectCardProps) {
   const t = useTranslations('projects/page/CloudProjectsList');
   const { formatDateAndTime } = useFormatters();
 
+  const { data: recentAgentsAndTemplatesEnabled } = useFeatureFlag(
+    'RECENT_AGENTS_AND_TEMPLATES',
+  );
+
   function handleFavoriteClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -59,6 +78,65 @@ function ProjectCard(props: ProjectCardProps) {
       onToggleFavorite(projectId, !isFavorited);
     }
   }
+
+  const { data: agentData } = useAgentsServiceListAgents(
+    {
+      limit: 3,
+      projectId,
+      sortBy: 'updatedAt',
+    },
+    undefined,
+    {
+      retry: false,
+    },
+  );
+
+  const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
+    queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
+      project_id: projectId,
+      limit: 3,
+      sort_by: 'updated_at',
+    }),
+    queryData: {
+      query: {
+        project_id: projectId,
+        limit: '3',
+        sort_by: 'updated_at',
+      },
+    },
+  });
+
+  const recentItems: CombinedItem[] = useMemo(() => {
+    const agents = agentData || [];
+    const templates = templateData?.body?.templates || [];
+
+    const combinedItems: CombinedItem[] = [
+      ...agents.map((agent: AgentState) => ({
+        id: agent.id,
+        name: agent.name,
+        url: `${url}/agents/${agent.id}`,
+        isTemplate: false,
+        updatedAt: agent.updated_at,
+      })),
+      ...templates.map((template: PublicTemplateDetailsType) => ({
+        id: template.id,
+        name: template.name,
+        url: `${url}/templates/${template.id}`,
+        isTemplate: true,
+        updatedAt: template.updated_at,
+      })),
+    ];
+
+    const filtered = combinedItems.filter((item) => item.updatedAt != null);
+
+    const sorted = filtered.sort((a, b) => {
+      const dateA = new Date(a.updatedAt!).getTime();
+      const dateB = new Date(b.updatedAt!).getTime();
+      return dateB - dateA;
+    });
+
+    return sorted.slice(0, 3);
+  }, [agentData, templateData, url]);
 
   return (
     <div className="relative">
@@ -89,34 +167,66 @@ function ProjectCard(props: ProjectCardProps) {
       )}
       <Card
         href={url}
-        className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer">
+        className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer"
+      >
         <VStack fullWidth>
-          <VStack gap="medium" fullWidth>
-            <Avatar size="medium" name={projectName} />
-            <VStack gap="text">
-              <Typography
-                bold
-                align="left"
-                variant="body"
-                noWrap
-                fullWidth
-                overflow="ellipsis"
-              >
-                {projectName}
-              </Typography>
-              <HStack>
-                {
-                  <Typography variant="body" color="muted">
-                    {lastUpdatedAt
-                      ? t('projectsList.projectItem.lastUpdatedAt', {
-                        date: formatDateAndTime(lastUpdatedAt),
-                      })
-                      : t('projectsList.projectItem.noLastUpdatedAt')}
-                  </Typography>
-                }
-              </HStack>
+          {!recentAgentsAndTemplatesEnabled ? (
+            <VStack gap="medium" fullWidth>
+              <Avatar size="medium" name={projectName} />
+              <VStack gap="text">
+                <Typography
+                  bold
+                  align="left"
+                  variant="body"
+                  noWrap
+                  fullWidth
+                  overflow="ellipsis"
+                >
+                  {projectName}
+                </Typography>
+                <HStack>
+                  {
+                    <Typography variant="body" color="muted">
+                      {lastUpdatedAt
+                        ? t('projectsList.projectItem.lastUpdatedAt', {
+                          date: formatDateAndTime(lastUpdatedAt),
+                        })
+                        : t('projectsList.projectItem.noLastUpdatedAt')}
+                    </Typography>
+                  }
+                </HStack>
+              </VStack>
             </VStack>
-          </VStack>
+          ) : (
+            <VStack gap="large" fullWidth>
+              <VStack gap="small">
+                <Typography
+                  bold
+                  align="left"
+                  variant="heading4"
+                  noWrap
+                  fullWidth
+                  overflow="ellipsis"
+                >
+                  {projectName}
+                </Typography>
+                <Typography variant="body" color="muted">
+                  {lastUpdatedAt
+                    ? t('projectsList.projectItem.lastUpdatedAt', {
+                      date: formatDateAndTime(lastUpdatedAt),
+                    })
+                    : t('projectsList.projectItem.noLastUpdatedAt')}
+                </Typography>
+              </VStack>
+              <Typography variant="body3" color="lighter">
+                {t('projectsList.projectItem.lastWorkedOn')}
+              </Typography>
+              {/*TODO: ADD STYLING AFTER STORYBOOK*/}
+              {recentItems.map((items) => {
+                return items.id;
+              })}
+            </VStack>
+          )}
         </VStack>
       </Card>
     </div>

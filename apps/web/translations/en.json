@@ -1472,7 +1472,8 @@
         "viewButton": "View Project",
         "noLastUpdatedAt": "Local",
         "addToFavorites": "Favorite",
-        "removeFromFavorites": "Remove from Favorites"
+        "removeFromFavorites": "Remove from Favorites",
+        "lastWorkedOn": "Last worked on"
       }
     }
   },

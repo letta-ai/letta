@@ -168,6 +168,7 @@ async function listTemplates(
     project_id,
     project_slug,
     template_id,
+    sort_by,
   } = query;
 
   if (project_id && project_slug) {
@@ -207,7 +208,7 @@ async function listTemplates(
   const templatesResponse = await db.query.lettaTemplates.findMany({
     where: and(
       eq(lettaTemplates.organizationId, organizationId),
-      ...!template_id ? [eq(lettaTemplates.latestDeployed, true)] : [],
+      ...(!template_id ? [eq(lettaTemplates.latestDeployed, true)] : []),
       ...(search ? [ilike(lettaTemplates.name, `%${search}%`)] : []),
       ...(name ? [ilike(lettaTemplates.name, `%${name}%`)] : []),
       ...(projectId ? [eq(lettaTemplates.projectId, projectId)] : []),
@@ -220,7 +221,11 @@ async function listTemplates(
         },
       },
     },
-    orderBy: [desc(lettaTemplates.createdAt)],
+    orderBy: [
+      sort_by === 'updated_at'
+        ? desc(lettaTemplates.updatedAt)
+        : desc(lettaTemplates.createdAt),
+    ],
     offset,
     limit: limit + 1,
   });
@@ -237,6 +242,7 @@ async function listTemplates(
           description: template.description || '',
           latest_version: template.version,
           template_deployment_slug: `${template.project.slug}/${template.name}:${template.version}`,
+          updated_at: template.updatedAt.toISOString(),
         };
       }),
       has_next_page: templatesResponse.length > limit,
@@ -398,6 +404,7 @@ async function saveTemplateVersion(
       description: newVersion.description || '',
       latest_version: newVersion.version,
       template_deployment_slug: `${project}/${newVersion.name}:${newVersion.version}`,
+      updated_at: newVersion.updatedAt.toISOString(),
     },
   };
 }
@@ -468,6 +475,7 @@ async function forkTemplate(
         description: newTemplate.description || '',
         latest_version: newTemplate.version,
         template_deployment_slug: `${project}/${newTemplate.name}:${newTemplate.version}`,
+        updated_at: newTemplate.updatedAt.toISOString(),
       },
     };
   } catch (_error) {
@@ -586,6 +594,7 @@ async function createTemplate(
         latest_version: lettaTemplate.version,
         description: lettaTemplate.description || '',
         template_deployment_slug: `${projectSlug}/${lettaTemplate.name}:${lettaTemplate.version}`,
+        updated_at: lettaTemplate.updatedAt.toISOString(),
       },
     };
   } catch (error) {
