@@ -2634,6 +2634,10 @@ export const useProvidersServiceListProviders = <
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
+ * @param data.after Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.limit Maximum number of runs to return
+ * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2644,12 +2648,20 @@ export const useRunsServiceListRuns = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
     agentIds,
+    ascending,
     background,
+    before,
+    limit,
     userId,
   }: {
+    after?: string;
     agentIds?: string[];
+    ascending?: boolean;
     background?: boolean;
+    before?: string;
+    limit?: number;
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -2657,11 +2669,19 @@ export const useRunsServiceListRuns = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunsKeyFn(
-      { agentIds, background, userId },
+      { after, agentIds, ascending, background, before, limit, userId },
       queryKey,
     ),
     queryFn: () =>
-      RunsService.listRuns({ agentIds, background, userId }) as TData,
+      RunsService.listRuns({
+        after,
+        agentIds,
+        ascending,
+        background,
+        before,
+        limit,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

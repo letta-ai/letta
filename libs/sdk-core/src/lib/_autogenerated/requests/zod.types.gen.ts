@@ -11298,6 +11298,16 @@ export const get_List_runs = {
           z.array(z.union([z.boolean(), z.null()])),
         ])
         .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      ascending: z.boolean().optional(),
     }),
     header: z.object({
       user_id: z

@@ -1599,18 +1599,28 @@ export type RunsServiceListRunsQueryResult<
 export const useRunsServiceListRunsKey = 'RunsServiceListRuns';
 export const UseRunsServiceListRunsKeyFn = (
   {
+    after,
     agentIds,
+    ascending,
     background,
+    before,
+    limit,
     userId,
   }: {
+    after?: string;
     agentIds?: string[];
+    ascending?: boolean;
     background?: boolean;
+    before?: string;
+    limit?: number;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunsKey,
-  ...(queryKey ?? [{ agentIds, background, userId }]),
+  ...(queryKey ?? [
+    { after, agentIds, ascending, background, before, limit, userId },
+  ]),
 ];
 export type RunsServiceListActiveRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listActiveRuns>

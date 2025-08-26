@@ -4520,6 +4520,10 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.agentIds The unique identifier of the agent associated with the run.
    * @param data.background If True, filters for runs that were created in background mode.
+   * @param data.after Cursor for pagination
+   * @param data.before Cursor for pagination
+   * @param data.limit Maximum number of runs to return
+   * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
    * @param data.userId
    * @returns Run Successful Response
    * @throws ApiError
@@ -4534,6 +4538,10 @@ export class RunsService {
       query: {
         agent_ids: data.agentIds,
         background: data.background,
+        after: data.after,
+        before: data.before,
+        limit: data.limit,
+        ascending: data.ascending,
       },
       errors: {
         422: 'Validation Error',

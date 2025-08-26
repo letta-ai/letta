@@ -7850,10 +7850,76 @@
                 }
               ],
               "description": "If True, filters for runs that were created in background mode.",
-              "default": false,
               "title": "Background"
             },
             "description": "If True, filters for runs that were created in background mode."
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "After"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cursor for pagination",
+              "title": "Before"
+            },
+            "description": "Cursor for pagination"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of runs to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of runs to return"
+          },
+          {
+            "name": "ascending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+              "default": false,
+              "title": "Ascending"
+            },
+            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)"
           }
         ],
         "responses": {
@@ -7926,7 +7992,6 @@
                 }
               ],
               "description": "If True, filters for runs that were created in background mode.",
-              "default": false,
               "title": "Background"
             },
             "description": "If True, filters for runs that were created in background mode."

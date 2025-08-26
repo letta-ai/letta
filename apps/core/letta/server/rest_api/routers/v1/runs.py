@@ -24,7 +24,14 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
-    background: Optional[bool] = Query(False, description="If True, filters for runs that were created in background mode."),
+    background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
+    after: Optional[str] = Query(None, description="Cursor for pagination"),
+    before: Optional[str] = Query(None, description="Cursor for pagination"),
+    limit: Optional[int] = Query(50, description="Maximum number of runs to return"),
+    ascending: bool = Query(
+        False,
+        description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+    ),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -32,14 +39,21 @@ def list_runs(
     """
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
-    runs = [Run.from_job(job) for job in server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)]
-
+    runs = [
+        Run.from_job(job)
+        for job in server.job_manager.list_jobs(
+            actor=actor,
+            job_type=JobType.RUN,
+            limit=limit,
+            before=before,
+            after=after,
+            ascending=False,
+        )
+    ]
     if agent_ids:
         runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
-
-    if background:
-        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"]]
-
+    if background is not None:
+        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"] == background]
     return runs
 
 
@@ -47,7 +61,7 @@ def list_runs(
 def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
-    background: Optional[bool] = Query(False, description="If True, filters for runs that were created in background mode."),
+    background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -56,18 +70,15 @@ def list_active_runs(
     actor = server.user_manager.get_user_or_default(user_id=actor_id)
 
     active_runs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN)
-
     active_runs = [Run.from_job(job) for job in active_runs]
 
-    if not agent_ids:
-        runs = active_runs
-    else:
-        runs = [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
+    if agent_ids:
+        active_runs = [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
 
-    if background:
-        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"]]
+    if background is not None:
+        active_runs = [run for run in active_runs if "background" in run.metadata and run.metadata["background"] == background]
 
-    return runs
+    return active_runs
 
 
 @router.get("/{run_id}", response_model=Run, operation_id="retrieve_run")

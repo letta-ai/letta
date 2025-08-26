@@ -2174,6 +2174,10 @@ export const prefetchUseProvidersServiceListProviders = (
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
+ * @param data.after Cursor for pagination
+ * @param data.before Cursor for pagination
+ * @param data.limit Maximum number of runs to return
+ * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
  * @returns Run Successful Response
  * @throws ApiError
@@ -2181,22 +2185,43 @@ export const prefetchUseProvidersServiceListProviders = (
 export const prefetchUseRunsServiceListRuns = (
   queryClient: QueryClient,
   {
+    after,
     agentIds,
+    ascending,
     background,
+    before,
+    limit,
     userId,
   }: {
+    after?: string;
     agentIds?: string[];
+    ascending?: boolean;
     background?: boolean;
+    before?: string;
+    limit?: number;
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseRunsServiceListRunsKeyFn({
+      after,
       agentIds,
+      ascending,
       background,
+      before,
+      limit,
       userId,
     }),
-    queryFn: () => RunsService.listRuns({ agentIds, background, userId }),
+    queryFn: () =>
+      RunsService.listRuns({
+        after,
+        agentIds,
+        ascending,
+        background,
+        before,
+        limit,
+        userId,
+      }),
   });
 /**
  * List Active Runs

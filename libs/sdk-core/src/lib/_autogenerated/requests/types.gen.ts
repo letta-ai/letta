@@ -7547,13 +7547,29 @@ export type CheckProviderResponse = unknown;
 
 export type ListRunsData = {
   /**
+   * Cursor for pagination
+   */
+  after?: string | null;
+  /**
    * The unique identifier of the agent associated with the run.
    */
   agentIds?: Array<string> | null;
   /**
+   * Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+   */
+  ascending?: boolean;
+  /**
    * If True, filters for runs that were created in background mode.
    */
   background?: boolean | null;
+  /**
+   * Cursor for pagination
+   */
+  before?: string | null;
+  /**
+   * Maximum number of runs to return
+   */
+  limit?: number | null;
   userId?: string | null;
 };
 
