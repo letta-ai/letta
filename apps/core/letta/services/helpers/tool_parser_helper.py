@@ -70,13 +70,16 @@ def runtime_override_tool_json_schema(
     tool_list: list[JsonDict],
     response_format: ResponseFormatUnion | None,
     request_heartbeat: bool = True,
+    terminal_tools: set[str] | None = None,
 ) -> list[JsonDict]:
     """Override the tool JSON schemas at runtime if certain conditions are met.
 
     Cases:
         1. We will inject `send_message` tool calls with `response_format` if provided
-        2. Tools will have an additional `request_heartbeat` parameter added.
+        2. Tools will have an additional `request_heartbeat` parameter added (except for terminal tools).
     """
+    if terminal_tools is None:
+        terminal_tools = set()
     for tool_json in tool_list:
         if tool_json["name"] == SEND_MESSAGE_TOOL_NAME and response_format and response_format.type != ResponseFormatType.text:
             if response_format.type == ResponseFormatType.json_schema:
@@ -89,8 +92,8 @@ def runtime_override_tool_json_schema(
                     "properties": {},
                 }
         if request_heartbeat:
-            # TODO (cliandy): see support for tool control loop parameters
-            if tool_json["name"] != SEND_MESSAGE_TOOL_NAME:
+            # Only add request_heartbeat to non-terminal tools
+            if tool_json["name"] not in terminal_tools:
                 tool_json["parameters"]["properties"][REQUEST_HEARTBEAT_PARAM] = {
                     "type": "boolean",
                     "description": REQUEST_HEARTBEAT_DESCRIPTION,
