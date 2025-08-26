@@ -316,6 +316,11 @@ describe('credit usage', () => {
       },
     });
 
+    // wait for messages to load
+    cy.findAllByTestId('agent-message-content', { timeout: 50000 })
+      .its('length')
+      .should('eq', 1);
+
     cy.findByTestId('chat-simulator-input').type('What is my name', {
       force: true,
     });
