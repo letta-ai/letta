@@ -1206,6 +1206,7 @@ async def send_message_streaming(
                 metadata={
                     "job_type": "send_message_streaming",
                     "agent_id": agent_id,
+                    "background": request.background or False,
                 },
                 request_config=LettaRequestConfig(
                     use_assistant_message=request.use_assistant_message,

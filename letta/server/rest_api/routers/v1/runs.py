@@ -24,6 +24,7 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    background: Optional[bool] = Query(False, description="If True, filters for runs that were created in background mode."),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -33,16 +34,20 @@ def list_runs(
 
     runs = [Run.from_job(job) for job in server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)]
 
-    if not agent_ids:
-        return runs
+    if agent_ids:
+        runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
 
-    return [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
+    if background:
+        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"]]
+
+    return runs
 
 
 @router.get("/active", response_model=List[Run], operation_id="list_active_runs")
 def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    background: Optional[bool] = Query(False, description="If True, filters for runs that were created in background mode."),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
@@ -55,9 +60,14 @@ def list_active_runs(
     active_runs = [Run.from_job(job) for job in active_runs]
 
     if not agent_ids:
-        return active_runs
+        runs = active_runs
+    else:
+        runs = [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
 
-    return [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
+    if background:
+        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"]]
+
+    return runs
 
 
 @router.get("/{run_id}", response_model=Run, operation_id="retrieve_run")
