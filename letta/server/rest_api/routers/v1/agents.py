@@ -301,7 +301,9 @@ async def import_agent_serialized(
         False,
         description="If set to True, strips all messages from the agent before importing.",
     ),
-    env_vars: Optional[Dict[str, Any]] = Form(None, description="Environment variables to pass to the agent for tool execution."),
+    env_vars_json: Optional[str] = Form(
+        None, description="Environment variables as a JSON string to pass to the agent for tool execution."
+    ),
 ):
     """
     Import a serialized agent file and recreate the agent(s) in the system.
@@ -314,6 +316,17 @@ async def import_agent_serialized(
         agent_json = json.loads(serialized_data)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
+
+    # Parse env_vars_json if provided
+    env_vars = None
+    if env_vars_json:
+        try:
+            env_vars = json.loads(env_vars_json)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
+
+        if not isinstance(env_vars, dict):
+            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
 
     # Check if the JSON is AgentFileSchema or AgentSchema
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
