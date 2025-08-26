@@ -33,7 +33,9 @@ async function createToolsInStarterKit(
   let toolIdsToAttach: string[] = [];
 
   const existingTools = await ToolsService.listTools(
-    {},
+    {
+      limit: 500,
+    },
     {
       user_id: lettaAgentsUserId,
     },
