@@ -12,7 +12,7 @@ import { ChevronLeftIcon } from '../../icons';
 import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 interface TitleProps {
-  title?: BreadcrumbProps['items'] | string;
+  title?: BreadcrumbProps['items'] | React.ReactNode | string;
 }
 
 function Title({ title }: TitleProps) {
@@ -26,6 +26,11 @@ function Title({ title }: TitleProps) {
         {title}
       </Typography>
     );
+  }
+
+  // react nodes are never an array, so this would satisfy the type-checker
+  if (!Array.isArray(title)) {
+    return title;
   }
 
   return <Breadcrumb size="xsmall" items={title} />;

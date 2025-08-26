@@ -2260,6 +2260,7 @@
     }
   },
   "projects/(projectSlug)/agents/page": {
+    "pageTitle": "Agents",
     "TagsShorthand": {
       "showAll": "+{count} more"
     },
