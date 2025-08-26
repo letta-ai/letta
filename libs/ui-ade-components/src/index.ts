@@ -45,3 +45,5 @@ export * from './lib/hooks/useQueryIdenities/useQueryIdentities';
 export * from './lib/OnboardingAsideFocus/OnboardingAsideFocus';
 export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 export * from './lib/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
+
+export * from './lib/constants'

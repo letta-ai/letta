@@ -5,6 +5,7 @@ import type { ToolType } from '@letta-cloud/sdk-core';
 import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
 import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 interface LettaToolsProps {
   types: ToolType[];
@@ -16,7 +17,7 @@ export function LettaTools(props: LettaToolsProps) {
     data: tools,
     isError,
     isLoading,
-  } = useToolsServiceListTools({ limit: 250 });
+  } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/LettaTools');

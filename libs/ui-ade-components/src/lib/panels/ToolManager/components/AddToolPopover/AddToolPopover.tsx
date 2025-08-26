@@ -27,6 +27,7 @@ import { SpecificToolIcon } from '../SpecificToolIcon/SpecificToolIcon';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
 import { useQueries } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
+import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 interface AddToolPopoverProps {
   disabled?: boolean;
@@ -38,7 +39,7 @@ export function AddToolPopover(props: AddToolPopoverProps) {
   const { tools: attachedTools, id: agentId } = useCurrentAgent();
   const [search, setSearch] = useState('');
 
-  const { data: allTools, isLoading, isError } = useToolsServiceListTools({ limit: 250 });
+  const { data: allTools, isLoading, isError } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
   const { mutate: attachTool, mutateAsync: attachToolAsync } = useAgentsServiceAttachTool();
   const { mutateAsync: addComposioTool } = useToolsServiceAddComposioTool();
   const { data: mcpServers } = useToolsServiceListMcpServers();

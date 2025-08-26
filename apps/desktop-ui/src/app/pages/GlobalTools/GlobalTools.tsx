@@ -8,13 +8,14 @@ import { useTranslations } from '@letta-cloud/translations';
 import { ToolsEditor } from '@letta-cloud/ui-ade-components';
 import { useMemo, useState } from 'react';
 import { DesktopToolManagerLayout } from './ToolManagerLayout';
+import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 export function GlobalTools() {
   const {
     data: tools,
     isError,
     isLoading,
-  } = useToolsServiceListTools({ limit: 250 });
+  } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
   const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('custom');
 

@@ -13,11 +13,12 @@ import {
   useToolsServiceListTools,
 } from '@letta-cloud/sdk-core';
 import { useMemo } from 'react';
+import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 export function useToolManagerRouteCopy() {
   const t = useTranslations('ToolManager');
 
-  const { data: tools } = useToolsServiceListTools({ limit: 250 });
+  const { data: tools } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
 
   const counts = useMemo(() => {
     if (!tools) {
