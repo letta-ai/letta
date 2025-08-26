@@ -2715,9 +2715,7 @@ export const BatchJob = z.object({
   last_updated_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  created_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
+  created_at: z.string().optional(),
   updated_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -5762,9 +5760,7 @@ export const Job = z.object({
   last_updated_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  created_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
+  created_at: z.string().optional(),
   updated_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -6991,9 +6987,7 @@ export const Run = z.object({
   last_updated_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
-  created_at: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
+  created_at: z.string().optional(),
   updated_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),

@@ -1,9 +1,11 @@
+from datetime import timedelta
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 from pydantic import Field
 
-from letta.data_sources.redis_client import get_redis_client
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm.errors import NoResultFound
 from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.letta_message import LettaMessageUnion
@@ -260,7 +262,31 @@ async def retrieve_stream(
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    try:
+        job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run = Run.from_job(job)
+
+    if "background" not in run.metadata or not run.metadata["background"]:
+        raise HTTPException(status_code=400, detail="Run was not created in background mode, so it cannot be retrieved.")
+
+    if run.created_at < get_utc_time() - timedelta(hours=3):
+        raise HTTPException(status_code=410, detail="Run was created more than 3 hours ago, and is now expired.")
+
     redis_client = await get_redis_client()
+
+    if isinstance(redis_client, NoopAsyncRedisClient):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Background streaming requires Redis to be running. "
+                "Please ensure Redis is properly configured. "
+                f"LETTA_REDIS_HOST: {settings.redis_host}, LETTA_REDIS_PORT: {settings.redis_port}"
+            ),
+        )
 
     stream = redis_sse_stream_generator(
         redis_client=redis_client,

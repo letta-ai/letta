@@ -1268,7 +1268,11 @@ async def send_message_streaming(
                 if isinstance(redis_client, NoopAsyncRedisClient):
                     raise HTTPException(
                         status_code=503,
-                        detail="Background streaming is not available: Redis is not configured. Please ensure Redis is properly configured and running.",
+                        detail=(
+                            "Background streaming requires Redis to be running. "
+                            "Please ensure Redis is properly configured. "
+                            f"LETTA_REDIS_HOST: {settings.redis_host}, LETTA_REDIS_PORT: {settings.redis_port}"
+                        ),
                     )
 
                 if request.stream_tokens and model_compatible_token_streaming:

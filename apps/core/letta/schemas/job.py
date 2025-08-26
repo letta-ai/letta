@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
+from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import MessageType
@@ -12,6 +13,7 @@ from letta.schemas.letta_message import MessageType
 class JobBase(OrmMetadataBase):
     __id_prefix__ = "job"
     status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
+    created_at: datetime = Field(default_factory=get_utc_time, description="The unix timestamp of when the job was created.")
     completed_at: Optional[datetime] = Field(None, description="The unix timestamp of when the job was completed.")
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="The metadata of the job.")
     job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")

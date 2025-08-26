@@ -1497,17 +1497,10 @@ export const $BatchJob = {
       description: 'The id of the user that made this object.',
     },
     created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      type: 'string',
+      format: 'date-time',
       title: 'Created At',
-      description: 'The timestamp when the object was created.',
+      description: 'The unix timestamp of when the job was created.',
     },
     updated_at: {
       anyOf: [
@@ -7338,17 +7331,10 @@ export const $Job = {
       description: 'The id of the user that made this object.',
     },
     created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      type: 'string',
+      format: 'date-time',
       title: 'Created At',
-      description: 'The timestamp when the object was created.',
+      description: 'The unix timestamp of when the job was created.',
     },
     updated_at: {
       anyOf: [
@@ -10679,17 +10665,10 @@ export const $Run = {
       description: 'The id of the user that made this object.',
     },
     created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
+      type: 'string',
+      format: 'date-time',
       title: 'Created At',
-      description: 'The timestamp when the object was created.',
+      description: 'The unix timestamp of when the job was created.',
     },
     updated_at: {
       anyOf: [

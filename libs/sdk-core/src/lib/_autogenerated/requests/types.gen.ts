@@ -519,9 +519,9 @@ export type BatchJob = {
    */
   last_updated_by_id?: string | null;
   /**
-   * The timestamp when the object was created.
+   * The unix timestamp of when the job was created.
    */
-  created_at?: string | null;
+  created_at?: string;
   /**
    * The timestamp when the object was last updated.
    */
@@ -2581,9 +2581,9 @@ export type Job = {
    */
   last_updated_by_id?: string | null;
   /**
-   * The timestamp when the object was created.
+   * The unix timestamp of when the job was created.
    */
-  created_at?: string | null;
+  created_at?: string;
   /**
    * The timestamp when the object was last updated.
    */
@@ -4004,9 +4004,9 @@ export type Run = {
    */
   last_updated_by_id?: string | null;
   /**
-   * The timestamp when the object was created.
+   * The unix timestamp of when the job was created.
    */
-  created_at?: string | null;
+  created_at?: string;
   /**
    * The timestamp when the object was last updated.
    */
