@@ -287,12 +287,34 @@ class AnthropicClient(LLMClientBase):
         else:
             anthropic_tools = None
 
+        thinking_enabled = False
+        if messages and len(messages) > 0:
+            # Check if the last assistant message starts with a thinking block
+            # Find the last assistant message
+            last_assistant_message = None
+            for message in reversed(messages):
+                if message.get("role") == "assistant":
+                    last_assistant_message = message
+                    break
+
+            if (
+                last_assistant_message
+                and isinstance(last_assistant_message.get("content"), list)
+                and len(last_assistant_message["content"]) > 0
+                and last_assistant_message["content"][0].get("type") == "thinking"
+            ):
+                thinking_enabled = True
+
         try:
-            result = await client.beta.messages.count_tokens(
-                model=model or "claude-3-7-sonnet-20250219",
-                messages=messages or [{"role": "user", "content": "hi"}],
-                tools=anthropic_tools or [],
-            )
+            count_params = {
+                "model": model or "claude-3-7-sonnet-20250219",
+                "messages": messages or [{"role": "user", "content": "hi"}],
+                "tools": anthropic_tools or [],
+            }
+
+            if thinking_enabled:
+                count_params["thinking"] = {"type": "enabled", "budget_tokens": 16000}
+            result = await client.beta.messages.count_tokens(**count_params)
         except:
             raise
 

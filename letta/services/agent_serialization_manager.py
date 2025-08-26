@@ -1,8 +1,16 @@
+import asyncio
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from letta.constants import MCP_TOOL_TAG_NAME_PREFIX
-from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
+from letta.errors import (
+    AgentExportIdMappingError,
+    AgentExportProcessingError,
+    AgentFileExportError,
+    AgentFileImportError,
+    AgentNotFoundForExportError,
+)
 from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.log import get_logger
 from letta.schemas.agent import AgentState, CreateAgent
@@ -420,6 +428,8 @@ class AgentSerializationManager:
         self,
         schema: AgentFileSchema,
         actor: User,
+        append_copy_suffix: bool = False,
+        override_existing_tools: bool = True,
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
     ) -> ImportResult:
@@ -481,7 +491,9 @@ class AgentSerializationManager:
                     pydantic_tools.append(Tool(**tool_schema.model_dump(exclude={"id"})))
 
                 # bulk upsert all tools at once
-                created_tools = await self.tool_manager.bulk_upsert_tools_async(pydantic_tools, actor)
+                created_tools = await self.tool_manager.bulk_upsert_tools_async(
+                    pydantic_tools, actor, override_existing_tools=override_existing_tools
+                )
 
                 # map file ids to database ids
                 # note: tools are matched by name during upsert, so we need to match by name here too
@@ -513,8 +525,20 @@ class AgentSerializationManager:
             if schema.sources:
                 # convert source schemas to pydantic sources
                 pydantic_sources = []
+
+                # First, do a fast batch check for existing source names to avoid conflicts
+                source_names_to_check = [s.name for s in schema.sources]
+                existing_source_names = await self.source_manager.get_existing_source_names(source_names_to_check, actor)
+
                 for source_schema in schema.sources:
                     source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
+
+                    # Check if source name already exists, if so add unique suffix
+                    original_name = source_data["name"]
+                    if original_name in existing_source_names:
+                        unique_suffix = uuid.uuid4().hex[:8]
+                        source_data["name"] = f"{original_name}_{unique_suffix}"
+
                     pydantic_sources.append(Source(**source_data))
 
                 # bulk upsert all sources at once
@@ -523,13 +547,15 @@ class AgentSerializationManager:
                 # map file ids to database ids
                 # note: sources are matched by name during upsert, so we need to match by name here too
                 created_sources_by_name = {source.name: source for source in created_sources}
-                for source_schema in schema.sources:
-                    created_source = created_sources_by_name.get(source_schema.name)
+                for i, source_schema in enumerate(schema.sources):
+                    # Use the pydantic source name (which may have been modified for uniqueness)
+                    source_name = pydantic_sources[i].name
+                    created_source = created_sources_by_name.get(source_name)
                     if created_source:
                         file_to_db_ids[source_schema.id] = created_source.id
                         imported_count += 1
                     else:
-                        logger.warning(f"Source {source_schema.name} was not created during bulk upsert")
+                        logger.warning(f"Source {source_name} was not created during bulk upsert")
 
             # 4. Create files (depends on sources)
             for file_schema in schema.files:
@@ -548,38 +574,49 @@ class AgentSerializationManager:
                 imported_count += 1
 
             # 5. Process files for chunking/embedding (depends on files and sources)
-            if should_use_pinecone():
-                embedder = PineconeEmbedder(embedding_config=schema.agents[0].embedding_config)
-            else:
-                embedder = OpenAIEmbedder(embedding_config=schema.agents[0].embedding_config)
-            file_processor = FileProcessor(
-                file_parser=self.file_parser,
-                embedder=embedder,
-                actor=actor,
-                using_pinecone=self.using_pinecone,
-            )
+            # Start background tasks for file processing
+            background_tasks = []
+            if schema.files and any(f.content for f in schema.files):
+                if should_use_pinecone():
+                    embedder = PineconeEmbedder(embedding_config=schema.agents[0].embedding_config)
+                else:
+                    embedder = OpenAIEmbedder(embedding_config=schema.agents[0].embedding_config)
+                file_processor = FileProcessor(
+                    file_parser=self.file_parser,
+                    embedder=embedder,
+                    actor=actor,
+                    using_pinecone=self.using_pinecone,
+                )
 
-            for file_schema in schema.files:
-                if file_schema.content:  # Only process files with content
-                    file_db_id = file_to_db_ids[file_schema.id]
-                    source_db_id = file_to_db_ids[file_schema.source_id]
+                for file_schema in schema.files:
+                    if file_schema.content:  # Only process files with content
+                        file_db_id = file_to_db_ids[file_schema.id]
+                        source_db_id = file_to_db_ids[file_schema.source_id]
 
-                    # Get the created file metadata (with caching)
-                    if file_db_id not in file_metadata_cache:
-                        file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
-                    file_metadata = file_metadata_cache[file_db_id]
+                        # Get the created file metadata (with caching)
+                        if file_db_id not in file_metadata_cache:
+                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
+                        file_metadata = file_metadata_cache[file_db_id]
 
-                    # Save the db call of fetching content again
-                    file_metadata.content = file_schema.content
+                        # Save the db call of fetching content again
+                        file_metadata.content = file_schema.content
 
-                    # Process the file for chunking/embedding
-                    passages = await file_processor.process_imported_file(file_metadata=file_metadata, source_id=source_db_id)
-                    imported_count += len(passages)
+                        # Create background task for file processing
+                        # TODO: This can be moved to celery or RQ or something
+                        task = asyncio.create_task(
+                            self._process_file_async(
+                                file_metadata=file_metadata, source_id=source_db_id, file_processor=file_processor, actor=actor
+                            )
+                        )
+                        background_tasks.append(task)
+                        logger.info(f"Started background processing for file {file_metadata.file_name} (ID: {file_db_id})")
 
             # 6. Create agents with empty message history
             for agent_schema in schema.agents:
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
+                if append_copy_suffix:
+                    agent_data["name"] = agent_data.get("name") + "_copy"
 
                 # Remap tool_ids from file IDs to database IDs
                 if agent_data.get("tool_ids"):
@@ -588,6 +625,10 @@ class AgentSerializationManager:
                 # Remap block_ids from file IDs to database IDs
                 if agent_data.get("block_ids"):
                     agent_data["block_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["block_ids"]]
+
+                # Remap source_ids from file IDs to database IDs
+                if agent_data.get("source_ids"):
+                    agent_data["source_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["source_ids"]]
 
                 if env_vars:
                     for var in agent_data["tool_exec_environment_variables"]:
@@ -635,14 +676,16 @@ class AgentSerializationManager:
                     for file_agent_schema in agent_schema.files_agents:
                         file_db_id = file_to_db_ids[file_agent_schema.file_id]
 
-                        # Use cached file metadata if available
+                        # Use cached file metadata if available (with content)
                         if file_db_id not in file_metadata_cache:
-                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(file_db_id, actor)
+                            file_metadata_cache[file_db_id] = await self.file_manager.get_file_by_id(
+                                file_db_id, actor, include_content=True
+                            )
                         file_metadata = file_metadata_cache[file_db_id]
                         files_for_agent.append(file_metadata)
 
                         if file_agent_schema.visible_content:
-                            visible_content_map[file_db_id] = file_agent_schema.visible_content
+                            visible_content_map[file_metadata.file_name] = file_agent_schema.visible_content
 
                     # Bulk attach files to agent
                     await self.file_agent_manager.attach_files_bulk(
@@ -669,9 +712,19 @@ class AgentSerializationManager:
                 file_to_db_ids[group.id] = created_group.id
                 imported_count += 1
 
+            # prepare result message
+            num_background_tasks = len(background_tasks)
+            if num_background_tasks > 0:
+                message = (
+                    f"Import completed successfully. Imported {imported_count} entities. "
+                    f"{num_background_tasks} file(s) are being processed in the background for embeddings."
+                )
+            else:
+                message = f"Import completed successfully. Imported {imported_count} entities."
+
             return ImportResult(
                 success=True,
-                message=f"Import completed successfully. Imported {imported_count} entities.",
+                message=message,
                 imported_count=imported_count,
                 imported_agent_ids=imported_agent_ids,
                 id_mappings=file_to_db_ids,
@@ -849,3 +902,47 @@ class AgentSerializationManager:
         except AttributeError:
             allowed = model_cls.__fields__.keys()  # Pydantic v1
         return {k: v for k, v in data.items() if k in allowed}
+
+    async def _process_file_async(self, file_metadata: FileMetadata, source_id: str, file_processor: FileProcessor, actor: User):
+        """
+        Process a file asynchronously in the background.
+
+        This method handles chunking and embedding of file content without blocking
+        the main import process.
+
+        Args:
+            file_metadata: The file metadata with content
+            source_id: The database ID of the source
+            file_processor: The file processor instance to use
+            actor: The user performing the action
+        """
+        file_id = file_metadata.id
+        file_name = file_metadata.file_name
+
+        try:
+            logger.info(f"Starting background processing for file {file_name} (ID: {file_id})")
+
+            # process the file for chunking/embedding
+            passages = await file_processor.process_imported_file(file_metadata=file_metadata, source_id=source_id)
+
+            logger.info(f"Successfully processed file {file_name} with {len(passages)} passages")
+
+            # file status is automatically updated to COMPLETED by process_imported_file
+            return passages
+
+        except Exception as e:
+            logger.error(f"Failed to process file {file_name} (ID: {file_id}) in background: {e}")
+
+            # update file status to ERROR
+            try:
+                await self.file_manager.update_file_status(
+                    file_id=file_id,
+                    actor=actor,
+                    processing_status=FileProcessingStatus.ERROR,
+                    error_message=str(e) if str(e) else f"Agent serialization failed: {type(e).__name__}",
+                )
+            except Exception as update_error:
+                logger.error(f"Failed to update file status to ERROR for {file_id}: {update_error}")
+
+            # we don't re-raise here since this is a background task
+            # the file will be marked as ERROR and the import can continue

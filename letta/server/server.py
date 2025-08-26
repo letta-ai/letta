@@ -2068,7 +2068,6 @@ class SyncServer(Server):
             raise ValueError(f"No client was created for MCP server: {mcp_server_name}")
 
         tools = await self.mcp_clients[mcp_server_name].list_tools()
-
         # Add health information to each tool
         for tool in tools:
             if tool.inputSchema:

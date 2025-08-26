@@ -14,7 +14,7 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
-from letta.data_sources.redis_client import get_redis_client
+from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -26,6 +26,7 @@ from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import JobType
+from letta.schemas.file import AgentFileAttachment, PaginatedAgentFiles
 from letta.schemas.group import Group
 from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
@@ -39,6 +40,7 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
+from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.summarizer.enums import SummarizationMode
@@ -249,6 +251,7 @@ async def import_agent(
     override_existing_tools: bool = True,
     project_id: str | None = None,
     strip_messages: bool = False,
+    env_vars: Optional[dict[str, Any]] = None,
 ) -> List[str]:
     """
     Import an agent using the new AgentFileSchema format.
@@ -259,7 +262,13 @@ async def import_agent(
         raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
 
     try:
-        import_result = await server.agent_serialization_manager.import_file(schema=agent_schema, actor=actor)
+        import_result = await server.agent_serialization_manager.import_file(
+            schema=agent_schema,
+            actor=actor,
+            append_copy_suffix=append_copy_suffix,
+            override_existing_tools=override_existing_tools,
+            env_vars=env_vars,
+        )
 
         if not import_result.success:
             raise HTTPException(
@@ -297,7 +306,9 @@ async def import_agent_serialized(
         False,
         description="If set to True, strips all messages from the agent before importing.",
     ),
-    env_vars: Optional[Dict[str, Any]] = Form(None, description="Environment variables to pass to the agent for tool execution."),
+    env_vars_json: Optional[str] = Form(
+        None, description="Environment variables as a JSON string to pass to the agent for tool execution."
+    ),
 ):
     """
     Import a serialized agent file and recreate the agent(s) in the system.
@@ -311,6 +322,17 @@ async def import_agent_serialized(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Corrupted agent file format.")
 
+    # Parse env_vars_json if provided
+    env_vars = None
+    if env_vars_json:
+        try:
+            env_vars = json.loads(env_vars_json)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
+
+        if not isinstance(env_vars, dict):
+            raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
+
     # Check if the JSON is AgentFileSchema or AgentSchema
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
@@ -323,6 +345,7 @@ async def import_agent_serialized(
             override_existing_tools=override_existing_tools,
             project_id=project_id,
             strip_messages=strip_messages,
+            env_vars=env_vars,
         )
     else:
         # This is a legacy AgentSchema
@@ -728,6 +751,49 @@ async def list_agent_folders(
     return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
 
 
+@router.get("/{agent_id}/files", response_model=PaginatedAgentFiles, operation_id="list_agent_files")
+async def list_agent_files(
+    agent_id: str,
+    cursor: Optional[str] = Query(None, description="Pagination cursor from previous response"),
+    limit: int = Query(20, ge=1, le=100, description="Number of items to return (1-100)"),
+    is_open: Optional[bool] = Query(None, description="Filter by open status (true for open files, false for closed files)"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    """
+    Get the files attached to an agent with their open/closed status (paginated).
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # get paginated file-agent relationships for this agent
+    file_agents, next_cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
+        agent_id=agent_id, actor=actor, cursor=cursor, limit=limit, is_open=is_open
+    )
+
+    # enrich with file and source metadata
+    enriched_files = []
+    for fa in file_agents:
+        # get source/folder metadata
+        source = await server.source_manager.get_source_by_id(source_id=fa.source_id, actor=actor)
+
+        # build response object
+        attachment = AgentFileAttachment(
+            id=fa.id,
+            file_id=fa.file_id,
+            file_name=fa.file_name,
+            folder_id=fa.source_id,
+            folder_name=source.name if source else "Unknown",
+            is_open=fa.is_open,
+            last_accessed_at=fa.last_accessed_at,
+            visible_content=fa.visible_content,
+            start_line=fa.start_line,
+            end_line=fa.end_line,
+        )
+        enriched_files.append(attachment)
+
+    return PaginatedAgentFiles(files=enriched_files, next_cursor=next_cursor, has_more=has_more)
+
+
 # TODO: remove? can also get with agent blocks
 @router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
 async def retrieve_agent_memory(
@@ -999,7 +1065,8 @@ async def send_message(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
+        "groq",
     ]
 
     # Create a new run for execution tracking
@@ -1143,7 +1210,8 @@ async def send_message_streaming(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
+        "groq",
     ]
     model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
 
@@ -1157,6 +1225,7 @@ async def send_message_streaming(
                 metadata={
                     "job_type": "send_message_streaming",
                     "agent_id": agent_id,
+                    "background": request.background or False,
                 },
                 request_config=LettaRequestConfig(
                     use_assistant_message=request.use_assistant_message,
@@ -1211,7 +1280,57 @@ async def send_message_streaming(
                         else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
                     ),
                 )
+
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
+
+            if request.background and settings.track_agent_run:
+                if isinstance(redis_client, NoopAsyncRedisClient):
+                    raise HTTPException(
+                        status_code=503,
+                        detail=(
+                            "Background streaming requires Redis to be running. "
+                            "Please ensure Redis is properly configured. "
+                            f"LETTA_REDIS_HOST: {settings.redis_host}, LETTA_REDIS_PORT: {settings.redis_port}"
+                        ),
+                    )
+
+                if request.stream_tokens and model_compatible_token_streaming:
+                    raw_stream = agent_loop.step_stream(
+                        input_messages=request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    )
+                else:
+                    raw_stream = agent_loop.step_stream_no_tokens(
+                        request.messages,
+                        max_steps=request.max_steps,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    )
+
+                asyncio.create_task(
+                    create_background_stream_processor(
+                        stream_generator=raw_stream,
+                        redis_client=redis_client,
+                        run_id=run.id,
+                    )
+                )
+
+                stream = redis_sse_stream_generator(
+                    redis_client=redis_client,
+                    run_id=run.id,
+                )
+
+                if request.include_pings and settings.enable_keepalive:
+                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval)
+
+                return StreamingResponseWithStatusCode(
+                    stream,
+                    media_type="text/event-stream",
+                )
 
             if request.stream_tokens and model_compatible_token_streaming:
                 raw_stream = agent_loop.step_stream(
@@ -1350,6 +1469,7 @@ async def _process_message_background(
             "google_vertex",
             "bedrock",
             "ollama",
+            "groq",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1538,7 +1658,8 @@ async def preview_raw_payload(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
+        "groq",
     ]
 
     if agent_eligible and model_compatible:
@@ -1608,7 +1729,8 @@ async def summarize_agent_conversation(
         "bedrock",
         "ollama",
         "azure",
-        "together",
+        "xai",
+        "groq",
     ]
 
     if agent_eligible and model_compatible:

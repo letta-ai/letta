@@ -3,7 +3,7 @@ import os
 import time
 from typing import Optional, Union
 
-import requests
+from letta_client import AsyncLetta, Letta
 
 from letta.functions.functions import parse_source_code
 from letta.functions.schema_generator import generate_schema
@@ -254,7 +254,8 @@ def validate_context_window_overview(
     assert len(overview.functions_definitions) > 0
 
 
-def upload_test_agentfile_from_disk(server_url: str, filename: str) -> ImportedAgentsResponse:
+# Changed this from server_url to client since client may be authenticated or not
+def upload_test_agentfile_from_disk(client: Letta, filename: str) -> ImportedAgentsResponse:
     """
     Upload a given .af file to live FastAPI server.
     """
@@ -263,18 +264,87 @@ def upload_test_agentfile_from_disk(server_url: str, filename: str) -> ImportedA
     file_path = os.path.join(path_to_test_agent_files, filename)
 
     with open(file_path, "rb") as f:
-        files = {"file": (filename, f, "application/json")}
+        return client.agents.import_file(file=f, append_copy_suffix=True, override_existing_tools=False)
 
-        # Send parameters as form data instead of query parameters
-        form_data = {
-            "append_copy_suffix": "true",
-            "override_existing_tools": "false",
-        }
 
-        response = requests.post(
-            f"{server_url}/v1/agents/import",
-            headers={"user_id": ""},
-            files=files,
-            data=form_data,  # Send as form data
-        )
-        return ImportedAgentsResponse(**response.json())
+async def upload_test_agentfile_from_disk_async(client: AsyncLetta, filename: str) -> ImportedAgentsResponse:
+    """
+    Upload a given .af file to live FastAPI server.
+    """
+    path_to_current_file = os.path.dirname(__file__)
+    path_to_test_agent_files = path_to_current_file.removesuffix("/helpers") + "/test_agent_files"
+    file_path = os.path.join(path_to_test_agent_files, filename)
+
+    with open(file_path, "rb") as f:
+        uploaded = await client.agents.import_file(file=f, append_copy_suffix=True, override_existing_tools=False)
+        return uploaded
+
+
+def upload_file_and_wait(
+    client: Letta,
+    source_id: str,
+    file_path: str,
+    name: Optional[str] = None,
+    max_wait: int = 60,
+    duplicate_handling: Optional[str] = None,
+):
+    """Helper function to upload a file and wait for processing to complete"""
+    with open(file_path, "rb") as f:
+        if duplicate_handling:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
+        else:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
+
+    # wait for the file to be processed
+    start_time = time.time()
+    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+        if time.time() - start_time > max_wait:
+            raise TimeoutError(f"File processing timed out after {max_wait} seconds")
+        time.sleep(1)
+        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
+        print("Waiting for file processing to complete...", file_metadata.processing_status)
+
+    if file_metadata.processing_status == "error":
+        raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
+
+    return file_metadata
+
+
+def upload_file_and_wait_list_files(
+    client: Letta,
+    source_id: str,
+    file_path: str,
+    name: Optional[str] = None,
+    max_wait: int = 60,
+    duplicate_handling: Optional[str] = None,
+):
+    """Helper function to upload a file and wait for processing using list_files instead of get_file_metadata"""
+    with open(file_path, "rb") as f:
+        if duplicate_handling:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling, name=name)
+        else:
+            file_metadata = client.sources.files.upload(source_id=source_id, file=f, name=name)
+
+    # wait for the file to be processed using list_files
+    start_time = time.time()
+    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
+        if time.time() - start_time > max_wait:
+            raise TimeoutError(f"File processing timed out after {max_wait} seconds")
+        time.sleep(1)
+
+        # use list_files to get all files and find our specific file
+        files = client.sources.files.list(source_id=source_id, limit=100)
+        # find the file with matching id
+        for file in files:
+            if file.id == file_metadata.id:
+                file_metadata = file
+                break
+        else:
+            raise RuntimeError(f"File {file_metadata.id} not found in source files list")
+
+        print("Waiting for file processing to complete (via list_files)...", file_metadata.processing_status)
+
+    if file_metadata.processing_status == "error":
+        raise RuntimeError(f"File processing failed: {file_metadata.error_message}")
+
+    return file_metadata

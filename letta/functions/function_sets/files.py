@@ -21,8 +21,8 @@ async def open_files(agent_state: "AgentState", file_requests: List[FileOpenRequ
 
         Open multiple files with different view ranges:
             file_requests = [
-                FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50),     # Lines 1-50
-                FileOpenRequest(file_name="project_utils/main.py", offset=100, length=100),    # Lines 100-199
+                FileOpenRequest(file_name="project_utils/config.py", offset=0, length=50),     # Lines 1-50
+                FileOpenRequest(file_name="project_utils/main.py", offset=100, length=100),    # Lines 101-200
                 FileOpenRequest(file_name="project_utils/utils.py")                            # Entire file
             ]
 

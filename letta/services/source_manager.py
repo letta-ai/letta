@@ -143,7 +143,6 @@ class SourceManager:
                     update_dict[col.name] = excluded[col.name]
 
         upsert_stmt = stmt.on_conflict_do_update(index_elements=["name", "organization_id"], set_=update_dict)
-
         await session.execute(upsert_stmt)
         await session.commit()
 
@@ -397,3 +396,29 @@ class SourceManager:
             sources_orm = result.scalars().all()
 
             return [source.to_pydantic() for source in sources_orm]
+
+    @enforce_types
+    @trace_method
+    async def get_existing_source_names(self, source_names: List[str], actor: PydanticUser) -> set[str]:
+        """
+        Fast batch check to see which source names already exist for the organization.
+
+        Args:
+            source_names: List of source names to check
+            actor: User performing the action
+
+        Returns:
+            Set of source names that already exist
+        """
+        if not source_names:
+            return set()
+
+        async with db_registry.async_session() as session:
+            query = select(SourceModel.name).where(
+                SourceModel.name.in_(source_names), SourceModel.organization_id == actor.organization_id, SourceModel.is_deleted == False
+            )
+
+            result = await session.execute(query)
+            existing_names = result.scalars().all()
+
+            return set(existing_names)

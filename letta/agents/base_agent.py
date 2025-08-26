@@ -7,6 +7,7 @@ from letta.constants import DEFAULT_MAX_STEPS
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.log import get_logger
+from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
@@ -17,7 +18,6 @@ from letta.schemas.message import Message, MessageCreate, MessageUpdate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.services.agent_manager import AgentManager
-from letta.services.helpers.agent_manager_helper import get_system_message_from_compiled_memory
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.utils import united_diff
@@ -142,7 +142,7 @@ class BaseAgent(ABC):
             if num_archival_memories is None:
                 num_archival_memories = await self.passage_manager.agent_passage_size_async(actor=self.actor, agent_id=agent_state.id)
 
-            new_system_message_str = get_system_message_from_compiled_memory(
+            new_system_message_str = PromptGenerator.get_system_message_from_compiled_memory(
                 system_prompt=agent_state.system,
                 memory_with_sources=curr_memory_str,
                 in_context_memory_last_edit=memory_edit_timestamp,

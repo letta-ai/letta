@@ -414,6 +414,8 @@ class Message(BaseMessage):
         except json.JSONDecodeError:
             raise ValueError(f"Failed to decode function return: {text_content}")
 
+        # if self.tool_call_id is None:
+        #     import pdb;pdb.set_trace()
         assert self.tool_call_id is not None
 
         return ToolReturnMessage(
@@ -844,7 +846,7 @@ class Message(BaseMessage):
             }
             content = []
             # COT / reasoning / thinking
-            if self.content is not None and len(self.content) > 1:
+            if self.content is not None and len(self.content) >= 1:
                 for content_part in self.content:
                     if isinstance(content_part, ReasoningContent):
                         content.append(
@@ -859,6 +861,13 @@ class Message(BaseMessage):
                             {
                                 "type": "redacted_thinking",
                                 "data": content_part.data,
+                            }
+                        )
+                    if isinstance(content_part, TextContent):
+                        content.append(
+                            {
+                                "type": "text",
+                                "text": content_part.text,
                             }
                         )
             elif text_content is not None:

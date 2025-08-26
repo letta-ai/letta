@@ -76,6 +76,10 @@ class LettaUserNotFoundError(LettaError):
     """Error raised when a user is not found."""
 
 
+class LettaUnexpectedStreamCancellationError(LettaError):
+    """Error raised when a streaming request is terminated unexpectedly."""
+
+
 class LLMError(LettaError):
     pass
 

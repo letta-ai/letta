@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 from letta.constants import MAX_FILENAME_LENGTH
@@ -522,19 +520,8 @@ def test_line_chunker_only_start_parameter():
 # ---------------------- Alembic Revision TESTS ---------------------- #
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    """
-    Create an event loop for the entire test session.
-    Ensures all async tasks use the same loop, avoiding cross-loop errors.
-    """
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.mark.asyncio
-async def test_get_latest_alembic_revision(event_loop):
+async def test_get_latest_alembic_revision():
     """Test that get_latest_alembic_revision returns a valid revision ID from the database."""
     from letta.utils import get_latest_alembic_revision
 
@@ -553,7 +540,7 @@ async def test_get_latest_alembic_revision(event_loop):
 
 
 @pytest.mark.asyncio
-async def test_get_latest_alembic_revision_consistency(event_loop):
+async def test_get_latest_alembic_revision_consistency():
     """Test that get_latest_alembic_revision returns the same value on multiple calls."""
     from letta.utils import get_latest_alembic_revision
 

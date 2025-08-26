@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import Field
 
@@ -108,3 +108,26 @@ class FileAgent(FileAgentBase):
         default_factory=datetime.utcnow,
         description="Row last-update timestamp (UTC).",
     )
+
+
+class AgentFileAttachment(LettaBase):
+    """Response model for agent file attachments showing file status in agent context"""
+
+    id: str = Field(..., description="Unique identifier of the file-agent relationship")
+    file_id: str = Field(..., description="Unique identifier of the file")
+    file_name: str = Field(..., description="Name of the file")
+    folder_id: str = Field(..., description="Unique identifier of the folder/source")
+    folder_name: str = Field(..., description="Name of the folder/source")
+    is_open: bool = Field(..., description="Whether the file is currently open in the agent's context")
+    last_accessed_at: Optional[datetime] = Field(None, description="Timestamp of last access by the agent")
+    visible_content: Optional[str] = Field(None, description="Portion of the file visible to the agent if open")
+    start_line: Optional[int] = Field(None, description="Starting line number if file was opened with line range")
+    end_line: Optional[int] = Field(None, description="Ending line number if file was opened with line range")
+
+
+class PaginatedAgentFiles(LettaBase):
+    """Paginated response for agent files"""
+
+    files: List[AgentFileAttachment] = Field(..., description="List of file attachments for the agent")
+    next_cursor: Optional[str] = Field(None, description="Cursor for fetching the next page (file-agent relationship ID)")
+    has_more: bool = Field(..., description="Whether more results exist after this page")

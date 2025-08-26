@@ -144,7 +144,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
 ]
 
 # configs for models that are to dumb to do much other than messaging
-limited_configs = ["ollama.json", "together-qwen-2.5-72b-instruct.json", "vllm.json", "lmstudio.json"]
+limited_configs = ["ollama.json", "together-qwen-2.5-72b-instruct.json", "vllm.json", "lmstudio.json", "groq.json"]
 
 all_configs = [
     "openai-gpt-4o-mini.json",
@@ -161,6 +161,7 @@ all_configs = [
     "gemini-2.5-pro-vertex.json",
     "ollama.json",
     "together-qwen-2.5-72b-instruct.json",
+    "groq.json",
 ]
 
 reasoning_configs = [
@@ -398,7 +399,7 @@ def validate_openai_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
             assert content is None
 
 
-def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
+def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]], reasoning_enabled: bool) -> None:
     """
     Validate that Anthropic/Claude format assistant messages with tool_use have no <thinking> tags.
     Args:
@@ -432,10 +433,12 @@ def validate_anthropic_format_scrubbing(messages: List[Dict[str, Any]]) -> None:
         # Verify that the message only contains tool_use items
         tool_use_items = [item for item in content_list if item.get("type") == "tool_use"]
         assert len(tool_use_items) > 0, "Assistant message should have at least one tool_use item"
-        assert len(content_list) == len(tool_use_items), (
-            f"Assistant message should ONLY contain tool_use items when reasoning is disabled. "
-            f"Found {len(content_list)} total items but only {len(tool_use_items)} are tool_use items."
-        )
+
+        if not reasoning_enabled:
+            assert len(content_list) == len(tool_use_items), (
+                f"Assistant message should ONLY contain tool_use items when reasoning is disabled. "
+                f"Found {len(content_list)} total items but only {len(tool_use_items)} are tool_use items."
+            )
 
 
 def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
@@ -1129,6 +1132,146 @@ def test_token_streaming_agent_loop_error(
 
     messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_background_token_streaming_greeting_with_assistant_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message with a synchronous client.
+    Checks that each chunk in the stream has the correct message types.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to test if they stream in chunks
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
+    else:
+        messages_to_send = USER_MESSAGE_FORCE_REPLY
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=messages_to_send,
+        stream_tokens=True,
+        background=True,
+    )
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+    run_id = messages[0].run_id
+    assert run_id is not None
+
+    response = client.runs.stream(run_id=run_id, starting_after=0)
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
+
+    last_message_cursor = messages[-3].seq_id - 1
+    response = client.runs.stream(run_id=run_id, starting_after=last_message_cursor)
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert len(messages) == 3
+    assert messages[0].message_type == "assistant_message" and messages[0].seq_id == last_message_cursor + 1
+    assert messages[1].message_type == "stop_reason"
+    assert messages[2].message_type == "usage_statistics"
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_background_token_streaming_greeting_without_assistant_message(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message with a synchronous client.
+    Checks that each chunk in the stream has the correct message types.
+    """
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to force chunking
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_FORCE_LONG_REPLY
+    else:
+        messages_to_send = USER_MESSAGE_FORCE_REPLY
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=messages_to_send,
+        use_assistant_message=False,
+        stream_tokens=True,
+        background=True,
+    )
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
+
+
+@pytest.mark.parametrize(
+    "llm_config",
+    TESTED_LLM_CONFIGS,
+    ids=[c.model for c in TESTED_LLM_CONFIGS],
+)
+def test_background_token_streaming_tool_call(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent_state: AgentState,
+    llm_config: LLMConfig,
+) -> None:
+    """
+    Tests sending a streaming message with a synchronous client.
+    Checks that each chunk in the stream has the correct message types.
+    """
+    # get the config filename
+    config_filename = None
+    for filename in filenames:
+        config = get_llm_config(filename)
+        if config.model_dump() == llm_config.model_dump():
+            config_filename = filename
+            break
+
+    # skip if this is a limited model
+    if not config_filename or config_filename in limited_configs:
+        pytest.skip(f"Skipping test for limited model {llm_config.model}")
+
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use longer message for Anthropic models to force chunking
+    if llm_config.model_endpoint_type == "anthropic":
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
+    response = client.agents.messages.create_stream(
+        agent_id=agent_state.id,
+        messages=messages_to_send,
+        stream_tokens=True,
+        background=True,
+    )
+    messages = accumulate_chunks(
+        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    )
+    assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
+    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
 def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, interval: float = 0.5) -> Run:
@@ -1842,7 +1985,7 @@ def test_inner_thoughts_toggle_interleaved(
         validate_openai_format_scrubbing(messages)
     elif llm_config.model_endpoint_type == "anthropic":
         messages = response["messages"]
-        validate_anthropic_format_scrubbing(messages)
+        validate_anthropic_format_scrubbing(messages, llm_config.enable_reasoner)
     elif llm_config.model_endpoint_type in ["google_ai", "google_vertex"]:
         # Google uses 'contents' instead of 'messages'
         contents = response.get("contents", response.get("messages", []))

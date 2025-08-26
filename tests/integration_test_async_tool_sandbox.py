@@ -321,7 +321,7 @@ def tool_with_pip_requirements(test_user):
             import requests
 
             # Simple usage to verify packages work
-            response = requests.get("https://httpbin.org/json", timeout=5)
+            response = requests.get("https://httpbin.org/json", timeout=30)
             arr = np.array([1, 2, 3])
             return f"Success! Status: {response.status_code}, Array sum: {np.sum(arr)}"
         except ImportError as e:

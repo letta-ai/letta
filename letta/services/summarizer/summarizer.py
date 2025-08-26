@@ -15,6 +15,8 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
+from letta.services.agent_manager import AgentManager
+from letta.services.message_manager import MessageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.system import package_summarize_message_no_counts
 from letta.templates.template_helper import render_template
@@ -36,6 +38,10 @@ class Summarizer:
         message_buffer_limit: int = 10,
         message_buffer_min: int = 3,
         partial_evict_summarizer_percentage: float = 0.30,
+        agent_manager: Optional[AgentManager] = None,
+        message_manager: Optional[MessageManager] = None,
+        actor: Optional[User] = None,
+        agent_id: Optional[str] = None,
     ):
         self.mode = mode
 
@@ -45,6 +51,12 @@ class Summarizer:
         self.message_buffer_min = message_buffer_min
         self.summarizer_agent = summarizer_agent
         self.partial_evict_summarizer_percentage = partial_evict_summarizer_percentage
+
+        # for partial buffer only
+        self.agent_manager = agent_manager
+        self.message_manager = message_manager
+        self.actor = actor
+        self.agent_id = agent_id
 
     @trace_method
     async def summarize(
@@ -121,9 +133,6 @@ class Summarizer:
             logger.debug("Not forcing summarization, returning in-context messages as is.")
             return all_in_context_messages, False
 
-        # Very ugly code to pull LLMConfig etc from the SummarizerAgent if we're not using it for anything else
-        assert self.summarizer_agent is not None
-
         # First step: determine how many messages to retain
         total_message_count = len(all_in_context_messages)
         assert self.partial_evict_summarizer_percentage >= 0.0 and self.partial_evict_summarizer_percentage <= 1.0
@@ -147,15 +156,13 @@ class Summarizer:
 
         # Dynamically get the LLMConfig from the summarizer agent
         # Pretty cringe code here that we need the agent for this but we don't use it
-        agent_state = await self.summarizer_agent.agent_manager.get_agent_by_id_async(
-            agent_id=self.summarizer_agent.agent_id, actor=self.summarizer_agent.actor
-        )
+        agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=self.agent_id, actor=self.actor)
 
         # TODO if we do this via the "agent", then we can more easily allow toggling on the memory block version
         summary_message_str = await simple_summary(
             messages=messages_to_summarize,
             llm_config=agent_state.llm_config,
-            actor=self.summarizer_agent.actor,
+            actor=self.actor,
             include_ack=True,
         )
 
@@ -185,9 +192,9 @@ class Summarizer:
         )[0]
 
         # Create the message in the DB
-        await self.summarizer_agent.message_manager.create_many_messages_async(
+        await self.message_manager.create_many_messages_async(
             pydantic_msgs=[summary_message_obj],
-            actor=self.summarizer_agent.actor,
+            actor=self.actor,
         )
 
         updated_in_context_messages = all_in_context_messages[assistant_message_index:]
@@ -354,7 +361,11 @@ async def simple_summary(messages: List[Message], llm_config: LLMConfig, actor: 
     # NOTE: we should disable the inner_thoughts_in_kwargs here, because we don't use it
     # I'm leaving it commented it out for now for safety but is fine assuming the var here is a copy not a reference
     # llm_config.put_inner_thoughts_in_kwargs = False
-    response_data = await llm_client.request_async(request_data, llm_config)
+    try:
+        response_data = await llm_client.request_async(request_data, llm_config)
+    except Exception as e:
+        # handle LLM error (likely a context window exceeded error)
+        raise llm_client.handle_llm_error(e)
     response = llm_client.convert_response_to_chat_completion(response_data, input_messages_obj, llm_config)
     if response.choices[0].message.content is None:
         logger.warning("No content returned from summarizer")

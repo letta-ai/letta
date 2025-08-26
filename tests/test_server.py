@@ -485,7 +485,7 @@ def test_delete_agent_same_org(server: SyncServer, org_id: str, user: User):
 
 
 @pytest.mark.asyncio
-async def test_read_local_llm_configs(server: SyncServer, user: User, event_loop):
+async def test_read_local_llm_configs(server: SyncServer, user: User):
     configs_base_dir = os.path.join(os.path.expanduser("~"), ".letta", "llm_configs")
     clean_up_dir = False
     if not os.path.exists(configs_base_dir):
@@ -1016,7 +1016,7 @@ async def test_add_remove_tools_update_agent(server: SyncServer, user_id: str, b
 
 
 @pytest.mark.asyncio
-async def test_messages_with_provider_override(server: SyncServer, user_id: str, event_loop):
+async def test_messages_with_provider_override(server: SyncServer, user_id: str):
     actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
     provider = server.provider_manager.create_provider(
         request=ProviderCreate(
@@ -1096,7 +1096,7 @@ async def test_messages_with_provider_override(server: SyncServer, user_id: str,
 
 
 @pytest.mark.asyncio
-async def test_unique_handles_for_provider_configs(server: SyncServer, user: User, event_loop):
+async def test_unique_handles_for_provider_configs(server: SyncServer, user: User):
     models = await server.list_llm_models_async(actor=user)
     model_handles = [model.handle for model in models]
     assert sorted(model_handles) == sorted(list(set(model_handles))), "All models should have unique handles"

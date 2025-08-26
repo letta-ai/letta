@@ -608,13 +608,58 @@ def generate_tool_schema_for_mcp(
     # Normalise so downstream code can treat it consistently.
     parameters_schema.setdefault("required", [])
 
+    # Process properties to handle anyOf types and make optional fields strict-compatible
+    if "properties" in parameters_schema:
+        for field_name, field_props in parameters_schema["properties"].items():
+            # Handle anyOf types by flattening to type array
+            if "anyOf" in field_props and "type" not in field_props:
+                types = []
+                format_value = None
+                for option in field_props["anyOf"]:
+                    if "type" in option:
+                        types.append(option["type"])
+                        # Capture format if present (e.g., uuid format for strings)
+                        if "format" in option and not format_value:
+                            format_value = option["format"]
+                if types:
+                    # Deduplicate types using set
+                    field_props["type"] = list(set(types))
+                    # Only add format if the field is not optional (doesn't have null type)
+                    if format_value and len(field_props["type"]) == 1 and "null" not in field_props["type"]:
+                        field_props["format"] = format_value
+                    # Remove the anyOf since we've flattened it
+                    del field_props["anyOf"]
+
+            # For strict mode: heal optional fields by making them required with null type
+            if strict and field_name not in parameters_schema["required"]:
+                # Field is optional - add it to required array
+                parameters_schema["required"].append(field_name)
+
+                # Ensure the field can accept null to maintain optionality
+                if "type" in field_props:
+                    if isinstance(field_props["type"], list):
+                        # Already an array of types - add null if not present
+                        if "null" not in field_props["type"]:
+                            field_props["type"].append("null")
+                        # Deduplicate
+                        field_props["type"] = list(set(field_props["type"]))
+                    elif field_props["type"] != "null":
+                        # Single type - convert to array with null
+                        field_props["type"] = list(set([field_props["type"], "null"]))
+                elif "anyOf" in field_props:
+                    # If there's still an anyOf, ensure null is one of the options
+                    has_null = any(opt.get("type") == "null" for opt in field_props["anyOf"])
+                    if not has_null:
+                        field_props["anyOf"].append({"type": "null"})
+
     # Add the optional heartbeat parameter
     if append_heartbeat:
         parameters_schema["properties"][REQUEST_HEARTBEAT_PARAM] = {
             "type": "boolean",
             "description": REQUEST_HEARTBEAT_DESCRIPTION,
         }
-        parameters_schema["required"].append(REQUEST_HEARTBEAT_PARAM)
+        if REQUEST_HEARTBEAT_PARAM not in parameters_schema["required"]:
+            parameters_schema["required"].append(REQUEST_HEARTBEAT_PARAM)
 
     # Return the final schema
     if strict:

@@ -39,12 +39,10 @@ def enable_strict_mode(tool_schema: Dict[str, Any]) -> Dict[str, Any]:
 
     # Ensure parameters is a valid dictionary
     parameters = schema.get("parameters", {})
-
     if isinstance(parameters, dict) and parameters.get("type") == "object":
         # Set additionalProperties to False
         parameters["additionalProperties"] = False
         schema["parameters"] = parameters
-
     # Remove the metadata fields from the schema
     schema.pop(MCP_TOOL_METADATA_SCHEMA_STATUS, None)
     schema.pop(MCP_TOOL_METADATA_SCHEMA_WARNINGS, None)

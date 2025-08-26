@@ -547,7 +547,7 @@ async def add_mcp_server_to_config(
                     server_name=request.server_name,
                     server_type=request.type,
                     server_url=request.server_url,
-                    token=request.resolve_token() if not request.custom_headers else None,
+                    token=request.resolve_token(),
                     custom_headers=request.custom_headers,
                 )
             elif isinstance(request, StreamableHTTPServerConfig):
@@ -555,7 +555,7 @@ async def add_mcp_server_to_config(
                     server_name=request.server_name,
                     server_type=request.type,
                     server_url=request.server_url,
-                    token=request.resolve_token() if not request.custom_headers else None,
+                    token=request.resolve_token(),
                     custom_headers=request.custom_headers,
                 )
 

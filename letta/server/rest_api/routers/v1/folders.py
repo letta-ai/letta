@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from starlette import status
+from starlette.responses import Response
 
 import letta.constants as constants
 from letta.helpers.pinecone_utils import (
@@ -34,7 +35,7 @@ from letta.services.file_processor.file_types import get_allowed_media_types, ge
 from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
-from letta.utils import safe_create_task, sanitize_filename
+from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
@@ -138,8 +139,11 @@ async def create_folder(
     # TODO: need to asyncify this
     if not folder_create.embedding_config:
         if not folder_create.embedding:
-            # TODO: modify error type
-            raise ValueError("Must specify either embedding or embedding_config in request")
+            if settings.default_embedding_handle is None:
+                # TODO: modify error type
+                raise ValueError("Must specify either embedding or embedding_config in request")
+            else:
+                folder_create.embedding = settings.default_embedding_handle
         folder_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=folder_create.embedding,
             embedding_chunk_size=folder_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
@@ -257,13 +261,16 @@ async def upload_file_to_folder(
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name
-    original_filename = sanitize_filename(name if name else file.filename)  # Basic sanitization only
+    # If custom name is provided, use it directly (it's just metadata, not a filesystem path)
+    # Otherwise, sanitize the uploaded filename for security
+    original_filename = name if name else sanitize_filename(file.filename)  # Basic sanitization only
 
     # Check if duplicate exists
     existing_file = await server.file_manager.get_file_by_original_name_and_source(
         original_filename=original_filename, source_id=folder_id, actor=actor
     )
 
+    unique_filename = None
     if existing_file:
         # Duplicate found, handle based on strategy
         if duplicate_handling == DuplicateFileHandling.ERROR:
@@ -305,8 +312,11 @@ async def upload_file_to_folder(
 
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")
-    safe_create_task(
+    safe_create_file_processing_task(
         load_file_to_source_cloud(server, agent_states, content, folder_id, actor, folder.embedding_config, file_metadata),
+        file_metadata=file_metadata,
+        server=server,
+        actor=actor,
         logger=logger,
         label="file_processor.process",
     )

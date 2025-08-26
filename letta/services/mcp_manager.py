@@ -41,6 +41,7 @@ from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPCl
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.services.tool_manager import ToolManager
+from letta.settings import tool_settings
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -55,19 +56,18 @@ class MCPManager:
         self.cached_mcp_servers = {}  # maps id -> async connection
 
     @enforce_types
-    async def list_mcp_server_tools(self, mcp_server_name: str, actor: PydanticUser) -> List[MCPTool]:
+    async def list_mcp_server_tools(self, mcp_server_name: str, actor: PydanticUser, agent_id: Optional[str] = None) -> List[MCPTool]:
         """Get a list of all tools for a specific MCP server."""
         mcp_client = None
         try:
             mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
             mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
             server_config = mcp_config.to_config()
-            mcp_client = await self.get_mcp_client(server_config, actor)
+            mcp_client = await self.get_mcp_client(server_config, actor, agent_id=agent_id)
             await mcp_client.connect_to_server()
 
             # list tools
             tools = await mcp_client.list_tools()
-
             # Add health information to each tool
             for tool in tools:
                 if tool.inputSchema:
@@ -92,33 +92,34 @@ class MCPManager:
         tool_args: Optional[Dict[str, Any]],
         environment_variables: Dict[str, str],
         actor: PydanticUser,
+        agent_id: Optional[str] = None,
     ) -> Tuple[str, bool]:
         """Call a specific tool from a specific MCP server."""
-        from letta.settings import tool_settings
+        mcp_client = None
+        try:
+            if not tool_settings.mcp_read_from_config:
+                # read from DB
+                mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
+                mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
+                server_config = mcp_config.to_config(environment_variables)
+            else:
+                # read from config file
+                mcp_config = self.read_mcp_config()
+                if mcp_server_name not in mcp_config:
+                    raise ValueError(f"MCP server {mcp_server_name} not found in config.")
+                server_config = mcp_config[mcp_server_name]
 
-        if not tool_settings.mcp_read_from_config:
-            # read from DB
-            mcp_server_id = await self.get_mcp_server_id_by_name(mcp_server_name, actor=actor)
-            mcp_config = await self.get_mcp_server_by_id_async(mcp_server_id, actor=actor)
-            server_config = mcp_config.to_config(environment_variables)
-        else:
-            # read from config file
-            mcp_config = self.read_mcp_config()
-            if mcp_server_name not in mcp_config:
-                raise ValueError(f"MCP server {mcp_server_name} not found in config.")
-            server_config = mcp_config[mcp_server_name]
+            mcp_client = await self.get_mcp_client(server_config, actor, agent_id=agent_id)
+            await mcp_client.connect_to_server()
 
-        mcp_client = await self.get_mcp_client(server_config, actor)
-        await mcp_client.connect_to_server()
-
-        # call tool
-        result, success = await mcp_client.execute_tool(tool_name, tool_args)
-        logger.info(f"MCP Result: {result}, Success: {success}")
-        # TODO: change to pydantic tool
-
-        await mcp_client.cleanup()
-
-        return result, success
+            # call tool
+            result, success = await mcp_client.execute_tool(tool_name, tool_args)
+            logger.info(f"MCP Result: {result}, Success: {success}")
+            # TODO: change to pydantic tool
+            return result, success
+        finally:
+            if mcp_client:
+                await mcp_client.cleanup()
 
     @enforce_types
     async def add_tool_from_mcp_server(self, mcp_server_name: str, mcp_tool_name: str, actor: PydanticUser) -> PydanticTool:
@@ -129,7 +130,6 @@ class MCPManager:
             raise ValueError(f"MCP server '{mcp_server_name}' not found")
 
         mcp_tools = await self.list_mcp_server_tools(mcp_server_name, actor=actor)
-
         for mcp_tool in mcp_tools:
             # TODO: @jnjpng move health check to tool class
             if mcp_tool.name == mcp_tool_name:
@@ -450,6 +450,7 @@ class MCPManager:
         server_config: Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig],
         actor: PydanticUser,
         oauth_provider: Optional[Any] = None,
+        agent_id: Optional[str] = None,
     ) -> Union[AsyncSSEMCPClient, AsyncStdioMCPClient, AsyncStreamableHTTPMCPClient]:
         """
         Helper function to create the appropriate MCP client based on server configuration.
@@ -482,13 +483,13 @@ class MCPManager:
 
         if server_config.type == MCPServerType.SSE:
             server_config = SSEServerConfig(**server_config.model_dump())
-            return AsyncSSEMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+            return AsyncSSEMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
         elif server_config.type == MCPServerType.STDIO:
             server_config = StdioServerConfig(**server_config.model_dump())
-            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+            return AsyncStdioMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
         elif server_config.type == MCPServerType.STREAMABLE_HTTP:
             server_config = StreamableHTTPServerConfig(**server_config.model_dump())
-            return AsyncStreamableHTTPMCPClient(server_config=server_config, oauth_provider=oauth_provider)
+            return AsyncStreamableHTTPMCPClient(server_config=server_config, oauth_provider=oauth_provider, agent_id=agent_id)
         else:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 

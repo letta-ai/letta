@@ -2,18 +2,17 @@ import asyncio
 import mimetypes
 import os
 import tempfile
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from starlette import status
+from starlette.responses import Response
 
 import letta.constants as constants
 from letta.helpers.pinecone_utils import (
     delete_file_records_from_pinecone_index,
     delete_source_records_from_pinecone_index,
-    list_pinecone_index_for_files,
     should_use_pinecone,
 )
 from letta.log import get_logger
@@ -35,13 +34,12 @@ from letta.services.file_processor.file_types import get_allowed_media_types, ge
 from letta.services.file_processor.parser.markitdown_parser import MarkitdownFileParser
 from letta.services.file_processor.parser.mistral_parser import MistralFileParser
 from letta.settings import settings
-from letta.utils import safe_create_task, sanitize_filename
+from letta.utils import safe_create_file_processing_task, safe_create_task, sanitize_filename
 
 logger = get_logger(__name__)
 
 # Register all supported file types with Python's mimetypes module
 register_mime_types()
-
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -139,8 +137,11 @@ async def create_source(
     # TODO: need to asyncify this
     if not source_create.embedding_config:
         if not source_create.embedding:
-            # TODO: modify error type
-            raise ValueError("Must specify either embedding or embedding_config in request")
+            if settings.default_embedding_handle is None:
+                # TODO: modify error type
+                raise ValueError("Must specify either embedding or embedding_config in request")
+            else:
+                source_create.embedding = settings.default_embedding_handle
         source_create.embedding_config = await server.get_embedding_config_from_handle_async(
             handle=source_create.embedding,
             embedding_chunk_size=source_create.embedding_chunk_size or constants.DEFAULT_EMBEDDING_CHUNK_SIZE,
@@ -258,7 +259,9 @@ async def upload_file_to_source(
 
     # Store original filename and handle duplicate logic
     # Use custom name if provided, otherwise use the uploaded file's name
-    original_filename = sanitize_filename(name if name else file.filename)  # Basic sanitization only
+    # If custom name is provided, use it directly (it's just metadata, not a filesystem path)
+    # Otherwise, sanitize the uploaded filename for security
+    original_filename = name if name else sanitize_filename(file.filename)  # Basic sanitization only
 
     # Check if duplicate exists
     existing_file = await server.file_manager.get_file_by_original_name_and_source(
@@ -307,8 +310,11 @@ async def upload_file_to_source(
 
     # Use cloud processing for all files (simple files always, complex files with Mistral key)
     logger.info("Running experimental cloud based file processing...")
-    safe_create_task(
+    safe_create_file_processing_task(
         load_file_to_source_cloud(server, agent_states, content, source_id, actor, source.embedding_config, file_metadata),
+        file_metadata=file_metadata,
+        server=server,
+        actor=actor,
         logger=logger,
         label="file_processor.process",
     )
@@ -358,6 +364,10 @@ async def list_source_files(
     limit: int = Query(1000, description="Number of files to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     include_content: bool = Query(False, description="Whether to include full file content"),
+    check_status_updates: bool = Query(
+        True,
+        description="Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.",
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
@@ -372,6 +382,7 @@ async def list_source_files(
         actor=actor,
         include_content=include_content,
         strip_directory_prefix=True,  # TODO: Reconsider this. This is purely for aesthetics.
+        check_status_updates=check_status_updates,
     )
 
 
@@ -400,51 +411,8 @@ async def get_file_metadata(
     if file_metadata.source_id != source_id:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found in source {source_id}.")
 
-    # Check for timeout if status is not terminal
-    if not file_metadata.processing_status.is_terminal_state():
-        if file_metadata.created_at:
-            # Handle timezone differences between PostgreSQL (timezone-aware) and SQLite (timezone-naive)
-            if settings.letta_pg_uri_no_default:
-                # PostgreSQL: both datetimes are timezone-aware
-                timeout_threshold = datetime.now(timezone.utc) - timedelta(minutes=settings.file_processing_timeout_minutes)
-                file_created_at = file_metadata.created_at
-            else:
-                # SQLite: both datetimes should be timezone-naive
-                timeout_threshold = datetime.utcnow() - timedelta(minutes=settings.file_processing_timeout_minutes)
-                file_created_at = file_metadata.created_at
-
-            if file_created_at < timeout_threshold:
-                # Move file to error status with timeout message
-                timeout_message = settings.file_processing_timeout_error_message.format(settings.file_processing_timeout_minutes)
-                try:
-                    file_metadata = await server.file_manager.update_file_status(
-                        file_id=file_metadata.id, actor=actor, processing_status=FileProcessingStatus.ERROR, error_message=timeout_message
-                    )
-                except ValueError as e:
-                    # state transition was blocked - log it but don't fail the request
-                    logger.warning(f"Could not update file to timeout error state: {str(e)}")
-                    # continue with existing file_metadata
-
-    if should_use_pinecone() and file_metadata.processing_status == FileProcessingStatus.EMBEDDING:
-        ids = await list_pinecone_index_for_files(file_id=file_id, actor=actor)
-        logger.info(
-            f"Embedded chunks {len(ids)}/{file_metadata.total_chunks} for {file_id} ({file_metadata.file_name}) in organization {actor.organization_id}"
-        )
-
-        if len(ids) != file_metadata.chunks_embedded or len(ids) == file_metadata.total_chunks:
-            if len(ids) != file_metadata.total_chunks:
-                file_status = file_metadata.processing_status
-            else:
-                file_status = FileProcessingStatus.COMPLETED
-            try:
-                file_metadata = await server.file_manager.update_file_status(
-                    file_id=file_metadata.id, actor=actor, chunks_embedded=len(ids), processing_status=file_status
-                )
-            except ValueError as e:
-                # state transition was blocked - this is a race condition
-                # log it but don't fail the request since we're just reading metadata
-                logger.warning(f"Race condition detected in get_file_metadata: {str(e)}")
-                # return the current file state without updating
+    # Check and update file status (timeout check and pinecone embedding sync)
+    file_metadata = await server.file_manager.check_and_update_file_status(file_metadata, actor)
 
     return file_metadata
 

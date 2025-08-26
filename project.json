@@ -7,7 +7,7 @@
     "lock": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry lock --no-update",
+        "command": "uv lock --no-update",
         "cwd": "apps/core"
       }
     },
@@ -26,10 +26,7 @@
     "dev": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "commands": [
-          "./otel/start-otel-collector.sh",
-          "poetry run letta server"
-        ],
+        "commands": ["./otel/start-otel-collector.sh", "uv run letta server"],
         "parallel": true,
         "cwd": "apps/core"
       }
@@ -39,7 +36,7 @@
       "options": {
         "commands": [
           "./otel/start-otel-collector.sh",
-          "poetry run letta server --debug --reload"
+          "uv run letta server --debug --reload"
         ],
         "parallel": true,
         "cwd": "apps/core"
@@ -58,21 +55,21 @@
     "install": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry install --all-extras",
+        "command": "uv sync --all-extras",
         "cwd": "apps/core"
       }
     },
     "lint": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run isort --profile black . && poetry run black . && poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .",
+        "command": "uv run isort --profile black . && uv run black . && uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .",
         "cwd": "apps/core"
       }
     },
     "database:migrate": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run alembic upgrade head",
+        "command": "uv run alembic upgrade head",
         "cwd": "apps/core"
       }
     },
@@ -83,7 +80,7 @@
         "{workspaceRoot}/coverage/apps/core"
       ],
       "options": {
-        "command": "poetry run pytest tests/",
+        "command": "uv run pytest tests/",
         "cwd": "apps/core"
       }
     }

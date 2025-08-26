@@ -13,6 +13,7 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.tool_execution_helper import add_pre_execution_message, enable_strict_mode, remove_request_heartbeat
 from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIChatCompletionsStreamingInterface
 from letta.log import get_logger
+from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState, AgentType
 from letta.schemas.enums import MessageRole, ToolType
 from letta.schemas.letta_response import LettaResponse
@@ -35,7 +36,6 @@ from letta.server.rest_api.utils import (
 )
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
-from letta.services.helpers.agent_manager_helper import compile_system_message_async
 from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
@@ -144,7 +144,7 @@ class VoiceAgent(BaseAgent):
 
         in_context_messages = await self.message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=self.actor)
         memory_edit_timestamp = get_utc_time()
-        in_context_messages[0].content[0].text = await compile_system_message_async(
+        in_context_messages[0].content[0].text = await PromptGenerator.compile_system_message_async(
             system_prompt=agent_state.system,
             in_context_memory=agent_state.memory,
             in_context_memory_last_edit=memory_edit_timestamp,

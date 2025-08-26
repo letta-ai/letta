@@ -1,4 +1,3 @@
-import asyncio
 from typing import List, Optional
 
 import pytest
@@ -34,14 +33,6 @@ from tests.utils import create_tool_from_func
 # ------------------------------
 # Fixtures
 # ------------------------------
-
-
-@pytest.fixture(scope="module")
-def event_loop():
-    """Use a single asyncio loop for the entire test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 def _clear_tables():

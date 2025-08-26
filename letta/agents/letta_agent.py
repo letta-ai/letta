@@ -137,6 +137,10 @@ class LettaAgent(BaseAgent):
             message_buffer_limit=message_buffer_limit,
             message_buffer_min=message_buffer_min,
             partial_evict_summarizer_percentage=partial_evict_summarizer_percentage,
+            agent_manager=self.agent_manager,
+            message_manager=self.message_manager,
+            actor=self.actor,
+            agent_id=self.agent_id,
         )
 
     async def _check_run_cancellation(self) -> bool:
@@ -345,16 +349,17 @@ class LettaAgent(BaseAgent):
                 agent_step_span.end()
 
                 # Log LLM Trace
-                await self.telemetry_manager.create_provider_trace_async(
-                    actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
-                        request_json=request_data,
-                        response_json=response_data,
-                        step_id=step_id,  # Use original step_id for telemetry
-                        organization_id=self.actor.organization_id,
-                    ),
-                )
-                step_progression = StepProgression.LOGGED_TRACE
+                if settings.track_provider_trace:
+                    await self.telemetry_manager.create_provider_trace_async(
+                        actor=self.actor,
+                        provider_trace_create=ProviderTraceCreate(
+                            request_json=request_data,
+                            response_json=response_data,
+                            step_id=step_id,  # Use original step_id for telemetry
+                            organization_id=self.actor.organization_id,
+                        ),
+                    )
+                    step_progression = StepProgression.LOGGED_TRACE
 
                 # stream step
                 # TODO: improve TTFT
@@ -642,17 +647,18 @@ class LettaAgent(BaseAgent):
                 agent_step_span.end()
 
                 # Log LLM Trace
-                await self.telemetry_manager.create_provider_trace_async(
-                    actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
-                        request_json=request_data,
-                        response_json=response_data,
-                        step_id=step_id,  # Use original step_id for telemetry
-                        organization_id=self.actor.organization_id,
-                    ),
-                )
+                if settings.track_provider_trace:
+                    await self.telemetry_manager.create_provider_trace_async(
+                        actor=self.actor,
+                        provider_trace_create=ProviderTraceCreate(
+                            request_json=request_data,
+                            response_json=response_data,
+                            step_id=step_id,  # Use original step_id for telemetry
+                            organization_id=self.actor.organization_id,
+                        ),
+                    )
+                    step_progression = StepProgression.LOGGED_TRACE
 
-                step_progression = StepProgression.LOGGED_TRACE
                 MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
                 step_progression = StepProgression.FINISHED
 
@@ -1003,31 +1009,32 @@ class LettaAgent(BaseAgent):
                 # Log LLM Trace
                 # We are piecing together the streamed response here.
                 # Content here does not match the actual response schema as streams come in chunks.
-                await self.telemetry_manager.create_provider_trace_async(
-                    actor=self.actor,
-                    provider_trace_create=ProviderTraceCreate(
-                        request_json=request_data,
-                        response_json={
-                            "content": {
-                                "tool_call": tool_call.model_dump_json(),
-                                "reasoning": [content.model_dump_json() for content in reasoning_content],
+                if settings.track_provider_trace:
+                    await self.telemetry_manager.create_provider_trace_async(
+                        actor=self.actor,
+                        provider_trace_create=ProviderTraceCreate(
+                            request_json=request_data,
+                            response_json={
+                                "content": {
+                                    "tool_call": tool_call.model_dump_json(),
+                                    "reasoning": [content.model_dump_json() for content in reasoning_content],
+                                },
+                                "id": interface.message_id,
+                                "model": interface.model,
+                                "role": "assistant",
+                                # "stop_reason": "",
+                                # "stop_sequence": None,
+                                "type": "message",
+                                "usage": {
+                                    "input_tokens": usage.prompt_tokens,
+                                    "output_tokens": usage.completion_tokens,
+                                },
                             },
-                            "id": interface.message_id,
-                            "model": interface.model,
-                            "role": "assistant",
-                            # "stop_reason": "",
-                            # "stop_sequence": None,
-                            "type": "message",
-                            "usage": {
-                                "input_tokens": usage.prompt_tokens,
-                                "output_tokens": usage.completion_tokens,
-                            },
-                        },
-                        step_id=step_id,  # Use original step_id for telemetry
-                        organization_id=self.actor.organization_id,
-                    ),
-                )
-                step_progression = StepProgression.LOGGED_TRACE
+                            step_id=step_id,  # Use original step_id for telemetry
+                            organization_id=self.actor.organization_id,
+                        ),
+                    )
+                    step_progression = StepProgression.LOGGED_TRACE
 
                 # yields tool response as this is handled from Letta and not the response from the LLM provider
                 tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
@@ -1352,6 +1359,7 @@ class LettaAgent(BaseAgent):
     ) -> list[Message]:
         # If total tokens is reached, we truncate down
         # TODO: This can be broken by bad configs, e.g. lower bound too high, initial messages too fat, etc.
+        # TODO: `force` and `clear` seem to no longer be used, we should remove
         if force or (total_tokens and total_tokens > llm_config.context_window):
             self.logger.warning(
                 f"Total tokens {total_tokens} exceeds configured max tokens {llm_config.context_window}, forcefully clearing message history."
@@ -1363,6 +1371,7 @@ class LettaAgent(BaseAgent):
                 clear=True,
             )
         else:
+            # NOTE (Sarah): Seems like this is doing nothing?
             self.logger.info(
                 f"Total tokens {total_tokens} does not exceed configured max tokens {llm_config.context_window}, passing summarizing w/o force."
             )
@@ -1453,8 +1462,10 @@ class LettaAgent(BaseAgent):
             force_tool_call = valid_tool_names[0]
 
         allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        # Extract terminal tool names from tool rules
+        terminal_tool_names = {rule.tool_name for rule in tool_rules_solver.terminal_tool_rules}
         allowed_tools = runtime_override_tool_json_schema(
-            tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True
+            tool_list=allowed_tools, response_format=agent_state.response_format, request_heartbeat=True, terminal_tools=terminal_tool_names
         )
 
         return (

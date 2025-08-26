@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from typing import Any, Dict, Optional, Type
 
@@ -129,6 +130,18 @@ class ToolExecutionManager:
                 result.func_return = FUNCTION_RETURN_VALUE_TRUNCATED(return_str, len(return_str), tool.return_char_limit)
             return result
 
+        except asyncio.CancelledError as e:
+            self.logger.error(f"Aysnc cancellation error executing tool {function_name}: {str(e)}")
+            error_message = get_friendly_error_msg(
+                function_name=function_name,
+                exception_name=type(e).__name__,
+                exception_message=str(e),
+            )
+            return ToolExecutionResult(
+                status="error",
+                func_return=error_message,
+                stderr=[traceback.format_exc()],
+            )
         except Exception as e:
             status = "error"
             self.logger.error(f"Error executing tool {function_name}: {str(e)}")

@@ -264,7 +264,10 @@ class FileProcessor:
                 },
             )
             await self.file_manager.update_file_status(
-                file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.ERROR, error_message=str(e)
+                file_id=file_metadata.id,
+                actor=self.actor,
+                processing_status=FileProcessingStatus.ERROR,
+                error_message=str(e) if str(e) else f"File processing failed: {type(e).__name__}",
             )
 
             return []
@@ -361,7 +364,7 @@ class FileProcessor:
                 file_id=file_metadata.id,
                 actor=self.actor,
                 processing_status=FileProcessingStatus.ERROR,
-                error_message=str(e),
+                error_message=str(e) if str(e) else f"Import file processing failed: {type(e).__name__}",
             )
 
             return []

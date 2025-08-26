@@ -130,7 +130,7 @@ async def test_provider_trace_experimental_step(message, agent_state, default_us
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Get the weather in San Francisco."])
-async def test_provider_trace_experimental_step_stream(message, agent_state, default_user, event_loop):
+async def test_provider_trace_experimental_step_stream(message, agent_state, default_user):
     experimental_agent = LettaAgent(
         agent_id=agent_state.id,
         message_manager=MessageManager(),
@@ -169,7 +169,7 @@ async def test_provider_trace_experimental_step_stream(message, agent_state, def
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Get the weather in San Francisco."])
-async def test_provider_trace_step(client, agent_state, default_user, message, event_loop):
+async def test_provider_trace_step(client, agent_state, default_user, message):
     client.agents.messages.create(agent_id=agent_state.id, messages=[])
     response = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -186,7 +186,7 @@ async def test_provider_trace_step(client, agent_state, default_user, message, e
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("message", ["Get the weather in San Francisco."])
-async def test_noop_provider_trace(message, agent_state, default_user, event_loop):
+async def test_noop_provider_trace(message, agent_state, default_user):
     experimental_agent = LettaAgent(
         agent_id=agent_state.id,
         message_manager=MessageManager(),

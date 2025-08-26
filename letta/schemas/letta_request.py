@@ -46,6 +46,10 @@ class LettaStreamingRequest(LettaRequest):
         default=False,
         description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
     )
+    background: bool = Field(
+        default=False,
+        description="Whether to process the request in the background.",
+    )
 
 
 class LettaAsyncRequest(LettaRequest):
@@ -65,4 +69,22 @@ class CreateBatch(BaseModel):
         "Where 'job_id' is the unique batch job identifier, "
         "'status' is the final batch status (e.g., 'completed', 'failed'), and "
         "'completed_at' is an ISO 8601 timestamp indicating when the batch job completed.",
+    )
+
+
+class RetrieveStreamRequest(BaseModel):
+    starting_after: int = Field(
+        0, description="Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id"
+    )
+    include_pings: Optional[bool] = Field(
+        default=False,
+        description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
+    )
+    poll_interval: Optional[float] = Field(
+        default=0.1,
+        description="Seconds to wait between polls when no new data.",
+    )
+    batch_size: Optional[int] = Field(
+        default=100,
+        description="Number of entries to read per batch.",
     )

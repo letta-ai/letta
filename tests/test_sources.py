@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import tempfile
@@ -7,17 +8,19 @@ from datetime import datetime, timedelta
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import CreateBlock, DuplicateFileHandling
+from letta_client import CreateBlock
 from letta_client import Letta as LettaSDKClient
 from letta_client import LettaRequest
 from letta_client import MessageCreate as ClientMessageCreate
 from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
+from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.schemas.enums import FileProcessingStatus, ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
 from letta.settings import settings
+from tests.helpers.utils import upload_file_and_wait, upload_file_and_wait_list_files
 from tests.utils import wait_for_server
 
 # Constants
@@ -69,31 +72,6 @@ def client() -> LettaSDKClient:
     client = LettaSDKClient(base_url=server_url, token=None)
     client.tools.upsert_base_tools()
     yield client
-
-
-def upload_file_and_wait(
-    client: LettaSDKClient, source_id: str, file_path: str, max_wait: int = 60, duplicate_handling: DuplicateFileHandling = None
-):
-    """Helper function to upload a file and wait for processing to complete"""
-    with open(file_path, "rb") as f:
-        if duplicate_handling:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f, duplicate_handling=duplicate_handling)
-        else:
-            file_metadata = client.sources.files.upload(source_id=source_id, file=f)
-
-    # Wait for the file to be processed
-    start_time = time.time()
-    while file_metadata.processing_status != "completed" and file_metadata.processing_status != "error":
-        if time.time() - start_time > max_wait:
-            pytest.fail(f"File processing timed out after {max_wait} seconds")
-        time.sleep(1)
-        file_metadata = client.sources.get_file_metadata(source_id=source_id, file_id=file_metadata.id)
-        print("Waiting for file processing to complete...", file_metadata.processing_status)
-
-    if file_metadata.processing_status == "error":
-        pytest.fail(f"File processing failed: {file_metadata.error_message}")
-
-    return file_metadata
 
 
 @pytest.fixture
@@ -418,7 +396,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
         assert initial_content_length > 10, f"Expected file content > 10 chars, got {initial_content_length}"
 
     # Ask agent to open the file for a specific range using offset/length
-    offset, length = 1, 5  # 1-indexed offset, 5 lines
+    offset, length = 0, 5  # 0-indexed offset, 5 lines
     print(f"Requesting agent to open file with offset={offset}, length={length}")
     open_response1 = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -447,7 +425,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert "5: " in old_value, f"Expected line 5 to be present, got: {old_value}"
 
     # Ask agent to open the file for a different range
-    offset, length = 6, 5  # Different offset, same length
+    offset, length = 5, 5  # Different offset, same length
     open_response2 = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
@@ -476,8 +454,8 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert "10: " in new_value, f"Expected line 10 to be present, got: {new_value}"
 
     print(f"Comparing content ranges:")
-    print(f"  First range (offset=1, length=5):  '{old_value}'")
-    print(f"  Second range (offset=6, length=5): '{new_value}'")
+    print(f"  First range (offset=0, length=5):  '{old_value}'")
+    print(f"  Second range (offset=5, length=5): '{new_value}'")
 
     assert new_value != old_value, f"Different view ranges should have different content. New: '{new_value}', Old: '{old_value}'"
 
@@ -697,7 +675,7 @@ def test_view_ranges_have_metadata(disable_pinecone, client: LettaSDKClient, age
     assert block.value.startswith("[Viewing file start (out of 100 lines)]")
 
     # Open a specific range using offset/length
-    offset = 50  # 1-indexed line 50
+    offset = 49  # 0-indexed for line 50
     length = 5  # 5 lines (50-54)
     open_response = client.agents.messages.create(
         agent_id=agent_state.id,
@@ -851,6 +829,87 @@ def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClien
             os.unlink(temp_file_path)
 
 
+def test_upload_file_with_custom_name(disable_pinecone, client: LettaSDKClient):
+    """Test that uploading a file with a custom name overrides the original filename"""
+    # Create agent
+    agent_state = client.agents.create(
+        name="test_agent_custom_name",
+        memory_blocks=[
+            CreateBlock(
+                label="persona",
+                value="I am a helpful assistant",
+            ),
+            CreateBlock(
+                label="human",
+                value="The user is a developer",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    # Create source
+    source = client.sources.create(name="test_source_custom_name", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Create a temporary file with specific content
+    import tempfile
+
+    temp_file_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write("This is a test file for custom naming")
+            temp_file_path = f.name
+
+        # Upload file with custom name
+        custom_name = "my_custom_file_name.txt"
+        file_metadata = upload_file_and_wait(client, source.id, temp_file_path, name=custom_name)
+
+        # Verify the file uses the custom name
+        assert file_metadata.file_name == custom_name
+        assert file_metadata.original_file_name == custom_name
+
+        # Verify file appears in source files list with custom name
+        files = client.sources.files.list(source_id=source.id, limit=1)
+        assert len(files) == 1
+        assert files[0].file_name == custom_name
+        assert files[0].original_file_name == custom_name
+
+        # Verify the custom name is used in file blocks
+        agent_state = client.agents.retrieve(agent_id=agent_state.id)
+        file_blocks = agent_state.memory.file_blocks
+        assert len(file_blocks) == 1
+        # Check that the custom name appears in the block label
+        assert custom_name.replace(".txt", "") in file_blocks[0].label
+
+        # Test duplicate handling with custom name - upload same file with same custom name
+        from letta.schemas.enums import DuplicateFileHandling
+
+        with pytest.raises(Exception) as exc_info:
+            upload_file_and_wait(client, source.id, temp_file_path, name=custom_name, duplicate_handling=DuplicateFileHandling.ERROR)
+        assert "already exists" in str(exc_info.value).lower()
+
+        # Upload same file with different custom name should succeed
+        different_custom_name = "folder_a/folder_b/another_custom_name.txt"
+        file_metadata2 = upload_file_and_wait(client, source.id, temp_file_path, name=different_custom_name)
+        assert file_metadata2.file_name == different_custom_name
+        assert file_metadata2.original_file_name == different_custom_name
+
+        # Verify both files exist
+        files = client.sources.files.list(source_id=source.id, limit=10)
+        assert len(files) == 2
+        file_names = {f.file_name for f in files}
+        assert custom_name in file_names
+        assert different_custom_name in file_names
+
+    finally:
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+
+
 def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient):
     """Test that open_files tool schema contains correct descriptions from docstring"""
 
@@ -873,9 +932,9 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     # Check that examples are included
     assert "Examples:" in description
     assert 'FileOpenRequest(file_name="project_utils/config.py")' in description
-    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=1, length=50)' in description
+    assert 'FileOpenRequest(file_name="project_utils/config.py", offset=0, length=50)' in description
     assert "# Lines 1-50" in description
-    assert "# Lines 100-199" in description
+    assert "# Lines 101-200" in description
     assert "# Entire file" in description
     assert "close_all_others=True" in description
     assert "View specific portions of large files (e.g. functions or definitions)" in description
@@ -922,7 +981,7 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     # Check offset field
     assert "offset" in file_request_properties
     offset_prop = file_request_properties["offset"]
-    expected_offset_desc = "Optional starting line number (1-indexed). If not specified, starts from beginning of file."
+    expected_offset_desc = "Optional offset for starting line number (0-indexed). If not specified, starts from beginning of file."
     assert offset_prop["description"] == expected_offset_desc
     assert offset_prop["type"] == "integer"
 
@@ -1074,10 +1133,43 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     ), f"Search results should contain relevant content: {search_results}"
 
 
+def test_pinecone_list_files_status(client: LettaSDKClient):
+    """Test that list_source_files properly syncs embedding status with Pinecone"""
+    if not should_use_pinecone():
+        pytest.skip("Pinecone not configured (missing API key or disabled), skipping Pinecone-specific tests")
+
+    # create source
+    source = client.sources.create(name="test_list_files_status", embedding="openai/text-embedding-3-small")
+
+    file_paths = ["tests/data/long_test.txt"]
+    uploaded_files = []
+    for file_path in file_paths:
+        # use the new helper that polls via list_files
+        file_metadata = upload_file_and_wait_list_files(client, source.id, file_path)
+        uploaded_files.append(file_metadata)
+        assert file_metadata.processing_status == "completed", f"File {file_path} should be completed"
+
+    # now get files using list_source_files to verify status checking works
+    files_list = client.sources.files.list(source_id=source.id, limit=100)
+
+    # verify all files show completed status and have proper embedding counts
+    assert len(files_list) == len(uploaded_files), f"Expected {len(uploaded_files)} files, got {len(files_list)}"
+
+    for file_metadata in files_list:
+        assert file_metadata.processing_status == "completed", f"File {file_metadata.file_name} should show completed status"
+
+        # verify embedding counts for files that have chunks
+        if file_metadata.total_chunks and file_metadata.total_chunks > 0:
+            assert (
+                file_metadata.chunks_embedded == file_metadata.total_chunks
+            ), f"File {file_metadata.file_name} should have all chunks embedded: {file_metadata.chunks_embedded}/{file_metadata.total_chunks}"
+
+    # cleanup
+    client.sources.delete(source_id=source.id)
+
+
 def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     """Test that file and source deletion removes records from Pinecone"""
-    import asyncio
-
     from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
 
     if not should_use_pinecone():
@@ -1145,8 +1237,6 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     assert (
         len(records_after) == 0
     ), f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
-
-    print("✓ Pinecone lifecycle verified - namespace is clean after source deletion")
 
 
 def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
