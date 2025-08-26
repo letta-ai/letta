@@ -30,7 +30,7 @@ jobs:
 
             # Check if Linear ID is already in the title
             if [[ ! "$CURRENT_TITLE" =~ $LINEAR_ID ]]; then
-              NEW_TITLE="$LINEAR_ID: $CURRENT_TITLE"
+              NEW_TITLE="$CURRENT_TITLE [$LINEAR_ID]"
               echo "Updating title to: $NEW_TITLE"
             else
               NEW_TITLE="$CURRENT_TITLE"
