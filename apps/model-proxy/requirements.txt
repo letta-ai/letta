@@ -1,8 +1,0 @@
-#pymemgpt==0.3.18
-letta==0.7.10
-fastapi
-uvicorn
-pydantic
-pytest
-starlette_prometheus
-google-cloud-pubsub

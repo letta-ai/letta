@@ -58,7 +58,6 @@ The `configurations/` directory contains environment-specific implementations of
   - **cluster**: Dev environment's cluster infra
   - **networking**: Instantiates networking resources like VPCs and their networks
   - **database**: Development database infra
-  - **model-proxy**: Dev environment's proxy service infra (pubsub to come 😉)
   - **registry**: Dev environment's docker registry infra (pubsub to come 😉)
 
 NOTHING FROM PROD IS ACTUALLY MANAGED USING THIS TF YET

@@ -158,11 +158,6 @@ variable "dev_cypress_TOGETHER_API_KEY" {
   sensitive   = true
 }
 
-variable "dev_model_proxy_OPENAI_API_KEY" {
-  description = "OpenAI API key for model-proxy"
-  type        = string
-  sensitive   = true
-}
 
 # cloud-api secrets
 variable "dev_cloud_api_OPENAI_API_KEY" {

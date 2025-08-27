@@ -52,8 +52,6 @@ locals {
     "dev_cypress_AZURE_API_VERSION"      = var.dev_cypress_AZURE_API_VERSION
     "dev_cypress_TOGETHER_API_KEY"       = var.dev_cypress_TOGETHER_API_KEY
 
-    # model-proxy secrets
-    "dev_model-proxy_OPENAI_API_KEY" = var.dev_model_proxy_OPENAI_API_KEY
 
     # cloud-api secrets
     "dev_cloud-api_OPENAI_API_KEY" = var.dev_cloud_api_OPENAI_API_KEY

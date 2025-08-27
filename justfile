@@ -810,44 +810,6 @@ trigger-lettuce-deploy branch="" deploy_message="":
     echo "🚀 Triggering lettuce deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy Lettuce" --ref $BRANCH
 
-build-model-proxy:
-    @echo "🚧 Building model-proxy Docker image with tag: {{TAG}}..."
-    docker buildx build --progress=plain --platform=linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/model-proxy:{{TAG}} . --load --file apps/model-proxy/Dockerfile
-
-push-model-proxy:
-    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
-    docker push {{DOCKER_REGISTRY}}/model-proxy:{{TAG}}
-
-@deploy-model-proxy: push-model-proxy
-    #!/usr/bin/env bash
-    echo "🚧 Deploying model-proxy Helm chart..."
-    npm run slack-bot-says "Deploying model-proxy service with tag: {{TAG}}..."
-    if [ "{{USES_SECRETS_V2}}" = "false" ]; then
-        helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
-            --set image.repository={{DOCKER_REGISTRY}}/model-proxy \
-            --set image.tag={{TAG}} \
-            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --set env.GCP_PUBSUB_PROJECT_ID="${GCP_PUBSUB_PROJECT_ID}" \
-            --set env.GCP_PUBSUB_TOPIC_ID="${GCP_PUBSUB_TOPIC_ID}" \
-            --set env.OPENAI_API_KEY="${OPENAI_API_KEY}"
-    else
-        helm upgrade --install model-proxy {{HELM_CHARTS_DIR}}/model-proxy \
-            --set image.tag={{TAG}} \
-            --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
-    fi
-
-    npm run slack-bot-says "Successfully deployed model-proxy service with tag: {{TAG}}."
-
-# Trigger the model-proxy deployment workflow (defaults to current branch if none specified)
-trigger-model-proxy-deploy branch="" deploy_message="":
-    #!/usr/bin/env bash
-    if [ -z "{{branch}}" ]; then
-        BRANCH=$(git branch --show-current)
-    else
-        BRANCH="{{branch}}"
-    fi
-    echo "🚀 Triggering model-proxy deployment workflow on branch: $BRANCH"
-    gh workflow run "🕸️🚀 Deploy model-proxy" --ref $BRANCH
 
 
 # Send an alert to Slack with optional mention of a GitHub user
