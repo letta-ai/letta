@@ -527,7 +527,7 @@ Letta is an open source project built by over a hundred contributors. There are 
 
 * [**Join the Discord**](https://discord.gg/letta): Chat with the Letta devs and other AI developers.
 * [**Chat on our forum**](https://forum.letta.com/): If you're not into Discord, check out our developer forum.
-* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](www.youtube.com/@letta-ai) 
+* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai) 
 
 ---
 
