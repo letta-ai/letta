@@ -1,16 +1,16 @@
-import os
 import sys
 import uuid
 
 from opentelemetry.sdk.resources import Resource
 
 from letta import __version__ as letta_version
+from letta.settings import settings
 
 _resources = {}
 
 
 def get_resource(service_name: str) -> Resource:
-    _env = os.getenv("LETTA_ENVIRONMENT")
+    _env = settings.environment
     if service_name not in _resources:
         resource_dict = {
             "service.name": service_name,

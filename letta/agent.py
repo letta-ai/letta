@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import time
 import traceback
 import warnings
@@ -71,7 +70,7 @@ from letta.services.step_manager import StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, summarizer_settings
+from letta.settings import model_settings, settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
@@ -1304,7 +1303,7 @@ class Agent(BaseAgent):
         )
 
     async def get_context_window_async(self) -> ContextWindowOverview:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and os.getenv("ANTHROPIC_API_KEY"):
+        if settings.environment == "PRODUCTION" and model_settings.anthropic_api_key:
             return await self.get_context_window_from_anthropic_async()
         return await self.get_context_window_from_tiktoken_async()
 
