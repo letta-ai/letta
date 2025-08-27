@@ -78,6 +78,8 @@ The agent type `memgpt_v2_agent` implements the latest iteration of the MemGPT a
 * [Sleep-time agent](/guides/agents/architectures/sleeptime) for background memory management
 * [File-based tools](/guides/agents/sources) (`open_file`, `grep_file`, `search_file`) for memory editing
 * Unified `recall` tool replaces conversation and archival memory tools
+* `memory_insert` and `memory_replace`: used for editing the contents of memory blocks in core memory (in-context memory)
+* `memory_rethink` and `memory_finish_edits`: for reorganizing and finalizing memory operations
 
 ## Creating MemGPT Agents
 

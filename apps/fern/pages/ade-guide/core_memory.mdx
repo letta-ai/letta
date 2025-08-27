@@ -93,7 +93,7 @@ When an agent interacts with users, it can dynamically update its core memory to
 
 1. A user mentions they're allergic to nuts during a conversation
 2. The agent recognizes this as important information
-3. The agent calls the `core_memory_append` or `core_memory_replace` tool
+3. The agent calls the `memory_insert` or `memory_replace` tool
 4. The agent adds "The human has a nut allergy" to the human memory block
 5. This information persists for future conversations
 
@@ -103,8 +103,12 @@ This dynamic memory management allows agents to build and maintain a rich unders
 
 Letta provides several built-in tools for agents to manage their own memory:
 
-- **`core_memory_replace`**: Replace the entire content of a memory block
-- **`core_memory_append`**: Add new information to the end of a memory block
+- **`memory_insert`**: Insert content into a memory block
+- **`memory_replace`**: Replace content in a memory block
+- **`memory_rethink`**: Reflect on and reorganize memory contents
+- **`memory_finish_edits`**: Finalize memory editing operations
+- **`core_memory_replace`** _(Deprecated)_: Replace the entire content of a memory block
+- **`core_memory_append`** _(Deprecated)_: Add new information to the end of a memory block
 
 Agents can use these tools to maintain accurate and up-to-date memory as they learn more about the user and their environment.
 

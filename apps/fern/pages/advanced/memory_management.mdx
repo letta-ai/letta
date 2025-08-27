@@ -29,7 +29,8 @@ We'll show each of these components in the default ChatMemory class described be
 ## ChatMemory Memory
 By default, agents have a ChatMemory memory class, which is designed for a 1:1 chat between a human and agent. The ChatMemory class consists of:
 * A "human" and "persona" memory sections each with a 2k character limit
-* Two memory editing functions: core_memory_replace and core_memory_append
+* Memory editing functions: memory_insert, memory_replace, memory_rethink, and memory_finish_edits
+* Legacy functions (deprecated): core_memory_replace and core_memory_append
 
 We show the implementation of ChatMemory below:
 ```python

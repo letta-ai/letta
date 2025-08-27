@@ -10,14 +10,18 @@ Letta provides a set of pre-built tools that are available to all agents. These 
 
 By default, agents in Letta are created with a set of default tools including `send_message` (which generates a message to send to the user), core memory tools (allowing the agent to edit its memory blocks), and external memory tools (to read/write from archival memory, and to access recall memory, aka the conversation history):
 
-| Tool                       | Description                                          |
-|----------------------------|------------------------------------------------------|
-| `send_message`             | Sends a message to the human user.                   |
-| `core_memory_append`       | Append to the contents of a block in core memory.    |
-| `core_memory_replace`      | Replace the contents of a block in core memory.      |
-| `conversation_search`      | Search prior conversation history (recall memory)    |
-| `archival_memory_insert`   | Add a memory to archival memory                      |
-| `archival_memory_search`   | Search archival memory via embedding search          |
+| Tool                                       | Description                                          |
+|--------------------------------------------|------------------------------------------------------|
+| `send_message`                             | Sends a message to the human user.                   |
+| `memory_insert`                            | Insert content into a block in core memory.          |
+| `memory_replace`                           | Replace content in a block in core memory.           |
+| `memory_rethink`                           | Reflect on and reorganize core memory contents.      |
+| `memory_finish_edits`                      | Finalize memory editing operations.                  |
+| `core_memory_append` _(Deprecated)_        | Append to the contents of a block in core memory.    |
+| `core_memory_replace` _(Deprecated)_       | Replace the contents of a block in core memory.      |
+| `conversation_search`                      | Search prior conversation history (recall memory)    |
+| `archival_memory_insert`                   | Add a memory to archival memory                      |
+| `archival_memory_search`                   | Search archival memory via embedding search          |
 
 You can disable the default tools by setting `include_base_tools` to `false` during agent creation. Note that disabling the `send_message` tool may cause agent messages (intended for the user) to appear as "reasoning" messages in the API and ADE.
 
