@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from letta.orm.agent import Agent as AgentModel
@@ -18,9 +18,10 @@ from letta.utils import enforce_types
 
 
 class GroupManager:
+
     @enforce_types
     @trace_method
-    def list_groups(
+    async def list_groups_async(
         self,
         actor: PydanticUser,
         project_id: Optional[str] = None,
@@ -29,13 +30,13 @@ class GroupManager:
         after: Optional[str] = None,
         limit: Optional[int] = 50,
     ) -> list[PydanticGroup]:
-        with db_registry.session() as session:
+        async with db_registry.async_session() as session:
             filters = {"organization_id": actor.organization_id}
             if project_id:
                 filters["project_id"] = project_id
             if manager_type:
                 filters["manager_type"] = manager_type
-            groups = GroupModel.list(
+            groups = await GroupModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
@@ -276,6 +277,43 @@ class GroupManager:
 
     @enforce_types
     @trace_method
+    async def list_group_messages_async(
+        self,
+        actor: PydanticUser,
+        group_id: Optional[str] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        use_assistant_message: bool = True,
+        assistant_message_tool_name: str = "send_message",
+        assistant_message_tool_kwarg: str = "message",
+    ) -> list[LettaMessage]:
+        async with db_registry.async_session() as session:
+            filters = {
+                "organization_id": actor.organization_id,
+                "group_id": group_id,
+            }
+            messages = await MessageModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                **filters,
+            )
+
+            messages = PydanticMessage.to_letta_messages_from_list(
+                messages=[msg.to_pydantic() for msg in messages],
+                use_assistant_message=use_assistant_message,
+                assistant_message_tool_name=assistant_message_tool_name,
+                assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+            )
+
+            # TODO: filter messages to return a clean conversation history
+
+            return messages
+
+    @enforce_types
+    @trace_method
     def reset_messages(self, group_id: str, actor: PydanticUser) -> None:
         with db_registry.session() as session:
             # Ensure group is loadable by user
@@ -287,6 +325,21 @@ class GroupManager:
             ).delete(synchronize_session=False)
 
             session.commit()
+
+    @enforce_types
+    @trace_method
+    async def reset_messages_async(self, group_id: str, actor: PydanticUser) -> None:
+        async with db_registry.async_session() as session:
+            # Ensure group is loadable by user
+            group = await GroupModel.read_async(db_session=session, identifier=group_id, actor=actor)
+
+            # Delete all messages in the group
+            delete_stmt = delete(MessageModel).where(
+                MessageModel.organization_id == actor.organization_id, MessageModel.group_id == group_id
+            )
+            await session.execute(delete_stmt)
+
+            await session.commit()
 
     @enforce_types
     @trace_method
@@ -342,15 +395,15 @@ class GroupManager:
             return prev_last_processed_message_id
 
     @enforce_types
-    def size(
+    async def size(
         self,
         actor: PydanticUser,
     ) -> int:
         """
         Get the total count of groups for the given user.
         """
-        with db_registry.session() as session:
-            return GroupModel.size(db_session=session, actor=actor)
+        async with db_registry.async_session() as session:
+            return await GroupModel.size_async(db_session=session, actor=actor)
 
     def _process_agent_relationship(self, session: Session, group: GroupModel, agent_ids: List[str], allow_partial=False, replace=True):
         if not agent_ids:
