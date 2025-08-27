@@ -315,9 +315,8 @@ export async function updateAgentFromAgentTemplateId(
   let nextLLMConfig = existingAgent.llm_config;
 
 
-  if (agentTemplate.model) {
+  if (agentTemplate.model !== nextLLMConfig.model) {
     const llms = await LlmsService.listModels({
-
     }, {
       user_id: lettaAgentsUserId,
     })
