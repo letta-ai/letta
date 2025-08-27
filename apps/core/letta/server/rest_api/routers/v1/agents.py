@@ -1078,6 +1078,7 @@ async def send_message(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     # Create a new run for execution tracking
@@ -1223,8 +1224,9 @@ async def send_message_streaming(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
-    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
+    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
 
     # Create a new job for execution tracking
     if settings.track_agent_run:
@@ -1480,7 +1482,10 @@ async def _process_message_background(
             "google_vertex",
             "bedrock",
             "ollama",
+            "azure",
+            "xai",
             "groq",
+            "deepseek",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1671,6 +1676,7 @@ async def preview_raw_payload(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     if agent_eligible and model_compatible:
@@ -1742,6 +1748,7 @@ async def summarize_agent_conversation(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     if agent_eligible and model_compatible:

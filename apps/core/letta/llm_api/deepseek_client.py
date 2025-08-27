@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List, Optional
 
@@ -10,6 +11,7 @@ from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
+from letta.schemas.openai.chat_completion_request import ChatMessage, cast_message_to_subtype
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import model_settings
 
@@ -36,15 +38,19 @@ class DeepseekClient(OpenAIClient):
         data = super().build_request_data(messages, llm_config, tools, force_tool_call)
 
         def add_functions_to_system_message(system_message: ChatMessage):
-            system_message.content += f"<available functions> {''.join(json.dumps(f) for f in functions)} </available functions>"
+            system_message.content += f"<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>"
             system_message.content += 'Select best function to call simply respond with a single json block with the fields "name" and "arguments". Use double quotes around the arguments.'
+
+        openai_message_list = [cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=False)) for m in messages]
 
         if llm_config.model == "deepseek-reasoner":  # R1 currently doesn't support function calling natively
             add_functions_to_system_message(
-                data["messages"][0]
+                openai_message_list[0]
             )  # Inject additional instructions to the system prompt with the available functions
 
-            data["messages"] = map_messages_to_deepseek_format(data["messages"])
+            openai_message_list = map_messages_to_deepseek_format(openai_message_list)
+
+        data["messages"] = [m.dict() for m in openai_message_list]
 
         return data
 
@@ -94,4 +100,6 @@ class DeepseekClient(OpenAIClient):
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
         response = ChatCompletionResponse(**response_data)
+        if response.choices[0].message.tool_calls:
+            return super().convert_response_to_chat_completion(response_data, input_messages, llm_config)
         return convert_deepseek_response_to_chatcompletion(response)
