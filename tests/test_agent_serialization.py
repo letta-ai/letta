@@ -625,6 +625,7 @@ def test_agent_download_upload_flow(server, server_url, serialize_test_agent, de
     response = requests.get(
         f"{server_url}/v1/agents/{agent_id}/export",
         headers={"user_id": default_user.id},
+        params={"use_legacy_format": True},
     )
     assert response.status_code == 200, f"Download failed: {response.text}"
 

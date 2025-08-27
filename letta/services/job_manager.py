@@ -1,4 +1,3 @@
-from datetime import datetime
 from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
@@ -28,7 +27,6 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -337,11 +335,7 @@ class JobManager:
                 conditions = []
                 if before_obj:
                     # records before this cursor (older)
-
                     before_timestamp = before_obj.created_at
-                    # SQLite does not support as granular timestamping, so we need to round the timestamp
-                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_timestamp, datetime):
-                        before_timestamp = before_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
                     conditions.append(
                         or_(
@@ -353,9 +347,6 @@ class JobManager:
                 if after_obj:
                     # records after this cursor (newer)
                     after_timestamp = after_obj.created_at
-                    # SQLite does not support as granular timestamping, so we need to round the timestamp
-                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_timestamp, datetime):
-                        after_timestamp = after_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
                     conditions.append(
                         or_(JobModel.created_at > after_timestamp, and_(JobModel.created_at == after_timestamp, JobModel.id > after_obj.id))
