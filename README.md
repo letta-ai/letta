@@ -31,7 +31,7 @@ Install the following with Homebrew:
 - `node` (for npm) - [linky](https://nodejs.org/en/download)
 - `postgresql` (to build psycopg2) - [linky](https://formulae.brew.sh/formula/postgresql@14)
 ```sh
-brew install docker just uv 1password-cli node postgresql
+brew install docker just uv 1password-cli node postgresql trufflehog
 ```
 
 - `nvm` - [linky](https://github.com/nvm-sh/nvm)
