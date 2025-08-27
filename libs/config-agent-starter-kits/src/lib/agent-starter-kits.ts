@@ -16,9 +16,11 @@ export interface StarterKitTool {
 
 export type StarterKitArchitecture = 'memgpt_v2_agent' | 'memgpt' | 'sleeptime';
 
+export type StarterKitId = 'scratch' | 'sleepTime' | 'voiceSleepTime' | 'deepThought' | 'characterRoleplay' | 'personalAssistant' | 'customerSupport' | 'companion';
+
 export interface StarterKit {
   image: StaticImport | string;
-  id: string;
+  id: StarterKitId;
   name: string;
   useGetTitle: () => string;
   useGetDescription: () => string;
@@ -33,7 +35,9 @@ export function isAStarterKitName(
   return Object.keys(STARTER_KITS).includes(templateName);
 }
 
-export const STARTER_KITS = {
+export const STARTER_KITS: {
+  [K in StarterKitId]: StarterKit & { id: K }
+} = {
   scratch: {
     id: 'scratch',
     name: 'scratch-agent',
@@ -428,7 +432,7 @@ export const STARTER_KITS = {
       },
     ],
   },
-  onboarding: {
+  companion: {
     architecture: 'memgpt_v2_agent',
     id: 'companion',
     name: 'companion-agent',
@@ -472,4 +476,4 @@ export const STARTER_KITS = {
       ],
     },
   },
-} satisfies Record<string, StarterKit>;
+}
