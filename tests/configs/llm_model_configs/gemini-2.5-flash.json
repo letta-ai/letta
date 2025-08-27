@@ -4,5 +4,7 @@
   "model_endpoint_type": "google_ai",
   "model_endpoint": "https://generativelanguage.googleapis.com",
   "model_wrapper": null,
-  "put_inner_thoughts_in_kwargs": true
+  "put_inner_thoughts_in_kwargs": true,
+  "enable_reasoner": true,
+  "max_reasoning_tokens": 1
 }

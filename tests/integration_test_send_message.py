@@ -748,10 +748,15 @@ def test_tool_call(
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-    response = client.agents.messages.create(
-        agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
-    )
+    try:
+        response = client.agents.messages.create(
+            agent_id=agent_state.id,
+            messages=USER_MESSAGE_ROLL_DICE,
+        )
+    except Exception as e:
+        if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+            pytest.skip("Skipping test for flash model due to malformed function call from llm")
+        raise e
     assert_tool_call_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1628,10 +1633,15 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
     prev_length = None
 
     for attempt in range(MAX_ATTEMPTS):
-        client.agents.messages.create(
-            agent_id=temp_agent_state.id,
-            messages=[MessageCreate(role="user", content=philosophical_question)],
-        )
+        try:
+            client.agents.messages.create(
+                agent_id=temp_agent_state.id,
+                messages=[MessageCreate(role="user", content=philosophical_question)],
+            )
+        except Exception as e:
+            if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+                pytest.skip("Skipping test for flash model due to malformed function call from llm")
+            raise e
 
         temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)
         message_ids = temp_agent_state.message_ids

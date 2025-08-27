@@ -310,7 +310,7 @@ class GoogleVertexClient(LLMClientBase):
                     # This means the response is malformed like MALFORMED_FUNCTION_CALL
                     # NOTE: must be a ValueError to trigger a retry
                     if candidate.finish_reason == "MALFORMED_FUNCTION_CALL":
-                        raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}...")
+                        raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}")
                     else:
                         raise ValueError(f"Error in response data from LLM: {candidate.model_dump()}")
 
