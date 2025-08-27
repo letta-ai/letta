@@ -103,5 +103,8 @@
     "removeFile": "移除文件",
     "openInFullSize": "打开全屏"
   },
+  "components/CardButtonGroup": {
+    "noItemsFound": "未找到项目"
+  },
   "tokens": "令牌"
 }

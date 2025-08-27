@@ -3,8 +3,6 @@ import type { StorybookConfig } from '@storybook/react-vite';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { mergeConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import * as path from 'node:path';
-import React from 'react';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
@@ -30,8 +28,11 @@ const config: StorybookConfig = {
     nextConfig.resolve.alias = {
       ...nextConfig.resolve.alias,
       path: 'path-browserify', // fixes `[ERROR] require is not defined [plugin vite:dep-pre-bundle]` when running `npm run cl`
-      // 'next/image': () => React.createElement('div'),
-      // 'next/link': () => React.createElement('div'),
+      'next/image': require.resolve('../.storybook/mocks/next-image.js'),
+      'next/link': require.resolve('../.storybook/mocks/next-link.js'),
+      'next/navigation': require.resolve(
+        '../.storybook/mocks/next-navigation.js',
+      ),
     };
 
     return nextConfig;

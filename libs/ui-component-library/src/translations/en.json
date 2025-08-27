@@ -279,5 +279,8 @@
     "removeFile": "Remove file",
     "openInFullSize": "Open in full size"
   },
+  "components/CardButtonGroup": {
+    "noItemsFound": "No items found"
+  },
   "tokens": "tokens"
 }
