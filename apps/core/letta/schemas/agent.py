@@ -91,6 +91,8 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
+    deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
+    entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
     identity_ids: List[str] = Field([], description="The ids of the identities associated with this agent.")
 
     # An advanced configuration that makes it so this agent does not remember any previous messages
@@ -302,6 +304,15 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
                 raise ValueError(f"Agent type {self.agent_type} requires enable_sleeptime to be True")
 
         return self
+
+
+class InternalTemplateAgentCreate(CreateAgent):
+    """Used for Letta Cloud"""
+
+    base_template_id: str = Field(..., description="The id of the base template.")
+    template_id: str = Field(..., description="The id of the template.")
+    deployment_id: str = Field(..., description="The id of the deployment.")
+    entity_id: str = Field(..., description="The id of the entity within the template.")
 
 
 class UpdateAgent(BaseModel):

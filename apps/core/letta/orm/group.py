@@ -4,12 +4,12 @@ from typing import List, Optional
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.mixins import OrganizationMixin, ProjectMixin
+from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.group import Group as PydanticGroup
 
 
-class Group(SqlalchemyBase, OrganizationMixin, ProjectMixin):
+class Group(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateMixin):
 
     __tablename__ = "groups"
     __pydantic_model__ = PydanticGroup

@@ -759,6 +759,30 @@ export const $AgentState = {
       title: 'Base Template Id',
       description: 'The base template id of the agent.',
     },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
+    },
     identity_ids: {
       items: {
         type: 'string',
@@ -1684,7 +1708,7 @@ export const $Block = {
         },
       ],
       title: 'Name',
-      description: 'Name of the block if it is a template.',
+      description: 'The id of the template.',
     },
     is_template: {
       type: 'boolean',
@@ -1692,6 +1716,42 @@ export const $Block = {
       description:
         'Whether the block is a template (e.g. saved human/persona options).',
       default: false,
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the block.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
     },
     preserve_on_migration: {
       anyOf: [
@@ -1835,12 +1895,48 @@ export const $BlockSchema = {
         },
       ],
       title: 'Name',
-      description: 'Name of the block if it is a template.',
+      description: 'The id of the template.',
     },
     is_template: {
       type: 'boolean',
       title: 'Is Template',
       default: false,
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the block.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
     },
     preserve_on_migration: {
       anyOf: [
@@ -1952,7 +2048,7 @@ export const $BlockUpdate = {
         },
       ],
       title: 'Name',
-      description: 'Name of the block if it is a template.',
+      description: 'The id of the template.',
     },
     is_template: {
       type: 'boolean',
@@ -1960,6 +2056,42 @@ export const $BlockUpdate = {
       description:
         'Whether the block is a template (e.g. saved human/persona options).',
       default: false,
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the block.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
     },
     preserve_on_migration: {
       anyOf: [
@@ -4778,12 +4910,48 @@ export const $CreateBlock = {
         },
       ],
       title: 'Name',
-      description: 'Name of the block if it is a template.',
+      description: 'The id of the template.',
     },
     is_template: {
       type: 'boolean',
       title: 'Is Template',
       default: false,
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the block.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
     },
     preserve_on_migration: {
       anyOf: [
@@ -5308,7 +5476,7 @@ export const $FileBlock = {
         },
       ],
       title: 'Name',
-      description: 'Name of the block if it is a template.',
+      description: 'The id of the template.',
     },
     is_template: {
       type: 'boolean',
@@ -5316,6 +5484,42 @@ export const $FileBlock = {
       description:
         'Whether the block is a template (e.g. saved human/persona options).',
       default: false,
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id of the block.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
     },
     preserve_on_migration: {
       anyOf: [
@@ -6229,6 +6433,42 @@ export const $Group = {
       ],
       title: 'Project Id',
       description: 'The associated project id.',
+    },
+    template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Id',
+      description: 'The id of the template.',
+    },
+    base_template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Base Template Id',
+      description: 'The base template id.',
+    },
+    deployment_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
     },
     shared_block_ids: {
       items: {

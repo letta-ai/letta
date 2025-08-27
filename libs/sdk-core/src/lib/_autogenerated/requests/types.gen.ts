@@ -300,6 +300,14 @@ export type AgentState = {
    */
   base_template_id?: string | null;
   /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
+  /**
    * The ids of the identities associated with this agent.
    */
   identity_ids?: Array<string>;
@@ -603,13 +611,25 @@ export type Block = {
    */
   project_id?: string | null;
   /**
-   * Name of the block if it is a template.
+   * The id of the template.
    */
   name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
   is_template?: boolean;
+  /**
+   * The base template id of the block.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
   /**
    * Preserve the block on template migration.
    */
@@ -663,10 +683,22 @@ export type BlockSchema = {
    */
   project_id?: string | null;
   /**
-   * Name of the block if it is a template.
+   * The id of the template.
    */
   name?: string | null;
   is_template?: boolean;
+  /**
+   * The base template id of the block.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
   /**
    * Preserve the block on template migration.
    */
@@ -712,13 +744,25 @@ export type BlockUpdate = {
    */
   project_id?: string | null;
   /**
-   * Name of the block if it is a template.
+   * The id of the template.
    */
   name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
   is_template?: boolean;
+  /**
+   * The base template id of the block.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
   /**
    * Preserve the block on template migration.
    */
@@ -1613,10 +1657,22 @@ export type CreateBlock = {
    */
   project_id?: string | null;
   /**
-   * Name of the block if it is a template.
+   * The id of the template.
    */
   name?: string | null;
   is_template?: boolean;
+  /**
+   * The base template id of the block.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
   /**
    * Preserve the block on template migration.
    */
@@ -1847,13 +1903,25 @@ export type FileBlock = {
    */
   project_id?: string | null;
   /**
-   * Name of the block if it is a template.
+   * The id of the template.
    */
   name?: string | null;
   /**
    * Whether the block is a template (e.g. saved human/persona options).
    */
   is_template?: boolean;
+  /**
+   * The base template id of the block.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id?: string | null;
   /**
    * Preserve the block on template migration.
    */
@@ -2221,6 +2289,18 @@ export type Group = {
    * The associated project id.
    */
   project_id?: string | null;
+  /**
+   * The id of the template.
+   */
+  template_id?: string | null;
+  /**
+   * The base template id.
+   */
+  base_template_id?: string | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id?: string | null;
   shared_block_ids?: Array<string>;
   manager_agent_id?: string | null;
   termination_token?: string | null;

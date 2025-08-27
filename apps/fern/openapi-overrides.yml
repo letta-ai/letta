@@ -981,6 +981,15 @@ paths:
   /v1/voice-beta/{agent_id}/chat/completions:
     get:
       x-fern-ignore: true
+  /v1/_internal_templates/groups:
+    post:
+      x-fern-ignore: true
+  /v1/_internal_templates/agents:
+    post:
+      x-fern-ignore: true
+  /v1/_internal_templates/blocks:
+    post:
+      x-fern-ignore: true
   /v1/projects:
     get:
       x-fern-sdk-group-name:

@@ -195,6 +195,30 @@ export const CreateBlock = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   preserve_on_migration: z
     .union([
       z.boolean(),
@@ -1434,6 +1458,30 @@ export const BlockSchema = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   preserve_on_migration: z
     .union([
       z.boolean(),
@@ -1832,6 +1880,30 @@ export const Block = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   preserve_on_migration: z
     .union([
       z.boolean(),
@@ -1905,6 +1977,30 @@ export const FileBlock = z.object({
     ])
     .optional(),
   is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   preserve_on_migration: z
     .union([
       z.boolean(),
@@ -2119,6 +2215,30 @@ export const Group = z.object({
       z.undefined(),
     ])
     .optional(),
+  template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
   manager_agent_id: z
     .union([
@@ -2326,6 +2446,22 @@ export const AgentState = z.object({
     ])
     .optional(),
   base_template_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
     .union([
       z.string(),
       z.null(),
@@ -2766,6 +2902,15 @@ export const BlockUpdate = z.object({
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   is_template: z.boolean().optional(),
+  base_template_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  deployment_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  entity_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   preserve_on_migration: z
     .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),

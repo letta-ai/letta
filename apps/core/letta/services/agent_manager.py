@@ -44,7 +44,7 @@ from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
+from letta.schemas.agent import AgentType, CreateAgent, InternalTemplateAgentCreate, UpdateAgent, get_prompt_template_for_agent_type
 from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
@@ -402,6 +402,13 @@ class AgentManager:
                     per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
+                # Set template fields for InternalTemplateAgentCreate (similar to group creation)
+                if isinstance(agent_create, InternalTemplateAgentCreate):
+                    new_agent.base_template_id = agent_create.base_template_id
+                    new_agent.template_id = agent_create.template_id
+                    new_agent.deployment_id = agent_create.deployment_id
+                    new_agent.entity_id = agent_create.entity_id
+
                 if _test_only_force_id:
                     new_agent.id = _test_only_force_id
 
@@ -610,6 +617,13 @@ class AgentManager:
                     max_files_open=agent_create.max_files_open,
                     per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
+
+                # Set template fields for InternalTemplateAgentCreate (similar to group creation)
+                if isinstance(agent_create, InternalTemplateAgentCreate):
+                    new_agent.base_template_id = agent_create.base_template_id
+                    new_agent.template_id = agent_create.template_id
+                    new_agent.deployment_id = agent_create.deployment_id
+                    new_agent.entity_id = agent_create.entity_id
 
                 if _test_only_force_id:
                     new_agent.id = _test_only_force_id

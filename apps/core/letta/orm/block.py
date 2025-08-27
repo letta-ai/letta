@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, attributes, declared_attr, mapped_column, rel
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
 from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
-from letta.orm.mixins import OrganizationMixin, ProjectMixin
+from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import Human, Persona
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from letta.orm.identity import Identity
 
 
-class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin):
+class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin, TemplateMixin):
     """Blocks are sections of the LLM context, representing a specific part of the total Memory"""
 
     __tablename__ = "block"
