@@ -206,6 +206,13 @@ def test_agent(server: SyncServer, default_user, default_organization, test_bloc
 
 
 @pytest.fixture(scope="function")
+def embedding_handle_override():
+    current_handle = EmbeddingConfig.default_config(provider="openai").handle
+    assert current_handle != "letta/letta-free"  # make sure its different
+    return "letta/letta-free"
+
+
+@pytest.fixture(scope="function")
 async def test_source(server: SyncServer, default_user):
     """Fixture to create and return a test source."""
     source_data = Source(
@@ -1062,6 +1069,28 @@ class TestAgentFileImport:
         for file_id, db_id in result.id_mappings.items():
             if file_id.startswith("agent-"):
                 assert db_id != test_agent.id  # New agent should have different ID
+
+    async def test_basic_import_with_embedding_override(
+        self, server, agent_serialization_manager, test_agent, default_user, other_user, embedding_handle_override
+    ):
+        """Test basic agent import functionality with embedding override."""
+        agent_file = await agent_serialization_manager.export([test_agent.id], default_user)
+
+        embedding_config_override = await server.get_cached_embedding_config_async(actor=other_user, handle=embedding_handle_override)
+        result = await agent_serialization_manager.import_file(agent_file, other_user, override_embedding_config=embedding_config_override)
+
+        assert result.success
+        assert result.imported_count > 0
+        assert len(result.id_mappings) > 0
+
+        for file_id, db_id in result.id_mappings.items():
+            if file_id.startswith("agent-"):
+                assert db_id != test_agent.id  # New agent should have different ID
+
+        # check embedding handle
+        imported_agent_id = next(db_id for file_id, db_id in result.id_mappings.items() if file_id == "agent-0")
+        imported_agent = server.agent_manager.get_agent_by_id(imported_agent_id, other_user)
+        assert imported_agent.embedding_config.handle == embedding_handle_override
 
     async def test_import_preserves_data(self, server, agent_serialization_manager, test_agent, default_user, other_user):
         """Test that import preserves all important data."""

@@ -3209,6 +3209,14 @@ export const Body_import_agent_serialized = z.object({
   file: z.string(),
   append_copy_suffix: z.union([z.boolean(), z.undefined()]).optional(),
   override_existing_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  override_embedding_handle: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   project_id: z
     .union([
       z.string(),

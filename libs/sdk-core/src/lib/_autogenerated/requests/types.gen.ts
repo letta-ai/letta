@@ -803,6 +803,10 @@ export type Body_import_agent_serialized = {
    */
   override_existing_tools?: boolean;
   /**
+   * Override import with specific embedding handle.
+   */
+  override_embedding_handle?: string | null;
+  /**
    * The project ID to associate the uploaded agent with.
    */
   project_id?: string | null;
