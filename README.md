@@ -6,285 +6,528 @@
   </picture>
 </p>
 
-<div align="center">
-<h1>Letta (previously MemGPT)</h1>
-<h3>
+# Letta (formerly MemGPT)
 
-[Homepage](https://letta.com) // [Documentation](https://docs.letta.com) // [ADE](https://docs.letta.com/agent-development-environment) // [Letta Cloud](https://forms.letta.com/early-access)
+Letta is the platform for building stateful agents: open AI with advanced memory that learn and self-improve over time.
 
-</h3>
+### Quicklinks:
+* [**Developer Documentation**](https://docs.letta.com): Learn how create agents that learn using Python / TypeScript
+* [**Agent Development Environment (ADE)**](https://docs.letta.com/guides/ade/overview): A no-code UI for building stateful agents
+* [**Letta Desktop**](https://docs.letta.com/guides/ade/desktop): A fully-local version of the ADE, available on MacOS and Windows
+* [**Letta Cloud**](https://app.letta.com/): The fastest way to try Letta, with agents running in the cloud
 
-**👾 Letta** is an open source framework for building **stateful agents** with advanced reasoning capabilities and transparent long-term memory. The Letta framework is white box and model-agnostic.
+## Get started
 
-[![Discord](https://img.shields.io/discord/1161736243340640419?label=Discord&logo=discord&logoColor=5865F2&style=flat-square&color=5865F2)](https://discord.gg/letta)
-[![Twitter Follow](https://img.shields.io/badge/Follow-%40Letta__AI-1DA1F2?style=flat-square&logo=x&logoColor=white)](https://twitter.com/Letta_AI)
-[![arxiv 2310.08560](https://img.shields.io/badge/Research-2310.08560-B31B1B?logo=arxiv&style=flat-square)](https://arxiv.org/abs/2310.08560)
+To get started, install the Letta SDK (available for both Python and TypeScript):
 
-[![Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-silver?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/cpacker/MemGPT?style=flat-square&label=Release&color=limegreen)](https://github.com/cpacker/MemGPT/releases)
-[![Docker](https://img.shields.io/docker/v/letta/letta?style=flat-square&logo=docker&label=Docker&color=0db7ed)](https://hub.docker.com/r/letta/letta)
-[![GitHub](https://img.shields.io/github/stars/cpacker/MemGPT?style=flat-square&logo=github&label=Stars&color=gold)](https://github.com/cpacker/MemGPT)
-
-<a href="https://trendshift.io/repositories/3612" target="_blank"><img src="https://trendshift.io/api/badge/repositories/3612" alt="cpacker%2FMemGPT | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-</div>
-
-> [!IMPORTANT]
-> **Looking for MemGPT?** You're in the right place!
->
-> The MemGPT package and Docker image have been renamed to `letta` to clarify the distinction between MemGPT *agents* and the Letta API *server* / *runtime* that runs LLM agents as *services*. Read more about the relationship between MemGPT and Letta [here](https://www.letta.com/blog/memgpt-and-letta).
-
----
-
-## ⚡ Quickstart
-
-_The recommended way to use Letta is to run use Docker. To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/). For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/). You can also install Letta using `pip` (see instructions [below](#-quickstart-pip))._
-
-### 🌖 Run the Letta server
-
-> [!NOTE]
-> Letta agents live inside the Letta server, which persists them to a database. You can interact with the Letta agents inside your Letta server via the [REST API](https://docs.letta.com/api-reference) + Python / Typescript SDKs, and the [Agent Development Environment](https://app.letta.com) (a graphical interface).
-
-The Letta server can be connected to various LLM API backends ([OpenAI](https://docs.letta.com/models/openai), [Anthropic](https://docs.letta.com/models/anthropic), [vLLM](https://docs.letta.com/models/vllm), [Ollama](https://docs.letta.com/models/ollama), etc.). To enable access to these LLM API providers, set the appropriate environment variables when you use `docker run`:
+### [Python SDK](https://github.com/letta-ai/letta-python)
 ```sh
-# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
-docker run \
-  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -p 8283:8283 \
-  -e OPENAI_API_KEY="your_openai_api_key" \
-  letta/letta:latest
+pip install letta-client
 ```
 
-If you have many different LLM API keys, you can also set up a `.env` file instead and pass that to `docker run`:
+### [TypeScript / Node.js SDK](https://github.com/letta-ai/letta-node)
 ```sh
-# using a .env file instead of passing environment variables
-docker run \
-  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -p 8283:8283 \
-  --env-file .env \
-  letta/letta:latest
+npm install @letta-ai/letta-client
 ```
 
-Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the Letta ADE to access and manage your agents in a web interface.
+## Simple Hello World example
 
-### 👾 Access the ADE (Agent Development Environment)
+In the example below, we'll create a stateful agent with two memory blocks, one for itself (the `persona` block), and one for the human. We'll initialize the `human` memory block with incorrect information, and correct agent in our first message - which will trigger the agent to update its own memory with a tool call.
 
-> [!NOTE]
-> For a guided tour of the ADE, watch our [ADE walkthrough on YouTube](https://www.youtube.com/watch?v=OzSCFR0Lp5s), or read our [blog post](https://www.letta.com/blog/introducing-the-agent-development-environment) and [developer docs](https://docs.letta.com/agent-development-environment).
+*To run the examples, you'll need to get a `LETTA_API_KEY` from [Letta Cloud](https://app.letta.com/api-keys), or run your own self-hosted server (see [our guide](https://docs.letta.com/guides/selfhosting))*
 
-The Letta ADE is a graphical user interface for creating, deploying, interacting and observing with your Letta agents. For example, if you're running a Letta server to power an end-user application (such as a customer support chatbot), you can use the ADE to test, debug, and observe the agents in your server. You can also use the ADE as a general chat interface to interact with your Letta agents.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png">
-    <img alt="ADE screenshot" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" width="800">
-  </picture>
-</p>
+### Python
+```python
+from letta_client import Letta
 
-The ADE can connect to self-hosted Letta servers (e.g. a Letta server running on your laptop), as well as the Letta Cloud service. When connected to a self-hosted / private server, the ADE uses the Letta REST API to communicate with your server.
+client = Letta(token="LETTA_API_KEY")
+# client = Letta(base_url="http://localhost:8283")  # if self-hosting, set your base_url
 
-#### 🖥️ Connecting the ADE to your local Letta server
-To connect the ADE with your local Letta server, simply:
-1. Start your Letta server (`docker run ...`)
-2. Visit [https://app.letta.com](https://app.letta.com) and you will see "Local server" as an option in the left panel
+agent_state = client.agents.create(
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Chad. They like vibe coding."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, a helpful assistant."
+        }
+    ],
+    tools=["web_search", "run_code"]
+)
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png">
-    <img alt="Letta logo" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" width="800">
-  </picture>
-</p>
+print(agent_state.id)
+# agent-d9be...0846
 
-🔐 To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
-```sh
-# If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
-docker run \
-  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -p 8283:8283 \
-  --env-file .env \
-  -e SECURE=true \
-  -e LETTA_SERVER_PASSWORD=yourpassword \
-  letta/letta:latest
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Hey, nice to meet you, my name is Brad."
+        }
+    ]
+)
+
+# the agent will think, then edit its memory using a tool
+for message in response.messages:
+    print(message)
 ```
 
-#### 🌐 Connecting the ADE to an external (self-hosted) Letta server
-If your Letta server isn't running on `localhost` (for example, you deployed it on an external service like EC2):
-1. Click "Add remote server"
-2. Enter your desired server name, the IP address of the server, and the server password (if set)
+### TypeScript / Node.js
+```typescript
+import { LettaClient } from '@letta-ai/letta-client'
 
----
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });  // if self-hosting, set your baseUrl
 
-## 🧑‍🚀 Frequently asked questions (FAQ)
+const agentState = await client.agents.create({
+    model: "openai/gpt-4.1",
+    embedding: "openai/text-embedding-3-small",
+    memoryBlocks: [
+        {
+          label: "human",
+          value: "The human's name is Chad. They like vibe coding."
+        },
+        {
+          label: "persona",
+          value: "My name is Sam, a helpful assistant."
+        }
+    ],
+    tools: ["web_search", "run_code"]
+});
 
-> _"Do I need to install Docker to use Letta?"_
+console.log(agentState.id);
+// agent-d9be...0846
 
-No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `uv sync`). See instructions below.
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: "Hey, nice to meet you, my name is Brad."
+            }
+        ]
+    }
+);
 
-> _"What's the difference between installing with `pip` vs `Docker`?"_
+// the agent will think, then edit its memory using a tool
+for (const message of response.messages) {
+    console.log(message);
+}
+```
 
-Letta gives your agents persistence (they live indefinitely) by storing all your agent data in a database. Letta is designed to be used with a [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL) (the world's most popular database), however, it is not possible to install PostgreSQL via `pip`, so the `pip` install of Letta defaults to using [SQLite](https://www.sqlite.org/). If you have a PostgreSQL instance running on your own computer, you can still connect Letta (installed via `pip`) to PostgreSQL by setting the environment variable `LETTA_PG_URI`.
+## Core concepts in Letta:
 
-**Database migrations are not officially supported for Letta when using SQLite**, so if you would like to ensure that you're able to upgrade to the latest Letta version and migrate your Letta agents data, make sure that you're using PostgreSQL as your Letta database backend. Full compatability table below:
+Letta is made by the creators of [MemGPT](https://arxiv.org/abs/2310.08560), a research paper that introduced the concept of the "LLM Operating System" for memory management. The core concepts in Letta for designing stateful agents follow the MemGPT LLM OS principles:
 
-| Installation method | Start server command | Database backend | Data migrations supported? |
-|---|---|---|---|
-| `pip install letta` | `letta server` | SQLite | ❌ |
-| `pip install letta` | `export LETTA_PG_URI=...` + `letta server` | PostgreSQL | ✅ |
-| *[Install Docker](https://www.docker.com/get-started/)*  |`docker run ...` ([full command](#-run-the-letta-server)) | PostgreSQL | ✅ |
+1. [**Memory Hierarchy**](https://docs.letta.com/guides/agents/memory): Agents have self-editing memory that is split between in-context memory and out-of-context memory
+2. [**Memory Blocks**](https://docs.letta.com/guides/agents/memory-blocks): The agent's in-context memory is composed of persistent editable **memory blocks**
+3. [**Agentic Context Engineering**](https://docs.letta.com/guides/agents/context-engineering): Agents control the context window by using tools to edit, delete, or search for memory
+4. [**Perpetual Self-Improving Agents**](https://docs.letta.com/guides/agents/overview): Every "agent" is a single entity that has a perpetual (infinite) message history
 
-> _"How do I use the ADE locally?"_
+## Multi-agent shared memory ([full guide](https://docs.letta.com/guides/agents/multi-agent-shared-memory))
 
-To connect the ADE to your local Letta server, simply run your Letta server (make sure you can access `localhost:8283`) and go to [https://app.letta.com](https://app.letta.com). If you would like to use the old version of the ADE (that runs on `localhost`), downgrade to Letta version `<=0.5.0`.
+A single memory block can be attached to multiple agents, allowing to extremely powerful multi-agent shared memory setups.
+For example, you can create two agents that have their own independent memory blocks in addition to a shared memory block.
 
-> _"If I connect the ADE to my local server, does my agent data get uploaded to letta.com?"_
+### Python
+```python
+# create a shared memory block
+shared_block = client.blocks.create(
+    label="organization",
+    description="Shared information between all agents within the organization.",
+    value="Nothing here yet, we should update this over time."
+)
 
-No, the data in your Letta server database stays on your machine. The Letta ADE web application simply connects to your local Letta server (via the REST API) and provides a graphical interface on top of it to visualize your local Letta data in your browser's local state.
+# create a supervisor agent
+supervisor_agent = client.agents.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    embedding="openai/text-embedding-3-small",
+    # blocks created for this agent
+    memory_blocks=[{"label": "persona", "value": "I am a supervisor"}],
+    # pre-existing shared block that is "attached" to this agent
+    block_ids=[shared_block.id],
+)
 
-> _"Do I have to use your ADE? Can I build my own?"_
+# create a worker agent
+worker_agent = client.agents.create(
+    model="openai/gpt-4.1-mini",
+    embedding="openai/text-embedding-3-small",
+    # blocks created for this agent
+    memory_blocks=[{"label": "persona", "value": "I am a worker"}],
+    # pre-existing shared block that is "attached" to this agent
+    block_ids=[shared_block.id],
+)
+```
 
-The ADE is built on top of the (fully open source) Letta server and Letta Agents API. You can build your own application like the ADE on top of the REST API (view the documentation [here](https://docs.letta.com/api-reference)).
+### TypeScript / Node.js
+```typescript
+// create a shared memory block
+const sharedBlock = await client.blocks.create({
+    label: "organization",
+    description: "Shared information between all agents within the organization.",
+    value: "Nothing here yet, we should update this over time."
+});
 
-> _"Can I interact with Letta agents via the CLI?"_
+// create a supervisor agent
+const supervisorAgent = await client.agents.create({
+    model: "anthropic/claude-3-5-sonnet-20241022",
+    embedding: "openai/text-embedding-3-small",
+    // blocks created for this agent
+    memoryBlocks: [{ label: "persona", value: "I am a supervisor" }],
+    // pre-existing shared block that is "attached" to this agent
+    blockIds: [sharedBlock.id]
+});
 
-The recommended way to use Letta is via the REST API and ADE, however you can also access your agents via the CLI.
+// create a worker agent
+const workerAgent = await client.agents.create({
+    model: "openai/gpt-4.1-mini",
+    embedding: "openai/text-embedding-3-small",
+    // blocks created for this agent
+    memoryBlocks: [{ label: "persona", value: "I am a worker" }],
+    // pre-existing shared block that is "attached" to this agent
+    blockIds: [sharedBlock.id]
+});
+```
+
+## Sleep-time agents ([full guide](https://docs.letta.com/guides/agents/architectures/sleeptime))
+
+In Letta, you can create special **sleep-time agents** that share the memory of your primary agents, but run in the background (like an agent's "subconcious"). You can think of sleep-time agents as a special form of multi-agent architecture.
+
+To enable sleep-time agents for your agent, set the `enable_sleeptime` flag to true when creating your agent. This will automatically create a sleep-time agent in addition to your main agent which will handle the memory editing, instead of your primary agent.
+
+### Python
+```python
+agent_state = client.agents.create(
+    ...
+    enable_sleeptime=True,  # <- enable this flag to create a sleep-time agent
+)
+```
+
+### TypeScript / Node.js
+```typescript
+const agentState = await client.agents.create({
+    ...
+    enableSleeptime: true  // <- enable this flag to create a sleep-time agent
+});
+```
+
+## Saving and sharing agents with Agent File (`.af`) ([full guide](https://docs.letta.com/guides/agents/agent-file))
+
+In Letta, all agent data is persisted to disk (Postgres or SQLite), and can be easily imported and exported using the open source [Agent File](https://github.com/letta-ai/agent-file) (`.af`) file format. You can use Agent File to checkpoint your agents, as well as move your agents (and their complete state/memories) between different Letta servers, e.g. between self-hosted Letta and Letta Cloud.
 
 <details>
-<summary>View instructions for running the Letta CLI</summary>
+<summary>View code snippets</summary>
 
-You can chat with your agents via the Letta CLI tool (`letta run`). If you have a Letta Docker container running, you can use `docker exec` to run the Letta CLI inside the container:
-```sh
-# replace `<letta_container_id>` with the ID of your Letta container, found via `docker ps`
-docker exec -it <letta_container_id> letta run
+### Python
+```python
+# Import your .af file from any location
+agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/file.af", "rb"))
+
+print(f"Imported agent: {agent.id}")
+
+# Export your agent into a serialized schema object (which you can write to a file)
+schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
 ```
 
-You can also use `docker ps` within the command to automatically find the ID of your Letta container:
-```
-docker exec -it $(docker ps -q -f ancestor=letta/letta) letta run
-```
+### TypeScript / Node.js
+```typescript
+import { readFileSync } from 'fs';
+import { Blob } from 'buffer';
 
-In the CLI tool, you'll be able to create new agents, or load existing agents:
-```
-🧬 Creating new agent...
-? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
-? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.letta.com]
-->  🤖 Using persona profile: 'sam_pov'
-->  🧑 Using human profile: 'basic'
-->  🛠️  8 tools: send_message, pause_heartbeats, conversation_search, conversation_search_date, archival_memory_insert, archival_memory_search, core_memory_append, core_memory_replace
+// Import your .af file from any location
+const file = new Blob([readFileSync('/path/to/agent/file.af')])
+const agentState = await client.agents.importAgentSerialized(file, {})
 
-🎉 Created new agent 'InspiringSpinach'
+console.log(`Imported agent: ${agentState.id}`);
 
-Hit enter to begin (will request first Letta message)
-
-💭 User engaged. Recognize as Chad. Acknowledge presence and establish connection. Explore interests and engage in meaningful discourse.
-🤖 Hello, Chad. It's nice to meet you. I am keen on learning and exploring new ideas and concepts. Is there a specific topic you'd like to discuss today?
-
-> Enter your message: my name is Brad, not Chad...
-
-💭 A discrepancy in identity. Reflect this change in core memory. Apologize for the oversight, and rectify the error.
-⚡🧠 [function] updating memory with core_memory_replace
-         First name: Chad
-        → First name: Brad
-💭 Apologize for the mistake in recognizing his name, and begin the conversation anew, addressing him by the correct name this time.
-🤖 I apologize for the oversight, Brad. Let's restart. It's a pleasure to meet you, Brad. Is there a specific topic you'd like to discuss today?
-
-> Enter your message:
+// Export your agent into a serialized schema object (which you can write to a file)
+const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
 ```
 </details>
 
----
+## Model Context Protocol (MCP) and custom tools ([full guide](https://docs.letta.com/guides/mcp/overview))
 
-## ⚡ Quickstart (pip)
+Letta has rich support for MCP tools (Letta acts as an MCP client), as well as custom Python tools.
+MCP servers can be easily added within the Agent Development Environment (ADE) tool manager UI, as well as via the SDK:
 
-> [!WARNING]
-> **Database migrations are not officially supported with `SQLite`**
->
-> When you install Letta with `pip`, the default database backend is `SQLite` (you can still use an external `postgres` service with your `pip` install of Letta by setting `LETTA_PG_URI`).
->
-> We do not officially support migrations between Letta versions with `SQLite` backends, only `postgres`. If you would like to keep your agent data across multiple Letta versions we highly recommend using the Docker install method which is the easiest way to use `postgres` with Letta.
 
 <details>
+<summary>View code snippets</summary>
 
-<summary>View instructions for installing with pip</summary>
+### Python
+```python
+# List tools from an MCP server
+tools = client.tools.list_mcp_tools_by_server(mcp_server_name="weather-server")
 
-You can also install Letta with `pip`, which will default to using `SQLite` for the database backends (whereas Docker will default to using `postgres`).
+# Add a specific tool from the MCP server
+tool = client.tools.add_mcp_tool(
+    mcp_server_name="weather-server",
+    mcp_tool_name="get_weather"
+)
 
-### Step 1 - Install Letta using `pip`
-```sh
-pip install -U letta
+# Create agent with MCP tool attached
+agent_state = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_ids=[tool.id]
+)
+
+# Or attach tools to an existing agent
+client.agents.tool.attach(
+    agent_id=agent_state.id
+    tool_id=tool.id
+)
+
+# Use the agent with MCP tools
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Use the weather tool to check the forecast"
+        }
+    ]
+)
 ```
 
-### Step 2 - Set your environment variables for your chosen LLM / embedding providers
-```sh
-export OPENAI_API_KEY=sk-...
-```
+### TypeScript / Node.js
+```typescript
+// List tools from an MCP server
+const tools = await client.tools.listMcpToolsByServer("weather-server");
 
-For Ollama (see our full [documentation](https://docs.letta.com/install) for examples of how to set up various providers):
-```sh
-export OLLAMA_BASE_URL=http://localhost:11434
-```
+// Add a specific tool from the MCP server
+const tool = await client.tools.addMcpTool("weather-server", "get_weather");
 
-### Step 3 - Run the Letta CLI
+// Create agent with MCP tool
+const agentState = await client.agents.create({
+    model: "openai/gpt-4o-mini",
+    embedding: "openai/text-embedding-3-small",
+    toolIds: [tool.id]
+});
 
-You can create agents and chat with them via the Letta CLI tool (`letta run`):
-```sh
-letta run
-```
-```
-🧬 Creating new agent...
-? Select LLM model: letta-free [type=openai] [ip=https://inference.letta.com]
-? Select embedding model: letta-free [type=hugging-face] [ip=https://embeddings.letta.com]
-->  🤖 Using persona profile: 'sam_pov'
-->  🧑 Using human profile: 'basic'
-->  🛠️  8 tools: send_message, pause_heartbeats, conversation_search, conversation_search_date, archival_memory_insert, archival_memory_search, core_memory_append, core_memory_replace
-
-🎉 Created new agent 'InspiringSpinach'
-
-Hit enter to begin (will request first Letta message)
-
-💭 User engaged. Recognize as Chad. Acknowledge presence and establish connection. Explore interests and engage in meaningful discourse.
-🤖 Hello, Chad. It's nice to meet you. I am keen on learning and exploring new ideas and concepts. Is there a specific topic you'd like to discuss today?
-
-> Enter your message: my name is Brad, not Chad...
-
-💭 A discrepancy in identity. Reflect this change in core memory. Apologize for the oversight, and rectify the error.
-⚡🧠 [function] updating memory with core_memory_replace
-         First name: Chad
-        → First name: Brad
-💭 Apologize for the mistake in recognizing his name, and begin the conversation anew, addressing him by the correct name this time.
-🤖 I apologize for the oversight, Brad. Let's restart. It's a pleasure to meet you, Brad. Is there a specific topic you'd like to discuss today?
-
-> Enter your message:
-```
-
-### Step 4 - Run the Letta server
-
-You can start the Letta API server with `letta server` (see the full API reference [here](https://docs.letta.com/api-reference)):
-```sh
-letta server
-```
-```
-Initializing database...
-Running: uvicorn server:app --host localhost --port 8283
-INFO:     Started server process [47750]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://localhost:8283 (Press CTRL+C to quit)
+// Use the agent with MCP tools
+const response = await client.agents.messages.create(agentState.id, {
+    messages: [
+        {
+            role: "user",
+            content: "Use the weather tool to check the forecast"
+        }
+    ]
+});
 ```
 </details>
 
----
+## Filesystem ([full guide](https://docs.letta.com/guides/agents/filesystem))
 
-## 🤗 How to contribute
+Letta’s filesystem allow you to easily connect your agents to external files, for example: research papers, reports, medical records, or any other data in common text formats (`.pdf`, `.txt`, `.md`, `.json`, etc).
+Once you attach a folder to an agent, the agent will be able to use filesystem tools (`open_file`, `grep_file`, `search_file`) to browse the files to search for information.
+
+<details>
+<summary>View code snippets</summary>
+  
+### Python
+```python
+# get an available embedding_config
+embedding_configs = client.embedding_models.list()
+embedding_config = embedding_configs[0]
+
+# create the folder
+folder = client.folders.create(
+    name="my_folder",
+    embedding_config=embedding_config
+)
+
+# upload a file into the folder
+job = client.folders.files.upload(
+    folder_id=folder.id,
+    file=open("my_file.txt", "rb")
+)
+
+# wait until the job is completed
+while True:
+    job = client.jobs.retrieve(job.id)
+    if job.status == "completed":
+        break
+    elif job.status == "failed":
+        raise ValueError(f"Job failed: {job.metadata}")
+    print(f"Job status: {job.status}")
+    time.sleep(1)
+
+# once you attach a folder to an agent, the agent can see all files in it
+client.agents.folders.attach(agent_id=agent.id, folder_id=folder.id)
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "What data is inside of my_file.txt?"
+        }
+    ]
+)
+
+for message in response.messages:
+    print(message)
+```
+
+### TypeScript / Node.js
+```typescript
+// get an available embedding_config
+const embeddingConfigs = await client.embeddingModels.list()
+const embeddingConfig = embeddingConfigs[0];
+
+// create the folder
+const folder = await client.folders.create({
+    name: "my_folder",
+    embeddingConfig: embeddingConfig
+});
+
+// upload a file into the folder
+const uploadJob = await client.folders.files.upload(
+    createReadStream("my_file.txt"),
+    folder.id,
+);
+console.log("file uploaded")
+
+// wait until the job is completed
+while (true) {
+    const job = await client.jobs.retrieve(uploadJob.id);
+    if (job.status === "completed") {
+        break;
+    } else if (job.status === "failed") {
+        throw new Error(`Job failed: ${job.metadata}`);
+    }
+    console.log(`Job status: ${job.status}`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
+// list files in the folder
+const files = await client.folders.files.list(folder.id);
+console.log(`Files in folder: ${files}`);
+
+// list passages in the folder
+const passages = await client.folders.passages.list(folder.id);
+console.log(`Passages in folder: ${passages}`);
+
+// once you attach a folder to an agent, the agent can see all files in it
+await client.agents.folders.attach(agent.id, folder.id);
+
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: "What data is inside of my_file.txt?"
+            }
+        ]
+    }
+);
+
+for (const message of response.messages) {
+    console.log(message);
+}
+```
+</details>
+
+## Long-running agents ([full guide](https://docs.letta.com/guides/agents/long-running))
+
+When agents need to execute multiple tool calls or perform complex operations (like deep research, data analysis, or multi-step workflows), processing time can vary significantly. Letta supports both a background mode (with resumable streaming) as well as an async mode (with polling) to enable robust long-running agent executions.
+
+
+<details>
+<summary>View code snippets</summary>
+  
+### Python
+```python
+stream = client.agents.messages.create_stream(
+    agent_id=agent_state.id,
+    messages=[
+      {
+        "role": "user",
+        "content": "Run comprehensive analysis on this dataset"
+      }
+    ],
+    stream_tokens=True,
+    background=True,
+)
+run_id = None
+last_seq_id = None
+for chunk in stream:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id       # Save this to reconnect if your connection drops
+        last_seq_id = chunk.seq_id  # Save this as your resumption point for cursor-based pagination
+    print(chunk)
+
+# If disconnected, resume from last received seq_id:
+for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
+    print(chunk)
+```
+
+### TypeScript / Node.js
+```typescript
+const stream = await client.agents.messages.createStream({
+    agentId: agentState.id,
+    requestBody: {
+        messages: [
+            {
+                role: "user",
+                content: "Run comprehensive analysis on this dataset"
+            }
+        ],
+        streamTokens: true,
+        background: true,
+    }
+});
+
+let runId = null;
+let lastSeqId = null;
+for await (const chunk of stream) {
+    if (chunk.run_id && chunk.seq_id) {
+        runId = chunk.run_id;      // Save this to reconnect if your connection drops
+        lastSeqId = chunk.seq_id; // Save this as your resumption point for cursor-based pagination
+    }
+    console.log(chunk);
+}
+
+// If disconnected, resume from last received seq_id
+for await (const chunk of client.runs.stream(runId, {startingAfter: lastSeqId})) {
+    console.log(chunk);
+}
+```
+</details>
+
+## Using local models
+
+Letta is model agnostic and supports using local model providers such as [Ollama](https://docs.letta.com/guides/server/providers/ollama) and [LM Studio](https://docs.letta.com/guides/server/providers/lmstudio). You can also easily swap models inside an agent after the agent has been created, by modifying the agent state with the new model provider via the SDK or in the ADE.
+
+## Development (only needed if you need to modify the server code)
+
+*Note: this repostory contains the source code for the core Letta service (API server), not the client SDKs. The client SDKs can be found here: [Python](https://github.com/letta-ai/letta-python), [TypeScript](https://github.com/letta-ai/letta-node).*
+
+To install the Letta server from source, fork the repo, clone your fork, then use [uv](https://docs.astral.sh/uv/getting-started/installation/) to install from inside the main directory:
+```sh
+cd letta
+uv sync --all-extras
+```
+
+To run the Letta server from source, use `uv run`:
+```sh
+uv run letta server
+```
+
+## Contributing
 
 Letta is an open source project built by over a hundred contributors. There are many ways to get involved in the Letta OSS project!
 
-* **Contribute to the project**: Interested in contributing? Start by reading our [Contribution Guidelines](https://github.com/cpacker/MemGPT/tree/main/CONTRIBUTING.md).
-* **Ask a question**: Join our community on [Discord](https://discord.gg/letta) and direct your questions to the `#support` channel.
-* **Report issues or suggest features**: Have an issue or a feature request? Please submit them through our [GitHub Issues page](https://github.com/cpacker/MemGPT/issues).
-* **Explore the roadmap**: Curious about future developments? View and comment on our [project roadmap](https://github.com/cpacker/MemGPT/issues/1533).
-* **Join community events**: Stay updated with the [event calendar](https://lu.ma/berkeley-llm-meetup) or follow our [Twitter account](https://twitter.com/Letta_AI).
+* [**Join the Discord**](https://discord.gg/letta): Chat with the Letta devs and other AI developers.
+* [**Chat on our forum**](https://forum.letta.com/): If you're not into Discord, check out our developer forum.
+* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](www.youtube.com/@letta-ai) 
 
 ---
 
