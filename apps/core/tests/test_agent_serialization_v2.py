@@ -205,7 +205,7 @@ def test_agent(server: SyncServer, default_user, default_organization, test_bloc
     yield agent_state
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def test_source(server: SyncServer, default_user):
     """Fixture to create and return a test source."""
     source_data = Source(
@@ -217,7 +217,7 @@ async def test_source(server: SyncServer, default_user):
     yield source
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def test_file(server: SyncServer, default_user, test_source):
     """Fixture to create and return a test file attached to test_source."""
     from letta.schemas.file import FileMetadata
@@ -233,7 +233,7 @@ async def test_file(server: SyncServer, default_user, test_source):
     yield file_metadata
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def agent_with_files(server: SyncServer, default_user, test_block, weather_tool, test_source, test_file):
     """Fixture to create and return an agent with attached files."""
     memory_blocks = [
@@ -274,7 +274,7 @@ async def agent_with_files(server: SyncServer, default_user, test_block, weather
     return (agent_state.id, test_source.id, test_file.id)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def test_mcp_server(server: SyncServer, default_user):
     """Fixture to create and return a test MCP server."""
     from letta.schemas.mcp import MCPServer, MCPServerType
@@ -290,7 +290,7 @@ async def test_mcp_server(server: SyncServer, default_user):
     yield mcp_server
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def mcp_tool(server: SyncServer, default_user, test_mcp_server):
     """Fixture to create and return an MCP tool."""
     from letta.schemas.tool import MCPTool, ToolCreate
@@ -308,7 +308,7 @@ async def mcp_tool(server: SyncServer, default_user, test_mcp_server):
     yield mcp_tool
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def agent_with_mcp_tools(server: SyncServer, default_user, test_block, mcp_tool, test_mcp_server):
     """Fixture to create and return an agent with MCP tools."""
     memory_blocks = [
@@ -732,7 +732,7 @@ def validate_id_format(schema: AgentFileSchema) -> bool:
 class TestFileExport:
     """Test file export functionality with comprehensive validation"""
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_basic_file_export(self, default_user, agent_serialization_manager, agent_with_files):
         """Test basic file export functionality"""
         agent_id, source_id, file_id = agent_with_files
@@ -755,7 +755,7 @@ class TestFileExport:
         assert file_agent.file_id == exported.files[0].id
         assert file_agent.source_id == exported.sources[0].id
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_multiple_files_per_source(self, server, default_user, agent_serialization_manager):
         """Test export with multiple files from the same source"""
         source = await create_test_source(server, "multi-file-source", default_user)
@@ -782,7 +782,7 @@ class TestFileExport:
             assert file_agent.file_id in file_ids
             assert file_agent.source_id == source_id
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_multiple_sources_export(self, server, default_user, agent_serialization_manager):
         """Test export with files from multiple sources"""
         source1 = await create_test_source(server, "source-1", default_user)
@@ -804,7 +804,7 @@ class TestFileExport:
         for file_schema in exported.files:
             assert file_schema.source_id in source_ids
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_cross_agent_file_deduplication(self, server, default_user, agent_serialization_manager):
         """Test that files shared across agents are deduplicated in export"""
         source = await create_test_source(server, "shared-source", default_user)
@@ -828,7 +828,7 @@ class TestFileExport:
             assert file_agent.file_id == file_id
             assert file_agent.source_id == source_id
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_file_agent_relationship_preservation(self, server, default_user, agent_serialization_manager):
         """Test that file-agent relationship details are preserved"""
         source = await create_test_source(server, "test-source", default_user)
@@ -845,7 +845,7 @@ class TestFileExport:
         assert file_agent.is_open is True
         assert hasattr(file_agent, "last_accessed_at")
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_id_remapping_consistency(self, server, default_user, agent_serialization_manager):
         """Test that ID remapping is consistent across all references"""
         source = await create_test_source(server, "consistency-source", default_user)
@@ -864,7 +864,7 @@ class TestFileExport:
         assert file_agent.file_id == file_schema.id
         assert file_agent.source_id == source_schema.id
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_empty_file_relationships(self, server, default_user, agent_serialization_manager):
         """Test export of agent with no file relationships"""
         agent_create = CreateAgent(
@@ -883,7 +883,7 @@ class TestFileExport:
         agent_schema = exported.agents[0]
         assert len(agent_schema.files_agents) == 0
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_file_content_inclusion_in_export(self, default_user, agent_serialization_manager, agent_with_files):
         """Test that file content is included in export"""
         agent_id, source_id, file_id = agent_with_files
@@ -992,7 +992,7 @@ class TestAgentFileExport:
         with pytest.raises(AgentFileExportError):  # Should raise AgentFileExportError for non-existent agent
             await agent_serialization_manager.export(["non-existent-id"], default_user)
 
-    @pytest.mark.asyncio(loop_scope="session")
+    @pytest.mark.asyncio
     async def test_revision_id_automatic_setting(self, agent_serialization_manager, test_agent, default_user):
         """Test that revision_id is automatically set to the latest alembic revision."""
         agent_file = await agent_serialization_manager.export([test_agent.id], default_user)

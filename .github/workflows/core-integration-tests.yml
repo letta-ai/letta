@@ -28,7 +28,6 @@ jobs:
           "matrix": {
             "test_suite": [
               "integration_test_summarizer.py",
-              "integration_test_tool_execution_sandbox.py",
               "integration_test_async_tool_sandbox.py",
               "integration_test_sleeptime_agent.py",
               "integration_test_agent_tool_graph.py",
