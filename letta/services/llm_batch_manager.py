@@ -218,7 +218,7 @@ class LLMBatchManager:
                 query = query.where(LLMBatchJob.organization_id == actor.organization_id)
 
             if weeks is not None:
-                cutoff_datetime = datetime.datetime.utcnow() - datetime.timedelta(weeks=weeks)
+                cutoff_datetime = datetime.datetime.now(datetime.UTC) - datetime.timedelta(weeks=weeks)
                 query = query.where(LLMBatchJob.created_at >= cutoff_datetime)
 
             if batch_size is not None:

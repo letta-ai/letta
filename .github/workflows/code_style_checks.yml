@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]  # Adjust Python version matrix if needed
+        python-version: ["3.11"]  # Removed 3.12+ as minimal sets the standard. Adjust Python version matrix if needed
 
     steps:
     - name: Checkout code
@@ -20,12 +20,21 @@ jobs:
         ref: ${{ github.head_ref }}  # Checkout the PR branch
         fetch-depth: 0  # Fetch all history for all branches and tags
 
-    - name: "Setup Python, Poetry and Dependencies"
-      uses: packetcoders/action-setup-cache-python-poetry@main
+    - name: Set up python
+      id: setup-python
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        poetry-version: "2.1.3"
-        install-args: "-E dev -E postgres -E external-tools -E tests"  # Adjust as necessary
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+        activate-environment: true
+
+    - name: Install Dependencies
+      run: |
+        uv sync --extra dev --extra postgres --extra external-tools
 
     - name: Validate PR Title
       if: github.event_name == 'pull_request'
@@ -41,10 +50,10 @@ jobs:
       continue-on-error: true
 
     - name: Run isort
-      run: poetry run isort --profile black --check-only --diff .
+      run: uv run isort --profile black --check-only --diff .
 
     - name: Run Black
-      run: poetry run black --check .
+      run: uv run black --check .
 
     - name: Run Autoflake
-      run: poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
+      run: uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .

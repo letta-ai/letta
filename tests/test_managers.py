@@ -561,7 +561,6 @@ def server():
 
 
 @pytest.fixture
-@pytest.mark.asyncio
 async def default_archive(server, default_user):
     archive = await server.archive_manager.create_archive_async("test", actor=default_user)
     yield archive
@@ -700,14 +699,6 @@ def letta_batch_job(server: SyncServer, default_user) -> Job:
     return server.job_manager.create_job(BatchJob(user_id=default_user.id), actor=default_user)
 
 
-@pytest.fixture(scope="session")
-def event_loop(request):
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture
 async def file_attachment(server, default_user, sarah_agent, default_file):
     assoc, closed_files = await server.file_agent_manager.attach_file(
@@ -735,7 +726,6 @@ async def another_file(server, default_source, default_user, default_organizatio
 # ======================================================================================================================
 # AgentManager Tests - Basic
 # ======================================================================================================================
-@pytest.mark.asyncio
 async def test_validate_agent_exists_async(server: SyncServer, comprehensive_test_agent_fixture, default_user):
     """Test the validate_agent_exists_async helper function"""
     created_agent, _ = comprehensive_test_agent_fixture
@@ -1013,9 +1003,8 @@ def set_letta_environment(request):
         os.environ.pop("LETTA_ENVIRONMENT", None)
 
 
-@pytest.mark.asyncio
 async def test_get_context_window_basic(
-    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, event_loop, set_letta_environment
+    server: SyncServer, comprehensive_test_agent_fixture, default_user, default_file, set_letta_environment
 ):
     # Test agent creation
     created_agent, create_agent_request = comprehensive_test_agent_fixture
@@ -1124,10 +1113,7 @@ async def test_create_agent_with_json_in_system_message(server: SyncServer, defa
     server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
 
 
-@pytest.mark.asyncio
-async def test_update_agent(
-    server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user, event_loop
-):
+async def test_update_agent(server: SyncServer, comprehensive_test_agent_fixture, other_tool, other_source, other_block, default_user):
     agent, _ = comprehensive_test_agent_fixture
     update_agent_request = UpdateAgent(
         name="train_agent",
@@ -1615,21 +1601,18 @@ async def test_bulk_detach_tools_nonexistent_agent(server: SyncServer, print_too
         await server.agent_manager.bulk_detach_tools_async(agent_id=nonexistent_agent_id, tool_ids=tool_ids, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_attach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test attaching a tool to a nonexistent agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.attach_tool_async(agent_id="nonexistent-agent-id", tool_id=print_tool.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_attach_tool_nonexistent_tool(server: SyncServer, sarah_agent, default_user):
     """Test attaching a nonexistent tool to an agent."""
     with pytest.raises(NoResultFound):
         await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id="nonexistent-tool-id", actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_detach_tool_nonexistent_agent(server: SyncServer, print_tool, default_user):
     """Test detaching a tool from a nonexistent agent."""
     with pytest.raises(NoResultFound):
@@ -2023,7 +2006,6 @@ async def test_list_attached_agents(server: SyncServer, sarah_agent, charles_age
     assert charles_agent.id in [a.id for a in attached_agents]
 
 
-@pytest.mark.asyncio
 async def test_list_attached_agents_nonexistent_source(server: SyncServer, default_user):
     """Test listing agents for a nonexistent source."""
     with pytest.raises(NoResultFound):
@@ -2824,10 +2806,7 @@ def mock_embed_model(mock_embeddings):
     return mock_model
 
 
-@pytest.mark.asyncio
-async def test_agent_list_passages_vector_search(
-    server, default_user, sarah_agent, default_source, default_file, event_loop, mock_embed_model
-):
+async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, mock_embed_model):
     """Test vector search functionality of agent passages"""
     embed_model = mock_embed_model
 
@@ -3053,9 +3032,8 @@ def test_passage_get_by_id(server: SyncServer, agent_passage_fixture, source_pas
     assert retrieved.text == source_passage_fixture.text
 
 
-@pytest.mark.asyncio
 async def test_passage_cascade_deletion(
-    server: SyncServer, agent_passage_fixture, source_passage_fixture, default_user, default_source, sarah_agent, event_loop
+    server: SyncServer, agent_passage_fixture, source_passage_fixture, default_user, default_source, sarah_agent
 ):
     """Test that passages are deleted when their parent (agent or source) is deleted."""
     # Verify passages exist
@@ -3582,8 +3560,7 @@ async def test_update_user(server: SyncServer):
     assert user.organization_id == test_org.id
 
 
-@pytest.mark.asyncio
-async def test_user_caching(server: SyncServer, event_loop, default_user, performance_pct=0.4):
+async def test_user_caching(server: SyncServer, default_user, performance_pct=0.4):
     if isinstance(await get_redis_client(), NoopAsyncRedisClient):
         pytest.skip("redis not available")
     # Invalidate previous cache behavior.
@@ -3859,7 +3836,6 @@ async def test_upsert_base_tools(server: SyncServer, default_user):
         assert t.json_schema
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "tool_type,expected_names",
     [
@@ -3886,7 +3862,6 @@ async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool
     assert all(t.tool_type == tool_type for t in tools)
 
 
-@pytest.mark.asyncio
 async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
     allowed = {ToolType.LETTA_CORE, ToolType.LETTA_BUILTIN, ToolType.LETTA_FILES_CORE}
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=allowed)
@@ -3897,13 +3872,11 @@ async def test_upsert_multiple_tool_types(server: SyncServer, default_user):
     assert all(t.tool_type in allowed for t in tools)
 
 
-@pytest.mark.asyncio
 async def test_upsert_base_tools_with_empty_type_filter(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types=set())
     assert tools == []
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_tools_async(server: SyncServer, default_user):
     """Test bulk upserting multiple tools at once"""
     # create multiple test tools
@@ -3960,7 +3933,6 @@ async def test_bulk_upsert_tools_async(server: SyncServer, default_user):
     assert result[0].description is not None  # should be auto-generated from docstring
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user):
     """Test bulk upserting tools handles name+org_id unique constraint correctly"""
 
@@ -4003,7 +3975,6 @@ async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user)
     assert tools_with_name[0].id == original_id
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_tools_mixed_create_update(server: SyncServer, default_user):
     """Test bulk upserting with mix of new tools and updates to existing ones"""
 
@@ -4270,13 +4241,11 @@ async def test_create_tool_with_pip_requirements(server: SyncServer, default_use
     assert created_tool.pip_requirements[1].version is None
 
 
-@pytest.mark.asyncio
 async def test_create_tool_without_pip_requirements(server: SyncServer, print_tool):
     # Verify that tools without pip_requirements have the field as None
     assert print_tool.pip_requirements is None
 
 
-@pytest.mark.asyncio
 async def test_update_tool_pip_requirements(server: SyncServer, print_tool, default_user):
     # Add pip requirements to existing tool
     pip_reqs = [
@@ -4299,7 +4268,6 @@ async def test_update_tool_pip_requirements(server: SyncServer, print_tool, defa
     assert updated_tool.pip_requirements[1].version is None
 
 
-@pytest.mark.asyncio
 async def test_update_tool_clear_pip_requirements(server: SyncServer, default_user, default_organization):
     def test_tool_clear_deps():
         """
@@ -4345,7 +4313,6 @@ async def test_update_tool_clear_pip_requirements(server: SyncServer, default_us
     assert updated_tool.pip_requirements == []
 
 
-@pytest.mark.asyncio
 async def test_pip_requirements_roundtrip(server: SyncServer, default_user, default_organization):
     def roundtrip_test_tool():
         """
@@ -4604,7 +4571,6 @@ def test_create_block(server: SyncServer, default_user):
     assert block.metadata == block_create.metadata
 
 
-@pytest.mark.asyncio
 async def test_batch_create_blocks_async(server: SyncServer, default_user):
     """Test batch creating multiple blocks at once"""
     block_manager = BlockManager()
@@ -4884,10 +4850,7 @@ async def test_batch_create_multiple_blocks(server: SyncServer, default_user):
     assert expected_labels.issubset(all_labels)
 
 
-@pytest.mark.asyncio
-async def test_bulk_update_skips_missing_and_truncates_then_returns_none(
-    server: SyncServer, default_user: PydanticUser, caplog, event_loop
-):
+async def test_bulk_update_skips_missing_and_truncates_then_returns_none(server: SyncServer, default_user: PydanticUser, caplog):
     mgr = BlockManager()
 
     # create one block with a small limit
@@ -4918,7 +4881,6 @@ async def test_bulk_update_skips_missing_and_truncates_then_returns_none(
     assert reloaded.value == long_val[:5]
 
 
-@pytest.mark.asyncio
 @pytest.mark.skip(reason="TODO: implement for async")
 async def test_bulk_update_return_hydrated_true(server: SyncServer, default_user: PydanticUser):
     mgr = BlockManager()
@@ -4938,9 +4900,8 @@ async def test_bulk_update_return_hydrated_true(server: SyncServer, default_user
     assert updated[0].value == "new-val"
 
 
-@pytest.mark.asyncio
 async def test_bulk_update_respects_org_scoping(
-    server: SyncServer, default_user: PydanticUser, other_user_different_org: PydanticUser, caplog, event_loop
+    server: SyncServer, default_user: PydanticUser, other_user_different_org: PydanticUser, caplog
 ):
     mgr = BlockManager()
 
@@ -5587,7 +5548,6 @@ async def test_create_and_upsert_identity(server: SyncServer, default_user):
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_get_identities(server, default_user):
     # Create identities to retrieve later
     user = await server.identity_manager.create_identity_async(
@@ -5833,6 +5793,34 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
 
+async def test_upsert_properties(server: SyncServer, default_user):
+    identity_create = IdentityCreate(
+        identifier_key="1234",
+        name="caren",
+        identity_type=IdentityType.user,
+        properties=[
+            IdentityProperty(key="email", value="caren@letta.com", type=IdentityPropertyType.string),
+            IdentityProperty(key="age", value=28, type=IdentityPropertyType.number),
+        ],
+    )
+
+    identity = await server.identity_manager.create_identity_async(identity_create, actor=default_user)
+    properties = [
+        IdentityProperty(key="email", value="caren@gmail.com", type=IdentityPropertyType.string),
+        IdentityProperty(key="age", value="28", type=IdentityPropertyType.string),
+        IdentityProperty(key="test", value=123, type=IdentityPropertyType.number),
+    ]
+
+    updated_identity = await server.identity_manager.upsert_identity_properties_async(
+        identity_id=identity.id,
+        properties=properties,
+        actor=default_user,
+    )
+    assert updated_identity.properties == properties
+
+    await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
+
+
 # ======================================================================================================================
 # SourceManager Tests - Sources
 # ======================================================================================================================
@@ -5909,7 +5897,6 @@ async def test_create_source(server: SyncServer, default_user):
     assert source.organization_id == default_user.organization_id
 
 
-@pytest.mark.asyncio
 async def test_create_sources_with_same_name_raises_error(server: SyncServer, default_user):
     """Test that creating sources with the same name raises an IntegrityError due to unique constraint."""
     name = "Test Source"
@@ -5932,7 +5919,6 @@ async def test_create_sources_with_same_name_raises_error(server: SyncServer, de
         await server.source_manager.create_source(source=source_pydantic, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_update_source(server: SyncServer, default_user):
     """Test updating an existing source."""
     source_pydantic = PydanticSource(name="Original Source", description="Original description", embedding_config=DEFAULT_EMBEDDING_CONFIG)
@@ -5948,7 +5934,6 @@ async def test_update_source(server: SyncServer, default_user):
     assert updated_source.metadata == update_data.metadata
 
 
-@pytest.mark.asyncio
 async def test_delete_source(server: SyncServer, default_user):
     """Test deleting a source."""
     source_pydantic = PydanticSource(
@@ -5992,7 +5977,6 @@ async def test_delete_attached_source(server: SyncServer, sarah_agent, default_u
     assert agent is not None
 
 
-@pytest.mark.asyncio
 async def test_list_sources(server: SyncServer, default_user):
     """Test listing sources with pagination."""
     # Create multiple sources
@@ -6019,7 +6003,6 @@ async def test_list_sources(server: SyncServer, default_user):
     assert next_page[0].name != paginated_sources[0].name
 
 
-@pytest.mark.asyncio
 async def test_get_source_by_id(server: SyncServer, default_user):
     """Test retrieving a source by ID."""
     source_pydantic = PydanticSource(
@@ -6036,7 +6019,6 @@ async def test_get_source_by_id(server: SyncServer, default_user):
     assert retrieved_source.description == source.description
 
 
-@pytest.mark.asyncio
 async def test_get_source_by_name(server: SyncServer, default_user):
     """Test retrieving a source by name."""
     source_pydantic = PydanticSource(
@@ -6052,7 +6034,6 @@ async def test_get_source_by_name(server: SyncServer, default_user):
     assert retrieved_source.description == source.description
 
 
-@pytest.mark.asyncio
 async def test_update_source_no_changes(server: SyncServer, default_user):
     """Test update_source with no actual changes to verify logging and response."""
     source_pydantic = PydanticSource(name="No Change Source", description="No changes", embedding_config=DEFAULT_EMBEDDING_CONFIG)
@@ -6068,7 +6049,6 @@ async def test_update_source_no_changes(server: SyncServer, default_user):
     assert updated_source.description == source.description
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_sources_async(server: SyncServer, default_user):
     """Test bulk upserting sources."""
     sources_data = [
@@ -6105,7 +6085,6 @@ async def test_bulk_upsert_sources_async(server: SyncServer, default_user):
         assert source.organization_id == default_user.organization_id
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_sources_name_conflict(server: SyncServer, default_user):
     """Test bulk upserting sources with name conflicts."""
     # Create an existing source
@@ -6152,7 +6131,6 @@ async def test_bulk_upsert_sources_name_conflict(server: SyncServer, default_use
     assert new_source.description == "Completely new"
 
 
-@pytest.mark.asyncio
 async def test_bulk_upsert_sources_mixed_create_update(server: SyncServer, default_user):
     """Test bulk upserting with a mix of creates and updates."""
     # Create some existing sources
@@ -6231,7 +6209,6 @@ async def test_bulk_upsert_sources_mixed_create_update(server: SyncServer, defau
 # ======================================================================================================================
 
 
-@pytest.mark.asyncio
 async def test_get_file_by_id(server: SyncServer, default_user, default_source):
     """Test retrieving a file by ID."""
     file_metadata = PydanticFileMetadata(
@@ -6253,7 +6230,6 @@ async def test_get_file_by_id(server: SyncServer, default_user, default_source):
     assert retrieved_file.file_type == created_file.file_type
 
 
-@pytest.mark.asyncio
 async def test_create_and_retrieve_file_with_content(server, default_user, default_source, async_session):
     text_body = "Line 1\nLine 2\nLine 3"
 
@@ -6282,7 +6258,6 @@ async def test_create_and_retrieve_file_with_content(server, default_user, defau
     assert loaded.content == text_body
 
 
-@pytest.mark.asyncio
 async def test_create_file_without_content(server, default_user, default_source, async_session):
     meta = PydanticFileMetadata(
         file_name="no_body.txt",
@@ -6301,7 +6276,6 @@ async def test_create_file_without_content(server, default_user, default_source,
     assert loaded.content is None
 
 
-@pytest.mark.asyncio
 async def test_lazy_raise_guard(server, default_user, default_source, async_session):
     text_body = "lazy-raise"
 
@@ -6322,13 +6296,11 @@ async def test_lazy_raise_guard(server, default_user, default_source, async_sess
         await orm.to_pydantic_async(include_content=True)
 
 
-@pytest.mark.asyncio
 async def test_list_files_content_none(server, default_user, default_source):
     files = await server.file_manager.list_files(source_id=default_source.id, actor=default_user)
     assert all(f.content is None for f in files)
 
 
-@pytest.mark.asyncio
 async def test_delete_cascades_to_content(server, default_user, default_source, async_session):
     text_body = "to be deleted"
     meta = PydanticFileMetadata(
@@ -6350,7 +6322,6 @@ async def test_delete_cascades_to_content(server, default_user, default_source, 
     assert await _count_file_content_rows(async_session, created.id) == 0
 
 
-@pytest.mark.asyncio
 async def test_get_file_by_original_name_and_source_found(server: SyncServer, default_user, default_source):
     """Test retrieving a file by original filename and source when it exists."""
     original_filename = "test_original_file.txt"
@@ -6376,7 +6347,6 @@ async def test_get_file_by_original_name_and_source_found(server: SyncServer, de
     assert retrieved_file.source_id == default_source.id
 
 
-@pytest.mark.asyncio
 async def test_get_file_by_original_name_and_source_not_found(server: SyncServer, default_user, default_source):
     """Test retrieving a file by original filename and source when it doesn't exist."""
     non_existent_filename = "does_not_exist.txt"
@@ -6390,7 +6360,6 @@ async def test_get_file_by_original_name_and_source_not_found(server: SyncServer
     assert retrieved_file is None
 
 
-@pytest.mark.asyncio
 async def test_get_file_by_original_name_and_source_different_sources(server: SyncServer, default_user, default_source):
     """Test that files with same original name in different sources are handled correctly."""
     from letta.schemas.source import Source as PydanticSource
@@ -6448,7 +6417,6 @@ async def test_get_file_by_original_name_and_source_different_sources(server: Sy
     assert retrieved_file_2.source_id == second_source.id
 
 
-@pytest.mark.asyncio
 async def test_get_file_by_original_name_and_source_ignores_deleted(server: SyncServer, default_user, default_source):
     """Test that deleted files are ignored when searching by original name and source."""
     original_filename = "to_be_deleted.txt"
@@ -6481,7 +6449,6 @@ async def test_get_file_by_original_name_and_source_ignores_deleted(server: Sync
     assert retrieved_file_after_delete is None
 
 
-@pytest.mark.asyncio
 async def test_list_files(server: SyncServer, default_user, default_source):
     """Test listing files with pagination."""
     # Create multiple files
@@ -6510,7 +6477,6 @@ async def test_list_files(server: SyncServer, default_user, default_source):
     assert next_page[0].file_name != paginated_files[0].file_name
 
 
-@pytest.mark.asyncio
 async def test_delete_file(server: SyncServer, default_user, default_source):
     """Test deleting a file."""
     file_metadata = PydanticFileMetadata(
@@ -6529,7 +6495,6 @@ async def test_delete_file(server: SyncServer, default_user, default_source):
     assert len(files) == 0
 
 
-@pytest.mark.asyncio
 async def test_update_file_status_basic(server, default_user, default_source):
     """Update processing status and error message for a file."""
     meta = PydanticFileMetadata(
@@ -6561,7 +6526,6 @@ async def test_update_file_status_basic(server, default_user, default_source):
     assert updated.error_message == "Parse failed"
 
 
-@pytest.mark.asyncio
 async def test_update_file_status_error_only(server, default_user, default_source):
     """Update just the error message, leave status unchanged."""
     meta = PydanticFileMetadata(
@@ -6582,7 +6546,6 @@ async def test_update_file_status_error_only(server, default_user, default_sourc
     assert updated.processing_status == FileProcessingStatus.PENDING  # default from creation
 
 
-@pytest.mark.asyncio
 async def test_update_file_status_with_chunks(server, default_user, default_source):
     """Update chunk progress fields along with status."""
     meta = PydanticFileMetadata(
@@ -7084,7 +7047,6 @@ async def test_same_state_transitions_allowed(server, default_user, default_sour
     assert updated.total_chunks == 10
 
 
-@pytest.mark.asyncio
 async def test_upsert_file_content_basic(server: SyncServer, default_user, default_source, async_session):
     """Test creating and updating file content with upsert_file_content()."""
     initial_text = "Initial content"
@@ -7130,7 +7092,6 @@ async def test_upsert_file_content_basic(server: SyncServer, default_user, defau
     assert orm_file.updated_at >= orm_file.created_at
 
 
-@pytest.mark.asyncio
 async def test_get_organization_sources_metadata(server, default_user):
     """Test getting organization sources metadata with aggregated file information."""
     # Create test sources
@@ -7692,7 +7653,6 @@ async def test_list_jobs_filter_by_type(server: SyncServer, default_user, defaul
     assert jobs[0].id == run.id
 
 
-@pytest.mark.asyncio
 async def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
     """Test that job callbacks are properly dispatched when a job is completed."""
     captured = {}
@@ -8784,9 +8744,8 @@ async def test_update_batch_status(server, default_user, dummy_beta_message_batc
     assert last_polled_at >= before
 
 
-@pytest.mark.asyncio
 async def test_create_and_get_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -8811,7 +8770,6 @@ async def test_create_and_get_batch_item(
     assert fetched.id == item.id
 
 
-@pytest.mark.asyncio
 async def test_update_batch_item(
     server,
     default_user,
@@ -8821,7 +8779,6 @@ async def test_update_batch_item(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
-    event_loop,
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -8855,9 +8812,8 @@ async def test_update_batch_item(
     assert updated.batch_request_result == dummy_successful_response
 
 
-@pytest.mark.asyncio
 async def test_delete_batch_item(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -8945,7 +8901,6 @@ async def test_bulk_update_batch_statuses(server, default_user, dummy_beta_messa
     assert updated.latest_polling_response == dummy_beta_message_batch
 
 
-@pytest.mark.asyncio
 async def test_bulk_update_batch_items_results_by_agent(
     server,
     default_user,
@@ -8955,7 +8910,6 @@ async def test_bulk_update_batch_items_results_by_agent(
     dummy_step_state,
     dummy_successful_response,
     letta_batch_job,
-    event_loop,
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -8980,9 +8934,8 @@ async def test_bulk_update_batch_items_results_by_agent(
     assert updated.batch_request_result == dummy_successful_response
 
 
-@pytest.mark.asyncio
 async def test_bulk_update_batch_items_step_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -9006,9 +8959,8 @@ async def test_bulk_update_batch_items_step_status_by_agent(
     assert updated.step_status == AgentStepStatus.resumed
 
 
-@pytest.mark.asyncio
 async def test_list_batch_items_limit_and_filter(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -9033,9 +8985,8 @@ async def test_list_batch_items_limit_and_filter(
     assert len(limited_items) == 2
 
 
-@pytest.mark.asyncio
 async def test_list_batch_items_pagination(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     # Create a batch job.
     batch = await server.batch_manager.create_llm_batch_job_async(
@@ -9098,9 +9049,8 @@ async def test_list_batch_items_pagination(
     assert empty_page == [], "Expected an empty list when cursor is after the last item"
 
 
-@pytest.mark.asyncio
 async def test_bulk_update_batch_items_request_status_by_agent(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     # Create a batch job
     batch = await server.batch_manager.create_llm_batch_job_async(
@@ -9129,14 +9079,12 @@ async def test_bulk_update_batch_items_request_status_by_agent(
     assert updated.request_status == JobStatus.expired
 
 
-@pytest.mark.asyncio
 async def test_bulk_update_nonexistent_items_should_error(
     server,
     default_user,
     dummy_beta_message_batch,
     dummy_successful_response,
     letta_batch_job,
-    event_loop,
 ):
     # Create a batch job
     batch = await server.batch_manager.create_llm_batch_job_async(
@@ -9172,10 +9120,7 @@ async def test_bulk_update_nonexistent_items_should_error(
         )
 
 
-@pytest.mark.asyncio
-async def test_bulk_update_nonexistent_items(
-    server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job, event_loop
-):
+async def test_bulk_update_nonexistent_items(server, default_user, dummy_beta_message_batch, dummy_successful_response, letta_batch_job):
     # Create a batch job
     batch = await server.batch_manager.create_llm_batch_job_async(
         llm_provider=ProviderType.anthropic,
@@ -9210,9 +9155,8 @@ async def test_bulk_update_nonexistent_items(
     )
 
 
-@pytest.mark.asyncio
 async def test_create_batch_items_bulk(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     # Create a batch job
     llm_batch_job = await server.batch_manager.create_llm_batch_job_async(
@@ -9264,9 +9208,8 @@ async def test_create_batch_items_bulk(
         assert fetched.id in created_ids
 
 
-@pytest.mark.asyncio
 async def test_count_batch_items(
-    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job, event_loop
+    server, default_user, sarah_agent, dummy_beta_message_batch, dummy_llm_config, dummy_step_state, letta_batch_job
 ):
     # Create a batch job first.
     batch = await server.batch_manager.create_llm_batch_job_async(
@@ -9606,7 +9549,6 @@ async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, d
 # ======================================================================================================================
 
 
-@pytest.mark.asyncio
 async def test_attach_creates_association(server, default_user, sarah_agent, default_file):
     assoc, closed_files = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
@@ -9629,7 +9571,6 @@ async def test_attach_creates_association(server, default_user, sarah_agent, def
     assert file_blocks[0].label == default_file.file_name
 
 
-@pytest.mark.asyncio
 async def test_attach_is_idempotent(server, default_user, sarah_agent, default_file):
     a1, closed_files = await server.file_agent_manager.attach_file(
         agent_id=sarah_agent.id,
@@ -9664,7 +9605,6 @@ async def test_attach_is_idempotent(server, default_user, sarah_agent, default_f
     assert file_blocks[0].label == default_file.file_name
 
 
-@pytest.mark.asyncio
 async def test_update_file_agent(server, file_attachment, default_user):
     updated = await server.file_agent_manager.update_file_agent_by_id(
         agent_id=file_attachment.agent_id,
@@ -9677,7 +9617,6 @@ async def test_update_file_agent(server, file_attachment, default_user):
     assert updated.visible_content == "updated"
 
 
-@pytest.mark.asyncio
 async def test_update_file_agent_by_file_name(server, file_attachment, default_user):
     updated = await server.file_agent_manager.update_file_agent_by_name(
         agent_id=file_attachment.agent_id,
@@ -9755,7 +9694,6 @@ async def test_file_agent_line_tracking(server, default_user, sarah_agent, defau
     assert previous_ranges == {file.file_name: (2, 4)}  # Should capture the previous range
 
 
-@pytest.mark.asyncio
 async def test_mark_access(server, file_attachment, default_user):
     old_ts = file_attachment.last_accessed_at
     if USING_SQLITE:
@@ -9776,7 +9714,6 @@ async def test_mark_access(server, file_attachment, default_user):
     assert refreshed.last_accessed_at > old_ts
 
 
-@pytest.mark.asyncio
 async def test_list_files_and_agents(
     server,
     default_user,
@@ -10046,7 +9983,6 @@ async def test_detach_file(server, file_attachment, default_user):
     assert res is None
 
 
-@pytest.mark.asyncio
 async def test_detach_file_bulk(
     server,
     default_user,
@@ -10135,7 +10071,6 @@ async def test_detach_file_bulk(
     assert deleted_count == 0
 
 
-@pytest.mark.asyncio
 async def test_org_scoping(
     server,
     default_user,
@@ -10165,7 +10100,6 @@ async def test_org_scoping(
 # ======================================================================================================================
 
 
-@pytest.mark.asyncio
 async def test_mark_access_bulk(server, default_user, sarah_agent, default_source):
     """Test that mark_access_bulk updates last_accessed_at for multiple files."""
     import time
@@ -10218,7 +10152,6 @@ async def test_mark_access_bulk(server, default_user, sarah_agent, default_sourc
             assert fa.last_accessed_at == initial_times[file.file_name], f"File {file.file_name} should not have updated timestamp"
 
 
-@pytest.mark.asyncio
 async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default_source):
     """Test that attaching files beyond max_files_open triggers LRU eviction."""
     import time
@@ -10288,7 +10221,6 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
     assert open_file_names == expected_open
 
 
-@pytest.mark.asyncio
 async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, default_source):
     """Test that opening a file beyond max_files_open triggers LRU eviction."""
     import time
@@ -10377,7 +10309,6 @@ async def test_lru_eviction_on_open_file(server, default_user, sarah_agent, defa
     assert first_file_agent.is_open is False, "First file should be closed"
 
 
-@pytest.mark.asyncio
 async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sarah_agent, default_source):
     """Test that reopening an already open file doesn't trigger unnecessary eviction."""
     import time
@@ -10442,7 +10373,6 @@ async def test_lru_no_eviction_when_reopening_same_file(server, default_user, sa
     assert initial_open_names == final_open_names, "Same files should remain open"
 
 
-@pytest.mark.asyncio
 async def test_last_accessed_at_updates_correctly(server, default_user, sarah_agent, default_source):
     """Test that last_accessed_at is updated in the correct scenarios."""
     import time
@@ -10493,7 +10423,6 @@ async def test_last_accessed_at_updates_correctly(server, default_user, sarah_ag
     assert final_agent.last_accessed_at > prev_time, "mark_access should update timestamp"
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_basic(server, default_user, sarah_agent, default_source):
     """Test basic functionality of attach_files_bulk method."""
     # Create multiple files
@@ -10538,7 +10467,6 @@ async def test_attach_files_bulk_basic(server, default_user, sarah_agent, defaul
             assert attached_file.visible_content == f"visible content {i}"
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_deduplication(server, default_user, sarah_agent, default_source):
     """Test that attach_files_bulk properly deduplicates files with same names."""
     # Create files with same name (different IDs)
@@ -10577,7 +10505,6 @@ async def test_attach_files_bulk_deduplication(server, default_user, sarah_agent
     assert attached_files[0].file_name == "duplicate_test.txt"
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent, default_source):
     """Test that attach_files_bulk properly handles LRU eviction without duplicates."""
     import time
@@ -10657,7 +10584,6 @@ async def test_attach_files_bulk_lru_eviction(server, default_user, sarah_agent,
         assert f"new_bulk_{i}.txt" in open_file_names
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_agent, default_source):
     """Test bulk attach with mix of existing and new files."""
     # Create and attach one file individually first
@@ -10723,7 +10649,6 @@ async def test_attach_files_bulk_mixed_existing_new(server, default_user, sarah_
     assert existing_file_agent.visible_content == "updated content"
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_empty_list(server, default_user, sarah_agent):
     """Test attach_files_bulk with empty file list."""
     closed_files = await server.file_agent_manager.attach_files_bulk(
@@ -10739,7 +10664,6 @@ async def test_attach_files_bulk_empty_list(server, default_user, sarah_agent):
     assert len(attached_files) == 0
 
 
-@pytest.mark.asyncio
 async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agent, default_source):
     """Test bulk attach when trying to attach more files than max_files_open allows."""
     max_files_open = sarah_agent.max_files_open
@@ -10793,9 +10717,9 @@ async def test_attach_files_bulk_oversized_bulk(server, default_user, sarah_agen
 FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionError: High concurrency stress test failed with errors: [{'error': "(sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DeadlockDetectedError'>: deadlock detected\nDETAIL:  Process ***04 waits for ShareLock on transaction 30***3; blocked by process 84.\nProcess 84 waits for ShareLock on transaction 30***5; blocked by process ***04.\nHINT:  See server log for query details.\n[SQL: INSERT INTO blocks_agents (agent_id, block_id, block_label) VALUES ($***::VARCHAR, $2::VARCHAR, $3::VARCHAR), ($4::VARCHAR, $5::VARCHAR, $6::VARCHAR), ($7::VARCHAR, $8::VARCHAR, $9::VARCHAR), ($***0::VARCHAR, $***::VARCHAR, $***2::VARCHAR) ON CONFLICT DO NOTHING]\n[parameters: ('agent-f69c0ffc-48ea-47f3-a6e0-e26a4***de764d', 'block-4506d355-b84a-44cd-bfdb-63a5039***07f***', 'stress_block_7', 'agent-f69c0ffc-48ea-47f3-a6e0-e26a4***de764d', 'block-cf32229c-9b43-4ed9-b65f-fc7cb***3567bf', 'stress_block_6', 'agent-f69c0ffc-48ea-47f3-a6e0-e26a4***de764d', 'block-02a***8***e7-44d6-402***-85a0-2c3dc20d9fae', 'stress_block_8', 'agent-f69c0ffc-48ea-47f3-a6e0-e26a4***de764d', 'block-4cba5***c***-42b8-4afa-aa59-97022c29f7a2', 'stress_block_0')]\n(Background on this error at: https://sqlalche.me/e/20/dbapi)", 'task_id': 4}]
 """
 #
-# @pytest.mark.asyncio
+# @pytest.mark.asyncio(loop_scope="session")
 # async def test_concurrent_block_updates_race_condition(
-#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser, event_loop
+#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser
 # ):
 #     """Test that concurrent block updates don't cause race conditions."""
 #     agent, _ = comprehensive_test_agent_fixture
@@ -10847,9 +10771,9 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #         await server.block_manager.delete_block_async(block.id, actor=default_user)
 #
 #
-# @pytest.mark.asyncio
+# @pytest.mark.asyncio(loop_scope="session")
 # async def test_concurrent_same_block_updates_race_condition(
-#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser, event_loop
+#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser
 # ):
 #     """Test that multiple concurrent updates to the same block configuration don't cause issues."""
 #     agent, _ = comprehensive_test_agent_fixture
@@ -10885,9 +10809,9 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #     await server.block_manager.delete_block_async(block.id, actor=default_user)
 #
 #
-# @pytest.mark.asyncio
+# @pytest.mark.asyncio(loop_scope="session")
 # async def test_concurrent_empty_block_updates_race_condition(
-#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser, event_loop
+#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser
 # ):
 #     """Test concurrent updates that remove all blocks."""
 #     agent, _ = comprehensive_test_agent_fixture
@@ -10914,9 +10838,9 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #     assert len(final_agent.memory.blocks) == 0
 #
 #
-# @pytest.mark.asyncio
+# @pytest.mark.asyncio(loop_scope="session")
 # async def test_concurrent_mixed_block_operations_race_condition(
-#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser, event_loop
+#     server: SyncServer, comprehensive_test_agent_fixture, default_user: PydanticUser
 # ):
 #     """Test mixed concurrent operations: some adding blocks, some removing."""
 #     agent, _ = comprehensive_test_agent_fixture

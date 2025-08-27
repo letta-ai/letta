@@ -249,7 +249,6 @@ class ToolExecutionSandbox:
             logger.error(f"Executing tool {self.tool_name} has an unexpected error: {e}")
             raise e
 
-    @trace_method
     def run_local_dir_sandbox_directly(
         self,
         sbx_config: SandboxConfig,

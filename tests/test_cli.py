@@ -36,7 +36,7 @@ def swap_letta_config():
 
 
 def test_letta_run_create_new_agent(swap_letta_config):
-    child = pexpect.spawn("poetry run letta run", encoding="utf-8")
+    child = pexpect.spawn("uv run letta run", encoding="utf-8")
     # Start the letta run command
     child.logfile = sys.stdout
     child.expect("Creating new agent", timeout=20)
@@ -79,7 +79,7 @@ def test_letta_run_create_new_agent(swap_letta_config):
 
 def test_letta_version_prints_only_version(swap_letta_config):
     # Start the letta version command
-    output = pexpect.run("poetry run letta version", encoding="utf-8")
+    output = pexpect.run("uv run letta version", encoding="utf-8")
 
     # Remove ANSI escape sequences and whitespace
     output = re.sub(r"\x1b\[[0-9;]*[mK]", "", output).strip()

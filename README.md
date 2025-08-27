@@ -120,7 +120,7 @@ If your Letta server isn't running on `localhost` (for example, you deployed it 
 
 > _"Do I need to install Docker to use Letta?"_
 
-No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `poetry install`). See instructions below.
+No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `uv sync`). See instructions below.
 
 > _"What's the difference between installing with `pip` vs `Docker`?"_
 

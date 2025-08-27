@@ -155,7 +155,6 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             if not settings.debug:
                 await asyncio.to_thread(os.remove, temp_file_path)
 
-    @trace_method
     async def _prepare_venv(self, local_configs, venv_path: str, env: Dict[str, str]):
         """
         Prepare virtual environment asynchronously (in a background thread).
@@ -179,7 +178,6 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
             )
             log_event(name="finish install_pip_requirements_for_sandbox", attributes={"local_configs": local_configs.model_dump_json()})
 
-    @trace_method
     async def _execute_tool_subprocess(
         self, sbx_config, python_executable: str, temp_file_path: str, env: Dict[str, str], cwd: str
     ) -> ToolExecutionResult:

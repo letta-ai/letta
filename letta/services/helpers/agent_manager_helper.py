@@ -249,7 +249,7 @@ def compile_system_message(
     append_icm_if_missing: bool = True,
     template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
     previous_message_count: int = 0,
-    archival_memory_size: int = 0,
+    archival_memory_size: int | None = 0,
     tool_rules_solver: Optional[ToolRulesSolver] = None,
     sources: Optional[List] = None,
     max_files_open: Optional[int] = None,
@@ -281,7 +281,7 @@ def compile_system_message(
         memory_metadata_string = PromptGenerator.compile_memory_metadata_block(
             memory_edit_timestamp=in_context_memory_last_edit,
             previous_message_count=previous_message_count,
-            archival_memory_size=archival_memory_size,
+            archival_memory_size=archival_memory_size or 0,
             timezone=timezone,
         )
 

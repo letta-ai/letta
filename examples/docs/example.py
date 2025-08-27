@@ -7,7 +7,7 @@ See: https://docs.letta.com/quickstart
 If you're using Letta Cloud, replace 'baseURL' with 'token'
 See: https://docs.letta.com/api-reference/overview
 
-Execute this script using `poetry run python3 example.py`
+Execute this script using `uv run python3 example.py`
 
 This will install `letta_client` and other dependencies.
 """

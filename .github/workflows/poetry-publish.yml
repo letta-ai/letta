@@ -1,4 +1,4 @@
-name: poetry-publish
+name: uv-publish
 on:
   release:
     types: [published]
@@ -13,20 +13,23 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: "Setup Python, Poetry and Dependencies"
-        uses: packetcoders/action-setup-cache-python-poetry@main
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          poetry-version: "1.7.1"
+          python-version: 3.12
 
-      - name: Configure poetry
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry config pypi-token.pypi "$PYPI_TOKEN"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          activate-environment: true
+          cache-dependency-glob: "uv.lock"
 
       - name: Build the Python package
-        run: poetry build
+        run: uv build
 
       - name: Publish the package to PyPI
-        run: poetry publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish

@@ -198,6 +198,7 @@ async def test_vllm():
 #     assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
+@pytest.mark.asyncio
 async def test_custom_anthropic():
     provider = AnthropicProvider(
         name="custom_anthropic",

@@ -61,7 +61,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
+        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google
       - name: Migrate database
         env:
           LETTA_PG_PORT: 5432
@@ -71,7 +71,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
 
       - name: Run integration tests
         # if any of the 1000+ test cases fail, pytest reports exit code 1 and won't procces/upload the results
@@ -94,7 +94,7 @@ jobs:
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
           LETTA_USE_EXPERIMENTAL: 1
         run: |
-          poetry run pytest \
+          uv run pytest \
             -s -vv \
             .github/scripts/model-sweep/model_sweep.py \
             --json-report --json-report-file=.github/scripts/model-sweep/model_sweep_report.json --json-report-indent=4
@@ -103,7 +103,7 @@ jobs:
         continue-on-error: true
         # file path args to generate_model_sweep_markdown.py are relative to the script
         run: |
-          poetry run python \
+          uv run python \
             .github/scripts/model-sweep/generate_model_sweep_markdown.py \
             .github/scripts/model-sweep/model_sweep_report.json \
             .github/scripts/model-sweep/supported-models.mdx
