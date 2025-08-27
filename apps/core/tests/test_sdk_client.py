@@ -48,7 +48,7 @@ def client() -> LettaSDKClient:
         thread.start()
         time.sleep(5)
     print("Running client tests with server:", server_url)
-    client = LettaSDKClient(base_url=server_url, token=None)
+    client = LettaSDKClient(base_url=server_url, token=None, timeout=300.0)
     yield client
 
 
