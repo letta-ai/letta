@@ -8,7 +8,7 @@
 
 # Letta (formerly MemGPT)
 
-Letta is the platform for building stateful agents: open AI with advanced memory that learn and self-improve over time.
+Letta is the platform for building stateful agents: open AI with advanced memory that can learn and self-improve over time.
 
 ### Quicklinks:
 * [**Developer Documentation**](https://docs.letta.com): Learn how create agents that learn using Python / TypeScript
