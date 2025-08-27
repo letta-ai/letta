@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.10.0"
+version = "0.11.6"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
