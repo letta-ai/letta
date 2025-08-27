@@ -34,7 +34,7 @@ function buildPythonAppGenerator() {
 
   if (!fs.existsSync(venvPath)) {
     console.log('Creating virtual environment');
-    execSync('poetry install', {
+    execSync('uv sync', {
       cwd: desktopCorePath,
       stdio: 'inherit',
       shell: 'bash',

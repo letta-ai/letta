@@ -9,7 +9,7 @@ export LETTA_API_URL=http://localhost:3006
 Then run the tests:
 ```bash
 cd apps/core
-poetry run pytest -s tests/test_client.py
-poetry run pytest -s tests/test_streaming.py
-poetry run pytest -s tests/sdk/
+uv run pytest -s tests/test_client.py
+uv run pytest -s tests/test_streaming.py
+uv run pytest -s tests/sdk/
 ```

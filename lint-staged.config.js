@@ -29,5 +29,5 @@ module.exports = {
   '{apps,libs,tools}/**/*.{js,jsx,json}': [
     (files) => `nx format:write --files=${files.join(',')}`,
   ],
-  'apps/core/**/*.py': () => 'cd apps/core && poetry run pre-commit run --all-files',
+  'apps/core/**/*.py': () => 'cd apps/core && uv run pre-commit run --all-files',
 };

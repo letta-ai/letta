@@ -26,12 +26,12 @@ Install `Docker Desktop`: [linky](https://docs.docker.com/desktop/setup/install/
 Install the following with Homebrew:
 - `docker` - [linky](https://docs.docker.com/get-docker/)
 - `just` - [linky](https://github.com/casey/just)
-- `poetry` - [linky](https://github.com/python-poetry/poetry)
+- `uv` - [linky](https://github.com/astral-sh/uv)
 - `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
 - `node` (for npm) - [linky](https://nodejs.org/en/download)
 - `postgresql` (to build psycopg2) - [linky](https://formulae.brew.sh/formula/postgresql@14)
 ```sh
-brew install docker just poetry 1password-cli node postgresql
+brew install docker just uv 1password-cli node postgresql
 ```
 
 - `nvm` - [linky](https://github.com/nvm-sh/nvm)

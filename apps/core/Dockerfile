@@ -14,10 +14,9 @@ RUN apt-get update && apt-get install -y \
 
 ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
+    UV_NO_PROGRESS=1 \
+    UV_PYTHON_PREFERENCE=only-managed \
+    UV_CACHE_DIR=/tmp/uv_cache
 
 # Set for other builds
 ARG LETTA_VERSION
@@ -29,17 +28,16 @@ WORKDIR /app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Now install poetry in the virtual environment
-RUN pip install --no-cache-dir poetry==2.1.3
+# Now install uv in the virtual environment
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 
 # Copy dependency files first
-COPY pyproject.toml poetry.lock ./
+COPY apps/core/pyproject.toml apps/core/uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN poetry lock && \
-    poetry install --all-extras && \
-    rm -rf $POETRY_CACHE_DIR
+RUN uv sync --frozen --no-dev --no-install-project --all-extras
 
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime
@@ -48,8 +46,8 @@ FROM ankane/pgvector:v0.5.1 AS runtime
 ARG NODE_VERSION=22
 
 RUN apt-get update && \
-    # Install curl and Python
-    apt-get install -y curl python3 python3-venv && \
+    # Install curl, Python, and PostgreSQL client libraries
+    apt-get install -y curl python3 python3-venv libpq-dev && \
     # Install Node.js
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
     apt-get install -y nodejs && \

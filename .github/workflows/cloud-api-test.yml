@@ -104,33 +104,31 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
+          enable-cache: true
+          activate-environment: true
       - name: Install just
         uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
 
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: cached-uv-dependencies
         uses: actions/cache@v4
         with:
           path: apps/core/.venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
           # Restore cache with this prefix if not exact match with key
           # Note cache-hit returns false in this case, so the below step will run
           restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install poetry dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}
+      - name: Install uv dependencies
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -143,9 +141,6 @@ jobs:
       - name: Inject env vars into environment
         working-directory: apps/core
         run: |
-          # Install required package
-          poetry run pip install google-cloud-secret-manager
-
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
             # Check if line is not empty
@@ -157,7 +152,7 @@ jobs:
               # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -168,7 +163,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
       - name: Turn on Letta agents
         working-directory: apps/core
         env:
@@ -178,7 +173,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-        run: poetry run letta server &
+        run: uv run letta server &
       - name: Cache npm dependencies
         id: cache-main
         uses: actions/cache@v3

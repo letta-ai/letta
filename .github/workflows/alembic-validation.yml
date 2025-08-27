@@ -38,13 +38,13 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra sqlite --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Test alembic migration
         working-directory: apps/core
         run: |
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
           # kinda janky but I think this might not matter for sqlite?
-          # poetry run alembic check
+          # uv run alembic check
 
       - name: Cleanup persistent data
         if: ${{ always() }}
@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Test alembic migration
         working-directory: apps/core
         env:
@@ -89,8 +89,8 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-          poetry run alembic upgrade head
-          poetry run alembic check
+          uv run alembic upgrade head
+          uv run alembic check
 
       - name: Print docker logs if tests fail
         if: ${{ failure() || cancelled() }}

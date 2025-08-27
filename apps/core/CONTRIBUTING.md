@@ -21,20 +21,20 @@ git clone https://github.com/your-username/letta.git
 
 ### 🧩 Install dependencies & configure environment
 
-#### Install poetry and dependencies
+#### Install uv and dependencies
 
-First, install Poetry using [the official instructions here](https://python-poetry.org/docs/#installation).
+First, install uv using [the official instructions here](https://docs.astral.sh/uv/getting-started/installation/).
 
-Once Poetry is installed, navigate to the letta directory and install the Letta project with Poetry:
+Once uv is installed, navigate to the letta directory and install the Letta project with uv:
 ```shell
 cd letta
-eval $(poetry env activate)
-poetry install --all-extras
+eval $(uv env activate)
+uv sync --all-extras
 ```
 #### Setup PostgreSQL environment (optional)
 
 If you are planning to develop letta connected to PostgreSQL database, you need to take the following actions.
-If you are not planning to use PostgreSQL database, you can skip to the step which talks about [running letta](#running-letta-with-poetry).
+If you are not planning to use PostgreSQL database, you can skip to the step which talks about [running letta](#running-letta-with-uv).
 
 Assuming you have a running PostgreSQL instance, first you need to create the user, database and ensure the pgvector
 extension is ready. Here are sample steps for a case where user and database name is letta and assumes no password is set:
@@ -50,32 +50,25 @@ export LETTA_PG_URI="postgresql://${POSTGRES_USER:-letta}:${POSTGRES_PASSWORD:-l
 ```
 
 After this you need to prep the database with initial content. You can use alembic upgrade to populate the initial
-contents from template test data. Please ensure to activate poetry environment using `poetry shell`.
+contents from template test data.
 ```shell
-alembic upgrade head
+uv run alembic upgrade head
 ```
 
-#### Running letta with poetry
+#### Running letta with uv
 
-Now when you want to use `letta`, make sure you first activate the `poetry` environment using poetry shell:
-
+Now when you want to use `letta`, you can use `uv run` to run any letta command:
 ```shell
-$ eval $(poetry env activate)
-(letta-py3.12) $ letta run
-```
-
-Alternatively, you can use `poetry run` (which will activate the `poetry` environment for the `letta run` command only):
-```shell
-poetry run letta run
+uv run letta run
 ```
 
 #### Installing pre-commit
 We recommend installing pre-commit to ensure proper formatting during development:
 ```
-poetry run pre-commit install
-poetry run pre-commit run --all-files
+uv run pre-commit install
+uv run pre-commit run --all-files
 ```
-If you don't install pre-commit, you will need to run `poetry run black .` before submitting a PR.
+If you don't install pre-commit, you will need to run `uv run black .` before submitting a PR.
 
 ## 2. 🛠️ Making Changes
 
@@ -95,13 +88,13 @@ Now, the world is your oyster! Go ahead and craft your fabulous changes. 🎨
 #### Handling Database Migrations
 If you are running Letta for the first time, your database will be automatically be setup. If you are updating Letta, you may need to run migrations. To run migrations, use the following command:
 ```shell
-poetry run alembic upgrade head
+uv run alembic upgrade head
 ```
 
 #### Creating a new Database Migration
 If you have made changes to the database models, you will need to create a new migration. To create a new migration, use the following command:
 ```shell
-poetry run alembic revision --autogenerate -m "Your migration message here"
+uv run alembic revision --autogenerate -m "Your migration message here"
 ```
 
 Visit the [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html) for more information on creating and running migrations.
@@ -112,9 +105,9 @@ Before we hit the 'Wow, I'm Done' button, let's make sure everything works as ex
 
 ### Run existing tests
 
-Running tests if you installed via poetry:
+Running tests:
 ```
-poetry run pytest -s tests
+uv run pytest -s tests
 ```
 
 Running tests if you installed via pip:
@@ -126,14 +119,14 @@ pytest -s tests
 If you added a major feature change, please add new tests in the `tests/` directory.
 
 ## 4. 🧩 Adding new dependencies
-If you need to add a new dependency to Letta, please add the package via `poetry add <PACKAGE_NAME>`. This will update the `pyproject.toml` and `poetry.lock` files. If the dependency does not need to be installed by all users, make sure to mark the dependency as optional in the `pyproject.toml` file and if needed, create a new extra under `[tool.poetry.extras]`.
+If you need to add a new dependency to Letta, please add the package via `uv add <PACKAGE_NAME>`. This will update the `pyproject.toml` and `uv.lock` files. If the dependency does not need to be installed by all users, make sure to mark the dependency as optional in the `pyproject.toml` file and if needed, create a new extra under `[project.optional-dependencies]`.
 
 ## 5. 🚀 Submitting Changes
 
 ### Check Formatting
 Please ensure your code is formatted correctly by running:
 ```
-poetry run black . -l 140
+uv run black . -l 140
 ```
 
 ### 🚀 Create a Pull Request

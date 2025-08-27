@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: [self-hosted, medium]
+    runs-on: [self-hosted, small]
     permissions: write-all
     steps:
       - name: Checkout repository
@@ -30,6 +30,6 @@ jobs:
           echo "🌿 Preview your docs: $URL" > preview_url.txt
 
       - name: Comment URL in PR
-        uses: thollander/actions-comment-pull-request@v2.4.3
+        uses: thollander/actions-comment-pull-request@v3
         with:
-          filePath: apps/fern/preview_url.txt
+          file-path: apps/fern/preview_url.txt

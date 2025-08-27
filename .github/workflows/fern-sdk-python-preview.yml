@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   changed-files:
-    runs-on: [self-hosted, medium]
+    runs-on: [self-hosted, small]
     name: changed-files
     outputs:
       all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -84,10 +84,28 @@ jobs:
             fi
           done < <(letta_secrets_helper --env dev --service ci)
 
+      - name: Debug environment
+        shell: bash
+        run: |
+          echo "=== Environment Debug ==="
+          echo "PATH: $PATH"
+          echo "USER: $(whoami)"
+          echo "HOME: $HOME"
+          echo "Shell: $SHELL"
+          echo "Working directory: $(pwd)"
+          echo ""
+          echo "=== UV Debug ==="
+          which uv || echo "uv not found in PATH"
+          ls -la /usr/local/bin/uv || echo "/usr/local/bin/uv not found"
+          ls -la /home/ci-runner/.local/bin/uv || echo "ci-runner uv not found"
+          echo ""
+          echo "=== Test uv command ==="
+          uv --version || echo "uv --version failed"
+
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
 
       - name: Migrate database
         working-directory: apps/core
@@ -99,7 +117,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
 
       - name: Run letta server
         working-directory: apps/core
@@ -113,7 +131,7 @@ jobs:
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
         run: |
           # Run server in background
-          poetry run letta server &
+          uv run letta server &
           # Wait for server to be ready
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
 
@@ -126,6 +144,7 @@ jobs:
           fern generate --group python-sdk --preview
           cd fern/.preview/fern-python-sdk
           poetry install
+          poetry build --format wheel
           poetry run mypy .
           poetry run pytest -rP tests/custom/test_client.py --env localhost
           ls -lah

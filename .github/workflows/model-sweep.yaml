@@ -48,7 +48,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google' }}
       - name: Migrate database
         working-directory: apps/core
         env:
@@ -59,7 +59,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
 
       - name: Run integration tests
         working-directory: apps/core
@@ -83,7 +83,7 @@ jobs:
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
           LETTA_USE_EXPERIMENTAL: 1
         run: |
-          poetry run pytest \
+          uv run --frozen pytest \
             -s -vv \
             ../../.github/scripts/model-sweep/model_sweep.py \
             --json-report --json-report-file=../../.github/scripts/model-sweep/model_sweep_report.json --json-report-indent=4
@@ -113,7 +113,7 @@ jobs:
       - name: Parse model sweep report to global config
         working-directory: apps/core
         run: |
-          poetry run python ../../.github/scripts/model-sweep/parse_model_sweep_report.py \
+          uv run python ../../.github/scripts/model-sweep/parse_model_sweep_report.py \
             model_sweep_report.json \
             global_models_config_detailed.json \
             config.json \
@@ -122,7 +122,7 @@ jobs:
       - name: Convert global config to markdown
         working-directory: apps/core
         run: |
-          poetry run python ../../.github/scripts/model-sweep/generate_model_sweep_markdown.py \
+          uv run python ../../.github/scripts/model-sweep/generate_model_sweep_markdown.py \
             global_models_config_detailed.json \
             supported-models.mdx
           cp ../../.github/scripts/model-sweep/supported-models.mdx ../fern/pages/selfhosting/supported-models.mdx
@@ -169,7 +169,7 @@ jobs:
         working-directory: apps/core
         id: analyze
         run: |
-          meaningful_changes=$(poetry run python ../../.github/scripts/model-sweep/analyze_model_changes.py \
+          meaningful_changes=$(uv run python ../../.github/scripts/model-sweep/analyze_model_changes.py \
             global_models_config_compact.json global_models_config_compact_previous.json)
           echo "MEANINGFUL_CHANGES=$meaningful_changes" >> $GITHUB_OUTPUT
 

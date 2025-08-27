@@ -70,17 +70,19 @@ jobs:
     # if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
+          activate-environment: true
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -93,9 +95,6 @@ jobs:
       - name: Inject env vars into environment
         working-directory: apps/core
         run: |
-          # Install required package
-          poetry run pip install google-cloud-secret-manager
-
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
             # Check if line is not empty
@@ -107,7 +106,7 @@ jobs:
               # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
 
           # Get 'e2b' secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
@@ -116,7 +115,7 @@ jobs:
               echo "::add-mask::$value"
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s e2b)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s e2b)
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

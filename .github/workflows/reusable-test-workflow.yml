@@ -219,6 +219,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: Generate cache key
         if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
         id: cache-key

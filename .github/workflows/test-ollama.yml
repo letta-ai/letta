@@ -23,8 +23,8 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: "integration"
-      install-args: "-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google"
-      test-command: "poetry run pytest -svv tests/"
+      install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google"
+      test-command: "uv run --frozen pytest -svv tests/"
       timeout-minutes: 60
       runner: '["self-hosted", "gpu", "ollama"]'
       matrix-strategy: |

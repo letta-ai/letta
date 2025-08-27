@@ -1033,12 +1033,11 @@ async def test_terminal_tool_rule_send_message_request_heartbeat_false(server, d
     # Parse the arguments and check request_heartbeat
     try:
         arguments = json.loads(send_message_call.tool_call.arguments)
+        assert "request_heartbeat" in arguments, "request_heartbeat should be present in send_message arguments"
+        assert arguments["request_heartbeat"] is False, "request_heartbeat should be False for terminal tool rule"
+
+        print(f"✓ Agent '{agent_name}' correctly set request_heartbeat=False for terminal send_message")
     except json.JSONDecodeError:
         pytest.fail("Failed to parse tool call arguments as JSON")
-
-    assert "request_heartbeat" in arguments, "request_heartbeat should be present in send_message arguments"
-    assert arguments["request_heartbeat"] is False, "request_heartbeat should be False for terminal tool rule"
-
-    print(f"✓ Agent '{agent_name}' correctly set request_heartbeat=False for terminal send_message")
-
-    cleanup(server=server, agent_uuid=agent_name, actor=default_user)
+    finally:
+        cleanup(server=server, agent_uuid=agent_name, actor=default_user)

@@ -108,31 +108,30 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
+          activate-environment: true
       - name: Install just
         uses: extractions/setup-just@v3
         with:
           just-version: '1.42.2'
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: cached-uv-dependencies
         uses: actions/cache@v4
         with:
           path: main-code/apps/core/.venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('main-code/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('main-code/**/uv.lock') }}${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
           # Restore cache with this prefix if not exact match with key
           # Note cache-hit returns false in this case, so the below step will run
           restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('main-code/**/poetry.lock') }}
-      - name: Install poetry dependencies on main branch
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('main-code/**/uv.lock') }}
+      - name: Install uv dependencies on main branch
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: main-code/apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project --extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox
       - name: Migrate database on main branch
         working-directory: main-code/apps/core
         env:
@@ -143,22 +142,22 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
       - name: Load cached venv
-        id: branch-cached-poetry-dependencies
+        id: branch-cached-uv-dependencies
         uses: actions/cache@v4
         with:
           path: branch-code/apps/core/.venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('branch-code/**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('branch-code/**/uv.lock') }}${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
           # Restore cache with this prefix if not exact match with key
           # Note cache-hit returns false in this case, so the below step will run
           restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('branch-code/**/poetry.lock') }}
-      - name: Install poetry dependencies on branch code
-        if: steps.branch-cached-poetry-dependencies.outputs.cache-hit != 'true'
+            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('branch-code/**/uv.lock') }}
+      - name: Install uv dependencies on branch code
+        if: steps.branch-cached-uv-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: branch-code/apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project --extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -170,9 +169,6 @@ jobs:
       - name: Inject env vars into environment
         working-directory: main-code/apps/core
         run: |
-          # Install required package
-          poetry run pip install google-cloud-secret-manager
-
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
             # Check if line is not empty
@@ -184,7 +180,7 @@ jobs:
               # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py --env dev --service ci)
       - name: Turn on Letta agents on main branch
         working-directory: main-code/apps/core
         env:
@@ -194,7 +190,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-        run: poetry run letta server &
+        run: uv run letta server &
       - name: Cache npm dependencies
         id: cache-branch
         uses: actions/cache@v3
@@ -234,7 +230,7 @@ jobs:
       - name: Kill Letta web
         run: kill $(pgrep -f "just cloud-api") || true
       - name: Kill Letta agents
-        run: kill $(pgrep -f "poetry run letta server") || true
+        run: kill $(pgrep -f "uv run letta server") || true
       - name: Migrate database on branch code
         working-directory: branch-code/apps/core
         env:
@@ -244,7 +240,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
         run: |
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
       - name: Turn on Letta agents on branch code
         working-directory: branch-code/apps/core
         env:
@@ -255,7 +251,7 @@ jobs:
           LETTA_PG_HOST: localhost
           OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
         # Detach
-        run: poetry run letta server &
+        run: uv run letta server &
       - name: Install deps on branch code
         working-directory: branch-code/apps/cloud-api
         run: just setup-cloud-api

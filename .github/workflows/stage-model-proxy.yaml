@@ -34,11 +34,26 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     timeout-minutes: 60
     # TODO: remove this
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          activate-environment: true
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -52,9 +67,6 @@ jobs:
       - name: Inject env vars into environment
         working-directory: apps/core
         run: |
-          # Install required package
-          poetry run pip install google-cloud-secret-manager
-
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
             # Check if line is not empty
@@ -66,7 +78,7 @@ jobs:
               # Add to GitHub environment
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(poetry run python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
 
       # - name: Set up Node.js
       #   uses: actions/setup-node@v4

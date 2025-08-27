@@ -177,21 +177,13 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
 
-      - name: Test poetry
-        run: poetry --version
+      - name: Test uv
+        run: uv --version
 
       - name: Build exe
         run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js
@@ -218,18 +210,10 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
         with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

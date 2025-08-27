@@ -70,7 +70,7 @@ We recommend directly `exec`ing into your Docker container and running [`pg_dump
 Alternatively, you can run `docker run` with an extra flag to expose the postgres port with `-p 5432:5432` and then run `pg_dump` from your local machine.
   </Accordion>
   <Accordion title="Do I need to install Docker to use Letta?">
-No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `poetry install`).
+No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `uv sync`).
   </Accordion>
   <Accordion title="What's the difference between installing with pip vs Docker?">
 Letta gives your agents persistence (they live indefinitely) by storing all your agent data in a database.

@@ -82,17 +82,20 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
 
+    - name: Set up python 3.12
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
         enable-cache: false
         activate-environment: true
 
-    - name: Set up Python
-      run: uv python install 3.12
-
     - name: Install dependencies
-      run: uv pip install poetry && poetry install --all-extras # uv sync --extra dev --extra postgres --extra external-tools --extra tests
+      run: uv sync --extra dev --extra postgres --extra external-tools
       working-directory: ./apps/core
 
 #    - name: Run ruff check with fixes
@@ -134,7 +137,7 @@ jobs:
         body: |
           ✅ **Lint fixes applied successfully!**
 
-          The workflow has automatically fixed linting issues and formatted the code.
+          Ruff has automatically fixed linting issues and formatted the code.
           Changes have been committed to the PR branch.
 
     - name: Comment on no changes

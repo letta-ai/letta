@@ -47,10 +47,10 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
       with:
-        version: 1.5.1
+        enable-cache: true
 
     - name: Install just
       uses: extractions/setup-just@v3
@@ -64,7 +64,7 @@ jobs:
     - name: Prepare Python Environment
       run: |
         cd apps/core/
-        poetry install --all-extras
+        uv sync --all-extras
 
     - name: Step Stage API
       run: just stage-api

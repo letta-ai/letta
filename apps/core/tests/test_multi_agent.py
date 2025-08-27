@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from letta.config import LettaConfig
@@ -15,39 +13,7 @@ from letta.schemas.group import (
     SupervisorManager,
 )
 from letta.schemas.message import MessageCreate
-from letta.server.db import db_registry
 from letta.server.server import SyncServer
-
-
-# Disable SQLAlchemy connection pooling for tests to prevent event loop issues
-@pytest.fixture(scope="session", autouse=True)
-def disable_db_pooling_for_tests():
-    """Disable database connection pooling for the entire test session."""
-    os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"] = "true"
-    yield
-    # Clean up environment variable after tests
-    if "LETTA_DISABLE_SQLALCHEMY_POOLING" in os.environ:
-        del os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"]
-
-
-@pytest.fixture(autouse=True)
-async def cleanup_db_connections():
-    """Cleanup database connections after each test."""
-    yield
-
-    # Dispose async engines in the current event loop
-    try:
-        if hasattr(db_registry, "_async_engines"):
-            for engine in db_registry._async_engines.values():
-                if engine:
-                    await engine.dispose()
-        # Reset async initialization to force fresh connections
-        db_registry._initialized["async"] = False
-        db_registry._async_engines.clear()
-        db_registry._async_session_factories.clear()
-    except Exception as e:
-        # Log the error but don't fail the test
-        print(f"Warning: Failed to cleanup database connections: {e}")
 
 
 @pytest.fixture(scope="module")
@@ -157,7 +123,6 @@ async def manager_agent(server, default_user):
     yield agent_scooby
 
 
-@pytest.mark.asyncio
 async def test_empty_group(server, default_user):
     group = await server.group_manager.create_group_async(
         group=GroupCreate(
@@ -182,7 +147,6 @@ async def test_empty_group(server, default_user):
     await server.group_manager.delete_group_async(group_id=group.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_modify_group_pattern(server, default_user, four_participant_agents, manager_agent):
     group = await server.group_manager.create_group_async(
         group=GroupCreate(
@@ -206,7 +170,6 @@ async def test_modify_group_pattern(server, default_user, four_participant_agent
     await server.group_manager.delete_group_async(group_id=group.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_list_agent_groups(server, default_user, four_participant_agents):
     group_a = await server.group_manager.create_group_async(
         group=GroupCreate(
@@ -232,7 +195,6 @@ async def test_list_agent_groups(server, default_user, four_participant_agents):
     await server.group_manager.delete_group_async(group_id=group_b.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_round_robin(server, default_user, four_participant_agents):
     description = (
         "This is a group chat between best friends all like to hang out together. In their free time they like to solve mysteries."
@@ -344,7 +306,6 @@ async def test_round_robin(server, default_user, four_participant_agents):
         await server.group_manager.delete_group_async(group_id=group.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 async def test_supervisor(server, default_user, four_participant_agents):
     agent_scrappy = await server.create_agent_async(
         request=CreateAgent(
@@ -408,7 +369,6 @@ async def test_supervisor(server, default_user, four_participant_agents):
         server.agent_manager.delete_agent(agent_id=agent_scrappy.id, actor=default_user)
 
 
-@pytest.mark.asyncio
 @pytest.mark.flaky(max_runs=2)
 async def test_dynamic_group_chat(server, default_user, manager_agent, four_participant_agents):
     description = (

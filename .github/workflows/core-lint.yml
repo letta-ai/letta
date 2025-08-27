@@ -40,7 +40,7 @@ jobs:
     - name: Install dependencies
       shell: bash
       working-directory: apps/core
-      run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests' }}
+      run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
     - name: Validate PR Title
       if: github.event_name == 'pull_request'
       uses: amannn/action-semantic-pull-request@v5
@@ -56,17 +56,17 @@ jobs:
 
     - name: Run isort
       working-directory: apps/core
-      run: poetry run isort --profile black --check-only --diff .
+      run: uv run isort --profile black --check-only --diff .
 
     - name: Run Black
       working-directory: apps/core
-      run: poetry run black --check .
+      run: uv run black --check .
 
     - name: Run Autoflake
       working-directory: apps/core
       run: |
         set +e
-        output=$(poetry run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports . 2>&1)
+        output=$(uv run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports . 2>&1)
         exit_code=$?
         echo "$output" | grep -v 'No issues detected!'
         exit $exit_code

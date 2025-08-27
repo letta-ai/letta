@@ -110,7 +110,7 @@ jobs:
       - name: Install python dependencies
         shell: bash
         working-directory: apps/core
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }
       - name: Migrate core database
         working-directory: apps/core
         env:
@@ -121,7 +121,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
       - name: Turn on Letta agents on main branch
         working-directory: apps/core
         env:
@@ -131,7 +131,7 @@ jobs:
           LETTA_PG_DB: postgres
           LETTA_PG_HOST: localhost
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: poetry run letta server &
+        run: uv run letta server &
       - name: Install Dependencies
         run: npm ci
       - name: Install undertaker dependencies

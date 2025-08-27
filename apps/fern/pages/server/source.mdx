@@ -9,7 +9,7 @@ It assumes that you are on MacOS, Linux, or Windows WSL (not Powershell or cmd.e
 </Note>
 
 ## Prerequisites
-First, install Poetry using the official instructions [here](https://python-poetry.org/docs/#installation).
+First, install uv using the official instructions [here](https://docs.astral.sh/uv/getting-started/installation/).
 You'll also need to have [git](https://git-scm.com/downloads) installed.
 
 ## Downloading the source code
@@ -28,10 +28,10 @@ git clone https://github.com/letta-ai/letta.git
 ```
 
 ## Installing from source
-Navigate to the letta directory and install the `letta` package using Poetry:
+Navigate to the letta directory and install the `letta` package using uv:
 ```sh
 cd letta
-poetry install --all-extras
+uv sync --all-extras
 ```
 
 ## Running Letta Server from source
@@ -40,13 +40,7 @@ If you've also installed Letta with `pip`, you may have conflicting installs whi
 To check where your current Letta install is located, you can run the command `which letta`.
 </Warning>
 
-Now when you want to use `letta server`, make sure you first activate the poetry environment using `poetry shell`:
+Now when you want to use `letta server`, use `uv run` (which will activate the uv environment for the letta server command directly):
 ```bash
-poetry shell
-```
-After running `poetry shell`, you will be able to run `letta server`.
-
-Alternatively, you can use poetry run (which will activate the poetry environment for the letta server command directly):
-```bash
-poetry run letta server
+uv run letta server
 ```
