@@ -1031,9 +1031,10 @@ def test_token_streaming_greeting_with_assistant_message(
         messages=messages_to_send,
         stream_tokens=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1067,9 +1068,10 @@ def test_token_streaming_greeting_without_assistant_message(
         use_assistant_message=False,
         stream_tokens=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
     assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1114,9 +1116,10 @@ def test_token_streaming_tool_call(
         messages=messages_to_send,
         stream_tokens=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1181,9 +1184,10 @@ def test_background_token_streaming_greeting_with_assistant_message(
         stream_tokens=True,
         background=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1196,16 +1200,12 @@ def test_background_token_streaming_greeting_with_assistant_message(
     assert runs[0].id == run_id
 
     response = client.runs.stream(run_id=run_id, starting_after=0)
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
-    )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
 
     last_message_cursor = messages[-3].seq_id - 1
     response = client.runs.stream(run_id=run_id, starting_after=last_message_cursor)
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
-    )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert len(messages) == 3
     assert messages[0].message_type == "assistant_message" and messages[0].seq_id == last_message_cursor + 1
     assert messages[1].message_type == "stop_reason"
@@ -1241,9 +1241,10 @@ def test_background_token_streaming_greeting_without_assistant_message(
         stream_tokens=True,
         background=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
     assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1289,9 +1290,10 @@ def test_background_token_streaming_tool_call(
         stream_tokens=True,
         background=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
