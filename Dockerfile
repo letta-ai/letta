@@ -32,11 +32,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 
 # Copy dependency files first
-COPY apps/core/pyproject.toml apps/core/uv.lock ./
+COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-dev --no-install-project --all-extras --python 3.11
+# TODO: strip this out into more selective dependency installation
+RUN uv sync --frozen --no-dev --all-extras --python 3.11
 
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime
