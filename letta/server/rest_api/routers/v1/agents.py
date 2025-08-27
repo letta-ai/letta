@@ -252,6 +252,7 @@ async def import_agent(
     project_id: str | None = None,
     strip_messages: bool = False,
     env_vars: Optional[dict[str, Any]] = None,
+    override_embedding_handle: Optional[str] = None,
 ) -> List[str]:
     """
     Import an agent using the new AgentFileSchema format.
@@ -262,12 +263,18 @@ async def import_agent(
         raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
 
     try:
+        if override_embedding_handle:
+            embedding_config_override = server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+        else:
+            embedding_config_override = None
+
         import_result = await server.agent_serialization_manager.import_file(
             schema=agent_schema,
             actor=actor,
             append_copy_suffix=append_copy_suffix,
             override_existing_tools=override_existing_tools,
             env_vars=env_vars,
+            override_embedding_config=embedding_config_override,
         )
 
         if not import_result.success:
@@ -300,6 +307,10 @@ async def import_agent_serialized(
     override_existing_tools: bool = Form(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+    ),
+    override_embedding_handle: Optional[str] = Form(
+        None,
+        description="Override import with specific embedding handle.",
     ),
     project_id: str | None = Form(None, description="The project ID to associate the uploaded agent with."),
     strip_messages: bool = Form(
