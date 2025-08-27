@@ -7,7 +7,7 @@
     "lock": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry lock --no-update",
+        "command": "uv lock",
         "cwd": "apps/desktop-core"
       }
     },
@@ -26,7 +26,7 @@
     "package": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run pyinstaller app.spec",
+        "command": "uv run pyinstaller app.spec",
         "cwd": "apps/desktop-core"
       },
       "cache": false
@@ -47,7 +47,7 @@
         "{workspaceRoot}/coverage/apps/desktop-core"
       ],
       "options": {
-        "command": "poetry run pytest tests/",
+        "command": "uv run pytest tests/",
         "cwd": "apps/desktop-core"
       },
       "cache": true

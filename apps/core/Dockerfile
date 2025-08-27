@@ -5,7 +5,6 @@ FROM ankane/pgvector:v0.5.1 AS builder
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-venv \
-    python3-pip \
     python3-full \
     build-essential \
     libpq-dev \
@@ -15,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 ARG LETTA_ENVIRONMENT=DEV
 ENV LETTA_ENVIRONMENT=${LETTA_ENVIRONMENT} \
     UV_NO_PROGRESS=1 \
-    UV_PYTHON_PREFERENCE=only-managed \
+    UV_PYTHON_PREFERENCE=system \
     UV_CACHE_DIR=/tmp/uv_cache
 
 # Set for other builds
@@ -28,8 +27,8 @@ WORKDIR /app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Now install uv in the virtual environment
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Now install uv and uvx in the virtual environment
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 
 # Copy dependency files first
@@ -37,7 +36,7 @@ COPY apps/core/pyproject.toml apps/core/uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-dev --no-install-project --all-extras
+RUN uv sync --frozen --no-dev --no-install-project --all-extras --python 3.11
 
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime
