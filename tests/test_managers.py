@@ -3941,7 +3941,7 @@ async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user)
         name="unique_name_tool",
         description="Original description",
         tags=["original"],
-        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'`",
+        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'",
         source_type="python",
     )
 
