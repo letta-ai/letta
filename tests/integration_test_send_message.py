@@ -1186,6 +1186,10 @@ def test_background_token_streaming_greeting_with_assistant_message(
     run_id = messages[0].run_id
     assert run_id is not None
 
+    runs = client.runs.list(agent_ids=[agent_state.id], background=True)
+    assert len(runs) > 0
+    assert runs[0].id == run_id
+
     response = client.runs.stream(run_id=run_id, starting_after=0)
     messages = accumulate_chunks(
         list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
