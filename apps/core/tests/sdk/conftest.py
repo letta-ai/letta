@@ -4,38 +4,51 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
+import requests
 from dotenv import load_dotenv
 from letta_client import Letta
 
 
-def run_server():
-    load_dotenv()
-
-    from letta.server.rest_api.app import start_server
-
-    print("Starting server...")
-    start_server(debug=True)
-
-
-# This fixture starts the server once for the entire test session
 @pytest.fixture(scope="session")
-def server():
-    # Get URL from environment or start server
-    server_url = os.getenv("LETTA_SERVER_URL", f"http://localhost:8283")
-    if not os.getenv("LETTA_SERVER_URL"):
-        print("Starting server thread")
-        thread = threading.Thread(target=run_server, daemon=True)
-        thread.start()
-        time.sleep(5)
+def server_url() -> str:
+    """
+    Provides the URL for the Letta server.
+    If LETTA_SERVER_URL is not set, starts the server in a background thread
+    and polls until it's accepting connections.
+    """
 
-    return server_url
+    def _run_server() -> None:
+        load_dotenv()
+        from letta.server.rest_api.app import start_server
+
+        start_server(debug=True)
+
+    url: str = os.getenv("LETTA_SERVER_URL", "http://localhost:8283")
+
+    if not os.getenv("LETTA_SERVER_URL"):
+        thread = threading.Thread(target=_run_server, daemon=True)
+        thread.start()
+
+        # Poll until the server is up (or timeout)
+        timeout_seconds = 30
+        deadline = time.time() + timeout_seconds
+        while time.time() < deadline:
+            try:
+                resp = requests.get(url + "/v1/health")
+                if resp.status_code < 500:
+                    break
+            except requests.exceptions.RequestException:
+                pass
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f"Could not reach {url} within {timeout_seconds}s")
+
+    return url
 
 
 # This fixture creates a client for each test module
 @pytest.fixture(scope="session")
-def client(server):
-    # Use the server URL from the server fixture
-    server_url = server
+def client(server_url):
     print("Running client tests with server:", server_url)
 
     # Overide the base_url if the LETTA_API_URL is set
