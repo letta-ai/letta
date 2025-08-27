@@ -58,7 +58,7 @@ class LLMClient:
                     put_inner_thoughts_first=put_inner_thoughts_first,
                     actor=actor,
                 )
-            case ProviderType.openai | ProviderType.ollama:
+            case ProviderType.openai | ProviderType.ollama | ProviderType.hugging_face:
                 from letta.llm_api.openai_client import OpenAIClient
 
                 return OpenAIClient(

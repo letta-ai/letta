@@ -3,21 +3,22 @@ from enum import Enum, StrEnum
 
 class ProviderType(str, Enum):
     anthropic = "anthropic"
+    azure = "azure"
+    bedrock = "bedrock"
+    cerebras = "cerebras"
+    deepseek = "deepseek"
     google_ai = "google_ai"
     google_vertex = "google_vertex"
-    openai = "openai"
+    groq = "groq"
+    hugging_face = "hugging-face"
     letta = "letta"
-    deepseek = "deepseek"
-    cerebras = "cerebras"
     lmstudio_openai = "lmstudio_openai"
-    xai = "xai"
     mistral = "mistral"
     ollama = "ollama"
-    groq = "groq"
+    openai = "openai"
     together = "together"
-    azure = "azure"
     vllm = "vllm"
-    bedrock = "bedrock"
+    xai = "xai"
 
 
 class ProviderCategory(str, Enum):

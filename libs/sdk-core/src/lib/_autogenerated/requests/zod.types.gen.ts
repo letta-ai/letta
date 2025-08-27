@@ -6867,21 +6867,22 @@ export const PassageUpdate = z.object({
 export type ProviderType = z.infer<typeof ProviderType>;
 export const ProviderType = z.union([
   z.literal('anthropic'),
+  z.literal('azure'),
+  z.literal('bedrock'),
+  z.literal('cerebras'),
+  z.literal('deepseek'),
   z.literal('google_ai'),
   z.literal('google_vertex'),
-  z.literal('openai'),
+  z.literal('groq'),
+  z.literal('hugging-face'),
   z.literal('letta'),
-  z.literal('deepseek'),
-  z.literal('cerebras'),
   z.literal('lmstudio_openai'),
-  z.literal('xai'),
   z.literal('mistral'),
   z.literal('ollama'),
-  z.literal('groq'),
+  z.literal('openai'),
   z.literal('together'),
-  z.literal('azure'),
   z.literal('vllm'),
-  z.literal('bedrock'),
+  z.literal('xai'),
 ]);
 
 export type Provider = z.infer<typeof Provider>;

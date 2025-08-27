@@ -3902,21 +3902,22 @@ export type ProviderTrace = {
 
 export type ProviderType =
   | 'anthropic'
+  | 'azure'
+  | 'bedrock'
+  | 'cerebras'
+  | 'deepseek'
   | 'google_ai'
   | 'google_vertex'
-  | 'openai'
+  | 'groq'
+  | 'hugging-face'
   | 'letta'
-  | 'deepseek'
-  | 'cerebras'
   | 'lmstudio_openai'
-  | 'xai'
   | 'mistral'
   | 'ollama'
-  | 'groq'
+  | 'openai'
   | 'together'
-  | 'azure'
   | 'vllm'
-  | 'bedrock';
+  | 'xai';
 
 export type ProviderUpdate = {
   /**
