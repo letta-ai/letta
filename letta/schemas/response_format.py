@@ -52,9 +52,9 @@ class JsonSchemaResponseFormat(ResponseFormat):
         description="The JSON schema of the response.",
     )
 
-    @field_validator("json_schema")
     @classmethod
-    def validate_json_schema(cls, v: dict[str, Any]) -> Dict[str, Any]:
+    @field_validator("json_schema")
+    def validate_json_schema(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         """Validate that the provided schema is a valid JSON schema."""
         if "schema" not in v:
             raise ValueError("JSON schema should include a schema property")

@@ -13,18 +13,18 @@ repos:
     hooks:
       - id: autoflake
         name: autoflake
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .'
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .'
         language: system
         types: [python]
       - id: isort
         name: isort
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; poetry run isort --profile black .'
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run isort --profile black .'
         language: system
         types: [python]
         exclude: ^docs/
       - id: black
         name: black
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; poetry run black --line-length 140 --target-version py310 --target-version py311 .'
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run black --line-length 140 --target-version py310 --target-version py311 .'
         language: system
         types: [python]
         exclude: ^docs/

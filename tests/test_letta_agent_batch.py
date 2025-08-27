@@ -134,7 +134,7 @@ async def agents(server, weather_tool):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def batch_requests(agents):
     """
     Create batch requests for each test agent.
@@ -151,7 +151,7 @@ def batch_requests(agents):
     ]
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def step_state_map(agents):
     """
     Create a mapping of agent IDs to their step states.
@@ -264,7 +264,7 @@ def create_failed_response(custom_id: str) -> BetaMessageBatchIndividualResponse
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def dummy_batch_response():
     """
     Create a minimal dummy batch response similar to what Anthropic would return.

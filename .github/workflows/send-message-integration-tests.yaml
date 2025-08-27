@@ -100,35 +100,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          version: "latest"
       - name: Load cached venv
-        id: cached-poetry-dependencies
+        id: cached-uv-dependencies
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox' }}
-          # Restore cache with this prefix if not exact match with key
-          # Note cache-hit returns false in this case, so the below step will run
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         shell: bash
-        run: poetry install --no-interaction --no-root ${{ inputs.install-args || '-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google' }}
-      - name: Install letta packages via Poetry
+        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google
+      - name: Install letta packages
         run: |
-          poetry run pip install --upgrade letta-client letta
+          uv run pip install --upgrade letta-client letta
       - name: Migrate database
         env:
           LETTA_PG_PORT: 5432
@@ -138,7 +128,7 @@ jobs:
           LETTA_PG_HOST: localhost
         run: |
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
-          poetry run alembic upgrade head
+          uv run alembic upgrade head
       - name: Run integration tests for ${{ matrix.config_file }}
         env:
           LLM_CONFIG_FILE: ${{ matrix.config_file }}
@@ -161,7 +151,7 @@ jobs:
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
           LETTA_GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
         run: |
-          poetry run pytest \
+          uv run pytest \
             -s -vv \
             tests/integration_test_send_message.py \
             --maxfail=1 --durations=10

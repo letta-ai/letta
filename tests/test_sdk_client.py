@@ -23,6 +23,12 @@ from tests.helpers.utils import upload_file_and_wait
 SERVER_PORT = 8283
 
 
+def pytest_configure(config):
+    """Override asyncio settings for this test file"""
+    # config.option.asyncio_default_fixture_loop_scope = "function"
+    config.option.asyncio_default_test_loop_scope = "function"
+
+
 def run_server():
     load_dotenv()
 

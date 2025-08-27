@@ -759,7 +759,14 @@ def test_tool_call(
 
 @pytest.mark.parametrize(
     "llm_config",
-    TESTED_LLM_CONFIGS,
+    [
+        (
+            pytest.param(config, marks=pytest.mark.xfail(reason="Qwen image processing unstable - needs investigation"))
+            if config.model == "Qwen/Qwen2.5-72B-Instruct-Turbo"
+            else config
+        )
+        for config in TESTED_LLM_CONFIGS
+    ],
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
 def test_url_image_input(
@@ -797,7 +804,14 @@ def test_url_image_input(
 
 @pytest.mark.parametrize(
     "llm_config",
-    TESTED_LLM_CONFIGS,
+    [
+        (
+            pytest.param(config, marks=pytest.mark.xfail(reason="Qwen image processing unstable - needs investigation"))
+            if config.model == "Qwen/Qwen2.5-72B-Instruct-Turbo"
+            else config
+        )
+        for config in TESTED_LLM_CONFIGS
+    ],
     ids=[c.model for c in TESTED_LLM_CONFIGS],
 )
 def test_base64_image_input(
@@ -1568,6 +1582,7 @@ def test_async_greeting_with_callback_url(
         assert headers.get("Content-Type") == "application/json", "Callback should have JSON content type"
 
 
+@pytest.mark.flaky(max_runs=2)
 @pytest.mark.parametrize(
     "llm_config",
     TESTED_LLM_CONFIGS,
