@@ -29,6 +29,10 @@ class Group(GroupBase):
     agent_ids: List[str] = Field(..., description="")
     description: str = Field(..., description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
+    # Template fields
+    template_id: Optional[str] = Field(None, description="The id of the template.")
+    base_template_id: Optional[str] = Field(None, description="The base template id.")
+    deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
     shared_block_ids: List[str] = Field([], description="")
     # Pattern fields
     manager_agent_id: Optional[str] = Field(None, description="")
@@ -166,6 +170,14 @@ class GroupCreate(BaseModel):
     manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
     shared_block_ids: List[str] = Field([], description="")
+
+
+class InternalTemplateGroupCreate(GroupCreate):
+    """Used for Letta Cloud"""
+
+    base_template_id: str = Field(..., description="The id of the base template.")
+    template_id: str = Field(..., description="The id of the template.")
+    deployment_id: str = Field(..., description="The id of the deployment.")
 
 
 class GroupUpdate(BaseModel):

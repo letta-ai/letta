@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from letta.orm.group import Group as GroupModel
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
 from letta.schemas.group import Group as PydanticGroup
-from letta.schemas.group import GroupCreate, GroupUpdate, ManagerType
+from letta.schemas.group import GroupCreate, GroupUpdate, InternalTemplateGroupCreate, ManagerType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
@@ -60,7 +60,7 @@ class GroupManager:
 
     @enforce_types
     @trace_method
-    def create_group(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
+    def create_group(self, group: Union[GroupCreate, InternalTemplateGroupCreate], actor: PydanticUser) -> PydanticGroup:
         with db_registry.session() as session:
             new_group = GroupModel()
             new_group.organization_id = actor.organization_id
@@ -96,6 +96,11 @@ class GroupManager:
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
 
+            if isinstance(group, InternalTemplateGroupCreate):
+                new_group.base_template_id = group.base_template_id
+                new_group.template_id = group.template_id
+                new_group.deployment_id = group.deployment_id
+
             self._process_agent_relationship(session=session, group=new_group, agent_ids=group.agent_ids, allow_partial=False)
 
             if group.shared_block_ids:
@@ -105,7 +110,7 @@ class GroupManager:
             return new_group.to_pydantic()
 
     @enforce_types
-    async def create_group_async(self, group: GroupCreate, actor: PydanticUser) -> PydanticGroup:
+    async def create_group_async(self, group: Union[GroupCreate, InternalTemplateGroupCreate], actor: PydanticUser) -> PydanticGroup:
         async with db_registry.async_session() as session:
             new_group = GroupModel()
             new_group.organization_id = actor.organization_id
@@ -140,6 +145,11 @@ class GroupManager:
                     new_group.min_message_buffer_length = min_message_buffer_length
                 case _:
                     raise ValueError(f"Unsupported manager type: {group.manager_config.manager_type}")
+
+            if isinstance(group, InternalTemplateGroupCreate):
+                new_group.base_template_id = group.base_template_id
+                new_group.template_id = group.template_id
+                new_group.deployment_id = group.deployment_id
 
             await self._process_agent_relationship_async(session=session, group=new_group, agent_ids=group.agent_ids, allow_partial=False)
 

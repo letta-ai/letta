@@ -23,6 +23,10 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # template data (optional)
     template_name: Optional[str] = Field(None, description="Name of the block if it is a template.", alias="name")
     is_template: bool = Field(False, description="Whether the block is a template (e.g. saved human/persona options).")
+    template_id: Optional[str] = Field(None, description="The id of the template.", alias="name")
+    base_template_id: Optional[str] = Field(None, description="The base template id of the block.")
+    deployment_id: Optional[str] = Field(None, description="The id of the deployment.")
+    entity_id: Optional[str] = Field(None, description="The id of the entity within the template.")
     preserve_on_migration: Optional[bool] = Field(False, description="Preserve the block on template migration.")
 
     # context window label
@@ -168,3 +172,12 @@ class CreatePersonaBlockTemplate(CreatePersona):
 
     is_template: bool = True
     label: str = "persona"
+
+
+class InternalTemplateBlockCreate(CreateBlock):
+    """Used for Letta Cloud"""
+
+    base_template_id: str = Field(..., description="The id of the base template.")
+    template_id: str = Field(..., description="The id of the template.")
+    deployment_id: str = Field(..., description="The id of the deployment.")
+    entity_id: str = Field(..., description="The id of the entity within the template.")
