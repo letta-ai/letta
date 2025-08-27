@@ -205,6 +205,7 @@ class Settings(BaseSettings):
     letta_dir: Optional[Path] = Field(Path.home() / ".letta", alias="LETTA_DIR")
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
+    environment: Optional[str] = Field(default=None, description="Application environment (PRODUCTION, DEV, etc.)")
 
     # SSE Streaming keepalive settings
     enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")

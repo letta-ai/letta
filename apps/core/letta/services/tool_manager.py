@@ -1,5 +1,4 @@
 import importlib
-import os
 import warnings
 from typing import List, Optional, Set, Union
 
@@ -331,9 +330,7 @@ class ToolManager:
         # TODO: This requires a deeper rethink about how we keep all our internal tools up-to-date
         if not after and upsert_base_tools:
             existing_tool_names = {tool.name for tool in tools}
-            base_tool_names = (
-                LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS) if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" else LETTA_TOOL_SET
-            )
+            base_tool_names = LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS) if settings.environment == "PRODUCTION" else LETTA_TOOL_SET
             missing_base_tools = base_tool_names - existing_tool_names
 
             # If any base tools are missing, upsert all base tools

@@ -101,7 +101,7 @@ from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
-from letta.settings import tool_settings
+from letta.settings import settings, tool_settings
 from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
@@ -862,7 +862,7 @@ def test_calculate_multi_agent_tools(set_letta_environment):
     """Test that calculate_multi_agent_tools excludes local-only tools in production."""
     result = calculate_multi_agent_tools()
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Production environment should exclude local-only tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert result == expected_tools, "Production should exclude local-only multi-agent tools"
@@ -889,7 +889,7 @@ async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncS
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
     tool_names = {tool.name for tool in tools}
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Production environment should exclude local-only multi-agent tools
         for local_only_tool in LOCAL_ONLY_MULTI_AGENT_TOOLS:
             assert local_only_tool not in tool_names, f"Local-only tool '{local_only_tool}' should not be upserted in production"
@@ -912,7 +912,7 @@ async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, s
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
     tool_names = {tool.name for tool in tools}
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Should only have non-local multi-agent tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert tool_names == expected_tools, "Production multi-agent upsert should exclude local-only tools"
@@ -991,16 +991,14 @@ async def test_create_agent_with_default_source(server: SyncServer, default_user
     server.agent_manager.delete_agent(created_agent_no_source.id, default_user)
 
 
-@pytest.fixture(params=["", "PRODUCTION"])
-def set_letta_environment(request):
-    original = os.environ.get("LETTA_ENVIRONMENT")
-    os.environ["LETTA_ENVIRONMENT"] = request.param
+@pytest.fixture(params=[None, "PRODUCTION"])
+def set_letta_environment(request, monkeypatch):
+    # Patch the settings.environment attribute
+    original = settings.environment
+    monkeypatch.setattr(settings, "environment", request.param)
     yield request.param
-    # Restore original environment variable
-    if original is not None:
-        os.environ["LETTA_ENVIRONMENT"] = original
-    else:
-        os.environ.pop("LETTA_ENVIRONMENT", None)
+    # Restore original environment
+    monkeypatch.setattr(settings, "environment", original)
 
 
 async def test_get_context_window_basic(
@@ -3801,7 +3799,7 @@ async def test_upsert_base_tools(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
 
     # Calculate expected tools accounting for production filtering
-    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         expected_tool_names = sorted(LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_tool_names = sorted(LETTA_TOOL_SET)
@@ -3853,7 +3851,7 @@ async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool
     tool_names = sorted([t.name for t in tools])
 
     # Adjust expected names for multi-agent tools in production
-    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and settings.environment == "PRODUCTION":
         expected_sorted = sorted(set(expected_names) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_sorted = sorted(expected_names)
