@@ -1877,7 +1877,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.maxSteps
-   * @param data.useLegacyFormat If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.
+   * @param data.useLegacyFormat If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
    * @param data.userId
    * @param data.requestBody
    * @returns string Successful Response

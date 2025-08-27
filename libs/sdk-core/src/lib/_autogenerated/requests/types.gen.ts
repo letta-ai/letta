@@ -6656,7 +6656,7 @@ export type ExportAgentSerializedData = {
   maxSteps?: number;
   requestBody?: Body_export_agent_serialized;
   /**
-   * If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.
+   * If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
    */
   useLegacyFormat?: boolean;
   userId?: string | null;

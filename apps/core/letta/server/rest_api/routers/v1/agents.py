@@ -155,8 +155,8 @@ async def export_agent_serialized(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
     use_legacy_format: bool = Query(
-        True,
-        description="If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.",
+        False,
+        description="If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).",
     ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
