@@ -164,7 +164,7 @@ jobs:
       - name: Install dependencies
         working-directory: apps/core
         run: |
-          uv sync --extra dev --extra postgres --extra external-tools --extra tests --extra cloud-tool-sandbox
+          uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox
 
       - name: Inject env vars into environment
         working-directory: apps/core
