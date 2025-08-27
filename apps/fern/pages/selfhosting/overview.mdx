@@ -85,7 +85,12 @@ docker run \
 The example above will make all compatible models running on OpenAI, Anthropic, and Ollama available to your Letta server.
 
 
-## Password protection (advanced)
+## Password protection
+
+<Warning>
+When running a self-hosted Letta server in a production environment (i.e. with untrusted users), make sure to enable both password protection (to prevent unauthorized access to your server over the network) and tool sandboxing (to prevent malicious tools from executing in a privledged environment).
+</Warning>
+
 To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
 ```sh
 # If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
@@ -135,3 +140,11 @@ curl --request POST \
 }'
 ```
 </CodeGroup>
+
+
+## Tool sandboxing
+
+To enable tool sandboxing, set the `E2B_API_KEY` and `E2B_SANDBOX_TEMPLATE_ID` environment variables (via [E2B](https://e2b.dev/)) when you use `docker run`.
+When sandboxing is enabled, all custom tools (created by users from source code) will be executed in a sandboxed environment.
+
+This does not include MCP tools, which are executed outside of the Letta server (on the MCP server itself), or built-in tools (like `send_message`), whose code cannot be modified after server startup.

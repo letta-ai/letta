@@ -37,7 +37,7 @@ Do not expose your Letta server to the public internet unless it is password pro
 If you are running your Letta server on a cloud service (like Railway) that exposes your server via a static IP address, you will likely want to secure your Letta server with a password by using the `SECURE` environment variable.
 For more information, see our [password guide](/guides/server/docker#password-protection-advanced).
 
-Note that the `SECURE` variable does **not** have anything to do with `https`, it simply turns on basic password protection to the API requests going to your Letta server.
+Note that the `SECURE` variable does **not** have anything to do with `https`, it simply turns on basic password protection to the API requests going to your Letta server. Make sure to also enable [tool sandboxing](/guides/selfhosting#tool-sandboxing) if you are allowing untrusted users to create tools on your Letta server.
 
 ## Connecting to a persistent database volume
 <Warning>

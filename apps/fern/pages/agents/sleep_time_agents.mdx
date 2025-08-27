@@ -24,13 +24,23 @@ Sleep-time agents specialize in generating *learned context*. Given some origina
 In Letta, the learned context is saved in a memory block. A memory block represents a labeled section of the context window with an associated character limit. Memory blocks can be shared between multiple agents. A sleep-time agent will write the learned context to a memory block, which can also be shared with other agents that could benefit from those learnings.
 
 Memory blocks can be access directly through the API to be updated, retrieved, or deleted.
-```python
+
+<CodeGroup>
+```python title="python"
 # get a block by label
 block = client.agents.blocks.retrieve(agent_id=agent_id, block_label="persona")
 
 # get a block by ID
 block = client.blocks.retrieve(block_id=block_id)
 ```
+```typescript title="node.js"
+// get a block by label
+const block = await client.agents.blocks.retrieve(agentId, "persona");
+
+// get a block by ID
+const block = await client.blocks.retrieve(blockId);
+```
+</CodeGroup>
 
 When sleep-time is enabled for an agent, there will be one or more sleep-time agents created to manage the memory blocks of the primary agent. These sleep-time agents will run in the background and can modify the memory blocks of the primary agent asynchronously. One sleep-time agent (created when the primary agent is created) will generate learned context from the conversation history to update the memory blocks of the primary agent. Additional ephemeral sleep-time agents will be created when you add data into data sources of the primary agent to process the data sources in the background. These ephemeral agents will create and write to a block specific to the data source, and be deleted once they are finished processing the data sources.
 
@@ -45,7 +55,9 @@ When a `sleeptime_agent` is created, a primary agent and a sleep-time agent are 
 
 ### Configuring the frequency of sleep-time updates
 The sleep-time agent will be triggered every N-steps (default `5`) to update the memory blocks of the primary agent. You can configure the frequency of updates by setting the `sleeptime_agent_frequency` parameter when creating the agent.
-```python maxLines=50
+
+<CodeGroup>
+```python title="python" maxLines=50
 from letta_client import Letta
 from letta_client.types import SleeptimeManagerUpdate
 
@@ -76,6 +88,36 @@ group = client.groups.modify(
     ),
 )
 ```
+```typescript title="node.js" maxLines=50
+import { LettaClient, SleeptimeManagerUpdate } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create a sleep-time-enabled agent
+const agent = await client.agents.create({
+    memoryBlocks: [
+        { value: "", label: "human" },
+        { value: "You are a helpful assistant.", label: "persona" }
+    ],
+    model: "anthropic/claude-3-7-sonnet-20250219",
+    embedding: "openai/text-embedding-3-small",
+    enableSleeptime: true
+});
+console.log(`Created agent id ${agent.id}`);
+
+// get the multi-agent group
+const groupId = agent.multiAgentGroup.id;
+const currentFrequency = agent.multiAgentGroup.sleeptimeAgentFrequency;
+console.log(`Group id: ${groupId}, frequency: ${currentFrequency}`);
+
+// update the frequency to every 2 steps
+const group = await client.groups.modify(groupId, {
+    managerConfig: {
+        sleeptimeAgentFrequency: 2
+    } as SleeptimeManagerUpdate
+});
+```
+</CodeGroup>
 We recommend keeping the frequency relatively high (e.g. 5 or 10) as triggering the sleep-time agent too often can be expensive (due to high token usage) and has diminishing returns.
 
 
@@ -96,7 +138,8 @@ Give your data sources an informative `name` and `description` when creating the
 
 Below is an example of using the SDK to attach a data source to a sleep-time-enabled agent:
 
-```python maxLines=50
+<CodeGroup>
+```python title="python" maxLines=50
 from letta_client import Letta
 
 client = Letta(token="LETTA_API_KEY")
@@ -131,6 +174,39 @@ job = client.sources.files.upload(
     source_id=source.id
 )
 ```
+```typescript title="node.js" maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+import { readFileSync } from 'fs';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+const agent = await client.agents.create({
+    memoryBlocks: [
+        { value: "", label: "human" },
+        { value: "You are a helpful assistant.", label: "persona" }
+    ],
+    model: "anthropic/claude-3-7-sonnet-20250219",
+    embedding: "openai/text-embedding-3-small",
+    enableSleeptime: true
+});
+console.log(`Created agent id ${agent.id}`);
+
+// create a source
+const sourceName = "employee_handbook";
+const source = await client.sources.create({
+    name: sourceName,
+    description: "Provides reference information for the employee handbook",
+    embedding: "openai/text-embedding-3-small" // must match agent
+});
+
+// attach the source to the agent
+await client.agents.sources.attach(agent.id, source.id);
+
+// upload a file: this will trigger processing
+const file = new Blob([readFileSync("handbook.pdf")]);
+const job = await client.sources.files.upload(source.id, file);
+```
+</CodeGroup>
 This code will create and attach a memory block with the label `employee_handbook` to the agent. An ephemeral sleep-time agent will be created to process the data source and write to the memory block, and be deleted once all the passages in the data source have been processed.
 
 <Warning>
