@@ -16,8 +16,10 @@ import {
 } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
 import { getDefaultProject } from '@letta-cloud/utils-server';
-import { DEFAULT_EMBEDDING_MODEL, DEFAULT_LLM_MODEL } from '@letta-cloud/types';
+import { DEFAULT_EMBEDDING_MODEL, DEFAULT_LLM_MODEL, DEFAULT_SYSTEM_PROMPT } from '@letta-cloud/types';
 import { createTemplateFromAgentState } from '@letta-cloud/utils-server';
+
+
 
 type CreateAgentFromStarterKitsRequest = ServerInferRequest<
   typeof contracts.starterKits.createAgentFromStarterKit
@@ -154,7 +156,7 @@ async function createAgentFromStarterKit(
 
   const toolIds =
     'tools' in starterKit
-      ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
+      ? await createToolsInStarterKit(starterKit.tools || [], lettaAgentsId)
       : [];
 
   const agent = await cloudApiRouter.agents.createAgent(
@@ -302,7 +304,7 @@ async function createTemplateFromStarterKit(
 
   const toolIds =
     'tools' in starterKit
-      ? await createToolsInStarterKit(starterKit.tools, lettaAgentsId)
+      ? await createToolsInStarterKit(starterKit.tools || [], lettaAgentsId)
       : [];
 
   const template = await createTemplateFromAgentState({
@@ -312,9 +314,13 @@ async function createTemplateFromStarterKit(
     userId,
     agentState: {
       ...starterKit.agentState,
+      system: starterKit.agentState.system || DEFAULT_SYSTEM_PROMPT,
+      tags: starterKit.agentState.tags || [],
+      identity_ids: starterKit.agentState.identity_ids || [],
       memory: {
-        blocks: starterKit.agentState.memory_blocks,
+        blocks: starterKit.agentState.memory_blocks || [],
       },
+      tool_exec_environment_variables: [],
       // Use tool rules from the starter kit if defined, otherwise default to terminal rule for send_message
       tool_rules: starterKit.agentState.tool_rules || [
         {

@@ -110,7 +110,7 @@ jobs:
       - name: Install python dependencies
         shell: bash
         working-directory: apps/core
-        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Migrate core database
         working-directory: apps/core
         env:
