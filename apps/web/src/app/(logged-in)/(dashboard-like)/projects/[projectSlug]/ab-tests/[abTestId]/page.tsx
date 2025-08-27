@@ -124,7 +124,6 @@ function ABTests() {
             roles={[
               {
                 value: 'user',
-                identityId: 'placeholderId',
                 label: t('role.user'),
                 icon: <PersonIcon />,
               },
