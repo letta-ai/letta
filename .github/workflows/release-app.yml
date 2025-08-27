@@ -27,18 +27,8 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Load cached Poetry Binary
-        id: cached-poetry-binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-1.8.3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -83,8 +73,8 @@ jobs:
       - name: Prepare desktop (rebuild deps)
         run: just prepare-desktop
 
-      - name: Test poetry
-        run: poetry --version
+      - name: Test uv
+        run: uv --version
 
       - name: Build elf
         run: node scripts/desktop-builders/src/generators/build-python-app/build-python-app.js

@@ -85,7 +85,7 @@ function buildPythonAppGenerator() {
   }
 
   console.log('Packaging the app');
-  execSync('poetry run pyinstaller app.spec', {
+  execSync('uv run pyinstaller app.spec', {
     cwd: desktopCorePath,
     stdio: 'inherit',
     shell: 'bash',

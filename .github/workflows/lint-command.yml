@@ -105,7 +105,7 @@ jobs:
 #      run: uv run ruff format .
 
     - name: Run isort, black, autoflake
-      run: poetry run isort . --profile black && poetry run black . && poetry run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
+      run: uv run isort . --profile black && uv run black . && uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
       working-directory: ./apps/core
 
 

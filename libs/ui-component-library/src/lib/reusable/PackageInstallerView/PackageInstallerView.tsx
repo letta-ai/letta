@@ -43,9 +43,9 @@ function useInstallerTypes() {
           `pip install ${packageNames.join(' ')}`,
       },
       {
-        name: 'poetry',
+        name: 'uv',
         installFormatter: (packageNames: string[]) =>
-          `poetry add ${packageNames.join(' ')}`,
+          `uv add ${packageNames.join(' ')}`,
       },
     ] satisfies PackageInstallerType[];
   }, []);

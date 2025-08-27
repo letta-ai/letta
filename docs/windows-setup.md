@@ -37,9 +37,9 @@ Install 1password-cli
 scoop install main/1password-cli
 ```
 
-Install poetry
+Install uv
 ```shell
-scoop install main/poetry
+scoop install main/uv
 ```
 
 Setup nvm

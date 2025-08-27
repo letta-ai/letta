@@ -24,7 +24,7 @@ jobs:
     with:
       test-type: "integration"
       install-args: "-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google"
-      test-command: "poetry run pytest -svv tests/"
+      test-command: "uv run pytest -svv tests/"
       timeout-minutes: 60
       runner: '["self-hosted", "gpu", "lmstudio"]'
       matrix-strategy: |
