@@ -296,9 +296,9 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             raise LettaUnexpectedStreamCancellationError("Stream was terminated due to unexpected cancellation from server")
 
         except Exception as exc:
-            logger.exception("Unhandled Streaming Error")
+            logger.exception(f"Unhandled Streaming Error: {str(exc)}")
             more_body = False
-            error_resp = {"error": {"message": "Internal Server Error"}}
+            error_resp = {"error": {"message": str(exc)}}
             error_event = f"event: error\ndata: {json.dumps(error_resp)}\n\n".encode(self.charset)
             logger.debug("response_started:", self.response_started)
             if not self.response_started:
