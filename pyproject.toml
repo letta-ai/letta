@@ -137,6 +137,7 @@ desktop = [
     "wikipedia>=1.4.0",
     "langchain-community>=0.3.7",
     "locust>=2.31.5",
+    "aiosqlite>=0.21.0",
     "sqlite-vec>=0.1.7a2",
     "pgvector>=0.2.3",
 ]
