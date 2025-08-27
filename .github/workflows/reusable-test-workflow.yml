@@ -359,7 +359,7 @@ jobs:
 
           # Feature flags (shared across all test types)
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
+          LETTA_GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
 
           # Pinecone flags
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
@@ -368,7 +368,6 @@ jobs:
           # Docker-specific environment variables
           PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}
 
-          # TODO (cliandy): see if this works
           LETTA_REDIS_HOST: localhost
         run: |
           set -o xtrace
