@@ -34,7 +34,7 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        uv sync --extra dev --extra postgres --extra external-tools --extra dev
+        uv sync --extra dev --extra postgres --extra external-tools
 
     - name: Validate PR Title
       if: github.event_name == 'pull_request'
