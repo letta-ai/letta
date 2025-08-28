@@ -676,3 +676,18 @@ Cypress.Commands.add('getCurrentTemplateFromUrl', () => {
     };
   });
 });
+
+// Download verification command
+Cypress.Commands.add('verifyDownload', (fileName: string, timeout = 15000) => {
+  const downloadsFolder = Cypress.config('downloadsFolder');
+
+  cy.task('findDownloadedFile', { fileName, downloadsFolder, timeout }).then((filePath) => {
+    if (!filePath) {
+      throw new Error(`File matching pattern "${fileName}" was not found in downloads folder within ${timeout}ms`);
+    }
+
+    // Verify file exists and return the path
+    cy.readFile(filePath).should('exist');
+    cy.wrap(filePath).as('verifiedDownload');
+  });
+});

@@ -2588,6 +2588,9 @@
   "ExportAgentButton": {
     "error": "There was an error exporting this agent, please try again or contact support."
   },
+  "ImportAgentFileProjectSelector/ProjectSelector": {
+    "label": "Select project"
+  },
   "ImportAgentsDialog": {
     "importOptions": "Import options",
     "sourceWarning": "Sources are not yet supported in manual import, your sources will be detached on upload",

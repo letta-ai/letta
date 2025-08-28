@@ -56,6 +56,7 @@ declare namespace Cypress {
       templateVersion: string;
       fullTemplateVersion: string;
     }>;
+    verifyDownload(fileName: string, timeout?: number): Cypress.Chainable<string>;
 
     // Task types for persistent caching
     task(name: 'getProjectSlug', arg: string): Cypress.Chainable<string | null>;
@@ -81,5 +82,7 @@ declare namespace Cypress {
     ): Cypress.Chainable<null>;
     task(name: 'clearAgentId', arg: string): Cypress.Chainable<null>;
     task(name: 'clearAllCache'): Cypress.Chainable<null>;
+    task(name: 'findDownloadedFile', arg: { fileName: string; downloadsFolder: string; timeout: number }): Cypress.Chainable<string | null>;
+    task(name: 'deleteFile', arg: string): Cypress.Chainable<null>;
   }
 }

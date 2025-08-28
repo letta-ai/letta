@@ -26,6 +26,7 @@ import { stripeWebhook } from './webhooks/stripeWebhook/stripeWebhook';
 import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware';
 import { datasourceMiddleware } from './libs/datasourceMiddleware/datasourceMiddleware';
 import { listMiddleware } from './libs/listMiddleware/listMiddleware';
+import { agentFileUploadMiddleware } from './libs/agentFileUploadMiddleware/agentFileUploadMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -148,6 +149,7 @@ export function startServer() {
   app.use(fileSizeRateLimitMiddleware);
   app.use(requireProjectMiddleware);
   app.use(projectHeaderMiddleware);
+  app.use(agentFileUploadMiddleware);
   app.use(updateAgentMiddleware);
   app.use(trackingMiddleware);
   app.use(datasourceMiddleware);
@@ -220,6 +222,13 @@ export function startServer() {
 
       header['X-Organization-Id'] = req.actor?.cloudOrganizationId || '';
     }
+
+    // // Forward custom headers
+    // if (req.headers['x-override-embedding-model']) {
+    //   header['X-Override-Embedding-Model'] = req.headers[
+    //     'x-override-embedding-model'
+    //   ] as string;
+    // }
 
     return createProxyMiddleware<Request, Response>({
       target: environment.LETTA_AGENTS_ENDPOINT,

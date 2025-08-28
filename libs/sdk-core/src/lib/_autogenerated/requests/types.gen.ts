@@ -6677,6 +6677,7 @@ export type ExportAgentSerializedResponse = string;
 export type ImportAgentSerializedData = {
   formData: Body_import_agent_serialized;
   userId?: string | null;
+  xOverrideEmbeddingModel?: string | null;
 };
 
 export type ImportAgentSerializedResponse = ImportedAgentsResponse;

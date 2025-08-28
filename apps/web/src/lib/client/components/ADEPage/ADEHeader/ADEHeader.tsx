@@ -186,6 +186,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         triggerAsChild
         trigger={
           <Button
+            data-testid="agent-settings-dropdown-trigger"
             size="small"
             preIcon={icon}
             label={t('AgentSettingsDropdown.trigger', {
@@ -253,6 +254,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         <ExportAgentButton
           trigger={
             <DropdownMenuItem
+              data-testid="download-agent-file"
               doNotCloseOnSelect
               preIcon={<DownloadIcon />}
               label={t('AgentSettingsDropdown.download')}

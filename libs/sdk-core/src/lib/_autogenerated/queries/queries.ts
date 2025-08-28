@@ -4167,6 +4167,7 @@ export const useAgentsServiceCreateAgent = <
  * @param data The data for the request.
  * @param data.formData
  * @param data.userId
+ * @param data.xOverrideEmbeddingModel
  * @returns ImportedAgentsResponse Successful Response
  * @throws ApiError
  */
@@ -4182,6 +4183,7 @@ export const useAgentsServiceImportAgentSerialized = <
       {
         formData: Body_import_agent_serialized;
         userId?: string;
+        xOverrideEmbeddingModel?: string;
       },
       TContext
     >,
@@ -4194,13 +4196,15 @@ export const useAgentsServiceImportAgentSerialized = <
     {
       formData: Body_import_agent_serialized;
       userId?: string;
+      xOverrideEmbeddingModel?: string;
     },
     TContext
   >({
-    mutationFn: ({ formData, userId }) =>
+    mutationFn: ({ formData, userId, xOverrideEmbeddingModel }) =>
       AgentsService.importAgentSerialized({
         formData,
         userId,
+        xOverrideEmbeddingModel,
       }) as unknown as Promise<TData>,
     ...options,
   });

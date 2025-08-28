@@ -3072,7 +3072,24 @@
         "summary": "Import Agent Serialized",
         "description": "Import a serialized agent file and recreate the agent(s) in the system.\nReturns the IDs of all imported agents.",
         "operationId": "import_agent_serialized",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-override-embedding-model",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Override-Embedding-Model"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {

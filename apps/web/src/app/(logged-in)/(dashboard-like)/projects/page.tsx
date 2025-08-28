@@ -158,6 +158,7 @@ function ProjectsPage() {
     <>
       {targetAgentfile && (
         <ImportAgentsDialog
+          showProjectSelector
           supportTemplateUploading
           trigger={
             <button

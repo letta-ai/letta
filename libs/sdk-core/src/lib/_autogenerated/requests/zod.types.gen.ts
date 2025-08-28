@@ -9458,6 +9458,9 @@ export const post_Import_agent_serialized = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'x-override-embedding-model': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_import_agent_serialized,
   }),

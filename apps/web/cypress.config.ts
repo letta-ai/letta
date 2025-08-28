@@ -3,8 +3,9 @@ import { nxE2EPreset } from '@nx/cypress/plugins/cypress-preset';
 import { defineConfig } from 'cypress';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { glob } from 'glob';
 
 config({ path: resolve(__dirname, '.env') });
 
@@ -171,6 +172,48 @@ export default defineConfig({
           };
           saveCache(cache);
           return null;
+        },
+
+        // Download verification task
+        findDownloadedFile({ fileName, downloadsFolder, timeout }: { fileName: string; downloadsFolder: string; timeout: number }) {
+          return new Promise((resolve) => {
+            const startTime = Date.now();
+            
+            const checkForFile = () => {
+              try {
+                const files = glob.sync(fileName, { cwd: downloadsFolder });
+                if (files.length > 0) {
+                  const filePath = join(downloadsFolder, files[0]);
+                  resolve(filePath);
+                  return;
+                }
+              } catch (error) {
+                // Continue checking
+              }
+              
+              if (Date.now() - startTime > timeout) {
+                resolve(null);
+                return;
+              }
+              
+              setTimeout(checkForFile, 500);
+            };
+            
+            checkForFile();
+          });
+        },
+
+        // Delete file task
+        deleteFile(filePath: string) {
+          try {
+            if (existsSync(filePath)) {
+              unlinkSync(filePath);
+            }
+            return null;
+          } catch (error) {
+            console.error('Failed to delete file:', error);
+            return null;
+          }
         },
       });
 

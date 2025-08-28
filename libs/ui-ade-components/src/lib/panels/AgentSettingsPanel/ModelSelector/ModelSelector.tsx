@@ -159,6 +159,7 @@ export function ModelSelector(props: LocalModelSelectorProps) {
             {t('invalidModelWarning.message')}
           </Typography>
           <Popover
+            triggerAsChild
             trigger={
               <Button
                 size="xsmall"

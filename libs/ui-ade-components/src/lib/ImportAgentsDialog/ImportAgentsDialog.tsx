@@ -15,7 +15,6 @@ import {
   JSONViewer,
   LettaInvaderIcon,
   MiniApp,
-  Select,
   Switch,
   toast,
   Typography,
@@ -26,7 +25,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { cn } from '@letta-cloud/ui-styles';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
+import { webApi } from '@letta-cloud/sdk-web';
+import type { ProjectSelectorProjectType } from './ImportAgentFileProjectSelector/ImportAgentFileProjectSelector';
+import {
+  ImportAgentFileProjectSelector,
+  ProjectSelectorProjectSchema,
+} from './ImportAgentFileProjectSelector/ImportAgentFileProjectSelector';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { environment } from '@letta-cloud/config-environment-variables';
 
@@ -34,7 +38,8 @@ interface ImportAgentsDialogProps {
   trigger: React.ReactNode;
   supportTemplateUploading?: boolean;
   defaultTemplateImport?: boolean;
-  projectId?: string;
+  defaultProject?: ProjectSelectorProjectType;
+  showProjectSelector?: boolean;
   onSuccess?: (redirectId: string, template?: boolean) => void;
   agentfileData?: AgentFileSchema;
 }
@@ -47,24 +52,13 @@ interface AgentsDialogSidebarProps {
   showProjectSelector?: boolean;
 }
 
-function getProjects() {
-  const { data, isLoading } = webApi.projects.getProjects.useQuery({
-    queryKey: webApiQueryKeys.projects.getProjectsWithSearch({}),
-    queryData: {
-      query: {},
-    },
-  });
-
-  return { data, isLoading };
-}
-
 function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
   const {
     isImporting,
     supportTemplateUploading = false,
     onReset,
     secondaryButton,
-    showProjectSelector = false,
+    showProjectSelector,
   } = props;
   const t = useTranslations('ImportAgentsDialog');
 
@@ -90,53 +84,25 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
           <Typography bold variant="body" align="left">
             {t('importOptions')}
           </Typography>
-          {showProjectSelector && (
+          {!!showProjectSelector && (
             <FormField
               render={({ field }) => {
-                const { data: projectsData, isLoading: isLoadingProjects } =
-                  getProjects();
-
-                const projectOptions = (projectsData?.body?.projects || []).map(
-                  (project) => ({
-                    value: project.id,
-                    label: project.name,
-                  }),
-                );
-
-                // Set default value to first project if no value is selected
-                if (
-                  !field.value &&
-                  projectOptions.length > 0 &&
-                  !isLoadingProjects
-                ) {
-                  field.onChange(projectOptions[0].value);
-                }
-
-                const selectedValue = projectOptions.find(
-                  (option) => option.value === field.value,
-                );
-
                 return (
-                  <Select
-                    label={'Select project'}
-                    options={projectOptions}
-                    value={selectedValue}
-                    onSelect={(selectedOption) => {
-                      if (selectedOption && 'value' in selectedOption) {
-                        field.onChange(selectedOption?.value || '');
-                      }
-                    }}
-                    isLoading={isLoadingProjects}
+                  <ImportAgentFileProjectSelector
+                    value={field.value}
+                    onSelectProject={field.onChange}
                     fullWidth
                   />
                 );
               }}
-              name="projectId"
+              name="project"
             />
           )}
+
           <FormField
             render={({ field }) => (
               <Switch
+                data-testid="append-copy-suffix-switch"
                 fullWidth
                 infoTooltip={{
                   text: t('AgentsDialogSidebar.appendCopySuffix.info'),
@@ -180,6 +146,7 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
           )}
         </VStack>
         <Button
+          data-testid="import-button"
           color="primary"
           busy={isImporting}
           type="submit"
@@ -206,11 +173,13 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
 export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   const {
     trigger,
-    projectId,
+    defaultProject,
     onSuccess,
     defaultTemplateImport = false,
+    showProjectSelector = false,
     agentfileData,
   } = props;
+
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
   const { push } = useRouter();
@@ -227,17 +196,17 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
             message: t('errors.fileIsRequired'),
           })
           .nullable(),
-        projectId: z.string().optional(),
+        project: showProjectSelector
+          ? ProjectSelectorProjectSchema
+          : ProjectSelectorProjectSchema.optional(),
         overrideExistingTools: z.boolean(),
         appendCopySuffix: z.boolean(),
         importAsTemplate: z.boolean().optional(),
       }),
-    [t],
+    [t, showProjectSelector],
   );
 
   type UploadToFormValues = z.infer<typeof UploadToFormValuesSchema>;
-
-  const { data: projectsData } = getProjects();
 
   const {
     mutate: importAgent,
@@ -249,14 +218,10 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     },
     onSuccess: async (res) => {
       // Get the selected project ID and find corresponding slug
-      const selectedProjectId = form.getValues('projectId') || projectId;
-      const selectedProject = projectsData?.body?.projects?.find(
-        (project) => project.id === selectedProjectId,
-      );
-      const selectedProjectSlug = selectedProject?.slug;
+      const selectedProject = form.getValues('project');
 
-      if (selectedProjectSlug) {
-        push(`/projects/${selectedProjectSlug}/agents/${res.agent_ids[0]}`);
+      if (selectedProject) {
+        push(`/projects/${selectedProject.slug}/agents/${res.agent_ids[0]}`);
       }
 
       await queryClient.refetchQueries({
@@ -303,7 +268,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     mode: 'onChange',
     defaultValues: {
       file: null,
-      projectId: projectId || '',
+      project: defaultProject,
       overrideExistingTools: false,
       appendCopySuffix: false,
       importAsTemplate: defaultTemplateImport,
@@ -325,12 +290,15 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
   );
   const [fileReadError, setFileReadError] = useState<string | null>(null);
 
-  const convertAgentDataToFile = useCallback((agentData: AgentFileSchema): File => {
-    const jsonString = JSON.stringify(agentData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const fileName = `agent.json`;
-    return new File([blob], fileName, { type: 'application/json' });
-  }, []);
+  const convertAgentDataToFile = useCallback(
+    (agentData: AgentFileSchema): File => {
+      const jsonString = JSON.stringify(agentData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const fileName = `agent.json`;
+      return new File([blob], fileName, { type: 'application/json' });
+    },
+    [],
+  );
 
   const onSubmit = useCallback(
     (values: UploadToFormValues) => {
@@ -347,7 +315,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         return;
       }
 
-      const selectedProjectId = values.projectId || projectId;
+      const selectedProjectId = values.project?.id || defaultProject?.id;
 
       // Handle template import
       if (values.importAsTemplate) {
@@ -376,7 +344,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       importAgent,
       file,
       importTemplate,
-      projectId,
+      defaultProject,
       agentfileData,
       convertAgentDataToFile,
     ],
@@ -544,12 +512,12 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
               <AgentsDialogSidebar
                 supportTemplateUploading={false}
                 onReset={handleReset}
+                showProjectSelector={showProjectSelector}
                 isImporting={
                   isImportAgentPending ||
                   isImportTemplatePending ||
                   forcePendingState
                 }
-                showProjectSelector={!!agentfileData}
                 secondaryButton={
                   agentfileData && (
                     <Button

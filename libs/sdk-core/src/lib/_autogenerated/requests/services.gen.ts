@@ -1913,6 +1913,7 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.formData
    * @param data.userId
+   * @param data.xOverrideEmbeddingModel
    * @returns ImportedAgentsResponse Successful Response
    * @throws ApiError
    */
