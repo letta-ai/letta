@@ -1189,9 +1189,15 @@
     "overrides": "Show overrides"
   },
   "components/Messages/InteractiveAgentMessage": {
-    "noContent": "This message returned with no content"
+    "noContent": "This message returned with no content",
+    "failedToParse": "This message could not be parsed, please check the debug to see the raw message"
   },
   "components/Messages": {
+    "ToggleDebugMode": {
+      "goToDebug": "Debug message",
+      "goToInteractive": "Return to interactive"
+    },
+    "loadMore": "Load more messages",
     "stepWasCancelled": "Step was cancelled by user",
     "exploreStopReason": "Click to view error",
     "stepDurationTooltip": "The duration of this step",

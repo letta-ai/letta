@@ -4,7 +4,6 @@ import { useTranslations } from '@letta-cloud/translations';
 import {
   ChatBubbleIcon,
   ChatIcon,
-  CodeIcon,
   RawToggleGroup,
 } from '@letta-cloud/ui-component-library';
 import type { MessagesDisplayMode } from '../../Messages/types';
@@ -37,12 +36,6 @@ export function ControlChatroomRenderMode() {
       label={t('setChatroomRenderMode.label')}
       hideLabel
       items={[
-        {
-          icon: <CodeIcon />,
-          label: t('setChatroomRenderMode.options.debug'),
-          value: 'debug',
-          hideLabel: true,
-        },
         {
           icon: <ChatIcon />,
           label: t('setChatroomRenderMode.options.interactive'),

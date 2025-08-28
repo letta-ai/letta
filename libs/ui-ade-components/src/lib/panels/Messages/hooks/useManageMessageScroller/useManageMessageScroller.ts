@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useMessagesContext } from '../useMessagesContext/useMessagesContext';
 import type { InfiniteData } from '@tanstack/query-core';
 import type {
   LettaMessageUnion,
   ListMessagesResponse,
 } from '@letta-cloud/sdk-core';
 import { deepEqual } from 'fast-equals';
+import type { MessagesDisplayMode } from '../../types';
 
 interface ManageMessageScrollerOptions {
   messagesData?: InfiniteData<ListMessagesResponse>;
   isSendingMessage?: boolean;
   isFetchingOlderPage?: boolean;
+  mode: MessagesDisplayMode;
   fetchOlderPage?: () => void;
 }
 
@@ -20,6 +21,7 @@ export function useManageMessageScroller(
   const {
     messagesData,
     isSendingMessage,
+    mode,
     fetchOlderPage,
     isFetchingOlderPage,
   } = options;
@@ -29,9 +31,6 @@ export function useManageMessageScroller(
   /* Scroll lock prevents scrolling, this is if the user tries to scroll up while new messages are being sent. */
   const scrollLock = useRef(false);
 
-  // on mount, or mode change, scroll down
-  const { mode } = useMessagesContext();
-
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
       if (scrollRef.current) {
@@ -39,6 +38,7 @@ export function useManageMessageScroller(
 
         setTimeout(() => {
           fetchNextPageLock.current = true;
+          scrollLock.current = false;
         }, 250);
       }
     });
@@ -110,6 +110,8 @@ export function useManageMessageScroller(
     pageCountRef.current = messagesData.pages.length;
   }, [messagesData, scrollToBottom, mode]);
 
+  const lastAutoFetch = useRef<number>(0)
+
   // if the user is near the top of the page, as long as the page is larger than the viewport, fetch older messages
   useEffect(() => {
     if (
@@ -130,8 +132,16 @@ export function useManageMessageScroller(
         return;
       }
 
+
       if (scrollElement.scrollTop < 100) {
+        // if the last autofetch was less than 1.5 seconds ago, wait
+        if (Date.now() - lastAutoFetch.current < 1500) {
+          return;
+        }
+
         fetchOlderPage?.();
+        lastAutoFetch.current = Date.now();
+
       }
     }
 
@@ -154,9 +164,8 @@ export function useManageMessageScroller(
   }, [isSendingMessage, scrollToBottom]);
 
   useEffect(() => {
+    fetchNextPageLock.current = true;
     scrollToBottom();
-    scrollLock.current = false;
-    fetchNextPageLock.current = false;
   }, [mode, scrollToBottom]);
 
   // set up scroll lock ref

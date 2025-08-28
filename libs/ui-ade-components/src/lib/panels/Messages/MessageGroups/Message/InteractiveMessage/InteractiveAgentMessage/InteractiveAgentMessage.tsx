@@ -48,8 +48,8 @@ export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
   if (!content) {
     return (
       <VStack>
-        <Typography italic>
-          {t('noContent')}
+        <Typography variant="body3" italic>
+          {t('failedToParse')}
         </Typography>
       </VStack>
     )

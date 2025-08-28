@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useMemo, memo } from 'react';
-import type { MessagesDisplayMode } from '../../types';
 
 interface MessagesContextType {
   disableInteractivity: boolean;
-  mode: MessagesDisplayMode;
 }
 
 const MessagesContext = createContext<MessagesContextType | undefined>(
@@ -15,24 +13,21 @@ export const useMessagesContext = () => {
 
   return {
     disableInteractivity: context?.disableInteractivity ?? false,
-    mode: context?.mode ?? 'interactive',
   };
 };
 
 interface MessagesProviderProps {
   children: React.ReactNode;
   disableInteractivity: boolean;
-  mode: MessagesDisplayMode;
 }
 
 export const MessagesProvider: React.FC<MessagesProviderProps> = memo(
-  ({ children, disableInteractivity, mode }) => {
+  ({ children, disableInteractivity }) => {
     const value = useMemo(
       () => ({
         disableInteractivity,
-        mode,
       }),
-      [disableInteractivity, mode],
+      [disableInteractivity],
     );
 
     return (

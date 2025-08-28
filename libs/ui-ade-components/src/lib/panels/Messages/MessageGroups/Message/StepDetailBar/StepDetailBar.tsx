@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   Badge,
-  Button,
+  Button, ChatIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CodeIcon,
@@ -11,7 +11,7 @@ import {
   Tooltip,
   Typography,
   VStack,
-  WarningIcon,
+  WarningIcon
 } from '@letta-cloud/ui-component-library';
 import { FeedbackButtons } from '../../../FeedbackButtons/FeedbackButtons';
 import {
@@ -33,11 +33,46 @@ import { ModifyToolBehaviorPopover } from '../../../ModifyToolBehaviorPopover/Mo
 import { CopyMessageContentButton } from '../../../CopyMessageContentButton/CopyMessageContentButton';
 import { ViewMessageTrace } from '../../../../../ViewMessageTrace/ViewMessageTrace';
 import { useRawMessageContent } from '../../../hooks/useRawMessageContent/useRawMessageContent';
+import { useMessageGroupContext } from '../../../hooks/useMessageGroupContext/useMessageGroupContext';
 
 interface StepDetailBarProps {
   message: LettaMessageUnion;
   showDetails: boolean;
   setShowDetails: (show: boolean) => void;
+}
+
+function ToggleDebugMode() {
+  const { setDisplayMode, displayMode } = useMessageGroupContext()
+  const t = useTranslations('components/Messages.ToggleDebugMode');
+
+  const isInteractive = useMemo(() => {
+    return displayMode === 'interactive'
+  }, [displayMode]);
+
+  return (
+    <Button
+      preIcon={
+        isInteractive ? (
+          <CodeIcon size="small" />
+        ) : (
+          <ChatIcon size="small" />
+        )
+      }
+      onClick={() => {
+        if (isInteractive) {
+          setDisplayMode('debug')
+        } else {
+          setDisplayMode('interactive')
+        }
+      }}
+      size="3xsmall"
+      hideLabel
+      square
+      _use_rarely_className="w-4 h-4 text-muted hover:text-brand"
+      label={isInteractive ? t('goToDebug') : t('goToInteractive')}
+      color="tertiary"
+    />
+  )
 }
 
 export function StepDetailBar(props: StepDetailBarProps) {
@@ -123,7 +158,7 @@ export function StepDetailBar(props: StepDetailBarProps) {
                 />
               </HStack>
             )}
-            <HStack gap="small">
+            <HStack align="center" gap="small">
               {message.message_type === 'tool_call_message' &&
                 message.tool_call.name && (
                   <ModifyToolBehaviorPopover
@@ -133,6 +168,7 @@ export function StepDetailBar(props: StepDetailBarProps) {
               {(message.message_type === 'user_message' ||
                 message.message_type === 'tool_return_message') &&
                 rawMessage && <CopyMessageContentButton message={rawMessage} />}
+              <ToggleDebugMode />
             </HStack>
           </HStack>
 

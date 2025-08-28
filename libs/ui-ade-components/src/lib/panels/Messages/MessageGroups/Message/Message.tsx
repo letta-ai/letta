@@ -10,6 +10,7 @@ import { cn } from '@letta-cloud/ui-styles';
 import { StepDetailBar } from './StepDetailBar/StepDetailBar';
 import { EditMessage } from './EditMessage/EditMessage';
 import { useMessageContext, MessageContextProvider } from './MessageContext';
+import { useMessageGroupContext } from '../../hooks/useMessageGroupContext/useMessageGroupContext';
 
 interface MessageProps {
   message: LettaMessageUnion;
@@ -18,9 +19,9 @@ interface MessageProps {
 
 function MessageInner(props: MessageProps) {
   const { message, toolReturnMessage } = props;
-  const { mode } = useMessagesContext();
+  const { displayMode } = useMessageGroupContext();
 
-  switch (mode) {
+  switch (displayMode) {
     case 'simple':
       return <InteractiveMessage message={message} />;
     case 'interactive':
@@ -81,9 +82,10 @@ function MessageContent(props: MessageContentProps) {
 
 export function Message(props: MessageProps) {
   const { message, toolReturnMessage } = props;
-  const { disableInteractivity, mode } = useMessagesContext();
+  const { disableInteractivity } = useMessagesContext();
+  const { displayMode, baseMode } = useMessageGroupContext();
 
-  const isInteractiveMode = useMemo(() => mode === 'interactive', [mode]);
+  const isNotSimple = useMemo(() => baseMode !== 'simple', [baseMode]);
 
   const canShowDetails = useMemo(() => {
     // if type is tool_call_message we can show details
@@ -95,7 +97,6 @@ export function Message(props: MessageProps) {
   }, [message]);
 
   const [showDetails, setShowDetails] = useState(false);
-
 
   return (
     <VStack
@@ -116,8 +117,11 @@ export function Message(props: MessageProps) {
             message={message}
             toolReturnMessage={toolReturnMessage}
           />
+          {displayMode === 'debug' &&
+            baseMode !== 'debug' &&
+            toolReturnMessage && <MessageContent message={toolReturnMessage} />}
         </MessageContextProvider>
-        {!disableInteractivity && isInteractiveMode && canShowDetails && (
+        {!disableInteractivity && isNotSimple && canShowDetails && (
           <StepDetailBar
             showDetails={showDetails}
             setShowDetails={setShowDetails}

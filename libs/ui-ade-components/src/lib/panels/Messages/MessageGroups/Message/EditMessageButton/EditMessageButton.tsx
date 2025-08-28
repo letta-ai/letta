@@ -3,16 +3,18 @@ import React from 'react';
 import { useMessagesContext } from '../../../hooks/useMessagesContext/useMessagesContext';
 import { useMessageContext } from '../MessageContext';
 import { useTranslations } from '@letta-cloud/translations';
+import { useMessageGroupContext } from '../../../hooks/useMessageGroupContext/useMessageGroupContext';
 
 
 export function EditMessageButton() {
 
-  const { mode, disableInteractivity } = useMessagesContext();
+  const { disableInteractivity } = useMessagesContext();
+  const { displayMode } = useMessageGroupContext()
   const { isEditing, setIsEditing } = useMessageContext();
 
   const t = useTranslations('components/Messages');
 
-  if (mode === 'interactive' && !disableInteractivity) {
+  if (displayMode === 'interactive' && !disableInteractivity) {
     return (
       <Button
         preIcon={<EditIcon size="auto" />}

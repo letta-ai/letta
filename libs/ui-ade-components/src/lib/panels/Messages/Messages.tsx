@@ -5,6 +5,7 @@ import {
   LoadingEmptyStatusComponent,
   Spinner,
   HStack,
+  Typography,
 } from '@letta-cloud/ui-component-library';
 import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
 import {
@@ -89,68 +90,69 @@ export function Messages(props: MessagesProps) {
   const queryClient = useQueryClient();
   const { data: includeErr = false } = useFeatureFlag('SHOW_ERRORED_MESSAGES');
 
-  const { data, hasNextPage, fetchNextPage, isFetching, isFetchingNextPage } = useInfiniteQuery<
-    LettaMessageUnion[],
-    Error,
-    InfiniteData<ListMessagesResponse>,
-    unknown[],
-    { before?: string }
-  >({
-    refetchInterval,
-    queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-    queryFn: async (query) => {
-      const res = (await getMessages({
-        url: developmentServerConfig?.url,
-        headers: {
-          'X-SOURCE-CLIENT': window.location.pathname,
-          ...(developmentServerConfig?.password
-            ? {
-                Authorization: `Bearer ${developmentServerConfig.password}`,
-                'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
-              }
-            : {}),
-        },
-        agentId,
-        limit: MESSAGE_LIMIT,
-        includeErr: includeErr,
-        ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
-      })) as unknown as ListMessagesResponse;
+  const { data, hasNextPage, fetchNextPage, isFetching, isFetchingNextPage } =
+    useInfiniteQuery<
+      LettaMessageUnion[],
+      Error,
+      InfiniteData<ListMessagesResponse>,
+      unknown[],
+      { before?: string }
+    >({
+      refetchInterval,
+      queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+      queryFn: async (query) => {
+        const res = (await getMessages({
+          url: developmentServerConfig?.url,
+          headers: {
+            'X-SOURCE-CLIENT': window.location.pathname,
+            ...(developmentServerConfig?.password
+              ? {
+                  Authorization: `Bearer ${developmentServerConfig.password}`,
+                  'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
+                }
+              : {}),
+          },
+          agentId,
+          limit: MESSAGE_LIMIT,
+          includeErr: includeErr,
+          ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
+        })) as unknown as ListMessagesResponse;
 
-      if (query.pageParam.before) {
-        return res;
-      }
+        if (query.pageParam.before) {
+          return res;
+        }
 
-      const data = queryClient.getQueriesData<
-        InfiniteData<ListMessagesResponse>
-      >({
-        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-      });
+        const data = queryClient.getQueriesData<
+          InfiniteData<ListMessagesResponse>
+        >({
+          queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+        });
 
-      const firstPage = data[0]?.[1]?.pages[0] || [];
+        const firstPage = data[0]?.[1]?.pages[0] || [];
 
-      return removeDuplicateMessages([
-        ...(firstPage as LettaMessageUnion[]),
-        ...(Array.isArray(res) ? res : []),
-      ]) as ListMessagesResponse;
-    },
-    getNextPageParam: (lastPage) => {
-      if (!Array.isArray(lastPage)) {
-        return undefined;
-      }
+        return removeDuplicateMessages([
+          ...(firstPage as LettaMessageUnion[]),
+          ...(Array.isArray(res) ? res : []),
+        ]) as ListMessagesResponse;
+      },
+      getNextPageParam: (lastPage) => {
+        if (!Array.isArray(lastPage)) {
+          return undefined;
+        }
 
-      if (lastPage.length < MESSAGE_LIMIT) {
-        return undefined;
-      }
+        if (lastPage.length < MESSAGE_LIMIT) {
+          return undefined;
+        }
 
-      return {
-        before: lastPage.toSorted(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        )[0].id,
-      };
-    },
-    enabled: !isSendingMessage && !!agentId,
-    initialPageParam: { before: '' },
-  });
+        return {
+          before: lastPage.toSorted(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          )[0].id,
+        };
+      },
+      enabled: !isSendingMessage && !!agentId,
+      initialPageParam: { before: '' },
+    });
 
   useEffect(() => {
     if (!data?.pages || data.pages.length === 0) {
@@ -188,14 +190,13 @@ export function Messages(props: MessagesProps) {
             return false;
           }
 
-          if (['system_message'].includes(message.message_type )) {
+          if (['system_message'].includes(message.message_type)) {
             return false;
           }
 
           if (message.message_type === 'user_message') {
-
             // we should hide user_messages with `"type": "login" json (do not parse)
-            if (typeof  message.content === 'string') {
+            if (typeof message.content === 'string') {
               if (message.content?.includes('"type": "login"')) {
                 return false;
               }
@@ -209,7 +210,6 @@ export function Messages(props: MessagesProps) {
                 return false;
               }
             }
-
 
             return true;
           }
@@ -245,11 +245,12 @@ export function Messages(props: MessagesProps) {
 
     const messages = data.pages.flat();
 
-    return removeDuplicateMessages(messages).filter(shouldRenderMessage)
+    return removeDuplicateMessages(messages).filter(shouldRenderMessage);
   }, [data, shouldRenderMessage]);
 
   const { scrollRef } = useManageMessageScroller({
     isSendingMessage,
+    mode,
     messagesData: data,
     fetchOlderPage: () => {
       if (isFetching || !hasNextPage) {
@@ -260,10 +261,7 @@ export function Messages(props: MessagesProps) {
   });
 
   return (
-    <MessagesProvider
-      disableInteractivity={disableInteractivity ?? false}
-      mode={mode}
-    >
+    <MessagesProvider disableInteractivity={disableInteractivity ?? false}>
       <VStack collapseHeight flex overflow="hidden">
         <VStack
           ref={scrollRef}
@@ -282,7 +280,7 @@ export function Messages(props: MessagesProps) {
             >
               <HStack
                 style={{
-                  width: 28
+                  width: 28,
                 }}
                 className={cn(
                   isFetchingNextPage ? 'opacity-100' : 'opacity-0',
@@ -298,10 +296,43 @@ export function Messages(props: MessagesProps) {
               >
                 <Spinner size="small" />
               </HStack>
+              {hasNextPage && !isFetchingNextPage && (
+                <HStack
+                  style={{
+                    marginRight: 10,
+                  }}
+                  className={cn(
+                    hasNextPage && !isFetchingNextPage
+                      ? 'opacity-100'
+                      : 'opacity-0',
+                    'transition-opacity duration-500',
+                  )}
+                  fullHeight
+                  justify="center"
+                  as="button"
+                  onClick={() => {
+                    fetchNextPage();
+                  }}
+                  border
+                  paddingX="small"
+                  paddingY="xxsmall"
+                  align="center"
+                  color="background-grey2"
+                >
+                  <Typography variant="body3" bold>
+                    {t('loadMore')}
+                  </Typography>
+                </HStack>
+              )}
+
               <div style={{ width: 209 }} />
             </div>
           )}
-          <MessageGroups messages={messages} hasNextPage={hasNextPage} />
+          <MessageGroups
+            mode={mode}
+            messages={messages}
+            hasNextPage={hasNextPage}
+          />
         </VStack>
         <div
           className={cn(
@@ -311,7 +342,9 @@ export function Messages(props: MessagesProps) {
         >
           <LoadingEmptyStatusComponent
             isLoading={!data}
-            emptyMessage={disableInteractivity ? t('noMessagesPreviewTab') : t('noMessages')}
+            emptyMessage={
+              disableInteractivity ? t('noMessagesPreviewTab') : t('noMessages')
+            }
             loaderFillColor="background-grey"
             loaderVariant="spinner"
           />

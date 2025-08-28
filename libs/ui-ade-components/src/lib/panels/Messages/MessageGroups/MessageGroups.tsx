@@ -8,9 +8,8 @@ import {
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
-import React, {  useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useGroupedMessages } from '../hooks/useGroupedMessages/useGroupedMessages';
-import { useMessagesContext } from '../hooks/useMessagesContext/useMessagesContext';
 import type {
   ListMessagesResponse,
   ToolReturnMessage,
@@ -18,15 +17,17 @@ import type {
 import type { AgentSimulatorMessageGroupType } from '../../AgentSimulator/types';
 import { Message } from './Message/Message';
 import { useTranslations } from '@letta-cloud/translations';
+import type { MessagesDisplayMode } from '../types';
+import { MessageGroupContextProvider } from '../hooks/useMessageGroupContext/useMessageGroupContext';
 
 interface MessageGroupType {
   group: AgentSimulatorMessageGroupType;
   dataAnchor?: string;
+  mode: MessagesDisplayMode;
 }
 
-function MessageGroup({ group, dataAnchor }: MessageGroupType) {
+function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
   const { name, messages } = group;
-  const { mode } = useMessagesContext();
 
   const sortedMessages = useMemo(() => {
     let nextMessages = messages.sort(
@@ -110,71 +111,72 @@ function MessageGroup({ group, dataAnchor }: MessageGroupType) {
   );
 
   return (
-    <VStack
-      paddingY="medium"
-      paddingLeft="medium"
-      position="relative"
-      paddingRight="medium"
-      /* eslint-disable-next-line react/forbid-component-props */
-      style={style}
-      className="message-group rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem] w-full"
-      data-testid="message-group"
-      {...(dataAnchor && { 'data-anchor': dataAnchor })}
-    >
-      <HStack align="center" className="gap-1.5">
-        <IconAvatar
-          textColor={textColor}
-          backgroundColor={backgroundColor}
-          icon={icon}
-          size={'xxsmall'}
-          className="rounded-[2px]"
-        />
-        <Typography variant="body4" className="tracking-[0.04em] font-bold">
-          {name.toUpperCase()}
-        </Typography>
-      </HStack>
+    <MessageGroupContextProvider mode={mode}>
       <VStack
-        gap="medium"
-        data-testid={`${name.toLowerCase()}-message-content`}
+        paddingY="medium"
+        paddingLeft="medium"
+        position="relative"
+        paddingRight="medium"
+        /* eslint-disable-next-line react/forbid-component-props */
+        style={style}
+        className="message-group rounded-t-[0.375rem] gap-1.5 rounded-br-[0.375rem] w-full"
+        data-testid="message-group"
+        {...(dataAnchor && { 'data-anchor': dataAnchor })}
       >
-        {sortedMessages.map((message, index) => {
-          const toolReturnMessage =
-            message.message_type === 'tool_call_message' &&
-            'tool_call_id' in message.tool_call
-              ? toolReturnMessages[message.tool_call.tool_call_id || '']
-              : undefined;
+        <HStack align="center" className="gap-1.5">
+          <IconAvatar
+            textColor={textColor}
+            backgroundColor={backgroundColor}
+            icon={icon}
+            size={'xxsmall'}
+            className="rounded-[2px]"
+          />
+          <Typography variant="body4" className="tracking-[0.04em] font-bold">
+            {name.toUpperCase()}
+          </Typography>
+        </HStack>
+        <VStack
+          gap="medium"
+          data-testid={`${name.toLowerCase()}-message-content`}
+        >
+          {sortedMessages.map((message, index) => {
+            const toolReturnMessage =
+              message.message_type === 'tool_call_message' &&
+              'tool_call_id' in message.tool_call
+                ? toolReturnMessages[message.tool_call.tool_call_id || '']
+                : undefined;
 
-          const messageToSet = message;
+            const messageToSet = message;
 
-          if (message.message_type === 'tool_call_message') {
-            // set the stepId of the tool_call_message to the tool_return_message's stepId if it exists
-            if (toolReturnMessage && toolReturnMessage.step_id) {
-              messageToSet.step_id = toolReturnMessage.step_id;
+            if (message.message_type === 'tool_call_message') {
+              // set the stepId of the tool_call_message to the tool_return_message's stepId if it exists
+              if (toolReturnMessage && toolReturnMessage.step_id) {
+                messageToSet.step_id = toolReturnMessage.step_id;
+              }
             }
-          }
 
-          return (
-            <Message
-              key={`${message.id}_${index}`}
-              message={messageToSet}
-              toolReturnMessage={toolReturnMessage}
-            />
-          );
-        })}
+            return (
+              <Message
+                key={`${message.id}_${index}`}
+                message={messageToSet}
+                toolReturnMessage={toolReturnMessage}
+              />
+            );
+          })}
+        </VStack>
       </VStack>
-    </VStack>
+    </MessageGroupContextProvider>
   );
 }
 
 interface MessageGroupsProps {
   messages: ListMessagesResponse;
   hasNextPage?: boolean;
+  mode: MessagesDisplayMode
 }
 
 export function MessageGroups(props: MessageGroupsProps) {
-  const { messages, hasNextPage = false } = props;
-
-  const { mode } = useMessagesContext();
+  const { messages, mode, hasNextPage = false } = props;
 
   const t = useTranslations('components/Messages');
 
@@ -186,6 +188,7 @@ export function MessageGroups(props: MessageGroupsProps) {
     <>
       {messageGroups.map((group, index) => (
         <MessageGroup
+          mode={mode}
           key={index}
           group={group}
           dataAnchor={index === 0 ? 'old-first' : undefined}
