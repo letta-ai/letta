@@ -61,22 +61,9 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          enable-cache: true
           activate-environment: true
 
-      - name: Load cached venv
-        id: cached-uv-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
-          # Restore cache with this prefix if not exact match with key
-          # Note cache-hit returns false in this case, so the below step will run
-          restore-keys: |
-            venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
-
       - name: Install dependencies
-        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
         shell: bash
         working-directory: apps/core
         run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra sqlite --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
