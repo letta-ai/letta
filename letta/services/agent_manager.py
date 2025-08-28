@@ -48,7 +48,7 @@ from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType, ToolType, VectorDBProvider
+from letta.schemas.enums import ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
@@ -2649,6 +2649,8 @@ class AgentManager:
         embed_query: bool = False,
         ascending: bool = True,
         embedding_config: Optional[EmbeddingConfig] = None,
+        tags: Optional[List[str]] = None,
+        tag_match_mode: Optional[TagMatchMode] = None,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
         # Check if we should use Turbopuffer for vector search
@@ -2686,6 +2688,8 @@ class AgentManager:
                         query_text=query_text,  # pass text for potential hybrid search
                         search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
+                        tags=tags,
+                        tag_match_mode=tag_match_mode or TagMatchMode.ANY,
                     )
 
                     # Return just the passages (without scores)
@@ -2719,7 +2723,30 @@ class AgentManager:
             passages = result.scalars().all()
 
             # Convert to Pydantic models
-            return [p.to_pydantic() for p in passages]
+            pydantic_passages = [p.to_pydantic() for p in passages]
+
+            # TODO: Integrate tag filtering directly into the SQL query for better performance.
+            # Currently using post-filtering which is less efficient but simpler to implement.
+            # Future optimization: Add JOIN with passage_tags table and WHERE clause for tag filtering.
+            if tags:
+                filtered_passages = []
+                for passage in pydantic_passages:
+                    if passage.tags:
+                        passage_tags = set(passage.tags)
+                        query_tags = set(tags)
+
+                        if tag_match_mode == TagMatchMode.ALL:
+                            # ALL mode: passage must have all query tags
+                            if query_tags.issubset(passage_tags):
+                                filtered_passages.append(passage)
+                        else:
+                            # ANY mode (default): passage must have at least one query tag
+                            if query_tags.intersection(passage_tags):
+                                filtered_passages.append(passage)
+
+                return filtered_passages
+
+            return pydantic_passages
 
     @enforce_types
     @trace_method

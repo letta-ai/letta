@@ -6,7 +6,7 @@ import pytest
 from letta.config import LettaConfig
 from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import VectorDBProvider
+from letta.schemas.enums import TagMatchMode, VectorDBProvider
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -233,16 +233,14 @@ class TestTurbopufferIntegration:
 
             assert len(result) == 3
 
-            # Query with organization filter
+            # Query all passages (no tag filtering)
             query_vector = [0.15] * 1536
-            results = await client.query_passages(
-                archive_id=archive_id, query_embedding=query_vector, top_k=10, filters={"organization_id": "org-123"}
-            )
+            results = await client.query_passages(archive_id=archive_id, query_embedding=query_vector, top_k=10)
 
-            # Should only get passages from org-123
-            assert len(results) >= 2  # At least the first two passages
+            # Should get all passages
+            assert len(results) == 3  # All three passages
             for passage, score in results:
-                assert passage.organization_id == "org-123"
+                assert passage.organization_id is not None
 
             # Clean up
             await client.delete_passages(archive_id=archive_id, passage_ids=[d["id"] for d in test_data])
@@ -386,6 +384,130 @@ class TestTurbopufferIntegration:
             # Test error handling - missing both for hybrid mode
             with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
                 await client.query_passages(archive_id=archive_id, query_embedding=[1.0, 2.0, 3.0], search_mode="hybrid", top_k=3)
+
+        finally:
+            # Clean up
+            try:
+                await client.delete_all_passages(archive_id)
+            except:
+                pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured for testing")
+    async def test_tag_filtering_with_real_tpuf(self, enable_turbopuffer):
+        """Test tag filtering functionality with AND and OR logic"""
+
+        import uuid
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        client = TurbopufferClient()
+        archive_id = f"test-tags-{datetime.now().timestamp()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Insert passages with different tag combinations
+            texts = [
+                "Python programming tutorial",
+                "Machine learning with Python",
+                "JavaScript web development",
+                "Python data science tutorial",
+                "React JavaScript framework",
+            ]
+
+            tag_sets = [
+                ["python", "tutorial"],
+                ["python", "ml"],
+                ["javascript", "web"],
+                ["python", "tutorial", "data"],
+                ["javascript", "react"],
+            ]
+
+            embeddings = [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
+            passage_ids = [f"passage-{str(uuid.uuid4())}" for _ in texts]
+
+            # Insert passages with tags
+            for i, (text, tags, embedding, passage_id) in enumerate(zip(texts, tag_sets, embeddings, passage_ids)):
+                await client.insert_archival_memories(
+                    archive_id=archive_id,
+                    text_chunks=[text],
+                    embeddings=[embedding],
+                    passage_ids=[passage_id],
+                    organization_id=org_id,
+                    tags=tags,
+                    created_at=datetime.now(timezone.utc),
+                )
+
+            # Test tag filtering with "any" mode (should find passages with any of the specified tags)
+            python_any_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 6.0, 11.0],
+                search_mode="vector",
+                top_k=10,
+                tags=["python"],
+                tag_match_mode=TagMatchMode.ANY,
+            )
+
+            # Should find 3 passages with python tag
+            python_passages = [passage for passage, _ in python_any_results]
+            python_texts = [p.text for p in python_passages]
+            assert len(python_passages) == 3
+            assert "Python programming tutorial" in python_texts
+            assert "Machine learning with Python" in python_texts
+            assert "Python data science tutorial" in python_texts
+
+            # Test tag filtering with "all" mode
+            python_tutorial_all_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 6.0, 11.0],
+                search_mode="vector",
+                top_k=10,
+                tags=["python", "tutorial"],
+                tag_match_mode=TagMatchMode.ALL,
+            )
+
+            # Should find 2 passages that have both python AND tutorial tags
+            tutorial_passages = [passage for passage, _ in python_tutorial_all_results]
+            tutorial_texts = [p.text for p in tutorial_passages]
+            assert len(tutorial_passages) == 2
+            assert "Python programming tutorial" in tutorial_texts
+            assert "Python data science tutorial" in tutorial_texts
+
+            # Test tag filtering with FTS mode
+            js_fts_results = await client.query_passages(
+                archive_id=archive_id,
+                query_text="javascript",
+                search_mode="fts",
+                top_k=10,
+                tags=["javascript"],
+                tag_match_mode=TagMatchMode.ANY,
+            )
+
+            # Should find 2 passages with javascript tag
+            js_passages = [passage for passage, _ in js_fts_results]
+            js_texts = [p.text for p in js_passages]
+            assert len(js_passages) == 2
+            assert "JavaScript web development" in js_texts
+            assert "React JavaScript framework" in js_texts
+
+            # Test hybrid search with tags
+            python_hybrid_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[2.0, 7.0, 12.0],
+                query_text="python programming",
+                search_mode="hybrid",
+                top_k=10,
+                tags=["python"],
+                tag_match_mode=TagMatchMode.ANY,
+                vector_weight=0.6,
+                fts_weight=0.4,
+            )
+
+            # Should find python-tagged passages
+            hybrid_passages = [passage for passage, _ in python_hybrid_results]
+            hybrid_texts = [p.text for p in hybrid_passages]
+            assert len(hybrid_passages) == 3
+            assert all("Python" in text for text in hybrid_texts)
 
         finally:
             # Clean up

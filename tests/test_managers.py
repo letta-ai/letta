@@ -64,6 +64,7 @@ from letta.schemas.enums import (
     ProviderType,
     SandboxType,
     StepStatus,
+    TagMatchMode,
     ToolType,
 )
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
@@ -3166,6 +3167,7 @@ def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_a
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
             metadata={"type": "test_specific"},
+            tags=["python", "test", "agent"],
         ),
         actor=default_user,
     )
@@ -3174,6 +3176,7 @@ def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_a
     assert passage.text == "Test agent passage via specific method"
     assert passage.archive_id == archive.id
     assert passage.source_id is None
+    assert sorted(passage.tags) == sorted(["python", "test", "agent"])
 
 
 def test_create_source_passage_specific(server: SyncServer, default_user, default_file, default_source):
@@ -3187,6 +3190,7 @@ def test_create_source_passage_specific(server: SyncServer, default_user, defaul
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
             metadata={"type": "test_specific"},
+            tags=["document", "test", "source"],
         ),
         file_metadata=default_file,
         actor=default_user,
@@ -3196,6 +3200,7 @@ def test_create_source_passage_specific(server: SyncServer, default_user, defaul
     assert passage.text == "Test source passage via specific method"
     assert passage.source_id == default_source.id
     assert passage.archive_id is None
+    assert sorted(passage.tags) == sorted(["document", "test", "source"])
 
 
 def test_create_agent_passage_validation(server: SyncServer, default_user, default_source, sarah_agent):
@@ -3509,6 +3514,7 @@ async def test_create_many_agent_passages_async(server: SyncServer, default_user
             organization_id=default_user.organization_id,
             embedding=[0.1 * i],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            tags=["batch", f"item{i}"] if i % 2 == 0 else ["batch", "odd"],
         )
         for i in range(3)
     ]
@@ -3520,6 +3526,8 @@ async def test_create_many_agent_passages_async(server: SyncServer, default_user
         assert passage.text == f"Batch agent passage {i}"
         assert passage.archive_id == archive.id
         assert passage.source_id is None
+        expected_tags = ["batch", f"item{i}"] if i % 2 == 0 else ["batch", "odd"]
+        assert passage.tags == expected_tags
 
 
 @pytest.mark.asyncio
@@ -3609,6 +3617,374 @@ def test_deprecated_methods_show_warnings(server: SyncServer, default_user, sara
         assert any("create_passage is deprecated" in str(warning.message) for warning in w)
         assert any("get_passage_by_id is deprecated" in str(warning.message) for warning in w)
         assert any("size is deprecated" in str(warning.message) for warning in w)
+
+
+@pytest.mark.asyncio
+async def test_passage_tags_functionality(server: SyncServer, default_user, sarah_agent):
+    """Test comprehensive tag functionality for passages."""
+    from letta.schemas.enums import TagMatchMode
+
+    # Get or create default archive for the agent
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
+    )
+
+    # Create passages with different tag combinations
+    test_passages = [
+        {"text": "Python programming tutorial", "tags": ["python", "tutorial", "programming"]},
+        {"text": "Machine learning with Python", "tags": ["python", "ml", "ai"]},
+        {"text": "JavaScript web development", "tags": ["javascript", "web", "frontend"]},
+        {"text": "Python data science guide", "tags": ["python", "tutorial", "data"]},
+        {"text": "No tags passage", "tags": None},
+    ]
+
+    created_passages = []
+    for test_data in test_passages:
+        passage = await server.passage_manager.create_agent_passage_async(
+            PydanticPassage(
+                text=test_data["text"],
+                archive_id=archive.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1, 0.2, 0.3],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                tags=test_data["tags"],
+            ),
+            actor=default_user,
+        )
+        created_passages.append(passage)
+
+    # Test that tags are properly stored (deduplicated)
+    for i, passage in enumerate(created_passages):
+        expected_tags = test_passages[i]["tags"]
+        if expected_tags:
+            assert set(passage.tags) == set(expected_tags)
+        else:
+            assert passage.tags is None
+
+    # Test querying with tag filtering (if Turbopuffer is enabled)
+    if hasattr(server.agent_manager, "query_agent_passages_async"):
+        # Test querying with python tag (should find 3 passages)
+        python_results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user,
+            agent_id=sarah_agent.id,
+            tags=["python"],
+            tag_match_mode=TagMatchMode.ANY,
+        )
+
+        python_texts = [p.text for p in python_results]
+        assert len([t for t in python_texts if "Python" in t]) >= 2
+
+        # Test querying with multiple tags using ALL mode
+        tutorial_python_results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user,
+            agent_id=sarah_agent.id,
+            tags=["python", "tutorial"],
+            tag_match_mode=TagMatchMode.ALL,
+        )
+
+        tutorial_texts = [p.text for p in tutorial_python_results]
+        expected_matches = [t for t in tutorial_texts if "tutorial" in t and "Python" in t]
+        assert len(expected_matches) >= 1
+
+
+@pytest.mark.asyncio
+async def test_comprehensive_tag_functionality(disable_turbopuffer, server: SyncServer, sarah_agent, default_user):
+    """Comprehensive test for tag functionality including dual storage and junction table."""
+
+    # Test 1: Create passages with tags and verify they're stored in both places
+    passages_with_tags = []
+    test_tags = {
+        "passage1": ["important", "documentation", "python"],
+        "passage2": ["important", "testing"],
+        "passage3": ["documentation", "api"],
+        "passage4": ["python", "testing", "api"],
+        "passage5": [],  # Test empty tags
+    }
+
+    for i, (passage_key, tags) in enumerate(test_tags.items(), 1):
+        text = f"Test passage {i} for comprehensive tag testing"
+        created_passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent,
+            text=text,
+            actor=default_user,
+            tags=tags if tags else None,
+        )
+        assert len(created_passages) == 1
+        passage = created_passages[0]
+
+        # Verify tags are stored in the JSON column (deduplicated)
+        if tags:
+            assert set(passage.tags) == set(tags)
+        else:
+            assert passage.tags is None
+        passages_with_tags.append(passage)
+
+    # Test 2: Verify unique tags for archive
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id,
+        agent_name=sarah_agent.name,
+        actor=default_user,
+    )
+
+    unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Should have all unique tags: "important", "documentation", "python", "testing", "api"
+    expected_unique_tags = {"important", "documentation", "python", "testing", "api"}
+    assert set(unique_tags) == expected_unique_tags
+    assert len(unique_tags) == 5
+
+    # Test 3: Verify tag counts
+    tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Verify counts
+    assert tag_counts["important"] == 2  # passage1 and passage2
+    assert tag_counts["documentation"] == 2  # passage1 and passage3
+    assert tag_counts["python"] == 2  # passage1 and passage4
+    assert tag_counts["testing"] == 2  # passage2 and passage4
+    assert tag_counts["api"] == 2  # passage3 and passage4
+
+    # Test 4: Query passages with ANY tag matching
+    any_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["important", "api"],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should match passages with "important" OR "api" tags (passages 1, 2, 3, 4)
+    [p.text for p in any_results]
+    assert len(any_results) >= 4
+
+    # Test 5: Query passages with ALL tag matching
+    all_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["python", "testing"],
+        tag_match_mode=TagMatchMode.ALL,
+        actor=default_user,
+    )
+
+    # Should only match passage4 which has both "python" AND "testing"
+    all_passage_texts = [p.text for p in all_results]
+    assert any("Test passage 4" in text for text in all_passage_texts)
+
+    # Test 6: Query with non-existent tags
+    no_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["nonexistent", "missing"],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should return no results
+    assert len(no_results) == 0
+
+    # Test 7: Verify tags CAN be updated (with junction table properly maintained)
+    first_passage = passages_with_tags[0]
+    new_tags = ["updated", "modified", "changed"]
+    update_data = PydanticPassage(
+        id=first_passage.id,
+        text="Updated text",
+        tags=new_tags,
+        organization_id=first_passage.organization_id,
+        archive_id=first_passage.archive_id,
+        embedding=first_passage.embedding,
+        embedding_config=first_passage.embedding_config,
+    )
+
+    # Update should work and tags should be updated
+    updated = await server.passage_manager.update_agent_passage_by_id_async(
+        passage_id=first_passage.id,
+        passage=update_data,
+        actor=default_user,
+    )
+
+    # Both text and tags should be updated
+    assert updated.text == "Updated text"
+    assert set(updated.tags) == set(new_tags)
+
+    # Verify tags are properly updated in junction table
+    updated_unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Should include new tags and not include old "important", "documentation", "python" from passage1
+    # But still have tags from other passages
+    assert "updated" in updated_unique_tags
+    assert "modified" in updated_unique_tags
+    assert "changed" in updated_unique_tags
+
+    # Test 8: Delete a passage and verify cascade deletion of tags
+    passage_to_delete = passages_with_tags[1]  # passage2 with ["important", "testing"]
+
+    await server.passage_manager.delete_agent_passage_by_id_async(
+        passage_id=passage_to_delete.id,
+        actor=default_user,
+    )
+
+    # Get updated tag counts
+    updated_tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # "important" no longer exists (was in passage1 which was updated and passage2 which was deleted)
+    assert "important" not in updated_tag_counts
+    # "testing" count should decrease from 2 to 1 (only in passage4 now)
+    assert updated_tag_counts["testing"] == 1
+
+    # Test 9: Batch create passages with tags
+    batch_texts = [
+        "Batch passage 1",
+        "Batch passage 2",
+        "Batch passage 3",
+    ]
+    batch_tags = ["batch", "test", "multiple"]
+
+    batch_passages = []
+    for text in batch_texts:
+        passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent,
+            text=text,
+            actor=default_user,
+            tags=batch_tags,
+        )
+        batch_passages.extend(passages)
+
+    # Verify all batch passages have the same tags
+    for passage in batch_passages:
+        assert set(passage.tags) == set(batch_tags)
+
+    # Test 10: Verify tag counts include batch passages
+    final_tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    assert final_tag_counts["batch"] == 3
+    assert final_tag_counts["test"] == 3
+    assert final_tag_counts["multiple"] == 3
+
+    # Test 11: Complex query with multiple tags and ALL matching
+    complex_all_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="batch",
+        limit=10,
+        tags=["batch", "test", "multiple"],
+        tag_match_mode=TagMatchMode.ALL,
+        actor=default_user,
+    )
+
+    # Should match all 3 batch passages
+    assert len(complex_all_results) >= 3
+
+    # Test 12: Empty tag list should return all passages
+    all_passages = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="passage",
+        limit=50,
+        tags=[],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should return passages based on text search only
+    assert len(all_passages) > 0
+
+
+@pytest.mark.asyncio
+async def test_tag_edge_cases(disable_turbopuffer, server: SyncServer, sarah_agent, default_user):
+    """Test edge cases for tag functionality."""
+
+    # Test 1: Very long tag names
+    long_tag = "a" * 500  # 500 character tag
+    passages = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing long tag names",
+        actor=default_user,
+        tags=[long_tag, "normal_tag"],
+    )
+
+    assert len(passages) == 1
+    assert long_tag in passages[0].tags
+
+    # Test 2: Special characters in tags
+    special_tags = [
+        "tag-with-dash",
+        "tag_with_underscore",
+        "tag.with.dots",
+        "tag/with/slash",
+        "tag:with:colon",
+        "tag@with@at",
+        "tag#with#hash",
+        "tag with spaces",
+        "CamelCaseTag",
+        "数字标签",
+    ]
+
+    passages_special = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing special character tags",
+        actor=default_user,
+        tags=special_tags,
+    )
+
+    assert len(passages_special) == 1
+    assert set(passages_special[0].tags) == set(special_tags)
+
+    # Verify unique tags includes all special character tags
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id,
+        agent_name=sarah_agent.name,
+        actor=default_user,
+    )
+
+    unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    for tag in special_tags:
+        assert tag in unique_tags
+
+    # Test 3: Duplicate tags in input (should be deduplicated)
+    duplicate_tags = ["tag1", "tag2", "tag1", "tag3", "tag2", "tag1"]
+    passages_dup = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing duplicate tags",
+        actor=default_user,
+        tags=duplicate_tags,
+    )
+
+    # Should only have unique tags (duplicates removed)
+    assert len(passages_dup) == 1
+    assert set(passages_dup[0].tags) == {"tag1", "tag2", "tag3"}
+    assert len(passages_dup[0].tags) == 3  # Should be deduplicated
+
+    # Test 4: Case sensitivity in tags
+    case_tags = ["Tag", "tag", "TAG", "tAg"]
+    passages_case = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing case sensitive tags",
+        actor=default_user,
+        tags=case_tags,
+    )
+
+    # All variations should be preserved (case-sensitive)
+    assert len(passages_case) == 1
+    assert set(passages_case[0].tags) == set(case_tags)
 
 
 # ======================================================================================================================
