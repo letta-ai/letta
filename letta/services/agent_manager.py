@@ -3172,6 +3172,33 @@ class AgentManager:
 
     @enforce_types
     @trace_method
+    async def modify_approvals_async(self, agent_id: str, tool_name: str, requires_approval: bool, actor: PydanticUser) -> None:
+        def is_target_rule(rule):
+            return rule.tool_name == tool_name and rule.type == "requires_approval"
+
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            existing_rules = [rule for rule in agent.tool_rules if is_target_rule(rule)]
+
+            if len(existing_rules) == 1 and not requires_approval:
+                tool_rules = [rule for rule in agent.tool_rules if not is_target_rule(rule)]
+            elif len(existing_rules) == 0 and requires_approval:
+                # Create a new list to ensure SQLAlchemy detects the change
+                # This is critical for JSON columns - modifying in place doesn't trigger change detection
+                tool_rules = list(agent.tool_rules) if agent.tool_rules else []
+                tool_rules.append(RequiresApprovalToolRule(tool_name=tool_name))
+            else:
+                tool_rules = None
+
+            if tool_rules is None:
+                return
+
+            agent.tool_rules = tool_rules
+            session.add(agent)
+            await session.commit()
+
+    @enforce_types
+    @trace_method
     def list_attached_tools(self, agent_id: str, actor: PydanticUser) -> List[PydanticTool]:
         """
         List all tools attached to an agent.
