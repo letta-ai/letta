@@ -175,7 +175,10 @@ function ProjectCard(props: ProjectCardProps) {
       )}
 
       {!recentAgentsAndTemplatesEnabled ? (
-        <Card className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer">
+        <Card
+          href={url}
+          className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer"
+        >
           <VStack fullWidth>
             <VStack gap="medium" fullWidth>
               <Avatar size="medium" name={projectName} />
