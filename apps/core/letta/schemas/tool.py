@@ -67,6 +67,9 @@ class Tool(BaseTool):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+    default_requires_approval: Optional[bool] = Field(
+        None, description="Default value for whether or not executing this tool requires approval."
+    )
 
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
@@ -168,6 +171,7 @@ class ToolCreate(LettaBase):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+    default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
 
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
@@ -248,6 +252,7 @@ class ToolUpdate(LettaBase):
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     metadata_: Optional[Dict[str, Any]] = Field(None, description="A dictionary of additional metadata for the tool.")
+    default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
 
     model_config = ConfigDict(extra="ignore")  # Allows extra fields without validation errors
     # TODO: Remove this, and clean usage of ToolUpdate everywhere else

@@ -1806,6 +1806,14 @@ export const letta__schemas__agent_file__ToolSchema = z.object({
       z.undefined(),
     ])
     .optional(),
+  default_requires_approval: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   created_by_id: z
     .union([
       z.string(),
@@ -2132,6 +2140,9 @@ export const Tool = z.object({
       z.null(),
       z.array(z.union([z.array(NpmRequirement), z.null()])),
     ])
+    .optional(),
+  default_requires_approval: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
   created_by_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -7751,6 +7762,14 @@ export const ToolCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  default_requires_approval: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ToolRunFromSource = z.infer<typeof ToolRunFromSource>;
@@ -7851,6 +7870,9 @@ export const ToolUpdate = z.object({
     .optional(),
   metadata_: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  default_requires_approval: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 

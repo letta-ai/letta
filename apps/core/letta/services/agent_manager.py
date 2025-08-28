@@ -60,7 +60,7 @@ from letta.schemas.message import MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool_rule import ContinueToolRule, TerminalToolRule
+from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, TerminalToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import MarshmallowAgentSchema
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
@@ -163,14 +163,16 @@ class AgentManager:
         return name_to_id, id_to_name
 
     @staticmethod
-    async def _resolve_tools_async(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+    async def _resolve_tools_async(
+        session, names: Set[str], ids: Set[str], org_id: str
+    ) -> Tuple[Dict[str, str], Dict[str, str], List[str]]:
         """
         Bulk‑fetch all ToolModel rows matching either name ∈ names or id ∈ ids
         (and scoped to this organization), and return two maps:
           name_to_id, id_to_name.
         Raises if any requested name or id was not found.
         """
-        stmt = select(ToolModel.id, ToolModel.name).where(
+        stmt = select(ToolModel.id, ToolModel.name, ToolModel.default_requires_approval).where(
             ToolModel.organization_id == org_id,
             or_(
                 ToolModel.name.in_(names),
@@ -181,6 +183,7 @@ class AgentManager:
         rows = result.fetchall()  # Use fetchall()
         name_to_id = {row[1]: row[0] for row in rows}  # row[1] is name, row[0] is id
         id_to_name = {row[0]: row[1] for row in rows}  # row[0] is id, row[1] is name
+        requires_approval = [row[1] for row in rows if row[2]]  # row[1] is name, row[2] is default_requires_approval
 
         missing_names = names - set(name_to_id.keys())
         missing_ids = ids - set(id_to_name.keys())
@@ -189,7 +192,7 @@ class AgentManager:
         if missing_ids:
             raise ValueError(f"Tools not found by id:   {missing_ids}")
 
-        return name_to_id, id_to_name
+        return name_to_id, id_to_name, requires_approval
 
     @staticmethod
     def _bulk_insert_pivot(session, table, rows: list[dict]):
@@ -556,7 +559,7 @@ class AgentManager:
         async with db_registry.async_session() as session:
             async with session.begin():
                 # Note: This will need to be modified if _resolve_tools needs an async version
-                name_to_id, id_to_name = await self._resolve_tools_async(
+                name_to_id, id_to_name, requires_approval = await self._resolve_tools_async(
                     session,
                     tool_names,
                     supplied_ids,
@@ -587,6 +590,9 @@ class AgentManager:
                             tool_rules.append(TerminalToolRule(tool_name=tn))
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
+
+                for tool_with_requires_approval in requires_approval:
+                    tool_rules.append(RequiresApprovalToolRule(tool_name=tool_with_requires_approval))
 
                 if tool_rules:
                     check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
@@ -2855,12 +2861,15 @@ class AgentManager:
 
             # verify tool exists and belongs to organization in a single query with the insert
             # first, check if tool exists with correct organization
-            tool_check_query = select(func.count(ToolModel.id)).where(
+            tool_check_query = select(ToolModel.name, ToolModel.default_requires_approval).where(
                 ToolModel.id == tool_id, ToolModel.organization_id == actor.organization_id
             )
-            tool_result = await session.execute(tool_check_query)
-            if tool_result.scalar() == 0:
+            result = await session.execute(tool_check_query)
+            tool_rows = result.fetchall()
+
+            if len(tool_rows) == 0:
                 raise NoResultFound(f"Tool with id={tool_id} not found in organization={actor.organization_id}")
+            tool_name, default_requires_approval = tool_rows[0]
 
             # use postgresql on conflict or mysql on duplicate key update for atomic operation
             if settings.letta_pg_uri_no_default:
@@ -2883,6 +2892,17 @@ class AgentManager:
                     await session.execute(insert_stmt)
                 else:
                     logger.info(f"Tool id={tool_id} is already attached to agent id={agent_id}")
+
+            if default_requires_approval:
+                agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+                existing_rules = [rule for rule in agent.tool_rules if rule.tool_name == tool_name and rule.type == "requires_approval"]
+                if len(existing_rules) == 0:
+                    # Create a new list to ensure SQLAlchemy detects the change
+                    # This is critical for JSON columns - modifying in place doesn't trigger change detection
+                    tool_rules = list(agent.tool_rules) if agent.tool_rules else []
+                    tool_rules.append(RequiresApprovalToolRule(tool_name=tool_name))
+                    agent.tool_rules = tool_rules
+                    session.add(agent)
 
             await session.commit()
 

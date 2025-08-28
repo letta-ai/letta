@@ -4848,6 +4848,10 @@ export type Tool = {
    */
   npm_requirements?: Array<NpmRequirement> | null;
   /**
+   * Default value for whether or not executing this tool requires approval.
+   */
+  default_requires_approval?: boolean | null;
+  /**
    * The id of the user that made this Tool.
    */
   created_by_id?: string | null;
@@ -4982,6 +4986,10 @@ export type ToolCreate = {
    * Optional list of npm packages required by this tool.
    */
   npm_requirements?: Array<NpmRequirement> | null;
+  /**
+   * Whether or not to require approval before executing this tool.
+   */
+  default_requires_approval?: boolean | null;
 };
 
 export type ToolEnvVarSchema = {
@@ -5180,6 +5188,10 @@ export type ToolUpdate = {
   metadata_?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * Whether or not to require approval before executing this tool.
+   */
+  default_requires_approval?: boolean | null;
 };
 
 export type UpdateAgent = {
@@ -5919,6 +5931,10 @@ export type letta__schemas__agent_file__ToolSchema = {
    * Optional list of npm packages required by this tool.
    */
   npm_requirements?: Array<NpmRequirement> | null;
+  /**
+   * Default value for whether or not executing this tool requires approval.
+   */
+  default_requires_approval?: boolean | null;
   /**
    * The id of the user that made this Tool.
    */

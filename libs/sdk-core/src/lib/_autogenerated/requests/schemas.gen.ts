@@ -12839,6 +12839,19 @@ export const $Tool = {
       title: 'Npm Requirements',
       description: 'Optional list of npm packages required by this tool.',
     },
+    default_requires_approval: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Requires Approval',
+      description:
+        'Default value for whether or not executing this tool requires approval.',
+    },
     created_by_id: {
       anyOf: [
         {
@@ -13274,6 +13287,19 @@ export const $ToolCreate = {
       ],
       title: 'Npm Requirements',
       description: 'Optional list of npm packages required by this tool.',
+    },
+    default_requires_approval: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Requires Approval',
+      description:
+        'Whether or not to require approval before executing this tool.',
     },
   },
   additionalProperties: false,
@@ -13851,6 +13877,19 @@ export const $ToolUpdate = {
       ],
       title: 'Metadata',
       description: 'A dictionary of additional metadata for the tool.',
+    },
+    default_requires_approval: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Requires Approval',
+      description:
+        'Whether or not to require approval before executing this tool.',
     },
   },
   type: 'object',
@@ -16031,6 +16070,19 @@ export const $letta__schemas__agent_file__ToolSchema = {
       ],
       title: 'Npm Requirements',
       description: 'Optional list of npm packages required by this tool.',
+    },
+    default_requires_approval: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Default Requires Approval',
+      description:
+        'Default value for whether or not executing this tool requires approval.',
     },
     created_by_id: {
       anyOf: [
