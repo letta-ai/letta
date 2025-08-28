@@ -17,6 +17,7 @@ interface CardButtonGroupProps {
   isLoading?: boolean;
   minRows?: number;
   emptyConfig?: EmptyConfig;
+  className?: string;
 }
 
 function CardButtonGroupComponent(props: CardButtonGroupProps) {
@@ -57,10 +58,10 @@ function CardButtonGroupComponent(props: CardButtonGroupProps) {
 }
 
 export function CardButtonGroup(props: CardButtonGroupProps) {
-  const { items, isLoading, minRows, emptyConfig } = props;
+  const { items, isLoading, minRows, emptyConfig, className } = props;
 
   return (
-    <VStack gap="small">
+    <VStack gap="small" className={className ?? ''} fullHeight>
       <CardButtonGroupComponent
         items={items}
         isLoading={isLoading}

@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Avatar,
   Button,
@@ -11,6 +12,9 @@ import {
   Typography,
   HStack,
   VStack,
+  CardButtonGroup,
+  LettaInvaderOutlineIcon,
+  TemplateIcon,
 } from '@letta-cloud/ui-component-library';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useQueryClient } from '@tanstack/react-query';
@@ -31,17 +35,19 @@ import {
   cloudQueryKeys,
   type PublicTemplateDetailsType,
 } from '@letta-cloud/sdk-cloud-api';
+import './CloudProjectsList.css';
 
 interface ProjectsListProps {
   search: string;
 }
 
-interface CombinedItem {
+interface RecentAgentsAndTemplates {
   id: string;
-  name: string;
+  label: string;
   url: string;
   isTemplate: boolean;
   updatedAt: string | null | undefined;
+  preIcon?: React.ReactNode;
 }
 
 interface ProjectCardProps {
@@ -106,24 +112,26 @@ function ProjectCard(props: ProjectCardProps) {
     },
   });
 
-  const recentItems: CombinedItem[] = useMemo(() => {
+  const recentItems: RecentAgentsAndTemplates[] = useMemo(() => {
     const agents = agentData || [];
     const templates = templateData?.body?.templates || [];
 
-    const combinedItems: CombinedItem[] = [
+    const combinedItems: RecentAgentsAndTemplates[] = [
       ...agents.map((agent: AgentState) => ({
         id: agent.id,
-        name: agent.name,
+        label: agent.name,
         url: `${url}/agents/${agent.id}`,
         isTemplate: false,
         updatedAt: agent.updated_at,
+        preIcon: <LettaInvaderOutlineIcon />,
       })),
       ...templates.map((template: PublicTemplateDetailsType) => ({
         id: template.id,
-        name: template.name,
-        url: `${url}/templates/${template.id}`,
+        label: template.name,
+        url: `${url}/templates/${template.name}`,
         isTemplate: true,
         updatedAt: template.updated_at,
+        preIcon: <TemplateIcon />,
       })),
     ];
 
@@ -165,12 +173,10 @@ function ProjectCard(props: ProjectCardProps) {
           />
         </div>
       )}
-      <Card
-        href={url}
-        className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer"
-      >
-        <VStack fullWidth>
-          {!recentAgentsAndTemplatesEnabled ? (
+
+      {!recentAgentsAndTemplatesEnabled ? (
+        <Card className="w-full flex bg-project-card-background border border-background-grey3-border hover:bg-background-grey2 cursor-pointer">
+          <VStack fullWidth>
             <VStack gap="medium" fullWidth>
               <Avatar size="medium" name={projectName} />
               <VStack gap="text">
@@ -189,46 +195,60 @@ function ProjectCard(props: ProjectCardProps) {
                     <Typography variant="body" color="muted">
                       {lastUpdatedAt
                         ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: formatDateAndTime(lastUpdatedAt),
-                        })
+                            date: formatDateAndTime(lastUpdatedAt),
+                          })
                         : t('projectsList.projectItem.noLastUpdatedAt')}
                     </Typography>
                   }
                 </HStack>
               </VStack>
             </VStack>
-          ) : (
+          </VStack>
+        </Card>
+      ) : (
+        <Card className="w-full flex bg-project-card-background border border-background-grey3-border project-card">
+          <VStack fullWidth padding="xxsmall" paddingY="medium">
             <VStack gap="large" fullWidth>
+              <Link href={url}>
+                <VStack gap="small" className="cursor-pointer project-button">
+                  <Typography
+                    bold
+                    align="left"
+                    variant="heading4"
+                    noWrap
+                    fullWidth
+                    overflow="ellipsis"
+                  >
+                    {projectName}
+                  </Typography>
+                  <Typography variant="body" color="muted">
+                    {lastUpdatedAt
+                      ? t('projectsList.projectItem.lastUpdatedAt', {
+                          date: formatDateAndTime(lastUpdatedAt),
+                        })
+                      : t('projectsList.projectItem.noLastUpdatedAt')}
+                  </Typography>
+                </VStack>
+              </Link>
+
               <VStack gap="small">
-                <Typography
-                  bold
-                  align="left"
-                  variant="heading4"
-                  noWrap
-                  fullWidth
-                  overflow="ellipsis"
-                >
-                  {projectName}
+                <Typography variant="body3" color="lighter">
+                  {t('projectsList.projectItem.lastWorkedOn')}
                 </Typography>
-                <Typography variant="body" color="muted">
-                  {lastUpdatedAt
-                    ? t('projectsList.projectItem.lastUpdatedAt', {
-                      date: formatDateAndTime(lastUpdatedAt),
-                    })
-                    : t('projectsList.projectItem.noLastUpdatedAt')}
-                </Typography>
+                <CardButtonGroup
+                  items={recentItems}
+                  minRows={3}
+                  emptyConfig={{
+                    className: 'h-[100px]',
+                    label: t('projectsList.projectItem.noTemplatesAndAgents'),
+                  }}
+                  className={'h-[100px]'}
+                />
               </VStack>
-              <Typography variant="body3" color="lighter">
-                {t('projectsList.projectItem.lastWorkedOn')}
-              </Typography>
-              {/*TODO: ADD STYLING AFTER STORYBOOK*/}
-              {recentItems.map((items) => {
-                return items.id;
-              })}
             </VStack>
-          )}
-        </VStack>
-      </Card>
+          </VStack>
+        </Card>
+      )}
     </div>
   );
 }
