@@ -91,8 +91,11 @@ def serialize_tool_rules(tool_rules: Optional[List[ToolRule]]) -> List[Dict[str,
     if not tool_rules:
         return []
 
+    # de-duplicate tool rules using dict.fromkeys (preserves order in Python 3.7+)
+    deduplicated_rules = list(dict.fromkeys(tool_rules))
+
     data = [
-        {**rule.model_dump(mode="json"), "type": rule.type.value} for rule in tool_rules
+        {**rule.model_dump(mode="json"), "type": rule.type.value} for rule in deduplicated_rules
     ]  # Convert Enum to string for JSON compatibility
 
     # Validate ToolRule structure
