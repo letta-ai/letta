@@ -3458,6 +3458,65 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/tools/approval/{tool_name}": {
+      "patch": {
+        "tags": ["agents"],
+        "summary": "Modify Approval",
+        "description": "Attach a tool to an agent.",
+        "operationId": "modify_approval",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tool Name"
+            }
+          },
+          {
+            "name": "requires_approval",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Requires Approval"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/sources/attach/{source_id}": {
       "patch": {
         "tags": ["agents"],

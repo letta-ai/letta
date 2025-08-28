@@ -130,6 +130,8 @@ import type {
   AttachToolResponse,
   DetachToolData,
   DetachToolResponse,
+  ModifyApprovalData,
+  ModifyApprovalResponse,
   AttachSourceToAgentData,
   AttachSourceToAgentResponse,
   AttachFolderToAgentData,
@@ -2116,6 +2118,38 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
         tool_id: data.toolId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Approval
+   * Attach a tool to an agent.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.toolName
+   * @param data.requiresApproval
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static modifyApproval(
+    data: ModifyApprovalData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyApprovalResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/agents/{agent_id}/tools/approval/{tool_name}',
+      path: {
+        agent_id: data.agentId,
+        tool_name: data.toolName,
+      },
+      query: {
+        requires_approval: data.requiresApproval,
       },
       errors: {
         422: 'Validation Error',

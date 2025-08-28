@@ -2272,6 +2272,9 @@ export type AgentsServiceAttachToolMutationResult = Awaited<
 export type AgentsServiceDetachToolMutationResult = Awaited<
   ReturnType<typeof AgentsService.detachTool>
 >;
+export type AgentsServiceModifyApprovalMutationResult = Awaited<
+  ReturnType<typeof AgentsService.modifyApproval>
+>;
 export type AgentsServiceAttachSourceToAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.attachSourceToAgent>
 >;

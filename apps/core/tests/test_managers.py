@@ -1967,6 +1967,25 @@ async def test_attach_tool_with_default_requires_approval_on_creation(server: Sy
     assert len(tool_rules) == 1
     assert tool_rules[0].type == "requires_approval"
 
+    # Modify approval on tool after attach
+    await server.agent_manager.modify_approvals_async(
+        agent_id=agent.id, tool_name=bash_tool.name, requires_approval=False, actor=default_user
+    )
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 0
+
+    # Revert override
+    await server.agent_manager.modify_approvals_async(
+        agent_id=agent.id, tool_name=bash_tool.name, requires_approval=True, actor=default_user
+    )
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
 
 # ======================================================================================================================
 # AgentManager Tests - Sources Relationship

@@ -291,6 +291,12 @@ paths:
           required: true
           schema:
             type: string
+  /v1/agents/{agent_id}/tools/approval/{tool_id}:
+    patch:
+      x-fern-sdk-group-name:
+        - agents
+        - tools
+      x-fern-sdk-method-name: modify_approval
   /v1/agents/{agent_id}/sources:
     get:
       x-fern-sdk-group-name:

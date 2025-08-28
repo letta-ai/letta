@@ -6718,6 +6718,15 @@ export type DetachToolData = {
 
 export type DetachToolResponse = AgentState;
 
+export type ModifyApprovalData = {
+  agentId: string;
+  requiresApproval: boolean;
+  toolName: string;
+  userId?: string | null;
+};
+
+export type ModifyApprovalResponse = AgentState;
+
 export type AttachSourceToAgentData = {
   agentId: string;
   sourceId: string;
@@ -8884,6 +8893,21 @@ export type $OpenApiTs = {
   '/v1/agents/{agent_id}/tools/detach/{tool_id}': {
     patch: {
       req: DetachToolData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/tools/approval/{tool_name}': {
+    patch: {
+      req: ModifyApprovalData;
       res: {
         /**
          * Successful Response

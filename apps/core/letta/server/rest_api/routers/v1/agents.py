@@ -481,6 +481,25 @@ async def detach_tool(
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
 
+@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval")
+async def modify_approval(
+    agent_id: str,
+    tool_name: str,
+    requires_approval: bool,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Attach a tool to an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    await server.agent_manager.toggle_approvals_async(
+        agent_id=agent_id, tool_name=tool_name, requires_approval=requires_approval, actor=actor
+    )
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
 @router.patch("/{agent_id}/sources/attach/{source_id}", response_model=AgentState, operation_id="attach_source_to_agent")
 async def attach_source(
     agent_id: str,

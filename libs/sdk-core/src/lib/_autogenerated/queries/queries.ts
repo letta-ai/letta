@@ -6037,6 +6037,57 @@ export const useAgentsServiceDetachTool = <
     ...options,
   });
 /**
+ * Modify Approval
+ * Attach a tool to an agent.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.toolName
+ * @param data.requiresApproval
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceModifyApproval = <
+  TData = Common.AgentsServiceModifyApprovalMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        agentId: string;
+        requiresApproval: boolean;
+        toolName: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      agentId: string;
+      requiresApproval: boolean;
+      toolName: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ agentId, requiresApproval, toolName, userId }) =>
+      AgentsService.modifyApproval({
+        agentId,
+        requiresApproval,
+        toolName,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
  * Attach Source
  * Attach a source to an agent.
  * @param data The data for the request.

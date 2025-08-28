@@ -9565,6 +9565,28 @@ export const patch_Detach_tool = {
   response: AgentState,
 };
 
+export type patch_Modify_approval = typeof patch_Modify_approval;
+export const patch_Modify_approval = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/agents/{agent_id}/tools/approval/{tool_name}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      requires_approval: z.boolean(),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+      tool_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: AgentState,
+};
+
 export type patch_Attach_source_to_agent = typeof patch_Attach_source_to_agent;
 export const patch_Attach_source_to_agent = {
   method: z.literal('PATCH'),
@@ -12165,6 +12187,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}': patch_Modify_agent,
     '/v1/agents/{agent_id}/tools/attach/{tool_id}': patch_Attach_tool,
     '/v1/agents/{agent_id}/tools/detach/{tool_id}': patch_Detach_tool,
+    '/v1/agents/{agent_id}/tools/approval/{tool_name}': patch_Modify_approval,
     '/v1/agents/{agent_id}/sources/attach/{source_id}':
       patch_Attach_source_to_agent,
     '/v1/agents/{agent_id}/folders/attach/{folder_id}':
