@@ -272,6 +272,18 @@ class MaxCountPerStepToolRule(BaseToolRule):
         return available_tools
 
 
+class RequiresApprovalToolRule(BaseToolRule):
+    """
+    Represents a tool rule configuration which requires approval before the tool can be invoked.
+    """
+
+    type: Literal[ToolRuleType.requires_approval] = ToolRuleType.requires_approval
+
+    def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
+        """Does not enforce any restrictions on which tools are valid"""
+        return available_tools
+
+
 ToolRule = Annotated[
     Union[
         ChildToolRule,
@@ -282,6 +294,7 @@ ToolRule = Annotated[
         RequiredBeforeExitToolRule,
         MaxCountPerStepToolRule,
         ParentToolRule,
+        RequiresApprovalToolRule,
     ],
     Field(discriminator="type"),
 ]
