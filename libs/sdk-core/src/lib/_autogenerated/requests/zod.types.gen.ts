@@ -374,6 +374,20 @@ export const ParentToolRule = z.object({
   children: z.array(z.string()),
 });
 
+export type RequiresApprovalToolRule = z.infer<typeof RequiresApprovalToolRule>;
+export const RequiresApprovalToolRule = z.object({
+  tool_name: z.string(),
+  type: z.union([z.string(), z.undefined()]).optional(),
+  prompt_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type AgentType = z.infer<typeof AgentType>;
 export const AgentType = z.union([
   z.literal('memgpt_agent'),
@@ -1058,6 +1072,7 @@ export const letta__schemas__agent_file__AgentSchema = z.object({
           RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
+          RequiresApprovalToolRule,
         ]),
       ),
       z.null(),
@@ -1073,6 +1088,7 @@ export const letta__schemas__agent_file__AgentSchema = z.object({
               RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
+              RequiresApprovalToolRule,
             ]),
           ),
           z.null(),
@@ -2362,6 +2378,7 @@ export const AgentState = z.object({
           RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
+          RequiresApprovalToolRule,
         ]),
       ),
       z.null(),
@@ -2377,6 +2394,7 @@ export const AgentState = z.object({
               RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
+              RequiresApprovalToolRule,
             ]),
           ),
           z.null(),
@@ -5051,6 +5069,7 @@ export const CreateAgentRequest = z.object({
           RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
+          RequiresApprovalToolRule,
         ]),
       ),
       z.null(),
@@ -5066,6 +5085,7 @@ export const CreateAgentRequest = z.object({
               RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
+              RequiresApprovalToolRule,
             ]),
           ),
           z.null(),
@@ -7882,6 +7902,7 @@ export const UpdateAgent = z.object({
           RequiredBeforeExitToolRule,
           MaxCountPerStepToolRule,
           ParentToolRule,
+          RequiresApprovalToolRule,
         ]),
       ),
       z.null(),
@@ -7897,6 +7918,7 @@ export const UpdateAgent = z.object({
               RequiredBeforeExitToolRule,
               MaxCountPerStepToolRule,
               ParentToolRule,
+              RequiresApprovalToolRule,
             ]),
           ),
           z.null(),

@@ -729,6 +729,53 @@
                                         }
                                       },
                                       "required": ["tool_name", "children"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": ["tool_name"]
                                     }
                                   ]
                                 }
@@ -1186,6 +1233,53 @@
                                               "tool_name",
                                               "children"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            "required": ["tool_name"]
                                           }
                                         ]
                                       }
@@ -6282,6 +6376,53 @@
                                         }
                                       },
                                       "required": ["tool_name", "children"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "tool_name": {
+                                          "type": "string"
+                                        },
+                                        "type": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {}
+                                          ]
+                                        },
+                                        "prompt_template": {
+                                          "oneOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "format": "null",
+                                              "nullable": true
+                                            },
+                                            {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  }
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            {}
+                                          ],
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": ["tool_name"]
                                     }
                                   ]
                                 }
@@ -6739,6 +6880,53 @@
                                               "tool_name",
                                               "children"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "tool_name": {
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {}
+                                                ]
+                                              },
+                                              "prompt_template": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "format": "null",
+                                                    "nullable": true
+                                                  },
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "oneOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "format": "null",
+                                                          "nullable": true
+                                                        }
+                                                      ],
+                                                      "nullable": true
+                                                    }
+                                                  },
+                                                  {}
+                                                ],
+                                                "nullable": true
+                                              }
+                                            },
+                                            "required": ["tool_name"]
                                           }
                                         ]
                                       }
@@ -11634,6 +11822,23 @@
                                     }
                                   },
                                   "required": ["tool_name", "children"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["requires_approval"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
                                 }
                               ]
                             },

@@ -228,6 +228,7 @@ export type AgentState = {
     | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
+    | RequiresApprovalToolRule
   > | null;
   /**
    * The ids of the messages in the agent's in-context memory.
@@ -1467,6 +1468,7 @@ export type CreateAgentRequest = {
     | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
+    | RequiresApprovalToolRule
   > | null;
   /**
    * The tags associated with the agent.
@@ -3971,6 +3973,21 @@ export type RequiredBeforeExitToolRule = {
   prompt_template?: string | null;
 };
 
+/**
+ * Represents a tool rule configuration which requires approval before the tool can be invoked.
+ */
+export type RequiresApprovalToolRule = {
+  /**
+   * The name of the tool. Must exist in the database for the user's organization.
+   */
+  tool_name: string;
+  type?: 'requires_approval';
+  /**
+   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   */
+  prompt_template?: string | null;
+};
+
 export type ResponseFormatJSONObject = {
   type: 'json_object';
 };
@@ -5202,6 +5219,7 @@ export type UpdateAgent = {
     | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
+    | RequiresApprovalToolRule
   > | null;
   /**
    * The LLM configuration used by the agent.
@@ -5604,6 +5622,7 @@ export type letta__schemas__agent_file__AgentSchema = {
     | RequiredBeforeExitToolRule
     | MaxCountPerStepToolRule
     | ParentToolRule
+    | RequiresApprovalToolRule
   > | null;
   /**
    * The tags associated with the agent.

@@ -572,6 +572,9 @@ export const $AgentState = {
               {
                 $ref: '#/components/schemas/ParentToolRule',
               },
+              {
+                $ref: '#/components/schemas/RequiresApprovalToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -585,6 +588,8 @@ export const $AgentState = {
                 parent_last_tool: '#/components/schemas/ParentToolRule',
                 required_before_exit:
                   '#/components/schemas/RequiredBeforeExitToolRule',
+                requires_approval:
+                  '#/components/schemas/RequiresApprovalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -4353,6 +4358,9 @@ export const $CreateAgentRequest = {
               {
                 $ref: '#/components/schemas/ParentToolRule',
               },
+              {
+                $ref: '#/components/schemas/RequiresApprovalToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -4366,6 +4374,8 @@ export const $CreateAgentRequest = {
                 parent_last_tool: '#/components/schemas/ParentToolRule',
                 required_before_exit:
                   '#/components/schemas/RequiredBeforeExitToolRule',
+                requires_approval:
+                  '#/components/schemas/RequiresApprovalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -10598,6 +10608,42 @@ export const $RequiredBeforeExitToolRule = {
     'Represents a tool rule configuration where this tool must be called before the agent loop can exit.',
 } as const;
 
+export const $RequiresApprovalToolRule = {
+  properties: {
+    tool_name: {
+      type: 'string',
+      title: 'Tool Name',
+      description:
+        "The name of the tool. Must exist in the database for the user's organization.",
+    },
+    type: {
+      type: 'string',
+      const: 'requires_approval',
+      title: 'Type',
+      default: 'requires_approval',
+    },
+    prompt_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Prompt Template',
+      description:
+        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['tool_name'],
+  title: 'RequiresApprovalToolRule',
+  description:
+    'Represents a tool rule configuration which requires approval before the tool can be invoked.',
+} as const;
+
 export const $ResponseFormatJSONObject = {
   properties: {
     type: {
@@ -13926,6 +13972,9 @@ export const $UpdateAgent = {
               {
                 $ref: '#/components/schemas/ParentToolRule',
               },
+              {
+                $ref: '#/components/schemas/RequiresApprovalToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -13939,6 +13988,8 @@ export const $UpdateAgent = {
                 parent_last_tool: '#/components/schemas/ParentToolRule',
                 required_before_exit:
                   '#/components/schemas/RequiredBeforeExitToolRule',
+                requires_approval:
+                  '#/components/schemas/RequiresApprovalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },
@@ -15161,6 +15212,9 @@ export const $letta__schemas__agent_file__AgentSchema = {
               {
                 $ref: '#/components/schemas/ParentToolRule',
               },
+              {
+                $ref: '#/components/schemas/RequiresApprovalToolRule',
+              },
             ],
             discriminator: {
               propertyName: 'type',
@@ -15174,6 +15228,8 @@ export const $letta__schemas__agent_file__AgentSchema = {
                 parent_last_tool: '#/components/schemas/ParentToolRule',
                 required_before_exit:
                   '#/components/schemas/RequiredBeforeExitToolRule',
+                requires_approval:
+                  '#/components/schemas/RequiresApprovalToolRule',
                 run_first: '#/components/schemas/InitToolRule',
               },
             },

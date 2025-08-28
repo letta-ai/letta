@@ -7,6 +7,7 @@ import type {
   MaxCountPerStepToolRule,
   TerminalToolRule,
   RequiredBeforeExitToolRule,
+  RequiresApprovalToolRule,
   ParentToolRule,
 } from '@letta-cloud/sdk-core';
 import type { Node } from '@xyflow/react';
@@ -20,6 +21,7 @@ export type SupportedToolRuleTypes =
   | MaxCountPerStepToolRule
   | ParentToolRule
   | RequiredBeforeExitToolRule
+  | RequiresApprovalToolRule
   | TerminalToolRule;
 
 export type {
@@ -31,6 +33,7 @@ export type {
   TerminalToolRule,
   RequiredBeforeExitToolRule,
   ParentToolRule,
+  RequiresApprovalToolRule,
 };
 
 export type SupportedToolRuleNameTypes =
@@ -40,7 +43,7 @@ export type SupportedToolRuleNameTypes =
   | 'exit_loop'
   | 'max_count_per_step'
   | 'required_before_exit'
-  | 'run_first';
+  | 'run_first'
 
 // Control node types
 export type ControlNodeType = 'agent' | 'done';

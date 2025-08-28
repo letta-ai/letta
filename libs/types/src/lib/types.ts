@@ -8,6 +8,7 @@ import type {
   RequiredBeforeExitToolRule,
   MaxCountPerStepToolRule,
   ParentToolRule,
+  RequiresApprovalToolRule,
 } from '@letta-cloud/sdk-core';
 
 export const ComposioProviderConfiguration = z.object({
@@ -375,6 +376,12 @@ export const ParentToolRuleSchema = z.object({
   children: z.array(z.string()),
 });
 
+export const RequiresApprovalRuleSchema = z.object({
+  tool_name: z.string(),
+  type: z.literal('requires_approval').optional(),
+  prompt_template: z.string().nullable().optional(),
+});
+
 // Union of all tool rule schemas
 export const ToolRuleSchema = z.union([
   ChildToolRuleSchema,
@@ -385,6 +392,7 @@ export const ToolRuleSchema = z.union([
   RequiredBeforeExitToolRuleSchema,
   MaxCountPerStepToolRuleSchema,
   ParentToolRuleSchema,
+  RequiresApprovalRuleSchema,
 ]);
 
 // Tool rules array schema - can be null or array of tool rules
@@ -392,6 +400,6 @@ export const ToolRulesSchema = z.array(ToolRuleSchema).nullable();
 
 // Tool Rule Types - use SDK types directly for type compatibility
 export type ToolRule =
-  ChildToolRule | ConditionalToolRule | ContinueToolRule | InitToolRule | MaxCountPerStepToolRule | ParentToolRule | RequiredBeforeExitToolRule | TerminalToolRule;
+  ChildToolRule | ConditionalToolRule | ContinueToolRule | InitToolRule | MaxCountPerStepToolRule | ParentToolRule | RequiresApprovalToolRule | RequiredBeforeExitToolRule | TerminalToolRule;
 
 export type ToolRulesArray = ToolRule[] | null;

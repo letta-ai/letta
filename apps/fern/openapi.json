@@ -10459,6 +10459,23 @@
                                     }
                                   },
                                   "required": ["tool_name", "children"]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "tool_name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": ["requires_approval"]
+                                    },
+                                    "prompt_template": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": ["tool_name"]
                                 }
                               ]
                             },
@@ -11998,6 +12015,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ParentToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequiresApprovalToolRule"
                     }
                   ],
                   "discriminator": {
@@ -12010,6 +12030,7 @@
                       "max_count_per_step": "#/components/schemas/MaxCountPerStepToolRule",
                       "parent_last_tool": "#/components/schemas/ParentToolRule",
                       "required_before_exit": "#/components/schemas/RequiredBeforeExitToolRule",
+                      "requires_approval": "#/components/schemas/RequiresApprovalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
                   }
@@ -15654,6 +15675,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ParentToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequiresApprovalToolRule"
                     }
                   ],
                   "discriminator": {
@@ -15666,6 +15690,7 @@
                       "max_count_per_step": "#/components/schemas/MaxCountPerStepToolRule",
                       "parent_last_tool": "#/components/schemas/ParentToolRule",
                       "required_before_exit": "#/components/schemas/RequiredBeforeExitToolRule",
+                      "requires_approval": "#/components/schemas/RequiresApprovalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
                   }
@@ -21506,6 +21531,38 @@
         "title": "RequiredBeforeExitToolRule",
         "description": "Represents a tool rule configuration where this tool must be called before the agent loop can exit."
       },
+      "RequiresApprovalToolRule": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "The name of the tool. Must exist in the database for the user's organization."
+          },
+          "type": {
+            "type": "string",
+            "const": "requires_approval",
+            "title": "Type",
+            "default": "requires_approval"
+          },
+          "prompt_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Template",
+            "description": "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["tool_name"],
+        "title": "RequiresApprovalToolRule",
+        "description": "Represents a tool rule configuration which requires approval before the tool can be invoked."
+      },
       "ResponseFormatJSONObject": {
         "properties": {
           "type": {
@@ -24611,6 +24668,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ParentToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequiresApprovalToolRule"
                     }
                   ],
                   "discriminator": {
@@ -24623,6 +24683,7 @@
                       "max_count_per_step": "#/components/schemas/MaxCountPerStepToolRule",
                       "parent_last_tool": "#/components/schemas/ParentToolRule",
                       "required_before_exit": "#/components/schemas/RequiredBeforeExitToolRule",
+                      "requires_approval": "#/components/schemas/RequiresApprovalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
                   }
@@ -25761,6 +25822,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ParentToolRule"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RequiresApprovalToolRule"
                     }
                   ],
                   "discriminator": {
@@ -25773,6 +25837,7 @@
                       "max_count_per_step": "#/components/schemas/MaxCountPerStepToolRule",
                       "parent_last_tool": "#/components/schemas/ParentToolRule",
                       "required_before_exit": "#/components/schemas/RequiredBeforeExitToolRule",
+                      "requires_approval": "#/components/schemas/RequiresApprovalToolRule",
                       "run_first": "#/components/schemas/InitToolRule"
                     }
                   }
