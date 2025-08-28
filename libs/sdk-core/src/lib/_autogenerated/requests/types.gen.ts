@@ -4698,6 +4698,7 @@ export type StepStatus = 'pending' | 'success' | 'failed' | 'cancelled';
 export type StopReasonType =
   | 'end_turn'
   | 'error'
+  | 'invalid_llm_response'
   | 'invalid_tool_call'
   | 'max_steps'
   | 'no_tool_call'

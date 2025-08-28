@@ -9,6 +9,7 @@ from letta.schemas.enums import JobStatus
 class StopReasonType(str, Enum):
     end_turn = "end_turn"
     error = "error"
+    invalid_llm_response = "invalid_llm_response"
     invalid_tool_call = "invalid_tool_call"
     max_steps = "max_steps"
     no_tool_call = "no_tool_call"
@@ -23,7 +24,12 @@ class StopReasonType(str, Enum):
             StopReasonType.tool_rule,
         ):
             return JobStatus.completed
-        elif self in (StopReasonType.error, StopReasonType.invalid_tool_call, StopReasonType.no_tool_call):
+        elif self in (
+            StopReasonType.error,
+            StopReasonType.invalid_tool_call,
+            StopReasonType.no_tool_call,
+            StopReasonType.invalid_llm_response,
+        ):
             return JobStatus.failed
         elif self == StopReasonType.cancelled:
             return JobStatus.cancelled

@@ -7,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.mixins import ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import StepStatus
-from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.step import Step as PydanticStep
 
 if TYPE_CHECKING:
@@ -51,7 +50,7 @@ class Step(SqlalchemyBase, ProjectMixin):
     prompt_tokens: Mapped[int] = mapped_column(default=0, doc="Number of tokens in the prompt")
     total_tokens: Mapped[int] = mapped_column(default=0, doc="Total number of tokens processed by the agent")
     completion_tokens_details: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True, doc="metadata for the agent.")
-    stop_reason: Mapped[Optional[StopReasonType]] = mapped_column(None, nullable=True, doc="The stop reason associated with this step.")
+    stop_reason: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The stop reason associated with this step.")
     tags: Mapped[Optional[List]] = mapped_column(JSON, doc="Metadata tags.")
     tid: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="Transaction ID that processed the step.")
     trace_id: Mapped[Optional[str]] = mapped_column(None, nullable=True, doc="The trace id of the agent step.")
