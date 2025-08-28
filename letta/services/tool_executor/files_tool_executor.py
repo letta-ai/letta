@@ -661,7 +661,7 @@ class LettaFileToolExecutor(ToolExecutor):
     async def _search_files_traditional(self, agent_state: AgentState, query: str, limit: int) -> str:
         """Traditional search using existing passage manager."""
         # Get semantic search results
-        passages = await self.agent_manager.list_source_passages_async(
+        passages = await self.agent_manager.query_source_passages_async(
             actor=self.actor,
             agent_id=agent_state.id,
             query_text=query,

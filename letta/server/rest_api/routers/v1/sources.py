@@ -349,7 +349,7 @@ async def list_source_passages(
     List all passages associated with a data source.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.agent_manager.list_passages_async(
+    return await server.agent_manager.query_source_passages_async(
         actor=actor,
         source_id=source_id,
         after=after,

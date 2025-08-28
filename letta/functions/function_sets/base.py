@@ -107,7 +107,7 @@ async def archival_memory_search(self: "Agent", query: str, page: Optional[int] 
 
     try:
         # Get results using passage manager
-        all_results = await self.agent_manager.list_passages_async(
+        all_results = await self.agent_manager.query_agent_passages_async(
             actor=self.user,
             agent_id=self.agent_state.id,
             query_text=query,

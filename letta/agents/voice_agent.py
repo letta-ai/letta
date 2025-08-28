@@ -484,7 +484,7 @@ class VoiceAgent(BaseAgent):
         if start_date and end_date and start_date > end_date:
             start_date, end_date = end_date, start_date
 
-        archival_results = await self.agent_manager.list_passages_async(
+        archival_results = await self.agent_manager.query_agent_passages_async(
             actor=self.actor,
             agent_id=self.agent_id,
             query_text=archival_query,

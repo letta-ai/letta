@@ -105,6 +105,62 @@ def disable_pinecone() -> Generator[None, None, None]:
 
 
 @pytest.fixture
+def disable_turbopuffer() -> Generator[None, None, None]:
+    """
+    Temporarily disables Turbopuffer by setting `settings.use_tpuf` to False
+    and `settings.tpuf_api_key` to None for the duration of the test.
+    Also sets environment to DEV for testing.
+    Restores the original values afterward.
+    """
+    from letta.settings import settings
+
+    original_use_tpuf = settings.use_tpuf
+    original_tpuf_api_key = settings.tpuf_api_key
+    original_environment = settings.environment
+    settings.use_tpuf = False
+    settings.tpuf_api_key = None
+    settings.environment = "DEV"
+    yield
+    settings.use_tpuf = original_use_tpuf
+    settings.tpuf_api_key = original_tpuf_api_key
+    settings.environment = original_environment
+
+
+@pytest.fixture
+def turbopuffer_mode(request) -> Generator[None, None, None]:
+    """
+    Parametrizable fixture to enable/disable Turbopuffer mode.
+
+    Usage:
+        @pytest.mark.parametrize("turbopuffer_mode", [True, False], indirect=True)
+        def test_function(turbopuffer_mode, ...):
+            # Test runs twice - once with Turbopuffer enabled, once disabled
+    """
+    from letta.settings import settings
+
+    enable_tpuf = request.param
+    original_use_tpuf = settings.use_tpuf
+    original_tpuf_api_key = settings.tpuf_api_key
+    original_environment = settings.environment
+
+    # Set environment to DEV for testing
+    settings.environment = "DEV"
+
+    if not enable_tpuf:
+        # Disable Turbopuffer by setting use_tpuf to False
+        settings.use_tpuf = False
+        settings.tpuf_api_key = None
+    # If enable_tpuf is True, leave the original settings unchanged
+
+    yield
+
+    # Restore original settings
+    settings.use_tpuf = original_use_tpuf
+    settings.tpuf_api_key = original_tpuf_api_key
+    settings.environment = original_environment
+
+
+@pytest.fixture
 def check_e2b_key_is_set():
     from letta.settings import tool_settings
 

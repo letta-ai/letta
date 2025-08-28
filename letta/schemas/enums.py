@@ -171,3 +171,10 @@ class StepStatus(str, Enum):
     SUCCESS = "success"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+
+class VectorDBProvider(str, Enum):
+    """Supported vector database providers for archival memory"""
+
+    NATIVE = "native"
+    TPUF = "tpuf"

@@ -143,7 +143,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         try:
             # Get results using passage manager
-            all_results = await AgentManager().list_agent_passages_async(
+            all_results = await AgentManager().query_agent_passages_async(
                 actor=actor,
                 agent_id=agent_state.id,
                 query_text=query,

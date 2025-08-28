@@ -2,11 +2,13 @@ from typing import List, Optional
 
 from sqlalchemy import select
 
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.orm import ArchivalPassage
 from letta.orm import Archive as ArchiveModel
 from letta.orm import ArchivesAgents
 from letta.schemas.archive import Archive as PydanticArchive
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
@@ -27,10 +29,14 @@ class ArchiveManager:
         """Create a new archive."""
         try:
             with db_registry.session() as session:
+                # determine vector db provider based on settings
+                vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+
                 archive = ArchiveModel(
                     name=name,
                     description=description,
                     organization_id=actor.organization_id,
+                    vector_db_provider=vector_db_provider,
                 )
                 archive.create(session, actor=actor)
                 return archive.to_pydantic()
@@ -48,10 +54,14 @@ class ArchiveManager:
         """Create a new archive."""
         try:
             async with db_registry.async_session() as session:
+                # determine vector db provider based on settings
+                vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+
                 archive = ArchiveModel(
                     name=name,
                     description=description,
                     organization_id=actor.organization_id,
+                    vector_db_provider=vector_db_provider,
                 )
                 await archive.create_async(session, actor=actor)
                 return archive.to_pydantic()

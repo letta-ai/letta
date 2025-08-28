@@ -34,7 +34,7 @@ from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaSt
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
 from letta.schemas.message import MessageCreate
-from letta.schemas.passage import Passage, PassageUpdate
+from letta.schemas.passage import Passage
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
@@ -954,22 +954,9 @@ async def create_passage(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return await server.insert_archival_memory_async(agent_id=agent_id, memory_contents=request.text, actor=actor)
-
-
-@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=list[Passage], operation_id="modify_passage")
-def modify_passage(
-    agent_id: str,
-    memory_id: str,
-    passage: PassageUpdate = Body(...),
-    server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
-):
-    """
-    Modify a memory in the agent's archival memory store.
-    """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.modify_archival_memory(agent_id=agent_id, memory_id=memory_id, passage=passage, actor=actor)
+    return await server.insert_archival_memory_async(
+        agent_id=agent_id, memory_contents=request.text, actor=actor, tags=request.tags, created_at=request.created_at
+    )
 
 
 # TODO(ethan): query or path parameter for memory_id?
