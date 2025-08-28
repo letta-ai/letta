@@ -111,6 +111,13 @@ class ModelSettings(BaseSettings):
         # env=["OPENAI_BASE_URL", "OPENAI_API_BASE"],  # pydantic-settings v2
         validation_alias=AliasChoices("OPENAI_BASE_URL", "OPENAI_API_BASE"),  # pydantic-settings v1
     )
+    # dedicated embedding api key (e.g., for openai-compatible embedding providers)
+    openai_embedding_api_key: Optional[str] = None
+    # dedicated embedding base url (e.g., for openai-compatible embedding providers)
+    openai_embedding_api_base: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("OPENAI_EMBEDDING_BASE_URL", "OPENAI_EMBEDDING_API_BASE"),
+    )
 
     # deepseek
     deepseek_api_key: Optional[str] = None
