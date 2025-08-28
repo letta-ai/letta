@@ -434,6 +434,7 @@ class AgentSerializationManager:
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
         override_embedding_config: Optional[EmbeddingConfig] = None,
+        project_id: Optional[str] = None,
     ) -> ImportResult:
         """
         Import AgentFileSchema into the database.
@@ -648,6 +649,10 @@ class AgentSerializationManager:
                 if env_vars:
                     for var in agent_data["tool_exec_environment_variables"]:
                         var["value"] = env_vars.get(var["key"], "")
+
+                # Override project_id if provided
+                if project_id:
+                    agent_data["project_id"] = project_id
 
                 agent_create = CreateAgent(**agent_data)
                 created_agent = await self.agent_manager.create_agent_async(agent_create, actor, _init_with_no_messages=True)

@@ -264,7 +264,7 @@ async def import_agent(
 
     try:
         if override_embedding_handle:
-            embedding_config_override = server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+            embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
         else:
             embedding_config_override = None
 
@@ -275,6 +275,7 @@ async def import_agent(
             override_existing_tools=override_existing_tools,
             env_vars=env_vars,
             override_embedding_config=embedding_config_override,
+            project_id=project_id,
         )
 
         if not import_result.success:
@@ -303,6 +304,7 @@ async def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
+    x_override_embedding_model: str | None = Header(None, alias="x-override-embedding-model"),
     append_copy_suffix: bool = Form(True, description='If set to True, appends "_copy" to the end of the agent name.'),
     override_existing_tools: bool = Form(
         True,
@@ -344,6 +346,9 @@ async def import_agent_serialized(
         if not isinstance(env_vars, dict):
             raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
 
+    # Prioritize header over form data for override_embedding_handle
+    final_override_embedding_handle = x_override_embedding_model or override_embedding_handle
+
     # Check if the JSON is AgentFileSchema or AgentSchema
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
@@ -357,6 +362,7 @@ async def import_agent_serialized(
             project_id=project_id,
             strip_messages=strip_messages,
             env_vars=env_vars,
+            override_embedding_handle=final_override_embedding_handle,
         )
     else:
         # This is a legacy AgentSchema
