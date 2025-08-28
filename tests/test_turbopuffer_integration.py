@@ -289,6 +289,111 @@ class TestTurbopufferIntegration:
         # Should still work with native PostgreSQL
         assert isinstance(vector_results, list)
 
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured for testing")
+    async def test_hybrid_search_with_real_tpuf(self, enable_turbopuffer):
+        """Test hybrid search functionality combining vector and full-text search"""
+
+        import uuid
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        client = TurbopufferClient()
+        archive_id = f"test-hybrid-{datetime.now().timestamp()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Insert test passages with different characteristics
+            texts = [
+                "Turbopuffer is a vector database optimized for high-performance similarity search",
+                "The quick brown fox jumps over the lazy dog",
+                "Machine learning models require vector embeddings for semantic search",
+                "Database optimization techniques improve query performance",
+                "Turbopuffer supports both vector and full-text search capabilities",
+            ]
+
+            # Create simple embeddings for testing (normally you'd use a real embedding model)
+            embeddings = [[float(i), float(i + 5), float(i + 10)] for i in range(len(texts))]
+            passage_ids = [f"passage-{str(uuid.uuid4())}" for _ in texts]
+
+            # Insert passages
+            await client.insert_archival_memories(
+                archive_id=archive_id, text_chunks=texts, embeddings=embeddings, passage_ids=passage_ids, organization_id=org_id
+            )
+
+            # Test vector-only search
+            vector_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 6.0, 11.0],  # similar to second passage embedding
+                search_mode="vector",
+                top_k=3,
+            )
+            assert 0 < len(vector_results) <= 3
+            # all results should have scores
+            assert all(isinstance(score, float) for _, score in vector_results)
+
+            # Test FTS-only search
+            fts_results = await client.query_passages(
+                archive_id=archive_id, query_text="Turbopuffer vector database", search_mode="fts", top_k=3
+            )
+            assert 0 < len(fts_results) <= 3
+            # should find passages mentioning Turbopuffer
+            assert any("Turbopuffer" in passage.text for passage, _ in fts_results)
+            # all results should have scores
+            assert all(isinstance(score, float) for _, score in fts_results)
+
+            # Test hybrid search
+            hybrid_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[2.0, 7.0, 12.0],
+                query_text="vector search Turbopuffer",
+                search_mode="hybrid",
+                top_k=3,
+                vector_weight=0.5,
+                fts_weight=0.5,
+            )
+            assert 0 < len(hybrid_results) <= 3
+            # hybrid should combine both vector and text relevance
+            assert any("Turbopuffer" in passage.text or "vector" in passage.text for passage, _ in hybrid_results)
+            # all results should have scores
+            assert all(isinstance(score, float) for _, score in hybrid_results)
+            # results should be sorted by score (highest first)
+            scores = [score for _, score in hybrid_results]
+            assert scores == sorted(scores, reverse=True)
+
+            # Test with different weights
+            vector_heavy_results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[0.0, 5.0, 10.0],  # very similar to first passage
+                query_text="quick brown fox",  # matches second passage
+                search_mode="hybrid",
+                top_k=3,
+                vector_weight=0.8,  # emphasize vector search
+                fts_weight=0.2,
+            )
+            assert 0 < len(vector_heavy_results) <= 3
+            # all results should have scores
+            assert all(isinstance(score, float) for _, score in vector_heavy_results)
+
+            # Test error handling - missing embedding for vector mode
+            with pytest.raises(ValueError, match="query_embedding is required"):
+                await client.query_passages(archive_id=archive_id, search_mode="vector", top_k=3)
+
+            # Test error handling - missing text for FTS mode
+            with pytest.raises(ValueError, match="query_text is required"):
+                await client.query_passages(archive_id=archive_id, search_mode="fts", top_k=3)
+
+            # Test error handling - missing both for hybrid mode
+            with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
+                await client.query_passages(archive_id=archive_id, query_embedding=[1.0, 2.0, 3.0], search_mode="hybrid", top_k=3)
+
+        finally:
+            # Clean up
+            try:
+                await client.delete_all_passages(archive_id)
+            except:
+                pass
+
 
 @pytest.mark.parametrize("turbopuffer_mode", [True, False], indirect=True)
 class TestTurbopufferParametrized:
