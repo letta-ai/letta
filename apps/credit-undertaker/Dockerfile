@@ -9,7 +9,7 @@ WORKDIR /app
 COPY apps/credit-undertaker/package.json apps/credit-undertaker/package-lock.json ./
 
 # Install only production dependencies
-RUN npm ci --production --ignore-scripts --legacy-peer-deps
+RUN npm ci --ignore-scripts --legacy-peer-deps
 
 # Build the application
 FROM base AS builder

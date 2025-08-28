@@ -58,8 +58,11 @@ jobs:
           cache: npm
           cache-dependency-path: apps/credit-undertaker/package.json
           node-version-file: '.nvmrc'
-      - run: npm ci --legacy-peer-deps
-        working-directory: apps/credit-undertaker
+      - name: Install just
+        uses: extractions/setup-just@v3
+        with:
+          just-version: '1.42.2'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build
-        run: npm run build
-        working-directory: apps/credit-undertaker
+        run: just build-undertaker
