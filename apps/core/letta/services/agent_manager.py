@@ -2671,11 +2671,14 @@ class AgentManager:
                     embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
                     query_embedding = embeddings[0]
 
-                    # Query Turbopuffer
+                    # Query Turbopuffer - use hybrid search when text is available
                     tpuf_client = TurbopufferClient()
+                    # use hybrid search to combine vector and full-text search
                     passages_with_scores = await tpuf_client.query_passages(
                         archive_id=archive_ids[0],
                         query_embedding=query_embedding,
+                        query_text=query_text,  # pass text for potential hybrid search
+                        search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
                     )
 
