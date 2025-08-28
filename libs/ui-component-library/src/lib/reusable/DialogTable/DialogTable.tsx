@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 export interface DialogTableItem {
   icon?: React.ReactNode;
   label: string;
+  subtitle?: string;
   action: React.ReactNode;
 }
 
@@ -63,9 +64,23 @@ export function DialogTable(props: DialogTableProps) {
           >
             <HStack overflow="hidden" fullWidth justify="start">
               {item.icon && <Slot className="w-3">{item.icon}</Slot>}
-              <Typography noWrap align="left" fullWidth overflow="ellipsis">
-                {item.label}
-              </Typography>
+              <VStack>
+                <Typography noWrap align="left" fullWidth overflow="ellipsis">
+                  {item.label}
+                </Typography>
+                {item.subtitle && (
+                  <Typography
+                    variant="body4"
+                    color="muted"
+                    noWrap
+                    align="left"
+                    fullWidth
+                    overflow="ellipsis"
+                  >
+                    {item.subtitle}
+                  </Typography>
+                )}
+              </VStack>
             </HStack>
             {item.action}
           </HStack>

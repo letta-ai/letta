@@ -5,7 +5,6 @@ import {
   CodeIcon,
   CogIcon,
   ContextWindowIcon,
-  DatabaseIcon,
   EditIcon,
   Frame,
   HiddenOnMobile,
@@ -34,10 +33,6 @@ import {
   useToolsPanelTitle,
 } from '../panels/ToolsPanel/ToolsPanel';
 import { AdvancedSettingsPanel } from '../panels/AdvancedSettingsPanel/AdvancedSettingsPanel';
-import {
-  EditDataSourcesPanel,
-  useDataSourcesTitle,
-} from '../panels/EditDataSourcesPanel/EditDataSourcesPanel';
 import { AgentSimulator } from '../panels/AgentSimulator/AgentSimulator';
 import { ContextWindowPanel } from '../panels/ContextEditorPanel/ContextEditorPanel';
 
@@ -73,6 +68,7 @@ import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerS
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useADEState } from '../hooks/useADEState/useADEState';
+import { useDataSourcesTitle } from '../panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -299,7 +295,6 @@ interface AppPanel {
 function useAppPanels(): Record<string, AppPanel> {
   const {
     baseName,
-    datasourcesTitle,
     toolsTitle,
     editCoreMemoriesTitle,
     archivalMemoriesTitle,
@@ -325,12 +320,6 @@ function useAppPanels(): Record<string, AppPanel> {
         mobileTitle: t('mobileTitles.tools'),
         icon: <ToolsIcon />,
         content: <ToolsPanel />,
-      },
-      datasources: {
-        title: datasourcesTitle,
-        mobileTitle: t('mobileTitles.datasources'),
-        icon: <DatabaseIcon />,
-        content: <EditDataSourcesPanel />,
       },
       agentSimulator: {
         title: t('agentSimulator'),
@@ -360,7 +349,6 @@ function useAppPanels(): Record<string, AppPanel> {
     [
       t,
       baseName,
-      datasourcesTitle,
       toolsTitle,
       editCoreMemoriesTitle,
       archivalMemoriesTitle,

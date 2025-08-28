@@ -7,7 +7,6 @@ export * from './lib/SearchMemoryBlocks/SearchMemoryBlocks';
 import en from './translations/en.json';
 
 export { en };
-export * from './lib/panels/EditDataSourcesPanel/EditDataSourcesPanel';
 export * from './lib/panels/Messages/Messages';
 export * from './lib/hooks/useCurrentAgentMetaData/useCurrentAgentMetaData';
 export * from './lib/hooks/useADEState/useADEState';
@@ -47,3 +46,4 @@ export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPa
 export * from './lib/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
 
 export * from './lib/constants'
+export * from './lib/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal'

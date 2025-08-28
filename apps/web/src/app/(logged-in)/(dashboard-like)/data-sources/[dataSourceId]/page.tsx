@@ -24,7 +24,10 @@ import {
 } from '@letta-cloud/ui-component-library';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import type { FileMetadata, ListSourceFilesResponse } from '@letta-cloud/sdk-core';
+import type {
+  FileMetadata,
+  ListSourceFilesResponse,
+} from '@letta-cloud/sdk-core';
 import { useSourcesServiceRetrieveSource } from '@letta-cloud/sdk-core';
 import {
   UseJobsServiceListActiveJobsKeyFn,
@@ -38,8 +41,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeleteFileDialog, FileStatus } from '@letta-cloud/ui-ade-components';
-import type { DeleteFilePayload } from '@letta-cloud/ui-ade-components';
+import { FileStatus } from '@letta-cloud/ui-ade-components';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useFormatters } from '@letta-cloud/utils-client';
@@ -48,6 +50,7 @@ import {
   RenameDataSourceDialog,
   UpdateSourceInstructionsModal,
 } from '@letta-cloud/ui-ade-components';
+import { DeleteFileModal } from '@letta-cloud/ui-ade-components';
 
 const uploadToFormValuesSchema = z.object({
   files: z.array(z.custom<File>((v) => v instanceof File)).min(1),
@@ -337,11 +340,6 @@ function DataSourceFilesPage() {
     setIsPolling(hasProcessingFiles || false);
   }, [hasProcessingFiles]);
 
-  const [fileToDelete, setFileToDelete] = useState<Omit<
-    DeleteFilePayload,
-    'onClose'
-  > | null>(null);
-
   const [fileToView, setFileToView] = useState<FileMetadata | null>(null);
   const { dynamicFileSize } = useFormatters();
 
@@ -355,7 +353,9 @@ function DataSourceFilesPage() {
 
           return (
             <HStack align="center" gap="small">
-              <Typography>{file.original_file_name || file.file_name}</Typography>
+              <Typography>
+                {file.original_file_name || file.file_name}
+              </Typography>
               {file.processing_status !== 'completed' && (
                 <div style={{ marginLeft: '8px' }}>
                   <FileStatus file={file} />
@@ -378,9 +378,15 @@ function DataSourceFilesPage() {
       },
       {
         header: '',
-        id: 'actions',
-        cell: ({ cell }) => {
-          return (
+        id: 'view',
+        meta: {
+          style: {
+            columnAlign: 'right',
+          },
+        },
+        accessorKey: 'id',
+        cell: ({ cell }) => (
+          <HStack fullWidth justify="end">
             <DropdownMenu
               triggerAsChild
               trigger={
@@ -392,38 +398,26 @@ function DataSourceFilesPage() {
                 />
               }
             >
-              <DropdownMenuItem
-                onClick={() => {
-                  setFileToDelete({
-                    sourceId,
-                    fileId: cell.row.original.id || '',
-                    fileName: cell.row.original.original_file_name || cell.row.original.file_name || '',
-                  });
-                }}
-                label={t('deleteFile')}
+              <DeleteFileModal
+                sourceId={sourceId}
+                fileId={cell.row.original.id || ''}
+                trigger={
+                  <DropdownMenuItem
+                    doNotCloseOnSelect
+                    label={t('deleteFile')}
+                  />
+                }
+                fileName={cell.row.original.file_name || ''}
               />
             </DropdownMenu>
-          );
-        },
-        accessorKey: 'id',
-      },
-      {
-        header: '',
-        id: 'view',
-        meta: {
-          style: {
-            columnAlign: 'right',
-          },
-        },
-        accessorKey: 'id',
-        cell: ({ cell }) => (
-          <Button
-            color="secondary"
-            label={t('viewButton')}
-            onClick={() => {
-              setFileToView(cell.row.original);
-            }}
-          />
+            <Button
+              color="secondary"
+              label={t('viewButton')}
+              onClick={() => {
+                setFileToView(cell.row.original);
+              }}
+            />
+          </HStack>
         ),
       },
     ],
@@ -432,17 +426,6 @@ function DataSourceFilesPage() {
 
   return (
     <>
-      {fileToDelete && (
-        <DeleteFileDialog
-          limit={limit}
-          sourceId={sourceId}
-          fileId={fileToDelete.fileId}
-          fileName={fileToDelete.fileName}
-          onClose={() => {
-            setFileToDelete(null);
-          }}
-        />
-      )}
       <FileViewDialog
         file={fileToView || ({} as FileMetadata)}
         isOpen={!!fileToView}

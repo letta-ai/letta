@@ -23,7 +23,9 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentAgent } from '../../../../hooks';
-import { isEqual } from 'lodash-es';
+import {
+  useIsSourceCompatibleWithAgent
+} from '../../hooks/useIsSourceCompatibleWithAgent/useIsSourceCompatibleWithAgent';
 
 interface DataSourceItemProps {
   source: Source;
@@ -33,7 +35,7 @@ interface DataSourceItemProps {
 
 function DataSourceItem(props: DataSourceItemProps) {
   const { source, isAttached, onAttachComplete } = props;
-  const { id, embedding_config } = useCurrentAgent();
+  const { id } = useCurrentAgent();
   const queryClient = useQueryClient();
   const t = useTranslations('ADE/EditDataSourcesPanel.AttachDataSourceModal');
 
@@ -46,7 +48,7 @@ function DataSourceItem(props: DataSourceItemProps) {
           }),
         },
         () => {
-          return response
+          return response;
         },
       );
 
@@ -61,7 +63,7 @@ function DataSourceItem(props: DataSourceItemProps) {
     });
   }, [id, mutate, source.id]);
 
-  const isCompatible = isEqual(embedding_config, source.embedding_config);
+  const isCompatible = useIsSourceCompatibleWithAgent(source);
 
   return (
     <HStack
@@ -74,7 +76,14 @@ function DataSourceItem(props: DataSourceItemProps) {
     >
       <HStack gap align="center">
         <DatabaseIcon size="xsmall" />
-        <Typography variant="body2">{source.name}</Typography>
+        <VStack gap={false}>
+          <Typography variant="body2">{source.name}</Typography>
+          {source.embedding_config.handle && (
+            <Typography variant="body4">
+              {source.embedding_config.handle}
+            </Typography>
+          )}
+        </VStack>
       </HStack>
 
       {!isCompatible ? (

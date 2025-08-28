@@ -1,6 +1,5 @@
 import { useCurrentAgent } from '../../../../../hooks';
 import type { Source } from '@letta-cloud/sdk-core';
-import { useMemo } from 'react';
 import {
   Badge,
   HStack,
@@ -9,24 +8,12 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { WarningIcon } from '@letta-cloud/ui-component-library';
+import {
+  useIsSourceCompatibleWithAgent
+} from '../../../hooks/useIsSourceCompatibleWithAgent/useIsSourceCompatibleWithAgent';
 
 interface DataSourceCompatibilityWarningProps {
   source: Source;
-}
-
-export function useIsSourceCompatibleWithAgent(source: Source) {
-  const { embedding_config } = useCurrentAgent();
-
-  return useMemo(() => {
-    if (!embedding_config || !source.embedding_config) {
-      return true;
-    }
-
-    return (
-      embedding_config.embedding_model ===
-      source.embedding_config.embedding_model
-    );
-  }, [embedding_config, source.embedding_config]);
 }
 
 export function DataSourceCompatibilityWarning(

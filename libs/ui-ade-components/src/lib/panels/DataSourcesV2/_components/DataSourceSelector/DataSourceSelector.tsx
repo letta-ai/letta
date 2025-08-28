@@ -14,8 +14,8 @@ import { useDataSourceContext } from '../../hooks/useDataSourceContext/useDataSo
 import { CreateDataSourceModal } from '../CreateDataSourceModal/CreateDataSourceModal';
 import { AttachDataSourceModal } from '../AttachDataSourceModal/AttachDataSourceModal';
 import { useTranslations } from '@letta-cloud/translations';
-import { useIsSourceCompatibleWithAgent } from '../DataSourceView/DataSourceCompatibilityWarning/DataSourceCompatibilityWarning';
 import type { Source } from '@letta-cloud/sdk-core';
+import { useIsSourceCompatibleWithAgent } from '../../hooks/useIsSourceCompatibleWithAgent/useIsSourceCompatibleWithAgent';
 
 export interface DataSourceSelectorProps {
   trigger: React.ReactNode;
