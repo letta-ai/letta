@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useRef } from 'react';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { useTranslations } from '@letta-cloud/translations';
+import { removeFileNamePrefix } from '@letta-cloud/utils-shared';
 import './FileView.scss';
 import { DeleteFileModal } from '../../../DeleteFileModal';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,8 +70,8 @@ function ExpandedFileView(props: ExpandedFileViewProps) {
 
   const title = useMemo(() => {
     if (file.file_name) {
-      // remove file extension
-      return file.file_name.split('.').slice(0, -1).join('.') || t('untitled');
+      const cleanFileName = removeFileNamePrefix(file.file_name);
+      return cleanFileName.split('.').slice(0, -1).join('.') || t('untitled');
     }
 
     return t('untitled');
@@ -87,7 +88,7 @@ function ExpandedFileView(props: ExpandedFileViewProps) {
         <DeleteFileModal
           sourceId={file.source_id || ''}
           fileId={file.id || ''}
-          fileName={file.file_name || ''}
+          fileName={removeFileNamePrefix(file.file_name)}
           trigger={
             <Button
               size="xsmall"
@@ -144,7 +145,7 @@ function FileViewActions(props: FileViewActionsProps) {
       <DeleteFileModal
         sourceId={file.source_id || ''}
         fileId={file.id || ''}
-        fileName={file.file_name || ''}
+        fileName={removeFileNamePrefix(file.file_name)}
         trigger={
           <Button
             size="xsmall"
@@ -225,7 +226,7 @@ function FileViewFooter(props: FileViewFooterProps) {
       <DeleteFileModal
         sourceId={file.source_id}
         fileId={file.id || ''}
-        fileName={file.file_name || ''}
+        fileName={removeFileNamePrefix(file.file_name)}
         trigger={
           <Button
             size="xsmall"
@@ -322,7 +323,7 @@ export function FileView(props: FileViewProps) {
       )}
       <HStack align="center">
         <Typography fullWidth overflow="ellipsis" noWrap variant="body3">
-          {file_name}
+          {removeFileNamePrefix(file_name)}
         </Typography>
         <FileStatus file={file} />
       </HStack>

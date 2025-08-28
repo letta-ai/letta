@@ -51,6 +51,7 @@ import {
   UpdateSourceInstructionsModal,
 } from '@letta-cloud/ui-ade-components';
 import { DeleteFileModal } from '@letta-cloud/ui-ade-components';
+import { removeFileNamePrefix } from '@letta-cloud/utils-shared';
 
 const uploadToFormValuesSchema = z.object({
   files: z.array(z.custom<File>((v) => v instanceof File)).min(1),
@@ -247,8 +248,9 @@ function FileViewDialog({ file, isOpen, onClose }: FileViewDialogProps) {
 
   const title = useMemo(() => {
     if (file.file_name) {
+      const cleanFileName = removeFileNamePrefix(file.file_name);
       return (
-        file.file_name.split('.').slice(0, -1).join('.') ||
+        cleanFileName.split('.').slice(0, -1).join('.') ||
         t('fileType.untitled')
       );
     }
@@ -353,9 +355,7 @@ function DataSourceFilesPage() {
 
           return (
             <HStack align="center" gap="small">
-              <Typography>
-                {file.original_file_name || file.file_name}
-              </Typography>
+              <Typography>{file.original_file_name || removeFileNamePrefix(file.file_name)}</Typography>
               {file.processing_status !== 'completed' && (
                 <div style={{ marginLeft: '8px' }}>
                   <FileStatus file={file} />
