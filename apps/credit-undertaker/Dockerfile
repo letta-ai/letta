@@ -10,8 +10,6 @@ COPY apps/credit-undertaker/package.json apps/credit-undertaker/package-lock.jso
 
 # Install only production dependencies
 RUN npm ci --production --ignore-scripts --legacy-peer-deps
-# Install specific packages needed for the build
-RUN npm install --legacy-peer-deps @ts-rest/express@3.51.0 @ts-rest/react-query@3.51.0 lodash jsonrepair axios @tanstack/react-query unique-names-generator lodash
 
 # Build the application
 FROM base AS builder

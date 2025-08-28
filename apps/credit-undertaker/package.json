@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "dev": "ts-node --swc ./src/main.ts",
-    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:nanoid --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:posthog-node"
+    "build": "esbuild src/main.ts --tsconfig=tsconfig.app.json --bundle --platform=node --outdir=dist --format=cjs --sourcemap --external:nanoid --external:pg --external:postgres --external:ioredis --external:zod --external:@sentry/node --external:dotenv --external:drizzle-orm --external:date-fns --external:@clickhouse/client --external:posthog-node --external:unique-names-generator --external:@t3-oss/env-nextjs --external:axios --external:lodash --external:lodash-es --external:js-tiktoken --external:jsonrepair --external:stripe --external:@ts-rest/express --external:@ts-rest/core --external:@ts-rest/react-query --external:@tanstack/react-query --external:react --external:react-dom --external:@react-email/components --external:resend --external:path-to-regexp"
   },
   "author": "",
   "license": "ISC",
@@ -20,13 +20,19 @@
     "@react-email/components": "^0.0.33",
     "@sentry/node": "^8.52.0",
     "@t3-oss/env-nextjs": "^0.12.0",
+    "@tanstack/react-query": "^5.85.5",
     "@ts-rest/core": "^3.52.1",
+    "@ts-rest/express": "^3.51.0",
+    "@ts-rest/react-query": "^3.51.0",
+    "axios": "^1.11.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.1",
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
     "js-tiktoken": "^1.0.19",
+    "jsonrepair": "^3.13.0",
+    "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.1.5",
     "pg": "^8.13.3",
@@ -36,6 +42,7 @@
     "react-dom": "^19.0.0",
     "resend": "^4.1.2",
     "stripe": "^18.0.0",
+    "unique-names-generator": "^4.7.1",
     "zod": "^3.24.1"
   }
 }
