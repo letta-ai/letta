@@ -5264,6 +5264,8 @@ export const MessageType = z.union([
   z.literal('hidden_reasoning_message'),
   z.literal('tool_call_message'),
   z.literal('tool_return_message'),
+  z.literal('approval_request_message'),
+  z.literal('approval_response_message'),
 ]);
 
 export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
