@@ -4849,6 +4849,35 @@ export const $CreateArchivalMemory = {
       title: 'Text',
       description: 'Text to write to archival memory.',
     },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'Optional list of tags to attach to the memory.',
+    },
+    created_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created At',
+      description:
+        'Optional timestamp for the memory (defaults to current UTC time).',
+    },
   },
   type: 'object',
   required: ['text'],
@@ -9867,191 +9896,6 @@ Parameters:
     archive_id (str): The unique identifier of the archive containing this passage.
     source_id (str): The data source of the passage.
     file_id (str): The unique identifier of the file associated with the passage.`,
-} as const;
-
-export const $PassageUpdate = {
-  properties: {
-    created_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created By Id',
-      description: 'The id of the user that made this object.',
-    },
-    last_updated_by_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Last Updated By Id',
-      description: 'The id of the user that made this object.',
-    },
-    created_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Created At',
-      description: 'The timestamp when the object was created.',
-    },
-    updated_at: {
-      anyOf: [
-        {
-          type: 'string',
-          format: 'date-time',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Updated At',
-      description: 'The timestamp when the object was last updated.',
-    },
-    is_deleted: {
-      type: 'boolean',
-      title: 'Is Deleted',
-      description: 'Whether this passage is deleted or not.',
-      default: false,
-    },
-    organization_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Organization Id',
-      description:
-        'The unique identifier of the user associated with the passage.',
-    },
-    archive_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Archive Id',
-      description:
-        'The unique identifier of the archive containing this passage.',
-    },
-    source_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Source Id',
-      description: 'The data source of the passage.',
-    },
-    file_id: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'File Id',
-      description:
-        'The unique identifier of the file associated with the passage.',
-    },
-    file_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'File Name',
-      description: 'The name of the file (only for source passages).',
-    },
-    metadata_: {
-      anyOf: [
-        {
-          additionalProperties: true,
-          type: 'object',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Metadata',
-      description: 'The metadata of the passage.',
-      default: {},
-    },
-    text: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Text',
-      description: 'The text of the passage.',
-    },
-    embedding: {
-      anyOf: [
-        {
-          items: {
-            type: 'number',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Embedding',
-      description: 'The embedding of the passage.',
-    },
-    embedding_config: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/EmbeddingConfig',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'The embedding configuration used by the passage.',
-    },
-    id: {
-      type: 'string',
-      title: 'Id',
-      description: 'The unique identifier of the passage.',
-    },
-  },
-  additionalProperties: false,
-  type: 'object',
-  required: ['id'],
-  title: 'PassageUpdate',
 } as const;
 
 export const $PipRequirement = {

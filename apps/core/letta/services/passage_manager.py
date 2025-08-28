@@ -14,6 +14,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.passage import ArchivalPassage, SourcePassage
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.user import User as PydanticUser
@@ -489,6 +490,8 @@ class PassageManager:
             embeddings = await embedding_client.request_embeddings(text_chunks, agent_state.embedding_config)
 
             passages = []
+
+            # Always write to SQL database first
             for chunk_text, embedding in zip(text_chunks, embeddings):
                 passage = await self.create_agent_passage_async(
                     PydanticPassage(
@@ -501,6 +504,26 @@ class PassageManager:
                     actor=actor,
                 )
                 passages.append(passage)
+
+            # If archive uses Turbopuffer, also write to Turbopuffer (dual-write)
+            if archive.vector_db_provider == VectorDBProvider.TPUF:
+                from letta.helpers.tpuf_client import TurbopufferClient
+
+                tpuf_client = TurbopufferClient()
+
+                # Extract IDs and texts from the created passages
+                passage_ids = [p.id for p in passages]
+                passage_texts = [p.text for p in passages]
+
+                # Insert to Turbopuffer with the same IDs as SQL
+                await tpuf_client.insert_archival_memories(
+                    archive_id=archive.id,
+                    text_chunks=passage_texts,
+                    embeddings=embeddings,
+                    passage_ids=passage_ids,  # Use same IDs as SQL
+                    organization_id=actor.organization_id,
+                    created_at=passages[0].created_at if passages else None,
+                )
 
             return passages
 
@@ -655,7 +678,20 @@ class PassageManager:
         async with db_registry.async_session() as session:
             try:
                 passage = await ArchivalPassage.read_async(db_session=session, identifier=passage_id, actor=actor)
+                archive_id = passage.archive_id
+
+                # Delete from SQL first
                 await passage.hard_delete_async(session, actor=actor)
+
+                # Check if archive uses Turbopuffer and dual-delete
+                if archive_id:
+                    archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_id, actor=actor)
+                    if archive.vector_db_provider == VectorDBProvider.TPUF:
+                        from letta.helpers.tpuf_client import TurbopufferClient
+
+                        tpuf_client = TurbopufferClient()
+                        await tpuf_client.delete_passage(archive_id=archive_id, passage_id=passage_id)
+
                 return True
             except NoResultFound:
                 raise NoResultFound(f"Agent passage with id {passage_id} not found.")
@@ -812,12 +848,34 @@ class PassageManager:
     @trace_method
     async def delete_agent_passages_async(
         self,
-        actor: PydanticUser,
         passages: List[PydanticPassage],
+        actor: PydanticUser,
     ) -> bool:
         """Delete multiple agent passages."""
+        if not passages:
+            return True
+
         async with db_registry.async_session() as session:
+            # Delete from SQL first
             await ArchivalPassage.bulk_hard_delete_async(db_session=session, identifiers=[p.id for p in passages], actor=actor)
+
+            # Group passages by archive_id for efficient Turbopuffer deletion
+            passages_by_archive = {}
+            for passage in passages:
+                if passage.archive_id:
+                    if passage.archive_id not in passages_by_archive:
+                        passages_by_archive[passage.archive_id] = []
+                    passages_by_archive[passage.archive_id].append(passage.id)
+
+            # Check each archive and delete from Turbopuffer if needed
+            for archive_id, passage_ids in passages_by_archive.items():
+                archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_id, actor=actor)
+                if archive.vector_db_provider == VectorDBProvider.TPUF:
+                    from letta.helpers.tpuf_client import TurbopufferClient
+
+                    tpuf_client = TurbopufferClient()
+                    await tpuf_client.delete_passages(archive_id=archive_id, passage_ids=passage_ids)
+
             return True
 
     @enforce_types

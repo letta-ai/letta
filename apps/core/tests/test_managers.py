@@ -2670,21 +2670,18 @@ async def test_refresh_memory_async(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test basic listing functionality of agent passages"""
 
     all_passages = await server.agent_manager.list_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(all_passages) == 5  # 3 source + 2 agent passages
 
-    source_passages = await server.agent_manager.list_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    source_passages = await server.agent_manager.query_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(source_passages) == 3  # 3 source + 2 agent passages
-
-    agent_passages = await server.agent_manager.list_agent_passages_async(actor=default_user, agent_id=sarah_agent.id)
-    assert len(agent_passages) == 2  # 3 source + 2 agent passages
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test ordering of agent passages"""
 
     # Test ascending order
@@ -2701,7 +2698,7 @@ async def test_agent_list_passages_ordering(server, default_user, sarah_agent, a
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test pagination of agent passages"""
 
     # Test limit
@@ -2742,7 +2739,7 @@ async def test_agent_list_passages_pagination(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test text search functionality of agent passages"""
 
     # Test text search for source passages
@@ -2759,7 +2756,7 @@ async def test_agent_list_passages_text_search(server, default_user, sarah_agent
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test text search functionality of agent passages"""
 
     # Test text search for agent passages
@@ -2768,7 +2765,7 @@ async def test_agent_list_passages_agent_only(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup):
+async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup, disable_turbopuffer):
     """Test filtering functionality of agent passages"""
 
     # Test source filtering
@@ -2804,7 +2801,9 @@ def mock_embed_model(mock_embeddings):
     return mock_model
 
 
-async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, mock_embed_model):
+async def test_agent_list_passages_vector_search(
+    server, default_user, sarah_agent, default_source, default_file, mock_embed_model, disable_turbopuffer
+):
     """Test vector search functionality of agent passages"""
     embed_model = mock_embed_model
 

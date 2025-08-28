@@ -5206,6 +5206,22 @@ export const CreateAgentRequest = z.object({
 export type CreateArchivalMemory = z.infer<typeof CreateArchivalMemory>;
 export const CreateArchivalMemory = z.object({
   text: z.string(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type MessageType = z.infer<typeof MessageType>;
@@ -6769,116 +6785,6 @@ export const Passage = z.object({
     z.null(),
     z.array(z.union([EmbeddingConfig, z.null()])),
   ]),
-});
-
-export type PassageUpdate = z.infer<typeof PassageUpdate>;
-export const PassageUpdate = z.object({
-  created_by_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  last_updated_by_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  created_at: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  updated_at: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  is_deleted: z.union([z.boolean(), z.undefined()]).optional(),
-  organization_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  archive_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  source_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  file_id: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  file_name: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  metadata_: z
-    .union([
-      z.unknown(),
-      z.null(),
-      z.array(z.union([z.unknown(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  text: z
-    .union([
-      z.string(),
-      z.null(),
-      z.array(z.union([z.string(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding: z
-    .union([
-      z.array(z.number()),
-      z.null(),
-      z.array(z.union([z.array(z.number()), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  embedding_config: z
-    .union([
-      EmbeddingConfig,
-      z.null(),
-      z.array(z.union([EmbeddingConfig, z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  id: z.string(),
 });
 
 export type ProviderType = z.infer<typeof ProviderType>;
@@ -9982,26 +9888,6 @@ export const post_Create_passage = {
   response: z.array(Passage),
 };
 
-export type patch_Modify_passage = typeof patch_Modify_passage;
-export const patch_Modify_passage = {
-  method: z.literal('PATCH'),
-  path: z.literal('/v1/agents/{agent_id}/archival-memory/{memory_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      agent_id: z.string(),
-      memory_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: PassageUpdate,
-  }),
-  response: z.array(Passage),
-};
-
 export type delete_Delete_passage = typeof delete_Delete_passage;
 export const delete_Delete_passage = {
   method: z.literal('DELETE'),
@@ -12243,7 +12129,6 @@ export const EndpointByMethod = {
       patch_Attach_core_memory_block,
     '/v1/agents/{agent_id}/core-memory/blocks/detach/{block_id}':
       patch_Detach_core_memory_block,
-    '/v1/agents/{agent_id}/archival-memory/{memory_id}': patch_Modify_passage,
     '/v1/agents/{agent_id}/messages/{message_id}': patch_Modify_message,
     '/v1/agents/{agent_id}/reset-messages': patch_Reset_messages,
     '/v1/groups/{group_id}': patch_Modify_group,

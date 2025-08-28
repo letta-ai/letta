@@ -48,7 +48,7 @@ from letta.schemas.block import DEFAULT_BLOCKS
 from letta.schemas.block import Block as PydanticBlock
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType, ToolType
+from letta.schemas.enums import ProviderType, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup
 from letta.schemas.group import ManagerType
@@ -67,6 +67,7 @@ from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.db import db_registry
+from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
@@ -116,6 +117,7 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
+        self.archive_manager = ArchiveManager()
 
     @staticmethod
     def _should_exclude_model_from_base_tool_rules(model: str) -> bool:
@@ -2520,7 +2522,20 @@ class AgentManager:
         embedding_config: Optional[EmbeddingConfig] = None,
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
-        """Lists all passages attached to an agent."""
+        """
+        DEPRECATED: Use query_source_passages_async or query_agent_passages_async instead.
+        This method is kept only for test compatibility and will be removed in a future version.
+
+        Lists all passages attached to an agent (combines both source and agent passages).
+        """
+        import warnings
+
+        warnings.warn(
+            "list_passages_async is deprecated. Use query_source_passages_async or query_agent_passages_async instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         async with db_registry.async_session() as session:
             main_query = await build_passage_query(
                 actor=actor,
@@ -2567,7 +2582,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_source_passages_async(
+    async def query_source_passages_async(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2615,7 +2630,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_agent_passages_async(
+    async def query_agent_passages_async(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2630,6 +2645,46 @@ class AgentManager:
         embedding_config: Optional[EmbeddingConfig] = None,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
+        # Check if we should use Turbopuffer for vector search
+        if embed_query and agent_id and query_text and embedding_config:
+            # Get archive IDs for the agent
+            archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
+
+            if archive_ids:
+                # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
+                if len(archive_ids) > 1:
+                    raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+
+                # Get archive to check vector_db_provider
+                archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_ids[0], actor=actor)
+
+                # Use Turbopuffer for vector search if archive is configured for TPUF
+                if archive.vector_db_provider == VectorDBProvider.TPUF:
+                    from letta.helpers.tpuf_client import TurbopufferClient
+                    from letta.llm_api.llm_client import LLMClient
+
+                    # Generate embedding for query
+                    embedding_client = LLMClient.create(
+                        provider_type=embedding_config.embedding_endpoint_type,
+                        actor=actor,
+                    )
+                    embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+                    query_embedding = embeddings[0]
+
+                    # Query Turbopuffer
+                    tpuf_client = TurbopufferClient()
+                    passages_with_scores = await tpuf_client.query_passages(
+                        archive_id=archive_ids[0],
+                        query_embedding=query_embedding,
+                        top_k=limit,
+                    )
+
+                    # Return just the passages (without scores)
+                    return [passage for passage, _ in passages_with_scores]
+            else:
+                return []
+
+        # Fall back to SQL-based search for non-vector queries or NATIVE archives
         async with db_registry.async_session() as session:
             main_query = await build_agent_passage_query(
                 actor=actor,

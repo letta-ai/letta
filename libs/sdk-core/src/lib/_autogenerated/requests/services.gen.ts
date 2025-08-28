@@ -166,8 +166,6 @@ import type {
   ListPassagesResponse,
   CreatePassageData,
   CreatePassageResponse,
-  ModifyPassageData,
-  ModifyPassageResponse,
   DeletePassageData,
   DeletePassageResponse,
   ListMessagesData,
@@ -2641,37 +2639,6 @@ export class AgentsService {
       url: '/v1/agents/{agent_id}/archival-memory',
       path: {
         agent_id: data.agentId,
-      },
-      body: data.requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: 'Validation Error',
-      },
-      headers,
-    });
-  }
-
-  /**
-   * Modify Passage
-   * Modify a memory in the agent's archival memory store.
-   * @param data The data for the request.
-   * @param data.agentId
-   * @param data.memoryId
-   * @param data.requestBody
-   * @param data.userId
-   * @returns Passage Successful Response
-   * @throws ApiError
-   */
-  public static modifyPassage(
-    data: ModifyPassageData,
-    headers?: { user_id: string },
-  ): CancelablePromise<ModifyPassageResponse> {
-    return __request(OpenAPI, {
-      method: 'PATCH',
-      url: '/v1/agents/{agent_id}/archival-memory/{memory_id}',
-      path: {
-        agent_id: data.agentId,
-        memory_id: data.memoryId,
       },
       body: data.requestBody,
       mediaType: 'application/json',

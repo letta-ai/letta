@@ -4470,68 +4470,6 @@
       }
     },
     "/v1/agents/{agent_id}/archival-memory/{memory_id}": {
-      "patch": {
-        "tags": ["agents"],
-        "summary": "Modify Passage",
-        "description": "Modify a memory in the agent's archival memory store.",
-        "operationId": "modify_passage",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
-            "name": "memory_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Memory Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PassageUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Passage"
-                  },
-                  "title": "Response Modify Passage"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": ["agents"],
         "summary": "Delete Passage",
@@ -16181,6 +16119,34 @@
             "type": "string",
             "title": "Text",
             "description": "Text to write to archival memory."
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Optional list of tags to attach to the memory."
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "Optional timestamp for the memory (defaults to current UTC time)."
           }
         },
         "type": "object",
@@ -20892,175 +20858,6 @@
         "required": ["text", "embedding", "embedding_config"],
         "title": "Passage",
         "description": "Representation of a passage, which is stored in archival memory.\n\nParameters:\n    text (str): The text of the passage.\n    embedding (List[float]): The embedding of the passage.\n    embedding_config (EmbeddingConfig): The embedding configuration used by the passage.\n    created_at (datetime): The creation date of the passage.\n    organization_id (str): The unique identifier of the organization associated with the passage.\n    archive_id (str): The unique identifier of the archive containing this passage.\n    source_id (str): The data source of the passage.\n    file_id (str): The unique identifier of the file associated with the passage."
-      },
-      "PassageUpdate": {
-        "properties": {
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By Id",
-            "description": "The id of the user that made this object."
-          },
-          "last_updated_by_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated By Id",
-            "description": "The id of the user that made this object."
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At",
-            "description": "The timestamp when the object was created."
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At",
-            "description": "The timestamp when the object was last updated."
-          },
-          "is_deleted": {
-            "type": "boolean",
-            "title": "Is Deleted",
-            "description": "Whether this passage is deleted or not.",
-            "default": false
-          },
-          "archive_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Archive Id",
-            "description": "The unique identifier of the archive containing this passage."
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id",
-            "description": "The data source of the passage."
-          },
-          "file_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Id",
-            "description": "The unique identifier of the file associated with the passage."
-          },
-          "file_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Name",
-            "description": "The name of the file (only for source passages)."
-          },
-          "metadata_": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata",
-            "description": "The metadata of the passage.",
-            "default": {}
-          },
-          "text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Text",
-            "description": "The text of the passage."
-          },
-          "embedding": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "number"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embedding",
-            "description": "The embedding of the passage."
-          },
-          "embedding_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmbeddingConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The embedding configuration used by the passage."
-          },
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "The unique identifier of the passage."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["id"],
-        "title": "PassageUpdate"
       },
       "PipRequirement": {
         "properties": {

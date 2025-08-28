@@ -2302,9 +2302,6 @@ export type AgentsServiceAttachCoreMemoryBlockMutationResult = Awaited<
 export type AgentsServiceDetachCoreMemoryBlockMutationResult = Awaited<
   ReturnType<typeof AgentsService.detachCoreMemoryBlock>
 >;
-export type AgentsServiceModifyPassageMutationResult = Awaited<
-  ReturnType<typeof AgentsService.modifyPassage>
->;
 export type AgentsServiceModifyMessageMutationResult = Awaited<
   ReturnType<typeof AgentsService.modifyMessage>
 >;

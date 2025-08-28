@@ -1631,6 +1631,14 @@ export type CreateArchivalMemory = {
    * Text to write to archival memory.
    */
   text: string;
+  /**
+   * Optional list of tags to attach to the memory.
+   */
+  tags?: Array<string> | null;
+  /**
+   * Optional timestamp for the memory (defaults to current UTC time).
+   */
+  created_at?: string | null;
 };
 
 export type CreateBatch = {
@@ -3669,71 +3677,6 @@ export type Passage = {
    * The embedding configuration used by the passage.
    */
   embedding_config: EmbeddingConfig | null;
-};
-
-export type PassageUpdate = {
-  /**
-   * The id of the user that made this object.
-   */
-  created_by_id?: string | null;
-  /**
-   * The id of the user that made this object.
-   */
-  last_updated_by_id?: string | null;
-  /**
-   * The timestamp when the object was created.
-   */
-  created_at?: string | null;
-  /**
-   * The timestamp when the object was last updated.
-   */
-  updated_at?: string | null;
-  /**
-   * Whether this passage is deleted or not.
-   */
-  is_deleted?: boolean;
-  /**
-   * The unique identifier of the user associated with the passage.
-   */
-  organization_id?: string | null;
-  /**
-   * The unique identifier of the archive containing this passage.
-   */
-  archive_id?: string | null;
-  /**
-   * The data source of the passage.
-   */
-  source_id?: string | null;
-  /**
-   * The unique identifier of the file associated with the passage.
-   */
-  file_id?: string | null;
-  /**
-   * The name of the file (only for source passages).
-   */
-  file_name?: string | null;
-  /**
-   * The metadata of the passage.
-   */
-  metadata_?: {
-    [key: string]: unknown;
-  } | null;
-  /**
-   * The text of the passage.
-   */
-  text?: string | null;
-  /**
-   * The embedding of the passage.
-   */
-  embedding?: Array<number> | null;
-  /**
-   * The embedding configuration used by the passage.
-   */
-  embedding_config?: EmbeddingConfig | null;
-  /**
-   * The unique identifier of the passage.
-   */
-  id: string;
 };
 
 export type PipRequirement = {
@@ -6908,15 +6851,6 @@ export type CreatePassageData = {
 
 export type CreatePassageResponse = Array<Passage>;
 
-export type ModifyPassageData = {
-  agentId: string;
-  memoryId: string;
-  requestBody: PassageUpdate;
-  userId?: string | null;
-};
-
-export type ModifyPassageResponse = Array<Passage>;
-
 export type DeletePassageData = {
   agentId: string;
   memoryId: string;
@@ -9192,19 +9126,6 @@ export type $OpenApiTs = {
     };
   };
   '/v1/agents/{agent_id}/archival-memory/{memory_id}': {
-    patch: {
-      req: ModifyPassageData;
-      res: {
-        /**
-         * Successful Response
-         */
-        200: Array<Passage>;
-        /**
-         * Validation Error
-         */
-        422: HTTPValidationError;
-      };
-    };
     delete: {
       req: DeletePassageData;
       res: {

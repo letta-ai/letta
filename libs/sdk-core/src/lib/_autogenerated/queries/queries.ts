@@ -64,7 +64,6 @@ import {
   MessageRole,
   OrganizationCreate,
   OrganizationUpdate,
-  PassageUpdate,
   ProviderCategory,
   ProviderCheck,
   ProviderCreate,
@@ -6513,57 +6512,6 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
       AgentsService.detachCoreMemoryBlock({
         agentId,
         blockId,
-        userId,
-      }) as unknown as Promise<TData>,
-    ...options,
-  });
-/**
- * Modify Passage
- * Modify a memory in the agent's archival memory store.
- * @param data The data for the request.
- * @param data.agentId
- * @param data.memoryId
- * @param data.requestBody
- * @param data.userId
- * @returns Passage Successful Response
- * @throws ApiError
- */
-export const useAgentsServiceModifyPassage = <
-  TData = Common.AgentsServiceModifyPassageMutationResult,
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: Omit<
-    UseMutationOptions<
-      TData,
-      TError,
-      {
-        agentId: string;
-        memoryId: string;
-        requestBody: PassageUpdate;
-        userId?: string;
-      },
-      TContext
-    >,
-    'mutationFn'
-  >,
-) =>
-  useMutation<
-    TData,
-    TError,
-    {
-      agentId: string;
-      memoryId: string;
-      requestBody: PassageUpdate;
-      userId?: string;
-    },
-    TContext
-  >({
-    mutationFn: ({ agentId, memoryId, requestBody, userId }) =>
-      AgentsService.modifyPassage({
-        agentId,
-        memoryId,
-        requestBody,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

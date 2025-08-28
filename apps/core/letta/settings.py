@@ -300,7 +300,7 @@ class Settings(BaseSettings):
     # For tpuf - currently only for archival memories
     use_tpuf: bool = False
     tpuf_api_key: Optional[str] = None
-    tpuf_region: str = "gcp-us-central1.turbopuffer.com"
+    tpuf_region: str = "gcp-us-central1"
 
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30

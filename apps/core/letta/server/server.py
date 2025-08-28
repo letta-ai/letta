@@ -52,7 +52,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ArchivalMemorySummary, Memory, RecallMemorySummary
 from letta.schemas.message import Message, MessageCreate, MessageUpdate
-from letta.schemas.passage import Passage, PassageUpdate
+from letta.schemas.passage import Passage
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.providers import (
     AnthropicProvider,
@@ -1114,7 +1114,7 @@ class SyncServer(Server):
         ascending: Optional[bool] = True,
     ) -> List[Passage]:
         # iterate over records
-        records = await self.agent_manager.list_agent_passages_async(
+        records = await self.agent_manager.query_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             after=after,
@@ -1125,18 +1125,18 @@ class SyncServer(Server):
         )
         return records
 
-    async def insert_archival_memory_async(self, agent_id: str, memory_contents: str, actor: User) -> List[Passage]:
+    async def insert_archival_memory_async(
+        self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]
+    ) -> List[Passage]:
         # Get the agent object (loaded in memory)
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
-        # Insert passages into the archive
+        # Use passage manager which handles dual-write to Turbopuffer if enabled
         passages = await self.passage_manager.insert_passage(agent_state=agent_state, text=memory_contents, actor=actor)
 
-        return passages
+        # TODO: Add support for tags and created_at parameters
+        # Currently PassageManager.insert_passage doesn't support these parameters
 
-    def modify_archival_memory(self, agent_id: str, memory_id: str, passage: PassageUpdate, actor: User) -> List[Passage]:
-        passage = Passage(**passage.model_dump(exclude_unset=True, exclude_none=True))
-        passages = self.passage_manager.update_passage_by_id(passage_id=memory_id, passage=passage, actor=actor)
         return passages
 
     async def delete_archival_memory_async(self, memory_id: str, actor: User):
@@ -1270,7 +1270,7 @@ class SyncServer(Server):
         await self.source_manager.delete_source(source_id=source_id, actor=actor)
 
         # delete data from passage store
-        passages_to_be_deleted = await self.agent_manager.list_passages_async(actor=actor, source_id=source_id, limit=None)
+        passages_to_be_deleted = await self.agent_manager.query_source_passages_async(actor=actor, source_id=source_id, limit=None)
         await self.passage_manager.delete_source_passages_async(actor=actor, passages=passages_to_be_deleted)
 
         # TODO: delete data from agent passage stores (?)
@@ -1316,27 +1316,6 @@ class SyncServer(Server):
     async def sleeptime_document_ingest_async(
         self, main_agent: AgentState, source: Source, actor: User, clear_history: bool = False
     ) -> None:
-        # TEMPORARILY DISABLE UNTIL V2
-        # sleeptime_agent_state = await self.create_document_sleeptime_agent_async(main_agent, source, actor, clear_history)
-        # sleeptime_agent = LettaAgent(
-        #     agent_id=sleeptime_agent_state.id,
-        #     message_manager=self.message_manager,
-        #     agent_manager=self.agent_manager,
-        #     block_manager=self.block_manager,
-        #     job_manager=self.job_manager,
-        #     passage_manager=self.passage_manager,
-        #     actor=actor,
-        #     step_manager=self.step_manager,
-        #     telemetry_manager=self.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-        # )
-        # passages = await self.agent_manager.list_passages_async(actor=actor, source_id=source.id)
-        # for passage in passages:
-        #     await sleeptime_agent.step(
-        #         input_messages=[
-        #             MessageCreate(role="user", content=passage.text),
-        #         ]
-        #     )
-        # await self.agent_manager.delete_agent_async(agent_id=sleeptime_agent_state.id, actor=actor)
         pass
 
     async def _remove_file_from_agent(self, agent_id: str, file_id: str, actor: User) -> None:
