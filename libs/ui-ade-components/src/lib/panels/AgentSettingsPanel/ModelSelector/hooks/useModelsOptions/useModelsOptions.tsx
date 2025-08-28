@@ -8,17 +8,11 @@ import {
   isBrandKey,
 } from '@letta-cloud/ui-component-library';
 import { useModelsServiceListModels } from '@letta-cloud/sdk-core';
-import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useTranslations } from '@letta-cloud/translations';
 
-function useLocalModelsOptions(enabled: boolean) {
-  const { data: modelsList } = useModelsServiceListModels(
-    undefined,
-    undefined,
-    {
-      enabled,
-    },
-  );
+function useLocalModelsOptions() {
+  const { data: modelsList } = useModelsServiceListModels();
+
 
   const options = useMemo(() => {
     if (!modelsList) {
@@ -58,11 +52,8 @@ function useLocalModelsOptions(enabled: boolean) {
   };
 }
 
-function useHostedOptions(enabled: boolean) {
-  const { data: modelsList } = webApi.models.listInferenceModels.useQuery({
-    queryKey: webApiQueryKeys.models.listInferenceModels,
-    enabled,
-  });
+function useHostedOptions() {
+  const { data: modelsList } = useModelsServiceListModels();
 
   const t = useTranslations('ADE/AgentSettingsPanel/useHostedOptions');
 
@@ -94,11 +85,11 @@ function useHostedOptions(enabled: boolean) {
       },
     ];
 
-    modelsList.body.forEach((model) => {
-      const brand = model?.brand || 'ollama';
+    modelsList.forEach((model) => {
+      const brand = model?.provider_name || 'ollama';
 
       const badge = (() => {
-        if (model.type === 'byok') {
+        if (model.provider_category === 'byok') {
           return null;
         }
 
@@ -135,18 +126,18 @@ function useHostedOptions(enabled: boolean) {
       })();
 
       const option = {
-        label: model.displayName || '',
+        label: model.model || '',
         value: model.handle || '',
-        group: model.type,
+        group: model.provider_category,
         badge: badge,
         icon: isBrandKey(brand) ? brandKeyToLogo(brand) : '',
       };
 
-      if (model.type === 'byok') {
+      if (model.provider_category === 'byok') {
         options[1].options!.push(option);
       }
 
-      if (model.type === 'letta') {
+      if (model.provider_category === 'base') {
         options[0].options!.push(option);
       }
     });
@@ -158,7 +149,7 @@ function useHostedOptions(enabled: boolean) {
 
   const getLLMConfigFromHandle = useCallback(
     (handle: string) => {
-      return modelsList?.body.find((model) => model.handle === handle);
+      return modelsList?.find((model) => model.handle === handle);
     },
     [modelsList],
   );
@@ -187,8 +178,8 @@ interface UseModelsOptionsOptions {
 export function useModelsOptions(options: UseModelsOptionsOptions = {}) {
   const { isLocal } = options;
 
-  const localOptions = useLocalModelsOptions(isLocal || false);
-  const hostedOptions = useHostedOptions(!isLocal);
+  const localOptions = useLocalModelsOptions();
+  const hostedOptions = useHostedOptions();
 
   return useMemo(() => {
     if (isLocal) {

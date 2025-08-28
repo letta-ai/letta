@@ -14,9 +14,9 @@ import {
   useSyncUpdateCurrentAgent,
 } from '../../../../hooks';
 import { useADEState } from '../../../../hooks/useADEState/useADEState';
+import { useModelsServiceListEmbeddingModels } from '@letta-cloud/sdk-core';
 import type { AgentState } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
-import { useEmbeddingModels } from '../../../../hooks/useEmbeddingModels/useEmbeddingModels';
 import { useDebouncedValue } from '@mantine/hooks';
 import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
 
@@ -26,10 +26,17 @@ interface EmbeddingConfig {
 
 export function EmbeddingSelector(props: EmbeddingConfig) {
   const { embeddingConfig } = props;
+  const { isLocal } = useADEState();
   const t = useTranslations('ADE/EmbeddingConfiguration');
   const { syncUpdateCurrentAgent, error } = useSyncUpdateCurrentAgent();
 
-  const embeddingModels = useEmbeddingModels();
+  const { data: embeddingModels } = useModelsServiceListEmbeddingModels(
+    {},
+    undefined,
+    {
+      enabled: isLocal,
+    },
+  );
 
   const formattedModelsList = useMemo(() => {
     if (!embeddingModels) {

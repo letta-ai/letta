@@ -9656,6 +9656,18 @@
         }
       }
     },
+    "/v1/models/embeddings": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [],
+        "operationId": "models.listEmbeddingModels",
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
     "/v1/templates/{project}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
@@ -19154,6 +19166,18 @@
             "title": "Verbosity",
             "description": "Soft control for how verbose model output should be, used for GPT-5 models.",
             "default": "medium"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier",
+            "description": "The cost tier for the model (cloud only)."
           }
         },
         "type": "object",

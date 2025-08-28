@@ -1699,6 +1699,36 @@
                                   {}
                                 ],
                                 "nullable": true
+                              },
+                              "tier": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -5540,6 +5570,30 @@
         }
       }
     },
+    "/v1/models": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [],
+        "operationId": "models.listLLMModels",
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
+    "/v1/models/embeddings": {
+      "get": {
+        "tags": ["models"],
+        "parameters": [],
+        "operationId": "models.listEmbeddingModels",
+        "responses": {
+          "200": {
+            "description": "200"
+          }
+        }
+      }
+    },
     "/v1/templates/{project}/{template_version}/agents": {
       "post": {
         "description": "Creates an Agent or multiple Agents from a template",
@@ -7185,6 +7239,36 @@
                                         {
                                           "type": "string",
                                           "enum": ["high"]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  {}
+                                ],
+                                "nullable": true
+                              },
+                              "tier": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
                                         },
                                         {
                                           "type": "string",

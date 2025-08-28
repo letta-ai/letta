@@ -528,6 +528,14 @@ export const LLMConfig = z.object({
       z.undefined(),
     ])
     .optional(),
+  tier: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type EmbeddingConfig = z.infer<typeof EmbeddingConfig>;

@@ -65,7 +65,6 @@ import {
   launchLinkContracts,
   launchLinkQueryKeys,
 } from './public/launchLinkContracts';
-import { modelContracts, modelQueryClientKeys } from './public/modelsContracts';
 import { cloudAccessCodeContract } from './public/cloudAccessCodeContract';
 import {
   composioContracts,
@@ -126,7 +125,6 @@ export const contracts = {
   sharedAgentChats: sharedAgentChatsContracts,
   sso: ssoContracts,
   launchLinks: launchLinkContracts,
-  models: modelContracts,
   cloudAccessCode: cloudAccessCodeContract,
   transactions: transactionsContracts,
   observability: observabilityContracts,
@@ -165,7 +163,6 @@ export const queryClientKeys = {
   sharedAgentChats: sharedAgentChatQueryClientKeys,
   launchLinks: launchLinkQueryKeys,
   composio: composioQueryKeys,
-  models: modelQueryClientKeys,
   transactions: transactionsQueryKeys,
   observability: observabilityQueryKeys,
   traces: tracesQueryKeys,
@@ -206,7 +203,6 @@ export * from './public/rateLimitsContracts';
 export * from './public/costsContract';
 export * from './public/sharedAgentChatsContracts';
 export * from './public/launchLinkContracts';
-export * from './public/modelsContracts';
 export * from './public/composioContracts';
 export * from './public/transactionsContracts';
 export * from './admin/adminContentViolationsContracts';

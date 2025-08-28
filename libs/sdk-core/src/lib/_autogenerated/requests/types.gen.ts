@@ -2855,6 +2855,10 @@ export type LLMConfig = {
    * Soft control for how verbose model output should be, used for GPT-5 models.
    */
   verbosity?: 'low' | 'medium' | 'high' | null;
+  /**
+   * The cost tier for the model (cloud only).
+   */
+  tier?: string | null;
 };
 
 /**

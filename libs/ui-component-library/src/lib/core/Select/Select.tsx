@@ -154,11 +154,22 @@ function useSelectComponents(selectProps: BaseSelectProps) {
       // @ts-expect-error yest
       SingleValue: ({ children, ...props }) => {
         const badge = props.data.badge || null;
+        const { testId } = useSelectOptionsContext();
 
         return (
           // @ts-expect-error yest
           <components.SingleValue {...props}>
-            <HStack align="center" fullWidth overflow="hidden" gap="medium">
+            <HStack
+              data-testid={
+                testId
+                  ? `select-single-value-${testId}`
+                  : undefined
+              }
+              align="center"
+              fullWidth
+              overflow="hidden"
+              gap="medium"
+            >
               <HStack
                 align="center"
                 gap="small"

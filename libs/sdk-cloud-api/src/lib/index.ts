@@ -3,9 +3,11 @@ import { initTsrReactQuery } from '@ts-rest/react-query/v5';
 import { templateQueryKeys, templatesContract } from './templatesContract';
 import { clientSideAccessTokensContract } from './clientSideAccessTokensContract';
 import { projectsContract } from './projectsContract';
+import { modelsContract } from './modelsContract';
 
 export const cloudContracts = {
   agents: agentsContract,
+  models: modelsContract,
   templates: templatesContract,
   clientSideAccessTokens: clientSideAccessTokensContract,
   projects: projectsContract,

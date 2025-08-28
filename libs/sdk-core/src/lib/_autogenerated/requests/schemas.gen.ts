@@ -8005,6 +8005,18 @@ export const $LLMConfig = {
         'Soft control for how verbose model output should be, used for GPT-5 models.',
       default: 'medium',
     },
+    tier: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tier',
+      description: 'The cost tier for the model (cloud only).',
+    },
   },
   type: 'object',
   required: ['model', 'model_endpoint_type', 'context_window'],

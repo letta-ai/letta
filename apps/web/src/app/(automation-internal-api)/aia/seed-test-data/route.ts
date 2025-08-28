@@ -86,26 +86,57 @@ export async function POST(req: NextRequest) {
 
     // Seed models if requested
     if (models) {
-      // Check if gpt-4o-mini model exists
-      const existingModel = await db.query.inferenceModelsMetadata.findFirst({
-        where: eq(inferenceModelsMetadata.modelName, 'gpt-4o-mini'),
-      });
+      async function addModel(modelName: string, modelEndpoint: string) {
+        const existingModel = await db.query.inferenceModelsMetadata.findFirst({
+          where: eq(inferenceModelsMetadata.modelName, modelName),
+        });
 
-      if (!existingModel) {
-        try {
-          const modelResponse = await router.admin.models.createAdminInferenceModel({
-            body: {
-              modelName: 'gpt-4o-mini',
-              modelEndpoint: 'https://api.openai.com/v1',
-            },
-          });
-          seededData.models.push(modelResponse);
-        } catch (error) {
-          console.warn('Failed to create gpt-4o-mini model:', error);
+        if (!existingModel) {
+          try {
+            const modelResponse = await router.admin.models.createAdminInferenceModel({
+              body: {
+                modelName,
+                modelEndpoint,
+              },
+            });
+
+            await router.admin.models.updateAdminInferenceModel({
+              params: {
+                // @ts-expect-error - this is valid
+                id: modelResponse.body.id,
+
+              },
+              body: {
+                disabled: false
+              }
+            })
+
+
+            seededData.models.push(modelResponse);
+          } catch (error) {
+            console.warn('Failed to create gpt-4o-mini model:', error);
+          }
+        } else {
+          if (existingModel.disabledAt) {
+            await router.admin.models.updateAdminInferenceModel({
+              params: {
+                id: existingModel.id,
+              },
+              body: {
+                disabled: false
+              }
+            })
+          }
+
+          seededData.models.push(existingModel);
         }
-      } else {
-        seededData.models.push(existingModel);
       }
+      await Promise.all([
+        addModel('gpt-4o-mini', 'https://api.openai.com/v1'),
+        addModel('gpt-4.1-nano', 'https://api.openai.com/v1'),
+        addModel('gpt-4o', 'https://api.openai.com/v1')
+
+      ])
     }
 
     // Set credits if requested

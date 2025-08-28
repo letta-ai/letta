@@ -124,6 +124,7 @@ export function ModelSelector(props: LocalModelSelectorProps) {
         <RawSelect
           fullWidth
           size="small"
+          data-testid="model-selector"
           placeholder={t('placeholder')}
           isLoading={isLoading}
           infoTooltip={{
