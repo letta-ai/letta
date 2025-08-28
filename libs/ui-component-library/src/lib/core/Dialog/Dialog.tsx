@@ -97,10 +97,7 @@ const DialogContent = React.forwardRef<
     return (
       <DialogPortal>
         <DialogOverlay />
-        <DialogPrimitive.Content
-          ref={ref}
-          {...props}
-        >
+        <DialogPrimitive.Content ref={ref} {...props}>
           <div id="dialog-dropdown-content" className="z-dropdown" />
           <div className="fixed top-0 left-0  w-[100dvw] flex items-center justify-center h-[100dvh] z-dialog pointer-events-none">
             <div
@@ -522,8 +519,7 @@ export function Dialog(props: DialogProps) {
         errorMessageAction={errorMessageAction}
         className={dialogVariants({ size, fullHeight, maintainAspectRatio })}
         onInteractOutside={(e) => {
-
-          const ret = disableClosingOnNetworkInspector(e)
+          const ret = disableClosingOnNetworkInspector(e);
 
           if (ret === false) {
             return false;

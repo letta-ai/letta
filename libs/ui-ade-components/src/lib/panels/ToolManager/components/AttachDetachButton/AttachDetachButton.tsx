@@ -261,6 +261,7 @@ function AttachLocalTool(props: AttachLocalToolProps) {
     },
     onSuccess: (payload) => {
       updateAgentTools(payload);
+      toast.success(t('AttachLocalTool.success'));
     },
   });
 
@@ -395,6 +396,7 @@ function DetachToolDialog(props: DetachToolDialogProps) {
     onSuccess: (payload) => {
       updateAgentTools(payload);
       setOpen(false);
+      toast.success(t('DetachToolDialog.success'));
     },
   });
 
