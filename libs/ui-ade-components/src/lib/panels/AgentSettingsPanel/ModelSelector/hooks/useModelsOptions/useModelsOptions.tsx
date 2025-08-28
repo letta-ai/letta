@@ -13,7 +13,6 @@ import { useTranslations } from '@letta-cloud/translations';
 function useLocalModelsOptions() {
   const { data: modelsList } = useModelsServiceListModels();
 
-
   const options = useMemo(() => {
     if (!modelsList) {
       return [];
@@ -86,7 +85,11 @@ function useHostedOptions() {
     ];
 
     modelsList.forEach((model) => {
-      const brand = model?.provider_name || 'ollama';
+      let brand = model?.provider_name || 'ollama';
+
+      if (brand === 'anthropic') {
+        brand = 'claude';
+      }
 
       const badge = (() => {
         if (model.provider_category === 'byok') {
@@ -126,7 +129,10 @@ function useHostedOptions() {
       })();
 
       const option = {
-        label: model.model || '',
+        label:
+          model.provider_category === 'byok'
+            ? model.handle || model.model
+            : model.model || '',
         value: model.handle || '',
         group: model.provider_category,
         badge: badge,
