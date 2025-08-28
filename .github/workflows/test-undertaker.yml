@@ -54,9 +54,10 @@ jobs:
           fetch-depth: 0
       - name: ⎔ Setup node
         uses: actions/setup-node@v4
+        working-directory: apps/credit-undertaker
         with:
           cache: npm
-          cache-dependency-path: apps/credit-undertaker/package.json
+          cache-dependency-path: ./package.json
           node-version-file: '.nvmrc'
       - run: npm ci --legacy-peer-deps
         working-directory: apps/credit-undertaker
