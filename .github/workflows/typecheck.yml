@@ -56,4 +56,4 @@ jobs:
       - name: Install dependencies
         run: just install-all-web-service-deps
       - name: Run TypeScript type check
-        run: npm run type-check
+        run: NODE_OPTIONS="--max-old-space-size=8192" npm run type-check
