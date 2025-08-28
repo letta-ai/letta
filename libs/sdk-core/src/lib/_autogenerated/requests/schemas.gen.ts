@@ -9854,6 +9854,21 @@ export const $Passage = {
       description: 'The metadata of the passage.',
       default: {},
     },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'Tags associated with this passage.',
+    },
     id: {
       type: 'string',
       pattern: '^passage-[a-fA-F0-9]{8}',

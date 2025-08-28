@@ -6806,6 +6806,14 @@ export const Passage = z.object({
       z.undefined(),
     ])
     .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
   text: z.string(),
   embedding: z.union([

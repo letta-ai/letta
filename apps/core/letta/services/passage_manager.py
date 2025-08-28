@@ -1,9 +1,11 @@
+import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from openai import AsyncOpenAI, OpenAI
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from letta.constants import MAX_EMBEDDING_DIM
 from letta.embeddings import parse_and_chunk_text
@@ -12,6 +14,7 @@ from letta.llm_api.llm_client import LLMClient
 from letta.orm import ArchivesAgents
 from letta.orm.errors import NoResultFound
 from letta.orm.passage import ArchivalPassage, SourcePassage
+from letta.orm.passage_tag import PassageTag
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import VectorDBProvider
@@ -47,6 +50,44 @@ class PassageManager:
 
     def __init__(self):
         self.archive_manager = ArchiveManager()
+
+    async def _create_tags_for_passage(
+        self,
+        session: AsyncSession,
+        passage_id: str,
+        archive_id: str,
+        organization_id: str,
+        tags: List[str],
+        actor: PydanticUser,
+    ) -> List[PassageTag]:
+        """Create tag entries in junction table (complements tags stored in JSON column).
+
+        Junction table enables efficient DISTINCT queries and tag-based filtering.
+
+        Note: Tags are already deduplicated before being passed to this method.
+        """
+        if not tags:
+            return []
+
+        tag_objects = []
+        for tag in tags:
+            tag_obj = PassageTag(
+                id=f"passage-tag-{uuid.uuid4()}",
+                tag=tag,
+                passage_id=passage_id,
+                archive_id=archive_id,
+                organization_id=organization_id,
+            )
+            tag_objects.append(tag_obj)
+
+        # batch create all tags
+        created_tags = await PassageTag.batch_create_async(
+            items=tag_objects,
+            db_session=session,
+            actor=actor,
+        )
+
+        return created_tags
 
     # AGENT PASSAGE METHODS
     @enforce_types
@@ -155,6 +196,12 @@ class PassageManager:
             raise ValueError("Agent passage cannot have source_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
+
+        # Deduplicate tags if provided (for dual storage consistency)
+        tags = data.get("tags")
+        if tags:
+            tags = list(set(tags))
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
@@ -162,6 +209,7 @@ class PassageManager:
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
+            "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
@@ -182,6 +230,12 @@ class PassageManager:
             raise ValueError("Agent passage cannot have source_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
+
+        # Deduplicate tags if provided (for dual storage consistency)
+        tags = data.get("tags")
+        if tags:
+            tags = list(set(tags))
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
@@ -189,6 +243,7 @@ class PassageManager:
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
+            "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
@@ -197,6 +252,18 @@ class PassageManager:
 
         async with db_registry.async_session() as session:
             passage = await passage.create_async(session, actor=actor)
+
+            # dual storage: save tags to junction table for efficient queries
+            if tags:  # use the deduplicated tags variable
+                await self._create_tags_for_passage(
+                    session=session,
+                    passage_id=passage.id,
+                    archive_id=passage.archive_id,
+                    organization_id=passage.organization_id,
+                    tags=tags,  # pass deduplicated tags
+                    actor=actor,
+                )
+
             return passage.to_pydantic()
 
     @enforce_types
@@ -211,6 +278,12 @@ class PassageManager:
             raise ValueError("Source passage cannot have archive_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
+
+        # Deduplicate tags if provided (for dual storage consistency)
+        tags = data.get("tags")
+        if tags:
+            tags = list(set(tags))
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
@@ -218,6 +291,7 @@ class PassageManager:
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
+            "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
@@ -244,6 +318,12 @@ class PassageManager:
             raise ValueError("Source passage cannot have archive_id")
 
         data = pydantic_passage.model_dump(to_orm=True)
+
+        # Deduplicate tags if provided (for dual storage consistency)
+        tags = data.get("tags")
+        if tags:
+            tags = list(set(tags))
+
         common_fields = {
             "id": data.get("id"),
             "text": data["text"],
@@ -251,6 +331,7 @@ class PassageManager:
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
+            "tags": tags,
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
@@ -310,6 +391,7 @@ class PassageManager:
             "embedding_config": data["embedding_config"],
             "organization_id": data["organization_id"],
             "metadata_": data.get("metadata", {}),
+            "tags": data.get("tags"),
             "is_deleted": data.get("is_deleted", False),
             "created_at": data.get("created_at", datetime.now(timezone.utc)),
         }
@@ -357,6 +439,7 @@ class PassageManager:
                 "embedding_config": data["embedding_config"],
                 "organization_id": data["organization_id"],
                 "metadata_": data.get("metadata", {}),
+                "tags": data.get("tags"),
                 "is_deleted": data.get("is_deleted", False),
                 "created_at": data.get("created_at", datetime.now(timezone.utc)),
             }
@@ -396,6 +479,7 @@ class PassageManager:
                 "embedding_config": data["embedding_config"],
                 "organization_id": data["organization_id"],
                 "metadata_": data.get("metadata", {}),
+                "tags": data.get("tags"),
                 "is_deleted": data.get("is_deleted", False),
                 "created_at": data.get("created_at", datetime.now(timezone.utc)),
             }
@@ -466,8 +550,19 @@ class PassageManager:
         agent_state: AgentState,
         text: str,
         actor: PydanticUser,
+        tags: Optional[List[str]] = None,
     ) -> List[PydanticPassage]:
-        """Insert passage(s) into archival memory"""
+        """Insert passage(s) into archival memory
+
+        Args:
+            agent_state: Agent state for embedding configuration
+            text: Text content to store as passages
+            actor: User performing the operation
+            tags: Optional list of tags to attach to all created passages
+
+        Returns:
+            List of created passage objects
+        """
 
         embedding_chunk_size = agent_state.embedding_config.embedding_chunk_size
         embedding_client = LLMClient.create(
@@ -500,6 +595,7 @@ class PassageManager:
                         text=chunk_text,
                         embedding=embedding,
                         embedding_config=agent_state.embedding_config,
+                        tags=tags,
                     ),
                     actor=actor,
                 )
@@ -522,6 +618,7 @@ class PassageManager:
                     embeddings=embeddings,
                     passage_ids=passage_ids,  # Use same IDs as SQL
                     organization_id=actor.organization_id,
+                    tags=tags,
                     created_at=passages[0].created_at if passages else None,
                 )
 
@@ -590,6 +687,34 @@ class PassageManager:
 
             # Update the database record with values from the provided record
             update_data = passage.model_dump(to_orm=True, exclude_unset=True, exclude_none=True)
+
+            # Handle tags update separately for junction table
+            new_tags = update_data.pop("tags", None)
+            if new_tags is not None:
+                # Deduplicate tags
+                if new_tags:
+                    new_tags = list(set(new_tags))
+
+                # Delete existing tags from junction table
+                from sqlalchemy import delete
+
+                await session.execute(delete(PassageTag).where(PassageTag.passage_id == passage_id))
+
+                # Create new tags in junction table
+                if new_tags:
+                    await self._create_tags_for_passage(
+                        session=session,
+                        passage_id=passage_id,
+                        archive_id=curr_passage.archive_id,
+                        organization_id=curr_passage.organization_id,
+                        tags=new_tags,
+                        actor=actor,
+                    )
+
+                # Update the tags on the passage object
+                setattr(curr_passage, "tags", new_tags)
+
+            # Update other fields
             for key, value in update_data.items():
                 setattr(curr_passage, key, value)
 
@@ -1067,3 +1192,69 @@ class PassageManager:
             )
             passages = result.scalars().all()
             return [p.to_pydantic() for p in passages]
+
+    @enforce_types
+    @trace_method
+    async def get_unique_tags_for_archive_async(
+        self,
+        archive_id: str,
+        actor: PydanticUser,
+    ) -> List[str]:
+        """Get all unique tags for an archive.
+
+        Args:
+            archive_id: ID of the archive
+            actor: User performing the operation
+
+        Returns:
+            List of unique tag values
+        """
+        async with db_registry.async_session() as session:
+            stmt = (
+                select(PassageTag.tag)
+                .distinct()
+                .where(
+                    PassageTag.archive_id == archive_id,
+                    PassageTag.organization_id == actor.organization_id,
+                    PassageTag.is_deleted == False,
+                )
+                .order_by(PassageTag.tag)
+            )
+
+            result = await session.execute(stmt)
+            tags = result.scalars().all()
+
+            return list(tags)
+
+    @enforce_types
+    @trace_method
+    async def get_tag_counts_for_archive_async(
+        self,
+        archive_id: str,
+        actor: PydanticUser,
+    ) -> Dict[str, int]:
+        """Get tag counts for an archive.
+
+        Args:
+            archive_id: ID of the archive
+            actor: User performing the operation
+
+        Returns:
+            Dictionary mapping tag values to their counts
+        """
+        async with db_registry.async_session() as session:
+            stmt = (
+                select(PassageTag.tag, func.count(PassageTag.id).label("count"))
+                .where(
+                    PassageTag.archive_id == archive_id,
+                    PassageTag.organization_id == actor.organization_id,
+                    PassageTag.is_deleted == False,
+                )
+                .group_by(PassageTag.tag)
+                .order_by(PassageTag.tag)
+            )
+
+            result = await session.execute(stmt)
+            rows = result.all()
+
+            return {row.tag: row.count for row in rows}

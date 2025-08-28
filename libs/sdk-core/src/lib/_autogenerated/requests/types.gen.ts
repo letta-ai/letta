@@ -3666,6 +3666,10 @@ export type Passage = {
     [key: string]: unknown;
   } | null;
   /**
+   * Tags associated with this passage.
+   */
+  tags?: Array<string> | null;
+  /**
    * The human-friendly ID of the Passage
    */
   id?: string;

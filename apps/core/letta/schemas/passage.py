@@ -25,6 +25,7 @@ class PassageBase(OrmMetadataBase):
     file_id: Optional[str] = Field(None, description="The unique identifier of the file associated with the passage.")
     file_name: Optional[str] = Field(None, description="The name of the file (only for source passages).")
     metadata: Optional[Dict] = Field({}, validation_alias="metadata_", description="The metadata of the passage.")
+    tags: Optional[List[str]] = Field(None, description="Tags associated with this passage.")
 
 
 class Passage(PassageBase):

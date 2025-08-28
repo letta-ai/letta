@@ -13,9 +13,7 @@ from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
-from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
-from letta.services.passage_manager import PassageManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.utils import get_friendly_error_msg
 
@@ -143,7 +141,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         try:
             # Get results using passage manager
-            all_results = await AgentManager().query_agent_passages_async(
+            all_results = await self.agent_manager.query_agent_passages_async(
                 actor=actor,
                 agent_id=agent_state.id,
                 query_text=query,
@@ -174,12 +172,12 @@ class LettaCoreToolExecutor(ToolExecutor):
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        await PassageManager().insert_passage(
+        await self.passage_manager.insert_passage(
             agent_state=agent_state,
             text=content,
             actor=actor,
         )
-        await AgentManager().rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
         return None
 
     async def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
@@ -198,7 +196,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         current_value = str(agent_state.memory.get_block(label).value)
         new_value = current_value + "\n" + str(content)
         agent_state.memory.update_block_value(label=label, value=new_value)
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
     async def core_memory_replace(
@@ -227,7 +225,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             raise ValueError(f"Old content '{old_content}' not found in memory block '{label}'")
         new_value = current_value.replace(str(old_content), str(new_content))
         agent_state.memory.update_block_value(label=label, value=new_value)
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
     async def memory_replace(self, agent_state: AgentState, actor: User, label: str, old_str: str, new_str: str) -> str:
@@ -291,7 +289,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write the new content to the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Create a snippet of the edited section
         SNIPPET_LINES = 3
@@ -384,7 +382,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write into the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "
@@ -437,7 +435,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         agent_state.memory.update_block_value(label=label, value=new_memory)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "

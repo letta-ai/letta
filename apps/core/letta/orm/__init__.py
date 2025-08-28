@@ -22,6 +22,7 @@ from letta.orm.mcp_server import MCPServer
 from letta.orm.message import Message
 from letta.orm.organization import Organization
 from letta.orm.passage import ArchivalPassage, BasePassage, SourcePassage
+from letta.orm.passage_tag import PassageTag
 from letta.orm.prompt import Prompt
 from letta.orm.provider import Provider
 from letta.orm.provider_trace import ProviderTrace

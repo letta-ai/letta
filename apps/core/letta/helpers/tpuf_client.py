@@ -2,9 +2,10 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from letta.otel.tracing import trace_method
+from letta.schemas.enums import TagMatchMode
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.settings import settings
 
@@ -168,7 +169,8 @@ class TurbopufferClient:
         query_text: Optional[str] = None,
         search_mode: str = "vector",  # "vector", "fts", "hybrid"
         top_k: int = 10,
-        filters: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        tag_match_mode: TagMatchMode = TagMatchMode.ANY,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
     ) -> List[Tuple[PydanticPassage, float]]:
@@ -180,7 +182,8 @@ class TurbopufferClient:
             query_text: Text query for full-text search (required for "fts" and "hybrid" modes)
             search_mode: Search mode - "vector", "fts", or "hybrid" (default: "vector")
             top_k: Number of results to return
-            filters: Optional filter conditions
+            tags: Optional list of tags to filter by
+            tag_match_mode: TagMatchMode.ANY (match any tag) or TagMatchMode.ALL (match all tags) - default: TagMatchMode.ANY
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
 
@@ -207,15 +210,19 @@ class TurbopufferClient:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
                 namespace = client.namespace(namespace_name)
 
-                # build filter conditions
-                filter_conditions = []
-                if filters:
-                    for key, value in filters.items():
-                        filter_conditions.append((key, "Eq", value))
+                # build tag filter conditions
+                tag_filter = None
+                if tags:
+                    tag_conditions = []
+                    for tag in tags:
+                        tag_conditions.append((tag, "Eq", True))
 
-                base_filter = (
-                    ("And", filter_conditions) if len(filter_conditions) > 1 else (filter_conditions[0] if filter_conditions else None)
-                )
+                    if len(tag_conditions) == 1:
+                        tag_filter = tag_conditions[0]
+                    elif tag_match_mode == TagMatchMode.ALL:
+                        tag_filter = ("And", tag_conditions)
+                    else:  # tag_match_mode == TagMatchMode.ANY
+                        tag_filter = ("Or", tag_conditions)
 
                 if search_mode == "vector":
                     # single vector search query
@@ -224,11 +231,11 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
                     }
-                    if base_filter:
-                        query_params["filters"] = base_filter
+                    if tag_filter:
+                        query_params["filters"] = tag_filter
 
                     result = await namespace.query(**query_params)
-                    return self._process_single_query_results(result, archive_id, filters)
+                    return self._process_single_query_results(result, archive_id, tags)
 
                 elif search_mode == "fts":
                     # single full-text search query
@@ -237,11 +244,11 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
                     }
-                    if base_filter:
-                        query_params["filters"] = base_filter
+                    if tag_filter:
+                        query_params["filters"] = tag_filter
 
                     result = await namespace.query(**query_params)
-                    return self._process_single_query_results(result, archive_id, filters, is_fts=True)
+                    return self._process_single_query_results(result, archive_id, tags, is_fts=True)
 
                 else:  # hybrid mode
                     # multi-query for both vector and FTS
@@ -253,8 +260,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
                     }
-                    if base_filter:
-                        vector_query["filters"] = base_filter
+                    if tag_filter:
+                        vector_query["filters"] = tag_filter
                     queries.append(vector_query)
 
                     # full-text search query
@@ -263,16 +270,16 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
                     }
-                    if base_filter:
-                        fts_query["filters"] = base_filter
+                    if tag_filter:
+                        fts_query["filters"] = tag_filter
                     queries.append(fts_query)
 
                     # execute multi-query
                     response = await namespace.multi_query(queries=[QueryParam(**q) for q in queries])
 
                     # process and combine results using reciprocal rank fusion
-                    vector_results = self._process_single_query_results(response.results[0], archive_id, filters)
-                    fts_results = self._process_single_query_results(response.results[1], archive_id, filters, is_fts=True)
+                    vector_results = self._process_single_query_results(response.results[0], archive_id, tags)
+                    fts_results = self._process_single_query_results(response.results[1], archive_id, tags, is_fts=True)
 
                     # combine results using reciprocal rank fusion
                     return self._reciprocal_rank_fusion(vector_results, fts_results, vector_weight, fts_weight, top_k)
@@ -282,16 +289,16 @@ class TurbopufferClient:
             raise
 
     def _process_single_query_results(
-        self, result, archive_id: str, filters: Optional[Dict[str, Any]], is_fts: bool = False
+        self, result, archive_id: str, tags: Optional[List[str]], is_fts: bool = False
     ) -> List[Tuple[PydanticPassage, float]]:
         """Process results from a single query into passage objects with scores."""
         passages_with_scores = []
 
         for row in result.rows:
-            # Build metadata including any filter conditions that were applied
+            # Build metadata including any tag filters that were applied
             metadata = {}
-            if filters:
-                metadata["applied_filters"] = filters
+            if tags:
+                metadata["applied_tags"] = tags
 
             # Create a passage with minimal fields - embeddings are not returned from Turbopuffer
             passage = PydanticPassage(
@@ -300,7 +307,7 @@ class TurbopufferClient:
                 organization_id=getattr(row, "organization_id", None),
                 archive_id=archive_id,  # use the archive_id from the query
                 created_at=getattr(row, "created_at", None),
-                metadata_=metadata,  # Include filter conditions in metadata
+                metadata_=metadata,  # Include tag filters in metadata
                 # Set required fields to empty/default values since we don't store embeddings
                 embedding=[],  # Empty embedding since we don't return it from Turbopuffer
                 embedding_config=None,  # No embedding config needed for retrieved passages
