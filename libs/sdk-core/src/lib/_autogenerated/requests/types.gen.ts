@@ -4932,7 +4932,7 @@ export type ToolCreate = {
   /**
    * Metadata tags.
    */
-  tags?: Array<string>;
+  tags?: Array<string> | null;
   /**
    * The source code of the function.
    */

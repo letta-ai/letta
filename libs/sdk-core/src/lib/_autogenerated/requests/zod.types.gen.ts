@@ -7688,7 +7688,14 @@ export const ToolCreate = z.object({
       z.undefined(),
     ])
     .optional(),
-  tags: z.union([z.array(z.string()), z.undefined()]).optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   source_code: z.string(),
   source_type: z.union([z.string(), z.undefined()]).optional(),
   json_schema: z

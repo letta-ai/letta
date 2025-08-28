@@ -13141,13 +13141,19 @@ export const $ToolCreate = {
       description: 'The description of the tool.',
     },
     tags: {
-      items: {
-        type: 'string',
-      },
-      type: 'array',
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Tags',
       description: 'Metadata tags.',
-      default: [],
     },
     source_code: {
       type: 'string',

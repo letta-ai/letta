@@ -23851,13 +23851,19 @@
             "description": "The description of the tool."
           },
           "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Tags",
-            "description": "Metadata tags.",
-            "default": []
+            "description": "Metadata tags."
           },
           "source_code": {
             "type": "string",

@@ -80,7 +80,8 @@ class Tool(BaseTool):
         """
         from letta.functions.helpers import generate_model_from_args_json_schema
 
-        if self.tool_type == ToolType.CUSTOM:
+        if self.tool_type == ToolType.CUSTOM and not self.json_schema:
+            # attempt various fallbacks to get the JSON schema
             if not self.source_code:
                 logger.error("Custom tool with id=%s is missing source_code field", self.id)
                 raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
@@ -157,7 +158,7 @@ class Tool(BaseTool):
 
 class ToolCreate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
-    tags: List[str] = Field([], description="Metadata tags.")
+    tags: Optional[List[str]] = Field(None, description="Metadata tags.")
     source_code: str = Field(..., description="The source code of the function.")
     source_type: str = Field("python", description="The source type of the function.")
     json_schema: Optional[Dict] = Field(

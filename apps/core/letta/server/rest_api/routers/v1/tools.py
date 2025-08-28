@@ -130,7 +130,7 @@ async def create_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        tool = Tool(**request.model_dump())
+        tool = Tool(**request.model_dump(exclude_unset=True))
         return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
@@ -162,7 +162,9 @@ async def upsert_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump()), actor=actor)
+        tool = await server.tool_manager.create_or_update_tool_async(
+            pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor
+        )
         return tool
     except UniqueConstraintViolationError as e:
         # Log the error and raise a conflict exception
@@ -190,18 +192,17 @@ async def modify_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+        tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+        print("FINAL TOOL", tool)
+        return tool
     except LettaToolNameConflictError as e:
         # HTTP 409 == Conflict
-        print(f"Tool name conflict during update: {e}")
         raise HTTPException(status_code=409, detail=str(e))
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
-        print(f"Error occurred during tool update: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
-        print(f"Unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 

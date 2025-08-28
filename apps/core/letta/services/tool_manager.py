@@ -18,7 +18,7 @@ from letta.constants import (
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
-from letta.errors import LettaToolNameConflictError
+from letta.errors import LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 
@@ -403,6 +403,7 @@ class ToolManager:
         updated_tool_type: Optional[ToolType] = None,
         bypass_name_check: bool = False,
     ) -> PydanticTool:
+        # TODO: remove this (legacy non-async)
         """
         Update a tool with complex validation and schema derivation logic.
 
@@ -519,55 +520,36 @@ class ToolManager:
         # Fetch current tool early to allow conditional logic based on tool type
         current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
 
-        # For MCP tools, do NOT derive schema from Python source. Trust provided JSON schema.
-        if current_tool.tool_type == ToolType.EXTERNAL_MCP:
-            # Prefer provided json_schema; fall back to current
-            if "json_schema" in update_data:
-                new_schema = update_data["json_schema"].copy()
-                new_name = new_schema.get("name", current_tool.name)
-            else:
-                new_schema = current_tool.json_schema
-                new_name = current_tool.name
-            # Ensure we don't trigger derive
-            update_data.pop("source_code", None)
-            # If name changes, enforce uniqueness
-            if new_name != current_tool.name:
-                name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
-                if name_exists:
-                    raise LettaToolNameConflictError(tool_name=new_name)
+        # Do NOT derive schema from Python source. Trust provided JSON schema.
+        # Prefer provided json_schema; fall back to current
+        if "json_schema" in update_data:
+            new_schema = update_data["json_schema"].copy()
+            new_name = new_schema.get("name", current_tool.name)
         else:
-            # For non-MCP tools, preserve existing behavior
-            # TODO: Consider this behavior...is this what we want?
-            # TODO: I feel like it's bad if json_schema strays from source code so
-            # if source code is provided, always derive the name from it
-            if "source_code" in update_data.keys() and not bypass_name_check:
-                # Check source type to use appropriate parser
-                source_type = update_data.get("source_type", current_tool.source_type)
-                if source_type == "typescript":
-                    from letta.functions.typescript_parser import derive_typescript_json_schema
+            new_schema = current_tool.json_schema
+            new_name = current_tool.name
 
-                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
-                else:
-                    # Default to Python for backwards compatibility
-                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
-                new_name = derived_schema["name"]
+        # original tool may no have a JSON schema at all for legacy reasons
+        # in this case, fallback to dangerous schema generation
+        if new_schema is None:
+            if source_type == "typescript":
+                from letta.functions.typescript_parser import derive_typescript_json_schema
 
-                # if json_schema wasn't provided, use the derived schema
-                if "json_schema" not in update_data.keys():
-                    new_schema = derived_schema
-                else:
-                    # if json_schema was provided, update only its name to match the source code
-                    new_schema = update_data["json_schema"].copy()
-                    new_schema["name"] = new_name
-                    # update the json_schema in update_data so it gets applied in the loop
-                    update_data["json_schema"] = new_schema
+                new_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+            else:
+                new_schema = derive_openai_json_schema(source_code=update_data["source_code"])
 
-                # check if the name is changing and if so, verify it doesn't conflict
-                if new_name != current_tool.name:
-                    # check if a tool with the new name already exists
-                    name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
-                    if name_exists:
-                        raise LettaToolNameConflictError(tool_name=new_name)
+        # If name changes, enforce uniqueness
+        if new_name != current_tool.name:
+            name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
+            if name_exists:
+                raise LettaToolNameConflictError(tool_name=new_name)
+
+        # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
+        if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
+            raise LettaToolNameSchemaMismatchError(
+                tool_name=new_name, json_schema_name=new_schema.get("name"), source_code=update_data.get("source_code")
+            )
 
         # Now perform the update within the session
         async with db_registry.async_session() as session:
