@@ -285,7 +285,11 @@ class LettaAgent(BaseAgent):
                 step_progression = StepProgression.RESPONSE_RECEIVED
                 log_event("agent.stream_no_tokens.llm_response.received")  # [3^]
 
-                response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+                try:
+                    response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+                except ValueError as e:
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
+                    raise e
 
                 # update usage
                 usage.step_count += 1
@@ -395,8 +399,12 @@ class LettaAgent(BaseAgent):
                     stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                 elif stop_reason.stop_reason in (StopReasonType.end_turn, StopReasonType.max_steps, StopReasonType.tool_rule):
                     self.logger.error("Error occurred during step processing, with valid stop reason: %s", stop_reason.stop_reason)
-                elif stop_reason.stop_reason not in (StopReasonType.no_tool_call, StopReasonType.invalid_tool_call):
-                    raise ValueError(f"Invalid Stop Reason: {stop_reason}")
+                elif stop_reason.stop_reason not in (
+                    StopReasonType.no_tool_call,
+                    StopReasonType.invalid_tool_call,
+                    StopReasonType.invalid_llm_response,
+                ):
+                    self.logger.error("Error occurred during step processing, with unexpected stop reason: %s", stop_reason.stop_reason)
 
                 # Send error stop reason to client and re-raise
                 yield f"data: {stop_reason.model_dump_json()}\n\n", 500
@@ -582,7 +590,11 @@ class LettaAgent(BaseAgent):
                 step_progression = StepProgression.RESPONSE_RECEIVED
                 log_event("agent.step.llm_response.received")  # [3^]
 
-                response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+                try:
+                    response = llm_client.convert_response_to_chat_completion(response_data, in_context_messages, agent_state.llm_config)
+                except ValueError as e:
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
+                    raise e
 
                 usage.step_count += 1
                 usage.completion_tokens += response.usage.completion_tokens
@@ -683,8 +695,12 @@ class LettaAgent(BaseAgent):
                     stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                 elif stop_reason.stop_reason in (StopReasonType.end_turn, StopReasonType.max_steps, StopReasonType.tool_rule):
                     self.logger.error("Error occurred during step processing, with valid stop reason: %s", stop_reason.stop_reason)
-                elif stop_reason.stop_reason not in (StopReasonType.no_tool_call, StopReasonType.invalid_tool_call):
-                    raise ValueError(f"Invalid Stop Reason: {stop_reason}")
+                elif stop_reason.stop_reason not in (
+                    StopReasonType.no_tool_call,
+                    StopReasonType.invalid_tool_call,
+                    StopReasonType.invalid_llm_response,
+                ):
+                    self.logger.error("Error occurred during step processing, with unexpected stop reason: %s", stop_reason.stop_reason)
                 raise
 
                 # Update step if it needs to be updated
@@ -1076,8 +1092,12 @@ class LettaAgent(BaseAgent):
                     stop_reason = LettaStopReason(stop_reason=StopReasonType.error.value)
                 elif stop_reason.stop_reason in (StopReasonType.end_turn, StopReasonType.max_steps, StopReasonType.tool_rule):
                     self.logger.error("Error occurred during step processing, with valid stop reason: %s", stop_reason.stop_reason)
-                elif stop_reason.stop_reason not in (StopReasonType.no_tool_call, StopReasonType.invalid_tool_call):
-                    raise ValueError(f"Invalid Stop Reason: {stop_reason}")
+                elif stop_reason.stop_reason not in (
+                    StopReasonType.no_tool_call,
+                    StopReasonType.invalid_tool_call,
+                    StopReasonType.invalid_llm_response,
+                ):
+                    self.logger.error("Error occurred during step processing, with unexpected stop reason: %s", stop_reason.stop_reason)
 
                 # Send error stop reason to client and re-raise with expected response code
                 yield f"data: {stop_reason.model_dump_json()}\n\n", 500
