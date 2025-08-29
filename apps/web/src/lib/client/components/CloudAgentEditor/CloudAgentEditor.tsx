@@ -41,8 +41,6 @@ function MobileNavigationProvider(props: MobileNavigationProviderProps) {
 }
 
 export function CloudAgentEditor() {
-
-
   return (
     <ADEPage>
       <HiddenOnMobile>

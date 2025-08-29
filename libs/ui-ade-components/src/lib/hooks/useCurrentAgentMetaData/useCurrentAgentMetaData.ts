@@ -47,7 +47,7 @@ function useLocalAgentData(agentId: string, enabled: boolean) {
 
 // Hook for template agent data
 function useTemplateAgentData() {
-  const agentTemplate = useCurrentTemplate();
+  const { template: agentTemplate } = useCurrentTemplate();
   const agentTemplateQuery = useCurrentAgentTemplate();
   const agentTemplateId = agentTemplateQuery.data?.body.id || '';
 

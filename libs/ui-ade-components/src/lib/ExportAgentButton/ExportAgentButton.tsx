@@ -47,5 +47,9 @@ export function ExportAgentButton(props: ExportAgentButtonProps) {
     }
   }, [agentId, t, name, isLocal, config]);
 
+  if (!agentId) {
+    return null;
+  }
+
   return <Slot onClick={handleAsyncDownload}>{trigger}</Slot>;
 }

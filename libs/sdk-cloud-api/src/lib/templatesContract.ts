@@ -103,6 +103,11 @@ export type PublicTemplateDetailsType = z.infer<typeof PublicTemplateDetails>;
 
 const templatesQuery = z.object({
   offset: z.string().or(z.number()).transform(Number).optional(),
+  exact: z
+    .string()
+    .transform((val) => val === 'true')
+    .optional()
+    .openapi({ description: 'Whether to search for an exact name match' }),
   limit: z
     .string()
     .transform(Number)
@@ -110,6 +115,7 @@ const templatesQuery = z.object({
       message: 'Limit must be between 1 and 100',
     })
     .optional(),
+  version: z.string().optional().openapi({ description: 'Specify the version you want to return, otherwise will return the latest version' }),
   template_id: z.string().optional(),
   name: z.string().optional(),
   search: z.string().optional(),

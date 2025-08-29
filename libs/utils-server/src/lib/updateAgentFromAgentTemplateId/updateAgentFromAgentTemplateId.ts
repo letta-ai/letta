@@ -361,7 +361,6 @@ export async function updateAgentFromAgentTemplateId(
     nextLLMConfig.temperature = agentTemplate.properties.temperature;
   }
 
-
   requestBody.llm_config = nextLLMConfig;
   requestBody.reasoning = nextLLMConfig.enable_reasoner || nextLLMConfig.put_inner_thoughts_in_kwargs;
 

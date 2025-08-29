@@ -3,7 +3,7 @@ import { useParams } from 'next/navigation';
 import { useCurrentTemplate } from '../useCurrentTemplate/useCurrentTemplate';
 
 export function useCurrentAgentTemplateQueryKey() {
-  const currentTemplate = useCurrentTemplate();
+  const { template: currentTemplate } = useCurrentTemplate();
   const { entityId } = useParams<{
     entityId?: string;
   }>();
@@ -15,7 +15,7 @@ export function useCurrentAgentTemplateQueryKey() {
 }
 
 export function useCurrentAgentTemplate() {
-  const currentTemplate = useCurrentTemplate();
+  const { template: currentTemplate } = useCurrentTemplate();
   const { entityId } = useParams<{
     entityId?: string;
   }>();

@@ -35,6 +35,7 @@ import { isFetchError } from '@ts-rest/react-query/v5';
 import { BillingLink } from '@letta-cloud/ui-component-library';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
+import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
 
 const elementWidth = '204px';
 const elementHeight = '166px';
@@ -501,17 +502,12 @@ interface DeployAgentViewContentsProps {
 
 function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
   const {
-    isCreating,
     setIsCreating,
     setIsError,
     hasErrored = false,
     selectedTemplate,
     setSelectedTemplate,
   } = props;
-
-  const t = useTranslations(
-    'projects/(projectSlug)/agents/page/DeployAgentDialog',
-  );
 
   const handleCreating = useCallback(
     (state: boolean) => {
@@ -523,16 +519,6 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
     },
     [setIsError, setIsCreating],
   );
-
-  if (isCreating) {
-    return (
-      <LoadingEmptyStatusComponent
-        emptyMessage=""
-        isLoading
-        loadingMessage={t('loading')}
-      />
-    );
-  }
 
   if (selectedTemplate) {
     return (
@@ -624,6 +610,7 @@ export function DeployAgentDialog() {
         />
       }
     >
+      {isCreating && <GoingToADEView mode="agent" />}
       <div className="h-full flex flex-col">
         <DeployAgentViewContents
           isCreating={isCreating}

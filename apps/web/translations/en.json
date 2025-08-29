@@ -507,6 +507,7 @@
   },
   "components/ADEError": {
     "goBack": "Go home ",
+    "templateNotFound": "The template does not exist or is not owned by your organization or part of this project",
     "agentNotFound": "This agent does not exist or is not owned by your organization"
   },
   "components/DashboardLikeLayout/DashboardNavigation": {

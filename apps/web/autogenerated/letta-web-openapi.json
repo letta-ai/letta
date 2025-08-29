@@ -11216,8 +11216,24 @@
             }
           },
           {
+            "name": "exact",
+            "in": "query",
+            "description": "Whether to search for an exact name match",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "Specify the version you want to return, otherwise will return the latest version",
             "schema": {
               "type": "string"
             }

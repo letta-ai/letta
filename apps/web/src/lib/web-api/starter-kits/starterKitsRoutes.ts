@@ -109,22 +109,6 @@ async function createAgentFromStarterKit(
     };
   }
 
-  const subscription = await getCustomerSubscription(activeOrganizationId);
-
-  const limits = await getUsageLimits(subscription.tier);
-
-  const agentsCount = await getActiveBillableAgentsCount(activeOrganizationId);
-
-  if (agentsCount >= limits.agents) {
-    return {
-      status: 402,
-      body: {
-        message:
-          'You have reached your limit for this resource, please upgrade your plan',
-        limit: limits.agents,
-      },
-    };
-  }
 
   const starterKit = STARTER_KITS[starterKitId];
 
@@ -137,13 +121,30 @@ async function createAgentFromStarterKit(
     };
   }
 
-  // lookup projectId
-  const project = await db.query.projects.findFirst({
-    where: and(
-      eq(projects.id, projectId),
-      eq(projects.organizationId, activeOrganizationId),
-    ),
-  });
+  const subscription = await getCustomerSubscription(activeOrganizationId);
+
+  const [limits, agentsCount, project] = await Promise.all([
+    getUsageLimits(subscription.tier),
+    getActiveBillableAgentsCount(activeOrganizationId),
+    db.query.projects.findFirst({
+      where: and(
+        eq(projects.id, projectId),
+        eq(projects.organizationId, activeOrganizationId),
+      ),
+    })
+  ]);
+
+  if (agentsCount >= limits.agents) {
+    return {
+      status: 402,
+      body: {
+        message:
+          'You have reached your limit for this resource, please upgrade your plan',
+        limit: limits.agents,
+      },
+    };
+  }
+
 
   if (!project) {
     return {
@@ -229,7 +230,7 @@ async function createTemplateFromStarterKit(
     activeOrganizationId,
     id: userId,
   } = await getUserWithActiveOrganizationIdOrThrow();
-  let { projectId } = req.body;
+  let { projectId, name } = req.body;
 
   if (!projectId) {
     projectId = (
@@ -347,6 +348,8 @@ async function createTemplateFromStarterKit(
     projectId,
     organizationId: activeOrganizationId,
     lettaAgentsId,
+    name,
+    allowNameOverride: true,
     userId,
     agentState: {
       ...starterKit.agentState,

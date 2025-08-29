@@ -2,29 +2,28 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { webApi } from '$web/client';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Alert,
   BillingLink,
   Dialog,
-  LoadingEmptyStatusComponent,
   Section,
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCurrentUser, useUserHasPermission } from '$web/client/hooks';
+import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-import { useSetOnboardingStep } from '@letta-cloud/sdk-web';
 import {
   StarterKitSelector,
-  useADETourStep,
 } from '@letta-cloud/ui-ade-components';
 import { isAPIError } from '@letta-cloud/sdk-core';
 import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
+import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
+import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -66,27 +65,26 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
 
   const { push } = useRouter();
 
-  const [_, setStep] = useADETourStep();
-
-  const user = useCurrentUser();
   const { mutate, isPending, isSuccess, error } =
     webApi.starterKits.createTemplateFromStarterKit.useMutation();
 
-  const { setOnboardingStep } = useSetOnboardingStep();
-
   const [open, setOpen] = React.useState(false);
+
+  const pathname = usePathname();
 
   const queryClient = useQueryClient();
 
   const handleSelectStarterKit = useCallback(
     (starterKitId: string) => {
-      if (user?.onboardingStatus?.currentStep === 'create_template') {
-        setStep('welcome');
-        setOnboardingStep({
-          onboardingStep: 'explore_ade',
-          stepToClaim: 'create_template',
-        });
-      }
+      const originalPathName = pathname;
+      const name = uniqueNamesGenerator({
+        dictionaries: [adjectives, colors, animals],
+        length: 3,
+        separator: '-',
+      });
+
+
+      push(`/projects/${slug}/templates/${name}?ensure=true`);
 
       mutate(
         {
@@ -94,10 +92,14 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
             starterKitId,
           },
           body: {
+            name,
             projectId: projectId,
           },
         },
         {
+          onError: () => {
+            push(originalPathName);
+          },
           onSuccess: (data) => {
             void queryClient.invalidateQueries({
               queryKey: cloudQueryKeys.templates.listTemplates,
@@ -109,16 +111,7 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         },
       );
     },
-    [
-      mutate,
-      setOnboardingStep,
-      user?.onboardingStatus?.currentStep,
-      queryClient,
-      push,
-      slug,
-      setStep,
-      projectId,
-    ],
+    [mutate, push, projectId, queryClient, slug, pathname],
   );
 
   const errorMessage = useMemo(() => {
@@ -169,23 +162,16 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         description={t('starterKits.description')}
       >
         <VStack paddingBottom>
-          {isSuccess || isPending ? (
-            <LoadingEmptyStatusComponent
-              emptyMessage=""
-              isLoading
-              loadingMessage={t('loading')}
+          {isSuccess || isPending ? <GoingToADEView mode="template" /> : null}
+          <VStack>
+            {errorMessage && <Alert title={errorMessage} />}
+            <StarterKitSelector
+              architectures={['memgpt']}
+              onSelectStarterKit={(_, kit) => {
+                handleSelectStarterKit(kit.id);
+              }}
             />
-          ) : (
-            <VStack>
-              {errorMessage && <Alert title={errorMessage} />}
-              <StarterKitSelector
-                architectures={['memgpt']}
-                onSelectStarterKit={(_, kit) => {
-                  handleSelectStarterKit(kit.id);
-                }}
-              />
-            </VStack>
-          )}
+          </VStack>
         </VStack>
       </Section>
     </Dialog>

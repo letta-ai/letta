@@ -8,6 +8,7 @@ export function useCurrentTemplateSnapshot(version: string) {
     projectSlug: string;
   }>();
 
+
   return cloudAPI.templates.getTemplateSnapshot.useQuery({
     queryKey: cloudQueryKeys.templates.getTemplateSnapshot(
       projectSlug,

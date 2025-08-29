@@ -264,6 +264,9 @@ function ToolsList(props: ToolsListProps) {
       {(toolsList.length === 0) ? (
         <LoadingEmptyStatusComponent
           className="min-h-[250px]"
+          loaderVariant="grower"
+          isLoading={!currentTools}
+          hideText={!currentTools}
           emptyMessage={search ? t('ToolsListPage.emptySearch') : t('ToolsListPage.empty')}
           emptyAction={(
             <Button

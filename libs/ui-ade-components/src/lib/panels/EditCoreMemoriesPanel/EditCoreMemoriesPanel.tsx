@@ -2,7 +2,7 @@ import {
   Button,
   CoreMemoryEditor,
   EmptyBlockIcon,
-  LinkIcon,
+  LinkIcon, LoadingEmptyStatusComponent,
   MemoryBlocksIcon,
   type MemoryType,
   PlusIcon,
@@ -10,7 +10,7 @@ import {
   TabGroup,
   Typography,
   useVisibleMemoryTypeContext,
-  VisibleMemoryTypeProvider,
+  VisibleMemoryTypeProvider
 } from '@letta-cloud/ui-component-library';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
 
@@ -129,6 +129,14 @@ function MemoryWrapper(props: MemoryWrapperProps) {
   const { children, memoryCount } = props;
 
   const t = useTranslations('ADE/EditCoreMemoriesPanel');
+
+  const {  memory } = useCurrentAgent();
+
+  if (!memory) {
+    return (
+      <LoadingEmptyStatusComponent isLoading loaderVariant="grower" emptyMessage="" hideText />
+    )
+  }
 
   if (memoryCount === 0) {
     return (

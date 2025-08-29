@@ -16,7 +16,7 @@ const agentsImportRoute = pathToRegexp('/v1/agents/import');
  */
 export function agentFileUploadMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
   // Only handle POST requests to /v1/agents/import

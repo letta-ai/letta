@@ -221,7 +221,7 @@ export const Button = forwardRef<
 
   const iconToRender = useMemo(() => {
     if (busy) {
-      return <SpinnerPrimitive className={iconSize} />;
+      return <SpinnerPrimitive  className={cn('text-inherit', iconSize)} />;
     }
 
     return <Slot className={iconSize}>{preIcon}</Slot>;

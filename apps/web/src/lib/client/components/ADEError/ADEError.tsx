@@ -10,7 +10,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 
 interface ADEErrorProps {
-  errorCode: 'agentNotFound';
+  errorCode: 'agentNotFound' | 'templateNotFound';
 }
 
 export function ADEError(props: ADEErrorProps) {
@@ -21,6 +21,7 @@ export function ADEError(props: ADEErrorProps) {
   const translation = useMemo(() => {
     return {
       agentNotFound: t('agentNotFound'),
+      templateNotFound: t('templateNotFound'),
     }[errorCode];
   }, [errorCode, t]);
 

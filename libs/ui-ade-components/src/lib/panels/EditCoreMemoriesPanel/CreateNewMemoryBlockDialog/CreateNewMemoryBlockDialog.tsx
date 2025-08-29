@@ -164,7 +164,7 @@ export function CreateNewMemoryBlockDialog(
   const { projectId } = useADEAppContext();
   const [open, setOpen] = React.useState(false);
   const t = useTranslations('CreateNewMemoryBlockDialog');
-  const template = useCurrentTemplate();
+  const { template } = useCurrentTemplate();
   const { templateId: agentTemplateId } = useCurrentAgentMetaData();
 
   const { agentId: currentAgentId, isTemplate } = useCurrentAgentMetaData();

@@ -123,6 +123,7 @@ function RecentTemplatesSection() {
             : t('RecentTemplatesSection.noDescription'),
         action: (
           <Button
+            preload
             color="secondary"
             label={t('RecentTemplatesSection.viewTemplate')}
             size="small"

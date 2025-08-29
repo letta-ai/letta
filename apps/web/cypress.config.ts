@@ -53,7 +53,7 @@ function saveCache(cache: CacheData) {
 export default defineConfig({
   projectId: process.env.CYPRESS_PROJECT_KEY || '7kya1h',
   retries: {
-    runMode: 2,
+    runMode: 0,
     openMode: 0,
   },
   e2e: {
@@ -178,7 +178,7 @@ export default defineConfig({
         findDownloadedFile({ fileName, downloadsFolder, timeout }: { fileName: string; downloadsFolder: string; timeout: number }) {
           return new Promise((resolve) => {
             const startTime = Date.now();
-            
+
             const checkForFile = () => {
               try {
                 const files = glob.sync(fileName, { cwd: downloadsFolder });
@@ -190,15 +190,15 @@ export default defineConfig({
               } catch (error) {
                 // Continue checking
               }
-              
+
               if (Date.now() - startTime > timeout) {
                 resolve(null);
                 return;
               }
-              
+
               setTimeout(checkForFile, 500);
             };
-            
+
             checkForFile();
           });
         },

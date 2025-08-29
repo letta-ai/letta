@@ -47,3 +47,4 @@ export * from './lib/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot
 
 export * from './lib/constants'
 export * from './lib/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal'
+export * from './lib/hooks/useCurrentTemplate/useCurrentTemplate'

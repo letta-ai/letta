@@ -26,6 +26,8 @@ describe('Agent File Upload/Download E2E Test', { tags: ['@ade', '@agentfiles', 
 
   it('should complete the full agent file upload/download flow', () => {
     cy.testStep('Navigate to agent settings and download agent file', () => {
+      cy.get('[data-testid="ade-page-title"]', { timeout: 50000 }).should('not.be.empty');
+
       // Navigate to the agent page (assuming we're already there from useDefaultAgent)
       cy.findAllByTestId('agent-settings-dropdown-trigger', { timeout: 50000 }).eq(1).click();
 

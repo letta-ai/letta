@@ -465,7 +465,7 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
                 <Typography variant="body2">/</Typography>
               </>
             )}
-            <Typography variant="body2">{agentName}</Typography>
+            <Typography data-testid="ade-page-title" variant="body2">{agentName}</Typography>
           </HStack>
           <AgentSettingsDropdown icon={<DotsHorizontalIcon />} />
         </HStack>

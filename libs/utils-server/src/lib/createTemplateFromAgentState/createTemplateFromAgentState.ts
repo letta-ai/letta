@@ -8,12 +8,12 @@ import { saveTemplate } from '../saveTemplateVersion/saveTemplate';
 import type { AgentStateForSynchronization } from '@letta-cloud/utils-shared';
 import { DEFAULT_SYSTEM_PROMPT } from '@letta-cloud/types';
 
-
 interface CreateTemplateOptions {
   projectId: string;
   organizationId: string;
   lettaAgentsId: string;
   userId: string;
+  allowNameOverride?: boolean;
   name?: string;
   agentState: AgentStateForSynchronization;
 }
@@ -23,11 +23,15 @@ export async function createTemplateFromAgentState(
 ) {
   const {
     projectId,
-    name: preName,
     organizationId,
+    allowNameOverride,
     lettaAgentsId,
     userId,
     agentState,
+  } = props;
+
+  let {
+    name: preName,
   } = props;
 
   // get project
@@ -62,7 +66,11 @@ export async function createTemplateFromAgentState(
     });
 
     if (exists) {
-      throw new Error('Name already exists');
+      if (allowNameOverride) {
+        preName = await findUniqueAgentTemplateName();
+      } else {
+        throw new Error('Name already exists');
+      }
     }
   }
 

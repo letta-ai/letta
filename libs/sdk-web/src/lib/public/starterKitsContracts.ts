@@ -10,6 +10,7 @@ const CreatedAgentFromStarterKitSchema = z.object({
 
 const CreateAgentFromStarterKitBodySchema = z.object({
   projectId: z.string().optional(),
+  name: z.string().optional(),
 });
 
 const createAgentFromStarterKitContract = c.mutation({

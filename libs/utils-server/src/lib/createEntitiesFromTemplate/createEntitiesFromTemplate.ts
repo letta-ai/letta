@@ -118,13 +118,17 @@ export async function createEntitiesFromTemplate(
     user_id: lettaAgentsId,
   })
 
-  const llmConfig = llms.find(
+  let llmConfig = llms.find(
     (model) => model.handle === agentTemplate.model,
   );
 
 
   if (!llmConfig) {
-    throw new Error(CreateEntitiesFromTemplateErrors.CORE_ERROR);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(CreateEntitiesFromTemplateErrors.CORE_ERROR);
+    } else {
+      llmConfig = llms[0];
+    }
   }
 
   llmConfig.max_tokens = agentTemplate.properties?.max_tokens || llmConfig.max_tokens;

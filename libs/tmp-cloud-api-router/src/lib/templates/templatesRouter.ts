@@ -164,10 +164,12 @@ async function listTemplates(
     name,
     limit = 25,
     offset = 0,
+    exact,
     search,
     project_id,
     project_slug,
     template_id,
+    version,
     sort_by,
   } = query;
 
@@ -208,9 +210,11 @@ async function listTemplates(
   const templatesResponse = await db.query.lettaTemplates.findMany({
     where: and(
       eq(lettaTemplates.organizationId, organizationId),
-      ...(!template_id ? [eq(lettaTemplates.latestDeployed, true)] : []),
+      ...(version && version !== 'latest') ? [eq(lettaTemplates.version, version)] : [],
+      ...(!template_id && (!version || version === 'latest') ? [eq(lettaTemplates.latestDeployed, true)] : []),
       ...(search ? [ilike(lettaTemplates.name, `%${search}%`)] : []),
-      ...(name ? [ilike(lettaTemplates.name, `%${name}%`)] : []),
+      ...(name && !exact ? [ilike(lettaTemplates.name, `%${name}%`)] : []),
+      ...(name && exact ? [eq(lettaTemplates.name, name)] : []),
       ...(projectId ? [eq(lettaTemplates.projectId, projectId)] : []),
       ...(template_id ? [eq(lettaTemplates.id, template_id)] : []),
     ),
