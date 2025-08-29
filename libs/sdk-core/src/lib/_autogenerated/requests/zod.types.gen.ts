@@ -746,6 +746,7 @@ export const LettaMessageContentUnion = z.union([
 
 export type MessageCreate = z.infer<typeof MessageCreate>;
 export const MessageCreate = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
   role: z.union([
     z.literal('user'),
     z.literal('system'),
@@ -878,6 +879,7 @@ export type letta__schemas__agent_file__MessageSchema = z.infer<
   typeof letta__schemas__agent_file__MessageSchema
 >;
 export const letta__schemas__agent_file__MessageSchema = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
   role: MessageRole,
   content: z.union([
     z.array(LettaMessageContentUnion),
@@ -2748,6 +2750,21 @@ export const AppModel = z.object({
     ])
     .optional(),
   configuration_docs_text: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ApprovalCreate = z.infer<typeof ApprovalCreate>;
+export const ApprovalCreate = z.object({
+  type: z.union([z.string(), z.undefined()]).optional(),
+  approve: z.boolean(),
+  approval_request_id: z.string(),
+  reason: z
     .union([
       z.string(),
       z.null(),
@@ -5270,7 +5287,7 @@ export const MessageType = z.union([
 
 export type LettaBatchRequest = z.infer<typeof LettaBatchRequest>;
 export const LettaBatchRequest = z.object({
-  messages: z.array(MessageCreate),
+  messages: z.array(z.union([MessageCreate, ApprovalCreate])),
   max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
@@ -6008,7 +6025,7 @@ export const Job = z.object({
 
 export type LettaAsyncRequest = z.infer<typeof LettaAsyncRequest>;
 export const LettaAsyncRequest = z.object({
-  messages: z.array(MessageCreate),
+  messages: z.array(z.union([MessageCreate, ApprovalCreate])),
   max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
@@ -6039,7 +6056,7 @@ export const LettaBatchMessages = z.object({
 
 export type LettaRequest = z.infer<typeof LettaRequest>;
 export const LettaRequest = z.object({
-  messages: z.array(MessageCreate),
+  messages: z.array(z.union([MessageCreate, ApprovalCreate])),
   max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
@@ -6519,7 +6536,7 @@ export const LettaResponse = z.object({
 
 export type LettaStreamingRequest = z.infer<typeof LettaStreamingRequest>;
 export const LettaStreamingRequest = z.object({
-  messages: z.array(MessageCreate),
+  messages: z.array(z.union([MessageCreate, ApprovalCreate])),
   max_steps: z.union([z.number(), z.undefined()]).optional(),
   use_assistant_message: z.union([z.boolean(), z.undefined()]).optional(),
   assistant_message_tool_name: z.union([z.string(), z.undefined()]).optional(),
@@ -8226,6 +8243,9 @@ export const UserUpdate = z.object({
     ])
     .optional(),
 });
+
+export type MessageCreateUnion = z.infer<typeof MessageCreateUnion>;
+export const MessageCreateUnion = z.union([MessageCreate, ApprovalCreate]);
 
 export type LettaPing = z.infer<typeof LettaPing>;
 export const LettaPing = z.object({

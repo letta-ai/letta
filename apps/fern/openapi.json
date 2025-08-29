@@ -12693,6 +12693,43 @@
         "title": "AppModel",
         "description": "App data model."
       },
+      "ApprovalCreate": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "approval",
+            "title": "Type",
+            "description": "The message type to be created.",
+            "default": "approval"
+          },
+          "approve": {
+            "type": "boolean",
+            "title": "Approve",
+            "description": "Whether the tool has been approved"
+          },
+          "approval_request_id": {
+            "type": "string",
+            "title": "Approval Request Id",
+            "description": "The message ID of the approval request"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "An optional explanation for the provided approval status"
+          }
+        },
+        "type": "object",
+        "required": ["approve", "approval_request_id"],
+        "title": "ApprovalCreate",
+        "description": "Input to approve or deny a tool call request"
+      },
       "AssistantMessage": {
         "properties": {
           "id": {
@@ -19256,7 +19293,21 @@
         "properties": {
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/MessageCreate"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalCreate"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalCreate",
+                  "message": "#/components/schemas/MessageCreate"
+                }
+              }
             },
             "type": "array",
             "title": "Messages",
@@ -19342,7 +19393,21 @@
         "properties": {
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/MessageCreate"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalCreate"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalCreate",
+                  "message": "#/components/schemas/MessageCreate"
+                }
+              }
             },
             "type": "array",
             "title": "Messages",
@@ -19462,7 +19527,21 @@
         "properties": {
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/MessageCreate"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalCreate"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalCreate",
+                  "message": "#/components/schemas/MessageCreate"
+                }
+              }
             },
             "type": "array",
             "title": "Messages",
@@ -19603,7 +19682,21 @@
         "properties": {
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/MessageCreate"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MessageCreate"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalCreate"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalCreate",
+                  "message": "#/components/schemas/MessageCreate"
+                }
+              }
             },
             "type": "array",
             "title": "Messages",
@@ -20327,6 +20420,13 @@
       },
       "MessageCreate": {
         "properties": {
+          "type": {
+            "type": "string",
+            "const": "message",
+            "title": "Type",
+            "description": "The message type to be created.",
+            "default": "message"
+          },
           "role": {
             "type": "string",
             "enum": ["user", "system", "assistant"],
@@ -26437,6 +26537,13 @@
       },
       "letta__schemas__agent_file__MessageSchema": {
         "properties": {
+          "type": {
+            "type": "string",
+            "const": "message",
+            "title": "Type",
+            "description": "The message type to be created.",
+            "default": "message"
+          },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
             "description": "The role of the participant."
@@ -27268,6 +27375,23 @@
             "tool_call_message": "#/components/schemas/ToolCallMessage",
             "tool_return_message": "#/components/schemas/ToolReturnMessage",
             "assistant_message": "#/components/schemas/AssistantMessage"
+          }
+        }
+      },
+      "MessageCreateUnion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessageCreate"
+          },
+          {
+            "$ref": "#/components/schemas/ApprovalCreate"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "message": "#/components/schemas/MessageCreate",
+            "approval": "#/components/schemas/ApprovalCreate"
           }
         }
       },

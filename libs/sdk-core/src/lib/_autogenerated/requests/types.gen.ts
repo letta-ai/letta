@@ -430,6 +430,28 @@ export type AppModel = {
 };
 
 /**
+ * Input to approve or deny a tool call request
+ */
+export type ApprovalCreate = {
+  /**
+   * The message type to be created.
+   */
+  type?: 'approval';
+  /**
+   * Whether the tool has been approved
+   */
+  approve: boolean;
+  /**
+   * The message ID of the approval request
+   */
+  approval_request_id: string;
+  /**
+   * An optional explanation for the provided approval status
+   */
+  reason?: string | null;
+};
+
+/**
  * A message sent by the LLM in response to user input. Used in the LLM context.
  *
  * Args:
@@ -2901,7 +2923,7 @@ export type LettaAsyncRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate>;
+  messages: Array<MessageCreate | ApprovalCreate>;
   /**
    * Maximum number of steps the agent should take to process the request.
    */
@@ -2940,7 +2962,7 @@ export type LettaBatchRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate>;
+  messages: Array<MessageCreate | ApprovalCreate>;
   /**
    * Maximum number of steps the agent should take to process the request.
    */
@@ -2998,7 +3020,7 @@ export type LettaRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate>;
+  messages: Array<MessageCreate | ApprovalCreate>;
   /**
    * Maximum number of steps the agent should take to process the request.
    */
@@ -3082,7 +3104,7 @@ export type LettaStreamingRequest = {
   /**
    * The messages to be sent to the agent.
    */
-  messages: Array<MessageCreate>;
+  messages: Array<MessageCreate | ApprovalCreate>;
   /**
    * Maximum number of steps the agent should take to process the request.
    */
@@ -3408,6 +3430,10 @@ export type Message = {
  * Request to create a message
  */
 export type MessageCreate = {
+  /**
+   * The message type to be created.
+   */
+  type?: 'message';
   /**
    * The role of the participant.
    */
@@ -5824,6 +5850,10 @@ export type letta__schemas__agent_file__AgentSchema = {
  */
 export type letta__schemas__agent_file__MessageSchema = {
   /**
+   * The message type to be created.
+   */
+  type?: 'message';
+  /**
    * The role of the participant.
    */
   role: MessageRole;
@@ -6067,6 +6097,8 @@ export type LettaMessageUnion =
   | ToolCallMessage
   | ToolReturnMessage
   | AssistantMessage;
+
+export type MessageCreateUnion = MessageCreate | ApprovalCreate;
 
 export type LettaMessageContentUnion =
   | TextContent

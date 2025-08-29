@@ -1207,6 +1207,44 @@ export const $AppModel = {
   description: 'App data model.',
 } as const;
 
+export const $ApprovalCreate = {
+  properties: {
+    type: {
+      type: 'string',
+      const: 'approval',
+      title: 'Type',
+      description: 'The message type to be created.',
+      default: 'approval',
+    },
+    approve: {
+      type: 'boolean',
+      title: 'Approve',
+      description: 'Whether the tool has been approved',
+    },
+    approval_request_id: {
+      type: 'string',
+      title: 'Approval Request Id',
+      description: 'The message ID of the approval request',
+    },
+    reason: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Reason',
+      description: 'An optional explanation for the provided approval status',
+    },
+  },
+  type: 'object',
+  required: ['approve', 'approval_request_id'],
+  title: 'ApprovalCreate',
+  description: 'Input to approve or deny a tool call request',
+} as const;
+
 export const $AssistantMessage = {
   properties: {
     id: {
@@ -8068,7 +8106,21 @@ export const $LettaAsyncRequest = {
   properties: {
     messages: {
       items: {
-        $ref: '#/components/schemas/MessageCreate',
+        oneOf: [
+          {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          {
+            $ref: '#/components/schemas/ApprovalCreate',
+          },
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            approval: '#/components/schemas/ApprovalCreate',
+            message: '#/components/schemas/MessageCreate',
+          },
+        },
       },
       type: 'array',
       title: 'Messages',
@@ -8161,7 +8213,21 @@ export const $LettaBatchRequest = {
   properties: {
     messages: {
       items: {
-        $ref: '#/components/schemas/MessageCreate',
+        oneOf: [
+          {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          {
+            $ref: '#/components/schemas/ApprovalCreate',
+          },
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            approval: '#/components/schemas/ApprovalCreate',
+            message: '#/components/schemas/MessageCreate',
+          },
+        },
       },
       type: 'array',
       title: 'Messages',
@@ -8290,7 +8356,21 @@ export const $LettaRequest = {
   properties: {
     messages: {
       items: {
-        $ref: '#/components/schemas/MessageCreate',
+        oneOf: [
+          {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          {
+            $ref: '#/components/schemas/ApprovalCreate',
+          },
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            approval: '#/components/schemas/ApprovalCreate',
+            message: '#/components/schemas/MessageCreate',
+          },
+        },
       },
       type: 'array',
       title: 'Messages',
@@ -8449,7 +8529,21 @@ export const $LettaStreamingRequest = {
   properties: {
     messages: {
       items: {
-        $ref: '#/components/schemas/MessageCreate',
+        oneOf: [
+          {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          {
+            $ref: '#/components/schemas/ApprovalCreate',
+          },
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            approval: '#/components/schemas/ApprovalCreate',
+            message: '#/components/schemas/MessageCreate',
+          },
+        },
       },
       type: 'array',
       title: 'Messages',
@@ -9243,6 +9337,13 @@ t`,
 
 export const $MessageCreate = {
   properties: {
+    type: {
+      type: 'string',
+      const: 'message',
+      title: 'Type',
+      description: 'The message type to be created.',
+      default: 'message',
+    },
     role: {
       type: 'string',
       enum: ['user', 'system', 'assistant'],
@@ -15791,6 +15892,13 @@ export const $letta__schemas__agent_file__AgentSchema = {
 
 export const $letta__schemas__agent_file__MessageSchema = {
   properties: {
+    type: {
+      type: 'string',
+      const: 'message',
+      title: 'Type',
+      description: 'The message type to be created.',
+      default: 'message',
+    },
     role: {
       $ref: '#/components/schemas/MessageRole',
       description: 'The role of the participant.',
@@ -16643,6 +16751,24 @@ export const $LettaMessageUnion = {
       tool_call_message: '#/components/schemas/ToolCallMessage',
       tool_return_message: '#/components/schemas/ToolReturnMessage',
       assistant_message: '#/components/schemas/AssistantMessage',
+    },
+  },
+} as const;
+
+export const $MessageCreateUnion = {
+  oneOf: [
+    {
+      $ref: '#/components/schemas/MessageCreate',
+    },
+    {
+      $ref: '#/components/schemas/ApprovalCreate',
+    },
+  ],
+  discriminator: {
+    propertyName: 'type',
+    mapping: {
+      message: '#/components/schemas/MessageCreate',
+      approval: '#/components/schemas/ApprovalCreate',
     },
   },
 } as const;
