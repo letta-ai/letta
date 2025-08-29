@@ -261,7 +261,7 @@ def create_application() -> "FastAPI":
 
     @app.exception_handler(BedrockPermissionError)
     async def bedrock_permission_error_handler(request, exc: BedrockPermissionError):
-        logger.error(f"Bedrock permission denied.")
+        logger.error("Bedrock permission denied.")
         if SENTRY_ENABLED:
             sentry_sdk.capture_exception(exc)
 
@@ -433,10 +433,10 @@ def start_server(
         if IS_WINDOWS:
             # Windows doesn't those the fancy unicode characters
             print(f"Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
-            print(f"View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+            print("View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
         else:
             print(f"▶ Server running at: http://{host or 'localhost'}:{port or REST_DEFAULT_PORT}")
-            print(f"▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
+            print("▶ View using ADE at: https://app.letta.com/development-servers/local/dashboard\n")
 
         if importlib.util.find_spec("granian") is not None and settings.use_granian:
             # Experimental Granian engine

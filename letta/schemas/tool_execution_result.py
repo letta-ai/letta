@@ -6,7 +6,6 @@ from letta.schemas.agent import AgentState
 
 
 class ToolExecutionResult(BaseModel):
-
     status: Literal["success", "error"] = Field(..., description="The status of the tool execution and return object")
     func_return: Optional[Any] = Field(None, description="The function return object")
     agent_state: Optional[AgentState] = Field(None, description="The agent state")

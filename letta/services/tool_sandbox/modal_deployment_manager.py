@@ -183,9 +183,9 @@ class ModalDeploymentManager:
                 existing_app = await self._try_get_existing_app(sbx_config, version_hash, user)
                 if existing_app:
                     return existing_app, version_hash
-                raise RuntimeError(f"Deployment completed but app not found")
+                raise RuntimeError("Deployment completed but app not found")
             else:
-                raise RuntimeError(f"Timeout waiting for deployment")
+                raise RuntimeError("Timeout waiting for deployment")
 
         # We're deploying - mark as in progress
         deployment_key = None

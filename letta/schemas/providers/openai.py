@@ -203,7 +203,7 @@ class OpenAIProvider(Provider):
                     continue
             else:
                 logger.debug(
-                    f"Skipping embedding models for %s by default, as we don't assume embeddings are supported."
+                    "Skipping embedding models for %s by default, as we don't assume embeddings are supported."
                     "Please open an issue on GitHub if support is required.",
                     self.base_url,
                 )
@@ -227,7 +227,7 @@ class OpenAIProvider(Provider):
             return LLM_MAX_TOKENS[model_name]
         else:
             logger.debug(
-                f"Model %s on %s for provider %s not found in LLM_MAX_TOKENS. Using default of {{LLM_MAX_TOKENS['DEFAULT']}}",
+                "Model %s on %s for provider %s not found in LLM_MAX_TOKENS. Using default of {LLM_MAX_TOKENS['DEFAULT']}",
                 model_name,
                 self.base_url,
                 self.__class__.__name__,

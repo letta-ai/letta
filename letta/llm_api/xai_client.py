@@ -14,7 +14,6 @@ from letta.settings import model_settings
 
 
 class XAIClient(OpenAIClient):
-
     def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
         return False
 

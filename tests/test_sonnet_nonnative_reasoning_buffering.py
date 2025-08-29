@@ -152,7 +152,9 @@ def test_streaming_buffering_behavior(client: Letta, agent_factory, model: str, 
 
     # Create the stream
     response_stream = client.agents.messages.create_stream(
-        agent_id=agent.id, messages=[MessageCreate(role="user", content=user_message)], stream_tokens=True  # Enable token streaming
+        agent_id=agent.id,
+        messages=[MessageCreate(role="user", content=user_message)],
+        stream_tokens=True,  # Enable token streaming
     )
 
     # Collect chunks with timestamps
@@ -215,7 +217,7 @@ def test_streaming_buffering_behavior(client: Letta, agent_factory, model: str, 
         traceback.print_exc()
 
     # Analyze results
-    print(f"\n=== Analysis ===")
+    print("\n=== Analysis ===")
     print(f"Total chunks: {len(chunks_with_time)}")
     print(f"Reasoning chunks: {len(reasoning_chunks)}")
     print(f"Assistant chunks: {len(assistant_chunks)}")
@@ -227,24 +229,24 @@ def test_streaming_buffering_behavior(client: Letta, agent_factory, model: str, 
         print(f"\nReasoning bursts detected: {len(reasoning_bursts)}")
         for i, burst in enumerate(reasoning_bursts):
             burst_times = [reasoning_chunks[idx][0] for idx in burst]
-            print(f"  Burst {i+1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
+            print(f"  Burst {i + 1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
 
     if assistant_chunks:
         assistant_bursts = detect_burst_chunks(assistant_chunks)
         print(f"\nAssistant bursts detected: {len(assistant_bursts)}")
         for i, burst in enumerate(assistant_bursts):
             burst_times = [assistant_chunks[idx][0] for idx in burst]
-            print(f"  Burst {i+1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
+            print(f"  Burst {i + 1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
 
     if tool_chunks:
         tool_bursts = detect_burst_chunks(tool_chunks)
         print(f"\nTool call bursts detected: {len(tool_bursts)}")
         for i, burst in enumerate(tool_bursts):
             burst_times = [tool_chunks[idx][0] for idx in burst]
-            print(f"  Burst {i+1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
+            print(f"  Burst {i + 1}: {len(burst)} chunks from {burst_times[0]:.3f}s to {burst_times[-1]:.3f}s")
 
     # Analyze results based on expected behavior
-    print(f"\n=== Test Results ===")
+    print("\n=== Test Results ===")
 
     # Check if we detected large bursts
     has_significant_bursts = False

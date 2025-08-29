@@ -10,8 +10,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.orm.user import User as UserModel
 from letta.otel.tracing import trace_method
-from letta.schemas.user import User as PydanticUser
-from letta.schemas.user import UserUpdate
+from letta.schemas.user import User as PydanticUser, UserUpdate
 from letta.server.db import db_registry
 from letta.utils import enforce_types
 

@@ -1,9 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from sqlalchemy import JSON
-from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import Index, String, UniqueConstraint
+from sqlalchemy import JSON, Enum as SqlEnum, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import AgentMixin, OrganizationMixin, SandboxConfigMixin

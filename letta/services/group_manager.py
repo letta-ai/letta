@@ -8,8 +8,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.group import Group as GroupModel
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
-from letta.schemas.group import Group as PydanticGroup
-from letta.schemas.group import GroupCreate, GroupUpdate, InternalTemplateGroupCreate, ManagerType
+from letta.schemas.group import Group as PydanticGroup, GroupCreate, GroupUpdate, InternalTemplateGroupCreate, ManagerType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
@@ -18,7 +17,6 @@ from letta.utils import enforce_types
 
 
 class GroupManager:
-
     @enforce_types
     @trace_method
     async def list_groups_async(

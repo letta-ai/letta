@@ -11,9 +11,9 @@ def generate_and_execute_tool(tool_name: str, args: dict):
     with open(script_path, "w") as script_file:
         script_file.write(f"from restaurant_management_system.tools.{tool_name} import {tool_name}\n\n")
         arg_str = ", ".join([f"{key}={repr(value)}" for key, value in args.items()])
-        script_file.write(f"if __name__ == '__main__':\n")
+        script_file.write("if __name__ == '__main__':\n")
         script_file.write(f"    result = {tool_name}({arg_str})\n")
-        script_file.write(f"    print(result)\n")
+        script_file.write("    print(result)\n")
 
     # Execute the script
     runpy.run_path(script_path, run_name="__main__")

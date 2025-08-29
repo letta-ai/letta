@@ -185,7 +185,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             try:
                 await asyncio.shield(self._protected_stream_response(send))
             except asyncio.CancelledError:
-                logger.info(f"Stream response was cancelled, but shielded task should continue")
+                logger.info("Stream response was cancelled, but shielded task should continue")
             except anyio.ClosedResourceError:
                 logger.info("Client disconnected, but shielded task should continue")
                 self._client_connected = False

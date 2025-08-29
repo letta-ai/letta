@@ -568,7 +568,7 @@ class LettaFileToolExecutor(ToolExecutor):
         attached_sources = await self.agent_manager.list_attached_sources_async(agent_id=agent_state.id, actor=self.actor)
         source_ids = [source.id for source in attached_sources]
         if not source_ids:
-            return f"No valid source IDs found for attached files"
+            return "No valid source IDs found for attached files"
 
         # Get all attached files for this agent
         file_agents = await self.files_agents_manager.list_files_for_agent(

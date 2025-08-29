@@ -9,8 +9,14 @@ from letta.orm.block import Block as BlockModel
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.identity import Identity as IdentityModel
 from letta.otel.tracing import trace_method
-from letta.schemas.identity import Identity as PydanticIdentity
-from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
+from letta.schemas.identity import (
+    Identity as PydanticIdentity,
+    IdentityCreate,
+    IdentityProperty,
+    IdentityType,
+    IdentityUpdate,
+    IdentityUpsert,
+)
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.settings import DatabaseChoice, settings
@@ -18,7 +24,6 @@ from letta.utils import enforce_types
 
 
 class IdentityManager:
-
     @enforce_types
     @trace_method
     async def list_identities_async(

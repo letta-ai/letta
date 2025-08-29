@@ -75,12 +75,12 @@ def test_inner_thoughts_in_args_simple(wait_for_first_key):
     for idx, (fragment, expected) in enumerate(zip(fragments1, expected_updates1)):
         updates_main_json, updates_inner_thoughts = handler1.process_fragment(fragment)
         # Assertions
-        assert (
-            updates_main_json == expected["main_json_update"]
-        ), f"Test Case 1, Fragment {idx+1}: Main JSON update mismatch.\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'"
-        assert (
-            updates_inner_thoughts == expected["inner_thoughts_update"]
-        ), f"Test Case 1, Fragment {idx+1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'"
+        assert updates_main_json == expected["main_json_update"], (
+            f"Test Case 1, Fragment {idx + 1}: Main JSON update mismatch.\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'"
+        )
+        assert updates_inner_thoughts == expected["inner_thoughts_update"], (
+            f"Test Case 1, Fragment {idx + 1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'"
+        )
 
 
 @pytest.mark.parametrize("wait_for_first_key", [True, False])
@@ -182,12 +182,12 @@ def test_inner_thoughts_in_args_trailing_quote(wait_for_first_key):
     for idx, (fragment, expected) in enumerate(zip(fragments1, expected_updates1)):
         updates_main_json, updates_inner_thoughts = handler1.process_fragment(fragment)
         # Assertions
-        assert (
-            updates_main_json == expected["main_json_update"]
-        ), f"Test Case 1, Fragment {idx+1}: Main JSON update mismatch.\nFragment: '{fragment}'\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'\nCurrent JSON: '{current_main_json}'\nCurrent Inner Thoughts: '{current_inner_thoughts}'"
-        assert (
-            updates_inner_thoughts == expected["inner_thoughts_update"]
-        ), f"Test Case 1, Fragment {idx+1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'\nCurrent JSON: '{current_main_json}'\nCurrent Inner Thoughts: '{current_inner_thoughts}'"
+        assert updates_main_json == expected["main_json_update"], (
+            f"Test Case 1, Fragment {idx + 1}: Main JSON update mismatch.\nFragment: '{fragment}'\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'\nCurrent JSON: '{current_main_json}'\nCurrent Inner Thoughts: '{current_inner_thoughts}'"
+        )
+        assert updates_inner_thoughts == expected["inner_thoughts_update"], (
+            f"Test Case 1, Fragment {idx + 1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'\nCurrent JSON: '{current_main_json}'\nCurrent Inner Thoughts: '{current_inner_thoughts}'"
+        )
         current_main_json += updates_main_json
         current_inner_thoughts += updates_inner_thoughts
 
@@ -227,20 +227,20 @@ def test_inner_thoughts_not_in_args():
     for idx, (fragment, expected) in enumerate(zip(fragments2, expected_updates2)):
         updates_main_json, updates_inner_thoughts = handler2.process_fragment(fragment)
         # Assertions
-        assert (
-            updates_main_json == expected["main_json_update"]
-        ), f"Test Case 2, Fragment {idx+1}: Main JSON update mismatch.\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'"
-        assert (
-            updates_inner_thoughts == expected["inner_thoughts_update"]
-        ), f"Test Case 2, Fragment {idx+1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'"
+        assert updates_main_json == expected["main_json_update"], (
+            f"Test Case 2, Fragment {idx + 1}: Main JSON update mismatch.\nExpected: '{expected['main_json_update']}'\nGot: '{updates_main_json}'"
+        )
+        assert updates_inner_thoughts == expected["inner_thoughts_update"], (
+            f"Test Case 2, Fragment {idx + 1}: Inner Thoughts update mismatch.\nExpected: '{expected['inner_thoughts_update']}'\nGot: '{updates_inner_thoughts}'"
+        )
 
     # Final assertions for Test Case 2
     expected_final_main_json2 = '{"message":"Here we are again, with \'x2\'! 🎉 Let\'s take this chance: If you could swap lives with any fictional character for a day, who would it be?"}'
     expected_final_inner_thoughts2 = ""
 
-    assert (
-        handler2.main_json == expected_final_main_json2
-    ), f"Test Case 2: Final main_json mismatch.\nExpected: '{expected_final_main_json2}'\nGot: '{handler2.main_json}'"
-    assert (
-        handler2.inner_thoughts == expected_final_inner_thoughts2
-    ), f"Test Case 2: Final inner_thoughts mismatch.\nExpected: '{expected_final_inner_thoughts2}'\nGot: '{handler2.inner_thoughts}'"
+    assert handler2.main_json == expected_final_main_json2, (
+        f"Test Case 2: Final main_json mismatch.\nExpected: '{expected_final_main_json2}'\nGot: '{handler2.main_json}'"
+    )
+    assert handler2.inner_thoughts == expected_final_inner_thoughts2, (
+        f"Test Case 2: Final inner_thoughts mismatch.\nExpected: '{expected_final_inner_thoughts2}'\nGot: '{handler2.inner_thoughts}'"
+    )

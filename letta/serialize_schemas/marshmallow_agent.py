@@ -5,8 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
 import letta
-from letta.orm import Agent
-from letta.orm import Message as MessageModel
+from letta.orm import Agent, Message as MessageModel
 from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.user import User
 from letta.serialize_schemas.marshmallow_agent_environment_variable import SerializedAgentEnvironmentVariableSchema

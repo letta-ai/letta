@@ -11,11 +11,18 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import Message as _Message
-from letta.schemas.openai.chat_completion_request import AssistantMessage, ChatCompletionRequest, ChatMessage
-from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
-from letta.schemas.openai.chat_completion_request import Tool, ToolFunctionChoice, ToolMessage, UserMessage, cast_message_to_subtype
+from letta.schemas.message import Message as PydanticMessage, Message as _Message
+from letta.schemas.openai.chat_completion_request import (
+    AssistantMessage,
+    ChatCompletionRequest,
+    ChatMessage,
+    FunctionCall as ToolFunctionChoiceFunctionCall,
+    Tool,
+    ToolFunctionChoice,
+    ToolMessage,
+    UserMessage,
+    cast_message_to_subtype,
+)
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.schemas.openai.openai import Function, ToolCall
 from letta.settings import model_settings
@@ -313,7 +320,6 @@ def convert_deepseek_response_to_chatcompletion(
 
 
 class DeepseekClient(OpenAIClient):
-
     def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
         return False
 

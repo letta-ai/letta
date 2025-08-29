@@ -7,8 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin, ProjectMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.identity import Identity as PydanticIdentity
-from letta.schemas.identity import IdentityProperty
+from letta.schemas.identity import Identity as PydanticIdentity, IdentityProperty
 
 
 class Identity(SqlalchemyBase, OrganizationMixin, ProjectMixin):

@@ -9,7 +9,6 @@ from letta.schemas.memory import Memory
 
 
 class PromptGenerator:
-
     # TODO: This code is kind of wonky and deserves a rewrite
     @trace_method
     @staticmethod

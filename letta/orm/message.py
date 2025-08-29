@@ -7,10 +7,8 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.letta_message_content import MessageContent
-from letta.schemas.letta_message_content import TextContent as PydanticTextContent
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import ToolReturn
+from letta.schemas.letta_message_content import MessageContent, TextContent as PydanticTextContent
+from letta.schemas.message import Message as PydanticMessage, ToolReturn
 from letta.settings import DatabaseChoice, settings
 
 

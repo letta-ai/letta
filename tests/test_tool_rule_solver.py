@@ -104,12 +104,12 @@ def test_conditional_tool_rule():
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "Initial allowed tool should be 'start_tool'"
 
     solver.register_tool_call(START_TOOL)
-    assert solver.get_allowed_tool_names({END_TOOL}, last_function_response='{"message": "true"}') == [
-        END_TOOL
-    ], "After 'start_tool' returns true, should allow 'end_tool'"
-    assert solver.get_allowed_tool_names({START_TOOL}, last_function_response='{"message": "false"}') == [
-        START_TOOL
-    ], "After 'start_tool' returns false, should allow 'start_tool'"
+    assert solver.get_allowed_tool_names({END_TOOL}, last_function_response='{"message": "true"}') == [END_TOOL], (
+        "After 'start_tool' returns true, should allow 'end_tool'"
+    )
+    assert solver.get_allowed_tool_names({START_TOOL}, last_function_response='{"message": "false"}') == [START_TOOL], (
+        "After 'start_tool' returns false, should allow 'start_tool'"
+    )
 
     assert solver.is_terminal_tool(END_TOOL) is True, "Should recognize 'end_tool' as terminal"
 
@@ -148,9 +148,9 @@ def test_max_count_per_step_tool_rule():
     assert solver.get_allowed_tool_names({START_TOOL}) == [START_TOOL], "After first use, should still allow 'start_tool'"
 
     solver.register_tool_call(START_TOOL)
-    assert (
-        solver.get_allowed_tool_names({START_TOOL}, error_on_empty=False) == []
-    ), "After reaching max count, 'start_tool' should no longer be allowed"
+    assert solver.get_allowed_tool_names({START_TOOL}, error_on_empty=False) == [], (
+        "After reaching max count, 'start_tool' should no longer be allowed"
+    )
 
 
 def test_max_count_per_step_tool_rule_allows_usage_up_to_limit():
@@ -179,9 +179,9 @@ def test_max_count_per_step_tool_rule_does_not_affect_other_tools():
     solver.register_tool_call(START_TOOL)
     solver.register_tool_call(START_TOOL)
 
-    assert sorted(solver.get_allowed_tool_names({START_TOOL, NEXT_TOOL, HELPER_TOOL})) == sorted(
-        [NEXT_TOOL, HELPER_TOOL]
-    ), "Other tools should still be allowed even if 'start_tool' is over limit"
+    assert sorted(solver.get_allowed_tool_names({START_TOOL, NEXT_TOOL, HELPER_TOOL})) == sorted([NEXT_TOOL, HELPER_TOOL]), (
+        "Other tools should still be allowed even if 'start_tool' is over limit"
+    )
 
 
 def test_max_count_per_step_tool_rule_resets_on_clear():
@@ -507,31 +507,31 @@ def test_required_before_exit_tool_rule_multiple_required_tools():
     required_rule_2 = RequiredBeforeExitToolRule(tool_name=REQUIRED_TOOL_2)
     solver = ToolRulesSolver(tool_rules=[required_rule_1, required_rule_2])
 
-    assert (
-        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False
-    ), "Should return False when no required tools have been called"
+    assert solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False, (
+        "Should return False when no required tools have been called"
+    )
     uncalled_tools = solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2})
     assert set(uncalled_tools) == {REQUIRED_TOOL_1, REQUIRED_TOOL_2}, "Should return both uncalled required tools"
 
     # Call first required tool
     solver.register_tool_call(REQUIRED_TOOL_1)
 
-    assert (
-        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False
-    ), "Should return False when only one required tool has been called"
-    assert solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == [
-        REQUIRED_TOOL_2
-    ], "Should return remaining uncalled required tool"
+    assert solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is False, (
+        "Should return False when only one required tool has been called"
+    )
+    assert solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == [REQUIRED_TOOL_2], (
+        "Should return remaining uncalled required tool"
+    )
 
     # Call second required tool
     solver.register_tool_call(REQUIRED_TOOL_2)
 
-    assert (
-        solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is True
-    ), "Should return True when all required tools have been called"
-    assert (
-        solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == []
-    ), "Should return empty list when all required tools have been called"
+    assert solver.has_required_tools_been_called({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) is True, (
+        "Should return True when all required tools have been called"
+    )
+    assert solver.get_uncalled_required_tools({REQUIRED_TOOL_1, REQUIRED_TOOL_2}) == [], (
+        "Should return empty list when all required tools have been called"
+    )
 
 
 def test_required_before_exit_tool_rule_mixed_with_other_tools():

@@ -83,7 +83,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
             <html>
             <body>
                 <h1>Authorization Failed</h1>
-                <p>Error: {query_params['error'][0]}</p>
+                <p>Error: {query_params["error"][0]}</p>
                 <p>You can close this window and return to the terminal.</p>
             </body>
             </html>

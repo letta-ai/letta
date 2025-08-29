@@ -205,7 +205,7 @@ def get_chat_completion(
         raise LocalLLMError(f"usage dict in response was missing fields ({usage})")
 
     if usage["prompt_tokens"] is None:
-        printd(f"usage dict was missing prompt_tokens, computing on-the-fly...")
+        printd("usage dict was missing prompt_tokens, computing on-the-fly...")
         usage["prompt_tokens"] = count_tokens(prompt)
 
     # NOTE: we should compute on-the-fly anyways since we might have to correct for errors during JSON parsing
@@ -220,7 +220,7 @@ def get_chat_completion(
 
     # NOTE: this is the token count that matters most
     if usage["total_tokens"] is None:
-        printd(f"usage dict was missing total_tokens, computing on-the-fly...")
+        printd("usage dict was missing total_tokens, computing on-the-fly...")
         usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
 
     # unpack with response.choices[0].message.content
@@ -261,9 +261,9 @@ def generate_grammar_and_documentation(
 ):
     from letta.utils import printd
 
-    assert not (
-        add_inner_thoughts_top_level and add_inner_thoughts_param_level
-    ), "Can only place inner thoughts in one location in the grammar generator"
+    assert not (add_inner_thoughts_top_level and add_inner_thoughts_param_level), (
+        "Can only place inner thoughts in one location in the grammar generator"
+    )
 
     grammar_function_models = []
     # create_dynamic_model_from_function will add inner thoughts to the function parameters if add_inner_thoughts is True.

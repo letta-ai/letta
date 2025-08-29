@@ -309,7 +309,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
 
         # Create numbered markdown for the LLM to reference
         numbered_lines = markdown_content.split("\n")
-        numbered_markdown = "\n".join([f"{i+1:4d}: {line}" for i, line in enumerate(numbered_lines)])
+        numbered_markdown = "\n".join([f"{i + 1:4d}: {line}" for i, line in enumerate(numbered_lines)])
 
         # Truncate if too long
         max_content_length = 200000

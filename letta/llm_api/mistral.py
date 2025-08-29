@@ -13,7 +13,7 @@ async def mistral_get_model_list_async(url: str, api_key: str) -> dict:
     if api_key is not None:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    logger.debug(f"Sending request to %s", url)
+    logger.debug("Sending request to %s", url)
 
     async with aiohttp.ClientSession() as session:
         # TODO add query param "tool" to be true

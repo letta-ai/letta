@@ -8,10 +8,9 @@ def adjust_menu_prices(percentage: float) -> str:
         str: A formatted string summarizing the price adjustments.
     """
     import cowsay
-    from tqdm import tqdm
-
     from core.menu import Menu, MenuItem  # Import a class from the codebase
     from core.utils import format_currency  # Use a utility function to test imports
+    from tqdm import tqdm
 
     if not isinstance(percentage, (int, float)):
         raise TypeError("percentage must be a number")

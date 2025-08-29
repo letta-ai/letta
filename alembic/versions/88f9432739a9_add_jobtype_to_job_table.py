@@ -29,7 +29,7 @@ def upgrade() -> None:
     op.add_column("jobs", sa.Column("job_type", sa.String(), nullable=True))
 
     # Set existing rows to have the default value of JobType.JOB
-    op.execute(f"UPDATE jobs SET job_type = 'job' WHERE job_type IS NULL")
+    op.execute("UPDATE jobs SET job_type = 'job' WHERE job_type IS NULL")
 
     # Make the column non-nullable after setting default values
     op.alter_column("jobs", "job_type", existing_type=sa.String(), nullable=False)

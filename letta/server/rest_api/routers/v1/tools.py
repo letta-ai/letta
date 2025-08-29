@@ -749,8 +749,8 @@ async def connect_mcp_server(
             except ConnectionError:
                 # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
                 if isinstance(client, AsyncStdioMCPClient):
-                    logger.warning(f"OAuth not supported for stdio")
-                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"OAuth not supported for stdio")
+                    logger.warning("OAuth not supported for stdio")
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
                     return
                 # Continue to OAuth flow
                 logger.info(f"Attempting OAuth flow for {request}...")

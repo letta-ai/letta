@@ -464,7 +464,6 @@ def package_initial_message_sequence(
     # create the agent object
     init_messages = []
     for message_create in initial_message_sequence:
-
         if message_create.role == MessageRole.user:
             packed_message = system.package_user_message(
                 user_message=message_create.content,
@@ -498,8 +497,10 @@ def package_initial_message_sequence(
             import json
             import uuid
 
-            from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-            from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+            from openai.types.chat.chat_completion_message_tool_call import (
+                ChatCompletionMessageToolCall as OpenAIToolCall,
+                Function as OpenAIFunction,
+            )
 
             from letta.constants import DEFAULT_MESSAGE_TOOL
 

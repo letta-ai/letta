@@ -20,8 +20,7 @@ from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, Tool
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import UserMessage as OpenAIUserMessage
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage as OpenAIUserMessage
 from letta.schemas.usage import LettaUsageStatistics
 from letta.server.server import SyncServer
 from letta.services.agent_manager import AgentManager

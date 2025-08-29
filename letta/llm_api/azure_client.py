@@ -13,7 +13,6 @@ from letta.settings import model_settings
 
 
 class AzureClient(OpenAIClient):
-
     def get_byok_overrides(self, llm_config: LLMConfig) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         if llm_config.provider_category == ProviderCategory.byok:
             from letta.services.provider_manager import ProviderManager

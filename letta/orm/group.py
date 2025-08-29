@@ -10,7 +10,6 @@ from letta.schemas.group import Group as PydanticGroup
 
 
 class Group(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateMixin):
-
     __tablename__ = "groups"
     __pydantic_model__ = PydanticGroup
 

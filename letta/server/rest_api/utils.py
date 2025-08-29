@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, AsyncGenerator, Dict, Iterable, List, Optional
 
 from fastapi import Header, HTTPException
 from openai.types.chat import ChatCompletionMessageParam
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from openai.types.chat.completion_create_params import CompletionCreateParams
 from pydantic import BaseModel
 

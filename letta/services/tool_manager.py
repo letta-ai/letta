@@ -27,8 +27,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import ToolType
-from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolCreate, ToolUpdate
+from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools

@@ -1149,7 +1149,6 @@ class CancellationSignal:
     """
 
     def __init__(self, job_manager=None, job_id=None, actor=None):
-
         from letta.log import get_logger
         from letta.schemas.user import User
         from letta.services.job_manager import JobManager

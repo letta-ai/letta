@@ -143,7 +143,7 @@ def assert_invoked_send_message_with_keyword(messages: Sequence[LettaMessage], k
     # Message field not in send_message
     if "message" not in arguments:
         raise InvalidToolCallError(
-            messages=[target_message], explanation=f"send_message function call does not have required field `message`"
+            messages=[target_message], explanation="send_message function call does not have required field `message`"
         )
 
     # Check that the keyword is in the message arguments
@@ -151,7 +151,7 @@ def assert_invoked_send_message_with_keyword(messages: Sequence[LettaMessage], k
         keyword = keyword.lower()
         arguments["message"] = arguments["message"].lower()
 
-    if not keyword in arguments["message"]:
+    if keyword not in arguments["message"]:
         raise InvalidToolCallError(messages=[target_message], explanation=f"Message argument did not contain keyword={keyword}")
 
 

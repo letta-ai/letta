@@ -124,7 +124,7 @@ if __name__ == "__main__":
             if a in response:
                 found = True
 
-        if not found and not "INSUFFICIENT INFORMATION" in response:
+        if not found and "INSUFFICIENT INFORMATION" not in response:
             # inconclusive: pass to llm judge
             print(question)
             print(answer)

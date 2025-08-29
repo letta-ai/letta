@@ -232,16 +232,13 @@ class OpenAIStreamingInterface:
 
                     # If we have main_json, we should output a ToolCallMessage
                     elif updates_main_json:
-
                         # If there's something in the function_name buffer, we should release it first
                         # NOTE: we could output it as part of a chunk that has both name and args,
                         #       however the frontend may expect name first, then args, so to be
                         #       safe we'll output name first in a separate chunk
                         if self.function_name_buffer:
-
                             # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
                             if self.use_assistant_message and self.function_name_buffer == self.assistant_message_tool_name:
-
                                 # Store the ID of the tool call so allow skipping the corresponding response
                                 if self.function_id_buffer:
                                     self.prev_assistant_message_id = self.function_id_buffer
@@ -373,7 +370,6 @@ class OpenAIStreamingInterface:
                                     # clear buffers
                                     self.function_id_buffer = None
                             else:
-
                                 # There may be a buffer from a previous chunk, for example
                                 # if the previous chunk had arguments but we needed to flush name
                                 if self.function_args_buffer:

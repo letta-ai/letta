@@ -63,7 +63,7 @@ def create_virtualenv_and_install_requirements(requirements_path: Path, name="ve
     except subprocess.CalledProcessError as exc:
         # On failure, try to clean up and recreate once more
         if not force_recreate:  # Avoid infinite recursion
-            print(f"Initial pip install failed, attempting clean recreation...")
+            print("Initial pip install failed, attempting clean recreation...")
             return create_virtualenv_and_install_requirements(requirements_path, name, force_recreate=False)
         raise RuntimeError(f"pip install failed with exit code {exc.returncode}")
 

@@ -25,7 +25,6 @@ class ExternalMCPToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-
         pass
 
         mcp_server_tag = [tag for tag in tool.tags if tag.startswith(f"{MCP_TOOL_TAG_NAME_PREFIX}:")]

@@ -92,7 +92,7 @@ USER_MESSAGE_FORCE_LONG_REPLY: List[MessageCreate] = [
 USER_MESSAGE_GREETING: List[MessageCreate] = [
     MessageCreate(
         role="user",
-        content=f"Hi!",
+        content="Hi!",
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -464,9 +464,9 @@ def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
         args = function_call.get("args", {})
 
         # Assert that there is no 'thinking' field in the function call arguments
-        assert (
-            "thinking" not in args
-        ), f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
+        assert "thinking" not in args, (
+            f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
+        )
 
 
 def assert_image_input_response(

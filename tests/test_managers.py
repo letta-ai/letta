@@ -16,8 +16,7 @@ import pytest
 from _pytest.python_api import approx
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
@@ -48,11 +47,9 @@ from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatus
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel
-from letta.orm.file import FileMetadata as FileMetadataModel
+from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
 from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate, CreateBlock
+from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
     ActorType,
@@ -68,35 +65,25 @@ from letta.schemas.enums import (
     ToolType,
 )
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata
-from letta.schemas.file import FileMetadata as PydanticFileMetadata
+from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob
-from letta.schemas.job import Job
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization
-from letta.schemas.organization import Organization as PydanticOrganization
-from letta.schemas.organization import OrganizationUpdate
+from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource
-from letta.schemas.source import SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolCreate, ToolUpdate
+from letta.schemas.source import Source as PydanticSource, SourceUpdate
+from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser
-from letta.schemas.user import UserUpdate
+from letta.schemas.user import User as PydanticUser, UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
@@ -4062,7 +4049,7 @@ async def test_user_caching(server: SyncServer, default_user, performance_pct=0.
             actor_cached = await server.user_manager.get_actor_by_id_async(default_user.id)
         duration = timer.elapsed_ns
         durations.append(duration)
-        print(f"Call {i+2}: {duration:.2e}ns")
+        print(f"Call {i + 2}: {duration:.2e}ns")
         assert actor_cached == actor
     for d in durations:
         assert d < duration_first * performance_pct
@@ -5306,7 +5293,7 @@ async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent,
 
     # Check that block has been detached too
     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
-    assert not (block.id in [b.id for b in agent_state.memory.blocks])
+    assert block.id not in [b.id for b in agent_state.memory.blocks]
 
 
 @pytest.mark.asyncio
@@ -5836,7 +5823,9 @@ def test_undo_concurrency_stale(server: SyncServer, default_user):
 
     # Session1 -> undo to seq=1
     block_manager.undo_checkpoint_block(
-        block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s1  # stale object from session1
+        block_id=block_v1.id,
+        actor=default_user,
+        use_preloaded_block=block_s1,  # stale object from session1
     )
     # This commits first => block now points to seq=1, version increments
 
@@ -6133,7 +6122,7 @@ async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent
 
     # Check that block has been detached too
     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
-    assert not identity.id in agent_state.identity_ids
+    assert identity.id not in agent_state.identity_ids
 
 
 @pytest.mark.asyncio
@@ -6172,7 +6161,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
     assert agent_with_identity.id in agent_state_ids
-    assert not agent_without_identity.id in agent_state_ids
+    assert agent_without_identity.id not in agent_state_ids
 
     # Get the agents for identifier key
     agent_states = await server.agent_manager.list_agents_async(identifier_keys=[identity.identifier_key], actor=default_user)
@@ -6183,7 +6172,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
     assert agent_with_identity.id in agent_state_ids
-    assert not agent_without_identity.id in agent_state_ids
+    assert agent_without_identity.id not in agent_state_ids
 
     # Delete new agents
     server.agent_manager.delete_agent(agent_id=agent_with_identity.id, actor=default_user)
@@ -6274,7 +6263,7 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
     assert block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_without_identity.id not in block_ids
 
     # Get the blocks for identifier key
     blocks = await server.block_manager.get_blocks_async(identifier_keys=[identity.identifier_key], actor=default_user)
@@ -6284,7 +6273,7 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
     assert block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_without_identity.id not in block_ids
 
     # Delete new agents
     server.block_manager.delete_block(block_id=block_with_identity.id, actor=default_user)
@@ -6297,8 +6286,8 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     # Check only initial block in the list
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
-    assert not block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_with_identity.id not in block_ids
+    assert block_without_identity.id not in block_ids
 
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
@@ -8490,11 +8479,11 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
-                [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
                 else None
             ),
-            tool_call_id=f"call_{i//2}" if i % 2 == 0 else None,
+            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
         )
         for i in range(4)
     ]
@@ -8540,11 +8529,11 @@ def test_get_run_messages_with_assistant_message(server: SyncServer, default_use
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
-                [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
                 else None
             ),
-            tool_call_id=f"call_{i//2}" if i % 2 == 0 else None,
+            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
         )
         for i in range(4)
     ]
@@ -9549,9 +9538,9 @@ async def test_list_batch_items_pagination(
         llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit
     )
     # If more than 'limit' items remain, we should only get exactly 'limit' items.
-    assert len(limited_page) == min(
-        limit, expected_remaining
-    ), f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    assert len(limited_page) == min(limit, expected_remaining), (
+        f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    )
 
     # Optional: Test with a cursor beyond the last item returns an empty list.
     last_cursor = sorted_ids[-1]
@@ -9888,9 +9877,7 @@ async def test_get_mcp_servers_by_ids(server, default_user):
 async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organization, default_user):
     """Deleting an MCP server deletes associated OAuth sessions (same user + URL)."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     test_server_url = "https://test.example.com/mcp"
 
@@ -9932,9 +9919,7 @@ async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organ
 async def test_oauth_sessions_with_different_url_persist(server, default_organization, default_user):
     """Sessions with different URL should not be deleted when deleting the server for another URL."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test.example.com/mcp"
     other_url = "https://other.example.com/mcp"
@@ -9973,9 +9958,7 @@ async def test_oauth_sessions_with_different_url_persist(server, default_organiz
 async def test_mcp_server_creation_links_orphaned_sessions(server, default_organization, default_user):
     """Creating a server should link any existing orphaned sessions (same user + URL)."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test-atomic-create.example.com/mcp"
 
@@ -10019,9 +10002,7 @@ async def test_mcp_server_creation_links_orphaned_sessions(server, default_organ
 async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, default_organization, default_user):
     """Deleting a server removes both linked and orphaned sessions for same user+URL."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test-atomic-cleanup.example.com/mcp"
 
@@ -10711,9 +10692,9 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
 
     # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
     expected_closed_count = len(files) - max_files_open
-    assert (
-        len(all_closed_files) == expected_closed_count
-    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    assert len(all_closed_files) == expected_closed_count, (
+        f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    )
 
     # Check that the oldest files were closed (first N files attached)
     expected_closed = [files[i].file_name for i in range(expected_closed_count)]

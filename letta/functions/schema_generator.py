@@ -593,7 +593,6 @@ def generate_tool_schema_for_mcp(
     append_heartbeat: bool = True,
     strict: bool = False,
 ) -> Dict[str, Any]:
-
     # MCP tool.inputSchema is a JSON schema
     # https://github.com/modelcontextprotocol/python-sdk/blob/775f87981300660ee957b63c2a14b448ab9c3675/src/mcp/types.py#L678
     parameters_schema = mcp_tool.inputSchema
