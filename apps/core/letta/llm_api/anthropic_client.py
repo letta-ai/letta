@@ -176,11 +176,14 @@ class AnthropicClient(LLMClientBase):
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
         if not llm_config.max_tokens:
-            raise ValueError("Max  tokens must be set for anthropic")
+            # TODO strip this default once we add provider-specific defaults
+            max_output_tokens = 4096  # the minimum max tokens (for Haiku 3)
+        else:
+            max_output_tokens = llm_config.max_tokens
 
         data = {
             "model": llm_config.model,
-            "max_tokens": llm_config.max_tokens,
+            "max_tokens": max_output_tokens,
             "temperature": llm_config.temperature,
         }
 
