@@ -551,6 +551,7 @@ class PassageManager:
         text: str,
         actor: PydanticUser,
         tags: Optional[List[str]] = None,
+        created_at: Optional[datetime] = None,
     ) -> List[PydanticPassage]:
         """Insert passage(s) into archival memory
 
@@ -588,15 +589,20 @@ class PassageManager:
 
             # Always write to SQL database first
             for chunk_text, embedding in zip(text_chunks, embeddings):
+                passage_data = {
+                    "organization_id": actor.organization_id,
+                    "archive_id": archive.id,
+                    "text": chunk_text,
+                    "embedding": embedding,
+                    "embedding_config": agent_state.embedding_config,
+                    "tags": tags,
+                }
+                # only include created_at if provided
+                if created_at is not None:
+                    passage_data["created_at"] = created_at
+
                 passage = await self.create_agent_passage_async(
-                    PydanticPassage(
-                        organization_id=actor.organization_id,
-                        archive_id=archive.id,
-                        text=chunk_text,
-                        embedding=embedding,
-                        embedding_config=agent_state.embedding_config,
-                        tags=tags,
-                    ),
+                    PydanticPassage(**passage_data),
                     actor=actor,
                 )
                 passages.append(passage)

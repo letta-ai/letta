@@ -1224,89 +1224,80 @@ def test_preview_payload(client: LettaSDKClient):
         client.agents.delete(agent_id=temp_agent.id)
 
 
-# TODO: Re-enable
-# def test_archive_tags_in_system_prompt(client: LettaSDKClient):
-#     """Test that archive tags are correctly compiled into the system prompt."""
-#     # Create a test agent
-#     temp_agent = client.agents.create(
-#         memory_blocks=[
-#             CreateBlock(
-#                 label="human",
-#                 value="username: test_user",
-#             ),
-#         ],
-#         model="openai/gpt-4o-mini",
-#         embedding="openai/text-embedding-3-small",
-#     )
-#
-#     try:
-#         # Add passages with different tags to the agent's archive
-#         test_tags = ["project_alpha", "meeting_notes", "research", "ideas", "todo_items"]
-#
-#         # Create passages with tags
-#         for i, tag in enumerate(test_tags):
-#             client.agents.passages.create(
-#                 agent_id=temp_agent.id,
-#                 text=f"Test passage {i} with tag {tag}",
-#                 tags=[tag]
-#             )
-#
-#         # Also create a passage with multiple tags
-#         client.agents.passages.create(
-#             agent_id=temp_agent.id,
-#             text="Passage with multiple tags",
-#             tags=["multi_tag_1", "multi_tag_2"]
-#         )
-#
-#         # Get the raw payload to check the system prompt
-#         payload = client.agents.messages.preview_raw_payload(
-#             agent_id=temp_agent.id,
-#             request=LettaRequest(
-#                 messages=[
-#                     MessageCreate(
-#                         role="user",
-#                         content=[
-#                             TextContent(
-#                                 text="Hello",
-#                             )
-#                         ],
-#                     )
-#                 ],
-#             ),
-#         )
-#
-#         # Extract the system message
-#         assert isinstance(payload, dict)
-#         assert "messages" in payload
-#         assert len(payload["messages"]) > 0
-#
-#         system_message = payload["messages"][0]
-#         assert system_message["role"] == "system"
-#         system_content = system_message["content"]
-#
-#         # Check that the archive tags are included in the metadata
-#         assert "Available archival memory tags:" in system_content
-#
-#         # Check that all unique tags are present
-#         all_unique_tags = set(test_tags + ["multi_tag_1", "multi_tag_2"])
-#         for tag in all_unique_tags:
-#             assert tag in system_content, f"Tag '{tag}' not found in system prompt"
-#
-#         # Verify the tags are in the memory_metadata section
-#         assert "<memory_metadata>" in system_content
-#         assert "</memory_metadata>" in system_content
-#
-#         # Extract the metadata section to verify format
-#         metadata_start = system_content.index("<memory_metadata>")
-#         metadata_end = system_content.index("</memory_metadata>")
-#         metadata_section = system_content[metadata_start:metadata_end]
-#
-#         # Verify the tags line is properly formatted
-#         assert "- Available archival memory tags:" in metadata_section
-#
-#     finally:
-#         # Clean up the agent
-#         client.agents.delete(agent_id=temp_agent.id)
+def test_archive_tags_in_system_prompt(client: LettaSDKClient):
+    """Test that archive tags are correctly compiled into the system prompt."""
+    # Create a test agent
+    temp_agent = client.agents.create(
+        memory_blocks=[
+            CreateBlock(
+                label="human",
+                value="username: test_user",
+            ),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
+
+    try:
+        # Add passages with different tags to the agent's archive
+        test_tags = ["project_alpha", "meeting_notes", "research", "ideas", "todo_items"]
+
+        # Create passages with tags
+        for i, tag in enumerate(test_tags):
+            client.agents.passages.create(agent_id=temp_agent.id, text=f"Test passage {i} with tag {tag}", tags=[tag])
+
+        # Also create a passage with multiple tags
+        client.agents.passages.create(agent_id=temp_agent.id, text="Passage with multiple tags", tags=["multi_tag_1", "multi_tag_2"])
+
+        # Get the raw payload to check the system prompt
+        payload = client.agents.messages.preview_raw_payload(
+            agent_id=temp_agent.id,
+            request=LettaRequest(
+                messages=[
+                    MessageCreate(
+                        role="user",
+                        content=[
+                            TextContent(
+                                text="Hello",
+                            )
+                        ],
+                    )
+                ],
+            ),
+        )
+
+        # Extract the system message
+        assert isinstance(payload, dict)
+        assert "messages" in payload
+        assert len(payload["messages"]) > 0
+
+        system_message = payload["messages"][0]
+        assert system_message["role"] == "system"
+        system_content = system_message["content"]
+
+        # Check that the archive tags are included in the metadata
+        assert "Available archival memory tags:" in system_content
+
+        # Check that all unique tags are present
+        all_unique_tags = set(test_tags + ["multi_tag_1", "multi_tag_2"])
+        for tag in all_unique_tags:
+            assert tag in system_content, f"Tag '{tag}' not found in system prompt"
+
+        # Verify the tags are in the memory_metadata section
+        assert "<memory_metadata>" in system_content
+        assert "</memory_metadata>" in system_content
+
+        # Extract the metadata section to verify format
+        metadata_start = system_content.index("<memory_metadata>")
+        metadata_end = system_content.index("</memory_metadata>")
+        metadata_section = system_content[metadata_start:metadata_end]
+
+        # Verify the tags line is properly formatted
+        assert "- Available archival memory tags:" in metadata_section
+
+    finally:
+        # Clean up the agent
+        client.agents.delete(agent_id=temp_agent.id)
 
 
 def test_agent_tools_list(client: LettaSDKClient):
