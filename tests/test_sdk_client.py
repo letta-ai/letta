@@ -1212,7 +1212,7 @@ def test_preview_payload(client: LettaSDKClient):
             assert tool["function"]["strict"] is True
 
         assert payload["frequency_penalty"] == 1.0
-        assert payload["max_completion_tokens"] == 4096
+        assert payload["max_completion_tokens"] is None
         assert payload["temperature"] == 0.7
         assert payload["parallel_tool_calls"] is False
         assert payload["tool_choice"] == "required"

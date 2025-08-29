@@ -229,10 +229,12 @@ class GoogleVertexClient(LLMClientBase):
             "contents": contents,
             "config": {
                 "temperature": llm_config.temperature,
-                "max_output_tokens": llm_config.max_tokens,
                 "tools": formatted_tools,
             },
         }
+        # Make tokens is optional
+        if llm_config.max_tokens:
+            request_data["config"]["max_output_tokens"] = llm_config.max_tokens
 
         if len(tool_names) == 1 and settings.use_vertex_structured_outputs_experimental:
             request_data["config"]["response_mime_type"] = "application/json"
