@@ -7,10 +7,11 @@ import uuid
 import warnings
 from collections import OrderedDict
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from enum import Enum
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
@@ -65,13 +66,19 @@ def add_inner_thoughts_to_tool_call(
         raise e
 
 
-class BaseMessage(OrmMetadataBase):
-    __id_prefix__ = "message"
+class MessageCreateType(str, Enum):
+    message = "message"
+    approval = "approval"
 
 
-class MessageCreate(BaseModel):
+class MessageCreateBase(BaseModel):
+    type: MessageCreateType = Field(..., description="The message type to be created.")
+
+
+class MessageCreate(MessageCreateBase):
     """Request to create a message"""
 
+    type: Literal[MessageCreateType.message] = Field(default=MessageCreateType.message, description="The message type to be created.")
     # In the simplified format, only allow simple roles
     role: Literal[
         MessageRole.user,
@@ -95,6 +102,37 @@ class MessageCreate(BaseModel):
             if isinstance(data["content"], str):
                 data["content"] = [TextContent(text=data["content"])]
         return data
+
+
+class ApprovalCreate(MessageCreateBase):
+    """Input to approve or deny a tool call request"""
+
+    type: Literal[MessageCreateType.approval] = Field(default=MessageCreateType.approval, description="The message type to be created.")
+    approve: bool = Field(..., description="Whether the tool has been approved")
+    approval_request_id: str = Field(..., description="The message ID of the approval request")
+    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+
+
+MessageCreateUnion = Annotated[
+    Union[MessageCreate, ApprovalCreate],
+    Field(discriminator="type"),
+]
+
+
+def create_message_create_union_schema():
+    return {
+        "oneOf": [
+            {"$ref": "#/components/schemas/MessageCreate"},
+            {"$ref": "#/components/schemas/ApprovalCreate"},
+        ],
+        "discriminator": {
+            "propertyName": "type",
+            "mapping": {
+                "message": "#/components/schemas/MessageCreate",
+                "approval": "#/components/schemas/ApprovalCreate",
+            },
+        },
+    }
 
 
 class MessageUpdate(BaseModel):
@@ -123,6 +161,10 @@ class MessageUpdate(BaseModel):
             if isinstance(data["content"], str):
                 data["content"] = [TextContent(text=data["content"])]
         return data
+
+
+class BaseMessage(OrmMetadataBase):
+    __id_prefix__ = "message"
 
 
 class Message(BaseMessage):

@@ -40,7 +40,7 @@ from letta.schemas.letta_message_content import OmittedReasoningContent, Reasoni
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreateBase
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.step import StepProgression
@@ -164,7 +164,7 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step(
         self,
-        input_messages: list[MessageCreate],
+        input_messages: list[MessageCreateBase],
         max_steps: int = DEFAULT_MAX_STEPS,
         run_id: str | None = None,
         use_assistant_message: bool = True,
@@ -203,7 +203,7 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step_stream_no_tokens(
         self,
-        input_messages: list[MessageCreate],
+        input_messages: list[MessageCreateBase],
         max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,
@@ -501,7 +501,7 @@ class LettaAgent(BaseAgent):
     async def _step(
         self,
         agent_state: AgentState,
-        input_messages: list[MessageCreate],
+        input_messages: list[MessageCreateBase],
         max_steps: int = DEFAULT_MAX_STEPS,
         run_id: str | None = None,
         request_start_timestamp_ns: int | None = None,
@@ -807,7 +807,7 @@ class LettaAgent(BaseAgent):
     @trace_method
     async def step_stream(
         self,
-        input_messages: list[MessageCreate],
+        input_messages: list[MessageCreateBase],
         max_steps: int = DEFAULT_MAX_STEPS,
         use_assistant_message: bool = True,
         request_start_timestamp_ns: int | None = None,

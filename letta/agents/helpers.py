@@ -9,7 +9,7 @@ from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, MessageCreateBase
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -121,7 +121,7 @@ async def _prepare_in_context_messages_async(
 
 
 async def _prepare_in_context_messages_no_persist_async(
-    input_messages: List[MessageCreate],
+    input_messages: List[MessageCreateBase],
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,

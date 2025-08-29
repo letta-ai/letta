@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreateUnion
 
 
 class LettaRequest(BaseModel):
-    messages: List[MessageCreate] = Field(..., description="The messages to be sent to the agent.")
+    messages: List[MessageCreateUnion] = Field(..., description="The messages to be sent to the agent.")
     max_steps: int = Field(
         default=DEFAULT_MAX_STEPS,
         description="Maximum number of steps the agent should take to process the request.",
@@ -35,6 +35,16 @@ class LettaRequest(BaseModel):
         default=True,
         description="If set to True, enables reasoning before responses or tool calls from the agent.",
     )
+
+    @field_validator("messages", mode="before")
+    @classmethod
+    def add_default_type_to_messages(cls, v):
+        """Add default 'message' type for backwards compatibility with older versions of SDK clients that don't send it"""
+        if isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict) and "type" not in item:
+                    item["type"] = "message"
+        return v
 
 
 class LettaStreamingRequest(LettaRequest):

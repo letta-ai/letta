@@ -668,7 +668,7 @@ class AgentSerializationManager:
                 messages = []
                 for message_schema in agent_schema.messages:
                     # Convert MessageSchema back to Message, setting agent_id to new DB ID
-                    message_data = message_schema.model_dump(exclude={"id"})
+                    message_data = message_schema.model_dump(exclude={"id", "type"})
                     message_data["agent_id"] = agent_db_id  # Remap agent_id to new database ID
                     message_obj = Message(**message_data)
                     messages.append(message_obj)
