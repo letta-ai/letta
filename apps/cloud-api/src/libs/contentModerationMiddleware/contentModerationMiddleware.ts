@@ -37,11 +37,12 @@ export function contentModerationMiddleware(
   let message = '';
 
   body.data.messages.forEach((m) => {
-    let content = (m as zodTypes.MessageCreate).content
-    if (typeof content === 'string') {
-      message += content + ' ';
-    } else {
-      message += JSON.stringify(content) + ' ';
+    if ('content' in m) {
+      if (typeof m.content === 'string') {
+        message += m.content + ' ';
+      } else {
+        message += JSON.stringify(m.content) + ' ';
+      }
     }
   });
 
