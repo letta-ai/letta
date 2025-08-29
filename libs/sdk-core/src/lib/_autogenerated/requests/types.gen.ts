@@ -3108,7 +3108,7 @@ export type LettaStreamingRequest = {
    */
   enable_thinking?: string;
   /**
-   * Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).
+   * Flag to determine if individual tokens should be streamed, rather than streaming per step.
    */
   stream_tokens?: boolean;
   /**

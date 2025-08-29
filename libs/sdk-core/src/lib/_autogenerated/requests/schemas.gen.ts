@@ -8509,7 +8509,7 @@ export const $LettaStreamingRequest = {
       type: 'boolean',
       title: 'Stream Tokens',
       description:
-        'Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).',
+        'Flag to determine if individual tokens should be streamed, rather than streaming per step.',
       default: false,
     },
     include_pings: {
