@@ -95,10 +95,8 @@ class TurbopufferClient:
         organization_ids = []
         archive_ids = []
         created_ats = []
+        tags_arrays = []  # Store tags as arrays
         passages = []
-
-        # prepare tag columns
-        tag_columns = {tag: [] for tag in (tags or [])}
 
         for idx, (text, embedding) in enumerate(zip(text_chunks, embeddings)):
             passage_id = passage_ids[idx]
@@ -110,10 +108,7 @@ class TurbopufferClient:
             organization_ids.append(organization_id)
             archive_ids.append(archive_id)
             created_ats.append(timestamp)
-
-            # append tag values
-            for tag in tag_columns:
-                tag_columns[tag].append(True)
+            tags_arrays.append(tags or [])  # Store tags as array
 
             # Create PydanticPassage object
             passage = PydanticPassage(
@@ -123,6 +118,7 @@ class TurbopufferClient:
                 archive_id=archive_id,
                 created_at=timestamp,
                 metadata_={},
+                tags=tags or [],  # Include tags in the passage
                 embedding=embedding,
                 embedding_config=None,  # Will be set by caller if needed
             )
@@ -136,10 +132,8 @@ class TurbopufferClient:
             "organization_id": organization_ids,
             "archive_id": archive_ids,
             "created_at": created_ats,
+            "tags": tags_arrays,  # Add tags as array column
         }
-
-        # add tag columns if any
-        upsert_columns.update(tag_columns)
 
         try:
             # Use AsyncTurbopuffer as a context manager for proper resource cleanup
@@ -193,16 +187,21 @@ class TurbopufferClient:
         from turbopuffer import AsyncTurbopuffer
         from turbopuffer.types import QueryParam
 
-        # validate inputs based on search mode
-        if search_mode == "vector" and query_embedding is None:
-            raise ValueError("query_embedding is required for vector search mode")
-        if search_mode == "fts" and query_text is None:
-            raise ValueError("query_text is required for FTS search mode")
-        if search_mode == "hybrid":
-            if query_embedding is None or query_text is None:
-                raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
-        if search_mode not in ["vector", "fts", "hybrid"]:
-            raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', or 'hybrid'")
+        # Check if we should fallback to timestamp-based retrieval
+        if query_embedding is None and query_text is None:
+            # Fallback to retrieving most recent passages when no search query is provided
+            search_mode = "timestamp"
+        else:
+            # validate inputs based on search mode
+            if search_mode == "vector" and query_embedding is None:
+                raise ValueError("query_embedding is required for vector search mode")
+            if search_mode == "fts" and query_text is None:
+                raise ValueError("query_text is required for FTS search mode")
+            if search_mode == "hybrid":
+                if query_embedding is None or query_text is None:
+                    raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
+            if search_mode not in ["vector", "fts", "hybrid"]:
+                raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', or 'hybrid'")
 
         namespace_name = self._get_namespace_name(archive_id)
 
@@ -213,23 +212,38 @@ class TurbopufferClient:
                 # build tag filter conditions
                 tag_filter = None
                 if tags:
-                    tag_conditions = []
-                    for tag in tags:
-                        tag_conditions.append((tag, "Eq", True))
-
-                    if len(tag_conditions) == 1:
-                        tag_filter = tag_conditions[0]
-                    elif tag_match_mode == TagMatchMode.ALL:
-                        tag_filter = ("And", tag_conditions)
+                    if tag_match_mode == TagMatchMode.ALL:
+                        # For ALL mode, need to check each tag individually with Contains
+                        tag_conditions = []
+                        for tag in tags:
+                            tag_conditions.append(("tags", "Contains", tag))
+                        if len(tag_conditions) == 1:
+                            tag_filter = tag_conditions[0]
+                        else:
+                            tag_filter = ("And", tag_conditions)
                     else:  # tag_match_mode == TagMatchMode.ANY
-                        tag_filter = ("Or", tag_conditions)
+                        # For ANY mode, use ContainsAny to match any of the tags
+                        tag_filter = ("tags", "ContainsAny", tags)
 
-                if search_mode == "vector":
+                if search_mode == "timestamp":
+                    # Fallback: retrieve most recent passages by timestamp
+                    query_params = {
+                        "rank_by": ("created_at", "desc"),  # Order by created_at in descending order
+                        "top_k": top_k,
+                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
+                    }
+                    if tag_filter:
+                        query_params["filters"] = tag_filter
+
+                    result = await namespace.query(**query_params)
+                    return self._process_single_query_results(result, archive_id, tags)
+
+                elif search_mode == "vector":
                     # single vector search query
                     query_params = {
                         "rank_by": ("vector", "ANN", query_embedding),
                         "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
+                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
                     if tag_filter:
                         query_params["filters"] = tag_filter
@@ -242,7 +256,7 @@ class TurbopufferClient:
                     query_params = {
                         "rank_by": ("text", "BM25", query_text),
                         "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
+                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
                     if tag_filter:
                         query_params["filters"] = tag_filter
@@ -258,7 +272,7 @@ class TurbopufferClient:
                     vector_query = {
                         "rank_by": ("vector", "ANN", query_embedding),
                         "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
+                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
                     if tag_filter:
                         vector_query["filters"] = tag_filter
@@ -268,7 +282,7 @@ class TurbopufferClient:
                     fts_query = {
                         "rank_by": ("text", "BM25", query_text),
                         "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at"],
+                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
                     if tag_filter:
                         fts_query["filters"] = tag_filter
@@ -295,10 +309,11 @@ class TurbopufferClient:
         passages_with_scores = []
 
         for row in result.rows:
-            # Build metadata including any tag filters that were applied
+            # Extract tags from the result row
+            passage_tags = getattr(row, "tags", []) or []
+
+            # Build metadata
             metadata = {}
-            if tags:
-                metadata["applied_tags"] = tags
 
             # Create a passage with minimal fields - embeddings are not returned from Turbopuffer
             passage = PydanticPassage(
@@ -307,7 +322,8 @@ class TurbopufferClient:
                 organization_id=getattr(row, "organization_id", None),
                 archive_id=archive_id,  # use the archive_id from the query
                 created_at=getattr(row, "created_at", None),
-                metadata_=metadata,  # Include tag filters in metadata
+                metadata_=metadata,
+                tags=passage_tags,  # Set the actual tags from the passage
                 # Set required fields to empty/default values since we don't store embeddings
                 embedding=[],  # Empty embedding since we don't return it from Turbopuffer
                 embedding_config=None,  # No embedding config needed for retrieved passages

@@ -17,6 +17,7 @@ class PromptGenerator:
         timezone: str,
         previous_message_count: int = 0,
         archival_memory_size: Optional[int] = 0,
+        archive_tags: Optional[List[str]] = None,
     ) -> str:
         """
         Generate a memory metadata block for the agent's system prompt.
@@ -31,6 +32,7 @@ class PromptGenerator:
             timezone: The timezone to use for formatting timestamps (e.g., 'America/Los_Angeles')
             previous_message_count: Number of messages in recall memory (conversation history)
             archival_memory_size: Number of items in archival memory (long-term storage)
+            archive_tags: List of unique tags available in archival memory
 
         Returns:
             A formatted string containing the memory metadata block with XML-style tags
@@ -41,6 +43,7 @@ class PromptGenerator:
             - Memory blocks were last modified: 2024-01-15 09:00 AM PST
             - 42 previous messages between you and the user are stored in recall memory (use tools to access them)
             - 156 total memories you created are stored in archival memory (use tools to access them)
+            - Available archival memory tags: project_x, meeting_notes, research, ideas
             </memory_metadata>
         """
         # Put the timestamp in the local timezone (mimicking get_local_time())
@@ -59,6 +62,10 @@ class PromptGenerator:
             metadata_lines.append(
                 f"- {archival_memory_size} total memories you created are stored in archival memory (use tools to access them)"
             )
+
+        # Include archive tags if available
+        if archive_tags:
+            metadata_lines.append(f"- Available archival memory tags: {', '.join(archive_tags)}")
 
         metadata_lines.append("</memory_metadata>")
         memory_metadata_block = "\n".join(metadata_lines)
@@ -90,6 +97,7 @@ class PromptGenerator:
         template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
         previous_message_count: int = 0,
         archival_memory_size: int = 0,
+        archive_tags: Optional[List[str]] = None,
     ) -> str:
         """Prepare the final/full system message that will be fed into the LLM API
 
@@ -114,6 +122,7 @@ class PromptGenerator:
                 previous_message_count=previous_message_count,
                 archival_memory_size=archival_memory_size,
                 timezone=timezone,
+                archive_tags=archive_tags,
             )
 
             full_memory_string = memory_with_sources + "\n\n" + memory_metadata_string

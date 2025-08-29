@@ -147,6 +147,37 @@ class ArchiveManager:
             await session.commit()
 
     @enforce_types
+    async def get_default_archive_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser = None,
+    ) -> Optional[PydanticArchive]:
+        """Get the agent's default archive if it exists, return None otherwise."""
+        # First check if agent has any archives
+        from letta.services.agent_manager import AgentManager
+
+        agent_manager = AgentManager()
+
+        archive_ids = await agent_manager.get_agent_archive_ids_async(
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        if archive_ids:
+            # TODO: Remove this check once we support multiple archives per agent
+            if len(archive_ids) > 1:
+                raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported")
+            # Get the archive
+            archive = await self.get_archive_by_id_async(
+                archive_id=archive_ids[0],
+                actor=actor,
+            )
+            return archive
+
+        # No archive found, return None
+        return None
+
+    @enforce_types
     async def get_or_create_default_archive_for_agent_async(
         self,
         agent_id: str,
