@@ -11,6 +11,7 @@ from letta.schemas.tool_rule import (
     MaxCountPerStepToolRule,
     ParentToolRule,
     RequiredBeforeExitToolRule,
+    RequiresApprovalToolRule,
     TerminalToolRule,
     ToolRule,
 )
@@ -44,6 +45,9 @@ class ToolRulesSolver(BaseModel):
     required_before_exit_tool_rules: list[RequiredBeforeExitToolRule] = Field(
         default_factory=list, description="Tool rules that must be called before the agent can exit.", exclude=True
     )
+    requires_approval_tool_rules: list[RequiresApprovalToolRule] = Field(
+        default_factory=list, description="Tool rules that trigger an approval request for human-in-the-loop.", exclude=True
+    )
     tool_call_history: list[str] = Field(default_factory=list, description="History of tool calls, updated with each tool call.")
 
     def __init__(self, tool_rules: list[ToolRule] | None = None, **kwargs):
@@ -68,6 +72,8 @@ class ToolRulesSolver(BaseModel):
                     self.parent_tool_rules.append(rule)
                 elif isinstance(rule, RequiredBeforeExitToolRule):
                     self.required_before_exit_tool_rules.append(rule)
+                elif isinstance(rule, RequiresApprovalToolRule):
+                    self.requires_approval_tool_rules.append(rule)
 
     def register_tool_call(self, tool_name: str):
         """Update the internal state to track tool call history."""
@@ -116,6 +122,10 @@ class ToolRulesSolver(BaseModel):
     def is_continue_tool(self, tool_name: ToolName):
         """Check if the tool is defined as a continue tool in the tool rules."""
         return any(rule.tool_name == tool_name for rule in self.continue_tool_rules)
+
+    def is_requires_approval_tool(self, tool_name: ToolName):
+        """Check if the tool is defined as a requires-approval tool in the tool rules."""
+        return any(rule.tool_name == tool_name for rule in self.requires_approval_tool_rules)
 
     def has_required_tools_been_called(self, available_tools: set[ToolName]) -> bool:
         """Check if all required-before-exit tools have been called."""

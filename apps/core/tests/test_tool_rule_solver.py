@@ -9,6 +9,7 @@ from letta.schemas.tool_rule import (
     MaxCountPerStepToolRule,
     ParentToolRule,
     RequiredBeforeExitToolRule,
+    RequiresApprovalToolRule,
     TerminalToolRule,
 )
 
@@ -23,6 +24,7 @@ UNRECOGNIZED_TOOL = "unrecognized_tool"
 REQUIRED_TOOL_1 = "required_tool_1"
 REQUIRED_TOOL_2 = "required_tool_2"
 SAVE_TOOL = "save_tool"
+REQUIRES_APPROVAL_TOOL = "requires_approval_tool"
 
 
 def test_get_allowed_tool_names_with_init_rules():
@@ -53,6 +55,17 @@ def test_is_terminal_tool():
 
     assert solver.is_terminal_tool(END_TOOL) is True, "Should recognize 'end_tool' as a terminal tool"
     assert solver.is_terminal_tool(START_TOOL) is False, "Should not recognize 'start_tool' as a terminal tool"
+
+
+def test_is_requires_approval_tool():
+    init_rule = InitToolRule(tool_name=START_TOOL)
+    terminal_rule = TerminalToolRule(tool_name=END_TOOL)
+    requires_approval_tool = RequiresApprovalToolRule(tool_name=REQUIRES_APPROVAL_TOOL)
+    solver = ToolRulesSolver(tool_rules=[init_rule, terminal_rule, requires_approval_tool])
+
+    assert solver.is_requires_approval_tool(START_TOOL) is False, "Should not recognize 'start_tool' as a requires approval tool"
+    assert solver.is_requires_approval_tool(END_TOOL) is False, "Should not recognize 'end_tool' as a requires approval tool"
+    assert solver.is_requires_approval_tool(REQUIRES_APPROVAL_TOOL) is True, "Should recognize 'requires_approval_tool' as a terminal tool"
 
 
 def test_get_allowed_tool_names_no_matching_rule_error():
