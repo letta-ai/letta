@@ -1,1 +1,1 @@
-export const MAX_TOOLS_THRESHOLD = 15;
+export const MAX_TOOLS_THRESHOLD = 20;
