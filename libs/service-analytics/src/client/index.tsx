@@ -47,6 +47,9 @@ export function PHProvider({ children }: ProvidersProps) {
     posthog.init(environment.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host: environment.NEXT_PUBLIC_POSTHOG_HOST,
     });
+    posthog.register({
+      'platform_type': getPlatformType(),
+    })
   }, []);
 
   if (
@@ -99,8 +102,8 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
 ) {
   try {
     posthog.capture(eventName, {
-      platformType: getPlatformType(),
-      distinctId: window.identity?.userId,
+      'platform_type': getPlatformType(),
+      'distinct_id': window.identity?.userId,
       ...properties,
     });
   } catch (error) {
