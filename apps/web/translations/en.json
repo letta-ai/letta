@@ -333,7 +333,7 @@
       "nextStep": "Create a template"
     },
     "title": "Models",
-    "description": "View and manage your AI models on Letta Cloud"
+    "description": "View available AI models on Letta Cloud"
   },
   "pages/models/ModelDetailsOverlay": {
     "title": "Model details",
@@ -469,9 +469,9 @@
     }
   },
   "pages/models/LettaManagedModels": {
-    "title": "Available models",
+    "title": "Understanding requests",
     "manageModels": "Manage Model Visibility",
-    "description": "Browse our collection of available models on Letta Cloud. Standard and Premium models are applied towards your plan's request quota. Additional models are available by enabling usage-based billing.",
+    "description": "Standard and Premium models are applied towards your plan's request quota. Enable usage-based billing to use additional requests. Some models are only available via usage-based billing.",
     "columns": {
       "name": "Model",
       "brand": "Provider",
