@@ -493,7 +493,7 @@ async def modify_approval(
     Attach a tool to an agent.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    await server.agent_manager.toggle_approvals_async(
+    await server.agent_manager.modify_approvals_async(
         agent_id=agent_id, tool_name=tool_name, requires_approval=requires_approval, actor=actor
     )
     # TODO: Unfortunately we need this to preserve our current API behavior
