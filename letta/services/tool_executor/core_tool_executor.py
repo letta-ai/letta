@@ -1,5 +1,6 @@
 import math
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
+from zoneinfo import ZoneInfo
 
 from letta.constants import (
     CORE_MEMORY_LINE_NUMBER_WARNING,
@@ -9,6 +10,7 @@ from letta.constants import (
 )
 from letta.helpers.json_helpers import json_dumps
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import TagMatchMode
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -117,57 +119,78 @@ class LettaCoreToolExecutor(ToolExecutor):
         return results_str
 
     async def archival_memory_search(
-        self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0, start: Optional[int] = 0
+        self,
+        agent_state: AgentState,
+        actor: User,
+        query: str,
+        tags: Optional[list[str]] = None,
+        tag_match_mode: Literal["any", "all"] = "any",
+        top_k: Optional[int] = None,
     ) -> Optional[str]:
         """
         Search archival memory using semantic (embedding-based) search.
 
         Args:
-            query (str): String to search for.
-            page (Optional[int]): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).
-            start (Optional[int]): Starting index for the search results. Defaults to 0.
+            query (str): String to search for using semantic similarity.
+            tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
+            tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
+            top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
 
         Returns:
-            str: Query result string
+            str: Query result string containing matching passages with timestamps, content, and tags.
         """
-        if page is None or (isinstance(page, str) and page.lower().strip() == "none"):
-            page = 0
         try:
-            page = int(page)
-        except:
-            raise ValueError("'page' argument must be an integer")
+            # Convert string to TagMatchMode enum
+            tag_mode = TagMatchMode.ANY if tag_match_mode == "any" else TagMatchMode.ALL
 
-        count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-
-        try:
             # Get results using passage manager
+            limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
             all_results = await self.agent_manager.query_agent_passages_async(
                 actor=actor,
                 agent_id=agent_state.id,
                 query_text=query,
-                limit=count + start,  # Request enough results to handle offset
+                limit=limit,
                 embedding_config=agent_state.embedding_config,
                 embed_query=True,
+                tags=tags,
+                tag_match_mode=tag_mode,
             )
 
-            # Apply pagination
-            end = min(count + start, len(all_results))
-            paged_results = all_results[start:end]
+            # Format results to include tags with friendly timestamps
+            formatted_results = []
+            for result in all_results:
+                # Format timestamp in agent's timezone if available
+                timestamp = result.created_at
+                if timestamp and agent_state.timezone:
+                    try:
+                        # Convert to agent's timezone
+                        tz = ZoneInfo(agent_state.timezone)
+                        local_time = timestamp.astimezone(tz)
+                        # Format as ISO string with timezone
+                        formatted_timestamp = local_time.isoformat()
+                    except Exception:
+                        # Fallback to ISO format if timezone conversion fails
+                        formatted_timestamp = str(timestamp)
+                else:
+                    # Use ISO format if no timezone is set
+                    formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-            # Format results to match previous implementation
-            formatted_results = [{"timestamp": str(result.created_at), "content": result.text} for result in paged_results]
+                formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
 
             return formatted_results, len(formatted_results)
 
         except Exception as e:
             raise e
 
-    async def archival_memory_insert(self, agent_state: AgentState, actor: User, content: str) -> Optional[str]:
+    async def archival_memory_insert(
+        self, agent_state: AgentState, actor: User, content: str, tags: Optional[list[str]] = None
+    ) -> Optional[str]:
         """
         Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
 
         Args:
             content (str): Content to write to the memory. All unicode (including emojis) are supported.
+            tags (Optional[list[str]]): Optional list of tags to associate with this memory for better organization and filtering.
 
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
@@ -176,6 +199,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             agent_state=agent_state,
             text=content,
             actor=actor,
+            tags=tags,
         )
         await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
         return None
