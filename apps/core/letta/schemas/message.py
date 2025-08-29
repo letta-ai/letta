@@ -78,7 +78,9 @@ class MessageCreateBase(BaseModel):
 class MessageCreate(MessageCreateBase):
     """Request to create a message"""
 
-    type: Literal[MessageCreateType.message] = Field(default=MessageCreateType.message, description="The message type to be created.")
+    type: Optional[Literal[MessageCreateType.message]] = Field(
+        default=MessageCreateType.message, description="The message type to be created."
+    )
     # In the simplified format, only allow simple roles
     role: Literal[
         MessageRole.user,
@@ -113,26 +115,7 @@ class ApprovalCreate(MessageCreateBase):
     reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
 
 
-MessageCreateUnion = Annotated[
-    Union[MessageCreate, ApprovalCreate],
-    Field(discriminator="type"),
-]
-
-
-def create_message_create_union_schema():
-    return {
-        "oneOf": [
-            {"$ref": "#/components/schemas/MessageCreate"},
-            {"$ref": "#/components/schemas/ApprovalCreate"},
-        ],
-        "discriminator": {
-            "propertyName": "type",
-            "mapping": {
-                "message": "#/components/schemas/MessageCreate",
-                "approval": "#/components/schemas/ApprovalCreate",
-            },
-        },
-    }
+MessageCreateUnion = Union[MessageCreate, ApprovalCreate]
 
 
 class MessageUpdate(BaseModel):

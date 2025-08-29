@@ -19553,21 +19553,14 @@
         "properties": {
           "messages": {
             "items": {
-              "oneOf": [
+              "anyOf": [
                 {
                   "$ref": "#/components/schemas/MessageCreate"
                 },
                 {
                   "$ref": "#/components/schemas/ApprovalCreate"
                 }
-              ],
-              "discriminator": {
-                "propertyName": "type",
-                "mapping": {
-                  "approval": "#/components/schemas/ApprovalCreate",
-                  "message": "#/components/schemas/MessageCreate"
-                }
-              }
+              ]
             },
             "type": "array",
             "title": "Messages",
@@ -19653,21 +19646,14 @@
         "properties": {
           "messages": {
             "items": {
-              "oneOf": [
+              "anyOf": [
                 {
                   "$ref": "#/components/schemas/MessageCreate"
                 },
                 {
                   "$ref": "#/components/schemas/ApprovalCreate"
                 }
-              ],
-              "discriminator": {
-                "propertyName": "type",
-                "mapping": {
-                  "approval": "#/components/schemas/ApprovalCreate",
-                  "message": "#/components/schemas/MessageCreate"
-                }
-              }
+              ]
             },
             "type": "array",
             "title": "Messages",
@@ -19787,21 +19773,14 @@
         "properties": {
           "messages": {
             "items": {
-              "oneOf": [
+              "anyOf": [
                 {
                   "$ref": "#/components/schemas/MessageCreate"
                 },
                 {
                   "$ref": "#/components/schemas/ApprovalCreate"
                 }
-              ],
-              "discriminator": {
-                "propertyName": "type",
-                "mapping": {
-                  "approval": "#/components/schemas/ApprovalCreate",
-                  "message": "#/components/schemas/MessageCreate"
-                }
-              }
+              ]
             },
             "type": "array",
             "title": "Messages",
@@ -19942,21 +19921,14 @@
         "properties": {
           "messages": {
             "items": {
-              "oneOf": [
+              "anyOf": [
                 {
                   "$ref": "#/components/schemas/MessageCreate"
                 },
                 {
                   "$ref": "#/components/schemas/ApprovalCreate"
                 }
-              ],
-              "discriminator": {
-                "propertyName": "type",
-                "mapping": {
-                  "approval": "#/components/schemas/ApprovalCreate",
-                  "message": "#/components/schemas/MessageCreate"
-                }
-              }
+              ]
             },
             "type": "array",
             "title": "Messages",
@@ -20681,8 +20653,15 @@
       "MessageCreate": {
         "properties": {
           "type": {
-            "type": "string",
-            "const": "message",
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "message"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Type",
             "description": "The message type to be created.",
             "default": "message"
@@ -26798,8 +26777,15 @@
       "letta__schemas__agent_file__MessageSchema": {
         "properties": {
           "type": {
-            "type": "string",
-            "const": "message",
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "message"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Type",
             "description": "The message type to be created.",
             "default": "message"
@@ -27643,23 +27629,6 @@
             "assistant_message": "#/components/schemas/AssistantMessage",
             "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
             "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
-          }
-        }
-      },
-      "MessageCreateUnion": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/MessageCreate"
-          },
-          {
-            "$ref": "#/components/schemas/ApprovalCreate"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "message": "#/components/schemas/MessageCreate",
-            "approval": "#/components/schemas/ApprovalCreate"
           }
         }
       },

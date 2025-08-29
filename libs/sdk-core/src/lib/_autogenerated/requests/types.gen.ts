@@ -3501,7 +3501,7 @@ export type MessageCreate = {
   /**
    * The message type to be created.
    */
-  type?: 'message';
+  type?: 'message' | null;
   /**
    * The role of the participant.
    */
@@ -5920,7 +5920,7 @@ export type letta__schemas__agent_file__MessageSchema = {
   /**
    * The message type to be created.
    */
-  type?: 'message';
+  type?: 'message' | null;
   /**
    * The role of the participant.
    */
@@ -6167,8 +6167,6 @@ export type LettaMessageUnion =
   | AssistantMessage
   | ApprovalRequestMessage
   | ApprovalResponseMessage;
-
-export type MessageCreateUnion = MessageCreate | ApprovalCreate;
 
 export type LettaMessageContentUnion =
   | TextContent

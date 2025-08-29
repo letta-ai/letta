@@ -39,11 +39,18 @@ class LettaRequest(BaseModel):
     @field_validator("messages", mode="before")
     @classmethod
     def add_default_type_to_messages(cls, v):
-        """Add default 'message' type for backwards compatibility with older versions of SDK clients that don't send it"""
+        """Handle union without discriminator - default to 'message' type if not specified"""
         if isinstance(v, list):
             for item in v:
-                if isinstance(item, dict) and "type" not in item:
-                    item["type"] = "message"
+                if isinstance(item, dict):
+                    # If type is not present, determine based on fields
+                    if "type" not in item:
+                        # If it has approval-specific fields, it's an approval
+                        if "approval_request_id" in item or "approve" in item:
+                            item["type"] = "approval"
+                        else:
+                            # Default to message
+                            item["type"] = "message"
         return v
 
 

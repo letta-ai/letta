@@ -8350,7 +8350,7 @@ export const $LettaAsyncRequest = {
   properties: {
     messages: {
       items: {
-        oneOf: [
+        anyOf: [
           {
             $ref: '#/components/schemas/MessageCreate',
           },
@@ -8358,13 +8358,6 @@ export const $LettaAsyncRequest = {
             $ref: '#/components/schemas/ApprovalCreate',
           },
         ],
-        discriminator: {
-          propertyName: 'type',
-          mapping: {
-            approval: '#/components/schemas/ApprovalCreate',
-            message: '#/components/schemas/MessageCreate',
-          },
-        },
       },
       type: 'array',
       title: 'Messages',
@@ -8457,7 +8450,7 @@ export const $LettaBatchRequest = {
   properties: {
     messages: {
       items: {
-        oneOf: [
+        anyOf: [
           {
             $ref: '#/components/schemas/MessageCreate',
           },
@@ -8465,13 +8458,6 @@ export const $LettaBatchRequest = {
             $ref: '#/components/schemas/ApprovalCreate',
           },
         ],
-        discriminator: {
-          propertyName: 'type',
-          mapping: {
-            approval: '#/components/schemas/ApprovalCreate',
-            message: '#/components/schemas/MessageCreate',
-          },
-        },
       },
       type: 'array',
       title: 'Messages',
@@ -8600,7 +8586,7 @@ export const $LettaRequest = {
   properties: {
     messages: {
       items: {
-        oneOf: [
+        anyOf: [
           {
             $ref: '#/components/schemas/MessageCreate',
           },
@@ -8608,13 +8594,6 @@ export const $LettaRequest = {
             $ref: '#/components/schemas/ApprovalCreate',
           },
         ],
-        discriminator: {
-          propertyName: 'type',
-          mapping: {
-            approval: '#/components/schemas/ApprovalCreate',
-            message: '#/components/schemas/MessageCreate',
-          },
-        },
       },
       type: 'array',
       title: 'Messages',
@@ -8773,7 +8752,7 @@ export const $LettaStreamingRequest = {
   properties: {
     messages: {
       items: {
-        oneOf: [
+        anyOf: [
           {
             $ref: '#/components/schemas/MessageCreate',
           },
@@ -8781,13 +8760,6 @@ export const $LettaStreamingRequest = {
             $ref: '#/components/schemas/ApprovalCreate',
           },
         ],
-        discriminator: {
-          propertyName: 'type',
-          mapping: {
-            approval: '#/components/schemas/ApprovalCreate',
-            message: '#/components/schemas/MessageCreate',
-          },
-        },
       },
       type: 'array',
       title: 'Messages',
@@ -9582,8 +9554,15 @@ t`,
 export const $MessageCreate = {
   properties: {
     type: {
-      type: 'string',
-      const: 'message',
+      anyOf: [
+        {
+          type: 'string',
+          const: 'message',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Type',
       description: 'The message type to be created.',
       default: 'message',
@@ -16137,8 +16116,15 @@ export const $letta__schemas__agent_file__AgentSchema = {
 export const $letta__schemas__agent_file__MessageSchema = {
   properties: {
     type: {
-      type: 'string',
-      const: 'message',
+      anyOf: [
+        {
+          type: 'string',
+          const: 'message',
+        },
+        {
+          type: 'null',
+        },
+      ],
       title: 'Type',
       description: 'The message type to be created.',
       default: 'message',
@@ -17003,24 +16989,6 @@ export const $LettaMessageUnion = {
       assistant_message: '#/components/schemas/AssistantMessage',
       approval_request_message: '#/components/schemas/ApprovalRequestMessage',
       approval_response_message: '#/components/schemas/ApprovalResponseMessage',
-    },
-  },
-} as const;
-
-export const $MessageCreateUnion = {
-  oneOf: [
-    {
-      $ref: '#/components/schemas/MessageCreate',
-    },
-    {
-      $ref: '#/components/schemas/ApprovalCreate',
-    },
-  ],
-  discriminator: {
-    propertyName: 'type',
-    mapping: {
-      message: '#/components/schemas/MessageCreate',
-      approval: '#/components/schemas/ApprovalCreate',
     },
   },
 } as const;
