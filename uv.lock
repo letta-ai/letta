@@ -2319,7 +2319,7 @@ wheels = [
 
 [[package]]
 name = "letta"
-version = "0.11.6"
+version = "0.11.7"
 source = { editable = "." }
 dependencies = [
     { name = "aiomultiprocess" },
