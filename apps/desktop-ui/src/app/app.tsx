@@ -5,6 +5,7 @@ import {
   useLocation,
   Outlet,
   useNavigate,
+  useParams,
 } from 'react-router-dom';
 import { AppHeader } from './AppHeader/AppHeader';
 import { Agents } from './pages/Agents/Agents';
@@ -12,6 +13,7 @@ import {
   Button,
   CogIcon,
   CommunicationsIcon,
+  DatabaseIcon,
   HStack,
   IdentitiesIcon,
   LettaInvaderIcon,
@@ -30,12 +32,26 @@ import { NotConnectedOverlay } from './pages/shared/NotConnectedOverlay/NotConne
 import { ServerStatus } from './pages/ServerStatus/ServerStatus';
 import { SetupProvider } from './pages/SetupProvider/SetupProvider';
 import { Settings } from './pages/Settings/Settings';
-import { IdentitiesTable } from '@letta-cloud/ui-ade-components';
+import {
+  IdentitiesTable,
+  DataSourceDetailTable,
+  DataSourcesList,
+} from '@letta-cloud/ui-ade-components';
 import { useDesktopConfig } from './hooks/useDesktopConfig/useDesktopConfig';
+
+function DataSourceDetailTableWrapper() {
+  const { dataSourceId } = useParams<{ dataSourceId: string }>();
+
+  if (!dataSourceId) {
+    return <div>Data source not found</div>;
+  }
+
+  return <DataSourceDetailTable dataSourceId={dataSourceId} isDesktop={true} />;
+}
 
 function Sidebar() {
   const t = useTranslations('App');
-  const { desktopConfig: _desktopConfig } = useDesktopConfig();
+  const { desktopConfig } = useDesktopConfig();
   const location = useLocation();
 
   return (
@@ -69,16 +85,28 @@ function Sidebar() {
           tooltipPlacement="right"
         ></Button>
       </Link>
-      <Link to="/dashboard/server-status">
+      <Link to="/dashboard/data-sources">
         <Button
           hideLabel
-          active={location.pathname === '/dashboard/server-status'}
-          preIcon={<TerminalIcon />}
+          active={location.pathname === '/dashboard/data-sources'}
+          preIcon={<DatabaseIcon />}
           color="tertiary"
-          label={t('Sidebar.serverStatus')}
+          label={t('Sidebar.dataSources')}
           tooltipPlacement="right"
         ></Button>
       </Link>
+      {desktopConfig && desktopConfig.databaseConfig.type !== 'local' && (
+        <Link to="/dashboard/server-status">
+          <Button
+            hideLabel
+            active={location.pathname === '/dashboard/server-status'}
+            preIcon={<TerminalIcon />}
+            color="tertiary"
+            label={t('Sidebar.serverStatus')}
+            tooltipPlacement="right"
+          ></Button>
+        </Link>
+      )}
       <Link to="/dashboard/integrations">
         <Button
           hideLabel
@@ -137,6 +165,10 @@ export function App() {
     }
   }, [navigate]);
 
+  function handleDataSourceNavigate(dataSourceId: string) {
+    navigate(`/dashboard/data-sources/${dataSourceId}`);
+  }
+
   return (
     <SetupProvider>
       <Routes>
@@ -164,6 +196,25 @@ export function App() {
             element={
               <NotConnectedOverlay>
                 <IdentitiesTable isDesktop />
+              </NotConnectedOverlay>
+            }
+          />
+          <Route
+            path="/dashboard/data-sources"
+            element={
+              <NotConnectedOverlay>
+                <DataSourcesList
+                  isDesktop={true}
+                  onNavigate={handleDataSourceNavigate}
+                />
+              </NotConnectedOverlay>
+            }
+          />
+          <Route
+            path="/dashboard/data-sources/:dataSourceId"
+            element={
+              <NotConnectedOverlay>
+                <DataSourceDetailTableWrapper />
               </NotConnectedOverlay>
             }
           />

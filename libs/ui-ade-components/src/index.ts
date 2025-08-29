@@ -44,7 +44,8 @@ export * from './lib/hooks/useQueryIdenities/useQueryIdentities';
 export * from './lib/OnboardingAsideFocus/OnboardingAsideFocus';
 export * from './lib/OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
 export * from './lib/hooks/useCurrentTemplateSnapshot/useCurrentTemplateSnapshot';
-
 export * from './lib/constants'
 export * from './lib/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal'
+export * from './lib/DataSourceDetailTable/DataSourceDetailTable';
 export * from './lib/hooks/useCurrentTemplate/useCurrentTemplate'
+export * from './lib/DataSourcesList/DataSourcesList';

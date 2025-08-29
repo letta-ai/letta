@@ -325,10 +325,10 @@ export function FileView(props: FileViewProps) {
         <Typography fullWidth overflow="ellipsis" noWrap variant="body3">
           {removeFileNamePrefix(file_name)}
         </Typography>
-        <FileStatus file={file} />
+        <FileStatus file={data || file} />
       </HStack>
       <HStack>
-        <FileViewFooter file={file} />
+        <FileViewFooter file={data || file} />
       </HStack>
     </VStack>
   );

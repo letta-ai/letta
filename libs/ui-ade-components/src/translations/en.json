@@ -2732,5 +2732,78 @@
     "placeholder": "Search...",
     "label": "Search",
     "closeLabel": "Close search"
+  },
+  "DataSourcesList": {
+    "title": "Filesystem",
+    "searchInput": {
+      "placeholder": "Search folders"
+    },
+    "CreateDataSourceDialog": {
+      "errors": {
+        "default": "There was an error creating the folder, please try again or contact support.",
+        "overage": "You have reached the maximum number of folders for your plan, please <link>upgrade your plan</link> to create more folders."
+      },
+      "title": "Create a new folder",
+      "trigger": "Create folder",
+      "name": {
+        "label": "Folder name",
+        "placeholder": "my-folder-name"
+      },
+      "instructions": {
+        "label": "Instructions",
+        "placeholder": "my-folder-instructions"
+      },
+      "createButton": "Create folder"
+    },
+    "dataSourcesList": {
+      "loadingMessage": "Loading data sources...",
+      "noDataSources": "You have no folders, create one below",
+      "noSearchResults": "We couldn't find any folders matching your search",
+      "dataSourceItem": {
+        "createdAt": "Created at {date}",
+        "noCreatedAt": "No creation date",
+        "attachedAgents": "Attached agents",
+        "noAttachedAgents": "No agents attached",
+        "agentCount": {
+          "single": "{count} agent",
+          "plural": "{count} agents"
+        }
+      }
+    }
+  },
+  "DataSourceDetailTable": {
+    "menuLabel": "Options",
+    "title": "Source files",
+    "filesSubtitle": "Files",
+    "emptyMessage": "This source has no files",
+    "loading": "Loading files",
+    "delete": "Delete folder",
+    "editInstructions": "Edit instructions",
+    "rename": "Rename folder",
+    "error": "There was an error loading files, please try again or contact support.",
+    "actions": "Actions",
+    "deleteFile": "Delete file",
+    "table": {
+      "columns": {
+        "name": "Name",
+        "fileSize": "Size",
+        "lastModified": "Last modified"
+      }
+    },
+    "fileContent": {
+      "loading": "Loading content...",
+      "noContent": "No file content available"
+    },
+    "uploadDialog": {
+      "title": "Upload File",
+      "confirmText": "Upload",
+      "triggerLabel": "Upload File"
+    },
+    "fileType": {
+      "defaultType": "Text",
+      "untitled": "Untitled"
+    },
+    "viewButton": "View",
+    "returnButtonText": "Return to all folders"
   }
 }

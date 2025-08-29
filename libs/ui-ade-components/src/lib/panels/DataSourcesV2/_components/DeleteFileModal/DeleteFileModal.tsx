@@ -14,10 +14,11 @@ export interface DeleteFileModalProps {
   fileId: string;
   fileName: string;
   trigger: React.ReactNode;
+  limit?: number;
 }
 
 export function DeleteFileModal(props: DeleteFileModalProps) {
-  const { sourceId, fileId, trigger, fileName } = props;
+  const { sourceId, fileId, trigger, fileName, limit = DEFAULT_FILE_LIMIT } = props;
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = React.useState(false);
   const t = useTranslations('ADE/EditDataSourcesPanel.DeleteFileModal');
@@ -28,7 +29,7 @@ export function DeleteFileModal(props: DeleteFileModalProps) {
         {
           queryKey: UseSourcesServiceListSourceFilesKeyFn({
             sourceId,
-            limit: DEFAULT_FILE_LIMIT,
+            limit,
           }),
           exact: false,
         },

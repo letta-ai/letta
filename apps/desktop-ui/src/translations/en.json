@@ -262,6 +262,7 @@
       "settings": "Settings",
       "agents": "Agents",
       "identities": "Identities",
+      "dataSources": "Filesystem",
       "integrations": "Integrations",
       "serverStatus": "Server logs",
       "globalTools": "Tools"
