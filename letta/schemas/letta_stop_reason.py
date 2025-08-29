@@ -15,6 +15,7 @@ class StopReasonType(str, Enum):
     no_tool_call = "no_tool_call"
     tool_rule = "tool_rule"
     cancelled = "cancelled"
+    requires_approval = "requires_approval"
 
     @property
     def run_status(self) -> JobStatus:
@@ -22,6 +23,7 @@ class StopReasonType(str, Enum):
             StopReasonType.end_turn,
             StopReasonType.max_steps,
             StopReasonType.tool_rule,
+            StopReasonType.requires_approval,
         ):
             return JobStatus.completed
         elif self in (

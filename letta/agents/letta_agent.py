@@ -48,7 +48,7 @@ from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_letta_messages_from_llm_response
+from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
@@ -1543,78 +1543,97 @@ class LettaAgent(BaseAgent):
             request_heartbeat=request_heartbeat,
         )
 
-        # 2.  Execute the tool (or synthesize an error result if disallowed)
-        tool_rule_violated = tool_call_name not in valid_tool_names
-        if tool_rule_violated:
-            tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
-        else:
-            # Track tool execution time
-            tool_start_time = get_utc_timestamp_ns()
-            tool_execution_result = await self._execute_tool(
-                tool_name=tool_call_name,
-                tool_args=tool_args,
-                agent_state=agent_state,
-                agent_step_span=agent_step_span,
+        if tool_rules_solver.is_requires_approval_tool(tool_call_name):
+            approval_message = create_approval_request_message_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=tool_call_name,
+                function_arguments=tool_args,
+                tool_call_id=tool_call_id,
+                actor=self.actor,
+                continue_stepping=request_heartbeat,
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
             )
-            tool_end_time = get_utc_timestamp_ns()
+            messages_to_persist = (initial_messages or []) + [approval_message]
+            continue_stepping = False
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+        else:
+            # 2.  Execute the tool (or synthesize an error result if disallowed)
+            tool_rule_violated = tool_call_name not in valid_tool_names
+            if tool_rule_violated:
+                tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
+            else:
+                # Track tool execution time
+                tool_start_time = get_utc_timestamp_ns()
+                tool_execution_result = await self._execute_tool(
+                    tool_name=tool_call_name,
+                    tool_args=tool_args,
+                    agent_state=agent_state,
+                    agent_step_span=agent_step_span,
+                    step_id=step_id,
+                )
+                tool_end_time = get_utc_timestamp_ns()
 
-            # Store tool execution time in metrics
-            step_metrics.tool_execution_ns = tool_end_time - tool_start_time
+                # Store tool execution time in metrics
+                step_metrics.tool_execution_ns = tool_end_time - tool_start_time
 
-        log_telemetry(
-            self.logger, "_handle_ai_response execute tool finish", tool_execution_result=tool_execution_result, tool_call_id=tool_call_id
-        )
+            log_telemetry(
+                self.logger,
+                "_handle_ai_response execute tool finish",
+                tool_execution_result=tool_execution_result,
+                tool_call_id=tool_call_id,
+            )
 
-        # 3.  Prepare the function-response payload
-        truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
-        return_char_limit = next(
-            (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
-            None,
-        )
-        function_response_string = validate_function_response(
-            tool_execution_result.func_return,
-            return_char_limit=return_char_limit,
-            truncate=truncate,
-        )
-        self.last_function_response = package_function_response(
-            was_success=tool_execution_result.success_flag,
-            response_string=function_response_string,
-            timezone=agent_state.timezone,
-        )
+            # 3.  Prepare the function-response payload
+            truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
+            return_char_limit = next(
+                (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
+                None,
+            )
+            function_response_string = validate_function_response(
+                tool_execution_result.func_return,
+                return_char_limit=return_char_limit,
+                truncate=truncate,
+            )
+            self.last_function_response = package_function_response(
+                was_success=tool_execution_result.success_flag,
+                response_string=function_response_string,
+                timezone=agent_state.timezone,
+            )
 
-        # 4.  Decide whether to keep stepping  (<<< focal section simplified)
-        continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
-            agent_state=agent_state,
-            request_heartbeat=request_heartbeat,
-            tool_call_name=tool_call_name,
-            tool_rule_violated=tool_rule_violated,
-            tool_rules_solver=tool_rules_solver,
-            is_final_step=is_final_step,
-        )
+            # 4.  Decide whether to keep stepping  (focal section simplified)
+            continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
+                agent_state=agent_state,
+                request_heartbeat=request_heartbeat,
+                tool_call_name=tool_call_name,
+                tool_rule_violated=tool_rule_violated,
+                tool_rules_solver=tool_rules_solver,
+                is_final_step=is_final_step,
+            )
 
-        # 5.  Create messages (step was already created at the beginning)
-        tool_call_messages = create_letta_messages_from_llm_response(
-            agent_id=agent_state.id,
-            model=agent_state.llm_config.model,
-            function_name=tool_call_name,
-            function_arguments=tool_args,
-            tool_execution_result=tool_execution_result,
-            tool_call_id=tool_call_id,
-            function_call_success=tool_execution_result.success_flag,
-            function_response=function_response_string,
-            timezone=agent_state.timezone,
-            actor=self.actor,
-            continue_stepping=continue_stepping,
-            heartbeat_reason=heartbeat_reason,
-            reasoning_content=reasoning_content,
-            pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            step_id=step_id,
-        )
+            # 5.  Create messages (step was already created at the beginning)
+            tool_call_messages = create_letta_messages_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=tool_call_name,
+                function_arguments=tool_args,
+                tool_execution_result=tool_execution_result,
+                tool_call_id=tool_call_id,
+                function_call_success=tool_execution_result.success_flag,
+                function_response=function_response_string,
+                timezone=agent_state.timezone,
+                actor=self.actor,
+                continue_stepping=continue_stepping,
+                heartbeat_reason=heartbeat_reason,
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+            )
+            messages_to_persist = (initial_messages or []) + tool_call_messages
 
-        persisted_messages = await self.message_manager.create_many_messages_async(
-            (initial_messages or []) + tool_call_messages, actor=self.actor
-        )
+        persisted_messages = await self.message_manager.create_many_messages_async(messages_to_persist, actor=self.actor)
 
         if run_id:
             await self.job_manager.add_messages_to_job_async(

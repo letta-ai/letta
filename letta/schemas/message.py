@@ -20,6 +20,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
+    ApprovalRequestMessage,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
@@ -204,7 +205,7 @@ class Message(BaseMessage):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        roles = ["system", "assistant", "user", "tool"]
+        roles = ["system", "assistant", "user", "tool", "approval"]
         assert v in roles, f"Role must be one of {roles}"
         return v
 
@@ -275,8 +276,8 @@ class Message(BaseMessage):
         include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
+        messages = []
         if self.role == MessageRole.assistant:
-            messages = []
             if self.content:
                 messages.extend(self._convert_reasoning_messages())
             if self.tool_calls is not None:
@@ -289,11 +290,19 @@ class Message(BaseMessage):
                     ),
                 )
         elif self.role == MessageRole.tool:
-            messages = [self._convert_tool_return_message()]
+            messages.append(self._convert_tool_return_message())
         elif self.role == MessageRole.user:
-            messages = [self._convert_user_message()]
+            messages.append(self._convert_user_message())
         elif self.role == MessageRole.system:
-            messages = [self._convert_system_message()]
+            messages.append(self._convert_system_message())
+        elif self.role == MessageRole.approval:
+            if self.content:
+                messages.extend(self._convert_reasoning_messages())
+            if self.tool_calls is not None:
+                tool_calls = self._convert_tool_call_messages()
+                assert len(tool_calls) == 1
+                approval_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
+                messages.append(approval_message)
         else:
             raise ValueError(f"Unknown role: {self.role}")
 
