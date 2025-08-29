@@ -2774,6 +2774,150 @@ export const ApprovalCreate = z.object({
     .optional(),
 });
 
+export type ToolCall = z.infer<typeof ToolCall>;
+export const ToolCall = z.object({
+  name: z.string(),
+  arguments: z.string(),
+  tool_call_id: z.string(),
+});
+
+export type ApprovalRequestMessage = z.infer<typeof ApprovalRequestMessage>;
+export const ApprovalRequestMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  step_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_err: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  run_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_call: ToolCall,
+});
+
+export type ApprovalResponseMessage = z.infer<typeof ApprovalResponseMessage>;
+export const ApprovalResponseMessage = z.object({
+  id: z.string(),
+  date: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  message_type: z.union([z.string(), z.undefined()]).optional(),
+  otid: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  sender_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  step_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_err: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  seq_id: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  run_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  approve: z.boolean(),
+  approval_request_id: z.string(),
+  reason: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type LettaAssistantMessageContentUnion = z.infer<
   typeof LettaAssistantMessageContentUnion
 >;
@@ -6305,13 +6449,6 @@ export const ReasoningMessage = z.object({
     .optional(),
 });
 
-export type ToolCall = z.infer<typeof ToolCall>;
-export const ToolCall = z.object({
-  name: z.string(),
-  arguments: z.string(),
-  tool_call_id: z.string(),
-});
-
 export type ToolCallDelta = z.infer<typeof ToolCallDelta>;
 export const ToolCallDelta = z.object({
   name: z
@@ -6484,6 +6621,8 @@ export const LettaMessageUnion = z.union([
   ToolCallMessage,
   ToolReturnMessage,
   AssistantMessage,
+  ApprovalRequestMessage,
+  ApprovalResponseMessage,
 ]);
 
 export type StopReasonType = z.infer<typeof StopReasonType>;
@@ -10107,6 +10246,8 @@ export const patch_Modify_message = {
     ToolCallMessage,
     ToolReturnMessage,
     AssistantMessage,
+    ApprovalRequestMessage,
+    ApprovalResponseMessage,
   ]),
 };
 
@@ -10493,6 +10634,8 @@ export const patch_Modify_group_message = {
     ToolCallMessage,
     ToolReturnMessage,
     AssistantMessage,
+    ApprovalRequestMessage,
+    ApprovalResponseMessage,
   ]),
 };
 
