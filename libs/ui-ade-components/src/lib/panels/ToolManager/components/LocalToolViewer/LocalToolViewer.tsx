@@ -4,6 +4,7 @@ import {
   type Tool,
   type ToolJSONSchema,
   type ToolUpdate,
+  useToolsServiceGenerateTool,
   useToolsServiceGenerateJsonSchema,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
@@ -471,29 +472,97 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     };
   }, [setJsonSchemaString]);
 
-  const { mutate, isPending, error, reset } =
+  const { data: useLLMGeneration } = useFeatureFlag('LLM_TOOL_SCHEMA_GENERATION');
+
+  const { mutate: mutateLLM, isPending: isPendingLLM, error: errorLLM, reset: resetLLM } =
+    useToolsServiceGenerateTool();
+
+  const { mutate: mutateClassic, isPending: isPendingClassic, error: errorClassic, reset: resetClassic } =
     useToolsServiceGenerateJsonSchema();
 
-  const alignJSONSchemaWithTool = useCallback(() => {
-    mutate(
-      {
-        requestBody: {
-          code: stagedTool.source_code || '',
-        },
-      },
-      {
-        onSuccess: (response) => {
-          setStagedTool((prev) => ({
-            ...prev,
-            json_schema: response,
-          }));
+  const isPending = useLLMGeneration ? isPendingLLM : isPendingClassic;
+  const error = useLLMGeneration ? errorLLM : errorClassic;
+  const reset = useLLMGeneration ? resetLLM : resetClassic;
 
-          setJsonSchemaString(JSON.stringify(response, null, 2));
-          setParsingError(null);
+  const alignJSONSchemaWithTool = useCallback(() => {
+    if (useLLMGeneration) {
+      const prompt = `You are updating ONLY the JSON schema for this tool. Do NOT modify the source code at all - return it exactly as provided.
+
+Your task is to generate a proper JSON schema that accurately describes the function's parameters and return type.
+
+The schema MUST follow this exact OpenAPI 3.0 structure:
+{
+  "name": "function_name",
+  "description": "Clear description of what the function does",
+  "parameters": {
+    "properties": {
+      "param_name": {
+        "type": "string|number|boolean|array|object",
+        "description": "Description of this parameter",
+        "enum": [...] // optional, for specific allowed values
+        "items": {...} // required if type is array
+      }
+    },
+    "required": ["list", "of", "required", "params"]
+  }
+}
+
+Important requirements:
+- Use the exact function name from the code
+- Provide clear, helpful descriptions for the function and each parameter
+- Correctly identify parameter types from Python type hints
+- Mark all non-optional parameters as required
+- For array types, include the "items" property to specify the array element type
+- For object types, include nested "properties"
+- Include "enum" arrays for parameters with specific allowed values
+- Follow OpenAPI 3.0 schema standards
+
+Remember: Return the source code EXACTLY as provided, only update the JSON schema.`;
+
+      mutateLLM(
+        {
+          requestBody: {
+            tool_name: tool.name || '',
+            starter_code: stagedTool.source_code || '',
+            validation_errors: [],
+            prompt: prompt.trim(),
+          },
         },
-      },
-    );
-  }, [mutate, stagedTool.source_code, setStagedTool, setJsonSchemaString]);
+        {
+          onSuccess: (response) => {
+            if (response.tool.json_schema) {
+              setStagedTool((prev) => ({
+                ...prev,
+                json_schema: response.tool.json_schema,
+              }));
+
+              setJsonSchemaString(JSON.stringify(response.tool.json_schema, null, 2));
+              setParsingError(null);
+            }
+          },
+        },
+      );
+    } else {
+      mutateClassic(
+        {
+          requestBody: {
+            code: stagedTool.source_code || '',
+          },
+        },
+        {
+          onSuccess: (response) => {
+            setStagedTool((prev) => ({
+              ...prev,
+              json_schema: response,
+            }));
+
+            setJsonSchemaString(JSON.stringify(response, null, 2));
+            setParsingError(null);
+          },
+        },
+      );
+    }
+  }, [useLLMGeneration, mutateLLM, mutateClassic, stagedTool.source_code, setStagedTool, setJsonSchemaString, tool.name]);
 
   const errorMessage = useMemo(() => {
     if (parsingError) {

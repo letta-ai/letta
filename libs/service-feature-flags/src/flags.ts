@@ -152,6 +152,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  LLM_TOOL_SCHEMA_GENERATION: {
+    description: 'LLM tool schema generation',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
 } satisfies Record<string, FlagProperties>;
 
 export type Flag = keyof typeof featureFlags;
