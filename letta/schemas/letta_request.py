@@ -40,7 +40,7 @@ class LettaRequest(BaseModel):
 class LettaStreamingRequest(LettaRequest):
     stream_tokens: bool = Field(
         default=False,
-        description="Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
+        description="Flag to determine if individual tokens should be streamed, rather than streaming per step.",
     )
     include_pings: bool = Field(
         default=False,
