@@ -18,7 +18,6 @@ import {
   HistoryIcon,
   InfoIcon,
   Popover,
-  Tooltip,
   Typography,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
@@ -34,12 +33,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../hooks';
-import { useToolArguments } from '../LocalToolViewer/ToolArgumentsContext';
-import { pythonCodeParser } from '@letta-cloud/utils-shared';
-import { useCurrentTool } from '../LocalToolViewer/LocalToolViewer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useDebouncedValue } from '@mantine/hooks';
-import { RESTRICTED_FN_PROPS } from '../../constants';
 
 interface ArgumentEditorProps {
   defaultArguments: ResizableKeyValueEditorDefinition[];
@@ -51,75 +45,19 @@ interface ArgumentEditorProps {
 
 function ArgumentEditor(props: ArgumentEditorProps) {
   const { defaultArguments, stagedArguments, setStagedArguments } = props;
-  const tool = useCurrentTool();
-  const { stagedTool } = useStagedCode(tool);
-
-  const [debouncedStagedTool] = useDebouncedValue(stagedTool, 500);
-
-  const pythonMetadata = useMemo(() => {
-    return pythonCodeParser(debouncedStagedTool.source_code || '');
-  }, [debouncedStagedTool.source_code]);
-
-  // TODO (cliandy): this needs to be updated to handle multiple functions
-  const lastFunction = useMemo(() => {
-    if (!pythonMetadata || pythonMetadata.length === 0) {
-      return null;
-    }
-    // the last function is the main function in our code
-    return pythonMetadata[pythonMetadata.length - 1];
-  }, [pythonMetadata]);
-
-  const t = useTranslations('ToolsEditor/ToolsSimulator');
-
-  useEffect(() => {
-    // if the keys in defaultArguments change, update the stagedArguments with new or removed keys
-
-    const existingKeysSet = new Set(stagedArguments.map((arg) => arg.key));
-
-    if (defaultArguments.some((arg) => !existingKeysSet.has(arg.key))) {
-      setStagedArguments((prev) => {
-        const existingMap = new Map(prev.map((arg) => [arg.key, arg]));
-        return defaultArguments.map((arg) => {
-          const existingArg = existingMap.get(arg.key);
-          if (existingArg) {
-            return existingArg;
-          }
-          return arg;
-        });
-      });
-    }
-  }, [defaultArguments, setStagedArguments, stagedArguments]);
-
-  const newToolArgs = useMemo(() => {
-    const existingArgNameSet = new Set(stagedArguments.map((arg) => arg.key));
-
-    if (!lastFunction?.args) {
-      return [];
-    }
-    return lastFunction.args
-      .filter((arg) => {
-        return !existingArgNameSet.has(arg.name);
-      })
-      .map((arg) => {
-        return {
-          key: arg.name,
-          value: '',
-          disableKeyInput: true,
-          disableValueInput: true,
-          keyBadge: (
-            <Tooltip content={t('ArgumentEditor.newArgument')}>
-              <WarningIcon color="warning" />
-            </Tooltip>
-          ),
-        };
-      });
-  }, [lastFunction, stagedArguments, t]);
 
   const definitions = useMemo(() => {
-    return [...stagedArguments, ...newToolArgs].filter(
-      (v) => !RESTRICTED_FN_PROPS.includes(v.key),
-    );
-  }, [stagedArguments, newToolArgs]);
+    // definitions is defaultArguments + stagedArguments, no duplicates, stagedArguments take precedence
+    const argMap = new Map<string, ResizableKeyValueEditorDefinition>();
+    defaultArguments.forEach((arg) => {
+      argMap.set(arg.key, arg);
+    });
+    stagedArguments.forEach((arg) => {
+      argMap.set(arg.key, arg);
+    });
+
+    return Array.from(argMap.values());
+  }, [defaultArguments, stagedArguments]);
 
   return (
     <VStack>
@@ -328,7 +266,7 @@ function EnvironmentEditor(props: EnvironmentEditorProps) {
 }
 
 interface ToolInputProps {
-  defaultArguments: ResizableKeyValueEditorDefinition[];
+  defaultArguments: ResizableKeyValueEditorDefinition[]
   onRunTool: (
     args: ToolRunFromSource['args'],
     env: ToolRunFromSource['env_vars'],
@@ -339,19 +277,11 @@ interface ToolInputProps {
 type ToolInputType = 'args' | 'environment';
 
 function ToolInput(props: ToolInputProps) {
-  const { defaultArguments, isToolRunning, onRunTool } = props;
-  const { sampleArguments } = useToolArguments();
+  const { isToolRunning, onRunTool, defaultArguments } = props;
 
-  const [stagedArguments, setStagedArguments] = useState<
-    ResizableKeyValueEditorDefinition[]
-  >(() => {
-    if (sampleArguments.length > 0) {
-      return sampleArguments;
-    }
-    return defaultArguments || [];
-  });
 
   const { tool_exec_environment_variables } = useCurrentAgent();
+
 
   const defaultEnvironment = useMemo(() => {
     return (tool_exec_environment_variables || []).map((variable) => {
@@ -361,29 +291,25 @@ function ToolInput(props: ToolInputProps) {
       };
     });
   }, [tool_exec_environment_variables]);
+
+
+
   const [stagedEnvironment, setStagedEnvironment] =
     useState<ResizableKeyValueEditorDefinition[]>(defaultEnvironment);
 
+  const [stagedArguments, setStagedToolArguments] = useState<ResizableKeyValueEditorDefinition[]>([]);
+
   const [toolInput, setToolInput] = useState<ToolInputType>('args');
 
-  useEffect(() => {
-    if (sampleArguments.length > 0) {
-      setStagedArguments(sampleArguments);
-    }
-  }, [sampleArguments]);
 
   const handleRunTool = useCallback(() => {
-    const args: ToolRunFromSource['args'] = stagedArguments.reduce(
-      (acc, arg) => {
-        if (!arg.key || !arg.value) {
-          return acc;
-        }
+    const args: ToolRunFromSource['args'] = {};
 
-        acc[arg.key] = arg.value;
-        return acc;
-      },
-      {} as ToolRunFromSource['args'],
-    );
+    stagedArguments.forEach((argument) => {
+      if (argument.key && argument.value) {
+        args[argument.key] = argument.value;
+      }
+    });
 
     const env: ToolRunFromSource['env_vars'] = stagedEnvironment.reduce(
       (acc, variable) => {
@@ -455,7 +381,7 @@ function ToolInput(props: ToolInputProps) {
           <ArgumentEditor
             defaultArguments={defaultArguments}
             stagedArguments={stagedArguments}
-            setStagedArguments={setStagedArguments}
+            setStagedArguments={setStagedToolArguments}
           />
         )}
         {toolInput === 'environment' && (
@@ -744,10 +670,10 @@ export function ToolSimulator(props: ToolSimulatorProps) {
       <PanelGroup direction="vertical">
         <Panel defaultSize={50} minSize={20} maxSize={100}>
           <ToolInput
+            defaultArguments={argumentParameters}
             isToolRunning={isPending}
             onRunTool={handleRun}
             key={tool.id}
-            defaultArguments={argumentParameters}
           />
         </Panel>
         <PanelResizeHandle className="h-[1px] w-full bg-border" />

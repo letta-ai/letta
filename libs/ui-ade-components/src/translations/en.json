@@ -1896,7 +1896,7 @@
         "description": "JSON schema is generated from python docstrings, the parameter [<parameter></parameter>] is missing a description, please add a description to the docstring."
       },
       "different": "Your JSON schema does not match your code, this may cause issues with your tool",
-      "fix": "Build schema from code",
+      "fix": "Autogenerate schema",
       "descriptionPlaceholder": "Please provide descriptions for your schema args, your tool may not work as expected without them"
     },
     "RestoreToolButton": {

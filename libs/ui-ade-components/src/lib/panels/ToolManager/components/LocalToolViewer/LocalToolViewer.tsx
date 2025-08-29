@@ -8,7 +8,7 @@ import {
   useToolsServiceGenerateJsonSchema,
   UseToolsServiceListToolsKeyFn,
   useToolsServiceModifyTool,
-  UseToolsServiceRetrieveToolKeyFn,
+  UseToolsServiceRetrieveToolKeyFn
 } from '@letta-cloud/sdk-core';
 import {
   Accordion,
@@ -26,12 +26,11 @@ import {
   TabGroup,
   ToolboxIcon,
   ToolsIcon,
-  Tooltip,
   Typography,
   VStack,
   WarningIcon,
   WrapNotificationDot,
-  toast,
+  toast
 } from '@letta-cloud/ui-component-library';
 import { ToolActionsHeader } from '../ToolActionsHeader/ToolActionsHeader';
 import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
@@ -42,20 +41,20 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useState
 } from 'react';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
-import { useDebouncedCallback, useDebouncedValue } from '@mantine/hooks';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolSimulator } from '../ToolSimulator/ToolSimulator';
 import { DependencyViewer } from '../DependencyViewer/DependencyViewer';
 import { ToolAssistant } from '../ToolAssistant/ToolAssistant';
-import { ToolArgumentsProvider } from './ToolArgumentsContext';
+
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { get, isEqual } from 'lodash-es';
+import { get } from 'lodash-es';
 import { atom, useAtom } from 'jotai';
 import { ToolSettings } from '../ToolsSettings/ToolSettings';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
@@ -87,7 +86,7 @@ function CurrentToolProvider(props: CurrentToolProviderProps) {
         setMode,
         tool,
         error,
-        setError,
+        setError
       }}
     >
       {children}
@@ -104,7 +103,7 @@ function useToolErrors() {
 
   return {
     error: response.error,
-    setError: response.setError,
+    setError: response.setError
   };
 }
 
@@ -193,13 +192,13 @@ function CodeEditor(props: CodeEditorProps) {
   const { data: typescriptToolsEnabled } = useFeatureFlag('TYPESCRIPT_TOOLS');
 
   const { validationErrorsToLineNumberMap } = useToolValidation(
-    stagedTool.source_code || '',
+    stagedTool.source_code || ''
   );
 
   const debouncedSetStagedTool = useDebouncedCallback(setStagedTool, 500);
 
   const [localCode, setLocalCode] = useState<string>(
-    stagedTool.source_code || '',
+    stagedTool.source_code || ''
   );
 
   // Determine language based on source_type
@@ -229,13 +228,13 @@ function CodeEditor(props: CodeEditorProps) {
 
     document.addEventListener(
       'updateLocalCode',
-      handleUpdateLocalCode as EventListener,
+      handleUpdateLocalCode as EventListener
     );
 
     return () => {
       document.removeEventListener(
         'updateLocalCode',
-        handleUpdateLocalCode as EventListener,
+        handleUpdateLocalCode as EventListener
       );
     };
   }, []);
@@ -246,10 +245,10 @@ function CodeEditor(props: CodeEditorProps) {
 
       debouncedSetStagedTool((prev) => ({
         ...prev,
-        source_code: code,
+        source_code: code
       }));
     },
-    [debouncedSetStagedTool],
+    [debouncedSetStagedTool]
   );
 
   return (
@@ -286,16 +285,16 @@ function CompileErrorMessage(props: CompileErrorMessageProps) {
       if (isAPIError(error)) {
         if (error.body.detail?.includes('lacks a description')) {
           const extractedParameters = /Parameter '(.+?)'/.exec(
-            error.body.detail,
+            error.body.detail
           );
 
           if (!extractedParameters) {
             return {
               message: error.body.detail.replace(
                 '400: Failed to generate schema: ',
-                '',
+                ''
               ),
-              type: 'generic',
+              type: 'generic'
             };
           }
 
@@ -305,10 +304,10 @@ function CompileErrorMessage(props: CompileErrorMessageProps) {
                 <Typography bold overrideEl="span">
                   {extractedParameters[1]}
                 </Typography>
-              ),
+              )
             }),
             parameter: extractedParameters[1],
-            type: 'parameter',
+            type: 'parameter'
           };
         }
 
@@ -316,16 +315,16 @@ function CompileErrorMessage(props: CompileErrorMessageProps) {
           return {
             message: error.body.detail.replace(
               '400: Failed to generate schema: ',
-              '',
+              ''
             ),
-            type: 'generic',
+            type: 'generic'
           };
         }
       }
 
       return {
         message: t('JSONSchemaViewer.errors.unknown'),
-        type: 'generic',
+        type: 'generic'
       };
     }
 
@@ -395,7 +394,7 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
   useEffect(() => {
     if (!mounted.current) {
       setJsonSchemaString(
-        JSON.stringify(stagedTool.json_schema || {}, null, 2),
+        JSON.stringify(stagedTool.json_schema || {}, null, 2)
       );
       mounted.current = true;
     }
@@ -405,7 +404,6 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
 
   const [parsingError, setParsingError] = useState<string | null>(null);
 
-  const { isDifferent } = useIsCodeAndSchemaDifferent();
 
   const validationErrorsToLineNumberMap = useMemo(() => {
     // look in the parsing error for line {lineNumber}
@@ -421,7 +419,7 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     }
 
     return {
-      [parseInt(match[1], 10)]: parsingError,
+      [parseInt(match[1], 10)]: parsingError
     };
   }, [parsingError]);
 
@@ -444,14 +442,14 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
     if (parsedJsonSchema) {
       setStagedTool((prev) => ({
         ...prev,
-        json_schema: parsedJsonSchema,
+        json_schema: parsedJsonSchema
       }));
     }
   }, [setStagedTool, parsedJsonSchema]);
 
   useEffect(() => {
     function handleJsonSchemaUpdate(
-      event: CustomEvent<{ schema: ToolJSONSchema }>,
+      event: CustomEvent<{ schema: ToolJSONSchema }>
     ) {
       if (event.detail.schema) {
         setJsonSchemaString(JSON.stringify(event.detail.schema, null, 2));
@@ -461,28 +459,27 @@ export function JSONSchemaViewer(props: JSONSchemaViewerProps) {
 
     document.addEventListener(
       'updateJsonSchema',
-      handleJsonSchemaUpdate as EventListener,
+      handleJsonSchemaUpdate as EventListener
     );
 
     return () => {
       document.removeEventListener(
         'updateJsonSchema',
-        handleJsonSchemaUpdate as EventListener,
+        handleJsonSchemaUpdate as EventListener
       );
     };
   }, [setJsonSchemaString]);
 
   const { data: useLLMGeneration } = useFeatureFlag('LLM_TOOL_SCHEMA_GENERATION');
 
-  const { mutate: mutateLLM, isPending: isPendingLLM, error: errorLLM, reset: resetLLM } =
+  const { mutate: mutateLLM, isPending: isPendingLLM, error: errorLLM } =
     useToolsServiceGenerateTool();
 
-  const { mutate: mutateClassic, isPending: isPendingClassic, error: errorClassic, reset: resetClassic } =
+  const { mutate: mutateClassic, isPending: isPendingClassic, error: errorClassic } =
     useToolsServiceGenerateJsonSchema();
 
   const isPending = useLLMGeneration ? isPendingLLM : isPendingClassic;
   const error = useLLMGeneration ? errorLLM : errorClassic;
-  const reset = useLLMGeneration ? resetLLM : resetClassic;
 
   const alignJSONSchemaWithTool = useCallback(() => {
     if (useLLMGeneration) {
@@ -525,41 +522,41 @@ Remember: Return the source code EXACTLY as provided, only update the JSON schem
             tool_name: tool.name || '',
             starter_code: stagedTool.source_code || '',
             validation_errors: [],
-            prompt: prompt.trim(),
-          },
+            prompt: prompt.trim()
+          }
         },
         {
           onSuccess: (response) => {
             if (response.tool.json_schema) {
               setStagedTool((prev) => ({
                 ...prev,
-                json_schema: response.tool.json_schema,
+                json_schema: response.tool.json_schema
               }));
 
               setJsonSchemaString(JSON.stringify(response.tool.json_schema, null, 2));
               setParsingError(null);
             }
-          },
-        },
+          }
+        }
       );
     } else {
       mutateClassic(
         {
           requestBody: {
-            code: stagedTool.source_code || '',
-          },
+            code: stagedTool.source_code || ''
+          }
         },
         {
           onSuccess: (response) => {
             setStagedTool((prev) => ({
               ...prev,
-              json_schema: response,
+              json_schema: response
             }));
 
             setJsonSchemaString(JSON.stringify(response, null, 2));
             setParsingError(null);
-          },
-        },
+          }
+        }
       );
     }
   }, [useLLMGeneration, mutateLLM, mutateClassic, stagedTool.source_code, setStagedTool, setJsonSchemaString, tool.name]);
@@ -569,68 +566,77 @@ Remember: Return the source code EXACTLY as provided, only update the JSON schem
       return parsingError;
     }
 
-    if (isDifferent) {
-      return t('JSONSchemaViewer.different');
-    }
 
     return null;
-  }, [parsingError, t, isDifferent]);
-
-  useEffect(() => {
-    if (!isDifferent) {
-      reset();
-    }
-  }, [isDifferent, reset]);
+  }, [parsingError]);
 
   return (
-    <VStack fullHeight gap={false} fullWidth>
-      <VStack gap={false}>
-        {errorMessage && (
-          <HStack
-            justify="spaceBetween"
-            gap="medium"
-            borderTop
-            color="warning"
-            align="center"
-            fullWidth
-            padding="small"
-          >
-            <HStack align="start">
-              <div className="mt-[-1px]">
-                <WarningIcon />
-              </div>
-              <Typography variant="body3">{errorMessage}</Typography>
-            </HStack>
-            {(parsingError || isDifferent) && (
-              <Button
-                preIcon={<ToolsIcon />}
-                color="primary"
-                size="small"
-                busy={isPending}
-                label={t('JSONSchemaViewer.fix')}
-                onClick={alignJSONSchemaWithTool}
-              />
-            )}
-          </HStack>
-        )}
-        <CompileErrorMessage error={error} />
-      </VStack>
-
-      <RawCodeEditor
-        fontSize="small"
+    <VStack gap={false} fullHeight fullWidth>
+      <HStack
+        paddingX="medium"
+        paddingY="xsmall"
+        borderBottom
+        align="center"
         fullWidth
-        flex
-        collapseHeight
-        lineNumberError={validationErrorsToLineNumberMap}
-        border={false}
-        variant="minimal"
-        label=""
-        showLineNumbers
-        hideLabel
-        language="javascript"
-        onSetCode={setJsonSchemaString}
-        code={jsonSchemaString}
-      />
+      >
+        <HStack fullWidth justify="spaceBetween" align="center" gap="small">
+          <HStack align="center">
+            <DataObjectIcon size="small" />
+            <Typography variant="body4" bold>
+              {t('schema')}
+            </Typography>
+          </HStack>
+          <Button
+            preIcon={<ToolsIcon />}
+            color="secondary"
+            size="xsmall"
+            busy={isPending}
+            label={t('JSONSchemaViewer.fix')}
+            onClick={alignJSONSchemaWithTool}
+          />
+        </HStack>
+      </HStack>
+      <VStack flex collapseHeight fullWidth>
+        <VStack fullHeight gap={false} fullWidth>
+          <VStack gap={false}>
+            {errorMessage && (
+              <HStack
+                justify="spaceBetween"
+                gap="medium"
+                borderTop
+                color="warning"
+                align="center"
+                fullWidth
+                padding="small"
+              >
+                <HStack align="start">
+                  <div className="mt-[-1px]">
+                    <WarningIcon />
+                  </div>
+                  <Typography variant="body3">{errorMessage}</Typography>
+                </HStack>
+              </HStack>
+            )}
+            <CompileErrorMessage error={error} />
+          </VStack>
+
+          <RawCodeEditor
+            fontSize="small"
+            fullWidth
+            flex
+            collapseHeight
+            lineNumberError={validationErrorsToLineNumberMap}
+            border={false}
+            variant="minimal"
+            label=""
+            showLineNumbers
+            hideLabel
+            language="javascript"
+            onSetCode={setJsonSchemaString}
+            code={jsonSchemaString}
+          />
+        </VStack>
+      </VStack>
     </VStack>
   );
 }
@@ -662,16 +668,16 @@ function EditModes() {
         {
           icon: <SplitscreenRightIcon />,
           label: t('EditModes.modes.simulator'),
-          value: 'simulator',
+          value: 'simulator'
         },
         ...(!isLocal
           ? [
-              {
-                icon: <ToolboxIcon />,
-                label: t('EditModes.modes.dependencies'),
-                value: 'dependencies',
-              },
-            ]
+            {
+              icon: <ToolboxIcon />,
+              label: t('EditModes.modes.dependencies'),
+              value: 'dependencies'
+            }
+          ]
           : []),
         {
           icon: (
@@ -680,13 +686,13 @@ function EditModes() {
             </WrapNotificationDot>
           ),
           label: t('EditModes.modes.errors'),
-          value: 'errors',
+          value: 'errors'
         },
         {
           icon: <CogIcon />,
           label: t('EditModes.modes.settings'),
-          value: 'settings',
-        },
+          value: 'settings'
+        }
       ]}
     />
   );
@@ -725,7 +731,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
       queryClient.setQueriesData<Tool[] | undefined>(
         {
           queryKey: UseToolsServiceListToolsKeyFn(),
-          exact: false,
+          exact: false
         },
         (old) => {
           if (!old) {
@@ -739,25 +745,25 @@ function SaveToolButton(props: SaveToolButtonProps) {
 
             return t;
           });
-        },
+        }
       );
 
       queryClient.setQueriesData<Tool | undefined>(
         {
-          queryKey: UseToolsServiceRetrieveToolKeyFn({ toolId: tool.id || '' }),
+          queryKey: UseToolsServiceRetrieveToolKeyFn({ toolId: tool.id || '' })
         },
-        () => response,
+        () => response
       );
 
       setStagedTool(() => response);
-    },
+    }
   });
 
   const handleSubmit = useCallback(
     (
       event?:
         | React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>
-        | KeyboardEvent,
+        | KeyboardEvent
     ) => {
       event?.preventDefault();
       const isTypeScript =
@@ -772,7 +778,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
         json_schema: stagedTool.json_schema,
         source_code: stagedTool.source_code || '',
         source_type: stagedTool.source_type || 'python',
-        return_char_limit: stagedTool.return_char_limit,
+        return_char_limit: stagedTool.return_char_limit
       };
 
       // Include appropriate dependencies based on language
@@ -784,10 +790,10 @@ function SaveToolButton(props: SaveToolButtonProps) {
 
       mutate({
         toolId: tool.id || '',
-        requestBody,
+        requestBody
       });
     },
-    [mutate, stagedTool, tool.id, typescriptToolsEnabled],
+    [mutate, stagedTool, tool.id, typescriptToolsEnabled]
   );
 
   useEffect(() => {
@@ -816,6 +822,7 @@ function SaveToolButton(props: SaveToolButtonProps) {
     <Button
       label={t('SaveToolButton.label')}
       color="primary"
+      size="small"
       busy={isPending}
       onClick={handleSubmit}
     />
@@ -830,9 +837,8 @@ function ToolActions(props: ToolActionsProps) {
   const { tool } = props;
 
   return (
-    <HStack gap="medium" align="center">
-      <SaveToolButton tool={tool} />
-    </HStack>
+    <SaveToolButton tool={tool} />
+
   );
 }
 
@@ -845,7 +851,7 @@ function useEditMode() {
 
   return {
     mode: response.mode,
-    setMode: response.setMode,
+    setMode: response.setMode
   };
 }
 
@@ -871,82 +877,9 @@ function ToolContent() {
   }
 }
 
-function useIsCodeAndSchemaDifferent() {
-  const tool = useCurrentTool();
-  const { stagedTool } = useStagedCode(tool);
-
-  const [isDifferent, setIsDifferent] = useState(false);
-  const { mutate } = useToolsServiceGenerateJsonSchema();
-
-  const codeSchema = useMemo(() => {
-    return stagedTool.json_schema;
-  }, [stagedTool.json_schema]);
-
-  const stagedCode = useMemo(() => {
-    return stagedTool.source_code || '';
-  }, [stagedTool.source_code]);
-
-  const [debouncedStagedCode] = useDebouncedValue(stagedCode, 250);
-
-  const handleCheckSchema = useCallback(() => {
-    if (!tool || !codeSchema) {
-      return;
-    }
-    mutate(
-      {
-        requestBody: {
-          code: debouncedStagedCode,
-        },
-      },
-      {
-        onSuccess: (response) => {
-          setIsDifferent(!isEqual(response, codeSchema));
-        },
-        onError: () => {
-          setIsDifferent(true);
-        },
-      },
-    );
-  }, [tool, codeSchema, debouncedStagedCode, mutate]);
-
-  useEffect(() => {
-    if (!tool || !debouncedStagedCode) {
-      return;
-    }
-
-    handleCheckSchema();
-  }, [handleCheckSchema, tool, debouncedStagedCode]);
-
-  return {
-    isDifferent,
-  };
-}
-
-function SchemaChangeWarning() {
-  const t = useTranslations('ToolsEditor/LocalToolsViewer');
-
-  const { isDifferent } = useIsCodeAndSchemaDifferent();
-
-  if (!isDifferent) {
-    return null;
-  }
-
-  return (
-    <Tooltip asChild content={t('SchemaChangeWarning.title')}>
-      <Badge
-        size="large"
-        preIcon={<WarningIcon />}
-        content={t('SchemaChangeWarning.error')}
-        variant="warning"
-      />
-    </Tooltip>
-  );
-}
-
 function LocalToolPanels(props: LocalToolsViewerProps) {
   const { tool } = props;
   const { mode } = useEditMode();
-  const t = useTranslations('ToolsEditor/LocalToolsViewer');
 
   return (
     <VStack collapseWidth flex fullHeight>
@@ -985,25 +918,9 @@ function LocalToolPanels(props: LocalToolsViewerProps) {
               className="h-full"
               minSize={20}
             >
-              <VStack gap={false} fullHeight fullWidth>
-                <HStack
-                  paddingX="medium"
-                  paddingY="xsmall"
-                  borderBottom
-                  align="center"
-                  fullWidth
-                >
-                  <HStack align="center" gap="small">
-                    <DataObjectIcon size="small" />
-                    <Typography variant="body4" bold>
-                      {t('schema')}
-                    </Typography>
-                  </HStack>
-                </HStack>
-                <VStack flex collapseHeight fullWidth>
-                  <JSONSchemaViewer key={tool.id} tool={tool} />
-                </VStack>
-              </VStack>
+
+              <JSONSchemaViewer key={tool.id} tool={tool} />
+
             </Panel>
           </PanelGroup>
         </Panel>
@@ -1063,7 +980,6 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
 
   return (
     <CurrentToolProvider tool={tool}>
-      <ToolArgumentsProvider>
         <VStack gap={false} fullWidth fullHeight>
           <ToolActionsHeader
             idToAttach={tool.id || ''}
@@ -1071,7 +987,6 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
             type={tool.tool_type || 'custom'}
             sourceType={tool.source_type ?? undefined}
             name={tool.name || ''}
-            actions={<ToolActions tool={tool} />}
           />
           <HStack
             overflowY="auto"
@@ -1091,17 +1006,16 @@ export function LocalToolViewer(props: LocalToolsViewerProps) {
               )}
             </HStack>
 
-            <HStack align="center">
+            <HStack gap="small" align="center">
               <RestoreToolButton />
-              <SchemaChangeWarning />
               <EditModes />
+              <ToolActions tool={tool} />
             </HStack>
           </HStack>
           <HStack collapseHeight fullWidth flex gap={false}>
             <LocalToolPanels tool={tool} />
           </HStack>
         </VStack>
-      </ToolArgumentsProvider>
     </CurrentToolProvider>
   );
 }

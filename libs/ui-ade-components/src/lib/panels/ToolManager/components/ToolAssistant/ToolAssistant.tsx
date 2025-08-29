@@ -18,7 +18,6 @@ import {
 import './ToolAssistant.scss';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useToolValidation } from '../../hooks/useToolValidation/useToolValidation';
-import { useToolArguments } from '../LocalToolViewer/ToolArgumentsContext';
 import { useTranslations } from '@letta-cloud/translations';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +30,6 @@ export function ToolAssistant(props: ToolAssistantProps) {
   const { tool } = props;
   const t = useTranslations('ToolsEditor/LocalToolsViewer');
   const { stagedTool, setStagedTool } = useStagedCode(tool);
-  const { updateSampleArguments } = useToolArguments();
   const { validationErrors } = useToolValidation(stagedTool.source_code || '');
   const [isCodingAgentOpen, setIsCodingAgentOpen] = useState(false);
 
@@ -57,9 +55,6 @@ export function ToolAssistant(props: ToolAssistantProps) {
             detail: { schema: response.tool.json_schema },
           }),
         );
-      }
-      if (response.sample_args) {
-        updateSampleArguments(response.sample_args);
       }
 
       setIsCodingAgentOpen(false);
