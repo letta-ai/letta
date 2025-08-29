@@ -159,20 +159,30 @@ async function createAgentFromStarterKit(
       ? await createToolsInStarterKit(starterKit.tools || [], lettaAgentsId)
       : [];
 
+  // Don't pass tool_rules at all - let backend handle via include_base_tool_rules
+  const { tool_rules, ...agentStateWithoutToolRules } = starterKit.agentState;
+
+  const agentBody: Record<string, unknown> = {
+    ...agentStateWithoutToolRules,
+    name: starterKit.name,
+    model:
+      'model' in starterKit.agentState
+        ? starterKit.agentState.model
+        : DEFAULT_LLM_MODEL,
+    embedding: DEFAULT_EMBEDDING_MODEL,
+    project_id: project.id,
+    initial_message_sequence: [],
+    // Backend will add tool rules via include_base_tool_rules (defaults to true)
+  };
+
+  // Only add tool_ids if we have custom tools
+  if (toolIds.length > 0) {
+    agentBody.tool_ids = toolIds;
+  }
+
   const agent = await cloudApiRouter.agents.createAgent(
     {
-      body: {
-        ...starterKit.agentState,
-        name: starterKit.name,
-        model:
-          'model' in starterKit.agentState
-            ? starterKit.agentState.model
-            : DEFAULT_LLM_MODEL,
-        embedding: DEFAULT_EMBEDDING_MODEL,
-        tool_ids: toolIds,
-        project_id: project.id,
-        initial_message_sequence: [],
-      },
+      body: agentBody,
     },
     {
       request: {
@@ -289,23 +299,49 @@ async function createTemplateFromStarterKit(
     };
   }
 
+  // Include tool types - memory_insert and memory_replace have type letta_sleeptime_core
+  // but we need them for all v2 agents, not just sleeptime
+  const toolTypesToInclude = ['letta_core', 'letta_memory_core', 'letta_sleeptime_core'];
+
+  // Base tools that all agents get
+  const baseToolNames = [
+    'conversation_search',
+    'memory_insert',
+    'memory_replace',
+    'send_message',
+  ];
+
+  // Sleeptime agents also get these additional tools
+  const sleeptimeToolNames = starterKit.architecture === 'sleeptime'
+    ? ['memory_rethink', 'memory_finish_edits']
+    : [];
+
+  const allowedToolNames = [...baseToolNames, ...sleeptimeToolNames];
+
+  // Get all matching tools
   const toolIdsForStarterKit = data.filter(
     (tool) =>
       tool.name &&
       tool.tool_type &&
-      ['letta_core', 'letta_sleeptime_core'].includes(tool.tool_type) &&
-      [
-        'conversation_search',
-        'memory_insert',
-        'memory_replace',
-        'send_message',
-      ].includes(tool.name),
+      toolTypesToInclude.includes(tool.tool_type) &&
+      allowedToolNames.includes(tool.name)
   );
 
   const toolIds =
     'tools' in starterKit
       ? await createToolsInStarterKit(starterKit.tools || [], lettaAgentsId)
       : [];
+
+  // Also find and attach any tools specified in agentState.tools (like web_search)
+  const additionalToolIds: string[] = [];
+  if (starterKit.agentState.tools && Array.isArray(starterKit.agentState.tools)) {
+    for (const toolName of starterKit.agentState.tools) {
+      const existingTool = data.find(tool => tool.name === toolName);
+      if (existingTool?.id) {
+        additionalToolIds.push(existingTool.id);
+      }
+    }
+  }
 
   const template = await createTemplateFromAgentState({
     projectId,
@@ -321,18 +357,57 @@ async function createTemplateFromStarterKit(
         blocks: starterKit.agentState.memory_blocks || [],
       },
       tool_exec_environment_variables: [],
-      // Use tool rules from the starter kit if defined, otherwise default to terminal rule for send_message
-      tool_rules: starterKit.agentState.tool_rules || [
-        {
-          type: 'exit_loop',
-          tool_name: 'send_message',
-        },
-      ],
+      // Build tool rules similar to what the backend does
+      tool_rules: (() => {
+        const rules: Array<{type: 'exit_loop' | 'continue_loop', tool_name: string}> = [];
+
+        // Add terminal rule for send_message (and memory_finish_edits for sleeptime)
+        const terminalTools = ['send_message'];
+        if (starterKit.architecture === 'sleeptime') {
+          terminalTools.push('memory_finish_edits');
+        }
+
+        for (const toolName of terminalTools) {
+          if (toolIdsForStarterKit.some(tool => tool.name === toolName)) {
+            rules.push({
+              type: 'exit_loop' as const,
+              tool_name: toolName,
+            });
+          }
+        }
+
+        // Add continue rules for base memory tools
+        const continueTools = [
+          'conversation_search',
+          'memory_insert',
+          'memory_replace',
+          ...(starterKit.architecture === 'sleeptime' ? ['memory_rethink'] : [])
+        ];
+
+        for (const toolName of continueTools) {
+          // Only add if the tool is actually included
+          if (toolIdsForStarterKit.some(tool => tool.name === toolName)) {
+            rules.push({
+              type: 'continue_loop' as const,
+              tool_name: toolName,
+            });
+          }
+        }
+
+        return rules;
+      })(),
       tools: [
         ...toolIds.map((toolId) => ({
           id: toolId,
         })),
-        ...toolIdsForStarterKit,
+        ...additionalToolIds.map((toolId) => ({
+          id: toolId,
+        })),
+        ...toolIdsForStarterKit.filter(tool => tool.id).map((tool) => ({
+          id: tool.id,
+          name: tool.name,
+          tool_type: tool.tool_type,
+        })),
       ],
       llm_config: {
         enable_reasoner: true,

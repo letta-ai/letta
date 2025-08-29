@@ -56,14 +56,8 @@ export const STARTER_KITS: {
       description:
         'A blank slate for you to create your own agent from scratch.',
       memory_blocks: [],
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
     },
-    architecture: 'memgpt',
+    architecture: 'memgpt_v2_agent',
   },
   sleepTime: {
     architecture: 'sleeptime',
@@ -85,12 +79,6 @@ export const STARTER_KITS: {
       enable_sleeptime: true,
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -126,12 +114,6 @@ export const STARTER_KITS: {
       agent_type: 'voice_convo_agent',
       description:
         'Act as a companion to the user, providing emotional support and companionship. This agent has a corresponding sleep-time agent that manages its memory.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -197,12 +179,6 @@ export const STARTER_KITS: {
       model: 'anthropic/claude-sonnet-4-20250514',
       tools: ['web_search'],
       description: 'A deep research agent designed to conduct comprehensive research using web search capabilities.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -232,7 +208,7 @@ export const STARTER_KITS: {
     },
   },
   characterRoleplay: {
-    architecture: 'memgpt',
+    architecture: 'memgpt_v2_agent',
     id: 'characterRoleplay',
     image: characterRoleplay,
     name: 'character-roleplay-agent',
@@ -249,12 +225,6 @@ export const STARTER_KITS: {
 
     agentState: {
       description: 'Act as a roleplay character in a fantasy setting.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -289,7 +259,7 @@ export const STARTER_KITS: {
     ],
   },
   personalAssistant: {
-    architecture: 'memgpt',
+    architecture: 'memgpt_v2_agent',
     id: 'personalAssistant',
     name: 'personal-assistant-agent',
     useGetTitle: () => {
@@ -306,12 +276,6 @@ export const STARTER_KITS: {
     agentState: {
       description:
         'Act as a personal assistant to help users with tasks and answer questions.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -328,7 +292,7 @@ export const STARTER_KITS: {
   },
 
   customerSupport: {
-    architecture: 'memgpt',
+    architecture: 'memgpt_v2_agent',
     id: 'customerSupport',
     name: 'customer-support-agent',
     useGetTitle: () => {
@@ -345,12 +309,6 @@ export const STARTER_KITS: {
     agentState: {
       description:
         'Act as a customer support agent to help users with their issues.',
-      tool_rules: [
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       memory_blocks: [
         {
           label: 'persona',
@@ -449,17 +407,6 @@ export const STARTER_KITS: {
     image: companion,
     agentState: {
       // model: 'anthropic/claude-sonnet-4-20250514',
-      tools: ['memory_rethink'],
-      tool_rules: [
-        {
-          tool_name: 'memory_rethink',
-          type: 'run_first',
-        },
-        {
-          tool_name: 'send_message',
-          type: 'exit_loop',
-        },
-      ],
       description:
         'Act as a companion to the user, providing emotional support and companionship.',
       memory_blocks: [
