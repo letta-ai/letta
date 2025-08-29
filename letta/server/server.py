@@ -1134,10 +1134,9 @@ class SyncServer(Server):
         agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
         # Use passage manager which handles dual-write to Turbopuffer if enabled
-        passages = await self.passage_manager.insert_passage(agent_state=agent_state, text=memory_contents, actor=actor)
-
-        # TODO: Add support for tags and created_at parameters
-        # Currently PassageManager.insert_passage doesn't support these parameters
+        passages = await self.passage_manager.insert_passage(
+            agent_state=agent_state, text=memory_contents, tags=tags, actor=actor, created_at=created_at
+        )
 
         return passages
 
