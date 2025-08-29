@@ -97,6 +97,12 @@ variable "dev_ci_LETTA_API_KEY" {
   sensitive   = true
 }
 
+variable "dev_ci_LETTA_TPUF_API_KEY" {
+  description = "Turbopuffer API Key for dev CI"
+  type        = string
+  sensitive   = true
+}
+
 # Cypress test secrets
 variable "dev_cypress_ANTHROPIC_API_KEY" {
   description = "Anthropic API Key for Cypress tests"
@@ -499,6 +505,12 @@ variable "dev_memgpt_server_voice_LETTA_PG_PASSWORD" {
 
 variable "dev_memgpt_server_voice_LETTA_SERVER_PASS" {
   description = "MemGPT Server Password for memgpt-server-voice service"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_memgpt_server_LETTA_TPUF_API_KEY" {
+  description = "Turbopuffer API Key for memgpt-server-voice service"
   type        = string
   sensitive   = true
 }

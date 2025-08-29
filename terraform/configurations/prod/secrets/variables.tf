@@ -228,3 +228,9 @@ variable "prod_memgpt_server_voice_TAVILY_API_KEY" {
   type        = string
   sensitive   = true
 }
+
+variable "prod_memgpt_server_LETTA_TPUF_API_KEY" {
+  description = "Turbopuffer API Key for memgpt-server service"
+  type        = string
+  sensitive   = true
+}

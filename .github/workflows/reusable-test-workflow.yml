@@ -353,6 +353,10 @@ jobs:
           PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
           PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
 
+          # Turbopuffer flags
+          LETTA_USE_TPUF: true
+          LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
+
           # Google Cloud (shared across all test types)
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}

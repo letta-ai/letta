@@ -39,6 +39,7 @@ locals {
     "dev_ci_TOGETHER_API_KEY"    = var.dev_ci_TOGETHER_API_KEY
     "dev_ci_FIRECRAWL_API_KEY"   = var.dev_ci_FIRECRAWL_API_KEY
     "dev_ci_LETTA_API_KEY"       = var.dev_ci_LETTA_API_KEY
+    "dev_ci_LETTA_TPUF_API_KEY" = var.dev_ci_LETTA_TPUF_API_KEY
 
     # Cypress test secrets
     "dev_cypress_ANTHROPIC_API_KEY"      = var.dev_cypress_ANTHROPIC_API_KEY
@@ -107,6 +108,7 @@ locals {
     "dev_memgpt-server_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_CLICKHOUSE_PASSWORD
     "dev_memgpt-server_LETTA_PG_URI" = var.dev_memgpt_server_LETTA_PG_URI
     "dev_memgpt-server_LETTA_PINECONE_API_KEY" = var.dev_memgpt_server_LETTA_PINECONE_API_KEY
+    "dev_memgpt-server_LETTA_TPUF_API_KEY" = var.dev_memgpt_server_LETTA_TPUF_API_KEY
 
     # memgpt-server-voice secrets
     "dev_memgpt-server-voice_LETTA_SERVER_PASS" = var.dev_memgpt_server_voice_LETTA_SERVER_PASS
@@ -118,6 +120,7 @@ locals {
     "dev_memgpt-server-voice_E2B_SANDBOX_TEMPLATE_ID" = var.dev_memgpt_server_voice_E2B_SANDBOX_TEMPLATE_ID
     "dev_memgpt-server-voice_SENTRY_DSN" = var.dev_memgpt_server_voice_SENTRY_DSN
     "dev_memgpt-server-voice_CLICKHOUSE_PASSWORD" = var.dev_memgpt_server_voice_CLICKHOUSE_PASSWORD
+
   }
   # create the secret but leave the value empty
   create_only_secrets = [

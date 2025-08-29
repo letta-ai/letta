@@ -93,6 +93,8 @@ locals {
     "prod_memgpt-server-voice_COMPOSIO_API_KEY" = var.prod_memgpt_server_voice_COMPOSIO_API_KEY
     "prod_memgpt-server-voice_GEMINI_API_KEY" = var.prod_memgpt_server_voice_GEMINI_API_KEY
     "prod_memgpt-server-voice_TAVILY_API_KEY" = var.prod_memgpt_server_voice_TAVILY_API_KEY
+
+    "prod_memgpt-server_LETTA_TPUF_API_KEY" = var.prod_memgpt_server_LETTA_TPUF_API_KEY
   }
 
   # create the secret but leave the value empty

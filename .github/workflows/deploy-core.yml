@@ -46,6 +46,25 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Inject env vars into environment
+        working-directory: apps/core
+        run: |
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Check if line is not empty
+            if [[ -n "$line" ]]; then
+              # Extract the value after the equals sign
+              value=$(echo "$line" | cut -d= -f2-)
+              # Mask the value so it doesn't appear in logs
+              echo "::add-mask::$value"
+              # Add to GitHub environment
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py --env prod --service memgpt-server)
+
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -109,6 +128,8 @@ jobs:
           LETTA_PG_POOL_SIZE: ${{ secrets.LETTA_PG_POOL_SIZE }}
           LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
           LETTA_PG_MAX_OVERFLOW: ${{ secrets.LETTA_PG_MAX_OVERFLOW }}
+          LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
+          LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
           MCP_READ_FROM_CONFIG: false
           MCP_DISABLE_STDIO: true
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}

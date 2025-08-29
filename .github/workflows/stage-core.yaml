@@ -71,7 +71,7 @@ jobs:
               echo "::add-mask::$value"
               echo "$line" >> $GITHUB_ENV
             fi
-          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s ci)
+          done < <(uvx --with google-cloud-secret-manager python3 ../../packer/base/files/letta_secrets_helper.py -e dev -s memgpt-server)
 
           # Get 'e2b' secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
@@ -148,6 +148,8 @@ jobs:
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+          LETTA_TURBOBUFFER_API_KEY: ${{ env.LETTA_TURBOBUFFER_API_KEY }}
+          LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
 
       - name: Wait for deployment rollout to complete

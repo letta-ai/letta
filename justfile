@@ -235,7 +235,9 @@ describe-web:
         --set secrets.LETTA_TELEMETRY_PROFILER=true \
         --set secrets.FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY} \
         --set secrets.LETTA_PINECONE_API_KEY=${LETTA_PINECONE_API_KEY} \
-        --set secrets.LETTA_ENABLE_PINECONE=${LETTA_ENABLE_PINECONE}
+        --set secrets.LETTA_ENABLE_PINECONE=${LETTA_ENABLE_PINECONE} \
+        --set secrets.LETTA_USE_TPUF=${LETTA_USE_TPUF} \
+        --set secrets.LETTA_TPUF_API_KEY=${LETTA_TPUF_API_KEY}
     else
         helm upgrade --install {{CORE_HELM_CHART_NAME}} {{HELM_CHARTS_DIR}}/{{CORE_HELM_CHART_NAME}} \
             --set image.repository={{DOCKER_REGISTRY}}/memgpt-server \
