@@ -33,29 +33,29 @@ function getPlatformType() {
   return 'cloud';
 }
 
-
 type ProvidersProps = PropsWithChildren<Record<never, string>>;
 
 export function PHProvider({ children }: ProvidersProps) {
+  // Fallback environment vars are for letta-desktop
+  const posthogKey =
+    environment.NEXT_PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  const posthogHost =
+    environment.NEXT_PUBLIC_POSTHOG_HOST ||
+    process.env.NEXT_PUBLIC_POSTHOG_HOST;
+
   useEffect(() => {
-    if (
-      !environment.NEXT_PUBLIC_POSTHOG_KEY ||
-      !environment.NEXT_PUBLIC_POSTHOG_HOST
-    ) {
+    if (!posthogKey || !posthogHost) {
       return;
     }
-    posthog.init(environment.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host: environment.NEXT_PUBLIC_POSTHOG_HOST,
+    posthog.init(posthogKey, {
+      api_host: posthogHost,
     });
     posthog.register({
-      'platform_type': getPlatformType(),
-    })
-  }, []);
+      platform_type: getPlatformType(),
+    });
+  }, [posthogKey, posthogHost]);
 
-  if (
-    !environment.NEXT_PUBLIC_POSTHOG_KEY ||
-    !environment.NEXT_PUBLIC_POSTHOG_HOST
-  ) {
+  if (!posthogKey || !posthogHost) {
     return children;
   }
 
@@ -72,6 +72,7 @@ interface IdentifyUserProps {
   email?: string;
 }
 
+// NOTE: This is not supported on letta-desktop
 export function IdentifyUserForPostHog(props: IdentifyUserProps) {
   const { userId, name, email } = props;
   const posthogClient = usePostHog();
@@ -102,12 +103,10 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
 ) {
   try {
     posthog.capture(eventName, {
-      'platform_type': getPlatformType(),
-      'distinct_id': window.identity?.userId,
+      platform_type: getPlatformType(),
       ...properties,
     });
   } catch (error) {
     console.error('Error tracking PostHog event', error);
   }
-
 }

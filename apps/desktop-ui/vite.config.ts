@@ -27,6 +27,9 @@ export default defineConfig({
       env: {
         OVERRIDE_WEB_ORIGIN_SDK_ENDPOINT: 'http://localhost:8283',
         LETTA_AGENTS_ENDPOINT: 'http://localhost:8283/',
+        NEXT_PUBLIC_POSTHOG_KEY:
+          'phc_FzkA3UcqiUXxOiBe3Iuvlh1o5HgAaRpK1FDUvi2zcoR',
+        NEXT_PUBLIC_POSTHOG_HOST: 'https://us.i.posthog.com',
       },
     },
   },

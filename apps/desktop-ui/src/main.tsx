@@ -14,6 +14,7 @@ import {
   Toaster,
 } from '@letta-cloud/ui-component-library';
 import { useDesktopConfig } from './app/hooks/useDesktopConfig/useDesktopConfig';
+import { PHProvider } from '@letta-cloud/service-analytics/client';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
@@ -59,22 +60,24 @@ function LettaCoreInterceptor() {
 root.render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <NextIntlClientProvider
-        locale="en"
-        messages={{
-          ...en,
-          ...adeEn,
-          ...componentTranslations,
-        }}
-      >
-        <HashRouter>
-          <Toaster />
-          <LettaCoreInterceptor />
-          <ServerStatusProvider>
-            <App />
-          </ServerStatusProvider>
-        </HashRouter>
-      </NextIntlClientProvider>
+      <PHProvider>
+        <NextIntlClientProvider
+          locale="en"
+          messages={{
+            ...en,
+            ...adeEn,
+            ...componentTranslations,
+          }}
+        >
+          <HashRouter>
+            <Toaster />
+            <LettaCoreInterceptor />
+            <ServerStatusProvider>
+              <App />
+            </ServerStatusProvider>
+          </HashRouter>
+        </NextIntlClientProvider>
+      </PHProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
