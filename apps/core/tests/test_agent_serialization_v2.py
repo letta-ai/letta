@@ -979,9 +979,9 @@ class TestAgentFileExport:
         exported_agent = agent_file.agents[0]
 
         for message in exported_agent.messages:
-            assert (
-                message.agent_id == exported_agent.id
-            ), f"Message {message.id} has agent_id {message.agent_id}, expected {exported_agent.id}"
+            assert message.agent_id == exported_agent.id, (
+                f"Message {message.id} has agent_id {message.agent_id}, expected {exported_agent.id}"
+            )
 
         assert exported_agent.id == "agent-0"
         assert exported_agent.id != test_agent.id

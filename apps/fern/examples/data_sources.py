@@ -1,28 +1,26 @@
-from letta_client import Letta
 import time
+
+from letta_client import Letta
 
 client = Letta(base_url="http://localhost:8283")
 
-# get available embedding models 
+# get available embedding models
 embedding_configs = client.models.list_embedding_models()
 
 # clear existing sources
-if len(client.sources.list()) > 0: 
+if len(client.sources.list()) > 0:
     for source in client.sources.list():
         if source.name == "my_source":
             client.sources.delete(source.id)
 
-# create a source 
+# create a source
 # TODO: pass in embedding
-source = client.sources.create(
-    name="my_source", 
-    embedding_config = embedding_configs[0]
-)
+source = client.sources.create(name="my_source", embedding_config=embedding_configs[0])
 
 # list sources
 sources = client.sources.list()
 
-# write a dummy file 
+# write a dummy file
 with open("dummy.txt", "w") as f:
     f.write("Remember that the user is a redhead")
 
@@ -47,10 +45,10 @@ print(f"Files in source: {files}")
 passages = client.sources.passages.list(source_id=source.id)
 print(f"Passages in source: {passages}")
 
-# attach the source to an agent 
+# attach the source to an agent
 agent = client.agents.create(
-    name="my_agent", 
-    memory_blocks=[], 
+    name="my_agent",
+    memory_blocks=[],
     model="anthropic/claude-3-5-sonnet-20241022",
     embedding=embedding_configs[0].handle,
     tags=["worker"],

@@ -12,8 +12,7 @@ from letta.constants import MAX_FILENAME_LENGTH
 from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
-from letta.orm.file import FileContent as FileContentModel
-from letta.orm.file import FileMetadata as FileMetadataModel
+from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import FileProcessingStatus
@@ -60,7 +59,6 @@ class FileManager:
         *,
         text: Optional[str] = None,
     ) -> PydanticFileMetadata:
-
         # short-circuit if it already exists
         existing = await self.get_file_by_id(file_metadata.id, actor=actor)
         if existing:

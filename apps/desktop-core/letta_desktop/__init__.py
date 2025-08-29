@@ -1,17 +1,18 @@
-from dotenv import load_dotenv
-from pathlib import Path
-from os.path import join
-import os
-import sys
-import threading
 import asyncio
-import uvicorn
-import urllib.parse
-import requests
-import time
+import os
 import platform
 import subprocess
+import sys
+import threading
+import time
+import urllib.parse
 from argparse import ArgumentParser
+from os.path import join
+from pathlib import Path
+
+import requests
+import uvicorn
+from dotenv import load_dotenv
 
 letta_dir = Path.home() / ".letta"
 dotenv_path = join(letta_dir, "env")
@@ -31,21 +32,21 @@ import datamodel_code_generator  # noqa
 import opentelemetry  # noqa
 import blib2to3.pgen2.tokenize  # noqa
 import blib2to3.pgen2.parse  # noqa
-import async_lru # noqa
+import async_lru  # noqa
 import mcp  # noqa
-import e2b # noqa
-import asyncpg # noqa
-import aiosqlite # noqa
-import markitdown # noqa
-import magika # noqa
-import pgvector # noqa
-import pgvector.sqlalchemy # noqa
+import e2b  # noqa
+import asyncpg  # noqa
+import aiosqlite  # noqa
+import markitdown  # noqa
+import magika  # noqa
+import pgvector  # noqa
+import pgvector.sqlalchemy  # noqa
 import json
 
 
 # Only print initialization messages if we're actually starting the server
 # Check if we're being called as a script executor
-is_script_execution = len(sys.argv) > 1 and sys.argv[1].endswith('.py') and os.path.isfile(sys.argv[1])
+is_script_execution = len(sys.argv) > 1 and sys.argv[1].endswith(".py") and os.path.isfile(sys.argv[1])
 if not is_script_execution:
     print("Initializing Letta Desktop Service...", flush=True)
     print(f"Python version: {sys.version}", flush=True)
@@ -98,7 +99,10 @@ def initialize_database():
             if attempt < retries:
                 time.sleep(delay)
             else:
-                print(f"FATAL: Could not connect to Postgres instance running at {pg_uri_string} after {retries} attempts.", flush=True)
+                print(
+                    f"FATAL: Could not connect to Postgres instance running at {pg_uri_string} after {retries} attempts.",
+                    flush=True,
+                )
                 sys.exit(1)
 
     # Create the pgvector extension if not already present.
@@ -119,7 +123,10 @@ def initialize_database():
         cursor.execute("CREATE TEMP TABLE test_vector(vec vector(3));")
         cursor.close()
     except Exception as e:
-        print(f"FATAL: pgvector extension exists but is not functioning properly: {e}", flush=True)
+        print(
+            f"FATAL: pgvector extension exists but is not functioning properly: {e}",
+            flush=True,
+        )
         sys.exit(1)
 
     print("Database is ready and pgvector is available", flush=True)
@@ -147,17 +154,26 @@ def upgrade_db(db_uri=None):
     except Exception as e:
         error_msg = str(e)
         if "already exists" in error_msg and "sqlite" in db_uri.lower():
-            print("\n" + "="*60, flush=True)
+            print("\n" + "=" * 60, flush=True)
             print("DATABASE MIGRATION ERROR", flush=True)
-            print("="*60, flush=True)
+            print("=" * 60, flush=True)
             print(f"Error: {error_msg}", flush=True)
-            print("\nThis error typically occurs when your SQLite database was created", flush=True)
-            print("by an older version of Letta Desktop that didn't track migrations.", flush=True)
+            print(
+                "\nThis error typically occurs when your SQLite database was created",
+                flush=True,
+            )
+            print(
+                "by an older version of Letta Desktop that didn't track migrations.",
+                flush=True,
+            )
             print("\nRECOMMENDED SOLUTION:", flush=True)
             print(f"Delete your SQLite database at: {letta_dir / 'sqlite.db'}", flush=True)
-            print("The database will be recreated with proper migration tracking.", flush=True)
+            print(
+                "The database will be recreated with proper migration tracking.",
+                flush=True,
+            )
             print("\nWARNING: This will reset your local Letta data.", flush=True)
-            print("="*60 + "\n", flush=True)
+            print("=" * 60 + "\n", flush=True)
         raise
 
 
@@ -223,7 +239,7 @@ def check_if_web_server_running():
                 print("Server id not found in response text, exiting...", flush=True)
                 kill_app()
             time.sleep(5)
-        except Exception as e:
+        except Exception:
             print("Web server is down, exiting...", flush=True)
             kill_app()
 
@@ -231,7 +247,7 @@ def check_if_web_server_running():
 if __name__ == "__main__":
     # Check if we're being called to execute a Python script (tool execution)
     # This happens when sys.executable (the bundled app) is used to run a tool
-    if len(sys.argv) > 1 and sys.argv[1].endswith('.py') and os.path.isfile(sys.argv[1]):
+    if len(sys.argv) > 1 and sys.argv[1].endswith(".py") and os.path.isfile(sys.argv[1]):
         # Execute the script instead of starting the server
         script_path = sys.argv[1]
 
@@ -242,12 +258,16 @@ if __name__ == "__main__":
 
         # Execute the script in the current Python environment
         try:
-            with open(script_path, 'r') as f:
+            with open(script_path, "r") as f:
                 script_content = f.read()
-            exec(compile(script_content, script_path, 'exec'), {'__name__': '__main__', '__file__': script_path})
-        except Exception as e:
+            exec(
+                compile(script_content, script_path, "exec"),
+                {"__name__": "__main__", "__file__": script_path},
+            )
+        except Exception:
             # Print the error and exit with non-zero status
             import traceback
+
             traceback.print_exc()
             sys.exit(1)
 
@@ -259,56 +279,78 @@ if __name__ == "__main__":
     # CRITICAL: Handle pg_uri file BEFORE any Letta imports
     # The settings module reads pg_uri on import, so we must delete it first
     try:
-      database_config = config.get("databaseConfig", {})
-      pg_uri_path = letta_dir / "pg_uri"
+        database_config = config.get("databaseConfig", {})
+        pg_uri_path = letta_dir / "pg_uri"
 
-      # Debug: Check command line arguments
-      print(f"Command line arguments: {sys.argv}", flush=True)
-      print(f"Database config: type={database_config.get('type')}, embeddedType={database_config.get('embeddedType', 'N/A')}", flush=True)
+        # Debug: Check command line arguments
+        print(f"Command line arguments: {sys.argv}", flush=True)
+        print(
+            f"Database config: type={database_config.get('type')}, embeddedType={database_config.get('embeddedType', 'N/A')}",
+            flush=True,
+        )
 
-      # Check for database-related environment variables
-      env_vars_to_check = ['LETTA_PG_URI', 'LETTA_PG_HOST', 'LETTA_PG_PORT', 'LETTA_PG_DB', 'LETTA_PG_USER', 'LETTA_PG_PASSWORD']
-      for var in env_vars_to_check:
-          if var in os.environ:
-              print(f"Found environment variable: {var}={os.environ[var]}", flush=True)
+        # Check for database-related environment variables
+        env_vars_to_check = [
+            "LETTA_PG_URI",
+            "LETTA_PG_HOST",
+            "LETTA_PG_PORT",
+            "LETTA_PG_DB",
+            "LETTA_PG_USER",
+            "LETTA_PG_PASSWORD",
+        ]
+        for var in env_vars_to_check:
+            if var in os.environ:
+                print(f"Found environment variable: {var}={os.environ[var]}", flush=True)
 
-      if database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
-        # SQLite configuration - ensure pg_uri file doesn't interfere
-        if pg_uri_path.exists():
-          print("SQLite configured but pg_uri file exists - removing to prevent conflicts", flush=True)
-          pg_uri_path.unlink()
-          print("pg_uri file successfully deleted", flush=True)
+        if database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
+            # SQLite configuration - ensure pg_uri file doesn't interfere
+            if pg_uri_path.exists():
+                print(
+                    "SQLite configured but pg_uri file exists - removing to prevent conflicts",
+                    flush=True,
+                )
+                pg_uri_path.unlink()
+                print("pg_uri file successfully deleted", flush=True)
 
-        # Also clear any PostgreSQL environment variables that would override SQLite
-        pg_env_vars = ['LETTA_PG_URI', 'LETTA_PG_HOST', 'LETTA_PG_PORT', 'LETTA_PG_DB', 'LETTA_PG_USER', 'LETTA_PG_PASSWORD']
-        for var in pg_env_vars:
-          if var in os.environ:
-            print(f"Clearing PostgreSQL environment variable: {var}", flush=True)
-            del os.environ[var]
+            # Also clear any PostgreSQL environment variables that would override SQLite
+            pg_env_vars = [
+                "LETTA_PG_URI",
+                "LETTA_PG_HOST",
+                "LETTA_PG_PORT",
+                "LETTA_PG_DB",
+                "LETTA_PG_USER",
+                "LETTA_PG_PASSWORD",
+            ]
+            for var in pg_env_vars:
+                if var in os.environ:
+                    print(f"Clearing PostgreSQL environment variable: {var}", flush=True)
+                    del os.environ[var]
 
-      # Now handle the database setup
-      print(f"Database setup - type: {database_config.get('type')}, embeddedType: {database_config.get('embeddedType', 'N/A')}", flush=True)
+        # Now handle the database setup
+        print(
+            f"Database setup - type: {database_config.get('type')}, embeddedType: {database_config.get('embeddedType', 'N/A')}",
+            flush=True,
+        )
 
-      if database_config.get("type") != "embedded":
-        connection_string = database_config.get("connectionString", "")
-        if connection_string:
-          print(f"Using external database with connection string", flush=True)
-          with open(pg_uri_path, "w") as f:
-            f.write(connection_string)
-          upgrade_db(connection_string)
-      elif database_config.get("type") == "embedded" and database_config.get("embeddedType") != "sqlite":
-        print(f"Using embedded PostgreSQL database", flush=True)
-        pg_uri = initialize_database()
-        upgrade_db(pg_uri)
-      elif database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
-        # Run migrations for SQLite
-        print(f"Using embedded SQLite database", flush=True)
-        upgrade_db()  # Will use default SQLite path
+        if database_config.get("type") != "embedded":
+            connection_string = database_config.get("connectionString", "")
+            if connection_string:
+                print("Using external database with connection string", flush=True)
+                with open(pg_uri_path, "w") as f:
+                    f.write(connection_string)
+                upgrade_db(connection_string)
+        elif database_config.get("type") == "embedded" and database_config.get("embeddedType") != "sqlite":
+            print("Using embedded PostgreSQL database", flush=True)
+            pg_uri = initialize_database()
+            upgrade_db(pg_uri)
+        elif database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
+            # Run migrations for SQLite
+            print("Using embedded SQLite database", flush=True)
+            upgrade_db()  # Will use default SQLite path
     except KeyError:
-      # Default to SQLite if no config - also run migrations
-      print("No database config found, defaulting to SQLite", flush=True)
-      upgrade_db()  # Will use default SQLite path
-
+        # Default to SQLite if no config - also run migrations
+        print("No database config found, defaulting to SQLite", flush=True)
+        upgrade_db()  # Will use default SQLite path
 
     from letta.server.rest_api.app import app
 

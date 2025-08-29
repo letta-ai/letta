@@ -10,9 +10,7 @@ import threading
 import time
 
 import pytest
-from letta_client import CreateBlock
-from letta_client import Letta as LettaSDKClient
-from letta_client import MessageCreate
+from letta_client import CreateBlock, Letta as LettaSDKClient, MessageCreate
 
 SERVER_PORT = 8283
 
@@ -71,7 +69,7 @@ def test_archival_insert_text_embedding_004(client: LettaSDKClient):
     """
     # Create an agent with the specified model and embedding.
     agent = client.agents.create(
-        name=f"archival_insert_text_embedding_004",
+        name="archival_insert_text_embedding_004",
         memory_blocks=[
             CreateBlock(label="human", value="name: archival_test"),
             CreateBlock(label="persona", value="You are a helpful assistant that loves helping out the user"),
@@ -98,9 +96,9 @@ def test_archival_insert_text_embedding_004(client: LettaSDKClient):
 
     print(archived_messages.messages)
     # Assert that the archival message is present.
-    assert any(
-        message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"
-    ), f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
+    assert any(message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"), (
+        f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
+    )
 
     # Cleanup: Delete the agent.
     client.agents.delete(agent.id)
@@ -119,7 +117,7 @@ def test_archival_insert_embedding_001(client: LettaSDKClient):
     """
     # Create an agent with the specified model and embedding.
     agent = client.agents.create(
-        name=f"archival_insert_embedding_001",
+        name="archival_insert_embedding_001",
         memory_blocks=[
             CreateBlock(label="human", value="name: archival_test"),
             CreateBlock(label="persona", value="You are a helpful assistant that loves helping out the user"),
@@ -144,9 +142,9 @@ def test_archival_insert_embedding_001(client: LettaSDKClient):
     )
 
     # Assert that the archival message is present.
-    assert any(
-        message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"
-    ), f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
+    assert any(message.status == "success" for message in archived_messages.messages if message.message_type == "tool_return_message"), (
+        f"Archival message '{archival_message}' not found. Archived messages: {archived_messages}"
+    )
 
     # Cleanup: Delete the agent.
     client.agents.delete(agent.id)

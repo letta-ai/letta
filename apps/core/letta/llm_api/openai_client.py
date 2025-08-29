@@ -29,11 +29,14 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
-from letta.schemas.openai.chat_completion_request import FunctionSchema
-from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
-from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import (
+    ChatCompletionRequest,
+    FunctionCall as ToolFunctionChoiceFunctionCall,
+    FunctionSchema,
+    Tool as OpenAITool,
+    ToolFunctionChoice,
+    cast_message_to_subtype,
+)
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import model_settings
 

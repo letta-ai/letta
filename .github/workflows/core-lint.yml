@@ -54,19 +54,10 @@ jobs:
         level: "error"
       continue-on-error: true
 
-    - name: Run isort
+    - name: Run Ruff Check
       working-directory: apps/core
-      run: uv run isort --profile black --check-only --diff .
+      run: uv run ruff check --config pyproject.toml --diff .
 
-    - name: Run Black
+    - name: Run Ruff Format
       working-directory: apps/core
-      run: uv run black --check .
-
-    - name: Run Autoflake
-      working-directory: apps/core
-      run: |
-        set +e
-        output=$(uv run autoflake --remove-all-unused-imports --remove-unused-variables --check --recursive --ignore-init-module-imports . 2>&1)
-        exit_code=$?
-        echo "$output" | grep -v 'No issues detected!'
-        exit $exit_code
+      run: uv run ruff format --config pyproject.toml --check --diff .

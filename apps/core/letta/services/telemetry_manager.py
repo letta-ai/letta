@@ -2,8 +2,7 @@ from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.helpers.singleton import singleton
 from letta.orm.provider_trace import ProviderTrace as ProviderTraceModel
 from letta.otel.tracing import trace_method
-from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace
-from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.provider_trace import ProviderTrace as PydanticProviderTrace, ProviderTraceCreate
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -11,7 +10,6 @@ from letta.utils import enforce_types
 
 
 class TelemetryManager:
-
     @enforce_types
     @trace_method
     async def get_provider_trace_by_step_id_async(

@@ -1,25 +1,22 @@
+import json
 import logging
 import os
-import requests
 import socket
 import threading
 import time
-import json
-
 from datetime import datetime, timezone
-from typing import Generator, Dict, Any
+from typing import Any, Dict, Generator
 
 import pytest
-from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchRequestCounts
-
+import requests
+from anthropic.types.beta.messages import (
+    BetaMessageBatch,
+    BetaMessageBatchRequestCounts,
+)
 from dotenv import load_dotenv
-
-from letta_client import Letta, AsyncLetta
-
 from letta.log import get_logger
-from letta.schemas.agent import AgentState
-
 from letta.schemas.llm_config import LLMConfig
+from letta_client import AsyncLetta, Letta
 
 logger = get_logger(__name__)
 
@@ -164,10 +161,12 @@ def dummy_beta_message_batch() -> BetaMessageBatch:
         type="message_batch",
     )
 
+
 # --- Model Sweep ---
 # Global flag to track server state
 _server_started = False
 _server_url = None
+
 
 def _start_server_once() -> str:
     """Start server exactly once, return URL"""
@@ -180,7 +179,7 @@ def _start_server_once() -> str:
 
     # Check if already running
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        if s.connect_ex(('localhost', 8283)) == 0:
+        if s.connect_ex(("localhost", 8283)) == 0:
             _server_started = True
             _server_url = url
             return url
@@ -188,9 +187,11 @@ def _start_server_once() -> str:
     # Start server (your existing logic)
     if not os.getenv("LETTA_SERVER_URL"):
         print(os.environ)
+
         def _run_server():
             load_dotenv()
             from letta.server.rest_api.app import start_server
+
             start_server(debug=True)
 
         thread = threading.Thread(target=_run_server, daemon=True)
@@ -214,14 +215,17 @@ def _start_server_once() -> str:
     _server_url = url
     return url
 
+
 # ------------------------------
 # Fixtures
 # ------------------------------
+
 
 @pytest.fixture(scope="module")
 def server_url() -> str:
     """Return URL of already-started server"""
     return _start_server_once()
+
 
 @pytest.fixture(scope="module")
 def client(server_url: str) -> Letta:
@@ -249,6 +253,7 @@ def all_available_llm_configs(client: Letta) -> [LLMConfig]:
     llm_configs = client.models.list()
     return llm_configs
 
+
 def get_model_sweep_config() -> Dict[str, Any]:
     """
     Returns a dictionary of model sweep configuration.
@@ -258,6 +263,7 @@ def get_model_sweep_config() -> Dict[str, Any]:
         config = json.load(f)
     return config
 
+
 # create a client to the started server started at
 def get_available_llm_configs() -> [LLMConfig]:
     """Get configs, starting server if needed"""
@@ -266,9 +272,11 @@ def get_available_llm_configs() -> [LLMConfig]:
     filtered_models = [model for model in temp_client.models.list() if model.handle not in get_model_sweep_config()["excluded_llm_handles"]]
     return filtered_models
 
+
 # fetch once at startup
 def pytest_configure(config):
     config._cached_llm_configs = get_available_llm_configs()
+
 
 # dynamically paramaterize the llm_config arg
 def pytest_generate_tests(metafunc):
@@ -276,8 +284,4 @@ def pytest_generate_tests(metafunc):
     if "llm_config" in metafunc.fixturenames:
         configs = metafunc.config._cached_llm_configs
         if configs:
-            metafunc.parametrize(
-                "llm_config",
-                configs,
-                ids=[c.model for c in configs]
-            )
+            metafunc.parametrize("llm_config", configs, ids=[c.model for c in configs])

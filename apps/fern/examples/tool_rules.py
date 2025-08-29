@@ -8,7 +8,7 @@ powerful, they will not need as much guidance from the developer.
 Last tested with letta-client version: 0.1.22
 """
 
-from letta_client import Letta, TerminalToolRule, InitToolRule, ChildToolRule
+from letta_client import ChildToolRule, InitToolRule, Letta, TerminalToolRule
 
 client = Letta(base_url="http://localhost:8283")
 
@@ -22,18 +22,13 @@ search_agent = client.agents.create(
     tool_rules=[
         InitToolRule(tool_name="archival_memory_search"),
         ChildToolRule(tool_name="archival_memory_search", children=["send_message"]),
-        #TerminalToolRule(tool_name="send_message", type="TerminalToolRule"),
-        TerminalToolRule(tool_name="send_message")
-    ]
+        # TerminalToolRule(tool_name="send_message", type="TerminalToolRule"),
+        TerminalToolRule(tool_name="send_message"),
+    ],
 )
 response = client.agents.messages.create(
     agent_id=search_agent.id,
-    messages=[
-        {
-            "role": "user",
-            "content": "do something"
-        }
-    ],
+    messages=[{"role": "user", "content": "do something"}],
 )
 for message in response.messages:
     print(message)

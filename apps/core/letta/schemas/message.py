@@ -9,8 +9,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from pydantic import BaseModel, Field, field_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
@@ -880,7 +879,6 @@ class Message(BaseMessage):
             # Tool calling
             if self.tool_calls is not None:
                 for tool_call in self.tool_calls:
-
                     if put_inner_thoughts_in_kwargs:
                         tool_call_input = add_inner_thoughts_to_tool_call(
                             tool_call,
@@ -1021,7 +1019,7 @@ class Message(BaseMessage):
             assert self.tool_call_id is not None, vars(self)
 
             if self.name is None:
-                warnings.warn(f"Couldn't find function name on tool call, defaulting to tool ID instead.")
+                warnings.warn("Couldn't find function name on tool call, defaulting to tool ID instead.")
                 function_name = self.tool_call_id
             else:
                 function_name = self.name

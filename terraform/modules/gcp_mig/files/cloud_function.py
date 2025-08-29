@@ -1,12 +1,13 @@
 import os
 import time
+
 import jwt
 import requests
-from google.cloud import compute_v1
-from google.cloud import secretmanager
+from google.cloud import compute_v1, secretmanager
 
 GCP_PROJECT = os.getenv("PROJECT_ID", "memgpt-428419")
 GCP_ZONE = os.getenv("ZONE", "us-central1-a")
+
 
 # working
 def get_secret(secret_name):
@@ -14,6 +15,8 @@ def get_secret(secret_name):
     name = f"projects/{GCP_PROJECT}/secrets/{secret_name}/versions/latest"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode("UTF-8")
+
+
 # working
 def generate_github_token():
     # Get GitHub App credentials from Secret Manager
@@ -26,7 +29,7 @@ def generate_github_token():
     payload = {
         "iat": now,
         "exp": now + 600,  # 10 minute expiration
-        "iss": app_id
+        "iss": app_id,
     }
 
     # Create JWT token
@@ -34,11 +37,11 @@ def generate_github_token():
     print("JWT token generated.")
 
     # Get an installation token
-    installation_url = f"https://api.github.com/app/installations"
+    installation_url = "https://api.github.com/app/installations"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
-        "User-Agent": "GCP Runners Manager"
+        "User-Agent": "GCP Runners Manager",
     }
 
     # Get the first installation ID (assuming single installation)
@@ -52,6 +55,7 @@ def generate_github_token():
     print("Access token retrieved.")
     return response.json()["token"]
 
+
 # Configuration
 GITHUB_ORG = os.getenv("GITHUB_ORG", "letta-ai")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "letta-cloud")
@@ -59,6 +63,7 @@ MIG_NAME = os.getenv("INSTANCE_GROUP", "ci-runner-manager-dev")
 MIN_RUNNERS = int(os.getenv("MIN_RUNNERS", 1))
 MAX_RUNNERS = int(os.getenv("MAX_RUNNERS", 10))
 MAX_JOBS_PER_RUNNER = 1
+
 
 def autoscale_github_runners(token):
     """Basic autoscaling function"""
@@ -75,19 +80,20 @@ def autoscale_github_runners(token):
     busy_runners = [r for r in runners if r["busy"]]
     idle_runners = [r for r in runners if not r["busy"]]
 
-    print(f"Current state: {queued_jobs_count} queued jobs, {running_jobs_count} running jobs, " +
-          f"{len(busy_runners)} busy runners, {len(idle_runners)} idle runners")
+    print(
+        f"Current state: {queued_jobs_count} queued jobs, {running_jobs_count} running jobs, "
+        + f"{len(busy_runners)} busy runners, {len(idle_runners)} idle runners"
+    )
 
     # 4. Calculate needed runners based on all jobs
     needed_runners = min(
         MAX_RUNNERS,
         max(
             MIN_RUNNERS,
-            ((queued_jobs_count + running_jobs_count) + MAX_JOBS_PER_RUNNER - 1) // MAX_JOBS_PER_RUNNER
-        )
+            ((queued_jobs_count + running_jobs_count) + MAX_JOBS_PER_RUNNER - 1) // MAX_JOBS_PER_RUNNER,
+        ),
     )
     print(f"Needed runners: {needed_runners}")
-
 
     # 5. Get current MIG size
     current_size = get_gcp_mig_size()
@@ -105,6 +111,7 @@ def autoscale_github_runners(token):
     else:
         print(f"No resize needed: current={current_size}, target={needed_runners}")
 
+
 # working
 def get_github_jobs(token, statuses):
     """Get GitHub Actions jobs with specified statuses"""
@@ -116,8 +123,8 @@ def get_github_jobs(token, statuses):
             url,
             headers={
                 "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json"
-            }
+                "Accept": "application/vnd.github.v3+json",
+            },
         )
 
         if response.status_code != 200:
@@ -135,8 +142,8 @@ def get_github_jobs(token, statuses):
                 headers={
                     "Authorization": f"token {token}",
                     "Accept": "application/vnd.github.v3+json",
-                    "User-Agent": "GCP Runners Manager"
-                }
+                    "User-Agent": "GCP Runners Manager",
+                },
             )
 
             if jobs_response.status_code == 200:
@@ -144,6 +151,7 @@ def get_github_jobs(token, statuses):
                 all_jobs.extend([job for job in jobs_in_workflow if any([label == "self-hosted" for label in job.get("labels")])])
 
     return all_jobs
+
 
 # working
 def get_github_runners(token):
@@ -157,8 +165,8 @@ def get_github_runners(token):
             url,
             headers={
                 "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json"
-            }
+                "Accept": "application/vnd.github.v3+json",
+            },
         )
 
         if response.status_code != 200:
@@ -189,17 +197,14 @@ def get_github_runners(token):
 
     return online_runners
 
+
 # working
 def get_gcp_mig_size():
     """Get the current size of the managed instance group"""
     client = compute_v1.InstanceGroupManagersClient()
 
     # Format: projects/{project}/zones/{zone}/instanceGroupManagers/{instance_group_manager}
-    request = compute_v1.GetInstanceGroupManagerRequest(
-        project=GCP_PROJECT,
-        zone=GCP_ZONE,
-        instance_group_manager=MIG_NAME
-    )
+    request = compute_v1.GetInstanceGroupManagerRequest(project=GCP_PROJECT, zone=GCP_ZONE, instance_group_manager=MIG_NAME)
 
     try:
         response = client.get(request)
@@ -208,6 +213,7 @@ def get_gcp_mig_size():
     except Exception as e:
         print(f"Error getting MIG size: {str(e)}")
         raise
+
 
 # working
 def resize_gcp_mig(target_size):
@@ -218,7 +224,7 @@ def resize_gcp_mig(target_size):
         project=GCP_PROJECT,
         zone=GCP_ZONE,
         instance_group_manager=MIG_NAME,
-        size=target_size
+        size=target_size,
     )
 
     try:
@@ -228,6 +234,7 @@ def resize_gcp_mig(target_size):
     except Exception as e:
         print(f"Error resizing MIG: {str(e)}")
         raise
+
 
 # Cloud Run function entry point
 def webhook_handler(request):
@@ -249,7 +256,11 @@ def webhook_handler(request):
                     autoscale_github_runners(token)
                 return {"status": "success"}
 
-        return {"status": "ignored", "event": event, "message": "Event is probably not for self-hosted runner"}
+        return {
+            "status": "ignored",
+            "event": event,
+            "message": "Event is probably not for self-hosted runner",
+        }
     except Exception as e:
         print(f"Error handling webhook: {str(e)}")
         return {"status": "error", "message": str(e)}, 500

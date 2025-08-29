@@ -31,7 +31,6 @@ logger = get_logger(__name__)
 
 
 class GoogleVertexClient(LLMClientBase):
-
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
         return genai.Client(
@@ -344,9 +343,9 @@ class GoogleVertexClient(LLMClientBase):
                         if llm_config.put_inner_thoughts_in_kwargs:
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                            assert (
-                                INNER_THOUGHTS_KWARG_VERTEX in function_args
-                            ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            assert INNER_THOUGHTS_KWARG_VERTEX in function_args, (
+                                f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            )
                             inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                             assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                         else:
@@ -380,9 +379,9 @@ class GoogleVertexClient(LLMClientBase):
                             if llm_config.put_inner_thoughts_in_kwargs:
                                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                                assert (
-                                    INNER_THOUGHTS_KWARG_VERTEX in function_args
-                                ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                                assert INNER_THOUGHTS_KWARG_VERTEX in function_args, (
+                                    f"Couldn't find inner thoughts in function args:\n{function_call}"
+                                )
                                 inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                                 assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                             else:
@@ -406,7 +405,7 @@ class GoogleVertexClient(LLMClientBase):
 
                         except json.decoder.JSONDecodeError:
                             if candidate.finish_reason == "MAX_TOKENS":
-                                raise ValueError(f"Could not parse response data from LLM: exceeded max token limit")
+                                raise ValueError("Could not parse response data from LLM: exceeded max token limit")
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
@@ -463,7 +462,7 @@ class GoogleVertexClient(LLMClientBase):
                 )
             else:
                 # Count it ourselves
-                assert input_messages is not None, f"Didn't get UsageMetadata from the API response, so input_messages is required"
+                assert input_messages is not None, "Didn't get UsageMetadata from the API response, so input_messages is required"
                 prompt_tokens = count_tokens(json_dumps(input_messages))  # NOTE: this is a very rough approximation
                 completion_tokens = count_tokens(json_dumps(openai_response_message.model_dump()))  # NOTE: this is also approximate
                 total_tokens = prompt_tokens + completion_tokens

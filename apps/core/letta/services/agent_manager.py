@@ -26,37 +26,42 @@ from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
-from letta.orm import Agent as AgentModel
-from letta.orm import AgentsTags, ArchivalPassage
-from letta.orm import Block as BlockModel
-from letta.orm import BlocksAgents
-from letta.orm import Group as GroupModel
-from letta.orm import GroupsAgents, IdentitiesAgents
-from letta.orm import Source as SourceModel
-from letta.orm import SourcePassage, SourcesAgents
-from letta.orm import Tool as ToolModel
-from letta.orm import ToolsAgents
+from letta.orm import (
+    Agent as AgentModel,
+    AgentsTags,
+    ArchivalPassage,
+    Block as BlockModel,
+    BlocksAgents,
+    Group as GroupModel,
+    GroupsAgents,
+    IdentitiesAgents,
+    Source as SourceModel,
+    SourcePassage,
+    SourcesAgents,
+    Tool as ToolModel,
+    ToolsAgents,
+)
 from letta.orm.errors import NoResultFound
-from letta.orm.sandbox_config import AgentEnvironmentVariable
-from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+from letta.orm.sandbox_config import AgentEnvironmentVariable, AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, CreateAgent, InternalTemplateAgentCreate, UpdateAgent, get_prompt_template_for_agent_type
-from letta.schemas.block import DEFAULT_BLOCKS
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate
+from letta.schemas.agent import (
+    AgentState as PydanticAgentState,
+    AgentType,
+    CreateAgent,
+    InternalTemplateAgentCreate,
+    UpdateAgent,
+    get_prompt_template_for_agent_type,
+)
+from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
-from letta.schemas.group import Group as PydanticGroup
-from letta.schemas.group import ManagerType
+from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
-from letta.schemas.message import Message
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
@@ -493,7 +498,6 @@ class AgentManager:
         # blocks
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
-
             pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
 
             # Inject a description for the default blocks if the user didn't specify them
@@ -798,7 +802,6 @@ class AgentManager:
         agent_update: UpdateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-
         new_tools = set(agent_update.tool_ids or [])
         new_sources = set(agent_update.source_ids or [])
         new_blocks = set(agent_update.block_ids or [])
@@ -806,7 +809,6 @@ class AgentManager:
         new_tags = set(agent_update.tags or [])
 
         with db_registry.session() as session, session.begin():
-
             agent: AgentModel = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id
@@ -923,7 +925,6 @@ class AgentManager:
         agent_update: UpdateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-
         new_tools = set(agent_update.tool_ids or [])
         new_sources = set(agent_update.source_ids or [])
         new_blocks = set(agent_update.block_ids or [])
@@ -931,7 +932,6 @@ class AgentManager:
         new_tags = set(agent_update.tags or [])
 
         async with db_registry.async_session() as session, session.begin():
-
             agent: AgentModel = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id

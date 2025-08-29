@@ -219,7 +219,7 @@ def test_run_code(
 
     returns = [m.tool_return for m in tool_returns]
     assert any(expected in ret for ret in returns), (
-        f"For language={language!r}, expected to find '{expected}' in tool_return, " f"but got {returns!r}"
+        f"For language={language!r}, expected to find '{expected}' in tool_return, but got {returns!r}"
     )
 
 
@@ -357,7 +357,6 @@ async def test_web_search_uses_agent_env_var_model():
         patch.dict(os.environ, {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}),
         patch("firecrawl.AsyncFirecrawlApp") as mock_firecrawl_class,
     ):
-
         # setup mocks
         mock_model_settings.openai_api_key = "test-key"
 

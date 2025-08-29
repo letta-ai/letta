@@ -11,8 +11,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageStreamStatus
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import UserMessage as OpenAIUserMessage
+from letta.schemas.openai.chat_completion_request import ChatCompletionRequest, UserMessage as OpenAIUserMessage
 from letta.schemas.tool import ToolCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.services.tool_manager import ToolManager

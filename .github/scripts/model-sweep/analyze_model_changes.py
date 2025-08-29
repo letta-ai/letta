@@ -3,15 +3,16 @@
 Simple check for meaningful changes between model sweep configs.
 Returns exit code 1 if meaningful changes detected, 0 otherwise.
 """
+
 import json
-import sys
 import os
+import sys
 
 
 def load_config(file_path: str) -> dict:
     """Load a compact config file."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return {"models": {}}

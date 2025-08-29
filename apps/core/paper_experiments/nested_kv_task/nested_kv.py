@@ -61,13 +61,13 @@ def archival_memory_text_search(self, query: str, page: Optional[int] = 0) -> Op
     try:
         page = int(page)
     except:
-        raise ValueError(f"'page' argument must be an integer")
+        raise ValueError("'page' argument must be an integer")
     count = 10
     results = self.persistence_manager.archival_memory.storage.query_text(query, limit=count, offset=page * count)
     total = len(results)
     num_pages = math.ceil(total / count) - 1  # 0 index
     if len(results) == 0:
-        results_str = f"No results found."
+        results_str = "No results found."
     else:
         results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
         results_formatted = [f"memory: {d.text}" for d in results]
@@ -253,8 +253,8 @@ if __name__ == "__main__":
                 # overwrite
                 kv_d[current_key] = next_key
 
-                print(f"Nested {i+1}")
-            print(f"Done")
+                print(f"Nested {i + 1}")
+            print("Done")
 
         def get_nested_key(original_key, kv_d):
             key = original_key

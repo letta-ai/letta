@@ -1,16 +1,15 @@
 import base64
 import json
 import os
-import socket
-import threading
 import time
 import uuid
 from typing import Any, Dict, List
 
 import httpx
 import pytest
-import requests
-from dotenv import load_dotenv
+from letta.log import get_logger
+from letta.schemas.agent import AgentState
+from letta.schemas.llm_config import LLMConfig
 from letta_client import Letta, MessageCreate, Run
 from letta_client.core.api_error import ApiError
 from letta_client.types import (
@@ -28,10 +27,6 @@ from letta_client.types import (
     UrlImage,
     UserMessage,
 )
-
-from letta.log import get_logger
-from letta.schemas.agent import AgentState
-from letta.schemas.llm_config import LLMConfig
 
 logger = get_logger(__name__)
 
@@ -72,6 +67,8 @@ def roll_dice(num_sides: int) -> int:
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
 USER_MESSAGE_RESPONSE: str = "Teamwork makes the dream work"
+
+
 def get_user_message_force_reply(llm_config: LLMConfig) -> List[MessageCreate]:
     content = f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'."
     content = prefix_message_content_for_ollama(content, llm_config)
@@ -91,6 +88,8 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+
+
 def get_user_message_roll_dice(llm_config: LLMConfig) -> List[MessageCreate]:
     content = "This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome."
     content = prefix_message_content_for_ollama(content, llm_config)
@@ -111,6 +110,8 @@ USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     )
 ]
 URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+
+
 def get_user_message_url_image(llm_config: LLMConfig) -> List[MessageCreate]:
     text_content = "What is in this image?"
     text_content = prefix_message_content_for_ollama(text_content, llm_config)
@@ -137,6 +138,8 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     )
 ]
 BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
+
+
 def get_user_message_base64_image(llm_config: LLMConfig) -> List[MessageCreate]:
     text_content = "What is in this image?"
     text_content = prefix_message_content_for_ollama(text_content, llm_config)
@@ -162,6 +165,7 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+
 
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],
@@ -396,7 +400,11 @@ def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = False) -
         prev_message_type = current_message_type
         chunk_count += 1
     messages.append(current_message)
-    if verify_token_streaming and current_message.message_type in ["reasoning_message", "assistant_message", "tool_call_message"]:
+    if verify_token_streaming and current_message.message_type in [
+        "reasoning_message",
+        "assistant_message",
+        "tool_call_message",
+    ]:
         assert chunk_count > 1, f"Expected more than one chunk for {current_message.message_type}"
 
     return [m for m in messages if m is not None]
@@ -416,7 +424,9 @@ def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, i
         time.sleep(interval)
 
 
-def cast_message_dict_to_messages(messages: List[Dict[str, Any]]) -> List[LettaMessageUnion]:
+def cast_message_dict_to_messages(
+    messages: List[Dict[str, Any]],
+) -> List[LettaMessageUnion]:
     def cast_message(message: Dict[str, Any]) -> LettaMessageUnion:
         if message["message_type"] == "reasoning_message":
             return ReasoningMessage(**message)
@@ -487,6 +497,7 @@ def agent_state_no_tools(client: Letta) -> AgentState:
         client.agents.delete(agent_state_instance.id)
     except Exception as e:
         logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+
 
 # ------------------------------
 # Test Cases
@@ -829,7 +840,8 @@ def test_token_streaming_tool_call(
     )
     chunks = list(response)
     messages = accumulate_chunks(
-        chunks, verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+        chunks,
+        verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]),
     )
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)

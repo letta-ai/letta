@@ -4,8 +4,7 @@ from letta.constants import DEFAULT_ORG_ID, DEFAULT_ORG_NAME
 from letta.orm.errors import NoResultFound
 from letta.orm.organization import Organization as OrganizationModel
 from letta.otel.tracing import trace_method
-from letta.schemas.organization import Organization as PydanticOrganization
-from letta.schemas.organization import OrganizationUpdate
+from letta.schemas.organization import Organization as PydanticOrganization, OrganizationUpdate
 from letta.server.db import db_registry
 from letta.utils import enforce_types
 

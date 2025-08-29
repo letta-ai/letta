@@ -1,21 +1,22 @@
 # function/main.py
-import functions_framework
 import os
-import json
-from datetime import datetime
+
+import clickhouse_connect
+import functions_framework
 import requests
 from google.cloud import secretmanager
-import clickhouse_connect
 
 # Initialize Secret Manager client
 secret_client = secretmanager.SecretManagerServiceClient()
 
+
 def get_secret(secret_id):
     """Fetch secret from Secret Manager"""
-    project_id = os.environ.get('PROJECT_ID')
+    project_id = os.environ.get("PROJECT_ID")
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     response = secret_client.access_secret_version(request={"name": name})
-    return response.payload.data.decode('UTF-8')
+    return response.payload.data.decode("UTF-8")
+
 
 def send_slack_alert(message, alert_data):
     """Send alert to Slack"""
@@ -78,10 +79,13 @@ def check_alerts(request):
                 AND SpanAttributes['organization.id'] = %(organization_id)s
         """
 
-        total_result = client.query(total_runs_query, parameters={
-            'project_id': project_id,
-            'organization_id': organization_id,
-        })
+        total_result = client.query(
+            total_runs_query,
+            parameters={
+                "project_id": project_id,
+                "organization_id": organization_id,
+            },
+        )
 
         total_runs = total_result.result_rows[0][0] if total_result.result_rows else 0
         print(f"Total agent runs in last 5 minutes: {total_runs}")
@@ -159,10 +163,13 @@ def check_alerts(request):
 
         print(f"Executing query for project_id: {project_id} and organization_id: {organization_id}...")
 
-        result = client.query(query, parameters={
-            'project_id': project_id,
-            'organization_id': organization_id,
-        })
+        result = client.query(
+            query,
+            parameters={
+                "project_id": project_id,
+                "organization_id": organization_id,
+            },
+        )
 
         # Convert result to list of dictionaries
         traces = []
@@ -176,9 +183,9 @@ def check_alerts(request):
                 traces.append(trace_dict)
 
                 # Categorize traces
-                if trace_dict['issue_type'] in ['TOOL_ERROR', 'BOTH']:
+                if trace_dict["issue_type"] in ["TOOL_ERROR", "BOTH"]:
                     tool_error_traces.append(trace_dict)
-                if trace_dict['issue_type'] in ['TIMEOUT', 'BOTH']:
+                if trace_dict["issue_type"] in ["TIMEOUT", "BOTH"]:
                     timeout_traces.append(trace_dict)
 
         print(f"Found {len(traces)} problematic traces total")
@@ -197,14 +204,16 @@ def check_alerts(request):
 
         # Check if tool error rate exceeds threshold
         if tool_error_rate >= 10.0:
-            alert_msg = f"⚠️ **Tool Error Rate Alert**\n"
+            alert_msg = "⚠️ **Tool Error Rate Alert**\n"
             alert_msg += f"Tool error rate is {tool_error_rate:.2f}% ({len(tool_error_traces)}/{total_runs} runs)\n\n"
             alert_msg += "Recent failures:\n"
 
             for trace in tool_error_traces[:5]:  # Show first 5
                 agent_link = f"<https://app.letta.com/projects/{project_name}/agents/{trace['agent_id']}| {trace['agent_id']}...>"
-                failed_tools_str = f" - Failed tools: {', '.join(trace['failed_tools'])}" if trace.get('failed_tools') else ""
-                alert_msg += f"• {agent_link} at {trace['formatted_time_utc']} UTC - {trace['tool_error_count']} tool errors{failed_tools_str}\n"
+                failed_tools_str = f" - Failed tools: {', '.join(trace['failed_tools'])}" if trace.get("failed_tools") else ""
+                alert_msg += (
+                    f"• {agent_link} at {trace['formatted_time_utc']} UTC - {trace['tool_error_count']} tool errors{failed_tools_str}\n"
+                )
 
             if len(tool_error_traces) > 5:
                 alert_msg += f"... and {len(tool_error_traces) - 5} more\n"
@@ -214,7 +223,7 @@ def check_alerts(request):
 
         # Always alert on timeouts (these are critical)
         if timeout_traces:
-            alert_msg = f"⏱️ **Timeout Alert**\n"
+            alert_msg = "⏱️ **Timeout Alert**\n"
             alert_msg += f"{len(timeout_traces)} agent runs exceeded 5 minutes:\n\n"
 
             for trace in timeout_traces:
@@ -228,11 +237,14 @@ def check_alerts(request):
         if alerts_to_send:
             combined_alert = "\n---\n".join(alerts_to_send)
             combined_alert += f"\n\n📊 Stats: {total_runs} total runs in last 5 minutes"
-            send_slack_alert(combined_alert, {
-                "tool_error_rate": tool_error_rate,
-                "timeout_count": len(timeout_traces),
-                "total_runs": total_runs
-            })
+            send_slack_alert(
+                combined_alert,
+                {
+                    "tool_error_rate": tool_error_rate,
+                    "timeout_count": len(timeout_traces),
+                    "total_runs": total_runs,
+                },
+            )
 
         return {
             "status": "ok",

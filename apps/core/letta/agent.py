@@ -49,9 +49,7 @@ from letta.schemas.enums import MessageRole, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
-from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Message as ChatCompletionMessage, UsageStatistics
 from letta.schemas.response_format import ResponseFormatType
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -871,7 +869,6 @@ class Agent(BaseAgent):
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
         try:
-
             # Extract job_id from metadata if present
             job_id = metadata.get("job_id") if metadata else None
 
@@ -1084,9 +1081,9 @@ class Agent(BaseAgent):
         -> agent.step(messages=[Message(role='user', text=...)])
         """
         # Wrap with metadata, dumps to JSON
-        assert user_message_str and isinstance(
-            user_message_str, str
-        ), f"user_message_str should be a non-empty string, got {type(user_message_str)}"
+        assert user_message_str and isinstance(user_message_str, str), (
+            f"user_message_str should be a non-empty string, got {type(user_message_str)}"
+        )
         user_message_json_str = package_user_message(user_message_str, self.agent_state.timezone)
 
         # Validate JSON via save/load

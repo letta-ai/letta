@@ -71,7 +71,7 @@ def upgrade() -> None:
             WITH numbered_rows AS (
                 SELECT
                     id,
-                    ROW_NUMBER() OVER (ORDER BY {', '.join(ORDERING_COLUMNS)} ASC) as rn
+                    ROW_NUMBER() OVER (ORDER BY {", ".join(ORDERING_COLUMNS)} ASC) as rn
                 FROM {TABLE_NAME}
             )
             UPDATE {TABLE_NAME}

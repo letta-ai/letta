@@ -269,16 +269,20 @@ class LettaAgent(BaseAgent):
             effective_step_id = step_id if logged_step else None
 
             try:
-                request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
-                    await self._build_and_request_from_llm(
-                        current_in_context_messages,
-                        new_in_context_messages,
-                        agent_state,
-                        llm_client,
-                        tool_rules_solver,
-                        agent_step_span,
-                        step_metrics,
-                    )
+                (
+                    request_data,
+                    response_data,
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    valid_tool_names,
+                ) = await self._build_and_request_from_llm(
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    agent_state,
+                    llm_client,
+                    tool_rules_solver,
+                    agent_step_span,
+                    step_metrics,
                 )
                 in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -574,16 +578,20 @@ class LettaAgent(BaseAgent):
             effective_step_id = step_id if logged_step else None
 
             try:
-                request_data, response_data, current_in_context_messages, new_in_context_messages, valid_tool_names = (
-                    await self._build_and_request_from_llm(
-                        current_in_context_messages,
-                        new_in_context_messages,
-                        agent_state,
-                        llm_client,
-                        tool_rules_solver,
-                        agent_step_span,
-                        step_metrics,
-                    )
+                (
+                    request_data,
+                    response_data,
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    valid_tool_names,
+                ) = await self._build_and_request_from_llm(
+                    current_in_context_messages,
+                    new_in_context_messages,
+                    agent_state,
+                    llm_client,
+                    tool_rules_solver,
+                    agent_step_span,
+                    step_metrics,
                 )
                 in_context_messages = current_in_context_messages + new_in_context_messages
 
@@ -1626,7 +1634,6 @@ class LettaAgent(BaseAgent):
         tool_rules_solver: ToolRulesSolver,
         is_final_step: bool | None,
     ) -> tuple[bool, str | None, LettaStopReason | None]:
-
         continue_stepping = request_heartbeat
         heartbeat_reason: str | None = None
         stop_reason: LettaStopReason | None = None
@@ -1658,9 +1665,7 @@ class LettaAgent(BaseAgent):
             uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
             if not continue_stepping and uncalled:
                 continue_stepping = True
-                heartbeat_reason = (
-                    f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [" f"{', '.join(uncalled)}] to be called still."
-                )
+                heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [{', '.join(uncalled)}] to be called still."
 
                 stop_reason = None  # reset – we’re still going
 

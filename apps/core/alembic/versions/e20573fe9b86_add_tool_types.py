@@ -42,7 +42,7 @@ def upgrade() -> None:
         f"""
         UPDATE tools
         SET tool_type = '{letta_core_value}'
-        WHERE name IN ({','.join(f"'{name}'" for name in BASE_TOOLS)});
+        WHERE name IN ({",".join(f"'{name}'" for name in BASE_TOOLS)});
         """
     )
 
@@ -50,7 +50,7 @@ def upgrade() -> None:
         f"""
         UPDATE tools
         SET tool_type = '{letta_memory_core_value}'
-        WHERE name IN ({','.join(f"'{name}'" for name in BASE_MEMORY_TOOLS)});
+        WHERE name IN ({",".join(f"'{name}'" for name in BASE_MEMORY_TOOLS)});
         """
     )
 

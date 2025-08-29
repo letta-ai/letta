@@ -38,7 +38,9 @@ class BlockHistory(OrganizationMixin, SqlalchemyBase):
 
     # Relationships
     block_id: Mapped[str] = mapped_column(
-        String, ForeignKey("block.id", ondelete="CASCADE"), nullable=False  # History deleted if Block is deleted
+        String,
+        ForeignKey("block.id", ondelete="CASCADE"),
+        nullable=False,  # History deleted if Block is deleted
     )
 
     sequence_number: Mapped[int] = mapped_column(

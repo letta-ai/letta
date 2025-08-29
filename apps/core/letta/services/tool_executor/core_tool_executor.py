@@ -273,14 +273,13 @@ class LettaCoreToolExecutor(ToolExecutor):
         occurences = current_value.count(old_str)
         if occurences == 0:
             raise ValueError(
-                f"No replacement was performed, old_str `{old_str}` did not appear " f"verbatim in memory block with label `{label}`."
+                f"No replacement was performed, old_str `{old_str}` did not appear verbatim in memory block with label `{label}`."
             )
         elif occurences > 1:
             content_value_lines = current_value.split("\n")
             lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_str in line]
             raise ValueError(
-                f"No replacement was performed. Multiple occurrences of "
-                f"old_str `{old_str}` in lines {lines}. Please ensure it is unique."
+                f"No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines {lines}. Please ensure it is unique."
             )
 
         # Replace old_str with new_str

@@ -100,7 +100,7 @@ def generate_docqa_baseline_response(
     # print(f"Top {num_documents} documents: {documents_search_results_sorted_by_relevance}")
 
     # compute truncation length
-    extra_text = BASELINE_PROMPT + f"Question: {question}" + f"Answer:"
+    extra_text = BASELINE_PROMPT + f"Question: {question}" + "Answer:"
     padding = count_tokens(extra_text) + 1000
     truncation_length = int((config.default_llm_config.context_window - padding) / num_documents)
     print("Token size", config.default_llm_config.context_window)
@@ -114,7 +114,7 @@ def generate_docqa_baseline_response(
         if i >= num_documents:
             break
 
-        doc_prompt = f"Document [{i+1}]: {doc} \n"
+        doc_prompt = f"Document [{i + 1}]: {doc} \n"
 
         # truncate (that's why the performance goes down as x-axis increases)
         if truncation_length is not None:

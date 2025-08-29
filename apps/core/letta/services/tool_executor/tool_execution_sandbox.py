@@ -100,7 +100,7 @@ class ToolExecutionSandbox:
         logger.debug(f"Executed tool '{self.tool_name}', logging output from tool run: \n")
         for log_line in (result.stdout or []) + (result.stderr or []):
             logger.debug(f"{log_line}")
-        logger.debug(f"Ending output log from tool run.")
+        logger.debug("Ending output log from tool run.")
 
         # Return result
         return result
@@ -267,7 +267,6 @@ class ToolExecutionSandbox:
 
         try:
             with self.temporary_env_vars(env):
-
                 # Read and compile the Python script
                 with open(temp_file_path, "r", encoding="utf-8") as f:
                     source = f.read()
@@ -475,7 +474,7 @@ class ToolExecutionSandbox:
             return None, None
         result = pickle.loads(base64.b64decode(text))
         agent_state = None
-        if not result["agent_state"] is None:
+        if result["agent_state"] is not None:
             agent_state = result["agent_state"]
         return result["results"], agent_state
 

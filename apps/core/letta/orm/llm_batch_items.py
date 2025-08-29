@@ -9,8 +9,7 @@ from letta.orm.custom_columns import AgentStepStateColumn, BatchRequestResultCol
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import AgentStepStatus, JobStatus
-from letta.schemas.llm_batch_job import AgentStepState
-from letta.schemas.llm_batch_job import LLMBatchItem as PydanticLLMBatchItem
+from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem as PydanticLLMBatchItem
 from letta.schemas.llm_config import LLMConfig
 
 

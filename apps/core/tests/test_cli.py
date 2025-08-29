@@ -71,10 +71,10 @@ def test_letta_run_create_new_agent(swap_letta_config):
     assert full_output is not None, "No output was captured."
     # Count occurrences of inner thoughts
     cloud_emoji_count = full_output.count(INNER_THOUGHTS_CLI_SYMBOL)
-    assert cloud_emoji_count == 1, f"It appears that there are multiple instances of inner thought outputted."
+    assert cloud_emoji_count == 1, "It appears that there are multiple instances of inner thought outputted."
     # Count occurrences of assistant messages
     robot = full_output.count(ASSISTANT_MESSAGE_CLI_SYMBOL)
-    assert robot == 1, f"It appears that there are multiple instances of assistant messages outputted."
+    assert robot == 1, "It appears that there are multiple instances of assistant messages outputted."
 
 
 def test_letta_version_prints_only_version(swap_letta_config):

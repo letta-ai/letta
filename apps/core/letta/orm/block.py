@@ -8,8 +8,7 @@ from letta.orm.block_history import BlockHistory
 from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import Human, Persona
+from letta.schemas.block import Block as PydanticBlock, Human, Persona
 
 if TYPE_CHECKING:
     from letta.orm import Organization

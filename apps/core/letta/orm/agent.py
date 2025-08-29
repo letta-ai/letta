@@ -13,8 +13,7 @@ from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, get_prompt_template_for_agent_type
+from letta.schemas.agent import AgentState as PydanticAgentState, AgentType, get_prompt_template_for_agent_type
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory

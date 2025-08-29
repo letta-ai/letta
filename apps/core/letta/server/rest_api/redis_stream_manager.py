@@ -140,9 +140,7 @@ class RedisSSEStreamWriter:
 
             self.last_flush[run_id] = time.time()
 
-            logger.debug(
-                f"Flushed {len(chunks)} chunks to Redis stream {stream_key}, " f"seq_ids {chunks[0]['seq_id']}-{chunks[-1]['seq_id']}"
-            )
+            logger.debug(f"Flushed {len(chunks)} chunks to Redis stream {stream_key}, seq_ids {chunks[0]['seq_id']}-{chunks[-1]['seq_id']}")
 
             if chunks[-1].get("complete") == "true":
                 self._cleanup_run(run_id)

@@ -30,8 +30,10 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.json_helpers import json_dumps, json_loads
 
 # TODO use custom interface
-from letta.interface import AgentInterface  # abstract
-from letta.interface import CLIInterface  # for printing to terminal
+from letta.interface import (
+    AgentInterface,  # abstract
+    CLIInterface,  # for printing to terminal
+)
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import log_event, trace_method

@@ -13,13 +13,10 @@ from letta.orm.job import Job as JobModel
 from letta.orm.job_messages import JobMessage
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.step import Step
-from letta.orm.step import Step as StepModel
+from letta.orm.step import Step, Step as StepModel
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole
-from letta.schemas.job import BatchJob as PydanticBatchJob
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.job import BatchJob as PydanticBatchJob, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun

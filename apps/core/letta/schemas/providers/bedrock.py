@@ -35,7 +35,7 @@ class BedrockProvider(Provider):
                 response = await bedrock.list_inference_profiles()
                 return response["inferenceProfileSummaries"]
         except Exception as e:
-            logger.error(f"Error getting model list for bedrock: %s", e)
+            logger.error("Error getting model list for bedrock: %s", e)
             raise e
 
     async def check_api_key(self):

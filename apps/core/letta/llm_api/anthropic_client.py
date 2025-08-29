@@ -5,8 +5,7 @@ from typing import Dict, List, Optional, Union
 
 import anthropic
 from anthropic import AsyncStream
-from anthropic.types.beta import BetaMessage as AnthropicMessage
-from anthropic.types.beta import BetaRawMessageStreamEvent
+from anthropic.types.beta import BetaMessage as AnthropicMessage, BetaRawMessageStreamEvent
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
@@ -34,9 +33,14 @@ from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
-from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
-from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    ChatCompletionResponse,
+    Choice,
+    FunctionCall,
+    Message as ChoiceMessage,
+    ToolCall,
+    UsageStatistics,
+)
 from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -45,7 +49,6 @@ logger = get_logger(__name__)
 
 
 class AnthropicClient(LLMClientBase):
-
     @trace_method
     @deprecated("Synchronous version of this is no longer valid. Will result in model_dump of coroutine")
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:

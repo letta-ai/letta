@@ -34,7 +34,6 @@ class SandboxToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-
         # Store original memory state
         if agent_state:
             orig_memory_str = await agent_state.memory.compile_in_thread_async()

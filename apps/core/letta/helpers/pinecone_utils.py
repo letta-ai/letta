@@ -317,7 +317,6 @@ async def list_pinecone_index_for_files(file_id: str, actor: User, limit: int = 
         async with PineconeAsyncio(api_key=settings.pinecone_api_key) as pc:
             description = await pc.describe_index(name=settings.pinecone_source_index)
             async with pc.IndexAsyncio(host=description.index.host) as dense_index:
-
                 kwargs = {"namespace": namespace, "prefix": file_id}
                 if limit is not None:
                     kwargs["limit"] = limit

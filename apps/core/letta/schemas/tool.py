@@ -218,9 +218,9 @@ class ToolCreate(LettaBase):
         composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)
 
         assert len(composio_action_schemas) > 0, "User supplied parameters do not match any Composio tools"
-        assert (
-            len(composio_action_schemas) == 1
-        ), f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
+        assert len(composio_action_schemas) == 1, (
+            f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
+        )
 
         composio_action_schema = composio_action_schemas[0]
 

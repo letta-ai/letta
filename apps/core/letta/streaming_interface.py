@@ -117,9 +117,9 @@ class StreamingCLIInterface(AgentChunkStreamingInterface):
 
         # Starting a new buffer line
         if not self.streaming_buffer_type:
-            assert not (
-                message_delta.content is not None and message_delta.tool_calls is not None and len(message_delta.tool_calls)
-            ), f"Error: got both content and tool_calls in message stream\n{message_delta}"
+            assert not (message_delta.content is not None and message_delta.tool_calls is not None and len(message_delta.tool_calls)), (
+                f"Error: got both content and tool_calls in message stream\n{message_delta}"
+            )
 
             if message_delta.content is not None:
                 # Write out the prefix for inner thoughts

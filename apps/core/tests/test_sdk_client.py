@@ -9,9 +9,16 @@ from typing import List, Type
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import ContinueToolRule, CreateBlock
-from letta_client import Letta as LettaSDKClient
-from letta_client import LettaRequest, MaxCountPerStepToolRule, MessageCreate, TerminalToolRule, TextContent
+from letta_client import (
+    ContinueToolRule,
+    CreateBlock,
+    Letta as LettaSDKClient,
+    LettaRequest,
+    MaxCountPerStepToolRule,
+    MessageCreate,
+    TerminalToolRule,
+    TextContent,
+)
 from letta_client.client import BaseTool
 from letta_client.core import ApiError
 from letta_client.types import AgentState, ToolReturnMessage
@@ -1019,7 +1026,6 @@ def test_pydantic_inventory_management_tool(e2b_sandbox_mode, client: LettaSDKCl
 
 @pytest.mark.parametrize("e2b_sandbox_mode", [False], indirect=True)
 def test_pydantic_task_planning_tool(e2b_sandbox_mode, client: LettaSDKClient):
-
     class Step(BaseModel):
         name: str = Field(..., description="Name of the step.")
         description: str = Field(..., description="An exhaustive description of what this step is trying to achieve.")
@@ -1642,7 +1648,9 @@ def test_import_agent_file_from_disk(
     # Now import from the file
     with open(file_path, "rb") as f:
         import_result = client.agents.import_file(
-            file=f, append_copy_suffix=True, override_existing_tools=True  # Use suffix to avoid name conflict
+            file=f,
+            append_copy_suffix=True,
+            override_existing_tools=True,  # Use suffix to avoid name conflict
         )
 
     # Basic verification
@@ -1716,9 +1724,9 @@ def test_agent_serialization_v2(
     assert imported_agent.name == name, f"Agent name mismatch: {imported_agent.name} != {name}"
 
     # LLM and embedding configs should be preserved
-    assert (
-        imported_agent.llm_config.model == temp_agent.llm_config.model
-    ), f"LLM model mismatch: {imported_agent.llm_config.model} != {temp_agent.llm_config.model}"
+    assert imported_agent.llm_config.model == temp_agent.llm_config.model, (
+        f"LLM model mismatch: {imported_agent.llm_config.model} != {temp_agent.llm_config.model}"
+    )
     assert imported_agent.embedding_config.embedding_model == temp_agent.embedding_config.embedding_model, "Embedding model mismatch"
 
     # System prompt should be preserved
@@ -1728,9 +1736,9 @@ def test_agent_serialization_v2(
     assert set(imported_agent.tags) == set(temp_agent.tags), f"Tags mismatch: {imported_agent.tags} != {temp_agent.tags}"
 
     # Agent type should be preserved
-    assert (
-        imported_agent.agent_type == temp_agent.agent_type
-    ), f"Agent type mismatch: {imported_agent.agent_type} != {temp_agent.agent_type}"
+    assert imported_agent.agent_type == temp_agent.agent_type, (
+        f"Agent type mismatch: {imported_agent.agent_type} != {temp_agent.agent_type}"
+    )
 
     # ========== MEMORY BLOCKS ==========
     # Compare memory blocks directly from AgentState objects
@@ -1757,9 +1765,9 @@ def test_agent_serialization_v2(
     # Check context block
     assert "project_context" in imported_blocks_by_label, "Context block missing in imported agent"
     assert "financial markets" in imported_blocks_by_label["project_context"].value, "Context block content not preserved"
-    assert (
-        imported_blocks_by_label["project_context"].limit == original_blocks_by_label["project_context"].limit
-    ), "Context block limit mismatch"
+    assert imported_blocks_by_label["project_context"].limit == original_blocks_by_label["project_context"].limit, (
+        "Context block limit mismatch"
+    )
 
     # ========== TOOLS ==========
     # Compare tools directly from AgentState objects
@@ -1799,9 +1807,9 @@ def test_agent_serialization_v2(
     imported_user_msgs = [msg for msg in imported_messages if msg.message_type == "user_message" and "Test message" in msg.content]
 
     # Should have the same number of test messages
-    assert len(imported_user_msgs) == len(
-        original_user_msgs
-    ), f"User message count mismatch: {len(imported_user_msgs)} != {len(original_user_msgs)}"
+    assert len(imported_user_msgs) == len(original_user_msgs), (
+        f"User message count mismatch: {len(imported_user_msgs)} != {len(original_user_msgs)}"
+    )
 
     # Verify test message content is preserved
     if len(original_user_msgs) > 0 and len(imported_user_msgs) > 0:
@@ -1903,7 +1911,9 @@ def test_import_agent_with_files_from_disk(client: LettaSDKClient):
     # Now import from the file
     with open(file_path, "rb") as f:
         import_result = client.agents.import_file(
-            file=f, append_copy_suffix=True, override_existing_tools=True  # Use suffix to avoid name conflict
+            file=f,
+            append_copy_suffix=True,
+            override_existing_tools=True,  # Use suffix to avoid name conflict
         )
 
     # Verify import was successful
