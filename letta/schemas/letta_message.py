@@ -312,7 +312,17 @@ class AssistantMessage(LettaMessage):
 
 # NOTE: use Pydantic's discriminated unions feature: https://docs.pydantic.dev/latest/concepts/unions/#discriminated-unions
 LettaMessageUnion = Annotated[
-    Union[SystemMessage, UserMessage, ReasoningMessage, HiddenReasoningMessage, ToolCallMessage, ToolReturnMessage, AssistantMessage],
+    Union[
+        SystemMessage,
+        UserMessage,
+        ReasoningMessage,
+        HiddenReasoningMessage,
+        ToolCallMessage,
+        ToolReturnMessage,
+        AssistantMessage,
+        ApprovalRequestMessage,
+        ApprovalResponseMessage,
+    ],
     Field(discriminator="message_type"),
 ]
 
@@ -327,6 +337,8 @@ def create_letta_message_union_schema():
             {"$ref": "#/components/schemas/ToolCallMessage"},
             {"$ref": "#/components/schemas/ToolReturnMessage"},
             {"$ref": "#/components/schemas/AssistantMessage"},
+            {"$ref": "#/components/schemas/ApprovalRequestMessage"},
+            {"$ref": "#/components/schemas/ApprovalResponseMessage"},
         ],
         "discriminator": {
             "propertyName": "message_type",
@@ -338,6 +350,8 @@ def create_letta_message_union_schema():
                 "tool_call_message": "#/components/schemas/ToolCallMessage",
                 "tool_return_message": "#/components/schemas/ToolReturnMessage",
                 "assistant_message": "#/components/schemas/AssistantMessage",
+                "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+                "approval_response_message": "#/components/schemas/ApprovalResponseMessage",
             },
         },
     }
