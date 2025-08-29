@@ -187,21 +187,21 @@ class TurbopufferClient:
         from turbopuffer import AsyncTurbopuffer
         from turbopuffer.types import QueryParam
 
+        # validate inputs based on search mode first
+        if search_mode == "vector" and query_embedding is None:
+            raise ValueError("query_embedding is required for vector search mode")
+        if search_mode == "fts" and query_text is None:
+            raise ValueError("query_text is required for FTS search mode")
+        if search_mode == "hybrid":
+            if query_embedding is None or query_text is None:
+                raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
+        if search_mode not in ["vector", "fts", "hybrid", "timestamp"]:
+            raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', 'hybrid', or 'timestamp'")
+
         # Check if we should fallback to timestamp-based retrieval
-        if query_embedding is None and query_text is None:
+        if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
             # Fallback to retrieving most recent passages when no search query is provided
             search_mode = "timestamp"
-        else:
-            # validate inputs based on search mode
-            if search_mode == "vector" and query_embedding is None:
-                raise ValueError("query_embedding is required for vector search mode")
-            if search_mode == "fts" and query_text is None:
-                raise ValueError("query_text is required for FTS search mode")
-            if search_mode == "hybrid":
-                if query_embedding is None or query_text is None:
-                    raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
-            if search_mode not in ["vector", "fts", "hybrid"]:
-                raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', or 'hybrid'")
 
         namespace_name = self._get_namespace_name(archive_id)
 

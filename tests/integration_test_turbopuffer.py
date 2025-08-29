@@ -7,6 +7,7 @@ from letta.config import LettaConfig
 from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import TagMatchMode, VectorDBProvider
+from letta.schemas.passage import Passage
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -374,16 +375,26 @@ class TestTurbopufferIntegration:
             assert all(isinstance(score, float) for _, score in vector_heavy_results)
 
             # Test error handling - missing embedding for vector mode
-            with pytest.raises(ValueError, match="query_embedding is required"):
+            with pytest.raises(ValueError, match="query_embedding is required for vector search mode"):
                 await client.query_passages(archive_id=archive_id, search_mode="vector", top_k=3)
 
             # Test error handling - missing text for FTS mode
-            with pytest.raises(ValueError, match="query_text is required"):
+            with pytest.raises(ValueError, match="query_text is required for FTS search mode"):
                 await client.query_passages(archive_id=archive_id, search_mode="fts", top_k=3)
 
-            # Test error handling - missing both for hybrid mode
+            # Test error handling - missing text for hybrid mode (embedding provided but text missing)
             with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
                 await client.query_passages(archive_id=archive_id, query_embedding=[1.0, 2.0, 3.0], search_mode="hybrid", top_k=3)
+
+            # Test error handling - missing embedding for hybrid mode (text provided but embedding missing)
+            with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
+                await client.query_passages(archive_id=archive_id, query_text="test", search_mode="hybrid", top_k=3)
+
+            # Test explicit timestamp mode
+            timestamp_results = await client.query_passages(archive_id=archive_id, search_mode="timestamp", top_k=3)
+            assert len(timestamp_results) <= 3
+            # Should return passages ordered by timestamp (most recent first)
+            assert all(isinstance(passage, Passage) for passage, _ in timestamp_results)
 
         finally:
             # Clean up
