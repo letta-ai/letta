@@ -9659,7 +9659,7 @@ export const $MessageCreate = {
 
 export const $MessageRole = {
   type: 'string',
-  enum: ['assistant', 'user', 'tool', 'function', 'system'],
+  enum: ['assistant', 'user', 'tool', 'function', 'system', 'approval'],
   title: 'MessageRole',
 } as const;
 
@@ -12725,6 +12725,7 @@ export const $StopReasonType = {
     'no_tool_call',
     'tool_rule',
     'cancelled',
+    'requires_approval',
   ],
   title: 'StopReasonType',
 } as const;

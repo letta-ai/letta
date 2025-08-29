@@ -3537,7 +3537,13 @@ export type MessageCreate = {
  */
 export type role = 'user' | 'system' | 'assistant';
 
-export type MessageRole = 'assistant' | 'user' | 'tool' | 'function' | 'system';
+export type MessageRole =
+  | 'assistant'
+  | 'user'
+  | 'tool'
+  | 'function'
+  | 'system'
+  | 'approval';
 
 export type MessageType =
   | 'system_message'
@@ -4767,7 +4773,8 @@ export type StopReasonType =
   | 'max_steps'
   | 'no_tool_call'
   | 'tool_rule'
-  | 'cancelled';
+  | 'cancelled'
+  | 'requires_approval';
 
 /**
  * Configuration for an MCP server using Streamable HTTP

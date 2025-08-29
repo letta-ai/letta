@@ -829,6 +829,7 @@ export const MessageRole = z.union([
   z.literal('tool'),
   z.literal('function'),
   z.literal('system'),
+  z.literal('approval'),
 ]);
 
 export type openai__types__chat__chat_completion_message_function_tool_call__Function =
@@ -6667,6 +6668,7 @@ export const StopReasonType = z.union([
   z.literal('no_tool_call'),
   z.literal('tool_rule'),
   z.literal('cancelled'),
+  z.literal('requires_approval'),
 ]);
 
 export type LettaStopReason = z.infer<typeof LettaStopReason>;

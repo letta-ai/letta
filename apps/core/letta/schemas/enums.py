@@ -32,6 +32,7 @@ class MessageRole(str, Enum):
     tool = "tool"
     function = "function"
     system = "system"
+    approval = "approval"
 
 
 class OptionState(str, Enum):

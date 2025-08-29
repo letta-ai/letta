@@ -176,6 +176,46 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
     return messages
 
 
+def create_approval_request_message_from_llm_response(
+    agent_id: str,
+    model: str,
+    function_name: str,
+    function_arguments: Dict,
+    tool_call_id: str,
+    actor: User,
+    continue_stepping: bool = False,
+    reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
+    pre_computed_assistant_message_id: Optional[str] = None,
+    step_id: str | None = None,
+) -> Message:
+    # Construct the tool call with the assistant's message
+    # Force set request_heartbeat in tool_args to calculated continue_stepping
+    function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
+    tool_call = OpenAIToolCall(
+        id=tool_call_id,
+        function=OpenAIFunction(
+            name=function_name,
+            arguments=json.dumps(function_arguments),
+        ),
+        type="function",
+    )
+    # TODO: Use ToolCallContent instead of tool_calls
+    # TODO: This helps preserve ordering
+    approval_message = Message(
+        role=MessageRole.approval,
+        content=reasoning_content if reasoning_content else [],
+        agent_id=agent_id,
+        model=model,
+        tool_calls=[tool_call],
+        tool_call_id=tool_call_id,
+        created_at=get_utc_time(),
+        step_id=step_id,
+    )
+    if pre_computed_assistant_message_id:
+        approval_message.id = pre_computed_assistant_message_id
+    return approval_message
+
+
 def create_letta_messages_from_llm_response(
     agent_id: str,
     model: str,
