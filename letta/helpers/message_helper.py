@@ -40,8 +40,7 @@ def _convert_message_create_to_message(
     assert isinstance(message_create, MessageCreate)
 
     # Extract message content
-    if isinstance(message_create.content, str):
-        assert message_create.content != "", "Message content must not be empty"
+    if isinstance(message_create.content, str) and message_create.content != "":
         message_content = [TextContent(text=message_create.content)]
     elif isinstance(message_create.content, list) and len(message_create.content) > 0:
         message_content = message_create.content
