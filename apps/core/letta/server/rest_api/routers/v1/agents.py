@@ -1072,6 +1072,8 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
+    if len(request.messages) == 0:
+        raise ValueError("Messages must not be empty")
     request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
