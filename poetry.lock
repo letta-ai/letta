@@ -3685,14 +3685,14 @@ vcr = ["vcrpy (>=7.0.0)"]
 
 [[package]]
 name = "letta-client"
-version = "0.1.299"
+version = "0.1.301"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "letta_client-0.1.299-py3-none-any.whl", hash = "sha256:6cbcaf691886cb89035131d93338233c01dbd33632eeb8d567594a5a8e396ece"},
-    {file = "letta_client-0.1.299.tar.gz", hash = "sha256:58fb58b9ade5ab7c6b5cacc308ecb7c444f9a082aabaa8439ab42894420791ce"},
+    {file = "letta_client-0.1.301-py3-none-any.whl", hash = "sha256:e000a7d0ac8ea6300a2dc374976a33f3272ff4714d76d13fccfcd1d9c7bef195"},
+    {file = "letta_client-0.1.301.tar.gz", hash = "sha256:0de9be3d3128ce06bb7880ea2796adcdcf1db70ca3a11182ebaee2c4a3749d8f"},
 ]
 
 [package.dependencies]
@@ -9309,4 +9309,4 @@ sqlite = ["aiosqlite", "sqlite-vec"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.11"
-content-hash = "3a8f4f74713670c1c5527915c363f502593db75fc188efa28b8c1a385e4b80bb"
+content-hash = "07c6085d0512bb634d1752c5dbf1da60ff951e2d66df7dbdce6f98d427a4e5c6"
