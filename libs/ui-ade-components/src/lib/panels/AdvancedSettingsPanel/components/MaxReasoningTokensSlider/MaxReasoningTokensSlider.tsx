@@ -68,11 +68,13 @@ export function MaxReasoningTokensSlider(props: MaxReasoningTokensSliderProps) {
           : undefined
       }
       onValueChange={(value) => {
+        // Update the visual state immediately while dragging
         setDraftMaxReasoningTokens(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-
-        if (parsedNumber !== false) {
+      }}
+      onValueCommit={(value) => {
+        // Only sync to app state when mouse is released
+        const parsedNumber = tryParseSliderNumber(value[0].toString());
+        if (parsedNumber !== false && (parsedNumber === 0 || (parsedNumber >= 1024 && parsedNumber <= maxTokens))) {
           handleMaxReasoningTokensChange(parsedNumber);
         }
       }}

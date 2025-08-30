@@ -290,15 +290,23 @@
     },
     "ContextWindowSlider": {
       "error": "Invalid context window size, minimum value is 4000",
-      "label": "Context window"
+      "label": "Context window",
+      "tooltip": "The maximum number of tokens the model can process in a single request, including both input and output. Larger windows allow for more context but may increase costs / lower speed."
     },
     "TemperatureSlider": {
       "label": "Temperature",
-      "error": "Invalid temperature value, must be between 0 and 1"
+      "error": "Invalid temperature value, must be between 0 and 1",
+      "tooltip": "Controls randomness in responses. Lower values (0.0) make responses more focused and deterministic, higher values (1.0) make them more creative and varied."
     },
     "MaxTokensSlider": {
       "label": "Max output tokens",
-      "error": "Invalid max output tokens value, minimum value is 1024"
+      "error": "Invalid max output tokens value, minimum value is 1024",
+      "exceedsContextWindow": "Max tokens cannot exceed context window ({contextWindow})",
+      "tooltip": "The maximum number of tokens the model can generate in its response. Setting this limit helps control response length and costs."
+    },
+    "EnableMaxTokensSwitch": {
+      "label": "Enable max output tokens",
+      "tooltip": "When enabled, explicitly limits the model's response length. When disabled, uses the model's default maximum."
     },
     "MaxReasoningTokensSlider": {
       "label": "Max reasoning tokens",
@@ -658,7 +666,7 @@
       "moreInfo": "Why am I seeing this?",
       "popover": {
         "title": "Why is this model invalid?",
-        "description": "The model you have selected is not supported in Letta cloud. This usually means that an invalid llm config was set via the SDK or you have removed the bring-your-own-key provider that came with this model."
+        "description": "The model you have selected is not supported in Letta cloud. This usually means that an invalid LLM config was set via the SDK."
       }
     }
   },

@@ -252,7 +252,7 @@ describe(
 
             // Verify initial state has default llm_config
             expect(initialAgent.llm_config.temperature).to.eq(0.7);
-            expect(initialAgent.llm_config.max_tokens).to.eq(4096);
+            expect(initialAgent.llm_config.max_tokens).to.be.null;
             expect(initialAgent.llm_config.context_window).to.eq(128000);
           });
         });
@@ -264,9 +264,12 @@ describe(
           }).click();
 
           // Update properties
-          cy.findByTestId('slider-input:context-window-slider').clear().type('16000');
-          cy.findByTestId('slider-input:temperature-slider').clear().type('0.3');
-          cy.findByTestId('slider-input:max-tokens-slider').clear().type('2000');
+          cy.findByTestId('slider-input:context-window-slider').clear().type('16000').blur();
+          cy.findByTestId('slider-input:temperature-slider').clear().type('0.3').blur();
+
+          // Enable max tokens first (since it's null by default)
+          cy.findByTestId('switch:enable-max-tokens').click();
+          cy.findByTestId('slider-input:max-tokens-slider').clear().type('2000').blur();
 
           // should automatically update
         });
@@ -586,7 +589,10 @@ describe(
             cy.findByTestId('toggle-variables-button', { timeout: 50000 })
               .first()
               .click();
-            cy.findByTestId('tab-item:environment').click();
+            // Wait for the tab to be visible and clickable
+            cy.findByTestId('tab-item:environment', { timeout: 10000 })
+              .should('be.visible')
+              .click();
 
             cy.findByTestId('add-variable-button').click();
             cy.findByTestId('key-value-editor-key-0').type('tool_variable');

@@ -55,6 +55,9 @@ export function TemperatureSlider(props: TemperatureSliderProps) {
       fullWidth
       id="temperature-slider"
       label={t('TemperatureSlider.label')}
+      infoTooltip={{
+        text: t('TemperatureSlider.tooltip'),
+      }}
       value={draftTemperature}
       errorMessage={
         parsedDraftTemperature === false
@@ -62,11 +65,13 @@ export function TemperatureSlider(props: TemperatureSliderProps) {
           : undefined
       }
       onValueChange={(value) => {
+        // Update the visual state immediately while dragging
         setDraftTemperature(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
-
-        if (parsedNumber) {
+      }}
+      onValueCommit={(value) => {
+        // Only sync to app state when mouse is released
+        const parsedNumber = tryParseSliderNumber(value[0].toString());
+        if (parsedNumber !== false && parsedNumber >= 0 && parsedNumber <= 1) {
           handleTemperatureChange(parsedNumber);
         }
       }}

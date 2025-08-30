@@ -30,15 +30,16 @@ SliderRoot.displayName = SliderPrimitive.Root.displayName;
 
 type SliderProps = Omit<
   React.ComponentProps<typeof SliderRoot>,
-  'onValueChange' | 'value'
+  'onValueChange' | 'value' | 'onValueCommit'
 > & {
   fullWidth?: boolean;
   value: string;
   onValueChange?: (value: string) => void;
+  onValueCommit?: (value: number[]) => void;
 };
 
 function SliderInput(props: SliderProps) {
-  const { value, onValueChange, fullWidth, ...sliderProps } = props;
+  const { value, onValueChange, onValueCommit, fullWidth, ...sliderProps } = props;
 
   const [sliderValue, setSliderValue] = useState<string>(value);
 
@@ -70,6 +71,7 @@ function SliderInput(props: SliderProps) {
         onValueChange={(value) => {
           handleSliderValueChange(value[0].toString());
         }}
+        onValueCommit={onValueCommit}
         {...sliderProps}
       />
       <input
@@ -81,6 +83,11 @@ function SliderInput(props: SliderProps) {
         value={sliderValue}
         onChange={(e) => {
           handleSliderValueChange(e.target.value);
+        }}
+        onBlur={() => {
+          if (onValueCommit && isSliderValueValid) {
+            onValueCommit([Number(sliderValue)]);
+          }
         }}
       />
     </HStack>

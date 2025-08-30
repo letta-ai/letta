@@ -12,6 +12,7 @@ import {
   MIN_CONTEXT_WINDOW,
 } from '../AdvancedSettingsPanel/components/ContextWindowSlider/ContextWindowSlider';
 import { MaxTokensSlider } from '../AdvancedSettingsPanel/components/MaxOutputTokensSlider/MaxOutputTokensSlider';
+import { EnableMaxTokensSwitch } from '../AdvancedSettingsPanel/components/EnableMaxTokensSwitch/EnableMaxTokensSwitch';
 import { MaxReasoningTokensSlider } from '../AdvancedSettingsPanel/components/MaxReasoningTokensSlider/MaxReasoningTokensSlider';
 
 export function LLMConfigPanel() {
@@ -52,16 +53,27 @@ export function LLMConfigPanel() {
             }
           />
         )}
-        {currentBaseModel?.max_tokens && (
+        <EnableMaxTokensSwitch
+          defaultMaxTokens={currentBaseModel?.max_tokens || 4096}
+        />
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            currentAgent.llm_config.max_tokens !== null &&
+            currentAgent.llm_config.max_tokens !== undefined
+              ? 'max-h-[200px] opacity-100'
+              : 'max-h-0 opacity-0 overflow-hidden'
+          }`}
+        >
           <MaxTokensSlider
-            maxContextWindow={
+            maxTokens={currentBaseModel?.max_tokens || 4096}
+            contextWindow={
               currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
             }
             defaultMaxTokens={
-              currentAgent.llm_config.max_tokens || currentBaseModel.max_tokens
+              currentAgent.llm_config.max_tokens || currentBaseModel?.max_tokens || 4096
             }
           />
-        )}
+        </div>
         {currentBaseModel?.max_tokens &&
           currentBaseModel.model.startsWith('claude-3-7-sonnet') && (
             <MaxReasoningTokensSlider

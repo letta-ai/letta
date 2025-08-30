@@ -37,7 +37,10 @@ describe('letta', () => {
     cy.findByTestId('toggle-variables-button', { timeout: 50000 })
       .first()
       .click();
-    cy.findByTestId('tab-item:environment').click();
+    // Wait for the tab to be visible and clickable
+    cy.findByTestId('tab-item:environment', { timeout: 10000 })
+      .should('be.visible')
+      .click();
 
     cy.findByTestId('add-variable-button').click();
     cy.findByTestId('key-value-editor-key-0').type('tool_variable');

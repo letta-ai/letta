@@ -48,6 +48,9 @@ export function ContextWindowSlider(props: ContextWindowSliderProps) {
       fullWidth
       id="context-window-slider"
       label={t('ContextWindowSlider.label')}
+      infoTooltip={{
+        text: t('ContextWindowSlider.tooltip'),
+      }}
       errorMessage={
         parsedDraftContextWindow === false
           ? t('ContextWindowSlider.error')
@@ -55,9 +58,12 @@ export function ContextWindowSlider(props: ContextWindowSliderProps) {
       }
       value={draftContextWindow}
       onValueChange={(value) => {
+        // Update the visual state immediately while dragging
         setDraftContextWindow(value);
-
-        const parsedNumber = tryParseSliderNumber(value);
+      }}
+      onValueCommit={(value) => {
+        // Only sync to app state when mouse is released
+        const parsedNumber = tryParseSliderNumber(value[0].toString());
         if (parsedNumber !== false) {
           if (parsedNumber >= MIN_CONTEXT_WINDOW) {
             handleContextWindowChange(parsedNumber);
