@@ -148,6 +148,27 @@ async def _prepare_in_context_messages_no_persist_async(
         # Otherwise, include the full list of messages by ID for context
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
+    # Check for approval-related message validation
+    if len(input_messages) == 1 and input_messages[0].type == "approval":
+        # User is trying to send an approval response
+        if current_in_context_messages[-1].role != "approval":
+            raise ValueError(
+                "Cannot process approval response: No tool call is currently awaiting approval. "
+                "Please send a regular message to interact with the agent."
+            )
+        if input_messages[0].approval_request_id != current_in_context_messages[-1].id:
+            raise ValueError(
+                f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
+                f"but received '{input_messages[0].approval_request_id}'."
+            )
+    else:
+        # User is trying to send a regular message
+        if current_in_context_messages[-1].role == "approval":
+            raise ValueError(
+                "Cannot send a new message: The agent is waiting for approval on a tool call. "
+                "Please approve or deny the pending request before continuing."
+            )
+
     # Create a new user message from the input but dont store it yet
     new_in_context_messages = create_input_messages(
         input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
