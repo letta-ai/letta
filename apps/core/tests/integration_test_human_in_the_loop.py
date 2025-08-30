@@ -7,7 +7,8 @@ from typing import Any, List
 import pytest
 import requests
 from dotenv import load_dotenv
-from letta_client import Letta, MessageCreate
+from letta_client import ApprovalCreate, Letta, MessageCreate
+from letta_client.core.api_error import ApiError
 
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -98,7 +99,7 @@ def approval_tool_fixture(client: Letta):
     client.tools.upsert_base_tools()
     approval_tool = client.tools.upsert_from_function(
         func=requires_approval_tool,
-        # default_requires_approval=True,
+        # default_requires_approval=True, switch to this once it is supported in sdk
     )
     yield approval_tool
 
@@ -118,6 +119,11 @@ def agent(client: Letta, approval_tool_fixture) -> AgentState:
         embedding="openai/text-embedding-3-small",
         tags=["approval_test"],
     )
+    client.agents.tools.modify_approval(
+        agent_id=agent_state.id,
+        tool_name=approval_tool_fixture.name,
+        requires_approval=True,
+    )
     yield agent_state
 
 
@@ -136,6 +142,13 @@ def test_send_message_with_approval_tool(
     This test just verifies that the agent can send a message successfully.
     The actual approval logic testing will be filled out by the user.
     """
+    # Attempt to send approval without pending request
+    with pytest.raises(ApiError, match="No tool call is currently awaiting approval"):
+        client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[ApprovalCreate(approve=True, approval_request_id="fake_id")],
+        )
+
     # Send a simple greeting message to test basic functionality
     response = client.agents.messages.create(
         agent_id=agent.id,
@@ -147,3 +160,17 @@ def test_send_message_with_approval_tool(
     assert len(response.messages) == 2
     assert response.messages[0].message_type == "reasoning_message"
     assert response.messages[1].message_type == "approval_request_message"
+
+    # Attempt to send user message - should fail
+    with pytest.raises(ApiError, match="Please approve or deny the pending request before continuing"):
+        client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[MessageCreate(role="user", content="hi")],
+        )
+
+    # Attempt to send approval with incorrect id
+    with pytest.raises(ApiError, match="Invalid approval request ID"):
+        client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[ApprovalCreate(approve=True, approval_request_id="fake_id")],
+        )
