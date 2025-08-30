@@ -555,7 +555,12 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
 
 type ErrorType = 'default' | 'overage';
 
-export function DeployAgentDialog() {
+interface DeployAgentDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function DeployAgentDialog(props: DeployAgentDialogProps) {
+  const { trigger } = props;
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorType, setErrorType] = React.useState<ErrorType | null>(null);
   const [selectedTemplate, setSelectedTemplate] =
@@ -602,12 +607,14 @@ export function DeployAgentDialog() {
       errorMessage={errorMessage || ''}
       size={selectedTemplate ? 'large' : 'xxlarge'}
       trigger={
-        <Button
-          data-testid="deploy-agent-dialog-start"
-          label={t('trigger')}
-          preIcon={<PlusIcon />}
-          color="primary"
-        />
+        trigger || (
+          <Button
+            data-testid="deploy-agent-dialog-start"
+            label={t('trigger')}
+            preIcon={<PlusIcon />}
+            color="primary"
+          />
+        )
       }
     >
       {isCreating && <GoingToADEView mode="agent" />}

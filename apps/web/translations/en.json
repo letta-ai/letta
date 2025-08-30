@@ -1571,6 +1571,7 @@
     "RecentAgentsSection": {
       "title": "Recent agents",
       "viewAgent": "View",
+      "createAgent": "New agent",
       "emptyState": {
         "title": "No agents deployed",
         "description": "You have not deployed any agents in this project yet, create one from a template"

@@ -18,6 +18,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
+import { DeployAgentDialog } from './agents/DeployAgentDialog/DeployAgentDialog';
 import { useUserHasPermission } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents } from '@letta-cloud/sdk-core';
@@ -40,10 +41,28 @@ function RecentAgentsSection() {
   const { formatDate } = useFormatters();
   const t = useTranslations('projects/(projectSlug)/page');
 
+  const [canCreateAgents] = useUserHasPermission(
+    ApplicationServices.CREATE_AGENT,
+  );
+
   return (
     <BoxList
       icon={<LettaInvaderIcon />}
       title={t('RecentAgentsSection.title')}
+      topRightAction={
+        canCreateAgents && (
+          <DeployAgentDialog
+            trigger={
+              <Button
+                label={t('RecentAgentsSection.createAgent')}
+                size="small"
+                hideLabel
+                preIcon={<PlusIcon />}
+              />
+            }
+          />
+        )
+      }
       items={(agents || []).map((agent) => ({
         title: agent.name,
         description: t('RecentAgentsSection.createdAt', {
