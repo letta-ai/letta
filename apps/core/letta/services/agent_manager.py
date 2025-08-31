@@ -2690,6 +2690,8 @@ class AgentManager:
                         top_k=limit,
                         tags=tags,
                         tag_match_mode=tag_match_mode or TagMatchMode.ANY,
+                        start_date=start_date,
+                        end_date=end_date,
                     )
 
                     # Return just the passages (without scores)

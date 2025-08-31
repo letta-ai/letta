@@ -126,20 +126,70 @@ class LettaCoreToolExecutor(ToolExecutor):
         tags: Optional[list[str]] = None,
         tag_match_mode: Literal["any", "all"] = "any",
         top_k: Optional[int] = None,
+        start_datetime: Optional[str] = None,
+        end_datetime: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Search archival memory using semantic (embedding-based) search.
+        Search archival memory using semantic (embedding-based) search with optional temporal filtering.
 
         Args:
             query (str): String to search for using semantic similarity.
             tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
             tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
             top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
+            start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format.
+            end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format.
 
         Returns:
             str: Query result string containing matching passages with timestamps, content, and tags.
         """
         try:
+            # Parse datetime parameters if provided
+            from datetime import datetime
+
+            start_date = None
+            end_date = None
+
+            if start_datetime:
+                try:
+                    # Try parsing as full datetime first (with time)
+                    start_date = datetime.fromisoformat(start_datetime)
+                except ValueError:
+                    try:
+                        # Fall back to date-only format
+                        start_date = datetime.strptime(start_datetime, "%Y-%m-%d")
+                        # Set to beginning of day
+                        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    except ValueError:
+                        raise ValueError(
+                            f"Invalid start_datetime format: {start_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+                        )
+
+                # Apply agent's timezone if datetime is naive
+                if start_date.tzinfo is None and agent_state.timezone:
+                    tz = ZoneInfo(agent_state.timezone)
+                    start_date = start_date.replace(tzinfo=tz)
+
+            if end_datetime:
+                try:
+                    # Try parsing as full datetime first (with time)
+                    end_date = datetime.fromisoformat(end_datetime)
+                except ValueError:
+                    try:
+                        # Fall back to date-only format
+                        end_date = datetime.strptime(end_datetime, "%Y-%m-%d")
+                        # Set to end of day for end dates
+                        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    except ValueError:
+                        raise ValueError(
+                            f"Invalid end_datetime format: {end_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+                        )
+
+                # Apply agent's timezone if datetime is naive
+                if end_date.tzinfo is None and agent_state.timezone:
+                    tz = ZoneInfo(agent_state.timezone)
+                    end_date = end_date.replace(tzinfo=tz)
+
             # Convert string to TagMatchMode enum
             tag_mode = TagMatchMode.ANY if tag_match_mode == "any" else TagMatchMode.ALL
 
@@ -154,6 +204,8 @@ class LettaCoreToolExecutor(ToolExecutor):
                 embed_query=True,
                 tags=tags,
                 tag_match_mode=tag_mode,
+                start_date=start_date,
+                end_date=end_date,
             )
 
             # Format results to include tags with friendly timestamps
