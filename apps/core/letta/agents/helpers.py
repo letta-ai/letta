@@ -161,6 +161,10 @@ async def _prepare_in_context_messages_no_persist_async(
                 f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
                 f"but received '{input_messages[0].approval_request_id}'."
             )
+        if input_messages[0].approve:
+            new_in_context_messages = []
+        else:
+            raise NotImplementedError("Deny flow not yet supported")
     else:
         # User is trying to send a regular message
         if current_in_context_messages[-1].role == "approval":
@@ -169,10 +173,10 @@ async def _prepare_in_context_messages_no_persist_async(
                 "Please approve or deny the pending request before continuing."
             )
 
-    # Create a new user message from the input but dont store it yet
-    new_in_context_messages = create_input_messages(
-        input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
-    )
+        # Create a new user message from the input but dont store it yet
+        new_in_context_messages = create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
+        )
 
     return current_in_context_messages, new_in_context_messages
 
