@@ -50,7 +50,7 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
         return SystemMessage(**m_dict)
     elif role == "user":
         return UserMessage(**m_dict)
-    elif role == "assistant":
+    elif role == "assistant" or role == "approval":
         return AssistantMessage(**m_dict)
     elif role == "tool":
         return ToolMessage(**m_dict)

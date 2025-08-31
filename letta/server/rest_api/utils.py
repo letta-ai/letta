@@ -233,34 +233,36 @@ def create_letta_messages_from_llm_response(
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     step_id: str | None = None,
+    is_approval: bool | None = None,
 ) -> List[Message]:
     messages = []
-    # Construct the tool call with the assistant's message
-    # Force set request_heartbeat in tool_args to calculated continue_stepping
-    function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
-    tool_call = OpenAIToolCall(
-        id=tool_call_id,
-        function=OpenAIFunction(
-            name=function_name,
-            arguments=json.dumps(function_arguments),
-        ),
-        type="function",
-    )
-    # TODO: Use ToolCallContent instead of tool_calls
-    # TODO: This helps preserve ordering
-    assistant_message = Message(
-        role=MessageRole.assistant,
-        content=reasoning_content if reasoning_content else [],
-        agent_id=agent_id,
-        model=model,
-        tool_calls=[tool_call],
-        tool_call_id=tool_call_id,
-        created_at=get_utc_time(),
-        batch_item_id=llm_batch_item_id,
-    )
-    if pre_computed_assistant_message_id:
-        assistant_message.id = pre_computed_assistant_message_id
-    messages.append(assistant_message)
+    if not is_approval:
+        # Construct the tool call with the assistant's message
+        # Force set request_heartbeat in tool_args to calculated continue_stepping
+        function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping
+        tool_call = OpenAIToolCall(
+            id=tool_call_id,
+            function=OpenAIFunction(
+                name=function_name,
+                arguments=json.dumps(function_arguments),
+            ),
+            type="function",
+        )
+        # TODO: Use ToolCallContent instead of tool_calls
+        # TODO: This helps preserve ordering
+        assistant_message = Message(
+            role=MessageRole.assistant,
+            content=reasoning_content if reasoning_content else [],
+            agent_id=agent_id,
+            model=model,
+            tool_calls=[tool_call],
+            tool_call_id=tool_call_id,
+            created_at=get_utc_time(),
+            batch_item_id=llm_batch_item_id,
+        )
+        if pre_computed_assistant_message_id:
+            assistant_message.id = pre_computed_assistant_message_id
+        messages.append(assistant_message)
 
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering
