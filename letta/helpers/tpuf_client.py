@@ -167,6 +167,8 @@ class TurbopufferClient:
         tag_match_mode: TagMatchMode = TagMatchMode.ANY,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> List[Tuple[PydanticPassage, float]]:
         """Query passages from Turbopuffer using vector search, full-text search, or hybrid search.
 
@@ -180,6 +182,8 @@ class TurbopufferClient:
             tag_match_mode: TagMatchMode.ANY (match any tag) or TagMatchMode.ALL (match all tags) - default: TagMatchMode.ANY
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
+            start_date: Optional datetime to filter passages created after this date
+            end_date: Optional datetime to filter passages created before this date
 
         Returns:
             List of (passage, score) tuples
@@ -225,6 +229,29 @@ class TurbopufferClient:
                         # For ANY mode, use ContainsAny to match any of the tags
                         tag_filter = ("tags", "ContainsAny", tags)
 
+                # build date filter conditions
+                date_filters = []
+                if start_date:
+                    # Turbopuffer expects datetime objects directly for comparison
+                    date_filters.append(("created_at", "Gte", start_date))
+                if end_date:
+                    # Turbopuffer expects datetime objects directly for comparison
+                    date_filters.append(("created_at", "Lte", end_date))
+
+                # combine all filters
+                all_filters = []
+                if tag_filter:
+                    all_filters.append(tag_filter)
+                if date_filters:
+                    all_filters.extend(date_filters)
+
+                # create final filter expression
+                final_filter = None
+                if len(all_filters) == 1:
+                    final_filter = all_filters[0]
+                elif len(all_filters) > 1:
+                    final_filter = ("And", all_filters)
+
                 if search_mode == "timestamp":
                     # Fallback: retrieve most recent passages by timestamp
                     query_params = {
@@ -232,8 +259,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
-                    if tag_filter:
-                        query_params["filters"] = tag_filter
+                    if final_filter:
+                        query_params["filters"] = final_filter
 
                     result = await namespace.query(**query_params)
                     return self._process_single_query_results(result, archive_id, tags)
@@ -245,8 +272,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
-                    if tag_filter:
-                        query_params["filters"] = tag_filter
+                    if final_filter:
+                        query_params["filters"] = final_filter
 
                     result = await namespace.query(**query_params)
                     return self._process_single_query_results(result, archive_id, tags)
@@ -258,8 +285,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
-                    if tag_filter:
-                        query_params["filters"] = tag_filter
+                    if final_filter:
+                        query_params["filters"] = final_filter
 
                     result = await namespace.query(**query_params)
                     return self._process_single_query_results(result, archive_id, tags, is_fts=True)
@@ -274,8 +301,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
-                    if tag_filter:
-                        vector_query["filters"] = tag_filter
+                    if final_filter:
+                        vector_query["filters"] = final_filter
                     queries.append(vector_query)
 
                     # full-text search query
@@ -284,8 +311,8 @@ class TurbopufferClient:
                         "top_k": top_k,
                         "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
                     }
-                    if tag_filter:
-                        fts_query["filters"] = tag_filter
+                    if final_filter:
+                        fts_query["filters"] = final_filter
                     queries.append(fts_query)
 
                     # execute multi-query

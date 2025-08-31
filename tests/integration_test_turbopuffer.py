@@ -527,6 +527,141 @@ class TestTurbopufferIntegration:
             except:
                 pass
 
+    @pytest.mark.asyncio
+    async def test_temporal_filtering_with_real_tpuf(self, enable_turbopuffer):
+        """Test temporal filtering with date ranges"""
+        from datetime import datetime, timedelta, timezone
+
+        # Skip if Turbopuffer is not properly configured
+        if not should_use_tpuf():
+            pytest.skip("Turbopuffer not configured - skipping TPUF temporal filtering test")
+
+        # Create client
+        client = TurbopufferClient()
+
+        # Create a unique archive ID for this test
+        archive_id = f"test-temporal-{uuid.uuid4()}"
+
+        try:
+            # Create passages with different timestamps
+            now = datetime.now(timezone.utc)
+            yesterday = now - timedelta(days=1)
+            last_week = now - timedelta(days=7)
+            last_month = now - timedelta(days=30)
+
+            # Insert passages with specific timestamps
+            test_passages = [
+                ("Today's meeting notes about project Alpha", now),
+                ("Yesterday's standup summary", yesterday),
+                ("Last week's sprint review", last_week),
+                ("Last month's quarterly planning", last_month),
+            ]
+
+            # We need to generate embeddings for the passages
+            # For testing, we'll use simple dummy embeddings
+            for text, timestamp in test_passages:
+                dummy_embedding = [1.0, 2.0, 3.0]  # Simple test embedding
+                passage_id = f"passage-{uuid.uuid4()}"
+
+                await client.insert_archival_memories(
+                    archive_id=archive_id,
+                    text_chunks=[text],
+                    embeddings=[dummy_embedding],
+                    passage_ids=[passage_id],
+                    organization_id="test-org",
+                    created_at=timestamp,
+                )
+
+            # Test 1: Query with date range (last 3 days)
+            three_days_ago = now - timedelta(days=3)
+            results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 2.0, 3.0],
+                search_mode="vector",
+                top_k=10,
+                start_date=three_days_ago,
+                end_date=now,
+            )
+
+            # Should only get today's and yesterday's passages
+            passages = [p for p, _ in results]
+            texts = [p.text for p in passages]
+            assert len(passages) == 2
+            assert "Today's meeting notes" in texts[0] or "Today's meeting notes" in texts[1]
+            assert "Yesterday's standup" in texts[0] or "Yesterday's standup" in texts[1]
+            assert "Last week's sprint" not in str(texts)
+            assert "Last month's quarterly" not in str(texts)
+
+            # Test 2: Query with only start_date (everything after 2 weeks ago)
+            two_weeks_ago = now - timedelta(days=14)
+            results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 2.0, 3.0],
+                search_mode="vector",
+                top_k=10,
+                start_date=two_weeks_ago,
+            )
+
+            # Should get all except last month's passage
+            passages = [p for p, _ in results]
+            assert len(passages) == 3
+            texts = [p.text for p in passages]
+            assert "Last month's quarterly" not in str(texts)
+
+            # Test 3: Query with only end_date (everything before yesterday)
+            results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 2.0, 3.0],
+                search_mode="vector",
+                top_k=10,
+                end_date=yesterday + timedelta(hours=12),  # Middle of yesterday
+            )
+
+            # Should get yesterday and older passages
+            passages = [p for p, _ in results]
+            assert len(passages) >= 3  # yesterday, last week, last month
+            texts = [p.text for p in passages]
+            assert "Today's meeting notes" not in str(texts)
+
+            # Test 4: Test with FTS mode and date filtering
+            results = await client.query_passages(
+                archive_id=archive_id,
+                query_text="meeting notes project",
+                search_mode="fts",
+                top_k=10,
+                start_date=yesterday,
+            )
+
+            # Should only find today's meeting notes
+            passages = [p for p, _ in results]
+            if len(passages) > 0:  # FTS might not match if text search doesn't find keywords
+                texts = [p.text for p in passages]
+                assert "Today's meeting notes" in texts[0]
+
+            # Test 5: Test with hybrid mode and date filtering
+            results = await client.query_passages(
+                archive_id=archive_id,
+                query_embedding=[1.0, 2.0, 3.0],
+                query_text="sprint review",
+                search_mode="hybrid",
+                top_k=10,
+                start_date=last_week - timedelta(days=1),
+                end_date=last_week + timedelta(days=1),
+            )
+
+            # Should find last week's sprint review
+            passages = [p for p, _ in results]
+            if len(passages) > 0:
+                texts = [p.text for p in passages]
+                assert "Last week's sprint review" in texts[0]
+
+        finally:
+            # Clean up
+            try:
+                await client.delete_all_passages(archive_id)
+            except:
+                pass
+
 
 @pytest.mark.parametrize("turbopuffer_mode", [True, False], indirect=True)
 class TestTurbopufferParametrized:
@@ -566,3 +701,53 @@ class TestTurbopufferParametrized:
         # Verify deletion
         remaining = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
         assert not any(p.id == passages[0].id for p in remaining)
+
+    @pytest.mark.asyncio
+    async def test_temporal_filtering_in_both_modes(self, turbopuffer_mode, server, default_user, sarah_agent):
+        """Test that temporal filtering works in both NATIVE and TPUF modes"""
+        from datetime import datetime, timedelta, timezone
+
+        # Insert passages with different timestamps
+        now = datetime.now(timezone.utc)
+        yesterday = now - timedelta(days=1)
+        last_week = now - timedelta(days=7)
+
+        # Insert passages with specific timestamps
+        recent_passage = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent, text="Recent update from today", actor=default_user, created_at=now
+        )
+
+        old_passage = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent, text="Old update from last week", actor=default_user, created_at=last_week
+        )
+
+        # Query with date range that includes only recent passage
+        start_date = yesterday
+        end_date = now + timedelta(hours=1)  # Slightly in the future to ensure we catch it
+
+        # Query with date filtering
+        results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user, agent_id=sarah_agent.id, start_date=start_date, end_date=end_date, limit=10
+        )
+
+        # Should find only the recent passage, not the old one
+        assert len(results) >= 1
+        assert any("Recent update from today" in p.text for p in results)
+        assert not any("Old update from last week" in p.text for p in results)
+
+        # Query with date range that includes only the old passage
+        old_start = last_week - timedelta(days=1)
+        old_end = last_week + timedelta(days=1)
+
+        old_results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user, agent_id=sarah_agent.id, start_date=old_start, end_date=old_end, limit=10
+        )
+
+        # Should find only the old passage
+        assert len(old_results) >= 1
+        assert any("Old update from last week" in p.text for p in old_results)
+        assert not any("Recent update from today" in p.text for p in old_results)
+
+        # Clean up
+        await server.passage_manager.delete_agent_passages_async(recent_passage, default_user)
+        await server.passage_manager.delete_agent_passages_async(old_passage, default_user)

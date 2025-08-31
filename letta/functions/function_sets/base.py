@@ -78,16 +78,37 @@ async def archival_memory_insert(self: "Agent", content: str, tags: Optional[lis
 
 
 async def archival_memory_search(
-    self: "Agent", query: str, tags: Optional[list[str]] = None, tag_match_mode: Literal["any", "all"] = "any", top_k: Optional[int] = None
+    self: "Agent",
+    query: str,
+    tags: Optional[list[str]] = None,
+    tag_match_mode: Literal["any", "all"] = "any",
+    top_k: Optional[int] = None,
+    start_datetime: Optional[str] = None,
+    end_datetime: Optional[str] = None,
 ) -> Optional[str]:
     """
-    Search archival memory using semantic (embedding-based) search.
+    Search archival memory using semantic (embedding-based) search with optional temporal filtering.
 
     Args:
         query (str): String to search for using semantic similarity.
         tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
         tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
         top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
+        start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
+        end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+
+    Examples:
+        # Search all passages
+        archival_memory_search(query="project updates")
+
+        # Search with date range (full days)
+        archival_memory_search(query="meetings", start_datetime="2024-01-15", end_datetime="2024-01-20")
+
+        # Search with specific time range
+        archival_memory_search(query="error logs", start_datetime="2024-01-15T09:30", end_datetime="2024-01-15T17:30")
+
+        # Search from a specific point in time onwards
+        archival_memory_search(query="customer feedback", start_datetime="2024-01-15T14:00")
 
     Returns:
         str: Query result string containing matching passages with timestamps and content.
