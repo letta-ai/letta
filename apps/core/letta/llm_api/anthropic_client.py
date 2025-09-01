@@ -10,6 +10,7 @@ from anthropic.types.beta.message_create_params import MessageCreateParamsNonStr
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
 
+from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
@@ -59,7 +60,12 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
-        response = await client.beta.messages.create(**request_data)
+
+        if llm_config.enable_reasoner:
+            response = await client.beta.messages.create(**request_data, betas=["interleaved-thinking-2025-05-14"])
+        else:
+            response = await client.beta.messages.create(**request_data)
+
         return response.model_dump()
 
     @trace_method
@@ -71,6 +77,11 @@ class AnthropicClient(LLMClientBase):
         # This helps reduce buffering when streaming tool call parameters
         # See: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/fine-grained-streaming
         betas = ["fine-grained-tool-streaming-2025-05-14"]
+
+        # If extended thinking, turn on interleaved header
+        # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#interleaved-thinking
+        if llm_config.enable_reasoner:
+            betas.append("interleaved-thinking-2025-05-14")
 
         return await client.beta.messages.create(**request_data, betas=betas)
 
@@ -269,6 +280,10 @@ class AnthropicClient(LLMClientBase):
 
         # Handle alternating messages
         data["messages"] = merge_tool_results_into_user_messages(data["messages"])
+
+        # Strip heartbeat pings if extended thinking
+        if llm_config.enable_reasoner:
+            data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
 
         # Prefix fill
         # https://docs.anthropic.com/en/api/messages#body-messages
@@ -615,6 +630,98 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
     return formatted_tools
 
 
+def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
+    """Check if the message is an automated heartbeat ping"""
+
+    if "role" not in message or message["role"] != "user" or "content" not in message:
+        return False
+
+    try:
+        message_json = json.loads(message["content"])
+    except:
+        return False
+
+    if "reason" not in message_json:
+        return False
+
+    if message_json["type"] != "heartbeat":
+        return False
+
+    if not is_ping:
+        # Just checking if 'type': 'heartbeat'
+        return True
+    else:
+        # Also checking if it's specifically a 'ping' style message
+        # NOTE: this will not catch tool rule heartbeats
+        if REQ_HEARTBEAT_MESSAGE in message_json["reason"] or FUNC_FAILED_HEARTBEAT_MESSAGE in message_json["reason"]:
+            return True
+        else:
+            return False
+
+
+def merge_heartbeats_into_tool_responses(messages: List[dict]):
+    """For extended thinking mode, we don't want anything other than tool responses in-between assistant actions
+
+    Otherwise, the thinking will silently get dropped.
+
+    NOTE: assumes merge_tool_results_into_user_messages has already been called
+    """
+
+    merged_messages = []
+
+    # Loop through messages
+    # For messages with role 'user' and len(content) > 1,
+    #   Check if content[0].type == 'tool_result'
+    #   If so, iterate over content[1:] and while content.type == 'text' and is_heartbeat(content.text),
+    #     merge into content[0].content
+
+    for message in messages:
+        if "role" not in message or "content" not in message:
+            # Skip invalid messages
+            merged_messages.append(message)
+            continue
+
+        if message["role"] == "user" and len(message["content"]) > 1:
+            content_parts = message["content"]
+
+            # If the first content part is a tool result, merge the heartbeat content into index 0 of the content
+            # Two end cases:
+            # 1. It was [tool_result, heartbeat], in which case merged result is [tool_result+heartbeat] (len 1)
+            # 2. It was [tool_result, user_text], in which case it should be unchanged (len 2)
+            if "type" in content_parts[0] and "content" in content_parts[0] and content_parts[0]["type"] == "tool_result":
+                new_content_parts = [content_parts[0]]
+
+                # If the first content part is a tool result, merge the heartbeat content into index 0 of the content
+                for i, content_part in enumerate(content_parts[1:]):
+                    # If it's a heartbeat, add it to the merge
+                    if (
+                        content_part["type"] == "text"
+                        and "text" in content_part
+                        and is_heartbeat({"role": "user", "content": content_part["text"]})
+                    ):
+                        # NOTE: joining with a ','
+                        new_content_parts[0]["content"] += ", " + content_part["text"]
+
+                    # If it's not, break, and concat to finish
+                    else:
+                        # Append the rest directly, no merging of content strings
+                        new_content_parts.extend(content_parts[i + 1 :])
+                        break
+
+                # Set the content_parts
+                message["content"] = new_content_parts
+                merged_messages.append(message)
+
+            else:
+                # Skip invalid messages parts
+                merged_messages.append(message)
+                continue
+        else:
+            merged_messages.append(message)
+
+    return merged_messages
+
+
 def merge_tool_results_into_user_messages(messages: List[dict]):
     """Anthropic API doesn't allow role 'tool'->'user' sequences
 
@@ -653,7 +760,7 @@ def merge_tool_results_into_user_messages(messages: List[dict]):
                 if isinstance(next_message["content"], list)
                 else [{"type": "text", "text": next_message["content"]}]
             )
-            merged_content = current_content + next_content
+            merged_content: list = current_content + next_content
             current_message["content"] = merged_content
         else:
             # Append the current message to result as it's complete
