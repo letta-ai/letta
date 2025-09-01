@@ -21,7 +21,7 @@ from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_mes
 from letta.log import get_logger
 from letta.otel.tracing import log_event
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as _Message, MessageRole as _MessageRole
+from letta.schemas.message import Message as PydanticMessage, MessageRole as _MessageRole
 from letta.schemas.openai.chat_completion_request import (
     ChatCompletionRequest,
     FunctionCall as ToolFunctionChoiceFunctionCall,
@@ -177,7 +177,7 @@ async def openai_get_model_list_async(
 
 def build_openai_chat_completions_request(
     llm_config: LLMConfig,
-    messages: List[_Message],
+    messages: List[PydanticMessage],
     user_id: Optional[str],
     functions: Optional[list],
     function_call: Optional[str],
@@ -201,13 +201,12 @@ def build_openai_chat_completions_request(
     use_developer_message = accepts_developer_role(llm_config.model)
 
     openai_message_list = [
-        cast_message_to_subtype(
-            m.to_openai_dict(
-                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-                use_developer_message=use_developer_message,
-            )
+        cast_message_to_subtype(m)
+        for m in PydanticMessage.to_openai_dicts_from_list(
+            messages,
+            put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+            use_developer_message=use_developer_message,
         )
-        for m in messages
     ]
 
     if llm_config.model:
@@ -326,7 +325,7 @@ def openai_chat_completions_process_stream(
 
     # Create a dummy Message object to get an ID and date
     # TODO(sarah): add message ID generation function
-    dummy_message = _Message(
+    dummy_message = PydanticMessage(
         role=_MessageRole.assistant,
         content=[],
         agent_id="",

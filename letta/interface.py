@@ -248,7 +248,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages(message_sequence: List[Message], dump=False):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         idx = len(message_sequence)
         for msg in message_sequence:
@@ -291,7 +291,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages_simple(message_sequence: List[Message]):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         for msg in message_sequence:
             role = msg["role"]
@@ -309,7 +309,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages_raw(message_sequence: List[Message]):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         for msg in message_sequence:
             print(msg)

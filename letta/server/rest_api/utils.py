@@ -435,7 +435,9 @@ def convert_in_context_letta_messages_to_openai(in_context_messages: List[Messag
                     pass  # It's not JSON, leave as-is
 
         # Finally, convert to dict using your existing method
-        openai_messages.append(msg.to_openai_dict())
+        m = msg.to_openai_dict()
+        assert m is not None
+        openai_messages.append(m)
 
     return openai_messages
 

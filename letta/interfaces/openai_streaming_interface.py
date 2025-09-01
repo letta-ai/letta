@@ -113,6 +113,7 @@ class OpenAIStreamingInterface:
             if self.messages:
                 # Convert messages to dict format for token counting
                 message_dicts = [msg.to_openai_dict() if hasattr(msg, "to_openai_dict") else msg for msg in self.messages]
+                message_dicts = [m for m in message_dicts if m is not None]
                 self.fallback_input_tokens = num_tokens_from_messages(message_dicts)  # fallback to gpt-4 cl100k-base
 
             if self.tools:

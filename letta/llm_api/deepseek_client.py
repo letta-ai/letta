@@ -11,7 +11,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from letta.llm_api.openai_client import OpenAIClient
 from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage, Message as _Message
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import (
     AssistantMessage,
     ChatCompletionRequest,
@@ -119,7 +119,9 @@ def build_deepseek_chat_completions_request(
     #         inner_thoughts_description=inner_thoughts_desc,
     #     )
 
-    openai_message_list = [cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=False)) for m in messages]
+    openai_message_list = [
+        cast_message_to_subtype(m) for m in PydanticMessage.to_openai_dicts_from_list(messages, put_inner_thoughts_in_kwargs=False)
+    ]
 
     if llm_config.model:
         model = llm_config.model
@@ -343,7 +345,9 @@ class DeepseekClient(OpenAIClient):
             system_message.content += f"<available functions> {''.join(json.dumps(f) for f in tools)} </available functions>"
             system_message.content += 'Select best function to call simply respond with a single json block with the fields "name" and "arguments". Use double quotes around the arguments.'
 
-        openai_message_list = [cast_message_to_subtype(m.to_openai_dict(put_inner_thoughts_in_kwargs=False)) for m in messages]
+        openai_message_list = [
+            cast_message_to_subtype(m) for m in PydanticMessage.to_openai_dicts_from_list(messages, put_inner_thoughts_in_kwargs=False)
+        ]
 
         if llm_config.model == "deepseek-reasoner":  # R1 currently doesn't support function calling natively
             add_functions_to_system_message(

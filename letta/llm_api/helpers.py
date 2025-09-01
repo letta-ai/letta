@@ -310,7 +310,7 @@ def calculate_summarizer_cutoff(in_context_messages: List[Message], token_counts
             f"Given in_context_messages has different length from given token_counts: {len(in_context_messages)} != {len(token_counts)}"
         )
 
-    in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+    in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
 
     if summarizer_settings.evict_all_messages:
         logger.info("Evicting all messages...")
@@ -351,7 +351,7 @@ def calculate_summarizer_cutoff(in_context_messages: List[Message], token_counts
 
 
 def get_token_counts_for_messages(in_context_messages: List[Message]) -> List[int]:
-    in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+    in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
     token_counts = [count_tokens(str(msg)) for msg in in_context_messages_openai]
     return token_counts
 
