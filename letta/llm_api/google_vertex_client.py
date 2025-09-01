@@ -31,6 +31,8 @@ logger = get_logger(__name__)
 
 
 class GoogleVertexClient(LLMClientBase):
+    MAX_RETRIES = model_settings.gemini_max_retries
+
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
         return genai.Client(
@@ -59,12 +61,49 @@ class GoogleVertexClient(LLMClientBase):
         Performs underlying request to llm and returns raw response.
         """
         client = self._get_client()
-        response = await client.aio.models.generate_content(
-            model=llm_config.model,
-            contents=request_data["contents"],
-            config=request_data["config"],
-        )
-        return response.model_dump()
+
+        # Gemini 2.5 models will often return MALFORMED_FUNCTION_CALL, force a retry
+        # https://github.com/googleapis/python-aiplatform/issues/4472
+        retry_count = 1
+        should_retry = True
+        while should_retry and retry_count <= self.MAX_RETRIES:
+            response = await client.aio.models.generate_content(
+                model=llm_config.model,
+                contents=request_data["contents"],
+                config=request_data["config"],
+            )
+            response_data = response.model_dump()
+            is_malformed_function_call = self.is_malformed_function_call(response_data)
+            if is_malformed_function_call:
+                logger.warning(
+                    f"Received FinishReason.MALFORMED_FUNCTION_CALL in response for {llm_config.model}, retrying {retry_count}/{self.MAX_RETRIES}"
+                )
+                # Modify the last message if it's a heartbeat to include warning about special characters
+                if request_data["contents"] and len(request_data["contents"]) > 0:
+                    last_message = request_data["contents"][-1]
+                    if last_message.get("role") == "user" and last_message.get("parts"):
+                        for part in last_message["parts"]:
+                            if "text" in part:
+                                try:
+                                    # Try to parse as JSON to check if it's a heartbeat
+                                    message_json = json_loads(part["text"])
+                                    if message_json.get("type") == "heartbeat" and "reason" in message_json:
+                                        # Append warning to the reason
+                                        warning = f" RETRY {retry_count}/{self.MAX_RETRIES} ***DO NOT USE SPECIAL CHARACTERS OR QUOTATIONS INSIDE FUNCTION CALL ARGUMENTS. IF YOU MUST, MAKE SURE TO ESCAPE THEM PROPERLY***"
+                                        message_json["reason"] = message_json["reason"] + warning
+                                        # Update the text with modified JSON
+                                        part["text"] = json_dumps(message_json)
+                                        logger.warning(
+                                            f"Modified heartbeat message with special character warning for retry {retry_count}/{self.MAX_RETRIES}"
+                                        )
+                                except (json.JSONDecodeError, TypeError):
+                                    # Not a JSON message or not a heartbeat, skip modification
+                                    pass
+
+            should_retry = is_malformed_function_call
+            retry_count += 1
+
+        return response_data
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
@@ -299,7 +338,6 @@ class GoogleVertexClient(LLMClientBase):
         }
         }
         """
-
         response = GenerateContentResponse(**response_data)
         try:
             choices = []
@@ -516,6 +554,14 @@ class GoogleVertexClient(LLMClientBase):
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return llm_config.model.startswith("gemini-2.5-flash") or llm_config.model.startswith("gemini-2.5-pro")
+
+    def is_malformed_function_call(self, response_data: dict) -> dict:
+        response = GenerateContentResponse(**response_data)
+        for candidate in response.candidates:
+            content = candidate.content
+            if content is None or content.role is None or content.parts is None:
+                return candidate.finish_reason == "MALFORMED_FUNCTION_CALL"
+        return False
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
