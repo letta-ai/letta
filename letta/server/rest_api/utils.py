@@ -25,10 +25,11 @@ from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import tracer
+from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message, MessageCreate, ToolReturn
+from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -174,6 +175,19 @@ def create_input_messages(input_messages: List[MessageCreate], agent_id: str, ti
 
     messages = convert_message_creates_to_messages(input_messages, agent_id, timezone, wrap_user_message=False, wrap_system_message=False)
     return messages
+
+
+def create_approval_response_message_from_input(agent_state: AgentState, input_message: ApprovalCreate) -> List[Message]:
+    return [
+        Message(
+            role=MessageRole.approval,
+            agent_id=agent_state.id,
+            model=agent_state.llm_config.model,
+            approval_request_id=input_message.approval_request_id,
+            approve=input_message.approve,
+            denial_reason=input_message.reason,
+        )
+    ]
 
 
 def create_approval_request_message_from_llm_response(

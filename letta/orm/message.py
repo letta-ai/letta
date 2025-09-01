@@ -50,6 +50,12 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     is_err: Mapped[Optional[bool]] = mapped_column(
         nullable=True, doc="Whether this message is part of an error step. Used only for debugging purposes."
     )
+    approval_request_id: Mapped[Optional[str]] = mapped_column(
+        nullable=True,
+        doc="The id of the approval request if this message is associated with a tool call request.",
+    )
+    approve: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="Whether tool call is approved.")
+    denial_reason: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The reason the tool call request was denied.")
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(

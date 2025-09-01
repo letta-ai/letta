@@ -218,6 +218,7 @@ class LettaAgent(BaseAgent):
             input_messages, agent_state, self.message_manager, self.actor
         )
         initial_messages = new_in_context_messages
+        in_context_messages = current_in_context_messages
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
             provider_type=agent_state.llm_config.model_endpoint_type,
@@ -233,8 +234,8 @@ class LettaAgent(BaseAgent):
         request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         for i in range(max_steps):
-            if not new_in_context_messages and current_in_context_messages[-1].role == "approval":
-                approval_request_message = current_in_context_messages[-1]
+            if in_context_messages[-1].role == "approval":
+                approval_request_message = in_context_messages[-1]
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=approval_request_message.step_id, actor=self.actor)
                 persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                     approval_request_message.tool_calls[0],
@@ -244,18 +245,19 @@ class LettaAgent(BaseAgent):
                     usage,
                     reasoning_content=approval_request_message.content,
                     step_id=approval_request_message.step_id,
-                    initial_messages=[],
+                    initial_messages=initial_messages,
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=self.current_run_id,
                     is_approval=input_messages[0].approve,
-                    is_denial=not input_messages[0].approve,
+                    is_denial=input_messages[0].approve == False,
                     denial_reason=input_messages[0].reason,
                 )
-                new_message_idx = 0
-                self.response_messages.extend(persisted_messages)
-                new_in_context_messages.extend(persisted_messages)
+                new_message_idx = len(initial_messages) if initial_messages else 0
+                self.response_messages.extend(persisted_messages[new_message_idx:])
+                new_in_context_messages.extend(persisted_messages[new_message_idx:])
                 initial_messages = None
+                in_context_messages = current_in_context_messages + new_in_context_messages
 
                 # stream step
                 # TODO: improve TTFT
@@ -414,6 +416,7 @@ class LettaAgent(BaseAgent):
                     letta_messages = Message.to_letta_messages_from_list(
                         filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
                     )
+                    letta_messages = [m for m in letta_messages if m.message_type != "approval_response_message"]
 
                     for message in letta_messages:
                         if include_return_message_types is None or message.message_type in include_return_message_types:
@@ -557,6 +560,7 @@ class LettaAgent(BaseAgent):
             input_messages, agent_state, self.message_manager, self.actor
         )
         initial_messages = new_in_context_messages
+        in_context_messages = current_in_context_messages
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
             provider_type=agent_state.llm_config.model_endpoint_type,
@@ -572,8 +576,8 @@ class LettaAgent(BaseAgent):
         job_update_metadata = None
         usage = LettaUsageStatistics()
         for i in range(max_steps):
-            if not new_in_context_messages and current_in_context_messages[-1].role == "approval":
-                approval_request_message = current_in_context_messages[-1]
+            if in_context_messages[-1].role == "approval":
+                approval_request_message = in_context_messages[-1]
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=approval_request_message.step_id, actor=self.actor)
                 persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                     approval_request_message.tool_calls[0],
@@ -583,18 +587,19 @@ class LettaAgent(BaseAgent):
                     usage,
                     reasoning_content=approval_request_message.content,
                     step_id=approval_request_message.step_id,
-                    initial_messages=[],
+                    initial_messages=initial_messages,
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=run_id or self.current_run_id,
                     is_approval=input_messages[0].approve,
-                    is_denial=not input_messages[0].approve,
+                    is_denial=input_messages[0].approve == False,
                     denial_reason=input_messages[0].reason,
                 )
-                new_message_idx = 0
-                self.response_messages.extend(persisted_messages)
-                new_in_context_messages.extend(persisted_messages)
+                new_message_idx = len(initial_messages) if initial_messages else 0
+                self.response_messages.extend(persisted_messages[new_message_idx:])
+                new_in_context_messages.extend(persisted_messages[new_message_idx:])
                 initial_messages = None
+                in_context_messages = current_in_context_messages + new_in_context_messages
             else:
                 # If dry run, build request data and return it without making LLM call
                 if dry_run:
@@ -897,6 +902,7 @@ class LettaAgent(BaseAgent):
             input_messages, agent_state, self.message_manager, self.actor
         )
         initial_messages = new_in_context_messages
+        in_context_messages = current_in_context_messages
 
         tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
         llm_client = LLMClient.create(
@@ -913,8 +919,8 @@ class LettaAgent(BaseAgent):
             request_span.set_attributes({f"llm_config.{k}": v for k, v in agent_state.llm_config.model_dump().items() if v is not None})
 
         for i in range(max_steps):
-            if not new_in_context_messages and current_in_context_messages[-1].role == "approval":
-                approval_request_message = current_in_context_messages[-1]
+            if in_context_messages[-1].role == "approval":
+                approval_request_message = in_context_messages[-1]
                 step_metrics = await self.step_manager.get_step_metrics_async(step_id=approval_request_message.step_id, actor=self.actor)
                 persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
                     approval_request_message.tool_calls[0],
@@ -924,18 +930,19 @@ class LettaAgent(BaseAgent):
                     usage,
                     reasoning_content=approval_request_message.content,
                     step_id=approval_request_message.step_id,
-                    initial_messages=[],
+                    initial_messages=new_in_context_messages,
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=self.current_run_id,
                     is_approval=input_messages[0].approve,
-                    is_denial=not input_messages[0].approve,
+                    is_denial=input_messages[0].approve == False,
                     denial_reason=input_messages[0].reason,
                 )
-                new_message_idx = 0
-                self.response_messages.extend(persisted_messages)
-                new_in_context_messages.extend(persisted_messages)
+                new_message_idx = len(initial_messages) if initial_messages else 0
+                self.response_messages.extend(persisted_messages[new_message_idx:])
+                new_in_context_messages.extend(persisted_messages[new_message_idx:])
                 initial_messages = None
+                in_context_messages = current_in_context_messages + new_in_context_messages
 
                 # yields tool response as this is handled from Letta and not the response from the LLM provider
                 tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
@@ -1651,8 +1658,8 @@ class LettaAgent(BaseAgent):
                 step_id=step_id,
                 is_approval_response=True,
             )
-
-            persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
+            messages_to_persist = (initial_messages or []) + tool_call_messages
+            persisted_messages = await self.message_manager.create_many_messages_async(messages_to_persist, actor=self.actor)
             return persisted_messages, continue_stepping, stop_reason
 
         # 1.  Parse and validate the tool-call envelope
