@@ -225,7 +225,8 @@ async def create_background_stream_processor(
     except Exception as e:
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
-        error_chunk = {"error": {"message": str(e)}}
+        # error_chunk = {"error": {"message": str(e)}}
+        error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
         await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=True)
     finally:
         if should_stop_writer:
