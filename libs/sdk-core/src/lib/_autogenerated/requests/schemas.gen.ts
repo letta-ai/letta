@@ -9524,6 +9524,43 @@ export const $Message = {
       description:
         'Whether this message is part of an error step. Used only for debugging purposes.',
     },
+    approval_request_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Approval Request Id',
+      description:
+        'The id of the approval request if this message is associated with a tool call request.',
+    },
+    approve: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Approve',
+      description: 'Whether tool call is approved.',
+    },
+    denial_reason: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Denial Reason',
+      description: 'The reason the tool call request was denied.',
+    },
   },
   additionalProperties: false,
   type: 'object',

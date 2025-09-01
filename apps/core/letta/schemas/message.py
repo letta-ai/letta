@@ -21,6 +21,7 @@ from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
     ApprovalRequestMessage,
+    ApprovalResponseMessage,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
@@ -199,6 +200,11 @@ class Message(BaseMessage):
     is_err: Optional[bool] = Field(
         default=None, description="Whether this message is part of an error step. Used only for debugging purposes."
     )
+    approval_request_id: Optional[str] = Field(
+        default=None, description="The id of the approval request if this message is associated with a tool call request."
+    )
+    approve: Optional[bool] = Field(default=None, description="Whether tool call is approved.")
+    denial_reason: Optional[str] = Field(default=None, description="The reason the tool call request was denied.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
@@ -301,8 +307,18 @@ class Message(BaseMessage):
             if self.tool_calls is not None:
                 tool_calls = self._convert_tool_call_messages()
                 assert len(tool_calls) == 1
-                approval_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
-                messages.append(approval_message)
+                approval_request_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
+                messages.append(approval_request_message)
+            else:
+                approval_response_message = ApprovalResponseMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    otid=self.otid,
+                    approve=self.approve,
+                    approval_request_id=self.approval_request_id,
+                    reason=self.denial_reason,
+                )
+                messages.append(approval_response_message)
         else:
             raise ValueError(f"Unknown role: {self.role}")
 
@@ -732,6 +748,8 @@ class Message(BaseMessage):
         use_developer_message: bool = False,
     ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
+        if self.role == "approval" and self.tool_calls is None:
+            return None
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
         # If we only have one content part and it's text, treat it as COT

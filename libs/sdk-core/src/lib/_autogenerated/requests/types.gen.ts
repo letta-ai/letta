@@ -3492,6 +3492,18 @@ export type Message = {
    * Whether this message is part of an error step. Used only for debugging purposes.
    */
   is_err?: boolean | null;
+  /**
+   * The id of the approval request if this message is associated with a tool call request.
+   */
+  approval_request_id?: string | null;
+  /**
+   * Whether tool call is approved.
+   */
+  approve?: boolean | null;
+  /**
+   * The reason the tool call request was denied.
+   */
+  denial_reason?: string | null;
 };
 
 /**

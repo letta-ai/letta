@@ -13,7 +13,7 @@ from letta.schemas.message import Message, MessageCreate, MessageCreateBase
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_input_messages
+from letta.server.rest_api.utils import create_approval_response_message_from_input, create_input_messages
 from letta.services.message_manager import MessageManager
 
 logger = get_logger(__name__)
@@ -36,6 +36,8 @@ def _create_letta_response(
     response_messages = Message.to_letta_messages_from_list(
         messages=filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
     )
+    # Filter approval response messages
+    response_messages = [m for m in response_messages if m.message_type != "approval_response_message"]
 
     # Apply message type filtering if specified
     if include_return_message_types is not None:
@@ -161,7 +163,7 @@ async def _prepare_in_context_messages_no_persist_async(
                 f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
                 f"but received '{input_messages[0].approval_request_id}'."
             )
-        new_in_context_messages = []
+        new_in_context_messages = create_approval_response_message_from_input(agent_state=agent_state, input_message=input_messages[0])
     else:
         # User is trying to send a regular message
         if current_in_context_messages[-1].role == "approval":

@@ -214,6 +214,45 @@ def test_approve_tool_call_request(
     assert response.messages[2].message_type == "assistant_message"
 
 
+def test_approve_cursor_fetch(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1)[0].id
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
+    assert len(messages) == 3
+    assert messages[0].message_type == "user_message"
+    assert messages[1].message_type == "reasoning_message"
+    assert messages[2].message_type == "approval_request_message"
+    assert messages[2].id == approval_request_id
+
+    last_message_cursor = approval_request_id
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(
+                approve=True,
+                approval_request_id=approval_request_id,
+            ),
+        ],
+    )
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
+    assert len(messages) == 5
+    assert messages[0].message_type == "approval_response_message"
+    assert messages[1].message_type == "tool_return_message"
+    assert messages[1].status == "success"
+    assert messages[2].message_type == "user_message"  # heartbeat
+    assert messages[3].message_type == "reasoning_message"
+    assert messages[4].message_type == "assistant_message"
+
+
 def test_deny_tool_call_request(
     client: Letta,
     agent: AgentState,
@@ -244,3 +283,43 @@ def test_deny_tool_call_request(
     assert response.messages[1].message_type == "reasoning_message"
     assert response.messages[2].message_type == "assistant_message"
     assert SECRET_CODE in response.messages[2].content
+
+
+def test_deny_cursor_fetch(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    last_message_cursor = client.agents.messages.list(agent_id=agent.id, limit=1)[0].id
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
+    assert len(messages) == 3
+    assert messages[0].message_type == "user_message"
+    assert messages[1].message_type == "reasoning_message"
+    assert messages[2].message_type == "approval_request_message"
+    assert messages[2].id == approval_request_id
+
+    last_message_cursor = approval_request_id
+    client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(
+                approve=False,
+                approval_request_id=approval_request_id,
+                reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",
+            ),
+        ],
+    )
+
+    messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
+    assert len(messages) == 5
+    assert messages[0].message_type == "approval_response_message"
+    assert messages[1].message_type == "tool_return_message"
+    assert messages[1].status == "error"
+    assert messages[2].message_type == "user_message"  # heartbeat
+    assert messages[3].message_type == "reasoning_message"
+    assert messages[4].message_type == "assistant_message"
