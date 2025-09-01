@@ -754,14 +754,14 @@ name = "desktop-core"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "letta", extra = ["desktop", "postgres", "sqlite"] },
+    { name = "letta", extra = ["cloud-tool-sandbox", "desktop", "postgres", "sqlite"] },
     { name = "pgserver" },
     { name = "pyinstaller" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "letta", extras = ["desktop", "postgres", "sqlite"], directory = "../core" },
+    { name = "letta", extras = ["desktop", "postgres", "sqlite", "cloud-tool-sandbox"], directory = "../core" },
     { name = "pgserver" },
     { name = "pyinstaller", specifier = ">=6.15.0" },
 ]
@@ -805,6 +805,38 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/08/12/9c22a58c0b1e29271051222d8906257616da84135af9ed167c9e28f85cb3/docstring_parser-0.16.tar.gz", hash = "sha256:538beabd0af1e2db0146b6bd3caa526c35a34d61af9fd2887f3a8a27a739aa6e", size = 26565, upload-time = "2024-03-15T10:39:44.419Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d5/7c/e9fcff7623954d86bdc17782036cbf715ecab1bec4847c008557affe1ca8/docstring_parser-0.16-py3-none-any.whl", hash = "sha256:bf0a1387354d3691d102edef7ec124f219ef639982d096e26e3b60aeffa90637", size = 36533, upload-time = "2024-03-15T10:39:41.527Z" },
+]
+
+[[package]]
+name = "e2b"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpcore" },
+    { name = "httpx" },
+    { name = "packaging" },
+    { name = "protobuf" },
+    { name = "python-dateutil" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ca/61/4cacf82b1d00f888678fdcfff23a8c3a09aed25b2993eea7af472e20dda5/e2b-2.0.0.tar.gz", hash = "sha256:4d033d937b0a09b8428e73233321a913cbaef8e7299fc731579c656e9d53a144", size = 66401, upload-time = "2025-08-21T15:50:40.207Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/92/76/ddf676a327006b9c3bdec1a10b99aad4f10af8b2cbc3358ebb156951914e/e2b-2.0.0-py3-none-any.whl", hash = "sha256:a6621b905cb2a883a9c520736ae98343a6184fc90c29b4f2f079d720294a0df0", size = 123785, upload-time = "2025-08-21T15:50:38.579Z" },
+]
+
+[[package]]
+name = "e2b-code-interpreter"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "e2b" },
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/84/e94cb706d88ac3510748be9d0030fb0a896a25b43677903aff20213b3cc1/e2b_code_interpreter-2.0.0.tar.gz", hash = "sha256:19136916be8de60bfd0a678742501d1d0335442bb6e86405c7dd6f98059b73c4", size = 10029, upload-time = "2025-08-22T10:16:57.169Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/f1/135acbaffe4b2e63addecfc2a6c2ecf9ea3e5394aa2a9a829e3eb6f2098d/e2b_code_interpreter-2.0.0-py3-none-any.whl", hash = "sha256:273642d4dd78f09327fb1553fe4f7ddcf17892b78f98236e038d29985e42dca5", size = 12939, upload-time = "2025-08-22T10:16:55.698Z" },
 ]
 
 [[package]]
@@ -1806,6 +1838,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+cloud-tool-sandbox = [
+    { name = "e2b-code-interpreter" },
+]
 desktop = [
     { name = "aiosqlite" },
     { name = "docker" },

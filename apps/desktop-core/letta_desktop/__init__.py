@@ -3,6 +3,8 @@ import os
 import platform
 import subprocess
 import sys
+import pg8000
+import json
 import threading
 import time
 import urllib.parse
@@ -22,31 +24,12 @@ Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
 Path(dotenv_path).touch(exist_ok=True)
 load_dotenv(dotenv_path)
 
-# import pgserver
-import pg8000  # noqa
-from tiktoken_ext import openai_public  # noqa
-import tiktoken_ext  # noqa
-import tiktoken  # noqa
-import pydantic.deprecated.decorator  # noqa
-import datamodel_code_generator  # noqa
-import opentelemetry  # noqa
-import blib2to3.pgen2.tokenize  # noqa
-import blib2to3.pgen2.parse  # noqa
-import async_lru  # noqa
-import mcp  # noqa
-import e2b  # noqa
-import asyncpg  # noqa
-import aiosqlite  # noqa
-import markitdown  # noqa
-import magika  # noqa
-import pgvector  # noqa
-import pgvector.sqlalchemy  # noqa
-import json
-
 
 # Only print initialization messages if we're actually starting the server
 # Check if we're being called as a script executor
-is_script_execution = len(sys.argv) > 1 and sys.argv[1].endswith(".py") and os.path.isfile(sys.argv[1])
+is_script_execution = (
+    len(sys.argv) > 1 and sys.argv[1].endswith(".py") and os.path.isfile(sys.argv[1])
+)
 if not is_script_execution:
     print("Initializing Letta Desktop Service...", flush=True)
     print(f"Python version: {sys.version}", flush=True)
@@ -91,8 +74,12 @@ def initialize_database():
     delay = 2  # seconds between retries
     for attempt in range(1, retries + 1):
         try:
-            conn = pg8000.connect(user=username, password=password, host=host, port=port, database=dbname)
-            print(f"Successfully connected to Postgres on attempt {attempt}", flush=True)
+            conn = pg8000.connect(
+                user=username, password=password, host=host, port=port, database=dbname
+            )
+            print(
+                f"Successfully connected to Postgres on attempt {attempt}", flush=True
+            )
             break
         except Exception as e:
             print(f"Attempt {attempt} to connect to Postgres failed: {e}", flush=True)
@@ -145,7 +132,9 @@ def upgrade_db(db_uri=None):
         print(f"Running migrations for database: {db_uri}", flush=True)
 
     alembic_cfg = Config(str(letta_dir / "migrations" / "alembic.ini"))
-    alembic_cfg.set_main_option("script_location", str(letta_dir / "migrations" / "alembic"))
+    alembic_cfg.set_main_option(
+        "script_location", str(letta_dir / "migrations" / "alembic")
+    )
     alembic_cfg.set_main_option("sqlalchemy.url", db_uri)
 
     try:
@@ -167,7 +156,9 @@ def upgrade_db(db_uri=None):
                 flush=True,
             )
             print("\nRECOMMENDED SOLUTION:", flush=True)
-            print(f"Delete your SQLite database at: {letta_dir / 'sqlite.db'}", flush=True)
+            print(
+                f"Delete your SQLite database at: {letta_dir / 'sqlite.db'}", flush=True
+            )
             print(
                 "The database will be recreated with proper migration tracking.",
                 flush=True,
@@ -180,7 +171,9 @@ def upgrade_db(db_uri=None):
 argparser = ArgumentParser()
 argparser.add_argument("--look-for-server-id", type=str, help="Look for server id")
 argparser.add_argument("--use-file-pg-uri", action="store_true")
-argparser.add_argument("--no-generation", action="store_true", help="Disable generation features")
+argparser.add_argument(
+    "--no-generation", action="store_true", help="Disable generation features"
+)
 
 
 class ThreadedUvicorn:
@@ -247,7 +240,11 @@ def check_if_web_server_running():
 if __name__ == "__main__":
     # Check if we're being called to execute a Python script (tool execution)
     # This happens when sys.executable (the bundled app) is used to run a tool
-    if len(sys.argv) > 1 and sys.argv[1].endswith(".py") and os.path.isfile(sys.argv[1]):
+    if (
+        len(sys.argv) > 1
+        and sys.argv[1].endswith(".py")
+        and os.path.isfile(sys.argv[1])
+    ):
         # Execute the script instead of starting the server
         script_path = sys.argv[1]
 
@@ -300,9 +297,14 @@ if __name__ == "__main__":
         ]
         for var in env_vars_to_check:
             if var in os.environ:
-                print(f"Found environment variable: {var}={os.environ[var]}", flush=True)
+                print(
+                    f"Found environment variable: {var}={os.environ[var]}", flush=True
+                )
 
-        if database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
+        if (
+            database_config.get("type") == "embedded"
+            and database_config.get("embeddedType") == "sqlite"
+        ):
             # SQLite configuration - ensure pg_uri file doesn't interfere
             if pg_uri_path.exists():
                 print(
@@ -323,7 +325,9 @@ if __name__ == "__main__":
             ]
             for var in pg_env_vars:
                 if var in os.environ:
-                    print(f"Clearing PostgreSQL environment variable: {var}", flush=True)
+                    print(
+                        f"Clearing PostgreSQL environment variable: {var}", flush=True
+                    )
                     del os.environ[var]
 
         # Now handle the database setup
@@ -339,11 +343,17 @@ if __name__ == "__main__":
                 with open(pg_uri_path, "w") as f:
                     f.write(connection_string)
                 upgrade_db(connection_string)
-        elif database_config.get("type") == "embedded" and database_config.get("embeddedType") != "sqlite":
+        elif (
+            database_config.get("type") == "embedded"
+            and database_config.get("embeddedType") != "sqlite"
+        ):
             print("Using embedded PostgreSQL database", flush=True)
             pg_uri = initialize_database()
             upgrade_db(pg_uri)
-        elif database_config.get("type") == "embedded" and database_config.get("embeddedType") == "sqlite":
+        elif (
+            database_config.get("type") == "embedded"
+            and database_config.get("embeddedType") == "sqlite"
+        ):
             # Run migrations for SQLite
             print("Using embedded SQLite database", flush=True)
             upgrade_db()  # Will use default SQLite path
