@@ -752,10 +752,11 @@ def test_tool_call(
         response = client.agents.messages.create(
             agent_id=agent_state.id,
             messages=USER_MESSAGE_ROLL_DICE,
+            request_options={"timeout_in_seconds": 300},
         )
     except Exception as e:
-        if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
-            pytest.skip("Skipping test for flash model due to malformed function call from llm")
+        # if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+        #     pytest.skip("Skipping test for flash model due to malformed function call from llm")
         raise e
     assert_tool_call_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
@@ -967,6 +968,7 @@ def test_step_streaming_tool_call(
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_ROLL_DICE,
+        request_options={"timeout_in_seconds": 300},
     )
     messages = accumulate_chunks(list(response))
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
@@ -1115,6 +1117,7 @@ def test_token_streaming_tool_call(
         agent_id=agent_state.id,
         messages=messages_to_send,
         stream_tokens=True,
+        request_options={"timeout_in_seconds": 300},
     )
     verify_token_streaming = (
         llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
@@ -1183,6 +1186,7 @@ def test_background_token_streaming_greeting_with_assistant_message(
         messages=messages_to_send,
         stream_tokens=True,
         background=True,
+        request_options={"timeout_in_seconds": 300},
     )
     verify_token_streaming = (
         llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
@@ -1418,6 +1422,7 @@ def test_async_tool_call(
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_ROLL_DICE,
+        request_options={"timeout_in_seconds": 300},
     )
     run = wait_for_run_completion(client, run.id)
 
@@ -1639,10 +1644,11 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
             client.agents.messages.create(
                 agent_id=temp_agent_state.id,
                 messages=[MessageCreate(role="user", content=philosophical_question)],
+                request_options={"timeout_in_seconds": 300},
             )
         except Exception as e:
-            if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
-                pytest.skip("Skipping test for flash model due to malformed function call from llm")
+            # if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+            #     pytest.skip("Skipping test for flash model due to malformed function call from llm")
             raise e
 
         temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)
