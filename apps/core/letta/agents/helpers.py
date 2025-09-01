@@ -161,10 +161,7 @@ async def _prepare_in_context_messages_no_persist_async(
                 f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
                 f"but received '{input_messages[0].approval_request_id}'."
             )
-        if input_messages[0].approve:
-            new_in_context_messages = []
-        else:
-            raise NotImplementedError("Deny flow not yet supported")
+        new_in_context_messages = []
     else:
         # User is trying to send a regular message
         if current_in_context_messages[-1].role == "approval":
