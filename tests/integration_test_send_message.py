@@ -120,6 +120,26 @@ USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=(
+            "This is an automated test message. First, think long and hard about about why you're here, and your creator. "
+            "Then, call the roll_dice tool with 16 sides. "
+            "Once you've rolled the die, think deeply about the meaning of the roll to you (but don't tell me, just think these thoughts privately). "
+            "Then, once you're done thinking, send me a very detailed, comprehensive message about the outcome, using send_message. "
+            "Your response must be at least 800 characters long. Start by explaining what dice rolling represents in games and probability theory. "
+            "Discuss the mathematical probability of getting each number on a 16-sided die (1/16 or 6.25% for each face). "
+            "Explain how 16-sided dice are commonly used in tabletop role-playing games like Dungeons & Dragons. "
+            "Describe the specific number you rolled and what it might mean in different gaming contexts. "
+            "Discuss how this particular roll compares to the expected value (8.5) of a 16-sided die. "
+            "Explain the concept of randomness and how true random number generation works. "
+            "End with some interesting facts about polyhedral dice and their history in gaming. "
+            "Remember, make your response detailed and at least 800 characters long."
+        ),
+        otid=USER_MESSAGE_OTID,
+    )
+]
 URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
 USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
@@ -153,8 +173,10 @@ all_configs = [
     "openai-o4-mini.json",
     "azure-gpt-4o-mini.json",
     "claude-4-sonnet-extended.json",
+    "claude-4-sonnet.json",
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet-extended.json",
+    "claude-3-7-sonnet.json",
     "bedrock-claude-4-sonnet.json",
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",
@@ -323,7 +345,7 @@ def assert_tool_call_response(
     ReasoningMessage -> AssistantMessage.
     """
     expected_message_count = 7 if streaming or from_db else 5
-    assert len(messages) == expected_message_count
+    assert len(messages) == expected_message_count, messages
 
     index = 0
     if from_db:
@@ -748,10 +770,15 @@ def test_tool_call(
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     try:
         response = client.agents.messages.create(
             agent_id=agent_state.id,
-            messages=USER_MESSAGE_ROLL_DICE,
+            messages=messages_to_send,
             request_options={"timeout_in_seconds": 300},
         )
     except Exception as e:
@@ -965,9 +992,14 @@ def test_step_streaming_tool_call(
 
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=messages_to_send,
         request_options={"timeout_in_seconds": 300},
     )
     messages = accumulate_chunks(list(response))
@@ -1110,7 +1142,11 @@ def test_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
-        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+        if llm_config.enable_reasoner:
+            # Without asking the model to think, Anthropic might decide to not think for the second step post-roll
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+        else:
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
@@ -1285,7 +1321,11 @@ def test_background_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
-        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+        if llm_config.enable_reasoner:
+            # Without asking the model to think, Anthropic might decide to not think for the second step post-roll
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+        else:
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
@@ -1419,9 +1459,14 @@ def test_async_tool_call(
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=messages_to_send,
         request_options={"timeout_in_seconds": 300},
     )
     run = wait_for_run_completion(client, run.id)
