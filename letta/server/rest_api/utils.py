@@ -233,10 +233,10 @@ def create_letta_messages_from_llm_response(
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     step_id: str | None = None,
-    is_approval: bool | None = None,
+    is_approval_response: bool | None = None,
 ) -> List[Message]:
     messages = []
-    if not is_approval:
+    if not is_approval_response:
         # Construct the tool call with the assistant's message
         # Force set request_heartbeat in tool_args to calculated continue_stepping
         function_arguments[REQUEST_HEARTBEAT_PARAM] = continue_stepping

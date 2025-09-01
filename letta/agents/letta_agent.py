@@ -248,7 +248,9 @@ class LettaAgent(BaseAgent):
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=self.current_run_id,
-                    is_approval=True,
+                    is_approval=input_messages[0].approve,
+                    is_denial=not input_messages[0].approve,
+                    denial_reason=input_messages[0].reason,
                 )
                 new_message_idx = 0
                 self.response_messages.extend(persisted_messages)
@@ -585,7 +587,9 @@ class LettaAgent(BaseAgent):
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=run_id or self.current_run_id,
-                    is_approval=True,
+                    is_approval=input_messages[0].approve,
+                    is_denial=not input_messages[0].approve,
+                    denial_reason=input_messages[0].reason,
                 )
                 new_message_idx = 0
                 self.response_messages.extend(persisted_messages)
@@ -924,7 +928,9 @@ class LettaAgent(BaseAgent):
                     is_final_step=(i == max_steps - 1),
                     step_metrics=step_metrics,
                     run_id=self.current_run_id,
-                    is_approval=True,
+                    is_approval=input_messages[0].approve,
+                    is_denial=not input_messages[0].approve,
+                    denial_reason=input_messages[0].reason,
                 )
                 new_message_idx = 0
                 self.response_messages.extend(persisted_messages)
@@ -1615,14 +1621,43 @@ class LettaAgent(BaseAgent):
         run_id: str | None = None,
         step_metrics: StepMetrics = None,
         is_approval: bool | None = None,
+        is_denial: bool | None = None,
+        denial_reason: str | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the final AI response once streaming completes, execute / validate the
         tool call, decide whether we should keep stepping, and persist state.
         """
+        tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+
+        if is_denial:
+            continue_stepping = True
+            stop_reason = None
+            tool_call_messages = create_letta_messages_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name="",
+                function_arguments={},
+                tool_execution_result=ToolExecutionResult(status="error"),
+                tool_call_id=tool_call_id,
+                function_call_success=False,
+                function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
+                timezone=agent_state.timezone,
+                actor=self.actor,
+                continue_stepping=continue_stepping,
+                heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
+                reasoning_content=None,
+                pre_computed_assistant_message_id=None,
+                step_id=step_id,
+                is_approval_response=True,
+            )
+
+            persisted_messages = await self.message_manager.create_many_messages_async(tool_call_messages, actor=self.actor)
+            return persisted_messages, continue_stepping, stop_reason
+
         # 1.  Parse and validate the tool-call envelope
         tool_call_name: str = tool_call.function.name
-        tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+
         tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
         request_heartbeat: bool = _pop_heartbeat(tool_args)
         tool_args.pop(INNER_THOUGHTS_KWARG, None)
@@ -1723,7 +1758,7 @@ class LettaAgent(BaseAgent):
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
-                is_approval=is_approval,
+                is_approval_response=is_approval or is_denial,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 

@@ -195,3 +195,44 @@ def test_send_message_with_approval_tool(
     assert response.messages[0].status == "success"
     assert response.messages[1].message_type == "reasoning_message"
     assert response.messages[2].message_type == "assistant_message"
+
+
+def test_deny(
+    disable_e2b_api_key: Any,
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    """
+    Tests sending a message to an agent with a tool that requires approval.
+    This test just verifies that the agent can send a message successfully.
+    The actual approval logic testing will be filled out by the user.
+    """
+    # Send a simple greeting message to test basic functionality
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+
+    # Basic assertion that we got a response with an approval request
+    assert response.messages is not None
+    assert len(response.messages) == 2
+    assert response.messages[0].message_type == "reasoning_message"
+    assert response.messages[1].message_type == "approval_request_message"
+    approval_request_id = response.messages[0].id
+    tool_call_id = response.messages[1].tool_call.tool_call_id
+
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[
+            ApprovalCreate(approve=False, approval_request_id=approval_request_id, reason="No don't do that, the answer is 2"),
+        ],
+    )
+
+    # Basic assertion that we got a response with tool call return
+    assert response.messages is not None
+    assert len(response.messages) == 3
+    assert response.messages[0].message_type == "tool_return_message"
+    assert response.messages[0].tool_call_id == tool_call_id
+    assert response.messages[0].status == "error"
+    assert response.messages[1].message_type == "reasoning_message"
+    assert response.messages[2].message_type == "assistant_message"
