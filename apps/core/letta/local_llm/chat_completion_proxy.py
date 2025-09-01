@@ -22,6 +22,7 @@ from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
 from letta.otel.tracing import log_event
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
 from letta.utils import get_tool_call_id
 
@@ -61,7 +62,7 @@ def get_chat_completion(
 
     # TODO: eventually just process Message object
     if not isinstance(messages[0], dict):
-        messages = [m.to_openai_dict() for m in messages]
+        messages = PydanticMessage.to_openai_dicts_from_list(messages)
 
     if function_call is not None and function_call != "auto":
         raise ValueError(f"function_call == {function_call} not supported (auto or None only)")

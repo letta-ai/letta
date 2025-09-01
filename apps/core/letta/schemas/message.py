@@ -730,7 +730,7 @@ class Message(BaseMessage):
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
-    ) -> dict:
+    ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
@@ -821,6 +821,24 @@ class Message(BaseMessage):
                     openai_message["redacted_reasoning_content"] = content.data
 
         return openai_message
+
+    @staticmethod
+    def to_openai_dicts_from_list(
+        messages: List[Message],
+        max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        put_inner_thoughts_in_kwargs: bool = False,
+        use_developer_message: bool = False,
+    ) -> List[dict]:
+        result = [
+            m.to_openai_dict(
+                max_tool_id_length=max_tool_id_length,
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
+            )
+            for m in messages
+        ]
+        result = [m for m in result if m is not None]
+        return result
 
     def to_anthropic_dict(
         self,

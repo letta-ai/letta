@@ -1106,7 +1106,7 @@ class Agent(BaseAgent):
 
     def summarize_messages_inplace(self):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
         in_context_messages_openai_no_system = in_context_messages_openai[1:]
         token_counts = get_token_counts_for_messages(in_context_messages)
         logger.info(f"System message token count={token_counts[0]}")
@@ -1212,7 +1212,7 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
 
         # Check if there's a summary message in the message queue
         if (
@@ -1312,7 +1312,7 @@ class Agent(BaseAgent):
         )
 
         # conversion of messages to OpenAI dict format, which is passed to the token counter
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
 
         # Extract system, memory and external summary
         if (

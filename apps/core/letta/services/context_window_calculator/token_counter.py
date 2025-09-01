@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from letta.helpers.decorators import async_redis_cache
 from letta.llm_api.anthropic_client import AnthropicClient
 from letta.otel.tracing import trace_method
+from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.utils import count_tokens
 
@@ -124,4 +125,4 @@ class TiktokenCounter(TokenCounter):
         return num_tokens_from_functions(functions=functions, model=self.model)
 
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
-        return [m.to_openai_dict() for m in messages]
+        return Message.to_openai_dicts_from_list(messages)

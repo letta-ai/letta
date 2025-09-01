@@ -145,7 +145,7 @@ def create(
 
     # Count the tokens first, if there's an overflow exit early by throwing an error up the stack
     # NOTE: we want to include a specific substring in the error message to trigger summarization
-    messages_oai_format = [m.to_openai_dict() for m in messages]
+    messages_oai_format = Message.to_openai_dicts_from_list(messages)
     prompt_tokens = num_tokens_from_messages(messages=messages_oai_format, model=llm_config.model)
     function_tokens = num_tokens_from_functions(functions=functions, model=llm_config.model) if functions else 0
     if prompt_tokens + function_tokens > llm_config.context_window:

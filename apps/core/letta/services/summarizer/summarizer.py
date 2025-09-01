@@ -295,7 +295,9 @@ class Summarizer:
 def simple_formatter(messages: List[Message], include_system: bool = False) -> str:
     """Go from an OpenAI-style list of messages to a concatenated string"""
 
-    parsed_messages = [message.to_openai_dict() for message in messages if message.role != MessageRole.system or include_system]
+    parsed_messages = Message.to_openai_dicts_from_list(
+        [message for message in messages if message.role != MessageRole.system or include_system]
+    )
     return "\n".join(json.dumps(msg) for msg in parsed_messages)
 
 

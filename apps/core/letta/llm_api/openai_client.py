@@ -179,13 +179,12 @@ class OpenAIClient(LLMClientBase):
         use_developer_message = accepts_developer_role(llm_config.model)
 
         openai_message_list = [
-            cast_message_to_subtype(
-                m.to_openai_dict(
-                    put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-                    use_developer_message=use_developer_message,
-                )
+            cast_message_to_subtype(m)
+            for m in PydanticMessage.to_openai_dicts_from_list(
+                messages,
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
             )
-            for m in messages
         ]
 
         if llm_config.model:
