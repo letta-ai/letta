@@ -862,13 +862,15 @@ class Message(BaseMessage):
         self,
         inner_thoughts_xml_tag="thinking",
         put_inner_thoughts_in_kwargs: bool = False,
-    ) -> dict:
+    ) -> dict | None:
         """
         Convert to an Anthropic message dictionary
 
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
+        if self.role == "approval" and self.tool_calls is None:
+            return None
 
         # Check for COT
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
@@ -926,10 +928,10 @@ class Message(BaseMessage):
                     "role": self.role,
                 }
 
-        elif self.role == "assistant":
+        elif self.role == "assistant" or self.role == "approval":
             assert self.tool_calls is not None or text_content is not None
             anthropic_message = {
-                "role": self.role,
+                "role": "assistant",
             }
             content = []
             # COT / reasoning / thinking
@@ -1008,6 +1010,22 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return anthropic_message
+
+    @staticmethod
+    def to_anthropic_dicts_from_list(
+        messages: List[Message],
+        inner_thoughts_xml_tag: str = "thinking",
+        put_inner_thoughts_in_kwargs: bool = False,
+    ) -> List[dict]:
+        result = [
+            m.to_anthropic_dict(
+                inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+            )
+            for m in messages
+        ]
+        result = [m for m in result if m is not None]
+        return result
 
     def to_google_ai_dict(self, put_inner_thoughts_in_kwargs: bool = True) -> dict:
         """

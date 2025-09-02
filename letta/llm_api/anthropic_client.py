@@ -266,13 +266,11 @@ class AnthropicClient(LLMClientBase):
             raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
         system_content = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
         data["system"] = self._add_cache_control_to_system_message(system_content)
-        data["messages"] = [
-            m.to_anthropic_dict(
-                inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-                put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
-            )
-            for m in messages[1:]
-        ]
+        data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
+            messages=messages[1:],
+            inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+            put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
+        )
 
         # Ensure first message is user
         if data["messages"][0]["role"] != "user":

@@ -1442,7 +1442,7 @@ class Agent(BaseAgent):
         )
 
         # conversion of messages to anthropic dict format, which is passed to the token counter
-        in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
+        in_context_messages_anthropic = Message.to_anthropic_dicts_from_list(in_context_messages)
 
         # Extract system, memory and external summary
         if (
