@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from letta.agent import Agent
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING
@@ -20,16 +20,39 @@ def send_message(self: "Agent", message: str) -> Optional[str]:
     return None
 
 
-def conversation_search(self: "Agent", query: str, page: Optional[int] = 0) -> Optional[str]:
+def conversation_search(
+    self: "Agent",
+    query: str,
+    roles: Optional[List[Literal["assistant", "user", "tool"]]] = None,
+    limit: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Optional[str]:
     """
-    Search prior conversation history using case-insensitive string matching.
+    Search prior conversation history using hybrid search (text + semantic similarity).
 
     Args:
-        query (str): String to search for.
-        page (int): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).
+        query (str): String to search for using both text matching and semantic similarity.
+        roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
+        limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
+        start_date (Optional[str]): Filter results to messages created after this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
+        end_date (Optional[str]): Filter results to messages created before this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+
+    Examples:
+        # Search all messages
+        conversation_search(query="project updates")
+
+        # Search only assistant messages
+        conversation_search(query="error handling", roles=["assistant"])
+
+        # Search with date range
+        conversation_search(query="meetings", start_date="2024-01-15", end_date="2024-01-20")
+
+        # Search with limit
+        conversation_search(query="debugging", limit=10)
 
     Returns:
-        str: Query result string
+        str: Query result string containing matching messages with timestamps and content.
     """
 
     import math
