@@ -2,7 +2,7 @@ import importlib
 import warnings
 from typing import List, Optional, Set, Union
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -319,10 +319,30 @@ class ToolManager:
     @enforce_types
     @trace_method
     async def list_tools_async(
-        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, upsert_base_tools: bool = True
+        self,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        upsert_base_tools: bool = True,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
     ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
-        tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+        tools = await self._list_tools_async(
+            actor=actor,
+            after=after,
+            limit=limit,
+            tool_types=tool_types,
+            exclude_tool_types=exclude_tool_types,
+            names=names,
+            tool_ids=tool_ids,
+            search=search,
+            return_only_letta_tools=return_only_letta_tools,
+        )
 
         # Check if all base tools are present if we requested all the tools w/o cursor
         # TODO: This is a temporary hack to resolve this issue
@@ -337,22 +357,86 @@ class ToolManager:
                 logger.info(f"Missing base tools detected: {missing_base_tools}. Upserting all base tools.")
                 await self.upsert_base_tools_async(actor=actor)
                 # Re-fetch the tools list after upserting base tools
-                tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+                tools = await self._list_tools_async(
+                    actor=actor,
+                    after=after,
+                    limit=limit,
+                    tool_types=tool_types,
+                    exclude_tool_types=exclude_tool_types,
+                    names=names,
+                    tool_ids=tool_ids,
+                    search=search,
+                    return_only_letta_tools=return_only_letta_tools,
+                )
 
         return tools
 
     @enforce_types
     @trace_method
-    async def _list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
+    async def _list_tools_async(
+        self,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
+    ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         tools_to_delete = []
         async with db_registry.async_session() as session:
-            tools = await ToolModel.list_async(
-                db_session=session,
-                after=after,
-                limit=limit,
-                organization_id=actor.organization_id,
-            )
+            # Use SQLAlchemy directly for all cases - more control and consistency
+            # Start with base query
+            query = select(ToolModel).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply tool_types filter
+            if tool_types is not None:
+                query = query.where(ToolModel.tool_type.in_(tool_types))
+
+            # Apply names filter
+            if names is not None:
+                query = query.where(ToolModel.name.in_(names))
+
+            # Apply tool_ids filter
+            if tool_ids is not None:
+                query = query.where(ToolModel.id.in_(tool_ids))
+
+            # Apply search filter (ILIKE for case-insensitive partial match)
+            if search is not None:
+                query = query.where(ToolModel.name.ilike(f"%{search}%"))
+
+            # Apply exclude_tool_types filter at database level
+            if exclude_tool_types is not None:
+                query = query.where(~ToolModel.tool_type.in_(exclude_tool_types))
+
+            # Apply return_only_letta_tools filter at database level
+            if return_only_letta_tools:
+                query = query.where(ToolModel.tool_type.like("letta_%"))
+
+            # Apply pagination if specified
+            if after is not None:
+                after_tool = await session.get(ToolModel, after)
+                if after_tool:
+                    query = query.where(
+                        or_(
+                            ToolModel.created_at < after_tool.created_at,
+                            and_(ToolModel.created_at == after_tool.created_at, ToolModel.id < after_tool.id),
+                        )
+                    )
+
+            # Apply limit
+            if limit is not None:
+                query = query.limit(limit)
+
+            # Order by created_at and id for consistent pagination
+            query = query.order_by(ToolModel.created_at.desc(), ToolModel.id.desc())
+
+            # Execute query
+            result = await session.execute(query)
+            tools = list(result.scalars())
 
             # Remove any malformed tools
             results = []
@@ -374,6 +458,61 @@ class ToolManager:
             await self.delete_tool_by_id_async(tool.id, actor=actor)
 
         return results
+
+    @enforce_types
+    @trace_method
+    async def count_tools_async(
+        self,
+        actor: PydanticUser,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
+        exclude_letta_tools: bool = False,
+    ) -> int:
+        """Count tools with the same filtering logic as list_tools_async."""
+        async with db_registry.async_session() as session:
+            # Use SQLAlchemy directly with COUNT query - same filtering logic as list_tools_async
+            # Start with base query
+            query = select(func.count(ToolModel.id)).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply tool_types filter
+            if tool_types is not None:
+                query = query.where(ToolModel.tool_type.in_(tool_types))
+
+            # Apply names filter
+            if names is not None:
+                query = query.where(ToolModel.name.in_(names))
+
+            # Apply tool_ids filter
+            if tool_ids is not None:
+                query = query.where(ToolModel.id.in_(tool_ids))
+
+            # Apply search filter (ILIKE for case-insensitive partial match)
+            if search is not None:
+                query = query.where(ToolModel.name.ilike(f"%{search}%"))
+
+            # Apply exclude_tool_types filter at database level
+            if exclude_tool_types is not None:
+                query = query.where(~ToolModel.tool_type.in_(exclude_tool_types))
+
+            # Apply return_only_letta_tools filter at database level
+            if return_only_letta_tools:
+                query = query.where(ToolModel.tool_type.like("letta_%"))
+
+            # Handle exclude_letta_tools logic (if True, exclude Letta tools)
+            if exclude_letta_tools:
+                # Exclude tools that are in the LETTA_TOOL_SET
+                letta_tool_names = list(LETTA_TOOL_SET)
+                query = query.where(~ToolModel.name.in_(letta_tool_names))
+
+            # Execute count query
+            result = await session.execute(query)
+            count = result.scalar()
+
+            return count or 0
 
     @enforce_types
     @trace_method
