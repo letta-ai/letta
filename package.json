@@ -275,6 +275,7 @@
     "prettier": "^3.4.2",
     "redis": "^4.7.0",
     "redis-om": "^0.4.7",
+    "remote-web-worker": "^0.0.9",
     "start-server-and-test": "^2.0.9",
     "storybook": "^8.4.7",
     "tailwindcss": "^3.4.17",

@@ -159,6 +159,36 @@ jobs:
       - name: Build
         run: just build-web-images
 
+      - name: Extract and deploy static files to CDN
+        run: |
+          echo "🚧 Extracting static files from Docker image..."
+          # Create temporary container from the built image
+          CONTAINER_ID=$(docker create us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/letta-dev-us-central1/web:${{ env.TAG }})
+
+          # Create directory for static files
+          mkdir -p ./static-files
+
+          # Extract static files from the container
+          docker cp $CONTAINER_ID:/app/apps/web/.next/static ./static-files/_next
+          docker cp $CONTAINER_ID:/app/apps/web/public ./static-files/public
+
+          # Clean up container
+          docker rm $CONTAINER_ID
+
+          echo "🚧 Uploading static files to Google Cloud Storage..."
+          # Set the bucket name for staging environment
+          BUCKET_NAME="letta-web"
+
+          # Upload static files to GCS with proper headers
+          gsutil -m cp -r ./static-files/public/* gs://$BUCKET_NAME/
+          gsutil -m cp -r ./static-files/_next/* gs://$BUCKET_NAME/_next/static
+
+          # Set cache headers for static assets (1 year for _next, 1 hour for public)
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" gs://$BUCKET_NAME/_next/**
+          gsutil -m setmeta -h "Cache-Control:public, max-age=3600" gs://$BUCKET_NAME/**
+
+          echo "✅ Static files deployed to staging CDN successfully"
+
       - name: Update deployment status to in_progress
         uses: chrnorm/deployment-status@v2
         with:

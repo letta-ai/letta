@@ -1,4 +1,5 @@
 'use client';
+import 'remote-web-worker';
 import { useCallback, useEffect } from 'react';
 import type {
   ComputeCoreMemoryWorkerPayload,

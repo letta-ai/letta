@@ -1,12 +1,11 @@
+import 'remote-web-worker';
 import PromiseWorker from 'promise-worker';
 import { useCallback } from 'react';
 
 let worker: Worker;
 
 if (typeof Worker !== 'undefined') {
-  worker = new Worker(new URL('./pythonValidatorWorker.ts', import.meta.url), {
-    type: 'module',
-  });
+  worker = new Worker(new URL('./pythonValidatorWorker.ts', import.meta.url));
 }
 
 export function usePythonValidator() {

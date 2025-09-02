@@ -10,6 +10,11 @@ const withNextIntl = createNextIntlPlugin();
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 let nextConfig = {
+  assetPrefix:
+    process.env.NODE_ENV === 'production' &&
+    process.env.IS_CYPRESS_RUN !== 'yes'
+      ? 'https://web-cdn.letta.com'
+      : '',
   nx: {
     // Set this to true if you would like to use SVGR
     // See: https://github.com/gregberge/svgr

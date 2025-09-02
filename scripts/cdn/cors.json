@@ -1,0 +1,15 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:8080",
+      "https://app.letta.com",
+      "https://localhost:3000",
+      "https://localhost:8080",
+      "https://app-dev.letta.com"
+    ],
+    "method": ["GET", "OPTIONS", "HEAD"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
+    "maxAgeSeconds": 3600
+  }
+]
