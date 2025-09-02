@@ -47,7 +47,7 @@ def is_openai_reasoning_model(model: str) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
 
     # NOTE: needs to be updated with new model releases
-    is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4")
+    is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4") or model.startswith("gpt-5")
     return is_reasoning
 
 
