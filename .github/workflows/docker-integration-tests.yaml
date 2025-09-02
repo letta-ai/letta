@@ -56,7 +56,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         PYTHONPATH: ${{ github.workspace }}:${{ env.PYTHONPATH }}
       run: |
-        uv sync --extra dev --extra postgres
+        uv sync --extra dev --extra postgres --extra sqlite
         uv run pytest -s tests/test_client.py
 
     - name: Print docker logs if tests fail
