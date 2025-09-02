@@ -1,10 +1,9 @@
 import asyncio
+import json
 import os
 import platform
 import subprocess
 import sys
-import pg8000
-import json
 import threading
 import time
 import urllib.parse
@@ -23,6 +22,26 @@ dotenv_path = join(letta_dir, "env")
 Path(dotenv_path).parent.mkdir(parents=True, exist_ok=True)
 Path(dotenv_path).touch(exist_ok=True)
 load_dotenv(dotenv_path)
+
+# import pgserver
+import pg8000  # noqa
+from tiktoken_ext import openai_public  # noqa
+import tiktoken_ext  # noqa
+import tiktoken  # noqa
+import pydantic.deprecated.decorator  # noqa
+import datamodel_code_generator  # noqa
+import opentelemetry  # noqa
+import blib2to3.pgen2.tokenize  # noqa
+import blib2to3.pgen2.parse  # noqa
+import async_lru  # noqa
+import mcp  # noqa
+import e2b  # noqa
+import asyncpg  # noqa
+import aiosqlite  # noqa
+import markitdown  # noqa
+import magika  # noqa
+import pgvector  # noqa
+import pgvector.sqlalchemy  # noqa
 
 
 # Only print initialization messages if we're actually starting the server

@@ -1908,7 +1908,7 @@ requires-dist = [
     { name = "langchain", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'desktop'", specifier = ">=0.3.7" },
     { name = "langchain-community", marker = "extra == 'external-tools'", specifier = ">=0.3.7" },
-    { name = "letta-client", specifier = ">=0.1.285" },
+    { name = "letta-client", specifier = ">=0.1.301" },
     { name = "llama-index", specifier = ">=0.12.2" },
     { name = "llama-index-embeddings-openai", specifier = ">=0.3.1" },
     { name = "locust", marker = "extra == 'desktop'", specifier = ">=2.31.5" },
@@ -1979,7 +1979,7 @@ provides-extras = ["postgres", "redis", "pinecone", "sqlite", "experimental", "s
 
 [[package]]
 name = "letta-client"
-version = "0.1.285"
+version = "0.1.304"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1988,9 +1988,9 @@ dependencies = [
     { name = "pydantic-core" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e6/90/ee619f8254d3c32ec5ed148735ed4c8876f4775961b38c26f4426385b060/letta_client-0.1.285.tar.gz", hash = "sha256:5a511b7bdd51cb7c4d99c8eea973f0ee94e39237d3824252d42d10cc8b782c7e", size = 184621, upload-time = "2025-08-26T23:03:14.826Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/69/25d694f2710fa8f8625f19d031dcee9152cc311c18a20d4ee828c2464c52/letta_client-0.1.304.tar.gz", hash = "sha256:2f92293fb585162e63086948b731e0a3fee6a2dc9b5b72fbbab5f287289cc010", size = 189122, upload-time = "2025-09-02T22:59:30.642Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/23/af58475b0d6d6709579e4cc2688ece2a0dc1a2a448bdf810f5830d9f7fe6/letta_client-0.1.285-py3-none-any.whl", hash = "sha256:024a6128e38d333483e51004d79ef6f18611d444ecf62d31d6d0cbbdd8c17a47", size = 465153, upload-time = "2025-08-26T23:03:13.125Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/a3/c0ed5579244d0dc8f985810b6c295867ffa22a12537fe6e2bc8819037c43/letta_client-0.1.304-py3-none-any.whl", hash = "sha256:a1589fd948bb071ddcfef239d99300302b67c29d4446bbae2022b535849dc130", size = 474355, upload-time = "2025-09-02T22:59:29.003Z" },
 ]
 
 [[package]]
