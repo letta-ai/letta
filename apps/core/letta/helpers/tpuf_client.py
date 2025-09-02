@@ -2,10 +2,10 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import TagMatchMode
+from letta.schemas.enums import MessageRole, TagMatchMode
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.settings import settings
 
@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 def should_use_tpuf() -> bool:
     return bool(settings.use_tpuf) and bool(settings.tpuf_api_key)
+
+
+def should_use_tpuf_for_messages() -> bool:
+    """Check if Turbopuffer should be used for messages."""
+    return should_use_tpuf() and bool(settings.embed_all_messages)
 
 
 class TurbopufferClient:
@@ -28,7 +33,7 @@ class TurbopufferClient:
             raise ValueError("Turbopuffer API key not provided")
 
     @trace_method
-    def _get_namespace_name(self, archive_id: str) -> str:
+    def _get_archive_namespace_name(self, archive_id: str) -> str:
         """Get namespace name for a specific archive."""
         # use archive_id as namespace to isolate different archives' memories
         # append environment suffix to namespace for isolation if environment is set
@@ -37,6 +42,18 @@ class TurbopufferClient:
             namespace_name = f"{archive_id}_{environment.lower()}"
         else:
             namespace_name = archive_id
+        return namespace_name
+
+    @trace_method
+    def _get_message_namespace_name(self, agent_id: str) -> str:
+        """Get namespace name for a specific agent's messages."""
+        # use agent_id as namespace to isolate different agents' messages
+        # append environment suffix to namespace for isolation if environment is set
+        environment = settings.environment
+        if environment:
+            namespace_name = f"messages_{agent_id}_{environment.lower()}"
+        else:
+            namespace_name = f"messages_{agent_id}"
         return namespace_name
 
     @trace_method
@@ -66,7 +83,7 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_namespace_name(archive_id)
+        namespace_name = self._get_archive_namespace_name(archive_id)
 
         # handle timestamp - ensure UTC
         if created_at is None:
@@ -156,6 +173,212 @@ class TurbopufferClient:
             raise
 
     @trace_method
+    async def insert_messages(
+        self,
+        agent_id: str,
+        message_texts: List[str],
+        embeddings: List[List[float]],
+        message_ids: List[str],
+        organization_id: str,
+        roles: List[MessageRole],
+        created_ats: List[datetime],
+    ) -> bool:
+        """Insert messages into Turbopuffer.
+
+        Args:
+            agent_id: ID of the agent
+            message_texts: List of message text content to store
+            embeddings: List of embedding vectors corresponding to message texts
+            message_ids: List of message IDs (must match 1:1 with message_texts)
+            organization_id: Organization ID for the messages
+            roles: List of message roles corresponding to each message
+            created_ats: List of creation timestamps for each message
+
+        Returns:
+            True if successful
+        """
+        from turbopuffer import AsyncTurbopuffer
+
+        namespace_name = self._get_message_namespace_name(agent_id)
+
+        # validation checks
+        if not message_ids:
+            raise ValueError("message_ids must be provided for Turbopuffer insertion")
+        if len(message_ids) != len(message_texts):
+            raise ValueError(f"message_ids length ({len(message_ids)}) must match message_texts length ({len(message_texts)})")
+        if len(message_ids) != len(embeddings):
+            raise ValueError(f"message_ids length ({len(message_ids)}) must match embeddings length ({len(embeddings)})")
+        if len(message_ids) != len(roles):
+            raise ValueError(f"message_ids length ({len(message_ids)}) must match roles length ({len(roles)})")
+        if len(message_ids) != len(created_ats):
+            raise ValueError(f"message_ids length ({len(message_ids)}) must match created_ats length ({len(created_ats)})")
+
+        # prepare column-based data for turbopuffer - optimized for batch insert
+        ids = []
+        vectors = []
+        texts = []
+        organization_ids = []
+        agent_ids = []
+        message_roles = []
+        created_at_timestamps = []
+
+        for idx, (text, embedding, role, created_at) in enumerate(zip(message_texts, embeddings, roles, created_ats)):
+            message_id = message_ids[idx]
+
+            # ensure the provided timestamp is timezone-aware and in UTC
+            if created_at.tzinfo is None:
+                # assume UTC if no timezone provided
+                timestamp = created_at.replace(tzinfo=timezone.utc)
+            else:
+                # convert to UTC if in different timezone
+                timestamp = created_at.astimezone(timezone.utc)
+
+            # append to columns
+            ids.append(message_id)
+            vectors.append(embedding)
+            texts.append(text)
+            organization_ids.append(organization_id)
+            agent_ids.append(agent_id)
+            message_roles.append(role.value)
+            created_at_timestamps.append(timestamp)
+
+        # build column-based upsert data
+        upsert_columns = {
+            "id": ids,
+            "vector": vectors,
+            "text": texts,
+            "organization_id": organization_ids,
+            "agent_id": agent_ids,
+            "role": message_roles,
+            "created_at": created_at_timestamps,
+        }
+
+        try:
+            # Use AsyncTurbopuffer as a context manager for proper resource cleanup
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # turbopuffer recommends column-based writes for performance
+                await namespace.write(
+                    upsert_columns=upsert_columns,
+                    distance_metric="cosine_distance",
+                    schema={"text": {"type": "string", "full_text_search": True}},
+                )
+                logger.info(f"Successfully inserted {len(ids)} messages to Turbopuffer for agent {agent_id}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to insert messages to Turbopuffer: {e}")
+            # check if it's a duplicate ID error
+            if "duplicate" in str(e).lower():
+                logger.error("Duplicate message IDs detected in batch")
+            raise
+
+    @trace_method
+    async def _execute_query(
+        self,
+        namespace_name: str,
+        search_mode: str,
+        query_embedding: Optional[List[float]],
+        query_text: Optional[str],
+        top_k: int,
+        include_attributes: List[str],
+        filters: Optional[Any] = None,
+        vector_weight: float = 0.5,
+        fts_weight: float = 0.5,
+    ) -> Any:
+        """Generic query execution for Turbopuffer.
+
+        Args:
+            namespace_name: Turbopuffer namespace to query
+            search_mode: "vector", "fts", "hybrid", or "timestamp"
+            query_embedding: Embedding for vector search
+            query_text: Text for full-text search
+            top_k: Number of results to return
+            include_attributes: Attributes to include in results
+            filters: Turbopuffer filter expression
+            vector_weight: Weight for vector search in hybrid mode
+            fts_weight: Weight for FTS in hybrid mode
+
+        Returns:
+            Raw Turbopuffer query results or multi-query response
+        """
+        from turbopuffer import AsyncTurbopuffer
+        from turbopuffer.types import QueryParam
+
+        # validate inputs based on search mode
+        if search_mode == "vector" and query_embedding is None:
+            raise ValueError("query_embedding is required for vector search mode")
+        if search_mode == "fts" and query_text is None:
+            raise ValueError("query_text is required for FTS search mode")
+        if search_mode == "hybrid":
+            if query_embedding is None or query_text is None:
+                raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
+        if search_mode not in ["vector", "fts", "hybrid", "timestamp"]:
+            raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', 'hybrid', or 'timestamp'")
+
+        async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+            namespace = client.namespace(namespace_name)
+
+            if search_mode == "timestamp":
+                # retrieve most recent items by timestamp
+                query_params = {
+                    "rank_by": ("created_at", "desc"),
+                    "top_k": top_k,
+                    "include_attributes": include_attributes,
+                }
+                if filters:
+                    query_params["filters"] = filters
+                return await namespace.query(**query_params)
+
+            elif search_mode == "vector":
+                # vector search query
+                query_params = {
+                    "rank_by": ("vector", "ANN", query_embedding),
+                    "top_k": top_k,
+                    "include_attributes": include_attributes,
+                }
+                if filters:
+                    query_params["filters"] = filters
+                return await namespace.query(**query_params)
+
+            elif search_mode == "fts":
+                # full-text search query
+                query_params = {
+                    "rank_by": ("text", "BM25", query_text),
+                    "top_k": top_k,
+                    "include_attributes": include_attributes,
+                }
+                if filters:
+                    query_params["filters"] = filters
+                return await namespace.query(**query_params)
+
+            else:  # hybrid mode
+                queries = []
+
+                # vector search query
+                vector_query = {
+                    "rank_by": ("vector", "ANN", query_embedding),
+                    "top_k": top_k,
+                    "include_attributes": include_attributes,
+                }
+                if filters:
+                    vector_query["filters"] = filters
+                queries.append(vector_query)
+
+                # full-text search query
+                fts_query = {
+                    "rank_by": ("text", "BM25", query_text),
+                    "top_k": top_k,
+                    "include_attributes": include_attributes,
+                }
+                if filters:
+                    fts_query["filters"] = filters
+                queries.append(fts_query)
+
+                # execute multi-query
+                return await namespace.multi_query(queries=[QueryParam(**q) for q in queries])
+
+    @trace_method
     async def query_passages(
         self,
         archive_id: str,
@@ -188,146 +411,212 @@ class TurbopufferClient:
         Returns:
             List of (passage, score) tuples
         """
-        from turbopuffer import AsyncTurbopuffer
-        from turbopuffer.types import QueryParam
-
-        # validate inputs based on search mode first
-        if search_mode == "vector" and query_embedding is None:
-            raise ValueError("query_embedding is required for vector search mode")
-        if search_mode == "fts" and query_text is None:
-            raise ValueError("query_text is required for FTS search mode")
-        if search_mode == "hybrid":
-            if query_embedding is None or query_text is None:
-                raise ValueError("Both query_embedding and query_text are required for hybrid search mode")
-        if search_mode not in ["vector", "fts", "hybrid", "timestamp"]:
-            raise ValueError(f"Invalid search_mode: {search_mode}. Must be 'vector', 'fts', 'hybrid', or 'timestamp'")
-
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
             # Fallback to retrieving most recent passages when no search query is provided
             search_mode = "timestamp"
 
-        namespace_name = self._get_namespace_name(archive_id)
+        namespace_name = self._get_archive_namespace_name(archive_id)
+
+        # build tag filter conditions
+        tag_filter = None
+        if tags:
+            if tag_match_mode == TagMatchMode.ALL:
+                # For ALL mode, need to check each tag individually with Contains
+                tag_conditions = []
+                for tag in tags:
+                    tag_conditions.append(("tags", "Contains", tag))
+                if len(tag_conditions) == 1:
+                    tag_filter = tag_conditions[0]
+                else:
+                    tag_filter = ("And", tag_conditions)
+            else:  # tag_match_mode == TagMatchMode.ANY
+                # For ANY mode, use ContainsAny to match any of the tags
+                tag_filter = ("tags", "ContainsAny", tags)
+
+        # build date filter conditions
+        date_filters = []
+        if start_date:
+            date_filters.append(("created_at", "Gte", start_date))
+        if end_date:
+            date_filters.append(("created_at", "Lte", end_date))
+
+        # combine all filters
+        all_filters = []
+        if tag_filter:
+            all_filters.append(tag_filter)
+        if date_filters:
+            all_filters.extend(date_filters)
+
+        # create final filter expression
+        final_filter = None
+        if len(all_filters) == 1:
+            final_filter = all_filters[0]
+        elif len(all_filters) > 1:
+            final_filter = ("And", all_filters)
 
         try:
-            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
-                namespace = client.namespace(namespace_name)
+            # use generic query executor
+            result = await self._execute_query(
+                namespace_name=namespace_name,
+                search_mode=search_mode,
+                query_embedding=query_embedding,
+                query_text=query_text,
+                top_k=top_k,
+                include_attributes=["text", "organization_id", "archive_id", "created_at", "tags"],
+                filters=final_filter,
+                vector_weight=vector_weight,
+                fts_weight=fts_weight,
+            )
 
-                # build tag filter conditions
-                tag_filter = None
-                if tags:
-                    if tag_match_mode == TagMatchMode.ALL:
-                        # For ALL mode, need to check each tag individually with Contains
-                        tag_conditions = []
-                        for tag in tags:
-                            tag_conditions.append(("tags", "Contains", tag))
-                        if len(tag_conditions) == 1:
-                            tag_filter = tag_conditions[0]
-                        else:
-                            tag_filter = ("And", tag_conditions)
-                    else:  # tag_match_mode == TagMatchMode.ANY
-                        # For ANY mode, use ContainsAny to match any of the tags
-                        tag_filter = ("tags", "ContainsAny", tags)
-
-                # build date filter conditions
-                date_filters = []
-                if start_date:
-                    # Turbopuffer expects datetime objects directly for comparison
-                    date_filters.append(("created_at", "Gte", start_date))
-                if end_date:
-                    # Turbopuffer expects datetime objects directly for comparison
-                    date_filters.append(("created_at", "Lte", end_date))
-
-                # combine all filters
-                all_filters = []
-                if tag_filter:
-                    all_filters.append(tag_filter)
-                if date_filters:
-                    all_filters.extend(date_filters)
-
-                # create final filter expression
-                final_filter = None
-                if len(all_filters) == 1:
-                    final_filter = all_filters[0]
-                elif len(all_filters) > 1:
-                    final_filter = ("And", all_filters)
-
-                if search_mode == "timestamp":
-                    # Fallback: retrieve most recent passages by timestamp
-                    query_params = {
-                        "rank_by": ("created_at", "desc"),  # Order by created_at in descending order
-                        "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
-                    }
-                    if final_filter:
-                        query_params["filters"] = final_filter
-
-                    result = await namespace.query(**query_params)
-                    return self._process_single_query_results(result, archive_id, tags)
-
-                elif search_mode == "vector":
-                    # single vector search query
-                    query_params = {
-                        "rank_by": ("vector", "ANN", query_embedding),
-                        "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
-                    }
-                    if final_filter:
-                        query_params["filters"] = final_filter
-
-                    result = await namespace.query(**query_params)
-                    return self._process_single_query_results(result, archive_id, tags)
-
-                elif search_mode == "fts":
-                    # single full-text search query
-                    query_params = {
-                        "rank_by": ("text", "BM25", query_text),
-                        "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
-                    }
-                    if final_filter:
-                        query_params["filters"] = final_filter
-
-                    result = await namespace.query(**query_params)
-                    return self._process_single_query_results(result, archive_id, tags, is_fts=True)
-
-                else:  # hybrid mode
-                    # multi-query for both vector and FTS
-                    queries = []
-
-                    # vector search query
-                    vector_query = {
-                        "rank_by": ("vector", "ANN", query_embedding),
-                        "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
-                    }
-                    if final_filter:
-                        vector_query["filters"] = final_filter
-                    queries.append(vector_query)
-
-                    # full-text search query
-                    fts_query = {
-                        "rank_by": ("text", "BM25", query_text),
-                        "top_k": top_k,
-                        "include_attributes": ["text", "organization_id", "archive_id", "created_at", "tags"],
-                    }
-                    if final_filter:
-                        fts_query["filters"] = final_filter
-                    queries.append(fts_query)
-
-                    # execute multi-query
-                    response = await namespace.multi_query(queries=[QueryParam(**q) for q in queries])
-
-                    # process and combine results using reciprocal rank fusion
-                    vector_results = self._process_single_query_results(response.results[0], archive_id, tags)
-                    fts_results = self._process_single_query_results(response.results[1], archive_id, tags, is_fts=True)
-
-                    # combine results using reciprocal rank fusion
-                    return self._reciprocal_rank_fusion(vector_results, fts_results, vector_weight, fts_weight, top_k)
+            # process results based on search mode
+            if search_mode == "hybrid":
+                # for hybrid mode, we get a multi-query response
+                vector_results = self._process_single_query_results(result.results[0], archive_id, tags)
+                fts_results = self._process_single_query_results(result.results[1], archive_id, tags, is_fts=True)
+                # use backwards-compatible wrapper which calls generic RRF
+                return self._reciprocal_rank_fusion(vector_results, fts_results, vector_weight, fts_weight, top_k)
+            else:
+                # for single queries (vector, fts, timestamp)
+                is_fts = search_mode == "fts"
+                return self._process_single_query_results(result, archive_id, tags, is_fts=is_fts)
 
         except Exception as e:
             logger.error(f"Failed to query passages from Turbopuffer: {e}")
             raise
+
+    @trace_method
+    async def query_messages(
+        self,
+        agent_id: str,
+        query_embedding: Optional[List[float]] = None,
+        query_text: Optional[str] = None,
+        search_mode: str = "vector",  # "vector", "fts", "hybrid", "timestamp"
+        top_k: int = 10,
+        roles: Optional[List[MessageRole]] = None,
+        vector_weight: float = 0.5,
+        fts_weight: float = 0.5,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[Tuple[dict, float]]:
+        """Query messages from Turbopuffer using vector search, full-text search, or hybrid search.
+
+        Args:
+            agent_id: ID of the agent
+            query_embedding: Embedding vector for vector search (required for "vector" and "hybrid" modes)
+            query_text: Text query for full-text search (required for "fts" and "hybrid" modes)
+            search_mode: Search mode - "vector", "fts", "hybrid", or "timestamp" (default: "vector")
+            top_k: Number of results to return
+            roles: Optional list of message roles to filter by
+            vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
+            fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
+            start_date: Optional datetime to filter messages created after this date
+            end_date: Optional datetime to filter messages created before this date
+
+        Returns:
+            List of (message_dict, score) tuples where message_dict contains id, text, role, created_at
+        """
+        # Check if we should fallback to timestamp-based retrieval
+        if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
+            # Fallback to retrieving most recent messages when no search query is provided
+            search_mode = "timestamp"
+
+        namespace_name = self._get_message_namespace_name(agent_id)
+
+        # build role filter conditions
+        role_filter = None
+        if roles:
+            role_values = [r.value for r in roles]
+            if len(role_values) == 1:
+                role_filter = ("role", "Eq", role_values[0])
+            else:
+                role_filter = ("role", "In", role_values)
+
+        # build date filter conditions
+        date_filters = []
+        if start_date:
+            date_filters.append(("created_at", "Gte", start_date))
+        if end_date:
+            date_filters.append(("created_at", "Lte", end_date))
+
+        # combine all filters
+        all_filters = []
+        if role_filter:
+            all_filters.append(role_filter)
+        if date_filters:
+            all_filters.extend(date_filters)
+
+        # create final filter expression
+        final_filter = None
+        if len(all_filters) == 1:
+            final_filter = all_filters[0]
+        elif len(all_filters) > 1:
+            final_filter = ("And", all_filters)
+
+        try:
+            # use generic query executor
+            result = await self._execute_query(
+                namespace_name=namespace_name,
+                search_mode=search_mode,
+                query_embedding=query_embedding,
+                query_text=query_text,
+                top_k=top_k,
+                include_attributes=["text", "organization_id", "agent_id", "role", "created_at"],
+                filters=final_filter,
+                vector_weight=vector_weight,
+                fts_weight=fts_weight,
+            )
+
+            # process results based on search mode
+            if search_mode == "hybrid":
+                # for hybrid mode, we get a multi-query response
+                vector_results = self._process_message_query_results(result.results[0])
+                fts_results = self._process_message_query_results(result.results[1], is_fts=True)
+                # use generic RRF with lambda to extract ID from dict
+                return self._generic_reciprocal_rank_fusion(
+                    vector_results=vector_results,
+                    fts_results=fts_results,
+                    get_id_func=lambda msg_dict: msg_dict["id"],
+                    vector_weight=vector_weight,
+                    fts_weight=fts_weight,
+                    top_k=top_k,
+                )
+            else:
+                # for single queries (vector, fts, timestamp)
+                is_fts = search_mode == "fts"
+                return self._process_message_query_results(result, is_fts=is_fts)
+
+        except Exception as e:
+            logger.error(f"Failed to query messages from Turbopuffer: {e}")
+            raise
+
+    def _process_message_query_results(self, result, is_fts: bool = False) -> List[Tuple[dict, float]]:
+        """Process results from a message query into message dicts with scores."""
+        messages_with_scores = []
+
+        for row in result.rows:
+            # Build message dict with key fields
+            message_dict = {
+                "id": row.id,
+                "text": getattr(row, "text", ""),
+                "organization_id": getattr(row, "organization_id", None),
+                "agent_id": getattr(row, "agent_id", None),
+                "role": getattr(row, "role", None),
+                "created_at": getattr(row, "created_at", None),
+            }
+
+            # handle score based on search type
+            if is_fts:
+                # for FTS, use the BM25 score directly (higher is better)
+                score = getattr(row, "$score", 0.0)
+            else:
+                # for vector search, convert distance to similarity score
+                distance = getattr(row, "$dist", 0.0)
+                score = 1.0 - distance
+
+            messages_with_scores.append((message_dict, score))
+
+        return messages_with_scores
 
     def _process_single_query_results(
         self, result, archive_id: str, tags: Optional[List[str]], is_fts: bool = False
@@ -369,6 +658,56 @@ class TurbopufferClient:
 
         return passages_with_scores
 
+    def _generic_reciprocal_rank_fusion(
+        self,
+        vector_results: List[Tuple[Any, float]],
+        fts_results: List[Tuple[Any, float]],
+        get_id_func: Callable[[Any], str],
+        vector_weight: float,
+        fts_weight: float,
+        top_k: int,
+    ) -> List[Tuple[Any, float]]:
+        """Generic RRF implementation that works with any object type.
+
+        RRF score = vector_weight * (1/(k + vector_rank)) + fts_weight * (1/(k + fts_rank))
+        where k is a constant (typically 60) to avoid division by zero
+
+        Args:
+            vector_results: List of (item, score) tuples from vector search
+            fts_results: List of (item, score) tuples from FTS
+            get_id_func: Function to extract ID from an item
+            vector_weight: Weight for vector search results
+            fts_weight: Weight for FTS results
+            top_k: Number of results to return
+
+        Returns:
+            List of (item, score) tuples sorted by RRF score
+        """
+        k = 60  # standard RRF constant
+
+        # create rank mappings using the get_id_func
+        vector_ranks = {get_id_func(item): rank + 1 for rank, (item, _) in enumerate(vector_results)}
+        fts_ranks = {get_id_func(item): rank + 1 for rank, (item, _) in enumerate(fts_results)}
+
+        # combine all unique items
+        all_items = {}
+        for item, _ in vector_results:
+            all_items[get_id_func(item)] = item
+        for item, _ in fts_results:
+            all_items[get_id_func(item)] = item
+
+        # calculate RRF scores
+        rrf_scores = {}
+        for item_id in all_items:
+            vector_score = vector_weight / (k + vector_ranks.get(item_id, k + top_k))
+            fts_score = fts_weight / (k + fts_ranks.get(item_id, k + top_k))
+            rrf_scores[item_id] = vector_score + fts_score
+
+        # sort by RRF score and return top_k
+        sorted_results = sorted([(all_items[iid], score) for iid, score in rrf_scores.items()], key=lambda x: x[1], reverse=True)
+
+        return sorted_results[:top_k]
+
     def _reciprocal_rank_fusion(
         self,
         vector_results: List[Tuple[PydanticPassage, float]],
@@ -377,42 +716,22 @@ class TurbopufferClient:
         fts_weight: float,
         top_k: int,
     ) -> List[Tuple[PydanticPassage, float]]:
-        """Combine vector and FTS results using Reciprocal Rank Fusion (RRF).
-
-        RRF score = vector_weight * (1/(k + vector_rank)) + fts_weight * (1/(k + fts_rank))
-        where k is a constant (typically 60) to avoid division by zero
-        """
-        k = 60  # standard RRF constant
-
-        # create rank mappings
-        vector_ranks = {passage.id: rank + 1 for rank, (passage, _) in enumerate(vector_results)}
-        fts_ranks = {passage.id: rank + 1 for rank, (passage, _) in enumerate(fts_results)}
-
-        # combine all unique passage IDs
-        all_passages = {}
-        for passage, _ in vector_results:
-            all_passages[passage.id] = passage
-        for passage, _ in fts_results:
-            all_passages[passage.id] = passage
-
-        # calculate RRF scores
-        rrf_scores = {}
-        for passage_id in all_passages:
-            vector_score = vector_weight / (k + vector_ranks.get(passage_id, k + top_k))
-            fts_score = fts_weight / (k + fts_ranks.get(passage_id, k + top_k))
-            rrf_scores[passage_id] = vector_score + fts_score
-
-        # sort by RRF score and return top_k
-        sorted_results = sorted([(all_passages[pid], score) for pid, score in rrf_scores.items()], key=lambda x: x[1], reverse=True)
-
-        return sorted_results[:top_k]
+        """Wrapper for backwards compatibility - uses generic RRF for passages."""
+        return self._generic_reciprocal_rank_fusion(
+            vector_results=vector_results,
+            fts_results=fts_results,
+            get_id_func=lambda p: p.id,
+            vector_weight=vector_weight,
+            fts_weight=fts_weight,
+            top_k=top_k,
+        )
 
     @trace_method
     async def delete_passage(self, archive_id: str, passage_id: str) -> bool:
         """Delete a passage from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_namespace_name(archive_id)
+        namespace_name = self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -433,7 +752,7 @@ class TurbopufferClient:
         if not passage_ids:
             return True
 
-        namespace_name = self._get_namespace_name(archive_id)
+        namespace_name = self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -451,7 +770,7 @@ class TurbopufferClient:
         """Delete all passages for an archive from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_namespace_name(archive_id)
+        namespace_name = self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -462,4 +781,22 @@ class TurbopufferClient:
                 return True
         except Exception as e:
             logger.error(f"Failed to delete all passages from Turbopuffer: {e}")
+            raise
+
+    @trace_method
+    async def delete_all_messages(self, agent_id: str) -> bool:
+        """Delete all messages for an agent from Turbopuffer."""
+        from turbopuffer import AsyncTurbopuffer
+
+        namespace_name = self._get_message_namespace_name(agent_id)
+
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # Turbopuffer has a delete_all() method on namespace
+                await namespace.delete_all()
+                logger.info(f"Successfully deleted all messages for agent {agent_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to delete all messages from Turbopuffer: {e}")
             raise

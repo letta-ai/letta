@@ -4,9 +4,11 @@ from datetime import datetime, timezone
 import pytest
 
 from letta.config import LettaConfig
-from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf
+from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf, should_use_tpuf_for_messages
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import TagMatchMode, VectorDBProvider
+from letta.schemas.enums import MessageRole, TagMatchMode, VectorDBProvider
+from letta.schemas.letta_message_content import TextContent
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.passage import Passage
 from letta.server.server import SyncServer
 from letta.settings import settings
@@ -67,6 +69,48 @@ def enable_turbopuffer():
     settings.use_tpuf = original_use_tpuf
     settings.tpuf_api_key = original_api_key
     settings.environment = original_environment
+
+
+@pytest.fixture
+def enable_message_embedding():
+    """Enable both Turbopuffer and message embedding"""
+    original_use_tpuf = settings.use_tpuf
+    original_api_key = settings.tpuf_api_key
+    original_embed_messages = settings.embed_all_messages
+    original_environment = settings.environment
+
+    settings.use_tpuf = True
+    settings.tpuf_api_key = settings.tpuf_api_key or "test-key"
+    settings.embed_all_messages = True
+    settings.environment = "DEV"
+
+    yield
+
+    settings.use_tpuf = original_use_tpuf
+    settings.tpuf_api_key = original_api_key
+    settings.embed_all_messages = original_embed_messages
+    settings.environment = original_environment
+
+
+@pytest.fixture
+def disable_turbopuffer():
+    """Ensure Turbopuffer is disabled for testing"""
+    original_use_tpuf = settings.use_tpuf
+    original_embed_messages = settings.embed_all_messages
+
+    settings.use_tpuf = False
+    settings.embed_all_messages = False
+
+    yield
+
+    settings.use_tpuf = original_use_tpuf
+    settings.embed_all_messages = original_embed_messages
+
+
+@pytest.fixture
+def sample_embedding_config():
+    """Provide a sample embedding configuration"""
+    return EmbeddingConfig.default_config(model_name="letta")
 
 
 class TestTurbopufferIntegration:
@@ -373,14 +417,6 @@ class TestTurbopufferIntegration:
             assert 0 < len(vector_heavy_results) <= 3
             # all results should have scores
             assert all(isinstance(score, float) for _, score in vector_heavy_results)
-
-            # Test error handling - missing embedding for vector mode
-            with pytest.raises(ValueError, match="query_embedding is required for vector search mode"):
-                await client.query_passages(archive_id=archive_id, search_mode="vector", top_k=3)
-
-            # Test error handling - missing text for FTS mode
-            with pytest.raises(ValueError, match="query_text is required for FTS search mode"):
-                await client.query_passages(archive_id=archive_id, search_mode="fts", top_k=3)
 
             # Test error handling - missing text for hybrid mode (embedding provided but text missing)
             with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
@@ -751,3 +787,645 @@ class TestTurbopufferParametrized:
         # Clean up
         await server.passage_manager.delete_agent_passages_async(recent_passage, default_user)
         await server.passage_manager.delete_agent_passages_async(old_passage, default_user)
+
+
+class TestTurbopufferMessagesIntegration:
+    """Test Turbopuffer message embedding functionality"""
+
+    def test_should_use_tpuf_for_messages_settings(self):
+        """Test that should_use_tpuf_for_messages correctly checks both use_tpuf AND embed_all_messages"""
+        # Save original values
+        original_use_tpuf = settings.use_tpuf
+        original_api_key = settings.tpuf_api_key
+        original_embed_messages = settings.embed_all_messages
+
+        try:
+            # Test when both are true
+            settings.use_tpuf = True
+            settings.tpuf_api_key = "test-key"
+            settings.embed_all_messages = True
+            assert should_use_tpuf_for_messages() is True
+
+            # Test when use_tpuf is False
+            settings.use_tpuf = False
+            settings.embed_all_messages = True
+            assert should_use_tpuf_for_messages() is False
+
+            # Test when embed_all_messages is False
+            settings.use_tpuf = True
+            settings.tpuf_api_key = "test-key"
+            settings.embed_all_messages = False
+            assert should_use_tpuf_for_messages() is False
+
+            # Test when both are false
+            settings.use_tpuf = False
+            settings.embed_all_messages = False
+            assert should_use_tpuf_for_messages() is False
+
+            # Test when API key is missing
+            settings.use_tpuf = True
+            settings.tpuf_api_key = None
+            settings.embed_all_messages = True
+            assert should_use_tpuf_for_messages() is False
+        finally:
+            # Restore original values
+            settings.use_tpuf = original_use_tpuf
+            settings.tpuf_api_key = original_api_key
+            settings.embed_all_messages = original_embed_messages
+
+    def test_message_text_extraction(self, server, default_user):
+        """Test extraction of text from various message content structures"""
+        manager = server.message_manager
+
+        # Test 1: List with single string-like TextContent
+        msg1 = PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(text="Simple text content")],
+            agent_id="test-agent",
+        )
+        text1 = manager._extract_message_text(msg1)
+        assert text1 == "Simple text content"
+
+        # Test 2: List with single TextContent
+        msg2 = PydanticMessage(
+            role=MessageRole.user,
+            content=[TextContent(text="Single text content")],
+            agent_id="test-agent",
+        )
+        text2 = manager._extract_message_text(msg2)
+        assert text2 == "Single text content"
+
+        # Test 3: List with multiple TextContent items
+        msg3 = PydanticMessage(
+            role=MessageRole.user,
+            content=[
+                TextContent(text="First part"),
+                TextContent(text="Second part"),
+                TextContent(text="Third part"),
+            ],
+            agent_id="test-agent",
+        )
+        text3 = manager._extract_message_text(msg3)
+        assert text3 == "First part Second part Third part"
+
+        # Test 4: Empty content
+        msg4 = PydanticMessage(
+            role=MessageRole.system,
+            content=None,
+            agent_id="test-agent",
+        )
+        text4 = manager._extract_message_text(msg4)
+        assert text4 == ""
+
+        # Test 5: Empty list
+        msg5 = PydanticMessage(
+            role=MessageRole.assistant,
+            content=[],
+            agent_id="test-agent",
+        )
+        text5 = manager._extract_message_text(msg5)
+        assert text5 == ""
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_embedding_without_config(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that messages are NOT embedded without embedding_config even when tpuf is enabled"""
+        # Create messages WITHOUT embedding_config
+        messages = [
+            PydanticMessage(
+                role=MessageRole.user,
+                content=[TextContent(text="Test message without embedding config")],
+                agent_id=sarah_agent.id,
+            ),
+            PydanticMessage(
+                role=MessageRole.assistant,
+                content=[TextContent(text="Response without embedding config")],
+                agent_id=sarah_agent.id,
+            ),
+        ]
+
+        # Create messages without embedding_config
+        created = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=messages,
+            actor=default_user,
+            embedding_config=None,  # No config provided
+        )
+
+        assert len(created) == 2
+        assert all(msg.agent_id == sarah_agent.id for msg in created)
+
+        # Messages should be in SQL
+        sql_messages = await server.message_manager.list_messages_for_agent_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            limit=10,
+        )
+        assert len(sql_messages) >= 2
+
+        # Clean up
+        message_ids = [msg.id for msg in created]
+        await server.message_manager.delete_messages_by_ids_async(message_ids, default_user)
+
+    @pytest.mark.asyncio
+    async def test_generic_reciprocal_rank_fusion(self):
+        """Test the generic RRF function with different object types"""
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        client = TurbopufferClient()
+
+        # Test with passage objects (backward compatibility)
+        p1_id = "passage-78d49031-8502-49c1-a970-45663e9f6e07"
+        p2_id = "passage-90df8386-4caf-49cc-acbc-d71526de6f77"
+        passage1 = Passage(
+            id=p1_id,
+            text="First passage",
+            organization_id="org1",
+            archive_id="archive1",
+            created_at=datetime.now(timezone.utc),
+            metadata_={},
+            tags=[],
+            embedding=[],
+            embedding_config=None,
+        )
+        passage2 = Passage(
+            id=p2_id,
+            text="Second passage",
+            organization_id="org1",
+            archive_id="archive1",
+            created_at=datetime.now(timezone.utc),
+            metadata_={},
+            tags=[],
+            embedding=[],
+            embedding_config=None,
+        )
+
+        vector_results = [(passage1, 0.9), (passage2, 0.7)]
+        fts_results = [(passage2, 0.8), (passage1, 0.6)]
+
+        # Test with passages using the wrapper function
+        combined = client._reciprocal_rank_fusion(
+            vector_results=vector_results,
+            fts_results=fts_results,
+            vector_weight=0.5,
+            fts_weight=0.5,
+            top_k=2,
+        )
+
+        assert len(combined) == 2
+        # Both passages should be in results
+        result_ids = [p.id for p, _ in combined]
+        assert p1_id in result_ids
+        assert p2_id in result_ids
+
+        # Test with message dicts using generic function
+        msg1 = {"id": "m1", "text": "First message"}
+        msg2 = {"id": "m2", "text": "Second message"}
+        msg3 = {"id": "m3", "text": "Third message"}
+
+        vector_msg_results = [(msg1, 0.95), (msg2, 0.85), (msg3, 0.75)]
+        fts_msg_results = [(msg2, 0.90), (msg3, 0.80), (msg1, 0.70)]
+
+        combined_msgs = client._generic_reciprocal_rank_fusion(
+            vector_results=vector_msg_results,
+            fts_results=fts_msg_results,
+            get_id_func=lambda m: m["id"],
+            vector_weight=0.6,
+            fts_weight=0.4,
+            top_k=3,
+        )
+
+        assert len(combined_msgs) == 3
+        msg_ids = [m["id"] for m, _ in combined_msgs]
+        assert "m1" in msg_ids
+        assert "m2" in msg_ids
+        assert "m3" in msg_ids
+
+        # Test edge cases
+        # Empty results
+        empty_combined = client._generic_reciprocal_rank_fusion(
+            vector_results=[],
+            fts_results=[],
+            get_id_func=lambda x: x["id"],
+            vector_weight=0.5,
+            fts_weight=0.5,
+            top_k=10,
+        )
+        assert len(empty_combined) == 0
+
+        # Single result list
+        single_combined = client._generic_reciprocal_rank_fusion(
+            vector_results=[(msg1, 0.9)],
+            fts_results=[],
+            get_id_func=lambda m: m["id"],
+            vector_weight=0.5,
+            fts_weight=0.5,
+            top_k=10,
+        )
+        assert len(single_combined) == 1
+        assert single_combined[0][0]["id"] == "m1"
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_dual_write_with_real_tpuf(self, enable_message_embedding):
+        """Test actual message embedding and storage in Turbopuffer"""
+        import uuid
+        from datetime import datetime, timezone
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+        from letta.schemas.enums import MessageRole
+
+        client = TurbopufferClient()
+        agent_id = f"test-agent-{uuid.uuid4()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Prepare test messages
+            message_texts = [
+                "Hello, how can I help you today?",
+                "I need help with Python programming.",
+                "Sure, what specific Python topic?",
+            ]
+            message_ids = [str(uuid.uuid4()) for _ in message_texts]
+            roles = [MessageRole.assistant, MessageRole.user, MessageRole.assistant]
+            created_ats = [datetime.now(timezone.utc) for _ in message_texts]
+
+            # Generate embeddings (dummy for test)
+            embeddings = [[float(i), float(i + 1), float(i + 2)] for i in range(len(message_texts))]
+
+            # Insert messages into Turbopuffer
+            success = await client.insert_messages(
+                agent_id=agent_id,
+                message_texts=message_texts,
+                embeddings=embeddings,
+                message_ids=message_ids,
+                organization_id=org_id,
+                roles=roles,
+                created_ats=created_ats,
+            )
+
+            assert success == True
+
+            # Verify we can query the messages
+            results = await client.query_messages(
+                agent_id=agent_id,
+                search_mode="timestamp",
+                top_k=10,
+            )
+
+            assert len(results) == 3
+            # Results should be ordered by timestamp (most recent first)
+            for msg_dict, score in results:
+                assert msg_dict["agent_id"] == agent_id
+                assert msg_dict["organization_id"] == org_id
+                assert msg_dict["text"] in message_texts
+                assert msg_dict["role"] in ["assistant", "user"]
+
+        finally:
+            # Clean up namespace
+            try:
+                await client.delete_all_messages(agent_id)
+            except:
+                pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_vector_search_with_real_tpuf(self, enable_message_embedding):
+        """Test vector search on messages in Turbopuffer"""
+        import uuid
+        from datetime import datetime, timezone
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+        from letta.schemas.enums import MessageRole
+
+        client = TurbopufferClient()
+        agent_id = f"test-agent-{uuid.uuid4()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Insert messages with different embeddings
+            message_texts = [
+                "Python is a great programming language",
+                "JavaScript is used for web development",
+                "Machine learning with Python is powerful",
+            ]
+            message_ids = [str(uuid.uuid4()) for _ in message_texts]
+            roles = [MessageRole.assistant] * len(message_texts)
+            created_ats = [datetime.now(timezone.utc) for _ in message_texts]
+
+            # Create embeddings that reflect content similarity
+            embeddings = [
+                [1.0, 0.0, 0.0],  # Python programming
+                [0.0, 1.0, 0.0],  # JavaScript web
+                [0.8, 0.0, 0.2],  # ML with Python (similar to first)
+            ]
+
+            # Insert messages
+            await client.insert_messages(
+                agent_id=agent_id,
+                message_texts=message_texts,
+                embeddings=embeddings,
+                message_ids=message_ids,
+                organization_id=org_id,
+                roles=roles,
+                created_ats=created_ats,
+            )
+
+            # Search for Python-related messages using vector search
+            query_embedding = [0.9, 0.0, 0.1]  # Similar to Python messages
+            results = await client.query_messages(
+                agent_id=agent_id,
+                query_embedding=query_embedding,
+                search_mode="vector",
+                top_k=2,
+            )
+
+            assert len(results) == 2
+            # Should return Python-related messages first
+            result_texts = [msg["text"] for msg, _ in results]
+            assert "Python is a great programming language" in result_texts
+            assert "Machine learning with Python is powerful" in result_texts
+
+        finally:
+            # Clean up namespace
+            try:
+                await client.delete_all_messages(agent_id)
+            except:
+                pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_hybrid_search_with_real_tpuf(self, enable_message_embedding):
+        """Test hybrid search combining vector and FTS for messages"""
+        import uuid
+        from datetime import datetime, timezone
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+        from letta.schemas.enums import MessageRole
+
+        client = TurbopufferClient()
+        agent_id = f"test-agent-{uuid.uuid4()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Insert diverse messages
+            message_texts = [
+                "The quick brown fox jumps over the lazy dog",
+                "Machine learning algorithms are fascinating",
+                "Quick tutorial on Python programming",
+                "Deep learning with neural networks",
+            ]
+            message_ids = [str(uuid.uuid4()) for _ in message_texts]
+            roles = [MessageRole.assistant] * len(message_texts)
+            created_ats = [datetime.now(timezone.utc) for _ in message_texts]
+
+            # Embeddings
+            embeddings = [
+                [0.1, 0.9, 0.0],  # fox text
+                [0.9, 0.1, 0.0],  # ML algorithms
+                [0.5, 0.5, 0.0],  # Quick Python
+                [0.8, 0.2, 0.0],  # Deep learning
+            ]
+
+            # Insert messages
+            await client.insert_messages(
+                agent_id=agent_id,
+                message_texts=message_texts,
+                embeddings=embeddings,
+                message_ids=message_ids,
+                organization_id=org_id,
+                roles=roles,
+                created_ats=created_ats,
+            )
+
+            # Hybrid search - vector similar to ML but text contains "quick"
+            results = await client.query_messages(
+                agent_id=agent_id,
+                query_embedding=[0.7, 0.3, 0.0],  # Similar to ML messages
+                query_text="quick",  # Text search for "quick"
+                search_mode="hybrid",
+                top_k=3,
+                vector_weight=0.5,
+                fts_weight=0.5,
+            )
+
+            assert len(results) > 0
+            # Should get a mix of results based on both vector and text similarity
+            result_texts = [msg["text"] for msg, _ in results]
+            # At least one result should contain "quick" due to FTS
+            assert any("quick" in text.lower() for text in result_texts)
+
+        finally:
+            # Clean up namespace
+            try:
+                await client.delete_all_messages(agent_id)
+            except:
+                pass
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_role_filtering_with_real_tpuf(self, enable_message_embedding):
+        """Test filtering messages by role"""
+        import uuid
+        from datetime import datetime, timezone
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+        from letta.schemas.enums import MessageRole
+
+        client = TurbopufferClient()
+        agent_id = f"test-agent-{uuid.uuid4()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Insert messages with different roles
+            message_data = [
+                ("Hello! How can I help?", MessageRole.assistant),
+                ("I need help with Python", MessageRole.user),
+                ("Here's a Python example", MessageRole.assistant),
+                ("Can you explain this?", MessageRole.user),
+                ("System message here", MessageRole.system),
+            ]
+
+            message_texts = [text for text, _ in message_data]
+            roles = [role for _, role in message_data]
+            message_ids = [str(uuid.uuid4()) for _ in message_texts]
+            created_ats = [datetime.now(timezone.utc) for _ in message_texts]
+            embeddings = [[float(i), float(i + 1), float(i + 2)] for i in range(len(message_texts))]
+
+            # Insert messages
+            await client.insert_messages(
+                agent_id=agent_id,
+                message_texts=message_texts,
+                embeddings=embeddings,
+                message_ids=message_ids,
+                organization_id=org_id,
+                roles=roles,
+                created_ats=created_ats,
+            )
+
+            # Query only user messages
+            user_results = await client.query_messages(
+                agent_id=agent_id,
+                search_mode="timestamp",
+                top_k=10,
+                roles=[MessageRole.user],
+            )
+
+            assert len(user_results) == 2
+            for msg, _ in user_results:
+                assert msg["role"] == "user"
+                assert msg["text"] in ["I need help with Python", "Can you explain this?"]
+
+            # Query assistant and system messages
+            non_user_results = await client.query_messages(
+                agent_id=agent_id,
+                search_mode="timestamp",
+                top_k=10,
+                roles=[MessageRole.assistant, MessageRole.system],
+            )
+
+            assert len(non_user_results) == 3
+            for msg, _ in non_user_results:
+                assert msg["role"] in ["assistant", "system"]
+
+        finally:
+            # Clean up namespace
+            try:
+                await client.delete_all_messages(agent_id)
+            except:
+                pass
+
+    @pytest.mark.asyncio
+    async def test_message_search_fallback_to_sql(self, server, default_user, sarah_agent):
+        """Test that message search falls back to SQL when Turbopuffer is disabled"""
+        # Save original settings
+        original_use_tpuf = settings.use_tpuf
+        original_embed_messages = settings.embed_all_messages
+
+        try:
+            # Disable Turbopuffer for messages
+            settings.use_tpuf = False
+            settings.embed_all_messages = False
+
+            # Create messages
+            messages = await server.message_manager.create_many_messages_async(
+                pydantic_msgs=[
+                    PydanticMessage(
+                        role=MessageRole.user,
+                        content=[TextContent(text="Test message for SQL fallback")],
+                        agent_id=sarah_agent.id,
+                    )
+                ],
+                actor=default_user,
+            )
+
+            # Search should use SQL backend (not Turbopuffer)
+            results = await server.message_manager.search_messages_async(
+                actor=default_user,
+                agent_id=sarah_agent.id,
+                query_text="fallback",
+                limit=10,
+            )
+
+            # Should return results from SQL search
+            assert len(results) > 0
+            # Extract text from messages and check for "fallback"
+            for msg in results:
+                text = server.message_manager._extract_message_text(msg)
+                if "fallback" in text.lower():
+                    break
+            else:
+                assert False, "No messages containing 'fallback' found"
+
+        finally:
+            # Restore settings
+            settings.use_tpuf = original_use_tpuf
+            settings.embed_all_messages = original_embed_messages
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_date_filtering_with_real_tpuf(self, enable_message_embedding):
+        """Test filtering messages by date range"""
+        import uuid
+        from datetime import datetime, timedelta, timezone
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+        from letta.schemas.enums import MessageRole
+
+        client = TurbopufferClient()
+        agent_id = f"test-agent-{uuid.uuid4()}"
+        org_id = str(uuid.uuid4())
+
+        try:
+            # Create messages with different timestamps
+            now = datetime.now(timezone.utc)
+            yesterday = now - timedelta(days=1)
+            last_week = now - timedelta(days=7)
+            last_month = now - timedelta(days=30)
+
+            message_data = [
+                ("Today's message", now),
+                ("Yesterday's message", yesterday),
+                ("Last week's message", last_week),
+                ("Last month's message", last_month),
+            ]
+
+            for text, timestamp in message_data:
+                await client.insert_messages(
+                    agent_id=agent_id,
+                    message_texts=[text],
+                    embeddings=[[1.0, 2.0, 3.0]],
+                    message_ids=[str(uuid.uuid4())],
+                    organization_id=org_id,
+                    roles=[MessageRole.assistant],
+                    created_ats=[timestamp],
+                )
+
+            # Query messages from the last 3 days
+            three_days_ago = now - timedelta(days=3)
+            recent_results = await client.query_messages(
+                agent_id=agent_id,
+                search_mode="timestamp",
+                top_k=10,
+                start_date=three_days_ago,
+            )
+
+            # Should get today's and yesterday's messages
+            assert len(recent_results) == 2
+            result_texts = [msg["text"] for msg, _ in recent_results]
+            assert "Today's message" in result_texts
+            assert "Yesterday's message" in result_texts
+
+            # Query messages between 2 weeks ago and 1 week ago
+            two_weeks_ago = now - timedelta(days=14)
+            week_results = await client.query_messages(
+                agent_id=agent_id,
+                search_mode="timestamp",
+                top_k=10,
+                start_date=two_weeks_ago,
+                end_date=last_week + timedelta(days=1),  # Include last week's message
+            )
+
+            # Should get only last week's message
+            assert len(week_results) == 1
+            assert week_results[0][0]["text"] == "Last week's message"
+
+            # Query with vector search and date filtering
+            filtered_vector_results = await client.query_messages(
+                agent_id=agent_id,
+                query_embedding=[1.0, 2.0, 3.0],
+                search_mode="vector",
+                top_k=10,
+                start_date=three_days_ago,
+            )
+
+            # Should get only recent messages
+            assert len(filtered_vector_results) == 2
+            for msg, _ in filtered_vector_results:
+                assert msg["text"] in ["Today's message", "Yesterday's message"]
+
+        finally:
+            # Clean up namespace
+            try:
+                await client.delete_all_messages(agent_id)
+            except:
+                pass

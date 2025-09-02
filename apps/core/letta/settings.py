@@ -301,6 +301,7 @@ class Settings(BaseSettings):
     use_tpuf: bool = False
     tpuf_api_key: Optional[str] = None
     tpuf_region: str = "gcp-us-central1"
+    embed_all_messages: bool = False
 
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30
