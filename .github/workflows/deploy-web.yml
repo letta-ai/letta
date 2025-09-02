@@ -163,7 +163,7 @@ jobs:
         run: |
           echo "🚧 Extracting static files from Docker image..."
           # Create temporary container from the built image
-          CONTAINER_ID=$(docker create us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/letta-dev-us-central1/web:${{ env.TAG }})
+          CONTAINER_ID=$(docker create us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/letta:${{ env.TAG }})
 
           # Create directory for static files
           mkdir -p ./static-files
