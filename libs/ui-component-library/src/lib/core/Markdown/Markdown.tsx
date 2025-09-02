@@ -122,6 +122,7 @@ export function Markdown(props: MarkdownProps) {
           if (!isSupportedLanguage(language || '')) {
             return (
               <RawCodeEditor
+                fullWidth
                 label="Code"
                 hideLabel
                 language="text"
