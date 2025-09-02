@@ -35,13 +35,14 @@ class OpenAIStreamingInterface:
         is_openai_proxy: bool = False,
         messages: Optional[list] = None,
         tools: Optional[list] = None,
+        put_inner_thoughts_in_kwarg: bool = True,
     ):
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
-        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=True)  # TODO: pass in kwarg
+        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
         self.function_name_buffer = None
         self.function_args_buffer = None
         self.function_id_buffer = None
