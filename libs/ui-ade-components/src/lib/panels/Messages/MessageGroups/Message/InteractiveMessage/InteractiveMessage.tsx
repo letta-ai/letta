@@ -3,6 +3,7 @@ import { InteractiveToolCallMessage } from './InteractiveToolCallMessage/Interac
 import { InteractiveUserMessage } from './InteractiveUserMessage/InteractiveUserMessage';
 import { InteractiveReasoningMessage } from './InteractiveReasoningMessage/InteractiveReasoningMessage';
 import { InteractiveAgentMessage } from './InteractiveAgentMessage/InteractiveAgentMessage';
+import { InteractiveHiddenReasoningMessage } from './InteractiveHiddenReasoningMessage/InteractiveHiddenReasoningMessage';
 
 interface InteractiveMessageProps {
   message: LettaMessageUnion;
@@ -28,6 +29,8 @@ export function InteractiveMessage(props: InteractiveMessageProps) {
     }
     case 'reasoning_message':
       return <InteractiveReasoningMessage message={message} />;
+    case 'hidden_reasoning_message':
+      return <InteractiveHiddenReasoningMessage message={message} />;
     case 'user_message':
       return <InteractiveUserMessage message={message} />;
     default:

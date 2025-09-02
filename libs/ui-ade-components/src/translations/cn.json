@@ -778,6 +778,8 @@
   },
   "components/Messages": {
     "reasoning": "推理",
+    "hiddenByModelProvider": "由模型提供商隐藏",
+    "redactedByModelProvider": "由模型提供商编辑",
     "loadingMessages": "正在连接到智能体...",
     "noMessages": "此智能体没有消息，在下方聊天",
     "toolReturn": "工具响应",

@@ -1225,6 +1225,8 @@
     "exploreStopReason": "Click to view error",
     "stepDurationTooltip": "The duration of this step",
     "reasoning": "Reasoning",
+    "hiddenByModelProvider": "Hidden by model provider",
+    "redactedByModelProvider": "Redacted by model provider",
     "saveToDataset": "Save to Dataset",
     "selectDatasetPrompt": "Select a dataset to save this prompt to:",
     "searchDatasets": "Search datasets",
