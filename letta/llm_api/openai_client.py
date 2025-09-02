@@ -221,6 +221,10 @@ class OpenAIClient(LLMClientBase):
         if supports_verbosity_control(model) and llm_config.verbosity:
             data.verbosity = llm_config.verbosity
 
+        # Add reasoning effort control for reasoning models
+        if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
+            data.reasoning_effort = llm_config.reasoning_effort
+
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
 
