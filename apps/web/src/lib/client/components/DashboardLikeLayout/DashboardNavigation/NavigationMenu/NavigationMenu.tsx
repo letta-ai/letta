@@ -443,6 +443,16 @@ function SettingsMenu() {
         id="settings-environmentVariables"
         label={t('environmentVariables')}
       />
+      <DashboardNavigationButton
+        href={`${baseUrl}/organization/audit-log`}
+        id="audit-logs"
+        label={t('audit-logs')}
+      />
+      <DashboardNavigationButton
+        href={`${baseUrl}/organization/rate-limits`}
+        id="rate-limits"
+        label={t('rate-limits')}
+      />
     </NavigationSection>
   );
 }

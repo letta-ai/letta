@@ -53,6 +53,8 @@
       "account": "Account",
       "general": "General",
       "models": "Models",
+      "audit-logs": "Usage History",
+      "rate-limits": "Rate limits",
       "user": "User settings",
       "members": "Members",
       "billing": "Billing",
