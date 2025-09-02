@@ -7,7 +7,7 @@ from letta.config import LettaConfig
 from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf, should_use_tpuf_for_messages
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, TagMatchMode, VectorDBProvider
-from letta.schemas.letta_message_content import TextContent
+from letta.schemas.letta_message_content import ReasoningContent, TextContent, ToolCallContent, ToolReturnContent
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.passage import Passage
 from letta.server.server import SyncServer
@@ -885,6 +885,26 @@ class TestTurbopufferMessagesIntegration:
         )
         text5 = manager._extract_message_text(msg5)
         assert text5 == ""
+
+        # Test 6: Mixed content types with to_text() methods
+        msg6 = PydanticMessage(
+            role=MessageRole.assistant,
+            content=[
+                TextContent(text="User said:"),
+                ToolCallContent(id="call-123", name="search", input={"query": "test"}),
+                ToolReturnContent(tool_call_id="call-123", content="Found 5 results", is_error=False),
+                ReasoningContent(is_native=True, reasoning="I should help the user", signature="step-1"),
+            ],
+            agent_id="test-agent",
+        )
+        text6 = manager._extract_message_text(msg6)
+        expected_parts = [
+            "User said:",
+            'Tool call: search({\n  "query": "test"\n})',
+            "Tool result: Found 5 results",
+            "I should help the user",
+        ]
+        assert text6 == " ".join(expected_parts)
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
