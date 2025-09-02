@@ -31,11 +31,17 @@ function CardInner(props: CardButtonProps) {
       padding="xxsmall"
       color="background-grey"
       paddingX="small"
-      className={cn(url ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default')}
+      className={cn(
+        url
+          ? 'cursor-pointer hover:bg-gray-50 whitespace-nowrap'
+          : 'cursor-default',
+      )}
     >
       <HStack align="center">
         {preIcon}
-        <Typography variant="body">{label}</Typography>
+        <Typography variant="body" overflow="ellipsis">
+          {label}
+        </Typography>
       </HStack>
     </VStack>
   );
