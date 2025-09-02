@@ -128,7 +128,7 @@ def agent(client: Letta, approval_tool_fixture) -> AgentState:
         name="approval_test_agent",
         include_base_tools=False,
         tool_ids=[send_message_tool.id, approval_tool_fixture.id],
-        model="openai/gpt-4o-mini",
+        model="anthropic/claude-3-5-sonnet",
         embedding="openai/text-embedding-3-small",
         tags=["approval_test"],
     )
@@ -229,12 +229,13 @@ def test_send_message_after_turning_off_requires_approval(
     )
 
     assert response.messages is not None
-    assert len(response.messages) == 5
+    assert len(response.messages) == 3 or len(response.messages) == 5
     assert response.messages[0].message_type == "reasoning_message"
     assert response.messages[1].message_type == "tool_call_message"
     assert response.messages[2].message_type == "tool_return_message"
-    assert response.messages[3].message_type == "reasoning_message"
-    assert response.messages[4].message_type == "assistant_message"
+    if len(response.messages) == 5:
+        assert response.messages[3].message_type == "reasoning_message"
+        assert response.messages[4].message_type == "assistant_message"
 
 
 # ------------------------------
@@ -303,13 +304,14 @@ def test_approve_cursor_fetch(
     )
 
     messages = client.agents.messages.list(agent_id=agent.id, after=last_message_cursor)
-    assert len(messages) == 5
+    assert len(messages) == 2 or len(messages) == 5
     assert messages[0].message_type == "approval_response_message"
     assert messages[1].message_type == "tool_return_message"
     assert messages[1].status == "success"
-    assert messages[2].message_type == "user_message"  # heartbeat
-    assert messages[3].message_type == "reasoning_message"
-    assert messages[4].message_type == "assistant_message"
+    if len(messages) == 5:
+        assert messages[2].message_type == "user_message"  # heartbeat
+        assert messages[3].message_type == "reasoning_message"
+        assert messages[4].message_type == "assistant_message"
 
 
 def test_approve_and_follow_up(

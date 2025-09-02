@@ -74,7 +74,7 @@ class AnthropicTokenCounter(TokenCounter):
         return await self.client.count_tokens(model=self.model, tools=tools)
 
     def convert_messages(self, messages: List[Any]) -> List[Dict[str, Any]]:
-        return [m.to_anthropic_dict() for m in messages]
+        return Message.to_anthropic_dicts_from_list(messages)
 
 
 class TiktokenCounter(TokenCounter):
