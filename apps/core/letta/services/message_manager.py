@@ -34,12 +34,18 @@ class MessageManager:
     def _extract_message_text(self, message: PydanticMessage) -> str:
         """Extract text content from a message's complex content structure.
 
+        Only extracts text from searchable message roles (assistant, user, tool).
+
         Args:
             message: The message to extract text from
 
         Returns:
-            Concatenated text content from the message
+            Concatenated text content from the message, or empty string for non-searchable roles
         """
+        # only extract text from searchable roles
+        if message.role not in [MessageRole.assistant, MessageRole.user, MessageRole.tool]:
+            return ""
+
         if not message.content:
             return ""
 
@@ -218,7 +224,7 @@ class MessageManager:
 
                         for msg in result:
                             text = self._extract_message_text(msg)
-                            if text:  # only embed messages with text content
+                            if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
                                 message_texts.append(text)
                                 message_ids.append(msg.id)
                                 roles.append(msg.role)
@@ -228,15 +234,8 @@ class MessageManager:
                             # generate embeddings using provided config
                             from letta.llm_api.llm_client import LLMClient
 
-                            # extract provider info from embedding_config
-                            embedding_provider = embedding_config.get("provider", "openai")
-                            embedding_api_key = embedding_config.get("api_key")
-                            embedding_endpoint = embedding_config.get("endpoint", "https://api.openai.com/v1")
-
-                            embedding_client = LLMClient(
-                                llm_provider_type=embedding_provider,
-                                api_key=embedding_api_key,
-                                endpoint=embedding_endpoint,
+                            embedding_client = LLMClient.create(
+                                provider_type=embedding_config.embedding_endpoint_type,
                                 actor=actor,
                             )
                             embeddings = await embedding_client.request_embeddings(message_texts, embedding_config)
@@ -816,14 +815,8 @@ class MessageManager:
                     # generate embedding from query text
                     from letta.llm_api.llm_client import LLMClient
 
-                    embedding_provider = embedding_config.get("provider", "openai")
-                    embedding_api_key = embedding_config.get("api_key")
-                    embedding_endpoint = embedding_config.get("endpoint", "https://api.openai.com/v1")
-
-                    embedding_client = LLMClient(
-                        llm_provider_type=embedding_provider,
-                        api_key=embedding_api_key,
-                        endpoint=embedding_endpoint,
+                    embedding_client = LLMClient.create(
+                        provider_type=embedding_config.embedding_endpoint_type,
                         actor=actor,
                     )
                     embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
