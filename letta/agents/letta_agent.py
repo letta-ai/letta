@@ -1021,6 +1021,7 @@ class LettaAgent(BaseAgent):
                             is_openai_proxy=agent_state.llm_config.provider_name == "lmstudio_openai",
                             messages=current_in_context_messages + new_in_context_messages,
                             tools=request_data.get("tools", []),
+                            put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
                         )
                     else:
                         raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
