@@ -10,7 +10,14 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
-from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
+from letta.schemas.letta_message import (
+    AssistantMessage,
+    HiddenReasoningMessage,
+    LettaMessage,
+    ReasoningMessage,
+    ToolCallDelta,
+    ToolCallMessage,
+)
 from letta.schemas.letta_message_content import OmittedReasoningContent, TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
@@ -40,6 +47,7 @@ class OpenAIStreamingInterface:
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
+        self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
@@ -76,6 +84,7 @@ class OpenAIStreamingInterface:
         self.tool_call_name: str | None = None
         self.tool_call_id: str | None = None
         self.reasoning_messages = []
+        self.emitted_hidden_reasoning = False  # Track if we've emitted hidden reasoning message
 
     def get_reasoning_content(self) -> list[TextContent | OmittedReasoningContent]:
         content = "".join(self.reasoning_messages).strip()
@@ -185,6 +194,22 @@ class OpenAIStreamingInterface:
 
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 tool_call = message_delta.tool_calls[0]
+
+                # For OpenAI reasoning models, emit a hidden reasoning message before the first tool call
+                if not self.emitted_hidden_reasoning and is_openai_reasoning_model(self.model) and not self.put_inner_thoughts_in_kwarg:
+                    self.emitted_hidden_reasoning = True
+                    if prev_message_type and prev_message_type != "hidden_reasoning_message":
+                        message_index += 1
+                    hidden_message = HiddenReasoningMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc),
+                        state="omitted",
+                        hidden_reasoning=None,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    )
+                    yield hidden_message
+                    prev_message_type = hidden_message.message_type
+                    message_index += 1  # Increment for the next message
 
                 if tool_call.function.name:
                     # If we're waiting for the first key, then we should hold back the name

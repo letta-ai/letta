@@ -136,6 +136,7 @@ class ChatCompletionRequest(BaseModel):
     parallel_tool_calls: Optional[bool] = None
     instructions: Optional[str] = None
     verbosity: Optional[Literal["low", "medium", "high"]] = None  # For verbosity control in GPT-5 models
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None  # For reasoning effort control in reasoning models
 
     # function-calling related
     tools: Optional[List[Tool]] = None
