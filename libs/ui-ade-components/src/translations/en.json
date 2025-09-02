@@ -1321,7 +1321,7 @@
       "temperature": "Temperature",
       "toolChoice": "Tool choice"
     },
-    "tokens": "tokens"
+    "tokens": "{count} tokens"
   },
   "ADE/AgentSimulator/DetailedMessageView/TelemetryDetailsViewer/ResponseEvent": {
     "name": "Step output",
@@ -2437,7 +2437,7 @@
       "recallMemory": "Recall Memory",
       "archivalMemory": "Archival Memory"
     },
-    "tokens": "tokens"
+    "tokens": "{count} tokens"
   },
   "IdentityAgentsList": {
     "columns": {
@@ -2750,7 +2750,7 @@
       "default": "There was an error summarizing the conversation. Please try again."
     }
   },
-  "tokens": "tokens",
+  "tokens": "{count} tokens",
   "SearchOverlay": {
     "placeholder": "Search...",
     "label": "Search",

@@ -25,7 +25,7 @@ interface VerticalBarChartProps {
 
 function VerticalBarChart(props: VerticalBarChartProps) {
   const { chunks, setSelectedChunkId, selectedChunkId, baseId } = props;
-  const { formatTokenSize: _formatTokenSize, formatNumber } = useFormatters();
+  const { formatNumber } = useFormatters();
   const t = useTranslations();
 
   const onClickBar = useCallback(
@@ -52,12 +52,12 @@ function VerticalBarChart(props: VerticalBarChartProps) {
       gap={false}
       className="min-w-[16px] cursor-pointer "
     >
-      {chunks.map(({ id, color, size, label }) => {
+      {chunks.map(({ id, color, size }) => {
         return (
           <Tooltip
             key={id}
             asChild
-            content={t('tokens', { label, size: formatNumber(size) })}
+            content={t('tokens', { count: formatNumber(size) })}
           >
             <div
               id={`${baseId}-${id}-bar`}
@@ -87,7 +87,7 @@ interface TextChunksProps {
 
 function TextChunks(props: TextChunksProps) {
   const { chunks, baseId, ref, totalContextSize } = props;
-  const { formatTokenSize, formatNumber } = useFormatters();
+  const { formatNumber } = useFormatters();
   const t = useTranslations();
   return (
     <VStack ref={ref} gap={false} fullHeight overflow="auto">
@@ -127,9 +127,9 @@ function TextChunks(props: TextChunksProps) {
                 </Typography>
               </HStack>
               <Typography color="lighter" variant="body2">
-                <Tooltip content={t('tokens', { size: formatNumber(c.size) })}>
+                <Tooltip content={t('tokens', { count: formatNumber(c.size) })}>
                   <span>
-                    {formatTokenSize(c.size)} {t('tokens')}
+                    {t('tokens', { count: formatNumber(c.size) })}
                     {percentageOfTotal !== null && ` (${percentageOfTotal}%)`}
                   </span>
                 </Tooltip>
@@ -199,7 +199,6 @@ export function VerticalDelineatedTextChunker(
         setSelectedChunkId(firstChunk.id);
       }
     }
-
 
     if (currentRef) {
       currentRef.addEventListener('scroll', selector);

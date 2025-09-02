@@ -558,7 +558,7 @@ export function ContextWindowPanel() {
             {t.rich('ContextWindowPreview.usage', {
               total: () => (
                 <Tooltip
-                  content={`${formatNumber(totalLength)} ${t('tokens')}`}
+                  content={t('tokens', { count: formatNumber(totalLength) })}
                 >
                   <span>{formatTokenSize(totalLength)}</span>
                 </Tooltip>
@@ -566,7 +566,9 @@ export function ContextWindowPanel() {
               used: () => {
                 return (
                   <Tooltip
-                    content={`${formatNumber(totalUsedLength)} ${t('tokens')}`}
+                    content={t('tokens', {
+                      count: formatNumber(totalUsedLength),
+                    })}
                   >
                     <span
                       className="font-semibold"

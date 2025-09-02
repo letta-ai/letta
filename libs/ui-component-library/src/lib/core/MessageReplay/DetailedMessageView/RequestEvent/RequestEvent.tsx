@@ -112,7 +112,9 @@ export function RequestEvent(props: RequestEventProps) {
           <EventDetailRow
             label={t('attributes.inputTokens')}
             value={
-              <Tooltip content={`${formatNumber(inputTokens)} ${t('tokens')}`}>
+              <Tooltip
+                content={t('tokens', { count: formatNumber(inputTokens) })}
+              >
                 <span>{formatTokenSize(inputTokens)}</span>
               </Tooltip>
             }

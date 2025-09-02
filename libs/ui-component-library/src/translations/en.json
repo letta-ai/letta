@@ -282,5 +282,5 @@
   "components/CardButtonGroup": {
     "noItemsFound": "No items found"
   },
-  "tokens": "tokens"
+  "tokens": "{count} tokens"
 }
