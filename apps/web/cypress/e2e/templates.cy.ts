@@ -271,7 +271,9 @@ describe(
           cy.findByTestId('switch:enable-max-tokens').click();
           cy.findByTestId('slider-input:max-tokens-slider').clear().type('2000').blur();
 
-          // should automatically update
+          // should automatically update (but theres some lag)
+          cy.wait(2000);
+
         });
 
         cy.testStep('Phase 2: Save template version with migration enabled', () => {
