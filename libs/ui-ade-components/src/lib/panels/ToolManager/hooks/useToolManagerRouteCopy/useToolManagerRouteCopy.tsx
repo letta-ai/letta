@@ -9,68 +9,21 @@ import {
   VariableIcon,
 } from '@letta-cloud/ui-component-library';
 import {
+  useToolsServiceCountTools,
   useToolsServiceListMcpServers,
-  useToolsServiceListTools,
 } from '@letta-cloud/sdk-core';
 import { useMemo } from 'react';
-import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 export function useToolManagerRouteCopy() {
   const t = useTranslations('ToolManager');
 
-  const { data: tools } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
-
-  const counts = useMemo(() => {
-    if (!tools) {
-      return {} as Record<string, number>;
-    }
-
-    return tools.reduce(
-      (acc, tool) => {
-        if (tool.tool_type) {
-          acc[tool.tool_type] = (acc[tool.tool_type] || 0) + 1;
-        }
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-  }, [tools]);
-
-  const utilityToolCount = useMemo(() => {
-    if (!tools) {
-      return 0;
-    }
-    return counts['letta_builtin'] || 0;
-  }, [counts, tools]);
-
-  const multiAgentToolCount = useMemo(() => {
-    if (!tools) {
-      return 0;
-    }
-    return counts['letta_multi_agent_core'] || 0;
-  }, [counts, tools]);
-
-  const lettaToolCount = useMemo(() => {
-    if (!tools) {
-      return 0;
-    }
-
-    return (
-      counts['letta_memory_core'] +
-        counts['letta_core'] +
-        counts['letta_sleeptime_core'] || 0
-    );
-  }, [counts, tools]);
-
+  const { data: multiAgentToolCount } = useToolsServiceCountTools({ toolTypes: ['letta_multi_agent_core'] });
+  const { data: utilityToolCount } = useToolsServiceCountTools({ toolTypes: ['letta_builtin'] });
+  const { data: lettaToolCount } = useToolsServiceCountTools({ toolTypes: ['letta_memory_core', 'letta_core', 'letta_sleeptime_core'] });
+  const { data: toolCount } = useToolsServiceCountTools({ toolTypes: ['custom'] })
   const { data: servers } = useToolsServiceListMcpServers();
 
-  const toolCount = useMemo(() => {
-    if (!tools) {
-      return 0;
-    }
 
-    return counts['custom'];
-  }, [counts, tools]);
   const serverCount = useMemo(() => {
     return servers ? Object.keys(servers).length : 0;
   }, [servers]);

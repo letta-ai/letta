@@ -29,7 +29,6 @@ import { useToolManagerRouteCopy } from './hooks/useToolManagerRouteCopy/useTool
 import type { ToolType } from '@letta-cloud/sdk-core';
 import {
   useToolsServiceCreateTool,
-  useToolsServiceListTools,
   type Tool,
   UseToolsServiceListToolsKeyFn,
   UseToolsServiceRetrieveToolKeyFn,
@@ -41,12 +40,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
 import { useLocalStorage } from '@mantine/hooks';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
-import { LIST_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 import { useCurrentAgent } from '../../hooks';
 import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
+import { MY_TOOLS_PAYLOAD } from './routes/MyTools/MyTools';
 
 interface CreateToolDialogProps {
   trigger: React.ReactNode;
@@ -120,7 +119,7 @@ export function CreateToolDialog(props: CreateToolDialogProps) {
 
       queryClient.setQueriesData<Tool[]>(
         {
-          queryKey: UseToolsServiceListToolsKeyFn(LIST_TOOLS_PAYLOAD),
+          queryKey: UseToolsServiceListToolsKeyFn(MY_TOOLS_PAYLOAD),
         },
         (oldData) => {
           if (!oldData) {
@@ -606,7 +605,6 @@ export function ToolManager() {
     isToolManagerOpen,
   } = useToolManagerState();
 
-  useToolsServiceListTools();
 
   const t = useTranslations('ToolManager');
 

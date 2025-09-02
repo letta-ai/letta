@@ -30,16 +30,18 @@ export function JSONDiff(props: JSONDiffProps) {
   const diff = useJSONDiff(currentState, nextState);
 
   return (
-    <Viewer
-      diff={diff}
-      indent={4}
-      lineNumbers={showLineNumbers}
-      hideUnchangedLines={hideUnchangedLines}
-      highlightInlineDiff={true}
-      inlineDiffOptions={{
-        mode: 'word',
-        wordSeparator: ' ',
-      }}
-    />
+    <div onClick={(e) => e.stopPropagation()} className="contents" >
+      <Viewer
+        diff={diff}
+        indent={4}
+        lineNumbers={showLineNumbers}
+        hideUnchangedLines={hideUnchangedLines}
+        highlightInlineDiff={true}
+        inlineDiffOptions={{
+          mode: 'word',
+          wordSeparator: ' ',
+        }}
+      />
+    </div>
   );
 }

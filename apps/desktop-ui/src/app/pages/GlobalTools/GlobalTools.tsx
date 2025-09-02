@@ -3,59 +3,66 @@ import {
   DesktopPageLayout,
   ToolsIcon,
 } from '@letta-cloud/ui-component-library';
-import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
+import { useToolsServiceListTools, useToolsServiceCountTools } from '@letta-cloud/sdk-core';
 import { useTranslations } from '@letta-cloud/translations';
 import { ToolsEditor } from '@letta-cloud/ui-ade-components';
 import { useMemo, useState } from 'react';
 import { DesktopToolManagerLayout } from './ToolManagerLayout';
-import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 export function GlobalTools() {
-  const {
-    data: tools,
-    isError,
-    isLoading,
-  } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
   const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('custom');
 
   const t = useTranslations('GlobalTools');
 
+  // Get server-side filtering parameters based on selected category
+  const filterParams = useMemo(() => {
+    switch (selectedCategory) {
+      case 'custom':
+        return { toolTypes: ['custom'] };
+      case 'multi-agent':
+        return { toolTypes: ['letta_multi_agent_core'] };
+      case 'utility':
+        return { toolTypes: ['letta_builtin'] };
+      case 'base':
+        return { toolTypes: ['letta_core', 'letta_memory_core', 'letta_sleeptime_core'] };
+      case 'mcp-servers':
+        return { toolTypes: ['external_mcp'] };
+      default:
+        return {};
+    }
+  }, [selectedCategory]);
+
+  // Use server-side filtering for both search and category
+  const {
+    data: tools,
+    isError,
+    isLoading,
+  } = useToolsServiceListTools({
+    search: search || undefined,
+    ...filterParams
+  });
+
+  // Get counts for each category to display in sidebar
+  const { data: customCount } = useToolsServiceCountTools({ toolTypes: ['custom'] });
+  const { data: multiAgentCount } = useToolsServiceCountTools({ toolTypes: ['letta_multi_agent_core'] });
+  const { data: utilityCount } = useToolsServiceCountTools({ toolTypes: ['letta_builtin'] });
+  const { data: baseCount } = useToolsServiceCountTools({ toolTypes: ['letta_core', 'letta_memory_core', 'letta_sleeptime_core'] });
+  const { data: mcpCount } = useToolsServiceCountTools({ toolTypes: ['external_mcp'] });
+
+  const categoryCounts = useMemo(() => ({
+    custom: customCount ?? 0,
+    'multi-agent': multiAgentCount ?? 0,
+    utility: utilityCount ?? 0,
+    base: baseCount ?? 0,
+    'mcp-servers': mcpCount ?? 0,
+  }), [customCount, multiAgentCount, utilityCount, baseCount, mcpCount]);
+
   const allTools = useMemo(() => {
     return tools || [];
   }, [tools]);
 
-  const filteredTools = useMemo(() => {
-    let categoryFilteredTools = allTools;
-
-    switch (selectedCategory) {
-      case 'custom':
-        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'custom');
-        break;
-      case 'multi-agent':
-        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'letta_multi_agent_core');
-        break;
-      case 'utility':
-        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'letta_builtin');
-        break;
-      case 'base':
-        categoryFilteredTools = allTools.filter(tool =>
-          tool.tool_type === 'letta_core' ||
-          tool.tool_type === 'letta_memory_core' ||
-          tool.tool_type === 'letta_sleeptime_core'
-        );
-        break;
-      case 'mcp-servers':
-        categoryFilteredTools = allTools.filter(tool => tool.tool_type === 'external_mcp');
-        break;
-      default:
-        categoryFilteredTools = allTools;
-    }
-
-    return categoryFilteredTools.filter((tool) =>
-      (tool.name || '').toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [search, allTools, selectedCategory]);
+  const filteredTools = allTools;
 
   const [selectedToolId, setSelectedToolId] = useState<string | null>(() => {
     return filteredTools?.[0]?.id || null;
@@ -87,6 +94,7 @@ export function GlobalTools() {
       <DesktopToolManagerLayout
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
+        categoryCounts={categoryCounts}
       >
         <ToolsEditor
           selectedToolId={selectedToolId}

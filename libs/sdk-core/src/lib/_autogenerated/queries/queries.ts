@@ -131,7 +131,14 @@ export const useToolsServiceRetrieveTool = <
  * Count Tools
  * Get a count of all tools available to agents belonging to the org of the user.
  * @param data The data for the request.
- * @param data.includeBaseTools Include built-in Letta tools in the count
+ * @param data.name
+ * @param data.names Filter by specific tool names
+ * @param data.toolIds Filter by specific tool IDs - accepts repeated params or comma-separated values
+ * @param data.search Search tool names (case-insensitive partial match)
+ * @param data.toolTypes Filter by tool type(s) - accepts repeated params or comma-separated values
+ * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
+ * @param data.returnOnlyLettaTools Count only tools with tool_type starting with 'letta_'
+ * @param data.excludeLettaTools Exclude built-in Letta tools from the count
  * @param data.userId
  * @returns number Successful Response
  * @throws ApiError
@@ -142,10 +149,24 @@ export const useToolsServiceCountTools = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
-    includeBaseTools,
+    excludeLettaTools,
+    excludeToolTypes,
+    name,
+    names,
+    returnOnlyLettaTools,
+    search,
+    toolIds,
+    toolTypes,
     userId,
   }: {
-    includeBaseTools?: boolean;
+    excludeLettaTools?: boolean;
+    excludeToolTypes?: string[];
+    name?: string;
+    names?: string[];
+    returnOnlyLettaTools?: boolean;
+    search?: string;
+    toolIds?: string[];
+    toolTypes?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -153,11 +174,31 @@ export const useToolsServiceCountTools = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceCountToolsKeyFn(
-      { includeBaseTools, userId },
+      {
+        excludeLettaTools,
+        excludeToolTypes,
+        name,
+        names,
+        returnOnlyLettaTools,
+        search,
+        toolIds,
+        toolTypes,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
-      ToolsService.countTools({ includeBaseTools, userId }) as TData,
+      ToolsService.countTools({
+        excludeLettaTools,
+        excludeToolTypes,
+        name,
+        names,
+        returnOnlyLettaTools,
+        search,
+        toolIds,
+        toolTypes,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -167,6 +208,12 @@ export const useToolsServiceCountTools = <
  * @param data.after
  * @param data.limit
  * @param data.name
+ * @param data.names Filter by specific tool names
+ * @param data.toolIds Filter by specific tool IDs - accepts repeated params or comma-separated values
+ * @param data.search Search tool names (case-insensitive partial match)
+ * @param data.toolTypes Filter by tool type(s) - accepts repeated params or comma-separated values
+ * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
+ * @param data.returnOnlyLettaTools Return only tools with tool_type starting with 'letta_'
  * @param data.userId
  * @returns Tool Successful Response
  * @throws ApiError
@@ -178,13 +225,25 @@ export const useToolsServiceListTools = <
 >(
   {
     after,
+    excludeToolTypes,
     limit,
     name,
+    names,
+    returnOnlyLettaTools,
+    search,
+    toolIds,
+    toolTypes,
     userId,
   }: {
     after?: string;
+    excludeToolTypes?: string[];
     limit?: number;
     name?: string;
+    names?: string[];
+    returnOnlyLettaTools?: boolean;
+    search?: string;
+    toolIds?: string[];
+    toolTypes?: string[];
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
@@ -192,11 +251,33 @@ export const useToolsServiceListTools = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListToolsKeyFn(
-      { after, limit, name, userId },
+      {
+        after,
+        excludeToolTypes,
+        limit,
+        name,
+        names,
+        returnOnlyLettaTools,
+        search,
+        toolIds,
+        toolTypes,
+        userId,
+      },
       queryKey,
     ),
     queryFn: () =>
-      ToolsService.listTools({ after, limit, name, userId }) as TData,
+      ToolsService.listTools({
+        after,
+        excludeToolTypes,
+        limit,
+        name,
+        names,
+        returnOnlyLettaTools,
+        search,
+        toolIds,
+        toolTypes,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

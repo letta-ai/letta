@@ -155,7 +155,125 @@
         "operationId": "count_tools",
         "parameters": [
           {
-            "name": "include_base_tools",
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "names",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by specific tool names",
+              "title": "Names"
+            },
+            "description": "Filter by specific tool names"
+          },
+          {
+            "name": "tool_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by specific tool IDs - accepts repeated params or comma-separated values",
+              "title": "Tool Ids"
+            },
+            "description": "Filter by specific tool IDs - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search tool names (case-insensitive partial match)",
+              "title": "Search"
+            },
+            "description": "Search tool names (case-insensitive partial match)"
+          },
+          {
+            "name": "tool_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tool type(s) - accepts repeated params or comma-separated values",
+              "title": "Tool Types"
+            },
+            "description": "Filter by tool type(s) - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "exclude_tool_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tool type(s) to exclude - accepts repeated params or comma-separated values",
+              "title": "Exclude Tool Types"
+            },
+            "description": "Tool type(s) to exclude - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "return_only_letta_tools",
             "in": "query",
             "required": false,
             "schema": {
@@ -167,11 +285,30 @@
                   "type": "null"
                 }
               ],
-              "description": "Include built-in Letta tools in the count",
+              "description": "Count only tools with tool_type starting with 'letta_'",
               "default": false,
-              "title": "Include Base Tools"
+              "title": "Return Only Letta Tools"
             },
-            "description": "Include built-in Letta tools in the count"
+            "description": "Count only tools with tool_type starting with 'letta_'"
+          },
+          {
+            "name": "exclude_letta_tools",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exclude built-in Letta tools from the count",
+              "default": false,
+              "title": "Exclude Letta Tools"
+            },
+            "description": "Exclude built-in Letta tools from the count"
           }
         ],
         "responses": {
@@ -254,6 +391,127 @@
               ],
               "title": "Name"
             }
+          },
+          {
+            "name": "names",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by specific tool names",
+              "title": "Names"
+            },
+            "description": "Filter by specific tool names"
+          },
+          {
+            "name": "tool_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by specific tool IDs - accepts repeated params or comma-separated values",
+              "title": "Tool Ids"
+            },
+            "description": "Filter by specific tool IDs - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search tool names (case-insensitive partial match)",
+              "title": "Search"
+            },
+            "description": "Search tool names (case-insensitive partial match)"
+          },
+          {
+            "name": "tool_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tool type(s) - accepts repeated params or comma-separated values",
+              "title": "Tool Types"
+            },
+            "description": "Filter by tool type(s) - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "exclude_tool_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tool type(s) to exclude - accepts repeated params or comma-separated values",
+              "title": "Exclude Tool Types"
+            },
+            "description": "Tool type(s) to exclude - accepts repeated params or comma-separated values"
+          },
+          {
+            "name": "return_only_letta_tools",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return only tools with tool_type starting with 'letta_'",
+              "default": false,
+              "title": "Return Only Letta Tools"
+            },
+            "description": "Return only tools with tool_type starting with 'letta_'"
           }
         ],
         "responses": {

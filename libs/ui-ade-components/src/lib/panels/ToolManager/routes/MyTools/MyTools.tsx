@@ -6,16 +6,17 @@ import { LoadingEmptyStatusComponent } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
 
-export const LIST_TOOLS_PAYLOAD = {
+export const MY_TOOLS_PAYLOAD = {
+  toolTypes: ['custom'  as const],
   limit: 250,
-};
+}
 
 export function MyTools() {
   const {
     data: tools,
     isError,
     isLoading,
-  } = useToolsServiceListTools(LIST_TOOLS_PAYLOAD);
+  } = useToolsServiceListTools(MY_TOOLS_PAYLOAD);
   const [search, setSearch] = useState<string>('');
 
   const t = useTranslations('ToolsEditor/MyTools');

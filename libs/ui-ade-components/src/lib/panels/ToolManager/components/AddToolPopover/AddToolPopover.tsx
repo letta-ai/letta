@@ -27,7 +27,6 @@ import { SpecificToolIcon } from '../SpecificToolIcon/SpecificToolIcon';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
 import { useQueries } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
-import { LIST_TOOLS_LIMIT } from '@letta-cloud/ui-ade-components';
 
 interface AddToolPopoverProps {
   disabled?: boolean;
@@ -39,7 +38,10 @@ export function AddToolPopover(props: AddToolPopoverProps) {
   const { tools: attachedTools, id: agentId } = useCurrentAgent();
   const [search, setSearch] = useState('');
 
-  const { data: allTools, isLoading, isError } = useToolsServiceListTools({ limit: LIST_TOOLS_LIMIT });
+  const { data: allTools, isLoading, isError } = useToolsServiceListTools({
+    limit: 20,
+    search: search || undefined,
+  });
   const { mutate: attachTool, mutateAsync: attachToolAsync } = useAgentsServiceAttachTool();
   const { mutateAsync: addComposioTool } = useToolsServiceAddComposioTool();
   const { data: mcpServers } = useToolsServiceListMcpServers();
@@ -93,19 +95,20 @@ export function AddToolPopover(props: AddToolPopoverProps) {
   }, [mcpToolQueries, mcpServersArray, allTools]);
 
   const filteredTools = useMemo(() => {
-    const baseList = (allTools || []).filter(
-      (tool) => tool.tool_type !== 'letta_voice_sleeptime_core' && tool.tool_type !== 'letta_files_core',
-    );
-
+    // Server-side filtering is now handled by the API, so we just combine and sort
+    const baseList = allTools || [];
     const combined = [...baseList, ...discoveredMcpTools];
-    if (!search) {
-      return combined.toSorted((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    // If we have a search term, filter discoveredMcpTools client-side since they're not from the main API
+    if (search) {
+      const searchTerm = search.toLowerCase();
+      const filteredMcpTools = discoveredMcpTools.filter((tool) =>
+        (tool.name || '').toLowerCase().includes(searchTerm)
+      );
+      return [...baseList, ...filteredMcpTools].toSorted((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
-    const searchTerm = search.toLowerCase();
-    return combined
-      .filter((tool) => (tool.name || '').toLowerCase().includes(searchTerm))
-      .toSorted((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return combined.toSorted((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [allTools, discoveredMcpTools, search]);
 
   const handleAttachTool = useCallback(async (tool: typeof filteredTools[0]) => {

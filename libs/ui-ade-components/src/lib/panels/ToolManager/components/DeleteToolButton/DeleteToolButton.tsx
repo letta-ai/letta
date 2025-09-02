@@ -9,7 +9,7 @@ import {
 } from '@letta-cloud/sdk-core';
 import { Button, Dialog } from '@letta-cloud/ui-component-library';
 import { useToolManagerState } from '../../hooks/useToolManagerState/useToolManagerState';
-import { LIST_TOOLS_PAYLOAD } from '../../routes/MyTools/MyTools';
+import { MY_TOOLS_PAYLOAD } from '../../routes/MyTools/MyTools';
 
 interface DeleteToolButtonProps {
   currentToolId: string;
@@ -31,7 +31,7 @@ export function DeleteToolButton(props: DeleteToolButtonProps) {
     onSuccess: () => {
       queryClient.setQueriesData<Tool[]>(
         {
-          queryKey: UseToolsServiceListToolsKeyFn(LIST_TOOLS_PAYLOAD),
+          queryKey: UseToolsServiceListToolsKeyFn(MY_TOOLS_PAYLOAD),
           exact: false,
         },
         (oldData) => {

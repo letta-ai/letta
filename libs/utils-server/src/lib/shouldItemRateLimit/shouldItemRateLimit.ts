@@ -68,7 +68,7 @@ async function canCreateTool(
 
   const toolCount = await ToolsService.countTools(
     {
-      includeBaseTools: false,
+      excludeLettaTools: true,
     },
     {
       user_id: coreUserId,

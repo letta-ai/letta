@@ -17,6 +17,29 @@ interface AgentStateViewerProps {
   comparedName?: string;
 }
 
+// extract unique tool IDs from template snapshots
+function extractUniqueToolIds(baseState: TemplateSnapshotSchemaType, comparedState?: TemplateSnapshotSchemaType): string[] {
+  const toolIdSet = new Set<string>();
+
+  if (baseState.type === 'classic') {
+    baseState.agents.forEach(agent => {
+      if (agent.toolIds) {
+        agent.toolIds.forEach(id => toolIdSet.add(id));
+      }
+    });
+  }
+
+  if (comparedState && comparedState.type === 'classic') {
+    comparedState.agents.forEach(agent => {
+      if (agent.toolIds) {
+        agent.toolIds.forEach(id => toolIdSet.add(id));
+      }
+    });
+  }
+
+  return Array.from(toolIdSet);
+}
+
 // omit any entityId from the state for comparison
 function stateCleaner(state: TemplateSnapshotSchemaType, tools: Tool[]) {
   const toolIdToNameMap = tools.reduce((acc, tool) => {
@@ -41,7 +64,7 @@ function stateCleaner(state: TemplateSnapshotSchemaType, tools: Tool[]) {
               return 0;
             })
             .map((id) =>
-              toolIdToNameMap[id] ? id : `${toolIdToNameMap[id]} (${id})`,
+              toolIdToNameMap[id] ? `${id} (${toolIdToNameMap[id]})` : id,
             ),
           sourceIds: (agent.sourceIds || []).toSorted((a, b) => {
             if (a < b) return -1;
@@ -68,7 +91,19 @@ export function TemplateSnapshotViewer(props: AgentStateViewerProps) {
   const { baseState, comparedState, baseName, comparedName } = props;
 
   const t = useTranslations('components/TemplateSnapshotViewer.StateViewer');
-  const { data: toolsList } = useToolsServiceListTools();
+
+  // Extract unique tool IDs from both states to optimize API call
+  const uniqueToolIds = React.useMemo(() => {
+    return extractUniqueToolIds(baseState, comparedState);
+  }, [baseState, comparedState]);
+
+  // Only fetch tools that are actually used in the snapshots
+  const { data: toolsList } = useToolsServiceListTools({
+    toolIds: uniqueToolIds.length > 0 ? uniqueToolIds : undefined,
+    limit: uniqueToolIds.length > 0 ? uniqueToolIds.length : undefined,
+  }, undefined, {
+    enabled: uniqueToolIds.length > 0,
+  });
 
   if (!comparedState) {
     return (

@@ -64,16 +64,42 @@ export type ToolsServiceCountToolsQueryResult<
 export const useToolsServiceCountToolsKey = 'ToolsServiceCountTools';
 export const UseToolsServiceCountToolsKeyFn = (
   {
-    includeBaseTools,
+    excludeLettaTools,
+    excludeToolTypes,
+    name,
+    names,
+    returnOnlyLettaTools,
+    search,
+    toolIds,
+    toolTypes,
     userId,
   }: {
-    includeBaseTools?: boolean;
+    excludeLettaTools?: boolean;
+    excludeToolTypes?: string[];
+    name?: string;
+    names?: string[];
+    returnOnlyLettaTools?: boolean;
+    search?: string;
+    toolIds?: string[];
+    toolTypes?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useToolsServiceCountToolsKey,
-  ...(queryKey ?? [{ includeBaseTools, userId }]),
+  ...(queryKey ?? [
+    {
+      excludeLettaTools,
+      excludeToolTypes,
+      name,
+      names,
+      returnOnlyLettaTools,
+      search,
+      toolIds,
+      toolTypes,
+      userId,
+    },
+  ]),
 ];
 export type ToolsServiceListToolsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listTools>
@@ -86,19 +112,44 @@ export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
 export const UseToolsServiceListToolsKeyFn = (
   {
     after,
+    excludeToolTypes,
     limit,
     name,
+    names,
+    returnOnlyLettaTools,
+    search,
+    toolIds,
+    toolTypes,
     userId,
   }: {
     after?: string;
+    excludeToolTypes?: string[];
     limit?: number;
     name?: string;
+    names?: string[];
+    returnOnlyLettaTools?: boolean;
+    search?: string;
+    toolIds?: string[];
+    toolTypes?: string[];
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useToolsServiceListToolsKey,
-  ...(queryKey ?? [{ after, limit, name, userId }]),
+  ...(queryKey ?? [
+    {
+      after,
+      excludeToolTypes,
+      limit,
+      name,
+      names,
+      returnOnlyLettaTools,
+      search,
+      toolIds,
+      toolTypes,
+      userId,
+    },
+  ]),
 ];
 export type ToolsServiceListComposioAppsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioApps>

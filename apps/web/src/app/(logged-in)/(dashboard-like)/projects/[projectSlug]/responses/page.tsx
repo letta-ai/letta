@@ -31,7 +31,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { ViewMessageTrace } from '@letta-cloud/ui-ade-components';
 import { useSearchParams, useParams } from 'next/navigation';
-import { useToolsServiceListTools } from '@letta-cloud/sdk-core';
+import { useToolsServiceListTools, ToolsService } from '@letta-cloud/sdk-core';
 import { useQuery } from '@tanstack/react-query';
 import type { ServerInferResponses } from '@ts-rest/core';
 
@@ -47,8 +47,10 @@ function useQueryDefinition() {
   const params = useSearchParams();
 
   const { data: defaultTools } = useToolsServiceListTools({
-    limit: 250,
+    limit: 10,
   });
+
+
 
   // Load template data for default options
   const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
@@ -122,6 +124,29 @@ function useQueryDefinition() {
     [currentProjectId],
   );
 
+  const defaultToolOptions = useMemo(() => {
+    return (defaultTools || [])
+      .filter((tool) => !!tool.name)
+      .map((tool) => ({
+        label: tool.name || '',
+        value: tool.name || '',
+      }));
+  }, [defaultTools]);
+
+  const handleLoadTools = useCallback(async (query: string) => {
+    const tools = await ToolsService.listTools({
+      search: query || undefined,
+      limit: 10,
+    });
+
+    return (tools || [])
+      .filter((tool) => !!tool.name)
+      .map((tool) => ({
+        label: tool.name || '',
+        value: tool.name || '',
+      }));
+  }, []);
+
   return useMemo(() => {
     const fieldDefinitions = {
       functionName: {
@@ -149,19 +174,14 @@ function useQueryDefinition() {
           {
             key: 'value',
             label: t('useQueryDefinition.functionName.value.label'),
-            display: 'select',
+            display: 'async-select',
             options: {
               isMulti: false,
               placeholder: t(
                 'useQueryDefinition.functionName.value.placeholder',
               ),
-              options: (defaultTools || [])
-                .filter((tool) => !!tool.name)
-                .map((tool) => ({
-                  label: tool.name || '',
-                  value: tool.name || '',
-                })),
-              isLoading: !defaultTools,
+              defaultOptions: defaultToolOptions,
+              loadOptions: handleLoadTools,
             },
           },
         ],
@@ -380,10 +400,11 @@ function useQueryDefinition() {
       initialQuery,
     } satisfies UseQueryDefinitionResponse;
   }, [
-    defaultTools,
+    defaultToolOptions,
     queryFilter,
     t,
     handleLoadTemplateNames,
+    handleLoadTools,
     defaultTemplateNameOptions,
   ]);
 }

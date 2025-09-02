@@ -20,6 +20,7 @@ interface DesktopToolManagerLayoutProps {
   children: React.ReactNode;
   onCategoryChange?: (category: string) => void;
   selectedCategory?: string;
+  categoryCounts?: Record<string, number>;
 }
 
 type ViewMode = 'mcp-explorer' | 'mcp-servers' | 'tools';
@@ -78,6 +79,7 @@ export function DesktopToolManagerLayout({
   children,
   onCategoryChange,
   selectedCategory = 'custom',
+  categoryCounts = {},
 }: DesktopToolManagerLayoutProps) {
   const t = useTranslations('tools/layout');
   const [viewMode, setViewMode] = useState<ViewMode>('tools');
@@ -112,6 +114,7 @@ export function DesktopToolManagerLayout({
             <SidebarItem
               icon={copy.customTools.icon}
               label={copy.customTools.title as string}
+              count={categoryCounts.custom}
               active={selectedCategory === 'custom'}
               onClick={() => {
                 handleCategoryChange('custom');
@@ -120,6 +123,7 @@ export function DesktopToolManagerLayout({
             <SidebarItem
               icon={copy.multiAgentTools.icon}
               label={copy.multiAgentTools.title as string}
+              count={categoryCounts['multi-agent']}
               active={selectedCategory === 'multi-agent'}
               onClick={() => {
                 handleCategoryChange('multi-agent');
@@ -128,6 +132,7 @@ export function DesktopToolManagerLayout({
             <SidebarItem
               icon={copy.utilityTools.icon}
               label={copy.utilityTools.title as string}
+              count={categoryCounts.utility}
               active={selectedCategory === 'utility'}
               onClick={() => {
                 handleCategoryChange('utility');
@@ -136,6 +141,7 @@ export function DesktopToolManagerLayout({
             <SidebarItem
               icon={copy.lettaTools.icon}
               label={copy.lettaTools.title as string}
+              count={categoryCounts.base}
               active={selectedCategory === 'base'}
               onClick={() => {
                 handleCategoryChange('base');
@@ -161,6 +167,7 @@ export function DesktopToolManagerLayout({
             <SidebarItem
               icon={copy.mcpServers.icon}
               label={copy.mcpServers.title as string}
+              count={categoryCounts['mcp-servers']}
               active={selectedCategory === 'mcp-servers'}
               onClick={() => {
                 handleCategoryChange('mcp-servers');

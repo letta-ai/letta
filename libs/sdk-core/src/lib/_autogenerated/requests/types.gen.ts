@@ -6234,9 +6234,34 @@ export type ModifyToolResponse = Tool;
 
 export type CountToolsData = {
   /**
-   * Include built-in Letta tools in the count
+   * Exclude built-in Letta tools from the count
    */
-  includeBaseTools?: boolean | null;
+  excludeLettaTools?: boolean | null;
+  /**
+   * Tool type(s) to exclude - accepts repeated params or comma-separated values
+   */
+  excludeToolTypes?: Array<string> | null;
+  name?: string | null;
+  /**
+   * Filter by specific tool names
+   */
+  names?: Array<string> | null;
+  /**
+   * Count only tools with tool_type starting with 'letta_'
+   */
+  returnOnlyLettaTools?: boolean | null;
+  /**
+   * Search tool names (case-insensitive partial match)
+   */
+  search?: string | null;
+  /**
+   * Filter by specific tool IDs - accepts repeated params or comma-separated values
+   */
+  toolIds?: Array<string> | null;
+  /**
+   * Filter by tool type(s) - accepts repeated params or comma-separated values
+   */
+  toolTypes?: Array<string> | null;
   userId?: string | null;
 };
 
@@ -6244,8 +6269,32 @@ export type CountToolsResponse = number;
 
 export type ListToolsData = {
   after?: string | null;
+  /**
+   * Tool type(s) to exclude - accepts repeated params or comma-separated values
+   */
+  excludeToolTypes?: Array<string> | null;
   limit?: number | null;
   name?: string | null;
+  /**
+   * Filter by specific tool names
+   */
+  names?: Array<string> | null;
+  /**
+   * Return only tools with tool_type starting with 'letta_'
+   */
+  returnOnlyLettaTools?: boolean | null;
+  /**
+   * Search tool names (case-insensitive partial match)
+   */
+  search?: string | null;
+  /**
+   * Filter by specific tool IDs - accepts repeated params or comma-separated values
+   */
+  toolIds?: Array<string> | null;
+  /**
+   * Filter by tool type(s) - accepts repeated params or comma-separated values
+   */
+  toolTypes?: Array<string> | null;
   userId?: string | null;
 };
 
