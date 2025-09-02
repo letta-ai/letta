@@ -5,6 +5,7 @@ import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from openai.types.responses.response import Response
 
 from letta.constants import LETTA_MODEL_ENDPOINT
 from letta.errors import (
@@ -89,6 +90,23 @@ def supports_parallel_tool_calling(model: str) -> bool:
         return True
 
 
+def should_use_responses_api(llm_config: LLMConfig) -> bool:
+    """Determine if the responses API should be used instead of chat completions API.
+    
+    The responses API is OpenAI's newer API that provides:
+    - Stateful multi-turn conversations
+    - Built-in tools like web search and code execution
+    - Simplified request structure with 'input' and 'instructions' fields
+    
+    Args:
+        llm_config: The LLM configuration object
+        
+    Returns:
+        bool: True if responses API should be used, False for chat completions API
+    """
+    return llm_config.use_responses_api
+
+
 # TODO move into LLMConfig as a field?
 def supports_structured_output(llm_config: LLMConfig) -> bool:
     """Certain providers don't support structured output."""
@@ -111,6 +129,80 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     if llm_config.compatibility_type == "mlx":
         return True
     return False
+
+
+def convert_chat_completions_tools_to_responses_format(tools: List[dict]) -> List[dict]:
+    """
+    Convert Chat Completions API tools to Responses API format.
+    
+    Key differences:
+    1. Chat Completions uses external tagging: {"type": "function", "function": {...}}
+    2. Responses uses internal tagging: {"type": "function", "name": "...", ...}
+    3. Responses API functions are strict by default (vs non-strict in Chat Completions)
+    
+    Args:
+        tools: List of tools in Chat Completions format
+        
+    Returns:
+        List of tool dicts in Responses API format (SDK will handle validation)
+    """
+    responses_tools = []
+    
+    for tool in tools:
+        # Skip tools that are None or don't have proper structure
+        if not tool or not isinstance(tool, dict):
+            logger.debug(f"Skipping invalid tool: {tool}")
+            continue
+            
+        tool_type = tool.get("type")
+        if tool_type == "function":
+            # Extract the nested function definition from Chat Completions format
+            function_def = tool.get("function", {})
+            
+            # Skip if function definition is missing or invalid
+            if not function_def or not function_def.get("name"):
+                logger.warning(f"Skipping tool with missing function definition: {tool}")
+                continue
+            
+            # Create Responses API format (flatter structure) - let SDK handle validation
+            responses_function = {
+                "type": "function",
+                "name": function_def.get("name"),
+                "parameters": function_def.get("parameters"),
+                "strict": True  # Responses API is strict by default
+            }
+            
+            # Add description if present
+            if function_def.get("description"):
+                responses_function["description"] = function_def.get("description")
+            
+            responses_tools.append(responses_function)
+        elif tool.get("name") and tool.get("parameters"):
+            # Tool is already in Responses API format (flat structure)
+            parameters = tool.get("parameters", {}).copy()
+            
+            # For strict mode in Responses API, all properties must be required
+            if tool.get("strict", True) and "properties" in parameters:
+                all_properties = list(parameters["properties"].keys())
+                parameters["required"] = all_properties
+            
+            responses_function = {
+                "type": "function",
+                "name": tool.get("name"),
+                "parameters": parameters,
+                "strict": tool.get("strict", True)  # Default to strict
+            }
+            
+            # Add description if present
+            if tool.get("description"):
+                responses_function["description"] = tool.get("description")
+            
+            responses_tools.append(responses_function)
+        elif tool_type is not None:
+            logger.warning(f"Unsupported tool type for Responses API: {tool_type}")
+        # Silently skip tools with None type (likely empty/invalid tools)
+    
+    return responses_tools
 
 
 class OpenAIClient(LLMClientBase):
@@ -159,7 +251,14 @@ class OpenAIClient(LLMClientBase):
     ) -> dict:
         """
         Constructs a request object in the expected data format for the OpenAI API.
+        Supports both chat completions and responses APIs based on configuration.
         """
+        # Check if we should use the responses API
+        if should_use_responses_api(llm_config):
+            # Use the responses API format
+            return self.build_responses_request_data(messages, llm_config, tools, force_tool_call)
+        
+        # Use the traditional chat completions API format
         if tools and llm_config.put_inner_thoughts_in_kwargs:
             # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
             # TODO(fix)
@@ -251,23 +350,146 @@ class OpenAIClient(LLMClientBase):
         return request_data
 
     @trace_method
+    def build_responses_request_data(
+        self,
+        messages: List[PydanticMessage],
+        llm_config: LLMConfig,
+        tools: Optional[List[dict]] = None,
+        force_tool_call: Optional[str] = None,
+        previous_response_id: Optional[str] = None,
+    ) -> dict:
+        """
+        Constructs a request object for the OpenAI Responses API using SDK parameter types.
+        
+        Simplified to use the OpenAI SDK's built-in parameter validation and structure.
+        
+        Args:
+            messages: List of conversation messages
+            llm_config: LLM configuration 
+            tools: Available tools for function calling
+            force_tool_call: Force a specific tool call (not yet supported in Responses API)
+            previous_response_id: ID of previous response for conversation continuity
+            
+        Returns:
+            dict: Request data that the SDK can validate and send
+        """
+        # Build request parameters using SDK-compatible structure
+        request_params = {
+            "model": llm_config.model,
+            "input": self._extract_user_input(messages),
+        }
+        
+        # Add instructions from system messages
+        instructions = self._extract_instructions(messages)
+        if instructions:
+            request_params["instructions"] = instructions
+
+        # Add optional parameters
+        if previous_response_id:
+            request_params["previous_response_id"] = previous_response_id
+            
+        if self.actor:
+            request_params["user"] = self.actor.id
+            
+        if llm_config.temperature is not None and supports_temperature_param(llm_config.model):
+            request_params["temperature"] = llm_config.temperature
+            
+        if llm_config.max_tokens is not None:
+            request_params["max_output_tokens"] = llm_config.max_tokens  # Note: different param name in Responses API
+
+        # Handle tools conversion from Chat Completions to Responses format
+        if tools:
+            try:
+                responses_tools = convert_chat_completions_tools_to_responses_format(tools)
+                if responses_tools:  # Only add if we have valid tools
+                    request_params["tools"] = responses_tools
+                    logger.debug(f"Converted {len(tools)} tools to Responses API format")
+                    
+                    # Set tool_choice to force tool usage (same as Chat Completions API)
+                    if force_tool_call:
+                        # Force a specific tool call
+                        request_params["tool_choice"] = {
+                            "type": "function",
+                            "function": {"name": force_tool_call}
+                        }
+                    else:
+                        # Force any tool call (equivalent to tool_choice="required" in Chat Completions)
+                        request_params["tool_choice"] = "required"
+                        
+            except Exception as e:
+                logger.warning(f"Failed to convert tools to Responses API format: {e}")
+                # Continue without tools rather than failing
+        
+        # Handle Letta-specific endpoint
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            if not self.actor:
+                import uuid
+                request_params["user"] = str(uuid.UUID(int=0))
+            request_params["model"] = "memgpt-openai"
+
+        # Return request parameters - SDK handles validation
+        return request_params
+    
+    def _extract_user_input(self, messages: List[PydanticMessage]) -> str:
+        """Extract user input from the last user message."""
+        user_messages = [msg for msg in messages if msg.role == "user"]
+        if not user_messages:
+            raise ValueError("No user messages found for responses API request")
+        
+        last_user_msg = user_messages[-1]
+        if last_user_msg.content and len(last_user_msg.content) > 0:
+            # Extract text from first content part
+            return last_user_msg.content[0].text
+        else:
+            raise ValueError("User message has no content")
+    
+    def _extract_instructions(self, messages: List[PydanticMessage]) -> Optional[str]:
+        """Extract system instructions from system messages."""
+        system_messages = [msg for msg in messages if msg.role == "system"]
+        if system_messages:
+            instructions = []
+            for msg in system_messages:
+                if msg.content and len(msg.content) > 0:
+                    instructions.append(msg.content[0].text)
+            return "\n".join(instructions) if instructions else None
+        return None
+
+    @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
+        Supports both chat completions and responses APIs.
         """
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
-        response: ChatCompletion = client.chat.completions.create(**request_data)
-        return response.model_dump()
+        
+        # Use the same configuration-based decision as build_request_data
+        if should_use_responses_api(llm_config):
+            # Use the responses API
+            response: Response = client.responses.create(**request_data)
+            return response.model_dump()
+        else:
+            # Use the traditional chat completions API
+            response: ChatCompletion = client.chat.completions.create(**request_data)
+            return response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
         Performs underlying asynchronous request to OpenAI API and returns raw response dict.
+        Supports both chat completions and responses APIs.
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-        response: ChatCompletion = await client.chat.completions.create(**request_data)
-        return response.model_dump()
+        
+        # Use the same configuration-based decision as build_request_data
+        if should_use_responses_api(llm_config):
+            # Use the responses API
+            response: Response = await client.responses.create(**request_data)
+            return response.model_dump()
+        else:
+            # Use the traditional chat completions API
+            response: ChatCompletion = await client.chat.completions.create(**request_data)
+            return response.model_dump()
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return is_openai_reasoning_model(llm_config.model)
@@ -281,8 +503,14 @@ class OpenAIClient(LLMClientBase):
     ) -> ChatCompletionResponse:
         """
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
+        Handles both chat completions and responses API responses.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
+        # Use the same configuration-based decision as build_request_data and request
+        if should_use_responses_api(llm_config):
+            # Use the specialized conversion for responses API
+            return self.convert_responses_to_chat_completion(response_data, input_messages, llm_config)
+        
         # OpenAI's response structure directly maps to ChatCompletionResponse
         # We just need to instantiate the Pydantic model for validation and type safety.
         chat_completion_response = ChatCompletionResponse(**response_data)
@@ -296,6 +524,108 @@ class OpenAIClient(LLMClientBase):
         # If we used a reasoning model, create a content part for the ommitted reasoning
         if self.is_reasoning_model(llm_config):
             chat_completion_response.choices[0].message.omitted_reasoning_content = True
+
+        return chat_completion_response
+
+    @trace_method
+    def convert_responses_to_chat_completion(
+        self,
+        response_data: dict,
+        input_messages: List[PydanticMessage],
+        llm_config: LLMConfig,
+    ) -> ChatCompletionResponse:
+        """
+        Converts a raw responses API response dict into a ChatCompletionResponse format.
+        This provides backward compatibility by transforming responses API output
+        to match the expected chat completions structure.
+        """
+        # Parse the responses API response using the official SDK schema
+        try:
+            responses_response = Response(**response_data)
+        except Exception as e:
+            logger.warning(f"Failed to parse responses API response with official schema: {e}")
+            # Fallback to raw dict parsing
+            responses_response = None
+        
+        # Extract content using the SDK's convenience property and manual tool extraction
+        output_content = ""
+        tool_calls = None
+        
+        # Start with raw dict parsing since SDK parsing often fails for function calls
+        if "output" in response_data and response_data["output"]:
+            content_parts = []
+            response_tool_calls = []
+            
+            for output_item in response_data["output"]:
+                if output_item.get("type") == "message" and "content" in output_item:
+                    for content in output_item["content"]:
+                        if content.get("type") == "output_text" and "text" in content:
+                            content_parts.append(content["text"])
+                elif output_item.get("type") in ["function_tool_call", "function_call"]:
+                    chat_tool_call = {
+                        "id": output_item.get("id"),
+                        "type": "function",
+                        "function": {
+                            "name": output_item.get("name"),
+                            "arguments": output_item.get("arguments")
+                        }
+                    }
+                    response_tool_calls.append(chat_tool_call)
+            
+            output_content = " ".join(content_parts) if content_parts else ""
+            tool_calls = response_tool_calls if response_tool_calls else None
+            
+        elif responses_response:
+            # Fallback to SDK parsing if raw parsing didn't work
+            output_content = responses_response.output_text if hasattr(responses_response, 'output_text') else ""
+            tool_calls = None
+
+        # Extract usage information using official schema or fallback
+        if responses_response and responses_response.usage:
+            usage_data = {
+                "prompt_tokens": responses_response.usage.input_tokens,
+                "completion_tokens": responses_response.usage.output_tokens,
+                "total_tokens": responses_response.usage.total_tokens,
+            }
+        else:
+            # Fallback: map responses API usage to chat completions format
+            usage_raw = response_data.get("usage", {})
+            usage_data = {
+                "prompt_tokens": usage_raw.get("input_tokens", 0),
+                "completion_tokens": usage_raw.get("output_tokens", 0),
+                "total_tokens": usage_raw.get("total_tokens", 0),
+            }
+        
+        # Create a compatible chat completion response structure
+        chat_completion_data = {
+            "id": responses_response.id if responses_response else response_data.get("id", "resp-" + str(hash(output_content))[:8]),
+            "object": "chat.completion",
+            "created": int(responses_response.created_at) if responses_response else response_data.get("created_at", 0),
+            "model": str(responses_response.model) if responses_response else response_data.get("model", llm_config.model),
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": output_content,
+                        "tool_calls": tool_calls,
+                    },
+                    "logprobs": None,
+                    "finish_reason": "tool_calls" if tool_calls else "stop",
+                }
+            ],
+            "usage": usage_data,
+            "system_fingerprint": None,  # Responses API doesn't have system_fingerprint
+        }
+
+        # Convert to ChatCompletionResponse for consistency
+        chat_completion_response = ChatCompletionResponse(**chat_completion_data)
+        
+        # Apply any additional processing like inner thoughts extraction
+        if llm_config.put_inner_thoughts_in_kwargs:
+            chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
+                response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
+            )
 
         return chat_completion_response
 

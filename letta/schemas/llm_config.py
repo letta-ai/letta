@@ -74,6 +74,11 @@ class LLMConfig(BaseModel):
         "medium",
         description="Soft control for how verbose model output should be, used for GPT-5 models.",
     )
+    use_responses_api: bool = Field(
+        False,
+        description="Whether to use OpenAI's Responses API instead of Chat Completions API. "
+        "The Responses API provides stateful conversations with built-in tools and simplified request structure.",
+    )
 
     # FIXME hack to silence pydantic protected namespace warning
     model_config = ConfigDict(protected_namespaces=())
