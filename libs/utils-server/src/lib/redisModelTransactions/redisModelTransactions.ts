@@ -55,15 +55,15 @@ export async function getRedisModelTransactions(
   try {
     // should expire every day or when the subscription ends
     const expireTime = Math.min(
-      new Date(subscription.billingPeriodEnd).getTime() - new Date().getTime(),
-      24 * 60 * 60 * 1000, // at least one day
+      Math.round((new Date(subscription.billingPeriodEnd).getTime() - new Date().getTime() / 1000)),
+      24 * 60 * 60, // at least one day
     );
 
-    roundedExpireTime = Math.round(expireTime / 1000);
+    roundedExpireTime = Math.round(expireTime);
 
     // check if time is valid for expiration
     if (roundedExpireTime <= 0) {
-      roundedExpireTime = 24 * 60 * 60 * 1000; // set to 1 second if the time is less than or equal to 0
+      roundedExpireTime = 24 * 60 * 60; // set to 1 second if the time is less than or equal to 0
     }
 
     await redis.setex(
@@ -84,7 +84,7 @@ export async function getRedisModelTransactions(
 
     await redis.setex(
       getRedisModelTransactionsKey(type, organizationId),
-      24 * 60 * 60 * 1000, // at least one day
+      24 * 60 * 60, // at least one day
       res[0].count,
     );
   }
