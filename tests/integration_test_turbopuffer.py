@@ -1429,3 +1429,82 @@ class TestTurbopufferMessagesIntegration:
                 await client.delete_all_messages(agent_id)
             except:
                 pass
+
+
+class TestNamespaceTracking:
+    """Test the new namespace tracking functionality"""
+
+    @pytest.mark.asyncio
+    async def test_archive_namespace_tracking(self, server, default_user, enable_turbopuffer):
+        """Test that archive namespaces are properly tracked in database"""
+        # Create an archive
+        archive = await server.archive_manager.create_archive_async(name="Test Archive for Namespace", actor=default_user)
+
+        # Get namespace - should be generated and stored
+        namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
+
+        # Should have archive_ prefix and environment suffix
+        expected_prefix = "archive_"
+        assert namespace.startswith(expected_prefix)
+        assert archive.id in namespace
+        if settings.environment:
+            assert settings.environment.lower() in namespace
+
+        # Call again - should return same namespace from database
+        namespace2 = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
+        assert namespace == namespace2
+
+    @pytest.mark.asyncio
+    async def test_agent_namespace_tracking(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that agent message namespaces are properly tracked in database"""
+        # Get namespace - should be generated and stored
+        namespace = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id)
+
+        # Should have messages_ prefix and environment suffix
+        expected_prefix = "messages_"
+        assert namespace.startswith(expected_prefix)
+        assert sarah_agent.id in namespace
+        if settings.environment:
+            assert settings.environment.lower() in namespace
+
+        # Call again - should return same namespace from database
+        namespace2 = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id)
+        assert namespace == namespace2
+
+    @pytest.mark.asyncio
+    async def test_namespace_consistency_with_tpuf_client(self, server, default_user, enable_turbopuffer):
+        """Test that the namespace from managers matches what tpuf_client would generate"""
+        # Create archive and agent
+        archive = await server.archive_manager.create_archive_async(name="Test Consistency Archive", actor=default_user)
+
+        # Get namespace from manager
+        archive_namespace = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
+
+        # Create TurbopufferClient and get what it would generate
+        client = TurbopufferClient()
+        tpuf_namespace = await client._get_archive_namespace_name(archive.id)
+
+        # Should match
+        assert archive_namespace == tpuf_namespace
+
+    @pytest.mark.asyncio
+    async def test_environment_namespace_variation(self, server, default_user):
+        """Test namespace generation with different environment settings"""
+        # Test with no environment
+        original_env = settings.environment
+        try:
+            settings.environment = None
+
+            archive = await server.archive_manager.create_archive_async(name="No Env Archive", actor=default_user)
+            namespace_no_env = await server.archive_manager.get_or_set_vector_db_namespace_async(archive.id)
+            assert namespace_no_env == f"archive_{archive.id}"
+
+            # Test with environment
+            settings.environment = "TESTING"
+
+            archive2 = await server.archive_manager.create_archive_async(name="With Env Archive", actor=default_user)
+            namespace_with_env = await server.archive_manager.get_or_set_vector_db_namespace_async(archive2.id)
+            assert namespace_with_env == f"archive_{archive2.id}_testing"
+
+        finally:
+            settings.environment = original_env
