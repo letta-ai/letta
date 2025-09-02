@@ -40,7 +40,6 @@ class MessageManager:
         Returns:
             Concatenated text content from the message
         """
-        # TODO: Make this much more complex/extend to beyond text content
         if not message.content:
             return ""
 
@@ -48,14 +47,12 @@ class MessageManager:
         if isinstance(message.content, str):
             return message.content
 
-        # handle list of content items
+        # handle list of content items using the to_text() method
         text_parts = []
         for content_item in message.content:
-            if isinstance(content_item, TextContent):
-                text_parts.append(content_item.text)
-            elif hasattr(content_item, "text"):
-                # handle other content types that might have text
-                text_parts.append(content_item.text)
+            text = content_item.to_text()
+            if text:  # only add non-None text
+                text_parts.append(text)
 
         return " ".join(text_parts)
 
