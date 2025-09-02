@@ -85,32 +85,36 @@ function ProjectCard(props: ProjectCardProps) {
     }
   }
 
-  const { data: agentData } = useAgentsServiceListAgents(
-    {
-      limit: 3,
-      projectId,
-      sortBy: 'updatedAt',
-    },
-    undefined,
-    {
-      retry: false,
-    },
-  );
-
-  const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
-    queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
-      project_id: projectId,
-      limit: 3,
-      sort_by: 'updated_at',
-    }),
-    queryData: {
-      query: {
-        project_id: projectId,
-        limit: '3',
-        sort_by: 'updated_at',
+  const { data: agentData, isLoading: isLoadingAgentData } =
+    useAgentsServiceListAgents(
+      {
+        limit: 3,
+        projectId,
+        sortBy: 'updatedAt',
       },
-    },
-  });
+      undefined,
+      {
+        retry: false,
+      },
+    );
+
+  const { data: templateData, isLoading: isLoadingTemplateData } =
+    cloudAPI.templates.listTemplates.useQuery({
+      queryKey: cloudQueryKeys.templates.listTemplatesWithSearch({
+        project_id: projectId,
+        limit: 3,
+        sort_by: 'updated_at',
+      }),
+      queryData: {
+        query: {
+          project_id: projectId,
+          limit: '3',
+          sort_by: 'updated_at',
+        },
+      },
+    });
+
+  const isLoadingRecentItems = isLoadingAgentData || isLoadingTemplateData;
 
   const recentItems: RecentAgentsAndTemplates[] = useMemo(() => {
     const agents = agentData || [];
@@ -239,6 +243,7 @@ function ProjectCard(props: ProjectCardProps) {
                   {t('projectsList.projectItem.lastWorkedOn')}
                 </Typography>
                 <CardButtonGroup
+                  isLoading={isLoadingRecentItems}
                   items={recentItems}
                   minRows={3}
                   emptyConfig={{
