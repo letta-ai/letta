@@ -206,7 +206,7 @@ class LLMConfig(BaseModel):
                 model_endpoint="https://api.openai.com/v1",
                 model_wrapper=None,
                 context_window=128000,
-                reasoning_effort="medium",
+                reasoning_effort="minimal",
                 verbosity="medium",
                 max_tokens=16384,
             )
@@ -266,7 +266,11 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
-                    config.reasoning_effort = "medium"
+                    # GPT-5 models default to minimal, others to medium
+                    if config.model.startswith("gpt-5"):
+                        config.reasoning_effort = "minimal"
+                    else:
+                        config.reasoning_effort = "medium"
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
@@ -295,7 +299,11 @@ class LLMConfig(BaseModel):
             elif cls.is_openai_reasoning_model(config):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
-                    config.reasoning_effort = "medium"
+                    # GPT-5 models default to minimal, others to medium
+                    if config.model.startswith("gpt-5"):
+                        config.reasoning_effort = "minimal"
+                    else:
+                        config.reasoning_effort = "medium"
                 # Set verbosity for GPT-5 models
                 if config.model.startswith("gpt-5") and config.verbosity is None:
                     config.verbosity = "medium"
