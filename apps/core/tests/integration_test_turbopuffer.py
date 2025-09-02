@@ -178,7 +178,9 @@ class TestTurbopufferIntegration:
             ]
 
             for text in test_passages:
-                passages = await server.passage_manager.insert_passage(agent_state=sarah_agent, text=text, actor=default_user)
+                passages = await server.passage_manager.insert_passage(
+                    agent_state=sarah_agent, text=text, actor=default_user, strict_mode=True
+                )
                 assert passages is not None
                 assert len(passages) > 0
 
@@ -208,7 +210,7 @@ class TestTurbopufferIntegration:
 
             # Test deletion - should delete from both
             passage_to_delete = sql_passages[0]
-            await server.passage_manager.delete_agent_passages_async([passage_to_delete], default_user)
+            await server.passage_manager.delete_agent_passages_async([passage_to_delete], default_user, strict_mode=True)
 
             # Verify deleted from SQL
             remaining = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
@@ -310,7 +312,9 @@ class TestTurbopufferIntegration:
 
         # Insert passages - should only write to SQL
         text_content = "This is a test passage for native PostgreSQL only."
-        passages = await server.passage_manager.insert_passage(agent_state=sarah_agent, text=text_content, actor=default_user)
+        passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent, text=text_content, actor=default_user, strict_mode=True
+        )
 
         assert passages is not None
         assert len(passages) > 0
@@ -721,7 +725,9 @@ class TestTurbopufferParametrized:
 
         # Test inserting a passage (should work in both modes)
         test_text = f"Test passage for {expected_provider} mode"
-        passages = await server.passage_manager.insert_passage(agent_state=sarah_agent, text=test_text, actor=default_user)
+        passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent, text=test_text, actor=default_user, strict_mode=True
+        )
 
         assert passages is not None
         assert len(passages) > 0
@@ -732,7 +738,7 @@ class TestTurbopufferParametrized:
         assert any(p.text == test_text for p in listed)
 
         # Delete should work in both modes
-        await server.passage_manager.delete_agent_passages_async(passages, default_user)
+        await server.passage_manager.delete_agent_passages_async(passages, default_user, strict_mode=True)
 
         # Verify deletion
         remaining = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
@@ -750,11 +756,11 @@ class TestTurbopufferParametrized:
 
         # Insert passages with specific timestamps
         recent_passage = await server.passage_manager.insert_passage(
-            agent_state=sarah_agent, text="Recent update from today", actor=default_user, created_at=now
+            agent_state=sarah_agent, text="Recent update from today", actor=default_user, created_at=now, strict_mode=True
         )
 
         old_passage = await server.passage_manager.insert_passage(
-            agent_state=sarah_agent, text="Old update from last week", actor=default_user, created_at=last_week
+            agent_state=sarah_agent, text="Old update from last week", actor=default_user, created_at=last_week, strict_mode=True
         )
 
         # Query with date range that includes only recent passage
@@ -785,8 +791,8 @@ class TestTurbopufferParametrized:
         assert not any("Recent update from today" in p.text for p in old_results)
 
         # Clean up
-        await server.passage_manager.delete_agent_passages_async(recent_passage, default_user)
-        await server.passage_manager.delete_agent_passages_async(old_passage, default_user)
+        await server.passage_manager.delete_agent_passages_async(recent_passage, default_user, strict_mode=True)
+        await server.passage_manager.delete_agent_passages_async(old_passage, default_user, strict_mode=True)
 
 
 class TestTurbopufferMessagesIntegration:
@@ -1360,6 +1366,369 @@ class TestTurbopufferMessagesIntegration:
             # Restore settings
             settings.use_tpuf = original_use_tpuf
             settings.embed_all_messages = original_embed_messages
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_update_reindexes_in_turbopuffer(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that updating a message properly deletes and re-inserts with new embedding in Turbopuffer"""
+        from letta.schemas.message import MessageUpdate
+
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create initial message
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Original content about Python programming")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=True,
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Search for "Python" - should find it
+        python_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="Python",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(python_results) > 0
+        assert any(msg.id == message_id for msg in python_results)
+
+        # Update the message content
+        updated_message = await server.message_manager.update_message_by_id_async(
+            message_id=message_id,
+            message_update=MessageUpdate(content="Updated content about JavaScript development"),
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=True,
+        )
+
+        assert updated_message.id == message_id  # ID should remain the same
+
+        # Search for "Python" - should NOT find it anymore
+        python_results_after = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="Python",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        # Should either find no results or results that don't include our message
+        assert not any(msg.id == message_id for msg in python_results_after)
+
+        # Search for "JavaScript" - should find the updated message
+        js_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="JavaScript",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(js_results) > 0
+        assert any(msg.id == message_id for msg in js_results)
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_deletion_syncs_with_turbopuffer(self, server, default_user, enable_message_embedding):
+        """Test that all deletion methods properly sync with Turbopuffer"""
+        from letta.schemas.agent import CreateAgent
+        from letta.schemas.llm_config import LLMConfig
+
+        # Create two test agents
+        agent_a = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name="Agent A",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+        agent_b = await server.agent_manager.create_agent_async(
+            agent_create=CreateAgent(
+                name="Agent B",
+                memory_blocks=[],
+                llm_config=LLMConfig.default_config("gpt-4o-mini"),
+                embedding_config=EmbeddingConfig.default_config(provider="openai"),
+                include_base_tools=False,
+            ),
+            actor=default_user,
+        )
+
+        embedding_config = agent_a.embedding_config
+
+        try:
+            # Create 5 messages for agent A
+            agent_a_messages = []
+            for i in range(5):
+                msgs = await server.message_manager.create_many_messages_async(
+                    pydantic_msgs=[
+                        PydanticMessage(
+                            role=MessageRole.user,
+                            content=[TextContent(text=f"Agent A message {i + 1}")],
+                            agent_id=agent_a.id,
+                        )
+                    ],
+                    actor=default_user,
+                    embedding_config=embedding_config,
+                    strict_mode=True,
+                )
+                agent_a_messages.extend(msgs)
+
+            # Create 3 messages for agent B
+            agent_b_messages = []
+            for i in range(3):
+                msgs = await server.message_manager.create_many_messages_async(
+                    pydantic_msgs=[
+                        PydanticMessage(
+                            role=MessageRole.user,
+                            content=[TextContent(text=f"Agent B message {i + 1}")],
+                            agent_id=agent_b.id,
+                        )
+                    ],
+                    actor=default_user,
+                    embedding_config=embedding_config,
+                    strict_mode=True,
+                )
+                agent_b_messages.extend(msgs)
+
+            # Verify initial state - all messages are searchable
+            agent_a_search = await server.message_manager.search_messages_async(
+                agent_id=agent_a.id,
+                actor=default_user,
+                query_text="Agent A",
+                search_mode="fts",
+                limit=10,
+                embedding_config=embedding_config,
+            )
+            assert len(agent_a_search) == 5
+
+            agent_b_search = await server.message_manager.search_messages_async(
+                agent_id=agent_b.id,
+                actor=default_user,
+                query_text="Agent B",
+                search_mode="fts",
+                limit=10,
+                embedding_config=embedding_config,
+            )
+            assert len(agent_b_search) == 3
+
+            # Test 1: Delete single message from agent A
+            await server.message_manager.delete_message_by_id_async(agent_a_messages[0].id, default_user, strict_mode=True)
+
+            # Test 2: Batch delete 2 messages from agent A
+            await server.message_manager.delete_messages_by_ids_async(
+                [agent_a_messages[1].id, agent_a_messages[2].id], default_user, strict_mode=True
+            )
+
+            # Test 3: Delete all messages for agent B
+            await server.message_manager.delete_all_messages_for_agent_async(agent_b.id, default_user, strict_mode=True)
+
+            # Verify final state
+            # Agent A should have 2 messages left (5 - 1 - 2 = 2)
+            agent_a_final = await server.message_manager.search_messages_async(
+                agent_id=agent_a.id,
+                actor=default_user,
+                query_text="Agent A",
+                search_mode="fts",
+                limit=10,
+                embedding_config=embedding_config,
+            )
+            assert len(agent_a_final) == 2
+            # Verify the remaining messages are the correct ones
+            remaining_ids = {msg.id for msg in agent_a_final}
+            assert agent_a_messages[3].id in remaining_ids
+            assert agent_a_messages[4].id in remaining_ids
+
+            # Agent B should have 0 messages
+            agent_b_final = await server.message_manager.search_messages_async(
+                agent_id=agent_b.id,
+                actor=default_user,
+                query_text="Agent B",
+                search_mode="fts",
+                limit=10,
+                embedding_config=embedding_config,
+            )
+            assert len(agent_b_final) == 0
+
+        finally:
+            # Clean up agents
+            await server.agent_manager.delete_agent_async(agent_a.id, default_user)
+            await server.agent_manager.delete_agent_async(agent_b.id, default_user)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_crud_operations_without_embedding_config(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that CRUD operations handle missing embedding_config gracefully"""
+        from letta.schemas.message import MessageUpdate
+
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create message WITH embedding_config
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Message with searchable content about databases")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=True,
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Verify message is searchable initially
+        initial_search = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(initial_search) > 0
+        assert any(msg.id == message_id for msg in initial_search)
+
+        # Update message WITHOUT embedding_config - should update postgres but not turbopuffer
+        updated_message = await server.message_manager.update_message_by_id_async(
+            message_id=message_id,
+            message_update=MessageUpdate(content="Updated content about algorithms"),
+            actor=default_user,
+            embedding_config=None,  # No config provided
+        )
+
+        # Verify postgres was updated
+        assert updated_message.id == message_id
+        updated_text = server.message_manager._extract_message_text(updated_message)
+        assert "algorithms" in updated_text
+        assert "databases" not in updated_text
+
+        # Original search term should STILL find the message (turbopuffer wasn't updated)
+        still_searchable = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(still_searchable) > 0
+        assert any(msg.id == message_id for msg in still_searchable)
+
+        # New content should NOT be searchable (wasn't re-indexed)
+        not_searchable = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="algorithms",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        # Should either find no results or results that don't include our message
+        assert not any(msg.id == message_id for msg in not_searchable)
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_turbopuffer_failure_does_not_break_postgres(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that postgres operations succeed even if turbopuffer fails"""
+        from unittest.mock import AsyncMock, patch
+
+        from letta.schemas.message import MessageUpdate
+
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create initial messages
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Test message for error handling")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Mock turbopuffer client to raise exceptions
+        with patch(
+            "letta.helpers.tpuf_client.TurbopufferClient.delete_messages",
+            new=AsyncMock(side_effect=Exception("Turbopuffer connection failed")),
+        ):
+            with patch(
+                "letta.helpers.tpuf_client.TurbopufferClient.insert_messages",
+                new=AsyncMock(side_effect=Exception("Turbopuffer insert failed")),
+            ):
+                # Test 1: Update should succeed in postgres despite turbopuffer failure
+                # NOTE: strict_mode=False here because we're testing error resilience
+                updated_message = await server.message_manager.update_message_by_id_async(
+                    message_id=message_id,
+                    message_update=MessageUpdate(content="Updated despite turbopuffer failure"),
+                    actor=default_user,
+                    embedding_config=embedding_config,
+                    strict_mode=False,  # Don't fail on turbopuffer errors - that's what we're testing!
+                )
+
+                # Verify postgres was updated successfully
+                assert updated_message.id == message_id
+                updated_text = server.message_manager._extract_message_text(updated_message)
+                assert "Updated despite turbopuffer failure" in updated_text
+
+                # Test 2: Delete should succeed in postgres despite turbopuffer failure
+                # First create another message to delete
+                messages2 = await server.message_manager.create_many_messages_async(
+                    pydantic_msgs=[
+                        PydanticMessage(
+                            role=MessageRole.user,
+                            content=[TextContent(text="Message to delete")],
+                            agent_id=sarah_agent.id,
+                        )
+                    ],
+                    actor=default_user,
+                    embedding_config=None,  # Create without embedding to avoid mock issues
+                )
+                message_to_delete_id = messages2[0].id
+
+                # Delete with mocked turbopuffer failure
+                # NOTE: strict_mode=False here because we're testing error resilience
+                deletion_result = await server.message_manager.delete_message_by_id_async(
+                    message_to_delete_id, default_user, strict_mode=False
+                )
+                assert deletion_result == True
+
+                # Verify message is deleted from postgres
+                deleted_msg = await server.message_manager.get_message_by_id_async(message_to_delete_id, default_user)
+                assert deleted_msg is None
+
+        # Clean up remaining message (use strict_mode=False since turbopuffer might be mocked)
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=False)
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")

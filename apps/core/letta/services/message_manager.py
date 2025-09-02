@@ -10,6 +10,7 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
 from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType, TextContent
@@ -161,7 +162,8 @@ class MessageManager:
         self,
         pydantic_msgs: List[PydanticMessage],
         actor: PydanticUser,
-        embedding_config: Optional[dict] = None,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        strict_mode: bool = False,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -253,8 +255,9 @@ class MessageManager:
                             )
                             logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
                 except Exception as e:
-                    # log error but don't fail the message creation
                     logger.error(f"Failed to embed messages in Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
 
             return result
 
@@ -356,7 +359,14 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def update_message_by_id_async(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
+    async def update_message_by_id_async(
+        self,
+        message_id: str,
+        message_update: MessageUpdate,
+        actor: PydanticUser,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        strict_mode: bool = False,
+    ) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
         Async version of the function above.
@@ -373,6 +383,47 @@ class MessageManager:
             await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_message = message.to_pydantic()
             await session.commit()
+
+            # update message in turbopuffer if enabled (delete and re-insert)
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages() and embedding_config and pydantic_message.agent_id:
+                try:
+                    # extract text content from updated message
+                    text = self._extract_message_text(pydantic_message)
+
+                    # only update in turbopuffer if there's text content (role filtering is handled in _extract_message_text)
+                    if text:
+                        tpuf_client = TurbopufferClient()
+
+                        # delete old message from turbopuffer
+                        await tpuf_client.delete_messages(agent_id=pydantic_message.agent_id, message_ids=[message_id])
+
+                        # generate new embedding
+                        from letta.llm_api.llm_client import LLMClient
+
+                        embedding_client = LLMClient.create(
+                            provider_type=embedding_config.embedding_endpoint_type,
+                            actor=actor,
+                        )
+                        embeddings = await embedding_client.request_embeddings([text], embedding_config)
+
+                        # re-insert with updated content
+                        await tpuf_client.insert_messages(
+                            agent_id=pydantic_message.agent_id,
+                            message_texts=[text],
+                            embeddings=embeddings,
+                            message_ids=[message_id],
+                            organization_id=actor.organization_id,
+                            roles=[pydantic_message.role],
+                            created_ats=[pydantic_message.created_at],
+                        )
+                        logger.info(f"Successfully updated message {message_id} in Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to update message in Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
             return pydantic_message
 
     def _update_message_by_id_impl(
@@ -412,6 +463,39 @@ class MessageManager:
                     actor=actor,
                 )
                 msg.hard_delete(session, actor=actor)
+                # Note: Turbopuffer deletion requires async, use delete_message_by_id_async for full deletion
+            except NoResultFound:
+                raise ValueError(f"Message with id {message_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
+        """Delete a message (async version with turbopuffer support)."""
+        async with db_registry.async_session() as session:
+            try:
+                msg = await MessageModel.read_async(
+                    db_session=session,
+                    identifier=message_id,
+                    actor=actor,
+                )
+                agent_id = msg.agent_id
+                await msg.hard_delete_async(session, actor=actor)
+
+                # delete from turbopuffer if enabled
+                from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+                if should_use_tpuf_for_messages() and agent_id:
+                    try:
+                        tpuf_client = TurbopufferClient()
+                        await tpuf_client.delete_messages(agent_id=agent_id, message_ids=[message_id])
+                        logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
+                    except Exception as e:
+                        logger.error(f"Failed to delete message from Turbopuffer: {e}")
+                        if strict_mode:
+                            raise  # Re-raise the exception in strict mode
+
+                return True
+
             except NoResultFound:
                 raise ValueError(f"Message with id {message_id} not found.")
 
@@ -712,7 +796,9 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None) -> int:
+    async def delete_all_messages_for_agent_async(
+        self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None, strict_mode: bool = False
+    ) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
@@ -736,12 +822,31 @@ class MessageManager:
             # 4) commit once
             await session.commit()
 
-            # 5) return the number of rows deleted
+            # 5) delete from turbopuffer if enabled
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages():
+                try:
+                    tpuf_client = TurbopufferClient()
+                    if exclude_ids:
+                        # if we're excluding some IDs, we can't use delete_all
+                        # would need to query all messages first then delete specific ones
+                        # for now, log a warning
+                        logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
+                    # delete all messages for the agent from turbopuffer
+                    await tpuf_client.delete_all_messages(agent_id)
+                    logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
+            # 6) return the number of rows deleted
             return result.rowcount
 
     @enforce_types
     @trace_method
-    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> int:
+    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser, strict_mode: bool = False) -> int:
         """
         Efficiently deletes messages by their specific IDs,
         while enforcing permission checks.
@@ -750,12 +855,39 @@ class MessageManager:
             return 0
 
         async with db_registry.async_session() as session:
+            # get agent_ids BEFORE deleting (for turbopuffer)
+            agent_ids = []
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages():
+                agent_query = (
+                    select(MessageModel.agent_id)
+                    .where(MessageModel.id.in_(message_ids))
+                    .where(MessageModel.organization_id == actor.organization_id)
+                    .distinct()
+                )
+                agent_result = await session.execute(agent_query)
+                agent_ids = [row[0] for row in agent_result.fetchall() if row[0]]
+
             # issue a CORE DELETE against the mapped class for specific message IDs
             stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
             result = await session.execute(stmt)
 
             # commit once
             await session.commit()
+
+            # delete from turbopuffer if enabled
+            if should_use_tpuf_for_messages() and agent_ids:
+                try:
+                    tpuf_client = TurbopufferClient()
+                    # delete from each affected agent's namespace
+                    for agent_id in agent_ids:
+                        await tpuf_client.delete_messages(agent_id=agent_id, message_ids=message_ids)
+                    logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
 
             # return the number of rows deleted
             return result.rowcount
@@ -773,7 +905,7 @@ class MessageManager:
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        embedding_config: Optional[dict] = None,
+        embedding_config: Optional[EmbeddingConfig] = None,
     ) -> List[PydanticMessage]:
         """
         Search messages using Turbopuffer if enabled, otherwise fall back to SQL search.

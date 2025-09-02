@@ -776,6 +776,27 @@ class TurbopufferClient:
             raise
 
     @trace_method
+    async def delete_messages(self, agent_id: str, message_ids: List[str]) -> bool:
+        """Delete multiple messages from Turbopuffer."""
+        from turbopuffer import AsyncTurbopuffer
+
+        if not message_ids:
+            return True
+
+        namespace_name = await self._get_message_namespace_name(agent_id)
+
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # Use write API with deletes parameter as per Turbopuffer docs
+                await namespace.write(deletes=message_ids)
+                logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer for agent {agent_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+            raise
+
+    @trace_method
     async def delete_all_messages(self, agent_id: str) -> bool:
         """Delete all messages for an agent from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
