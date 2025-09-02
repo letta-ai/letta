@@ -9,6 +9,7 @@ from letta.schemas.archive import Archive as PydanticArchive
 from letta.schemas.enums import VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -306,3 +307,32 @@ class ArchiveManager:
 
             # For now, return the first agent (backwards compatibility)
             return agent_ids[0]
+
+    @enforce_types
+    async def get_or_set_vector_db_namespace_async(
+        self,
+        archive_id: str,
+    ) -> str:
+        """Get the vector database namespace for an archive, creating it if it doesn't exist."""
+        from sqlalchemy import update
+
+        async with db_registry.async_session() as session:
+            # check if namespace already exists
+            result = await session.execute(select(ArchiveModel._vector_db_namespace).where(ArchiveModel.id == archive_id))
+            row = result.fetchone()
+
+            if row and row[0]:
+                return row[0]
+
+            # generate namespace name using same logic as tpuf_client
+            environment = settings.environment
+            if environment:
+                namespace_name = f"archive_{archive_id}_{environment.lower()}"
+            else:
+                namespace_name = f"archive_{archive_id}"
+
+            # update the archive with the namespace
+            await session.execute(update(ArchiveModel).where(ArchiveModel.id == archive_id).values(_vector_db_namespace=namespace_name))
+            await session.commit()
+
+            return namespace_name

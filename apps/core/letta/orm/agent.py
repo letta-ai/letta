@@ -100,6 +100,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
 
     # indexing controls
     hidden: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None, doc="If set to True, the agent will be hidden.")
+    _vector_db_namespace: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Private field for vector database namespace")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="agents", lazy="raise")

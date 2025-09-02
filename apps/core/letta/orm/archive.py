@@ -46,6 +46,7 @@ class Archive(SqlalchemyBase, OrganizationMixin):
         doc="The vector database provider used for this archive's passages",
     )
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Additional metadata for the archive")
+    _vector_db_namespace: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Private field for vector database namespace")
 
     # relationships
     archives_agents: Mapped[List["ArchivesAgents"]] = relationship(

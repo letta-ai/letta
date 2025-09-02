@@ -29,32 +29,24 @@ class TurbopufferClient:
         self.api_key = api_key or settings.tpuf_api_key
         self.region = region or settings.tpuf_region
 
+        from letta.services.agent_manager import AgentManager
+        from letta.services.archive_manager import ArchiveManager
+
+        self.archive_manager = ArchiveManager()
+        self.agent_manager = AgentManager()
+
         if not self.api_key:
             raise ValueError("Turbopuffer API key not provided")
 
     @trace_method
-    def _get_archive_namespace_name(self, archive_id: str) -> str:
+    async def _get_archive_namespace_name(self, archive_id: str) -> str:
         """Get namespace name for a specific archive."""
-        # use archive_id as namespace to isolate different archives' memories
-        # append environment suffix to namespace for isolation if environment is set
-        environment = settings.environment
-        if environment:
-            namespace_name = f"{archive_id}_{environment.lower()}"
-        else:
-            namespace_name = archive_id
-        return namespace_name
+        return await self.archive_manager.get_or_set_vector_db_namespace_async(archive_id)
 
     @trace_method
-    def _get_message_namespace_name(self, agent_id: str) -> str:
+    async def _get_message_namespace_name(self, agent_id: str) -> str:
         """Get namespace name for a specific agent's messages."""
-        # use agent_id as namespace to isolate different agents' messages
-        # append environment suffix to namespace for isolation if environment is set
-        environment = settings.environment
-        if environment:
-            namespace_name = f"messages_{agent_id}_{environment.lower()}"
-        else:
-            namespace_name = f"messages_{agent_id}"
-        return namespace_name
+        return await self.agent_manager.get_or_set_vector_db_namespace_async(agent_id)
 
     @trace_method
     async def insert_archival_memories(
@@ -83,7 +75,7 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_archive_namespace_name(archive_id)
+        namespace_name = await self._get_archive_namespace_name(archive_id)
 
         # handle timestamp - ensure UTC
         if created_at is None:
@@ -199,7 +191,7 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id)
 
         # validation checks
         if not message_ids:
@@ -416,7 +408,7 @@ class TurbopufferClient:
             # Fallback to retrieving most recent passages when no search query is provided
             search_mode = "timestamp"
 
-        namespace_name = self._get_archive_namespace_name(archive_id)
+        namespace_name = await self._get_archive_namespace_name(archive_id)
 
         # build tag filter conditions
         tag_filter = None
@@ -521,7 +513,7 @@ class TurbopufferClient:
             # Fallback to retrieving most recent messages when no search query is provided
             search_mode = "timestamp"
 
-        namespace_name = self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id)
 
         # build role filter conditions
         role_filter = None
@@ -731,7 +723,7 @@ class TurbopufferClient:
         """Delete a passage from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_archive_namespace_name(archive_id)
+        namespace_name = await self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -752,7 +744,7 @@ class TurbopufferClient:
         if not passage_ids:
             return True
 
-        namespace_name = self._get_archive_namespace_name(archive_id)
+        namespace_name = await self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -770,7 +762,7 @@ class TurbopufferClient:
         """Delete all passages for an archive from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_archive_namespace_name(archive_id)
+        namespace_name = await self._get_archive_namespace_name(archive_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -788,7 +780,7 @@ class TurbopufferClient:
         """Delete all messages for an agent from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:

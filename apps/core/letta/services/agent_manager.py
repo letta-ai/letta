@@ -3573,3 +3573,33 @@ class AgentManager:
             num_archival_memories=num_archival_memories,
             num_messages=num_messages,
         )
+
+    async def get_or_set_vector_db_namespace_async(
+        self,
+        agent_id: str,
+    ) -> str:
+        """Get the vector database namespace for an agent, creating it if it doesn't exist."""
+        from sqlalchemy import update
+
+        from letta.settings import settings
+
+        async with db_registry.async_session() as session:
+            # check if namespace already exists
+            result = await session.execute(select(AgentModel._vector_db_namespace).where(AgentModel.id == agent_id))
+            row = result.fetchone()
+
+            if row and row[0]:
+                return row[0]
+
+            # generate namespace name using same logic as tpuf_client
+            environment = settings.environment
+            if environment:
+                namespace_name = f"messages_{agent_id}_{environment.lower()}"
+            else:
+                namespace_name = f"messages_{agent_id}"
+
+            # update the agent with the namespace
+            await session.execute(update(AgentModel).where(AgentModel.id == agent_id).values(_vector_db_namespace=namespace_name))
+            await session.commit()
+
+            return namespace_name
