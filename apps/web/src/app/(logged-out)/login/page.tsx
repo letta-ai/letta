@@ -5,6 +5,7 @@ import {
   Form,
   FormProvider,
   useForm,
+  Alert,
 } from '@letta-cloud/ui-component-library';
 import { useState } from 'react';
 import { useCallback, useRef } from 'react';
@@ -20,6 +21,7 @@ import { LoggedOutWrapper } from '../_components/LoggedOutWrapper/LoggedOutWrapp
 import { Mode } from '../constants';
 import { EmailField, PasswordField } from '../_components/fields';
 import { spinOnClickForLogo } from '../libs';
+import { LoginErrorsMap, isTextALoginError } from '$web/errors';
 
 const PasswordLoginSchema = z.object({
   email: z.string(),
@@ -33,6 +35,13 @@ function LoginPage() {
   const logoRef = useRef<HTMLDivElement>(null);
   const extraFieldsRef = useRef<HTMLDivElement>(null);
   const [isEmailEntered, setIsEmailEntered] = useState<boolean>(false);
+
+  // Handle URL error codes
+  const errorCode = searchParams.get('errorCode');
+  const urlErrorMessage =
+    errorCode && isTextALoginError(errorCode)
+      ? LoginErrorsMap[errorCode]
+      : null;
 
   const spinOnClick = useCallback(() => {
     spinOnClickForLogo(logoRef);
@@ -91,6 +100,9 @@ function LoginPage() {
     <LoggedOutWrapper logoRef={logoRef}>
       <VStack align="center" position="relative" fullWidth>
         <VStack fullWidth gap="xlarge">
+          {urlErrorMessage && (
+            <Alert title={urlErrorMessage} variant="destructive" />
+          )}
           <OAuthButtons
             type={Mode.LOGIN}
             spinOnClick={spinOnClick}
