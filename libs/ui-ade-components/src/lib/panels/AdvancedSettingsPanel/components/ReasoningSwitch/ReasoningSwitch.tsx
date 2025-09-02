@@ -12,7 +12,7 @@ export function ReasoningSwitch() {
 
   const disableSwitch =
     (modelEndpointType?.startsWith('openai') &&
-      (model?.startsWith('o1') || model?.startsWith('o3') || model?.startsWith('o4'))) ||
+      (model?.startsWith('o1') || model?.startsWith('o3') || model?.startsWith('o4') || model?.startsWith('gpt-5'))) ||
     (modelEndpointType?.startsWith('google_vertex') &&
       model?.startsWith('gemini-2.5-pro'));
 

@@ -211,6 +211,13 @@
       "medium": "中等",
       "high": "高"
     },
+    "VerbosityLevelDropdown": {
+      "label": "详细程度",
+      "tooltip": "控制GPT-5模型输出的详细程度。更高的详细程度会提供更详细的响应。",
+      "low": "低",
+      "medium": "中等",
+      "high": "高"
+    },
     "MessageBufferLengthSlider": {
       "label": "消息缓冲长度",
       "error": "保存消息缓冲长度值失败",

@@ -8323,7 +8323,6 @@ export const $LLMConfig = {
       title: 'Verbosity',
       description:
         'Soft control for how verbose model output should be, used for GPT-5 models.',
-      default: 'medium',
     },
     tier: {
       anyOf: [

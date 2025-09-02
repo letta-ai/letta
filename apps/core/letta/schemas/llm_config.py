@@ -71,7 +71,7 @@ class LLMConfig(BaseModel):
     )
     compatibility_type: Optional[Literal["gguf", "mlx"]] = Field(None, description="The framework compatibility type for the model.")
     verbosity: Optional[Literal["low", "medium", "high"]] = Field(
-        "medium",
+        None,
         description="Soft control for how verbose model output should be, used for GPT-5 models.",
     )
     tier: Optional[str] = Field(None, description="The cost tier for the model (cloud only).")
@@ -206,6 +206,7 @@ class LLMConfig(BaseModel):
                 model_endpoint="https://api.openai.com/v1",
                 model_wrapper=None,
                 context_window=128000,
+                reasoning_effort="medium",
                 verbosity="medium",
                 max_tokens=16384,
             )
@@ -228,9 +229,9 @@ class LLMConfig(BaseModel):
 
     @classmethod
     def is_openai_reasoning_model(cls, config: "LLMConfig") -> bool:
-        return config.model_endpoint_type == "openai" and (
-            config.model.startswith("o1") or config.model.startswith("o3") or config.model.startswith("o4")
-        )
+        from letta.llm_api.openai_client import is_openai_reasoning_model
+
+        return config.model_endpoint_type == "openai" and is_openai_reasoning_model(config.model)
 
     @classmethod
     def is_anthropic_reasoning_model(cls, config: "LLMConfig") -> bool:
@@ -261,11 +262,14 @@ class LLMConfig(BaseModel):
     def apply_reasoning_setting_to_config(cls, config: "LLMConfig", reasoning: bool):
         if not reasoning:
             if cls.is_openai_reasoning_model(config):
-                logger.warning("Reasoning cannot be disabled for OpenAI o1/o3 models")
+                logger.warning("Reasoning cannot be disabled for OpenAI o1/o3/gpt-5 models")
                 config.put_inner_thoughts_in_kwargs = False
                 config.enable_reasoner = True
                 if config.reasoning_effort is None:
                     config.reasoning_effort = "medium"
+                # Set verbosity for GPT-5 models
+                if config.model.startswith("gpt-5") and config.verbosity is None:
+                    config.verbosity = "medium"
             elif config.model.startswith("gemini-2.5-pro"):
                 logger.warning("Reasoning cannot be disabled for Gemini 2.5 Pro model")
                 # Handle as non-reasoner until we support summary
@@ -292,6 +296,9 @@ class LLMConfig(BaseModel):
                 config.put_inner_thoughts_in_kwargs = False
                 if config.reasoning_effort is None:
                     config.reasoning_effort = "medium"
+                # Set verbosity for GPT-5 models
+                if config.model.startswith("gpt-5") and config.verbosity is None:
+                    config.verbosity = "medium"
             else:
                 config.put_inner_thoughts_in_kwargs = True
 

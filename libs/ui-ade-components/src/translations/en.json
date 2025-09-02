@@ -320,6 +320,13 @@
       "medium": "Medium",
       "high": "High"
     },
+    "VerbosityLevelDropdown": {
+      "label": "Verbosity level",
+      "tooltip": "Controls how verbose the GPT-5 model's output should be. Higher verbosity provides more detailed responses.",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "MessageBufferLengthSlider": {
       "label": "Message buffer length",
       "error": "Failed to persist message buffer length value",

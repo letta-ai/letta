@@ -15,6 +15,7 @@ import { MaxTokensSlider } from '../AdvancedSettingsPanel/components/MaxOutputTo
 import { EnableMaxTokensSwitch } from '../AdvancedSettingsPanel/components/EnableMaxTokensSwitch/EnableMaxTokensSwitch';
 import { MaxReasoningTokensSlider } from '../AdvancedSettingsPanel/components/MaxReasoningTokensSlider/MaxReasoningTokensSlider';
 import { ReasoningEffortDropdown } from '../AdvancedSettingsPanel/components/ReasoningEffortDropdown/ReasoningEffortDropdown';
+import { VerbosityLevelDropdown } from '../AdvancedSettingsPanel/components/VerbosityLevelDropdown/VerbosityLevelDropdown';
 
 export function LLMConfigPanel() {
   const { data: modelsList } = useModelsServiceListModels();
@@ -44,6 +45,7 @@ export function LLMConfigPanel() {
     <PanelMainContent>
       <VStack>
         <ReasoningEffortDropdown />
+        <VerbosityLevelDropdown />
         <TemperatureSlider
           defaultTemperature={currentAgent.llm_config.temperature || 1}
         />
