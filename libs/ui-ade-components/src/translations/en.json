@@ -312,6 +312,14 @@
       "label": "Max reasoning tokens",
       "error": "Invalid max reasoning tokens value, minimum value is 1024"
     },
+    "ReasoningEffortDropdown": {
+      "label": "Reasoning effort",
+      "tooltip": "Controls the level of reasoning effort for models that support it (e.g., OpenAI o-series, GPT-5). Higher effort allows for more thorough reasoning but may increase response time and costs.",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "MessageBufferLengthSlider": {
       "label": "Message buffer length",
       "error": "Failed to persist message buffer length value",

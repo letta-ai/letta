@@ -203,6 +203,14 @@
       "label": "最大推理令牌",
       "error": "无效的最大推理令牌值，最小值为1024"
     },
+    "ReasoningEffortDropdown": {
+      "label": "推理强度",
+      "tooltip": "控制支持该功能的模型（如OpenAI o系列、GPT-5）的推理强度级别。更高的强度允许更彻底的推理，但可能会增加响应时间和成本。",
+      "minimal": "最小",
+      "low": "低",
+      "medium": "中等",
+      "high": "高"
+    },
     "MessageBufferLengthSlider": {
       "label": "消息缓冲长度",
       "error": "保存消息缓冲长度值失败",
