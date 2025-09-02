@@ -15,6 +15,7 @@ import {
   CardButtonGroup,
   LettaInvaderOutlineIcon,
   TemplateIcon,
+  Tooltip,
 } from '@letta-cloud/ui-component-library';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useQueryClient } from '@tanstack/react-query';
@@ -213,49 +214,69 @@ function ProjectCard(props: ProjectCardProps) {
           </VStack>
         </Card>
       ) : (
-        <Card className="w-full flex bg-project-card-background border border-background-grey3-border project-card">
-          <VStack fullWidth padding="xxsmall" paddingY="medium">
-            <VStack gap="large" fullWidth>
-              <Link href={url}>
-                <VStack gap="small" className="cursor-pointer project-button">
-                  <Typography
-                    bold
-                    align="left"
-                    variant="heading4"
-                    noWrap
-                    fullWidth
-                    overflow="ellipsis"
-                  >
-                    {projectName}
-                  </Typography>
-                  <Typography variant="body" color="muted">
-                    {lastUpdatedAt
-                      ? t('projectsList.projectItem.lastUpdatedAt', {
-                          date: formatDateAndTime(lastUpdatedAt),
-                        })
-                      : t('projectsList.projectItem.noLastUpdatedAt')}
-                  </Typography>
-                </VStack>
-              </Link>
+        <Link href={url}>
+          <Card className="w-full flex bg-project-card-background border border-background-grey3-border project-card h-[240px] cursor-pointer project-button">
+            <VStack fullWidth padding="xxsmall" paddingY="medium">
+              <VStack gap="large" fullWidth>
+                <Tooltip
+                  content={t('projectsList.projectItem.goTo', {
+                    item: projectName,
+                  })}
+                >
+                  <VStack gap="small">
+                    <Typography
+                      bold
+                      align="left"
+                      variant="heading4"
+                      noWrap
+                      fullWidth
+                      overflow="ellipsis"
+                    >
+                      {projectName}
+                    </Typography>
+                    <Typography variant="body" color="muted">
+                      {lastUpdatedAt
+                        ? t('projectsList.projectItem.lastUpdatedAt', {
+                            date: formatDateAndTime(lastUpdatedAt),
+                          })
+                        : t('projectsList.projectItem.noLastUpdatedAt')}
+                    </Typography>
+                  </VStack>
+                </Tooltip>
 
-              <VStack gap="small">
-                <Typography variant="body3" color="lighter">
-                  {t('projectsList.projectItem.lastWorkedOn')}
-                </Typography>
-                <CardButtonGroup
-                  isLoading={isLoadingRecentItems}
-                  items={recentItems}
-                  minRows={3}
-                  emptyConfig={{
-                    className: 'h-[100px]',
-                    label: t('projectsList.projectItem.noTemplatesAndAgents'),
-                  }}
-                  className={'h-[100px]'}
-                />
+                <VStack gap="small">
+                  <Typography variant="body3" color="lighter">
+                    {t('projectsList.projectItem.lastWorkedOn')}
+                  </Typography>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '7.25rem',
+                      left: '1rem',
+                      zIndex: 10,
+                      width: '300px',
+                    }}
+                  >
+                    <CardButtonGroup
+                      projectUrl={url}
+                      isLoading={isLoadingRecentItems}
+                      items={recentItems}
+                      minRows={3}
+                      emptyConfig={{
+                        className: 'h-[100px]',
+                        label: t(
+                          'projectsList.projectItem.noTemplatesAndAgents',
+                        ),
+                      }}
+                      className={'h-[100px]'}
+                      projectLabel={projectName}
+                    />
+                  </div>
+                </VStack>
               </VStack>
             </VStack>
-          </VStack>
-        </Card>
+          </Card>
+        </Link>
       )}
     </div>
   );

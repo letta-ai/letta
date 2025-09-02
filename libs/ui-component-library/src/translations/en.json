@@ -280,7 +280,8 @@
     "openInFullSize": "Open in full size"
   },
   "components/CardButtonGroup": {
-    "noItemsFound": "No items found"
+    "noItemsFound": "No items found",
+    "goTo": "Go to {item}"
   },
   "tokens": "{count} tokens"
 }

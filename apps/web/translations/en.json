@@ -1477,7 +1477,8 @@
         "addToFavorites": "Favorite",
         "removeFromFavorites": "Remove from Favorites",
         "lastWorkedOn": "Last worked on",
-        "noTemplatesAndAgents": "No templates and agents yet"
+        "noTemplatesAndAgents": "No templates and agents yet",
+        "goTo": "Go to {item}"
       }
     }
   },
