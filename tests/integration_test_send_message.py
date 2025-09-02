@@ -136,6 +136,7 @@ USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
             "Explain the concept of randomness and how true random number generation works. "
             "End with some interesting facts about polyhedral dice and their history in gaming. "
             "Remember, make your response detailed and at least 800 characters long."
+            "Absolutely do NOT violate this order of operations: (1) Think / reason, (2) Roll die, (3) Think / reason, (4) Call send_message tool."
         ),
         otid=USER_MESSAGE_OTID,
     )

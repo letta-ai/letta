@@ -289,6 +289,13 @@ class AnthropicStreamingInterface:
                 if not self.anthropic_mode == EventMode.TEXT:
                     raise RuntimeError(f"Streaming integrity failed - received BetaTextDelta object while not in TEXT EventMode: {delta}")
 
+                # Weird bug happens with native thinking where a single response can contain:
+                # [reasoning, text, tool_call]
+                # In these cases, we should pipe text out to null / ignore it
+                # TODO this will have to be redone to support non-tool calling message sending
+                if not self.put_inner_thoughts_in_kwarg:
+                    return
+
                 # Combine buffer with current text to handle tags split across chunks
                 combined_text = self.partial_tag_buffer + delta.text
 
