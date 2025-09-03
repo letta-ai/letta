@@ -52,6 +52,7 @@ Sentry.init({
     'abortIncoming(node:_http_server)',
     'Hydration Error',
     'ResponseAborted',
+    'ApiError: Not Found',
     // this is an unavoidable echarts error, but does not cause any failure on the page itself
     "Cannot read properties of undefined (reading 'getRawIndex')",
   ],
