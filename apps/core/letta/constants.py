@@ -164,6 +164,9 @@ def FUNCTION_RETURN_VALUE_TRUNCATED(return_str, return_char: int, return_char_li
 DEFAULT_MESSAGE_TOOL = SEND_MESSAGE_TOOL_NAME
 DEFAULT_MESSAGE_TOOL_KWARG = "message"
 
+# The name of the conversation search tool - messages with this tool should not be indexed
+CONVERSATION_SEARCH_TOOL_NAME = "conversation_search"
+
 PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 
 REQUEST_HEARTBEAT_PARAM = "request_heartbeat"

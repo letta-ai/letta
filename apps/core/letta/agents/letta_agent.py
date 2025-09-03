@@ -494,7 +494,9 @@ class LettaAgent(BaseAgent):
                                 for message in initial_messages:
                                     message.is_err = True
                                     message.step_id = effective_step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                                await self.message_manager.create_many_messages_async(
+                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
                                 self.logger.error("Error in step after logging step")
@@ -820,7 +822,9 @@ class LettaAgent(BaseAgent):
                                 for message in initial_messages:
                                     message.is_err = True
                                     message.step_id = effective_step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                                await self.message_manager.create_many_messages_async(
+                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
                                 self.logger.error("Error in step after logging step")
@@ -1254,7 +1258,9 @@ class LettaAgent(BaseAgent):
                                 for message in initial_messages:
                                     message.is_err = True
                                     message.step_id = effective_step_id
-                                await self.message_manager.create_many_messages_async(initial_messages, actor=self.actor)
+                                await self.message_manager.create_many_messages_async(
+                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
                                 self.logger.error("Error in step after logging step")
@@ -1660,7 +1666,9 @@ class LettaAgent(BaseAgent):
                 is_approval_response=True,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
-            persisted_messages = await self.message_manager.create_many_messages_async(messages_to_persist, actor=self.actor)
+            persisted_messages = await self.message_manager.create_many_messages_async(
+                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+            )
             return persisted_messages, continue_stepping, stop_reason
 
         # 1.  Parse and validate the tool-call envelope
@@ -1770,7 +1778,9 @@ class LettaAgent(BaseAgent):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
-        persisted_messages = await self.message_manager.create_many_messages_async(messages_to_persist, actor=self.actor)
+        persisted_messages = await self.message_manager.create_many_messages_async(
+            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+        )
 
         if run_id:
             await self.job_manager.add_messages_to_job_async(

@@ -717,7 +717,9 @@ class AgentManager:
 
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
-            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
+            await self.message_manager.create_many_messages_async(
+                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config
+            )
         return result
 
     @enforce_types
@@ -1882,8 +1884,8 @@ class AgentManager:
     async def append_to_in_context_messages_async(
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
-        messages = await self.message_manager.create_many_messages_async(messages, actor=actor)
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, embedding_config=agent.embedding_config)
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
@@ -3577,8 +3579,17 @@ class AgentManager:
     async def get_or_set_vector_db_namespace_async(
         self,
         agent_id: str,
+        organization_id: str,
     ) -> str:
-        """Get the vector database namespace for an agent, creating it if it doesn't exist."""
+        """Get the vector database namespace for an agent, creating it if it doesn't exist.
+
+        Args:
+            agent_id: Agent ID to check/store namespace
+            organization_id: Organization ID for namespace generation
+
+        Returns:
+            The org-scoped namespace name
+        """
         from sqlalchemy import update
 
         from letta.settings import settings
@@ -3591,14 +3602,17 @@ class AgentManager:
             if row and row[0]:
                 return row[0]
 
-            # generate namespace name using same logic as tpuf_client
+            # TODO: In the future, we might use agent_id for sharding the namespace
+            # For now, all messages in an org share the same namespace
+
+            # generate org-scoped namespace name
             environment = settings.environment
             if environment:
-                namespace_name = f"messages_{agent_id}_{environment.lower()}"
+                namespace_name = f"messages_{organization_id}_{environment.lower()}"
             else:
-                namespace_name = f"messages_{agent_id}"
+                namespace_name = f"messages_{organization_id}"
 
-            # update the agent with the namespace
+            # update the agent with the namespace (keeps agent-level tracking for future sharding)
             await session.execute(update(AgentModel).where(AgentModel.id == agent_id).values(_vector_db_namespace=namespace_name))
             await session.commit()
 

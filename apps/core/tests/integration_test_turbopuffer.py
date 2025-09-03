@@ -850,7 +850,7 @@ class TestTurbopufferMessagesIntegration:
             agent_id="test-agent",
         )
         text1 = manager._extract_message_text(msg1)
-        assert text1 == "Simple text content"
+        assert text1 == '{"content": "Simple text content"}'
 
         # Test 2: List with single TextContent
         msg2 = PydanticMessage(
@@ -859,7 +859,7 @@ class TestTurbopufferMessagesIntegration:
             agent_id="test-agent",
         )
         text2 = manager._extract_message_text(msg2)
-        assert text2 == "Single text content"
+        assert text2 == '{"content": "Single text content"}'
 
         # Test 3: List with multiple TextContent items
         msg3 = PydanticMessage(
@@ -872,7 +872,7 @@ class TestTurbopufferMessagesIntegration:
             agent_id="test-agent",
         )
         text3 = manager._extract_message_text(msg3)
-        assert text3 == "First part Second part Third part"
+        assert text3 == '{"content": "First part Second part Third part"}'
 
         # Test 4: Empty content
         msg4 = PydanticMessage(
@@ -910,7 +910,10 @@ class TestTurbopufferMessagesIntegration:
             "Tool result: Found 5 results",
             "I should help the user",
         ]
-        assert text6 == " ".join(expected_parts)
+        assert (
+            text6
+            == '{"content": "User said: Tool call: search({\\n  \\"query\\": \\"test\\"\\n}) Tool result: Found 5 results I should help the user"}'
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
@@ -1094,6 +1097,7 @@ class TestTurbopufferMessagesIntegration:
             # Verify we can query the messages
             results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 search_mode="timestamp",
                 top_k=10,
             )
@@ -1160,6 +1164,7 @@ class TestTurbopufferMessagesIntegration:
             query_embedding = [0.9, 0.0, 0.1]  # Similar to Python messages
             results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 query_embedding=query_embedding,
                 search_mode="vector",
                 top_k=2,
@@ -1226,6 +1231,7 @@ class TestTurbopufferMessagesIntegration:
             # Hybrid search - vector similar to ML but text contains "quick"
             results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 query_embedding=[0.7, 0.3, 0.0],  # Similar to ML messages
                 query_text="quick",  # Text search for "quick"
                 search_mode="hybrid",
@@ -1291,6 +1297,7 @@ class TestTurbopufferMessagesIntegration:
             # Query only user messages
             user_results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 search_mode="timestamp",
                 top_k=10,
                 roles=[MessageRole.user],
@@ -1304,6 +1311,7 @@ class TestTurbopufferMessagesIntegration:
             # Query assistant and system messages
             non_user_results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 search_mode="timestamp",
                 top_k=10,
                 roles=[MessageRole.assistant, MessageRole.system],
@@ -1773,6 +1781,7 @@ class TestTurbopufferMessagesIntegration:
             three_days_ago = now - timedelta(days=3)
             recent_results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 search_mode="timestamp",
                 top_k=10,
                 start_date=three_days_ago,
@@ -1788,6 +1797,7 @@ class TestTurbopufferMessagesIntegration:
             two_weeks_ago = now - timedelta(days=14)
             week_results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 search_mode="timestamp",
                 top_k=10,
                 start_date=two_weeks_ago,
@@ -1801,6 +1811,7 @@ class TestTurbopufferMessagesIntegration:
             # Query with vector search and date filtering
             filtered_vector_results = await client.query_messages(
                 agent_id=agent_id,
+                organization_id=org_id,
                 query_embedding=[1.0, 2.0, 3.0],
                 search_mode="vector",
                 top_k=10,
@@ -1847,17 +1858,17 @@ class TestNamespaceTracking:
     async def test_agent_namespace_tracking(self, server, default_user, sarah_agent, enable_message_embedding):
         """Test that agent message namespaces are properly tracked in database"""
         # Get namespace - should be generated and stored
-        namespace = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id)
+        namespace = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id, default_user.organization_id)
 
-        # Should have messages_ prefix and environment suffix
+        # Should have messages_org_ prefix and environment suffix
         expected_prefix = "messages_"
         assert namespace.startswith(expected_prefix)
-        assert sarah_agent.id in namespace
+        assert default_user.organization_id in namespace
         if settings.environment:
             assert settings.environment.lower() in namespace
 
         # Call again - should return same namespace from database
-        namespace2 = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id)
+        namespace2 = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id, default_user.organization_id)
         assert namespace == namespace2
 
     @pytest.mark.asyncio

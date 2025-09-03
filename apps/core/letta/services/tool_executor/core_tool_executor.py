@@ -1,4 +1,3 @@
-import math
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 from zoneinfo import ZoneInfo
@@ -10,15 +9,17 @@ from letta.constants import (
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
 from letta.helpers.json_helpers import json_dumps
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole, TagMatchMode
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
-from letta.services.message_manager import MessageManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.utils import get_friendly_error_msg
+
+logger = get_logger(__name__)
 
 
 class LettaCoreToolExecutor(ToolExecutor):
@@ -170,9 +171,24 @@ class LettaCoreToolExecutor(ToolExecutor):
             else:
                 results_pref = f"Showing {len(messages)} results:"
                 results_formatted = []
+                # get current time in UTC, then convert to agent timezone for consistent comparison
+                from datetime import timezone
+
+                now_utc = datetime.now(timezone.utc)
+                if agent_state.timezone:
+                    try:
+                        tz = ZoneInfo(agent_state.timezone)
+                        now = now_utc.astimezone(tz)
+                    except Exception:
+                        now = now_utc
+                else:
+                    now = now_utc
+
                 for message in messages:
                     # Format timestamp in agent's timezone if available
                     timestamp = message.created_at
+                    time_delta_str = ""
+
                     if timestamp and agent_state.timezone:
                         try:
                             # Convert to agent's timezone
@@ -180,6 +196,23 @@ class LettaCoreToolExecutor(ToolExecutor):
                             local_time = timestamp.astimezone(tz)
                             # Format as ISO string with timezone
                             formatted_timestamp = local_time.isoformat()
+
+                            # Calculate time delta
+                            delta = now - local_time
+                            total_seconds = int(delta.total_seconds())
+
+                            if total_seconds < 60:
+                                time_delta_str = f"{total_seconds}s ago"
+                            elif total_seconds < 3600:
+                                minutes = total_seconds // 60
+                                time_delta_str = f"{minutes}m ago"
+                            elif total_seconds < 86400:
+                                hours = total_seconds // 3600
+                                time_delta_str = f"{hours}h ago"
+                            else:
+                                days = total_seconds // 86400
+                                time_delta_str = f"{days}d ago"
+
                         except Exception:
                             # Fallback to ISO format if timezone conversion fails
                             formatted_timestamp = str(timestamp)
@@ -187,14 +220,37 @@ class LettaCoreToolExecutor(ToolExecutor):
                         # Use ISO format if no timezone is set
                         formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-                    results_formatted.append(
-                        {
-                            "timestamp": formatted_timestamp,
-                            "role": message.role,
-                            "content": message.content[0].text if message.content else "",
-                        }
-                    )
+                    content = self.message_manager._extract_message_text(message)
 
+                    # Create the base result dict
+                    result_dict = {
+                        "timestamp": formatted_timestamp,
+                        "time_ago": time_delta_str,
+                        "role": message.role,
+                    }
+
+                    # _extract_message_text returns already JSON-encoded strings
+                    # We need to parse them to get the actual content structure
+                    if content:
+                        try:
+                            import json
+
+                            parsed_content = json.loads(content)
+
+                            # Add the parsed content directly to avoid double JSON encoding
+                            if isinstance(parsed_content, dict):
+                                # Merge the parsed content into result_dict
+                                result_dict.update(parsed_content)
+                            else:
+                                # If it's not a dict, add as content
+                                result_dict["content"] = parsed_content
+                        except (json.JSONDecodeError, ValueError):
+                            # if not valid JSON, add as plain content
+                            result_dict["content"] = content
+
+                    results_formatted.append(result_dict)
+
+                # Don't double-encode - results_formatted already has the parsed content
                 results_str = f"{results_pref} {json_dumps(results_formatted)}"
 
             return results_str
