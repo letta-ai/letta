@@ -208,17 +208,17 @@ function ProjectPage() {
       subtitle={t('subtitle', { name })}
     >
       <DashboardPageSection>
-        <HStack wrap>
-          <VStack minWidth="mobile" collapseWidth flex>
-            <RecentTemplatesSection />
-          </VStack>
-          <VStack minWidth="mobile" collapseWidth flex>
-            <RecentAgentsSection />
-          </VStack>
-        </HStack>
-        <HStack border padding="medium">
-          <Tutorials />
-        </HStack>
+          <HStack wrap>
+            <VStack minWidth="mobile" collapseWidth flex>
+              <RecentTemplatesSection />
+            </VStack>
+            <VStack minWidth="mobile" collapseWidth flex>
+              <RecentAgentsSection />
+            </VStack>
+          </HStack>
+          <HStack border padding="medium">
+            <Tutorials />
+          </HStack>
       </DashboardPageSection>
     </DashboardPageLayout>
   );

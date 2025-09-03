@@ -58,16 +58,18 @@ interface ObservabilityProviderProps {
   children: React.ReactNode;
   baseTemplate?: OptionType;
   noTemplateFilter?: boolean;
+  defaultTimeRange?: TimeRange;
 }
 
 export function ObservabilityProvider({
   children,
   baseTemplate,
   noTemplateFilter,
+  defaultTimeRange,
 }: ObservabilityProviderProps) {
   const [timeRange, setTimeRangeState] = useSessionStorage<TimeRange>({
     key: 'observability-time-range',
-    defaultValue: DEFAULT_TIME_RANGE,
+    defaultValue: defaultTimeRange || DEFAULT_TIME_RANGE,
   });
 
   // Compute dates based on time range

@@ -1597,6 +1597,27 @@
       "viewAllTemplates": "View all"
     },
     "subtitle": "Create, manage, and monitor your agents",
+    "MiniObservabilityDashboard": {
+      "title": "Monitoring",
+      "metrics": {
+        "totalMessages": "Total Messages",
+        "toolErrorRate": "Tool Error Rate",
+        "toolErrorRateTooltip": "Percentage of tool calls that resulted in errors. Total tool errors / total steps",
+        "totalMessagesTooltip": "Total number of messages sent to agents",
+        "totalStepsTooltip": "Total number of execution steps performed by agents, including tool calls and reasoning steps",
+        "apiErrorsTooltip": "Total number of API errors encountered during agent operations and external service calls",
+        "toolDurationP50Tooltip": "Median of hourly P50 tool latency values",
+        "toolDurationP99Tooltip": "Median of hourly P99 tool latency values",
+        "totalStepsPerHour": "Total Steps",
+        "apiErrors": "API Errors",
+        "toolDurationP50": "Tool Duration (P50)",
+        "toolDurationP99": "Tool Duration (P99)"
+      },
+      "MetricCard": {
+        "previousPeriod": "Previous Period: ",
+        "value": "Value"
+      }
+    },
     "QuickActions": {
       "subtitle": "Get started with these quick actions",
       "title": "Quick actions",
