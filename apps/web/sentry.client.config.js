@@ -46,6 +46,7 @@ Sentry.init({
   ],
   ignoreErrors: [
     'NEXT_REDIRECT',
+    'ApiError: Conflict',
     'NEXT_NOT_FOUND',
     'User not found',
     'abortIncoming(node:_http_server)',
