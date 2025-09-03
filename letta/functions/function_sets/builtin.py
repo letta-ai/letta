@@ -45,3 +45,16 @@ async def web_search(tasks: List[SearchTask], limit: int = 1, return_raw: bool =
              corresponding to each search task.
     """
     raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")
+
+
+async def fetch_webpage(url: str) -> str:
+    """
+    Fetch a webpage and convert it to markdown/text format using Jina AI reader.
+
+    Args:
+        url: The URL of the webpage to fetch and convert
+
+    Returns:
+        String containing the webpage content in markdown/text format
+    """
+    raise NotImplementedError("This is only available on the latest agent architecture. Please contact the Letta team.")

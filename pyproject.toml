@@ -68,6 +68,8 @@ dependencies = [
     "markitdown[docx,pdf,pptx]>=0.1.2",
     "orjson>=3.11.1",
     "ruff[dev]>=0.12.10",
+    "trafilatura",
+    "readability-lxml",
 ]
 
 [project.scripts]
