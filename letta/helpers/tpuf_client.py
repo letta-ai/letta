@@ -44,9 +44,17 @@ class TurbopufferClient:
         return await self.archive_manager.get_or_set_vector_db_namespace_async(archive_id)
 
     @trace_method
-    async def _get_message_namespace_name(self, agent_id: str) -> str:
-        """Get namespace name for a specific agent's messages."""
-        return await self.agent_manager.get_or_set_vector_db_namespace_async(agent_id)
+    async def _get_message_namespace_name(self, agent_id: str, organization_id: str) -> str:
+        """Get namespace name for messages (org-scoped).
+
+        Args:
+            agent_id: Agent ID (stored for future sharding)
+            organization_id: Organization ID for namespace generation
+
+        Returns:
+            The org-scoped namespace name for messages
+        """
+        return await self.agent_manager.get_or_set_vector_db_namespace_async(agent_id, organization_id)
 
     @trace_method
     async def insert_archival_memories(
@@ -191,7 +199,7 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = await self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
 
         # validation checks
         if not message_ids:
@@ -481,6 +489,7 @@ class TurbopufferClient:
     async def query_messages(
         self,
         agent_id: str,
+        organization_id: str,
         query_embedding: Optional[List[float]] = None,
         query_text: Optional[str] = None,
         search_mode: str = "vector",  # "vector", "fts", "hybrid", "timestamp"
@@ -494,7 +503,8 @@ class TurbopufferClient:
         """Query messages from Turbopuffer using vector search, full-text search, or hybrid search.
 
         Args:
-            agent_id: ID of the agent
+            agent_id: ID of the agent (used for filtering results)
+            organization_id: Organization ID for namespace lookup
             query_embedding: Embedding vector for vector search (required for "vector" and "hybrid" modes)
             query_text: Text query for full-text search (required for "fts" and "hybrid" modes)
             search_mode: Search mode - "vector", "fts", "hybrid", or "timestamp" (default: "vector")
@@ -513,7 +523,10 @@ class TurbopufferClient:
             # Fallback to retrieving most recent messages when no search query is provided
             search_mode = "timestamp"
 
-        namespace_name = await self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
+
+        # build agent_id filter
+        agent_filter = ("agent_id", "Eq", agent_id)
 
         # build role filter conditions
         role_filter = None
@@ -532,7 +545,7 @@ class TurbopufferClient:
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters
-        all_filters = []
+        all_filters = [agent_filter]  # always include agent_id filter
         if role_filter:
             all_filters.append(role_filter)
         if date_filters:
@@ -776,14 +789,14 @@ class TurbopufferClient:
             raise
 
     @trace_method
-    async def delete_messages(self, agent_id: str, message_ids: List[str]) -> bool:
+    async def delete_messages(self, agent_id: str, organization_id: str, message_ids: List[str]) -> bool:
         """Delete multiple messages from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
         if not message_ids:
             return True
 
-        namespace_name = await self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -797,18 +810,19 @@ class TurbopufferClient:
             raise
 
     @trace_method
-    async def delete_all_messages(self, agent_id: str) -> bool:
+    async def delete_all_messages(self, agent_id: str, organization_id: str) -> bool:
         """Delete all messages for an agent from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = await self._get_message_namespace_name(agent_id)
+        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
                 namespace = client.namespace(namespace_name)
-                # Turbopuffer has a delete_all() method on namespace
-                await namespace.delete_all()
-                logger.info(f"Successfully deleted all messages for agent {agent_id}")
+                # Use delete_by_filter to only delete messages for this agent
+                # since namespace is now org-scoped
+                result = await namespace.write(delete_by_filter=("agent_id", "Eq", agent_id))
+                logger.info(f"Successfully deleted all messages for agent {agent_id} (deleted {result.rows_affected} rows)")
                 return True
         except Exception as e:
             logger.error(f"Failed to delete all messages from Turbopuffer: {e}")
