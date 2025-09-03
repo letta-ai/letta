@@ -19,7 +19,7 @@ export function StatusBadge(props: StatusBadgeProps) {
       return {
         message: t('success'),
         color: 'success' as const,
-        icon: <CheckCircleFilledIcon size="small" />,
+        icon: <CheckCircleFilledIcon size="xsmall" />,
       };
     }
 
@@ -27,14 +27,14 @@ export function StatusBadge(props: StatusBadgeProps) {
       return {
         message: t('isExecuting'),
         color: 'warning' as const,
-        icon: <Spinner size="small" />,
+        icon: <Spinner size="xsmall" />,
       };
     }
 
     return {
       message: t('error'),
       color: 'destructive' as const,
-      icon: <WarningIcon />,
+      icon: <WarningIcon size="xsmall" />,
     };
   }, [toolReturn, status, t]);
 

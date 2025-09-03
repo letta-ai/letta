@@ -57,7 +57,7 @@ const iconVariants = cva('', {
   variants: {
     size: {
       default: 'w-3 h-3',
-      small: 'max-w-3 max-h-3 min-w-2 min-w-2',
+      small: 'max-w-3 max-h-3 min-w-2 min-h-2',
       large: 'w-4 h-4',
       xsmall: 'w-2 h-2',
     },
