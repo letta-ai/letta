@@ -3,7 +3,7 @@ import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import {
   Button,
   Dialog,
-  DownloadIcon,
+  FileDownloadAfIcon,
   DropdownMenu,
   DropdownMenuItem,
   ForkIcon,
@@ -256,7 +256,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             <DropdownMenuItem
               data-testid="download-agent-file"
               doNotCloseOnSelect
-              preIcon={<DownloadIcon />}
+              preIcon={<FileDownloadAfIcon />}
               label={t('AgentSettingsDropdown.download')}
             />
           }
