@@ -35,7 +35,14 @@ from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFun
 from letta.schemas.openai.chat_completion_request import FunctionSchema
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
 from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cast_message_to_subtype
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.openai.chat_completion_response import (
+    ChatCompletionResponse,
+    Choice,
+    Message,
+    ToolCall,
+    FunctionCall,
+    UsageStatistics,
+)
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
@@ -373,12 +380,15 @@ class OpenAIClient(LLMClientBase):
         Returns:
             dict: Request data that the SDK can validate and send
         """
+
         # Build request parameters using SDK-compatible structure
         request_params = {
             "model": llm_config.model,
             "input": self._extract_user_input(messages),
         }
-        
+        # By default, don't store anything for responses API for now
+        request_params["store"] = False
+
         # Add instructions from system messages
         instructions = self._extract_instructions(messages)
         if instructions:
@@ -539,6 +549,7 @@ class OpenAIClient(LLMClientBase):
         This provides backward compatibility by transforming responses API output
         to match the expected chat completions structure.
         """
+        
         # Parse the responses API response using the official SDK schema
         try:
             responses_response = Response(**response_data)
@@ -547,85 +558,81 @@ class OpenAIClient(LLMClientBase):
             # Fallback to raw dict parsing
             responses_response = None
         
-        # Extract content using the SDK's convenience property and manual tool extraction
+        # Extract content and tool calls using SDK parsing
         output_content = ""
         tool_calls = None
         
-        # Start with raw dict parsing since SDK parsing often fails for function calls
-        if "output" in response_data and response_data["output"]:
-            content_parts = []
-            response_tool_calls = []
+        if responses_response:
+            # Use SDK's parsed response
+            output_content = getattr(responses_response, 'output_text', '') or ""
             
-            for output_item in response_data["output"]:
-                if output_item.get("type") == "message" and "content" in output_item:
-                    for content in output_item["content"]:
-                        if content.get("type") == "output_text" and "text" in content:
-                            content_parts.append(content["text"])
-                elif output_item.get("type") in ["function_tool_call", "function_call"]:
-                    chat_tool_call = {
-                        "id": output_item.get("id"),
-                        "type": "function",
-                        "function": {
-                            "name": output_item.get("name"),
-                            "arguments": output_item.get("arguments")
-                        }
-                    }
-                    response_tool_calls.append(chat_tool_call)
-            
-            output_content = " ".join(content_parts) if content_parts else ""
-            tool_calls = response_tool_calls if response_tool_calls else None
-            
-        elif responses_response:
-            # Fallback to SDK parsing if raw parsing didn't work
-            output_content = responses_response.output_text if hasattr(responses_response, 'output_text') else ""
-            tool_calls = None
+            # Extract tool calls from SDK response
+            if hasattr(responses_response, 'output') and responses_response.output:
+                response_tool_calls = []
+                for output_item in responses_response.output:
+                    if hasattr(output_item, 'type') and output_item.type in ["function_tool_call", "function_call"]:
+                        function_call = FunctionCall(
+                            name=getattr(output_item, 'name', ''),
+                            arguments=getattr(output_item, 'arguments', '')
+                        )
+                        tool_call = ToolCall(
+                            id=getattr(output_item, 'id', ''),
+                            type="function",
+                            function=function_call
+                        )
+                        response_tool_calls.append(tool_call)
+                tool_calls = response_tool_calls if response_tool_calls else None
 
-        # Extract usage information using official schema or fallback
+        # Create UsageStatistics from SDK response
         if responses_response and responses_response.usage:
-            usage_data = {
-                "prompt_tokens": responses_response.usage.input_tokens,
-                "completion_tokens": responses_response.usage.output_tokens,
-                "total_tokens": responses_response.usage.total_tokens,
-            }
+            usage = UsageStatistics(
+                prompt_tokens=responses_response.usage.input_tokens,
+                completion_tokens=responses_response.usage.output_tokens,
+                total_tokens=responses_response.usage.total_tokens,
+            )
         else:
-            # Fallback: map responses API usage to chat completions format
-            usage_raw = response_data.get("usage", {})
-            usage_data = {
-                "prompt_tokens": usage_raw.get("input_tokens", 0),
-                "completion_tokens": usage_raw.get("output_tokens", 0),
-                "total_tokens": usage_raw.get("total_tokens", 0),
-            }
+            # Default usage if no response
+            usage = UsageStatistics(
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+            )
         
-        # Create a compatible chat completion response structure
-        chat_completion_data = {
-            "id": responses_response.id if responses_response else response_data.get("id", "resp-" + str(hash(output_content))[:8]),
-            "object": "chat.completion",
-            "created": int(responses_response.created_at) if responses_response else response_data.get("created_at", 0),
-            "model": str(responses_response.model) if responses_response else response_data.get("model", llm_config.model),
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": output_content,
-                        "tool_calls": tool_calls,
-                    },
-                    "logprobs": None,
-                    "finish_reason": "tool_calls" if tool_calls else "stop",
-                }
-            ],
-            "usage": usage_data,
-            "system_fingerprint": None,  # Responses API doesn't have system_fingerprint
-        }
-
-        # Convert to ChatCompletionResponse for consistency
-        chat_completion_response = ChatCompletionResponse(**chat_completion_data)
+        # Create Message Pydantic object
+        message = Message(
+            role="assistant",
+            content=output_content,
+            tool_calls=tool_calls,
+        )
+        
+        # Create Choice Pydantic object
+        choice = Choice(
+            index=0,
+            message=message,
+            logprobs=None,
+            finish_reason="tool_calls" if tool_calls else "stop",
+        )
+        
+        # Create ChatCompletionResponse Pydantic object
+        chat_completion_response = ChatCompletionResponse(
+            id=responses_response.id if responses_response else response_data.get("id", "resp-" + str(hash(output_content))[:8]),
+            object="chat.completion",
+            created=int(responses_response.created_at) if responses_response else response_data.get("created_at", 0),
+            model=str(responses_response.model) if responses_response else response_data.get("model", llm_config.model),
+            choices=[choice],
+            usage=usage,
+            system_fingerprint=None,  # Responses API doesn't have system_fingerprint
+        )
         
         # Apply any additional processing like inner thoughts extraction
         if llm_config.put_inner_thoughts_in_kwargs:
             chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
                 response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
             )
+
+        # If we used a reasoning model, create a content part for the omitted reasoning
+        if self.is_reasoning_model(llm_config):
+            chat_completion_response.choices[0].message.omitted_reasoning_content = True
 
         return chat_completion_response
 
