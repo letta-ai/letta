@@ -16,14 +16,18 @@ import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { Slot } from '@radix-ui/react-slot';
 import { useShowOnboarding } from '$web/client/hooks/useShowOnboarding/useShowOnboarding';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
-import {
-  StarterKitSelector,
-} from '@letta-cloud/ui-ade-components';
+import { StarterKitSelector } from '@letta-cloud/ui-ade-components';
 import { isAPIError } from '@letta-cloud/sdk-core';
 import { OnboardingAsideFocus } from '@letta-cloud/ui-ade-components';
 import { cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
-import { adjectives, animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
+import {
+  adjectives,
+  animals,
+  colors,
+  uniqueNamesGenerator,
+} from 'unique-names-generator';
 import { GoingToADEView } from '$web/client/components/GoingToADEView/GoingToADEView';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface CreateNewTemplateDialogProps {
   trigger: React.ReactNode;
@@ -83,7 +87,6 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
         separator: '-',
       });
 
-
       push(`/projects/${slug}/templates/${name}?ensure=true`);
 
       mutate(
@@ -128,6 +131,10 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
     return undefined;
   }, [error, t]);
 
+  const { data: enabledSleeptimeTemplates } = useFeatureFlag(
+    'SLEEPTIME_TEMPLATES',
+  );
+
   const [canCreateTemplate] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_TEMPLATES,
   );
@@ -166,7 +173,10 @@ export function CreateNewTemplateDialog(props: CreateNewTemplateDialogProps) {
           <VStack>
             {errorMessage && <Alert title={errorMessage} />}
             <StarterKitSelector
-              architectures={['memgpt']}
+              architectures={[
+                'memgpt',
+                ...(enabledSleeptimeTemplates ? ['sleeptime' as const] : []),
+              ]}
               onSelectStarterKit={(_, kit) => {
                 handleSelectStarterKit(kit.id);
               }}
