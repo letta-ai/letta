@@ -43,7 +43,7 @@ export function StartOnboardingDialog() {
     mutate(
       {
         params: {
-          starterKitId: 'onboarding',
+          starterKitId: 'companion',
         },
         body: {},
       },
