@@ -27,6 +27,7 @@ export function generateTemplateSnapshot(
       toolVariables: agent.toolVariables,
       tags: agent.tags,
       identityIds: agent.identityIds,
+      agentType: agent.agentType,
       toolRules: agent.toolRules,
       memoryVariables: agent.memoryVariables,
     })),

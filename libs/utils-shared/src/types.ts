@@ -5,7 +5,7 @@ import type { ToZod } from '@letta-cloud/utils-types';
 import {
   AgentTemplateProperties,
   GroupConfigurationSchema,
-  LettaTemplateTypes,
+  LettaTemplateTypes, SupportedAgentTypeSchema
 } from '@letta-cloud/sdk-core';
 import {
   ToolRulesSchema,
@@ -27,7 +27,7 @@ export const BlockTemplateSchema = z.object({
 
 type AgentTemplateStateToolRuleFix = Omit<
   AgentTemplateStateWithNoMetadata,
-  'toolRules'
+  'toolRules' | 'agentType'
 >;
 
 /* there's a "bug" with ToZod that doesnt accept any types */
@@ -46,6 +46,7 @@ const AgentTemplateSchemaResponseSchemaBase: ToZod<AgentTemplateStateToolRuleFix
 
 export const AgentTemplateState = AgentTemplateSchemaResponseSchemaBase.extend({
   toolRules: ToolRulesSchema,
+  agentType: SupportedAgentTypeSchema,
 });
 
 export const AgentTemplateSchemaResponseSchema = AgentTemplateState.extend({

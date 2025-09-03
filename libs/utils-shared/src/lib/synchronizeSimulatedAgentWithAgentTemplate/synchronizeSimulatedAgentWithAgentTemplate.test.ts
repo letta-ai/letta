@@ -102,6 +102,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       sourceIds: ['source-1'],
       tags: [],
       identityIds: [],
+      agentType: 'memgpt_agent',
       memoryVariables: {
         data: [],
         version: "1"
@@ -178,6 +179,7 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       sourceIds: [],
       tags: [],
       identityIds: [],
+      agentType: 'memgpt_agent',
       memoryVariables: {
         data: [],
         version: "1"

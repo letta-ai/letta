@@ -303,6 +303,21 @@ export type LLMConfigPropertiesForAgentTemplateType = z.infer<
   typeof LLMConfigPropertiesForAgentTemplateSchema
 >;
 
+
+
+export const SupportedAgentTypeSchema = z.enum([
+  'memgpt_agent',
+  'memgpt_v2_agent',
+  'react_agent',
+  'workflow_agent',
+  'split_thread_agent',
+  'sleeptime_agent',
+  'voice_convo_agent',
+  'voice_sleeptime_agent',
+]);
+
+export type SupportedAgentTemplateType = z.infer<typeof SupportedAgentTypeSchema>;
+
 /* the schema is purposly not structured as to allow for more flexibility in the agent template */
 export const AgentTemplateProperties = z.object({
   enable_reasoner: z.boolean().nullable(),
@@ -321,7 +336,7 @@ export type AgentTemplatePropertiesType = z.infer<
 >;
 
 export const GroupConfigurationSchema = z.object({
-  managerAgentId: z.string().optional(),
+  managerAgentEntityId: z.string().optional(),
   managerType: z.string().optional(),
   terminationToken: z.string().optional(),
   maxTurns: z.number().optional(),
@@ -341,3 +356,5 @@ export const LettaTemplateTypes = z.enum([
   'dynamic',
   'voice_sleeptime',
 ]);
+
+export type LettaTemplateTypesType = z.infer<typeof LettaTemplateTypes>;

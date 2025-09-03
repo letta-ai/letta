@@ -6,7 +6,8 @@ import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { createTemplateEntitiesFromAgentState } from '../createTemplateEntitiesFromAgentState/createTemplateEntitiesFromAgentState';
 import { saveTemplate } from '../saveTemplateVersion/saveTemplate';
 import type { AgentStateForSynchronization } from '@letta-cloud/utils-shared';
-import { DEFAULT_SYSTEM_PROMPT } from '@letta-cloud/types';
+import { DEFAULT_LLM_MODEL, DEFAULT_SYSTEM_PROMPT } from '@letta-cloud/types';
+import { getNewTemplateName } from '../getNewTemplateName/getNewTemplateName';
 
 interface CreateTemplateOptions {
   projectId: string;
@@ -31,7 +32,7 @@ export async function createTemplateFromAgentState(
   } = props;
 
   let {
-    name: preName,
+    name: suggestedName,
   } = props;
 
   // get project
@@ -52,35 +53,22 @@ export async function createTemplateFromAgentState(
     user_id: userId,
   });
 
-  if (preName) {
-    if (!/^[a-zA-Z0-9_-]+$/.test(preName)) {
-      throw new Error('Name must be alphanumeric');
-    }
 
-    const exists = await db.query.lettaTemplates.findFirst({
-      where: and(
-        eq(lettaTemplates.organizationId, organizationId),
-        eq(lettaTemplates.projectId, projectId),
-        eq(lettaTemplates.name, preName),
-      ),
-    });
 
-    if (exists) {
-      if (allowNameOverride) {
-        preName = await findUniqueAgentTemplateName();
-      } else {
-        throw new Error('Name already exists');
-      }
-    }
-  }
-
-  const name = preName || (await findUniqueAgentTemplateName());
 
   const lettaTemplate = await db.transaction(async (tx) => {
+    const name = await getNewTemplateName({
+      organizationId,
+      projectId,
+      suggestedName,
+      allowNameOverride,
+      tx,
+    })
+
     const [lettaTemplate] = await tx
       .insert(lettaTemplates)
       .values({
-        name,
+        name: name,
         organizationId,
         projectId,
         version: 'current',
@@ -99,7 +87,7 @@ export async function createTemplateFromAgentState(
         system: agentState.system || DEFAULT_SYSTEM_PROMPT,
         llm_config: {
           ...agentState.llm_config,
-          handle: agentState.llm_config.handle || 'openai/gpt-4o-mini',
+          handle: agentState.llm_config.handle || DEFAULT_LLM_MODEL,
         },
       },
       organizationId,

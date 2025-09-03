@@ -44,7 +44,7 @@ describe('generateTemplateSnapshot', () => {
   };
 
   const mockGroupConfiguration: GroupConfigurationType = {
-    managerAgentId: 'manager-123',
+    managerAgentEntityId: 'manager-123',
     managerType: 'supervisor',
     terminationToken: 'STOP',
     maxTurns: 10,

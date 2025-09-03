@@ -123,6 +123,7 @@ export function synchronizeSimulatedAgentWithAgentTemplate(
 
     tags: agentState.tags ?? [],
     identityIds: agentState.identity_ids ?? [],
+    agentType: agentState.agent_type || 'memgpt_v2_agent',
 
     model: agentState.llm_config.handle,
     toolRules: agentState.tool_rules ?? [],

@@ -18,6 +18,7 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
     'identityIds',
     'memoryVariables',
     'model',
+    'agentType',
     'properties', // Contains nested properties that get mapped individually
   ]);
 
@@ -81,6 +82,7 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
   it('should ensure all AgentTemplateState properties are explicitly handled', () => {
     // Create a mock AgentTemplateState with all possible properties
     const mockAgentTemplate: AgentTemplateStateWithNoMetadata = {
+      agentType: 'memgpt_v2_agent',
       toolVariables: {
         version: '1',
         data: [
@@ -236,6 +238,7 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
 
   it('should map all expected properties correctly', () => {
     const mockAgentTemplate: AgentTemplateStateWithNoMetadata = {
+      agentType: 'memgpt_v2_agent',
       toolVariables: {
         version: '1',
         data: [

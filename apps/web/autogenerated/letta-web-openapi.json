@@ -11918,6 +11918,19 @@
                             },
                             "nullable": true
                           },
+                          "agentType": {
+                            "type": "string",
+                            "enum": [
+                              "memgpt_agent",
+                              "memgpt_v2_agent",
+                              "react_agent",
+                              "workflow_agent",
+                              "split_thread_agent",
+                              "sleeptime_agent",
+                              "voice_convo_agent",
+                              "voice_sleeptime_agent"
+                            ]
+                          },
                           "entityId": {
                             "type": "string"
                           },
@@ -11936,6 +11949,7 @@
                           "tags",
                           "identityIds",
                           "toolRules",
+                          "agentType",
                           "entityId",
                           "name"
                         ]
@@ -11979,7 +11993,7 @@
                     "configuration": {
                       "type": "object",
                       "properties": {
-                        "managerAgentId": {
+                        "managerAgentEntityId": {
                           "type": "string"
                         },
                         "managerType": {

@@ -28,6 +28,7 @@ export function convertAgentTemplateToPayload(
   return {
     id: agentTemplate.id,
     name: agentTemplate.name,
+    agentType: agentTemplate.agentType,
     entityId: agentTemplate.entityId,
     organizationId: agentTemplate.organizationId,
     projectId: agentTemplate.projectId,

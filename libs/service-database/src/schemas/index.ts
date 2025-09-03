@@ -27,6 +27,7 @@ import type {
   AgentTemplatePropertiesType,
   DatasetItemCreateMessageType,
   GroupConfigurationType,
+  SupportedAgentTemplateType
 } from '@letta-cloud/sdk-core';
 
 export const emailWhitelist = pgTable('email_whitelist', {
@@ -558,6 +559,7 @@ export const agentTemplateV2 = pgTable(
     identityIds: jsonb('identity_ids').$type<string[]>(),
 
     /* absolutes */
+    agentType: text('agent_type').$type<SupportedAgentTemplateType>().notNull(),
     systemPrompt: text('system_prompt').notNull(),
     toolIds: jsonb('tool_ids').$type<string[]>(),
     toolRules: jsonb('tool_rules').$type<ToolRulesArray>(),

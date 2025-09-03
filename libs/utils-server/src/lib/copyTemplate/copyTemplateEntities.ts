@@ -67,6 +67,7 @@ export async function copyTemplateEntities(
         tags: agentTemp.tags,
         identityIds: agentTemp.identityIds,
         systemPrompt: agentTemp.systemPrompt,
+        agentType: agentTemp.agentType,
         toolIds: agentTemp.toolIds,
         toolRules: agentTemp.toolRules,
         sourceIds: agentTemp.sourceIds,
