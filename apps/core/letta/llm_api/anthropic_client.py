@@ -618,14 +618,73 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
     """
     formatted_tools = []
     for tool in tools:
+        # Get the input schema
+        input_schema = tool.function.parameters or {"type": "object", "properties": {}, "required": []}
+
+        # Clean up the properties in the schema
+        # The presence of union types / default fields seems Anthropic to produce invalid JSON for tool calls
+        if isinstance(input_schema, dict) and "properties" in input_schema:
+            cleaned_properties = {}
+            for prop_name, prop_schema in input_schema.get("properties", {}).items():
+                if isinstance(prop_schema, dict):
+                    cleaned_properties[prop_name] = _clean_property_schema(prop_schema)
+                else:
+                    cleaned_properties[prop_name] = prop_schema
+
+            # Create cleaned input schema
+            cleaned_input_schema = {
+                "type": input_schema.get("type", "object"),
+                "properties": cleaned_properties,
+            }
+
+            # Only add required field if it exists and is non-empty
+            if "required" in input_schema and input_schema["required"]:
+                cleaned_input_schema["required"] = input_schema["required"]
+        else:
+            cleaned_input_schema = input_schema
+
         formatted_tool = {
             "name": tool.function.name,
             "description": tool.function.description if tool.function.description else "",
-            "input_schema": tool.function.parameters or {"type": "object", "properties": {}, "required": []},
+            "input_schema": cleaned_input_schema,
         }
         formatted_tools.append(formatted_tool)
 
     return formatted_tools
+
+
+def _clean_property_schema(prop_schema: dict) -> dict:
+    """Clean up a property schema by removing defaults and simplifying union types."""
+    cleaned = {}
+
+    # Handle type field - simplify union types like ["null", "string"] to just "string"
+    if "type" in prop_schema:
+        prop_type = prop_schema["type"]
+        if isinstance(prop_type, list):
+            # Remove "null" from union types to simplify
+            # e.g., ["null", "string"] becomes "string"
+            non_null_types = [t for t in prop_type if t != "null"]
+            if len(non_null_types) == 1:
+                cleaned["type"] = non_null_types[0]
+            elif len(non_null_types) > 1:
+                # Keep as array if multiple non-null types
+                cleaned["type"] = non_null_types
+            else:
+                # If only "null" was in the list, default to string
+                cleaned["type"] = "string"
+        else:
+            cleaned["type"] = prop_type
+
+    # Copy over other fields except 'default'
+    for key, value in prop_schema.items():
+        if key not in ["type", "default"]:  # Skip 'default' field
+            if key == "properties" and isinstance(value, dict):
+                # Recursively clean nested properties
+                cleaned["properties"] = {k: clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
+            else:
+                cleaned[key] = value
+
+    return cleaned
 
 
 def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
