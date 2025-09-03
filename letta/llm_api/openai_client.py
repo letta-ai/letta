@@ -5,7 +5,7 @@ import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
-from openai.types.responses import ResponseIncludable, ResponseReasoningItem
+from openai.types.responses import InputItemListParams, ResponseIncludable, ResponseReasoningItem
 from openai.types.responses.response import Response
 
 from letta.constants import LETTA_MODEL_ENDPOINT
@@ -381,23 +381,20 @@ class OpenAIClient(LLMClientBase):
         Returns:
             dict: Request data that the SDK can validate and send
         """
-
         # Build request parameters using SDK-compatible structure
         request_params = {
             "model": llm_config.model,
-            "input": self._extract_user_input(messages),
+            "input": self._extract_ordered_messages(messages),
         }
         # By default, don't store. This is becasue we want to get the reasoning content ourselves
         request_params["store"] = False
+        
+        # we need the reasoning summery
+        request_params["reasoning"] = {"summary": "auto"}
 
         # Include reasoning encrypted content in the response
         if is_openai_reasoning_model(llm_config.model):
-            request_params["include"] : List[ResponseIncludable] = ["reasoning.encrypted_content"]
-
-        # Add instructions from system messages
-        instructions = self._extract_instructions(messages)
-        if instructions:
-            request_params["instructions"] = instructions
+            request_params["include"] = ["reasoning.encrypted_content"]
 
         # Add optional parameters
         if previous_response_id:
@@ -457,30 +454,63 @@ class OpenAIClient(LLMClientBase):
         # Return request parameters - SDK handles validation
         return request_params
     
-    def _extract_user_input(self, messages: List[PydanticMessage]) -> str:
-        """Extract user input from the last user message."""
-        user_messages = [msg for msg in messages if msg.role == "user"]
-        if not user_messages:
-            raise ValueError("No user messages found for responses API request")
+    def _extract_ordered_messages(self, messages: List[PydanticMessage]) -> List[dict]:
+        """
+        Extract all message types in their original order from the messages list.
+        Returns a list containing input messages, reasoning messages, and tool messages
+        in the order they appeared in the original messages list.
+        """
+        extracted_messages = []
         
-        last_user_msg = user_messages[-1]
-        if last_user_msg.content and len(last_user_msg.content) > 0:
-            # Extract text from first content part
-            return last_user_msg.content[0].text
-        else:
-            raise ValueError("User message has no content")
+        for msg in messages:
+            if not msg.content or len(msg.content) == 0:
+                continue
+                
+            # Handle input messages (user, developer, system)
+            if msg.role in ["user", "developer", "system"]:
+                text_content = None
+                for content_part in msg.content:
+                    if hasattr(content_part, 'text'):  # TextContent has a 'text' attribute
+                        text_content = content_part.text
+                        break
+                
+                if text_content:
+                    extracted_messages.append({"role": msg.role, "content": text_content})
+            
+            # Handle reasoning messages (assistant with reasoning content)
+            elif msg.role == "assistant":
+                reasoning_info = None
+                for content_part in msg.content:
+                    # Check if this is a ReasoningContent with the correct attributes
+                    if hasattr(content_part, 'signature') and hasattr(content_part, 'reasoning'):
+                        # Extract all three pieces of information
+                        signature = content_part.signature
+                        reasoning = content_part.reasoning
+                        summary = content_part.summary if hasattr(content_part, 'summary') and content_part.summary else [{"text": "No summary text availabile.", "type": "summary_text"}]
+                        
+                        reasoning_info = {
+                            "id": signature,
+                            "summary": summary,
+                            "encrypted_content": reasoning,
+                            "type": "reasoning"
+                        }
+                        break
+                
+                if reasoning_info:
+                    extracted_messages.append(reasoning_info)
+            
+            # Handle tool messages
+            elif msg.role == "tool":
+                tool_content = None
+                for content_part in msg.content:
+                    if hasattr(content_part, 'content'):
+                        tool_content = content_part.content
+                        break
+                if tool_content:
+                    extracted_messages.append({"call_id": msg.tool_call_id, "output": tool_content, "type": "custom_tool_call_output"})
+        
+        return extracted_messages
     
-    def _extract_instructions(self, messages: List[PydanticMessage]) -> Optional[str]:
-        """Extract system instructions from system messages."""
-        system_messages = [msg for msg in messages if msg.role == "system"]
-        if system_messages:
-            instructions = []
-            for msg in system_messages:
-                if msg.content and len(msg.content) > 0:
-                    instructions.append(msg.content[0].text)
-            return "\n".join(instructions) if instructions else None
-        return None
-
     @trace_method
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
         """
@@ -617,20 +647,26 @@ class OpenAIClient(LLMClientBase):
 
         # assuming that there is just reasoning and then a tool call
         if responses_response and responses_response.output:
-            first_output = responses_response.output[0]
-            
-            # Type-safe check for reasoning item
+            first_output = responses_response.output[0]            # Type-safe check for reasoning item
+            logger.info(f"first output: {first_output}")
             if isinstance(first_output, ResponseReasoningItem):
-                reasoning_content_signature = first_output.encrypted_content
+                reasoning_content_signature = first_output.id
+                # overload redacted reasoning content with the summary for now. it is necessary for the other side of the api
+                # redacted_reasoning_content = first_output.summary[0].text
+                reasoning_content = first_output.encrypted_content
             else:
                 reasoning_content_signature = None
+                # redacted_reasoning_content = None
+                reasoning_content = None
         
         # Create Message Pydantic object
         message = ChoiceMessage(
             role="assistant",
             content=output_content,
             reasoning_content_signature=reasoning_content_signature,
-            tool_calls=tool_calls,
+            # redacted_reasoning_content=redacted_reasoning_content,
+            reasoning_content=reasoning_content,
+            tool_calls=tool_calls,      
         )
         
         # Create Choice Pydantic object
