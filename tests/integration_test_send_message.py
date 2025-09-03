@@ -1334,6 +1334,7 @@ def test_background_token_streaming_tool_call(
         messages=messages_to_send,
         stream_tokens=True,
         background=True,
+        request_options={"timeout_in_seconds": 300},
     )
     verify_token_streaming = (
         llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
