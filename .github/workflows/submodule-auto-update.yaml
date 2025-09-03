@@ -99,21 +99,23 @@ jobs:
             COMMIT_SHA=$(git rev-parse $TEMP_BRANCH)
 
             # Check status of key workflows
+            WEB_LINT_AND_TEST_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web] Lint and Test")) | .conclusion' | head -1)
             WEB_E2E_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("End-to-End Tests")) | .conclusion' | head -1)
-            CLOUD_API_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Stability")) | .conclusion' | head -1)
-            WEB_TESTS_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web] Lint and Test")) | .conclusion' | head -1)
+            WEB_MIGRATION_API_STABILITY_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web Migration API Stability")) | .conclusion' | head -1)
+            CLOUD_API_STABILITY_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Stability")) | .conclusion' | head -1)
+            CLOUD_API_INTEGRATION_TESTS_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Integration Tests")) | .conclusion' | head -1)
 
-            echo "Test status - E2E: $WEB_E2E_STATUS, Cloud API: $CLOUD_API_STATUS, Web: $WEB_TESTS_STATUS"
+            echo "Test status - E2E: $WEB_E2E_STATUS, Cloud API Stability: $CLOUD_API_STABILITY_STATUS, Cloud API Integration Tests: $CLOUD_API_INTEGRATION_TESTS_STATUS, Web Lint and Test: $WEB_LINT_AND_TEST_STATUS"
 
             # Check if any tests failed
-            if [[ "$WEB_E2E_STATUS" == "failure" ]] || [[ "$CLOUD_API_STATUS" == "failure" ]] || [[ "$WEB_TESTS_STATUS" == "failure" ]]; then
+            if [[ "$WEB_E2E_STATUS" == "failure" ]] || [[ "$CLOUD_API_STABILITY_STATUS" == "failure" ]] || [[ "$CLOUD_API_INTEGRATION_TESTS_STATUS" == "failure" ]] || [[ "$WEB_LINT_AND_TEST_STATUS" == "failure" ]] || [[ "$WEB_MIGRATION_API_STABILITY_STATUS" == "failure" ]]; then
               echo "Tests failed! Stopping."
               echo "all_passed=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
             # Check if all required tests passed
-            if [[ "$WEB_E2E_STATUS" == "success" ]] && [[ "$CLOUD_API_STATUS" == "success" ]] && [[ "$WEB_TESTS_STATUS" == "success" ]]; then
+            if [[ "$WEB_E2E_STATUS" == "success" ]] && [[ "$CLOUD_API_STABILITY_STATUS" == "success" ]] && [[ "$CLOUD_API_INTEGRATION_TESTS_STATUS" == "success" ]] && [[ "$WEB_LINT_AND_TEST_STATUS" == "success" ]] && [[ "$WEB_MIGRATION_API_STABILITY_STATUS" == "success" ]]; then
               echo "All tests passed!"
               echo "all_passed=true" >> $GITHUB_OUTPUT
               exit 0
