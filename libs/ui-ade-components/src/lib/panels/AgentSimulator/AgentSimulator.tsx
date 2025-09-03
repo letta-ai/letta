@@ -14,7 +14,6 @@ import {
   VStack,
   WarningIcon,
 } from '@letta-cloud/ui-component-library';
-import * as Sentry from '@sentry/nextjs';
 import { OnboardingAsideFocus } from '../../OnboardingAsideFocus/OnboardingAsideFocus';
 import React, {
   useCallback,
@@ -148,25 +147,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           error_type: errorCode || 'UNKNOWN',
           error_message: JSON.stringify(responseData),
         });
-
-        // Log INTERNAL_SERVER_ERROR to Sentry
-        if (errorCode === 'INTERNAL_SERVER_ERROR') {
-          Sentry.captureException(
-            new Error('AgentSimulator: Internal server error occurred'),
-            {
-              tags: {
-                component: 'AgentSimulator',
-                errorType: 'INTERNAL_SERVER_ERROR',
-              },
-              extra: {
-                message,
-                agentId: payload.agentId,
-                userMessageOtid,
-                responseData,
-              },
-            },
-          );
-        }
 
         options?.onFailedToSendMessage?.(message);
 
@@ -551,22 +531,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         setFailedToSendMessage(true);
         setErrorCode('INTERNAL_SERVER_ERROR');
 
-        // Log fetch errors to Sentry
-        Sentry.captureException(error, {
-          tags: {
-            component: 'AgentSimulator',
-            errorType: 'FETCH_ERROR',
-          },
-          extra: {
-            message: extractMessageTextFromContent(content),
-            agentId,
-            userMessageOtid,
-            url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
-            streamData: allText || 'No stream data available',
-            chunkData: data || 'No chunk data available',
-            requestBody,
-          },
-        });
 
         options?.onFailedToSendMessage?.(message);
       }

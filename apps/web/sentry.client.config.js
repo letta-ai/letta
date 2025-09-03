@@ -35,10 +35,22 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
+  denyUrls: [
+    /extensions\//i,
+    /^chrome:\/\//i,
+    /127\.0\.0\.1/i,
+    /localhost/i,
+    /^https?:\/\/192\.168\.*/i,
+    // ignore any sentry errors on development-servers (https://app.letta.com/development-servers/*/agents/*)
+    /^https?:\/\/app\.letta\.com\/development-servers\/.*\/agents\/.*/i,
+  ],
   ignoreErrors: [
     'NEXT_REDIRECT',
     'NEXT_NOT_FOUND',
     'User not found',
+    'abortIncoming(node:_http_server)',
+    'Hydration Error',
+    'ResponseAborted',
     // this is an unavoidable echarts error, but does not cause any failure on the page itself
     "Cannot read properties of undefined (reading 'getRawIndex')",
   ],
