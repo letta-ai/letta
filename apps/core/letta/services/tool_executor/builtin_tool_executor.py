@@ -60,7 +60,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -415,3 +415,48 @@ class LettaBuiltinToolExecutor(ToolExecutor):
             response["message"] = "No relevant passages found that directly answer the question."
 
         return response
+
+    async def fetch_webpage(self, agent_state: "AgentState", url: str) -> str:
+        """
+        Fetch a webpage and convert it to markdown/text format using trafilatura with readability fallback.
+
+        Args:
+            url: The URL of the webpage to fetch and convert
+
+        Returns:
+            String containing the webpage content in markdown/text format
+        """
+        import asyncio
+
+        import html2text
+        import requests
+        from readability import Document
+        from trafilatura import extract, fetch_url
+
+        try:
+            # single thread pool call for the entire trafilatura pipeline
+            def trafilatura_pipeline():
+                downloaded = fetch_url(url)  # fetch_url doesn't accept timeout parameter
+                if downloaded:
+                    md = extract(downloaded, output_format="markdown")
+                    return md
+
+            md = await asyncio.to_thread(trafilatura_pipeline)
+            if md:
+                return md
+
+            # single thread pool call for the entire fallback pipeline
+            def readability_pipeline():
+                response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0 (compatible; LettaBot/1.0)"})
+                response.raise_for_status()
+
+                doc = Document(response.text)
+                clean_html = doc.summary(html_partial=True)
+                return html2text.html2text(clean_html)
+
+            return await asyncio.to_thread(readability_pipeline)
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error fetching webpage: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Unexpected error: {str(e)}")
