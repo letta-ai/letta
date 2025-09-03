@@ -2,7 +2,7 @@ import asyncio
 import json
 import traceback
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -32,7 +32,13 @@ from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
+from letta.schemas.memory import (
+    ArchivalMemorySearchResponse,
+    ArchivalMemorySearchResult,
+    ContextWindowOverview,
+    CreateArchivalMemory,
+    Memory,
+)
 from letta.schemas.message import MessageCreate
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
@@ -976,6 +982,55 @@ async def create_passage(
     return await server.insert_archival_memory_async(
         agent_id=agent_id, memory_contents=request.text, actor=actor, tags=request.tags, created_at=request.created_at
     )
+
+
+@router.get("/{agent_id}/archival-memory/search", response_model=ArchivalMemorySearchResponse, operation_id="search_archival_memory")
+async def search_archival_memory(
+    agent_id: str,
+    query: str = Query(..., description="String to search for using semantic similarity"),
+    tags: Optional[List[str]] = Query(None, description="Optional list of tags to filter search results"),
+    tag_match_mode: Literal["any", "all"] = Query(
+        "any", description="How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags"
+    ),
+    top_k: Optional[int] = Query(None, description="Maximum number of results to return. Uses system default if not specified"),
+    start_datetime: Optional[str] = Query(None, description="Filter results to passages created after this datetime. ISO 8601 format"),
+    end_datetime: Optional[str] = Query(None, description="Filter results to passages created before this datetime. ISO 8601 format"),
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+
+    This endpoint allows manual triggering of archival memory searches, enabling users to query
+    an agent's archival memory store directly via the API. The search uses the same functionality
+    as the agent's archival_memory_search tool but is accessible for external API usage.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    try:
+        # Use the shared agent manager method
+        formatted_results, count = await server.agent_manager.search_agent_archival_memory_async(
+            agent_id=agent_id,
+            actor=actor,
+            query=query,
+            tags=tags,
+            tag_match_mode=tag_match_mode,
+            top_k=top_k,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+        )
+
+        # Convert to proper response schema
+        search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
+
+        return ArchivalMemorySearchResponse(results=search_results, count=count)
+
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error during archival memory search: {str(e)}")
 
 
 # TODO(ethan): query or path parameter for memory_id?
