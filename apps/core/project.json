@@ -26,10 +26,7 @@
     "dev": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "commands": [
-          "./otel/start-otel-collector.sh",
-          "uv run letta server"
-        ],
+        "commands": ["./otel/start-otel-collector.sh", "uv run letta server"],
         "parallel": true,
         "cwd": "apps/core"
       }

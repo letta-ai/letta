@@ -5468,10 +5468,6 @@ export type UpdateReasoningMessage = {
  */
 export type UpdateSSEMCPServer = {
   /**
-   * The name of the server
-   */
-  server_name?: string | null;
-  /**
    * The URL of the server (MCP SSE client will connect to this URL)
    */
   server_url?: string | null;
@@ -5492,10 +5488,6 @@ export type UpdateSSEMCPServer = {
  */
 export type UpdateStdioMCPServer = {
   /**
-   * The name of the server
-   */
-  server_name?: string | null;
-  /**
    * The configuration for the server (MCP 'local' client will run this command)
    */
   stdio_config?: StdioServerConfig | null;
@@ -5505,10 +5497,6 @@ export type UpdateStdioMCPServer = {
  * Update a Streamable HTTP MCP server
  */
 export type UpdateStreamableHTTPMCPServer = {
-  /**
-   * The name of the server
-   */
-  server_name?: string | null;
   /**
    * The URL path for the streamable HTTP server (e.g., 'example/mcp')
    */

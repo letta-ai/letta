@@ -25783,18 +25783,6 @@
       },
       "UpdateSSEMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
           "server_url": {
             "anyOf": [
               {
@@ -25842,18 +25830,6 @@
       },
       "UpdateStdioMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
           "stdio_config": {
             "anyOf": [
               {
@@ -25873,18 +25849,6 @@
       },
       "UpdateStreamableHTTPMCPServer": {
         "properties": {
-          "server_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Server Name",
-            "description": "The name of the server"
-          },
           "server_url": {
             "anyOf": [
               {

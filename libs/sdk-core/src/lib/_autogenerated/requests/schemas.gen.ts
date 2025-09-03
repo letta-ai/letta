@@ -14772,18 +14772,6 @@ export const $UpdateReasoningMessage = {
 
 export const $UpdateSSEMCPServer = {
   properties: {
-    server_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Server Name',
-      description: 'The name of the server',
-    },
     server_url: {
       anyOf: [
         {
@@ -14834,18 +14822,6 @@ export const $UpdateSSEMCPServer = {
 
 export const $UpdateStdioMCPServer = {
   properties: {
-    server_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Server Name',
-      description: 'The name of the server',
-    },
     stdio_config: {
       anyOf: [
         {
@@ -14867,18 +14843,6 @@ export const $UpdateStdioMCPServer = {
 
 export const $UpdateStreamableHTTPMCPServer = {
   properties: {
-    server_name: {
-      anyOf: [
-        {
-          type: 'string',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Server Name',
-      description: 'The name of the server',
-    },
     server_url: {
       anyOf: [
         {

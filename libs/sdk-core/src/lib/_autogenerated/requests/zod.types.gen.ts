@@ -8289,9 +8289,6 @@ export const UpdateReasoningMessage = z.object({
 
 export type UpdateSSEMCPServer = z.infer<typeof UpdateSSEMCPServer>;
 export const UpdateSSEMCPServer = z.object({
-  server_name: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
   server_url: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
@@ -8305,9 +8302,6 @@ export const UpdateSSEMCPServer = z.object({
 
 export type UpdateStdioMCPServer = z.infer<typeof UpdateStdioMCPServer>;
 export const UpdateStdioMCPServer = z.object({
-  server_name: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
   stdio_config: z
     .union([
       StdioServerConfig,
@@ -8321,9 +8315,6 @@ export type UpdateStreamableHTTPMCPServer = z.infer<
   typeof UpdateStreamableHTTPMCPServer
 >;
 export const UpdateStreamableHTTPMCPServer = z.object({
-  server_name: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
   server_url: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
