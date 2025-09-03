@@ -20,11 +20,13 @@ def datetime_to_timestamp(dt):
 
 def get_local_time_fast(timezone):
     # Get current UTC time and convert to the specified timezone
+    # Only return the date to avoid cache busting on every request
     if not timezone:
-        return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
+        return datetime.now().strftime("%B %d, %Y")
     current_time_utc = datetime.now(pytz.utc)
     local_time = current_time_utc.astimezone(pytz.timezone(timezone))
-    formatted_time = local_time.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
+    # Return only the date in a human-readable format (e.g., "June 1, 2021")
+    formatted_time = local_time.strftime("%B %d, %Y")
 
     return formatted_time
 

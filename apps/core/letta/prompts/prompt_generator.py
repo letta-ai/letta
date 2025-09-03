@@ -52,7 +52,7 @@ class PromptGenerator:
         # Create a metadata block of info so the agent knows about the metadata of out-of-context memories
         metadata_lines = [
             "<memory_metadata>",
-            f"- The current time is: {get_local_time_fast(timezone)}",
+            f"- The current system date is: {get_local_time_fast(timezone)}",
             f"- Memory blocks were last modified: {timestamp_str}",
             f"- {previous_message_count} previous messages between you and the user are stored in recall memory (use tools to access them)",
         ]
