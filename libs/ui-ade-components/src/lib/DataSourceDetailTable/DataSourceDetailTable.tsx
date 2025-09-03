@@ -41,12 +41,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   DeleteFileModal,
-} from '../panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal';
-import { FileStatus } from '../panels/DataSourcesV2/_components/DataSourceView/FilesView/FileView/FileStatus';
+} from '../ade/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal';
+import { FileStatus } from '../ade/panels/DataSourcesV2/_components/DataSourceView/FilesView/FileView/FileStatus';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { DeleteDataSourceDialog } from '../panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
-import { RenameDataSourceDialog } from '../panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
-import { UpdateSourceInstructionsModal } from '../panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
+import { DeleteDataSourceDialog } from '../ade/panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
+import { RenameDataSourceDialog } from '../ade/panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
+import { UpdateSourceInstructionsModal } from '../ade/panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
 
 const uploadToFormValuesSchema = z.object({
   files: z.array(z.custom<File>((v) => v instanceof File)).min(1),

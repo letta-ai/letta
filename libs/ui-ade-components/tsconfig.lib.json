@@ -29,6 +29,6 @@
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "src/lib/panels/ToolManager/routes/MCPServerExplorer/components/StreamableHttpSetupServer"
+    "src/lib/ade/panels/ToolManager/routes/MCPServerExplorer/components/StreamableHttpSetupServer"
   ]
 }

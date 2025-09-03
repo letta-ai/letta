@@ -16,7 +16,7 @@ import React, { useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import type { OtelTrace } from '@letta-cloud/types';
 import { useParams } from 'next/navigation';
-import { TraceViewer } from '../panels/Messages/DebugTraceSidebar/TraceViewer/TraceViewer';
+import { TraceViewer } from '../ade/panels/Messages/DebugTraceSidebar/TraceViewer/TraceViewer';
 
 interface ViewMessageTraceProps {
   traceId: string;

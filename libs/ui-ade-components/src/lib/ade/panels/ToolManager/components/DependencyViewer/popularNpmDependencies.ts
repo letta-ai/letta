@@ -1,0 +1,148 @@
+import type { Dependency } from './types';
+
+export const popularNpmDependencies: Dependency[] = [
+  {
+    id: 'axios',
+    name: 'axios',
+    version: '1.7.9',
+    description: 'Promise based HTTP client for the browser and node.js',
+  },
+  {
+    id: 'lodash',
+    name: 'lodash',
+    version: '4.17.21',
+    description: 'Utility library delivering consistency, customization, performance, and extras',
+  },
+  {
+    id: 'moment',
+    name: 'moment',
+    version: '2.30.1',
+    description: 'Parse, validate, manipulate, and display dates in JavaScript',
+  },
+  {
+    id: 'date-fns',
+    name: 'date-fns',
+    version: '4.1.0',
+    description: 'Modern JavaScript date utility library',
+  },
+  {
+    id: 'uuid',
+    name: 'uuid',
+    version: '11.0.5',
+    description: 'RFC4122 (v1, v4, and v5) UUIDs',
+  },
+  {
+    id: 'dotenv',
+    name: 'dotenv',
+    version: '16.4.7',
+    description: 'Loads environment variables from a .env file',
+  },
+  {
+    id: 'joi',
+    name: 'joi',
+    version: '17.13.3',
+    description: 'Object schema validation',
+  },
+  {
+    id: 'zod',
+    name: 'zod',
+    version: '3.24.1',
+    description: 'TypeScript-first schema validation with static type inference',
+  },
+  {
+    id: 'express',
+    name: 'express',
+    version: '4.21.2',
+    description: 'Fast, unopinionated, minimalist web framework for Node.js',
+  },
+  {
+    id: 'fastify',
+    name: 'fastify',
+    version: '5.2.2',
+    description: 'Fast and low overhead web framework for Node.js',
+  },
+  {
+    id: 'cheerio',
+    name: 'cheerio',
+    version: '1.0.0',
+    description: 'Server-side implementation of jQuery for HTML parsing',
+  },
+  {
+    id: 'puppeteer',
+    name: 'puppeteer',
+    version: '23.13.2',
+    description: 'Headless Chrome Node.js API',
+  },
+  {
+    id: 'playwright',
+    name: 'playwright',
+    version: '1.50.0',
+    description: 'Web testing and automation framework',
+  },
+  {
+    id: 'node-fetch',
+    name: 'node-fetch',
+    version: '3.3.2',
+    description: 'A light-weight module that brings window.fetch to Node.js',
+  },
+  {
+    id: 'fs-extra',
+    name: 'fs-extra',
+    version: '11.2.0',
+    description: 'Extra methods for the fs object like copy, remove, mkdirs',
+  },
+  {
+    id: 'jsonwebtoken',
+    name: 'jsonwebtoken',
+    version: '9.0.2',
+    description: 'JSON Web Token implementation (symmetric and asymmetric)',
+  },
+  {
+    id: 'bcrypt',
+    name: 'bcrypt',
+    version: '5.1.1',
+    description: 'A library to help you hash passwords',
+  },
+  {
+    id: 'winston',
+    name: 'winston',
+    version: '3.17.0',
+    description: 'A multi-transport async logging library for Node.js',
+  },
+  {
+    id: 'pino',
+    name: 'pino',
+    version: '9.5.0',
+    description: 'Super fast, all natural json logger',
+  },
+  {
+    id: 'commander',
+    name: 'commander',
+    version: '12.1.0',
+    description: 'Complete solution for node.js command-line interfaces',
+  },
+  {
+    id: 'yargs',
+    name: 'yargs',
+    version: '17.7.2',
+    description: 'Modern, pirate-themed, successor to optimist',
+  },
+  {
+    id: 'inquirer',
+    name: 'inquirer',
+    version: '14.3.1',
+    description: 'A collection of common interactive command line user interfaces',
+  },
+  {
+    id: 'chalk',
+    name: 'chalk',
+    version: '5.3.0',
+    description: 'Terminal string styling done right',
+  },
+  {
+    id: 'nodemailer',
+    name: 'nodemailer',
+    version: '6.9.17',
+    description: 'Send emails from Node.js',
+  },
+];

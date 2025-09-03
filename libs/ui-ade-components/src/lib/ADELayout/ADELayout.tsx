@@ -25,25 +25,25 @@ import {
 import {
   AgentSettingsOnboarding,
   AgentSettingsPanel,
-} from '../panels/AgentSettingsPanel/AgentSettingsPanel';
+} from '../ade/panels/AgentSettingsPanel/AgentSettingsPanel';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAgentBaseTypeName } from '../hooks';
 import {
   ToolsPanel,
   useToolsPanelTitle,
-} from '../panels/ToolsPanel/ToolsPanel';
-import { AdvancedSettingsPanel } from '../panels/AdvancedSettingsPanel/AdvancedSettingsPanel';
-import { AgentSimulator } from '../panels/AgentSimulator/AgentSimulator';
-import { ContextWindowPanel } from '../panels/ContextEditorPanel/ContextEditorPanel';
+} from '../ade/panels/ToolsPanel/ToolsPanel';
+import { AdvancedSettingsPanel } from '../ade/panels/AdvancedSettingsPanel/AdvancedSettingsPanel';
+import { AgentSimulator } from '../ade/panels/AgentSimulator/AgentSimulator';
+import { ContextWindowPanel } from '../ade/panels/ContextEditorPanel/ContextEditorPanel';
 
 import {
   EditMemory,
   useEditCoreMemoriesTitle,
-} from '../panels/EditCoreMemoriesPanel/EditCoreMemoriesPanel';
+} from '../ade/panels/EditCoreMemoriesPanel/EditCoreMemoriesPanel';
 import {
   ArchivalMemoriesPanel,
   useArchivalMemoriesTitle,
-} from '../panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
+} from '../ade/panels/ArchivalMemoriesPanel/ArchivalMemoriesPanel';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import WelcomeWebp from './welcome-to-ade.webp';
 
@@ -55,20 +55,20 @@ import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
 import {
   useGlobalNetworkInterceptor,
 } from '../hooks';
-import { DataSourcesPanel } from '../panels/DataSourcesV2/DataSourcesPanel';
-import { LLMConfigPanel } from '../panels/LLMConfigPanel/LLMConfigPanel';
-import { EmbeddingConfigPanel } from '../panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
-import { MetadataPanel } from '../panels/MetadataPanel/MetadataPanel';
+import { DataSourcesPanel } from '../ade/panels/DataSourcesV2/DataSourcesPanel';
+import { LLMConfigPanel } from '../ade/panels/LLMConfigPanel/LLMConfigPanel';
+import { EmbeddingConfigPanel } from '../ade/panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
+import { MetadataPanel } from '../ade/panels/MetadataPanel/MetadataPanel';
 import { useQuickADETour } from '../hooks/useQuickADETour/useQuickADETour';
 import { ADEAccordionGroup } from '../shared/ADEAccordionGroup/ADEAccordionGroup';
 import { useADELayoutConfig } from '../hooks/useADELayoutConfig/useADELayoutConfig';
 import { SimulatedAgentProvider } from '../hooks/useCurrentSimulatedAgent/useCurrentSimulatedAgent';
 import { ConfirmPauseOnboardingDialog } from '../OnboardingAsideFocus/ConfirmPauseOnboardingDialog/ConfirmPauseOnboardingDialog';
-import { ToolManagerProvider } from '../panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
+import { ToolManagerProvider } from '../ade/panels/ToolManager/hooks/useToolManagerState/useToolManagerState';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useADEState } from '../hooks/useADEState/useADEState';
-import { useDataSourcesTitle } from '../panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
+import { useDataSourcesTitle } from '../ade/panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
