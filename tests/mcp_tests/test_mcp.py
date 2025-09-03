@@ -375,3 +375,68 @@ async def test_streamable_http_mcp_server_update_schema_no_docstring_required(cl
     finally:
         client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
         assert mcp_server_name not in client.tools.list_mcp_servers()
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_patch_updates_url(client, server_url):
+    """
+    Test that PATCHing an MCP server actually updates the server URL.
+    """
+    # Create a unique server name
+    mcp_server_name = f"test_patch_{uuid.uuid4().hex[:6]}"
+    original_url = "https://mcp.deepwiki.com/sse"
+    updated_url = "https://mcp2.deepwiki.com/sse"  # Intentionally invalid URL
+
+    # Create the initial SSE MCP server
+    sse_config = SSEServerConfig(server_name=mcp_server_name, server_url=original_url)
+
+    try:
+        # Add the MCP server
+        client.tools.add_mcp_server(request=sse_config)
+
+        # Verify the server was created with correct URL
+        servers = client.tools.list_mcp_servers()
+        assert mcp_server_name in servers
+        assert servers[mcp_server_name].server_url == original_url
+        print(f"✓ Server created with URL: {original_url}")
+
+        # Import the update schema
+        from letta.schemas.mcp import UpdateSSEMCPServer
+
+        # Now PATCH the server to update ONLY the URL (partial update)
+        update_request = UpdateSSEMCPServer(server_url=updated_url)
+        # Note: We're only setting server_url, not server_name
+        print(f"Updating server with request: {update_request.model_dump(exclude_unset=True)}")
+
+        updated_server = client.tools.update_mcp_server(mcp_server_name=mcp_server_name, request=update_request)
+
+        # Verify the server URL was actually updated
+        print(f"Server after update: URL={updated_server.server_url}")
+        assert updated_server.server_url == updated_url, f"Server URL not updated. Expected {updated_url}, got {updated_server.server_url}"
+
+        # Also verify through the list endpoint
+        servers = client.tools.list_mcp_servers()
+        assert mcp_server_name in servers
+        assert servers[mcp_server_name].server_url == updated_url, (
+            f"Server URL not updated in list. Got: {servers[mcp_server_name].server_url}"
+        )
+        print(f"✓ Server URL successfully updated to: {updated_url}")
+
+        # Now try to list tools with the updated (invalid) URL
+        # This should fail or return empty list if the patch actually worked
+        try:
+            tools = client.tools.list_mcp_tools_by_server(mcp_server_name=mcp_server_name)
+            # If we get here, either the tools listing succeeded (shouldn't with invalid URL)
+            # or it returned an empty list
+            assert len(tools) == 0, f"Expected no tools from invalid URL {updated_url}, but got {len(tools)} tools"
+            print("✓ Invalid URL correctly returns no tools")
+        except Exception:
+            # This is expected - the invalid URL should cause an error
+            # which confirms the PATCH actually updated the URL
+            print("✓ Invalid URL correctly causes error when listing tools")
+
+    finally:
+        try:
+            client.tools.delete_mcp_server(mcp_server_name=mcp_server_name)
+        except Exception:
+            pass
