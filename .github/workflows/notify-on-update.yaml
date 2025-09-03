@@ -14,6 +14,7 @@ jobs:
         with:
           app-id: ${{ secrets.NOTIFIER_APP_ID }}
           private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+          repositories: letta-cloud
 
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v3.0.0
