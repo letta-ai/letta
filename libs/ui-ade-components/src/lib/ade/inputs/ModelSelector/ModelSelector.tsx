@@ -14,11 +14,11 @@ import {
 } from '@letta-cloud/ui-component-library';
 import React, { useEffect, useMemo } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
-import { getMergedLLMConfig } from '../utils/getMergedLLMConfig/getMergedLLMConfig';
+import { getMergedLLMConfig } from '../../panels/AgentSettingsPanel/utils/getMergedLLMConfig/getMergedLLMConfig';
 import {
   useSyncUpdateCurrentAgent,
-} from '../../../../hooks';
-import { useADEState } from '../../../../hooks/useADEState/useADEState';
+} from '../../../hooks';
+import { useADEState } from '../../../hooks/useADEState/useADEState';
 import { useModelsOptions } from './hooks/useModelsOptions/useModelsOptions';
 import { getBrandFromModelName } from '@letta-cloud/utils-shared';
 

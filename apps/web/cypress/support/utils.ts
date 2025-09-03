@@ -344,9 +344,13 @@ export function createTemplate(templateType: string, agentName: string) {
   );
 
   if (agentName) {
-    safeClick('[data-testid="update-agent-name-button"]');
+    cy.findByTestId('accordion-trigger:template-settings', {
+      timeout: 50000,
+    }).click();
+
+    safeClick('[data-testid="update-template-name-button"]');
     safeType(
-      '[data-testid="update-name-dialog-update-name"]',
+      '[data-testid="update-template-name-dialog-update-name"]',
       agentName,
     );
     safeClick('[data-testid="update-name-dialog-confirm-button"]');

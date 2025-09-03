@@ -229,12 +229,16 @@ Cypress.Commands.add(
           /\/projects\/(.+)\/templates\/(.+)/,
         );
 
-        cy.findByTestId('update-agent-name-button', {
+        cy.findByTestId('accordion-trigger:template-settings', {
           timeout: 50000,
         }).click();
-        cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
-        cy.findByTestId('update-name-dialog-update-name').type(agentName);
-        cy.findByTestId('update-name-dialog-confirm-button').click();
+
+        cy.findByTestId('update-template-name-button', {
+          timeout: 50000,
+        }).click();
+        cy.findByTestId('update-template-dialog-update-name').invoke('val', '');
+        cy.findByTestId('update-template-dialog-update-name').type(agentName);
+        cy.findByTestId('update-template-dialog-confirm-button').click();
 
         cy.location('pathname', { timeout: 50000 })
           .should('match', new RegExp(`/projects/(.+)/templates/${agentName}`))
@@ -493,13 +497,16 @@ Cypress.Commands.add(
       'match',
       /\/projects\/(.+)\/templates\/(.+)/,
     );
-
-    cy.findByTestId('update-agent-name-button', {
+    cy.findByTestId('accordion-trigger:template-settings', {
       timeout: 50000,
     }).click();
-    cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
-    cy.findByTestId('update-name-dialog-update-name').type(agentName);
-    cy.findByTestId('update-name-dialog-confirm-button').click();
+
+    cy.findByTestId('update-template-name-button', {
+      timeout: 50000,
+    }).click();
+    cy.findByTestId('update-template-name-dialog-update-name').invoke('val', '');
+    cy.findByTestId('update-template-name-dialog-update-name').type(agentName);
+    cy.findByTestId('update-template-name-dialog-confirm-button').click();
     cy.location('pathname', { timeout: 50000 }).should(
       'match',
       new RegExp(`/projects/(.+)/templates/${agentName}`),

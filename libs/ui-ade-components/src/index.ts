@@ -49,3 +49,7 @@ export * from './lib/ade/panels/DataSourcesV2/_components/DeleteFileModal/Delete
 export * from './lib/DataSourceDetailTable/DataSourceDetailTable';
 export * from './lib/hooks/useCurrentTemplate/useCurrentTemplate'
 export * from './lib/DataSourcesList/DataSourcesList';
+export * from './lib/ade/panels/TemplateSettingsPanel/TemplateSettingsPanel';
+export * from './lib/ade/panels/TemplateDefaultsPanel/TemplateDefaultsPanel';
+export * from './lib/shared/UpdateTemplateNameDialog/UpdateTemplateNameDialog';
+export * from './lib/ade/inputs/TemplateName/TemplateName';

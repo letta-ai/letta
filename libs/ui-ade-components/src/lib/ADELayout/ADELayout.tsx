@@ -23,7 +23,6 @@ import {
   Popover,
 } from '@letta-cloud/ui-component-library';
 import {
-  AgentSettingsOnboarding,
   AgentSettingsPanel,
 } from '../ade/panels/AgentSettingsPanel/AgentSettingsPanel';
 import { useTranslations } from '@letta-cloud/translations';
@@ -52,9 +51,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useADETour } from '../hooks/useADETour/useADETour';
 import { TOTAL_PRIMARY_ONBOARDING_STEPS } from '@letta-cloud/types';
 import { NetworkInspector } from '../NetworkInspector/NetworkInspector';
-import {
-  useGlobalNetworkInterceptor,
-} from '../hooks';
+import { useGlobalNetworkInterceptor } from '../hooks';
 import { DataSourcesPanel } from '../ade/panels/DataSourcesV2/DataSourcesPanel';
 import { LLMConfigPanel } from '../ade/panels/LLMConfigPanel/LLMConfigPanel';
 import { EmbeddingConfigPanel } from '../ade/panels/EmbeddingConfigPanel/EmbeddingConfigPanel';
@@ -69,6 +66,9 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useADEState } from '../hooks/useADEState/useADEState';
 import { useDataSourcesTitle } from '../ade/panels/DataSourcesV2/hooks/useDataSourcesTitle/useDataSourcesTitle';
+import { TemplateDefaultsPanel } from '../ade/panels/TemplateDefaultsPanel/TemplateDefaultsPanel';
+import { AgentTemplateSettingsPanel } from '../ade/panels/AgentTemplateSettingsPanel/AgentTemplateSettingsPanel';
+import { TemplateSettingsPanel } from '../ade/panels/TemplateSettingsPanel/TemplateSettingsPanel';
 
 function useADETitleTranslations() {
   const { capitalized: baseName } = useAgentBaseTypeName();
@@ -89,7 +89,6 @@ function useADETitleTranslations() {
 function DesktopLayout() {
   const t = useTranslations('ADELayout');
   const {
-    baseName,
     datasourcesTitle,
     toolsTitle,
     editCoreMemoriesTitle,
@@ -104,7 +103,6 @@ function DesktopLayout() {
     leftPanelToggleId,
     rightPanelToggleId,
   } = useADELayoutConfig();
-
 
   const leftSidebarRef = useRef<ImperativePanelHandle>(null);
   const rightSidebarRef = useRef<ImperativePanelHandle>(null);
@@ -184,13 +182,26 @@ function DesktopLayout() {
           <VStack gap={false} fullWidth fullHeight>
             <ADEAccordionGroup
               panels={[
-                {
-                  WrapperComponent: AgentSettingsOnboarding,
-                  id: 'settings',
-                  label: t('settings', { baseName }),
-                  content: <AgentSettingsPanel />,
+                ...isTemplate ? [{
+                  id: 'template-settings',
+                  defaultOpen: false,
+                  label: t('templateSettings'),
+                  content: <TemplateSettingsPanel />,
                   minHeight: 150,
                 },
+                  {
+                    id: 'settings',
+                    label: t('agentTemplateSettings'),
+                    content: <AgentTemplateSettingsPanel />,
+                    minHeight: 150,
+                  }] : [
+                  {
+                    id: 'settings',
+                    label: t('agentSettings'),
+                    content:  <AgentSettingsPanel />,
+                    minHeight: 150,
+                  }
+                ],
                 {
                   id: 'tools',
                   label: toolsTitle,
@@ -203,23 +214,35 @@ function DesktopLayout() {
                   minHeight: 200,
                   content: <DataSourcesPanel />,
                 },
-                {
-                  id: 'metadata',
-                  label: 'Metadata',
-                  content: <MetadataPanel />,
-                  minHeight: 150,
-                  defaultOpen: false,
-                },
+                ...(!isTemplate
+                  ? [
+                      {
+                        id: 'metadata',
+                        label: t('metadata'),
+                        content: <MetadataPanel />,
+                        minHeight: 150,
+                        defaultOpen: false,
+                      },
+                    ]
+                  : [
+                      {
+                        id: 'defaults',
+                        label: t('defaults'),
+                        content: <TemplateDefaultsPanel />,
+                        minHeight: 150,
+                        defaultOpen: false,
+                      },
+                    ]),
                 {
                   id: 'llm-config',
-                  label: 'LLM Config',
+                  label: t('llmConfig'),
                   content: <LLMConfigPanel />,
                   minHeight: 150,
                   defaultOpen: false,
                 },
                 {
                   id: 'embedding-config',
-                  label: 'Embedding Config',
+                  label: t('embeddingConfig'),
                   content: <EmbeddingConfigPanel />,
                   minHeight: 200,
                   defaultOpen: false,
@@ -293,12 +316,10 @@ interface AppPanel {
 }
 
 function useAppPanels(): Record<string, AppPanel> {
-  const {
-    baseName,
-    toolsTitle,
-    editCoreMemoriesTitle,
-    archivalMemoriesTitle,
-  } = useADETitleTranslations();
+  const { baseName, toolsTitle, editCoreMemoriesTitle, archivalMemoriesTitle } =
+    useADETitleTranslations();
+
+  const { isTemplate } = useADEState();
 
   const t = useTranslations('ADELayout');
   return useMemo(
@@ -307,7 +328,11 @@ function useAppPanels(): Record<string, AppPanel> {
         title: t('settings', { baseName }),
         mobileTitle: t('mobileTitles.settings'),
         icon: <SettingsApplicationsIcon />,
-        content: <AgentSettingsPanel />,
+        content: isTemplate ? (
+          <AgentTemplateSettingsPanel />
+        ) : (
+          <AgentSettingsPanel />
+        ),
       },
       advancedSettings: {
         title: t('advancedSettings'),
@@ -346,13 +371,7 @@ function useAppPanels(): Record<string, AppPanel> {
         content: <ArchivalMemoriesPanel />,
       },
     }),
-    [
-      t,
-      baseName,
-      toolsTitle,
-      editCoreMemoriesTitle,
-      archivalMemoriesTitle,
-    ],
+    [t, baseName, toolsTitle, isTemplate, editCoreMemoriesTitle, archivalMemoriesTitle],
   );
 }
 

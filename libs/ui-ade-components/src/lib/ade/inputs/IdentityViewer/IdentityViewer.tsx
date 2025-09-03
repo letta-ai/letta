@@ -1,3 +1,4 @@
+'use client'
 import { useTranslations } from '@letta-cloud/translations';
 import { useADEAppContext } from '../../../AppContext/AppContext';
 import { useIdentityTypeToTranslationMap } from '../../../IdentitiesTable/hooks/useIdentityTypeToTranslationMap';

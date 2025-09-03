@@ -388,6 +388,40 @@ const renameTemplate = c.mutation({
   },
 });
 
+const updateTemplateDescription = c.mutation({
+  path: '/v1/templates/:project/:template_name/description',
+  method: 'PATCH',
+  description:
+    'Updates the description for all versions of a template with the specified name. Versions are automatically stripped from the current template name if accidentally included.',
+  summary: 'Update template description (Cloud-only)',
+  pathParams: z.object({
+    project: z.string().openapi({ description: 'The project slug' }),
+    template_name: z.string().openapi({
+      description:
+        'The template name (version will be automatically stripped if included)',
+    }),
+  }),
+  body: z.object({
+    description: z
+      .string()
+      .optional()
+      .openapi({
+        description: 'The new description for the template',
+      }),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
 export const templatesContract = c.router({
   createAgentsFromTemplate,
   listTemplates,
@@ -397,6 +431,7 @@ export const templatesContract = c.router({
   createTemplate,
   deleteTemplate,
   renameTemplate,
+  updateTemplateDescription,
   listTemplateVersions,
 });
 

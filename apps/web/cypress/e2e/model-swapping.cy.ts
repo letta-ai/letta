@@ -60,13 +60,10 @@ describe(
           });
 
           cy.testStep('Verify ModelSelector is available in template editor', () => {
-            // Wait for the AgentSettingsPanel to load
-            cy.findByTestId('update-agent-name-button', {
+            // Wait for model selector control to be visible
+            cy.findByTestId('model-selector-trigger', {
               timeout: 50000
             }).should('exist');
-
-            // Wait for model selector control to be visible
-            cy.findByTestId('model-selector-trigger').should('exist');
           });
 
           cy.testStep('Switch to gpt-4o model', () => {
@@ -111,7 +108,7 @@ describe(
             cy.visitWithDevDelay(`/projects/${templateInfo.projectSlug}/templates/${templateInfo.templateName}`);
 
             // Wait for template to load
-            cy.findByTestId('update-agent-name-button', {
+            cy.findByTestId('model-selector-trigger', {
               timeout: 50000
             }).should('exist');
           });
@@ -179,7 +176,7 @@ describe(
             cy.visitWithDevDelay(`/projects/${templateInfo.projectSlug}/templates/${templateInfo.templateName}`);
 
             // Verify the model selector shows the current selection
-            cy.findByTestId('update-agent-name-button', {
+            cy.findByTestId('model-selector-trigger', {
               timeout: 50000
             }).should('exist');
 

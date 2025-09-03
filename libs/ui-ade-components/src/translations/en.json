@@ -49,6 +49,13 @@
     "addInstructions": "Set folder instructions",
     "instructionsTooltip": "Optional instructions for how the agent should use data in this folder"
   },
+  "ADE/TemplateDescription": {
+    "TemplateDescription": {
+      "label": "Description",
+      "placeholder": "Enter a description for your template...",
+      "tooltip": "Add a description to help others understand what this template is for and how to use it"
+    }
+  },
   "AgentMobileNavigation": {
     "more": "More panels",
     "less": "Less panels"
@@ -770,6 +777,14 @@
     "lastUpdatedAt": "Last updated on {date}",
     "error": "There was an error while updating the model, please try again or contact support."
   },
+  "ADE/TemplateSettingsPanel": {
+    "copyTemplateName": "Copy template name",
+    "templateName": {
+      "label": "Name",
+      "edit": "Edit template name"
+    },
+    "title": "Template Settings"
+  },
   "agentBaseType": {
     "base": {
       "template": "template",
@@ -938,6 +953,13 @@
         "sdkQuickstart": "SDK Quickstart (Python/TS)"
       }
     },
+    "embeddingConfig": "Embedding Config",
+    "llmConfig": "LLM Config",
+    "defaults": "Agent Defaults",
+    "metadata": "Metadata",
+    "templateSettings": "Template Settings",
+    "agentSettings": "Agent Settings",
+    "agentTemplateSettings": "Agent Settings",
     "apps": "All apps",
     "contextWindow": "Context Window",
     "agentSimulator": "Agent simulator",
@@ -1272,6 +1294,24 @@
     "error": {
       "conflict": "This {agentBaseType} name is already in use, please choose another name",
       "default": "There was an error updating the agent name, please try again or contact support."
+    }
+  },
+  "UpdateTemplateNameDialog": {
+    "title": "Rename Template",
+    "trigger": "Rename Template",
+    "confirm": "Update",
+    "name": {
+      "label": "Name",
+      "description": "Updating the name will update all references to this template in the project."
+    },
+    "error": {
+      "conflict": "This template name is already in use, please choose another name",
+      "default": "There was an error updating the template name, please try again or contact support."
+    },
+    "validation": {
+      "alphanumeric": "Name must be alphanumeric, with underscores or dashes",
+      "minLength": "Name must be at least 3 characters long",
+      "maxLength": "Name must be at most 50 characters long"
     }
   },
   "ADE/AgentSimulator/EditMessage": {

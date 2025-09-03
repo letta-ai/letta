@@ -897,6 +897,90 @@ async function listTemplateVersions(
   }
 }
 
+type UpdateTemplateDescriptionRequest = ServerInferRequest<
+  typeof cloudContracts.templates.updateTemplateDescription
+>;
+type UpdateTemplateDescriptionResponse = ServerInferResponses<
+  typeof cloudContracts.templates.updateTemplateDescription
+>;
+
+async function updateTemplateDescription(
+  req: UpdateTemplateDescriptionRequest,
+  context: SDKContext,
+): Promise<UpdateTemplateDescriptionResponse> {
+  const { organizationId } = getContextDataHack(req, context);
+  const { project, template_name } = req.params;
+  const { description } = req.body;
+
+  // Strip version from template name if accidentally included
+  const [nameWithoutVersion] = template_name.split(':');
+
+  // Get the project by slug
+  const projectData = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.slug, project),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!projectData) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Check if the template exists
+  const existingTemplates = await db.query.lettaTemplates.findMany({
+    where: and(
+      eq(lettaTemplates.organizationId, organizationId),
+      eq(lettaTemplates.projectId, projectData.id),
+      eq(lettaTemplates.name, nameWithoutVersion),
+    ),
+  });
+
+  if (existingTemplates.length === 0) {
+    return {
+      status: 404,
+      body: {
+        message: `Template '${nameWithoutVersion}' not found in project '${project}'`,
+      },
+    };
+  }
+
+  try {
+    // Update all template versions with the new description
+    await db
+      .update(lettaTemplates)
+      .set({ description: description || '' })
+      .where(
+        and(
+          eq(lettaTemplates.organizationId, organizationId),
+          eq(lettaTemplates.projectId, projectData.id),
+          eq(lettaTemplates.name, nameWithoutVersion),
+        ),
+      )
+      .execute();
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+      },
+    };
+  } catch (error) {
+    console.error('Error updating template description:', error);
+    return {
+      status: 400,
+      body: {
+        message: 'Failed to update template description',
+      },
+    };
+  }
+}
+
 export const templatesRouter = {
   createAgentsFromTemplate,
   listTemplates,
@@ -906,5 +990,6 @@ export const templatesRouter = {
   createTemplate,
   deleteTemplate,
   renameTemplate,
+  updateTemplateDescription,
   listTemplateVersions,
 };

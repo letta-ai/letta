@@ -23,7 +23,7 @@ import {
   DotsHorizontalIcon,
   Link,
   DockRightIcon,
-  DockLeftIcon,
+  DockLeftIcon, EditIcon
 } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -33,6 +33,7 @@ import {
   DeleteAgentDialog,
   DeleteTemplateDialog,
   ExportAgentButton,
+  UpdateTemplateNameDialog,
   useCurrentAgentMetaData,
 } from '@letta-cloud/ui-ade-components';
 import { useAgentBaseTypeName } from '$web/client/hooks/useAgentBaseNameType/useAgentBaseNameType';
@@ -200,6 +201,17 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
         <NetworkInspectorButton />
         <DropdownMenuSeparator />
         {isTemplate && (
+          <UpdateTemplateNameDialog
+            trigger={
+              <DropdownMenuItem
+                doNotCloseOnSelect
+                preIcon={<EditIcon />}
+                label={t('AgentSettingsDropdown.updateTemplateName')}
+              />
+            }
+          />
+        )}
+        {isTemplate && (
           <DropdownMenuItem
             onClick={() => {
               setOpenDialog('forkAgent');
@@ -210,6 +222,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
             })}
           />
         )}
+
         {isTemplate ? (
           <DeleteTemplateDialog
             templateName={name}
@@ -465,7 +478,9 @@ export function DesktopADEHeader(props: DesktopADEHeaderProps) {
                 <Typography variant="body2">/</Typography>
               </>
             )}
-            <Typography data-testid="ade-page-title" variant="body2">{agentName}</Typography>
+            <Typography data-testid="ade-page-title" variant="body2">
+              {agentName}
+            </Typography>
           </HStack>
           <AgentSettingsDropdown icon={<DotsHorizontalIcon />} />
         </HStack>

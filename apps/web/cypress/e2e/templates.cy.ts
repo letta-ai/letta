@@ -53,12 +53,16 @@ describe(
           });
 
           cy.testStep('Update template name', () => {
-            cy.findByTestId('update-agent-name-button', {
+            cy.findByTestId('accordion-trigger:template-settings', {
+              timeout: 50000,
+            }).click();
+
+            cy.findByTestId('update-template-name-button', {
               timeout: 50000
             }).click();
-            cy.findByTestId('update-name-dialog-update-name').invoke('val', '');
-            cy.findByTestId('update-name-dialog-update-name').type('NewTestTemplate');
-            cy.findByTestId('update-name-dialog-confirm-button').click();
+            cy.findByTestId('update-template-name-dialog-update-name').invoke('val', '');
+            cy.findByTestId('update-template-name-dialog-update-name').type('NewTestTemplate');
+            cy.findByTestId('update-template-name-dialog-confirm-button').click();
 
             cy.location('pathname', { timeout: 50000 }).should(
               'match',

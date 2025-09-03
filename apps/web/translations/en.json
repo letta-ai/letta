@@ -2841,6 +2841,7 @@
     "viewAgents": "View agents",
     "error": "There was a severe error in this application, please refresh this page. If the error persists, please contact support in the top right corner.",
     "AgentSettingsDropdown": {
+      "updateTemplateName": "Update template name",
       "publish": "Publish AgentFile",
       "trigger": "{agentBaseType} settings",
       "returnToProject": "Return to project",

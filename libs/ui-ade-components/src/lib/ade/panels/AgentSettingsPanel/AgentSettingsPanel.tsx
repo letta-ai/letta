@@ -20,7 +20,7 @@ import { useADEState } from '../../../hooks/useADEState/useADEState';
 import { useTranslations } from '@letta-cloud/translations';
 import { UpdateNameDialog } from '../../../shared/UpdateAgentNameDialog/UpdateAgentNameDialog';
 import { useADETour } from '../../../hooks/useADETour/useADETour';
-import { ModelSelector } from './ModelSelector/ModelSelector';
+import { ModelSelector } from '../../inputs/ModelSelector/ModelSelector';
 import { SystemPromptEditor } from '../../inputs/SystemPromptEditor/SystemPromptEditor';
 import { IdentityViewer } from '../../inputs/IdentityViewer/IdentityViewer';
 import { ReasoningSwitch } from '../../inputs/ReasoningSwitch/ReasoningSwitch';

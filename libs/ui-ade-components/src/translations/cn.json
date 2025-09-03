@@ -43,6 +43,13 @@
     "more": "更多面板",
     "less": "更少面板"
   },
+  "ADE/TemplateDescription": {
+    "TemplateDescription": {
+      "label": "描述",
+      "placeholder": "为您的模板输入描述...",
+      "tooltip": "添加描述以帮助其他人了解此模板的用途和使用方法"
+    }
+  },
   "ADE/ToolRules": {
     "appName": "工具规则",
     "title": "工具规则编辑器",
@@ -493,6 +500,13 @@
     "lastUpdatedAt": "最后更新于{date}",
     "error": "更新模型时出错，请重试或联系客服。"
   },
+  "ADE/TemplateSettingsPanel": {
+    "templateName": {
+      "label": "名称",
+      "edit": "编辑模板名称"
+    },
+    "title": "模板设置"
+  },
   "agentBaseType": {
     "base": {
       "template": "模板",
@@ -801,6 +815,24 @@
     "error": {
       "conflict": "此{agentBaseType}名称已被使用，请选择另一个名称",
       "default": "更新智能体名称时出错，请重试或联系客服。"
+    }
+  },
+  "UpdateTemplateNameDialog": {
+    "title": "重命名模板",
+    "trigger": "重命名模板",
+    "confirm": "更新",
+    "name": {
+      "label": "名称",
+      "description": "更新名称将更新项目中对此模板的所有引用。"
+    },
+    "error": {
+      "conflict": "此模板名称已被使用，请选择另一个名称",
+      "default": "更新模板名称时出错，请重试或联系客服。"
+    },
+    "validation": {
+      "alphanumeric": "名称只能包含字母数字、下划线或短横线",
+      "minLength": "名称至少需要3个字符",
+      "maxLength": "名称最多50个字符"
     }
   },
   "ADE/AgentSimulator": {
