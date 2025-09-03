@@ -2933,6 +2933,23 @@ export const ApprovalResponseMessage = z.object({
     .optional(),
 });
 
+export type ArchivalMemorySearchResult = z.infer<
+  typeof ArchivalMemorySearchResult
+>;
+export const ArchivalMemorySearchResult = z.object({
+  timestamp: z.string(),
+  content: z.string(),
+  tags: z.union([z.array(z.string()), z.undefined()]).optional(),
+});
+
+export type ArchivalMemorySearchResponse = z.infer<
+  typeof ArchivalMemorySearchResponse
+>;
+export const ArchivalMemorySearchResponse = z.object({
+  results: z.array(ArchivalMemorySearchResult),
+  count: z.number(),
+});
+
 export type LettaAssistantMessageContentUnion = z.infer<
   typeof LettaAssistantMessageContentUnion
 >;
@@ -10261,6 +10278,56 @@ export const post_Create_passage = {
   response: z.array(Passage),
 };
 
+export type get_Search_archival_memory = typeof get_Search_archival_memory;
+export const get_Search_archival_memory = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/agents/{agent_id}/archival-memory/search'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      query: z.string(),
+      tags: z.union([
+        z.array(z.string()),
+        z.null(),
+        z.array(z.union([z.array(z.string()), z.null()])),
+        z.undefined(),
+      ]),
+      tag_match_mode: z.union([
+        z.literal('any'),
+        z.literal('all'),
+        z.undefined(),
+      ]),
+      top_k: z.union([
+        z.number(),
+        z.null(),
+        z.array(z.union([z.number(), z.null()])),
+        z.undefined(),
+      ]),
+      start_datetime: z.union([
+        z.string(),
+        z.null(),
+        z.array(z.union([z.string(), z.null()])),
+        z.undefined(),
+      ]),
+      end_datetime: z.union([
+        z.string(),
+        z.null(),
+        z.array(z.union([z.string(), z.null()])),
+        z.undefined(),
+      ]),
+    }),
+    path: z.object({
+      agent_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: ArchivalMemorySearchResponse,
+};
+
 export type delete_Delete_passage = typeof delete_Delete_passage;
 export const delete_Delete_passage = {
   method: z.literal('DELETE'),
@@ -12440,6 +12507,7 @@ export const EndpointByMethod = {
       get_Retrieve_core_memory_block,
     '/v1/agents/{agent_id}/core-memory/blocks': get_List_core_memory_blocks,
     '/v1/agents/{agent_id}/archival-memory': get_List_passages,
+    '/v1/agents/{agent_id}/archival-memory/search': get_Search_archival_memory,
     '/v1/agents/{agent_id}/messages': get_List_messages,
     '/v1/agents/{agent_id}/groups': get_List_agent_groups,
     '/v1/groups/': get_List_groups,

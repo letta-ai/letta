@@ -990,6 +990,51 @@ export const UseAgentsServiceListPassagesKeyFn = (
     { after, agentId, ascending, before, limit, search, userId },
   ]),
 ];
+export type AgentsServiceSearchArchivalMemoryDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.searchArchivalMemory>
+>;
+export type AgentsServiceSearchArchivalMemoryQueryResult<
+  TData = AgentsServiceSearchArchivalMemoryDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useAgentsServiceSearchArchivalMemoryKey =
+  'AgentsServiceSearchArchivalMemory';
+export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
+  {
+    agentId,
+    endDatetime,
+    query,
+    startDatetime,
+    tagMatchMode,
+    tags,
+    topK,
+    userId,
+  }: {
+    agentId: string;
+    endDatetime?: string;
+    query: string;
+    startDatetime?: string;
+    tagMatchMode?: 'any' | 'all';
+    tags?: string[];
+    topK?: number;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useAgentsServiceSearchArchivalMemoryKey,
+  ...(queryKey ?? [
+    {
+      agentId,
+      endDatetime,
+      query,
+      startDatetime,
+      tagMatchMode,
+      tags,
+      topK,
+      userId,
+    },
+  ]),
+];
 export type AgentsServiceListMessagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listMessages>
 >;

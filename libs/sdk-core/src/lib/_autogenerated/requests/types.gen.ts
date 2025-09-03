@@ -519,6 +519,32 @@ export type ApprovalResponseMessage = {
   reason?: string | null;
 };
 
+export type ArchivalMemorySearchResponse = {
+  /**
+   * List of search results matching the query
+   */
+  results: Array<ArchivalMemorySearchResult>;
+  /**
+   * Total number of results returned
+   */
+  count: number;
+};
+
+export type ArchivalMemorySearchResult = {
+  /**
+   * Timestamp of when the memory was created, formatted in agent's timezone
+   */
+  timestamp: string;
+  /**
+   * Text content of the archival memory passage
+   */
+  content: string;
+  /**
+   * List of tags associated with this memory
+   */
+  tags?: Array<string>;
+};
+
 /**
  * A message sent by the LLM in response to user input. Used in the LLM context.
  *
@@ -7057,6 +7083,37 @@ export type CreatePassageData = {
 
 export type CreatePassageResponse = Array<Passage>;
 
+export type SearchArchivalMemoryData = {
+  agentId: string;
+  /**
+   * Filter results to passages created before this datetime. ISO 8601 format
+   */
+  endDatetime?: string | null;
+  /**
+   * String to search for using semantic similarity
+   */
+  query: string;
+  /**
+   * Filter results to passages created after this datetime. ISO 8601 format
+   */
+  startDatetime?: string | null;
+  /**
+   * How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags
+   */
+  tagMatchMode?: 'any' | 'all';
+  /**
+   * Optional list of tags to filter search results
+   */
+  tags?: Array<string> | null;
+  /**
+   * Maximum number of results to return. Uses system default if not specified
+   */
+  topK?: number | null;
+  userId?: string | null;
+};
+
+export type SearchArchivalMemoryResponse = ArchivalMemorySearchResponse;
+
 export type DeletePassageData = {
   agentId: string;
   memoryId: string;
@@ -9343,6 +9400,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<Passage>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/{agent_id}/archival-memory/search': {
+    get: {
+      req: SearchArchivalMemoryData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ArchivalMemorySearchResponse;
         /**
          * Validation Error
          */

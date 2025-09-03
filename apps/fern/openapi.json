@@ -4786,6 +4786,146 @@
         }
       }
     },
+    "/v1/agents/{agent_id}/archival-memory/search": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "Search Archival Memory",
+        "description": "Search archival memory using semantic (embedding-based) search with optional temporal filtering.\n\nThis endpoint allows manual triggering of archival memory searches, enabling users to query\nan agent's archival memory store directly via the API. The search uses the same functionality\nas the agent's archival_memory_search tool but is accessible for external API usage.",
+        "operationId": "search_archival_memory",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "String to search for using semantic similarity",
+              "title": "Query"
+            },
+            "description": "String to search for using semantic similarity"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional list of tags to filter search results",
+              "title": "Tags"
+            },
+            "description": "Optional list of tags to filter search results"
+          },
+          {
+            "name": "tag_match_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["any", "all"],
+              "type": "string",
+              "description": "How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags",
+              "default": "any",
+              "title": "Tag Match Mode"
+            },
+            "description": "How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags"
+          },
+          {
+            "name": "top_k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of results to return. Uses system default if not specified",
+              "title": "Top K"
+            },
+            "description": "Maximum number of results to return. Uses system default if not specified"
+          },
+          {
+            "name": "start_datetime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter results to passages created after this datetime. ISO 8601 format",
+              "title": "Start Datetime"
+            },
+            "description": "Filter results to passages created after this datetime. ISO 8601 format"
+          },
+          {
+            "name": "end_datetime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter results to passages created before this datetime. ISO 8601 format",
+              "title": "End Datetime"
+            },
+            "description": "Filter results to passages created before this datetime. ISO 8601 format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivalMemorySearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/archival-memory/{memory_id}": {
       "delete": {
         "tags": ["agents"],
@@ -13247,6 +13387,51 @@
         "required": ["id", "date", "approve", "approval_request_id"],
         "title": "ApprovalResponseMessage",
         "description": "A message representing a response form the user indicating whether a tool has been approved to run.\n\nArgs:\n    id (str): The ID of the message\n    date (datetime): The date the message was created in ISO format\n    name (Optional[str]): The name of the sender of the message\n    approve: (bool) Whether the tool has been approved\n    approval_request_id: The ID of the approval request\n    reason: (Optional[str]) An optional explanation for the provided approval status"
+      },
+      "ArchivalMemorySearchResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ArchivalMemorySearchResult"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "List of search results matching the query"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of results returned"
+          }
+        },
+        "type": "object",
+        "required": ["results", "count"],
+        "title": "ArchivalMemorySearchResponse"
+      },
+      "ArchivalMemorySearchResult": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "description": "Timestamp of when the memory was created, formatted in agent's timezone"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "Text content of the archival memory passage"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "List of tags associated with this memory"
+          }
+        },
+        "type": "object",
+        "required": ["timestamp", "content"],
+        "title": "ArchivalMemorySearchResult"
       },
       "AssistantMessage": {
         "properties": {

@@ -1584,6 +1584,79 @@ export const useAgentsServiceListPassagesSuspense = <
     ...options,
   });
 /**
+ * Search Archival Memory
+ * Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+ *
+ * This endpoint allows manual triggering of archival memory searches, enabling users to query
+ * an agent's archival memory store directly via the API. The search uses the same functionality
+ * as the agent's archival_memory_search tool but is accessible for external API usage.
+ * @param data The data for the request.
+ * @param data.agentId
+ * @param data.query String to search for using semantic similarity
+ * @param data.tags Optional list of tags to filter search results
+ * @param data.tagMatchMode How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags
+ * @param data.topK Maximum number of results to return. Uses system default if not specified
+ * @param data.startDatetime Filter results to passages created after this datetime. ISO 8601 format
+ * @param data.endDatetime Filter results to passages created before this datetime. ISO 8601 format
+ * @param data.userId
+ * @returns ArchivalMemorySearchResponse Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceSearchArchivalMemorySuspense = <
+  TData = Common.AgentsServiceSearchArchivalMemoryDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    agentId,
+    endDatetime,
+    query,
+    startDatetime,
+    tagMatchMode,
+    tags,
+    topK,
+    userId,
+  }: {
+    agentId: string;
+    endDatetime?: string;
+    query: string;
+    startDatetime?: string;
+    tagMatchMode?: 'any' | 'all';
+    tags?: string[];
+    topK?: number;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseAgentsServiceSearchArchivalMemoryKeyFn(
+      {
+        agentId,
+        endDatetime,
+        query,
+        startDatetime,
+        tagMatchMode,
+        tags,
+        topK,
+        userId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.searchArchivalMemory({
+        agentId,
+        endDatetime,
+        query,
+        startDatetime,
+        tagMatchMode,
+        tags,
+        topK,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
  * List Messages
  * Retrieve message history for an agent.
  * @param data The data for the request.

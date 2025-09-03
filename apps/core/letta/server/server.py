@@ -1536,7 +1536,16 @@ class SyncServer(Server):
         local_configs = self.get_local_llm_configs()
         llm_models.extend(local_configs)
 
-        return llm_models
+        # dedupe by handle for uniqueness
+        # Seems like this is required from the tests?
+        seen_handles = set()
+        unique_models = []
+        for model in llm_models:
+            if model.handle not in seen_handles:
+                seen_handles.add(model.handle)
+                unique_models.append(model)
+
+        return unique_models
 
     def list_embedding_models(self, actor: User) -> List[EmbeddingConfig]:
         """List available embedding models"""

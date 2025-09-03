@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple
+from zoneinfo import ZoneInfo
 
 import sqlalchemy as sa
 from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
@@ -21,6 +22,7 @@ from letta.constants import (
     EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
+    RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
@@ -2751,6 +2753,127 @@ class AgentManager:
                 return filtered_passages
 
             return pydantic_passages
+
+    @enforce_types
+    @trace_method
+    async def search_agent_archival_memory_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        query: str,
+        tags: Optional[List[str]] = None,
+        tag_match_mode: Literal["any", "all"] = "any",
+        top_k: Optional[int] = None,
+        start_datetime: Optional[str] = None,
+        end_datetime: Optional[str] = None,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """
+        Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+
+        This is a shared method used by both the agent tool and API endpoint to ensure consistent behavior.
+
+        Args:
+            agent_id: ID of the agent whose archival memory to search
+            actor: User performing the search
+            query: String to search for using semantic similarity
+            tags: Optional list of tags to filter search results
+            tag_match_mode: How to match tags - "any" or "all"
+            top_k: Maximum number of results to return
+            start_datetime: Filter results after this datetime (ISO 8601 format)
+            end_datetime: Filter results before this datetime (ISO 8601 format)
+
+        Returns:
+            Tuple of (formatted_results, count)
+        """
+        # Handle empty or whitespace-only queries
+        if not query or not query.strip():
+            return [], 0
+
+        # Get the agent to access timezone and embedding config
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+        # Parse datetime parameters if provided
+        start_date = None
+        end_date = None
+
+        if start_datetime:
+            try:
+                # Try parsing as full datetime first (with time)
+                start_date = datetime.fromisoformat(start_datetime)
+            except ValueError:
+                try:
+                    # Fall back to date-only format
+                    start_date = datetime.strptime(start_datetime, "%Y-%m-%d")
+                    # Set to beginning of day
+                    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                except ValueError:
+                    raise ValueError(
+                        f"Invalid start_datetime format: {start_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+                    )
+
+            # Apply agent's timezone if datetime is naive
+            if start_date.tzinfo is None and agent_state.timezone:
+                tz = ZoneInfo(agent_state.timezone)
+                start_date = start_date.replace(tzinfo=tz)
+
+        if end_datetime:
+            try:
+                # Try parsing as full datetime first (with time)
+                end_date = datetime.fromisoformat(end_datetime)
+            except ValueError:
+                try:
+                    # Fall back to date-only format
+                    end_date = datetime.strptime(end_datetime, "%Y-%m-%d")
+                    # Set to end of day for end dates
+                    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                except ValueError:
+                    raise ValueError(f"Invalid end_datetime format: {end_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)")
+
+            # Apply agent's timezone if datetime is naive
+            if end_date.tzinfo is None and agent_state.timezone:
+                tz = ZoneInfo(agent_state.timezone)
+                end_date = end_date.replace(tzinfo=tz)
+
+        # Convert string to TagMatchMode enum
+        tag_mode = TagMatchMode.ANY if tag_match_mode == "any" else TagMatchMode.ALL
+
+        # Get results using existing passage query method
+        limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+        all_results = await self.query_agent_passages_async(
+            actor=actor,
+            agent_id=agent_id,
+            query_text=query,
+            limit=limit,
+            embedding_config=agent_state.embedding_config,
+            embed_query=True,
+            tags=tags,
+            tag_match_mode=tag_mode,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # Format results to include tags with friendly timestamps
+        formatted_results = []
+        for result in all_results:
+            # Format timestamp in agent's timezone if available
+            timestamp = result.created_at
+            if timestamp and agent_state.timezone:
+                try:
+                    # Convert to agent's timezone
+                    tz = ZoneInfo(agent_state.timezone)
+                    local_time = timestamp.astimezone(tz)
+                    # Format as ISO string with timezone
+                    formatted_timestamp = local_time.isoformat()
+                except Exception:
+                    # Fallback to ISO format if timezone conversion fails
+                    formatted_timestamp = str(timestamp)
+            else:
+                # Use ISO format if no timezone is set
+                formatted_timestamp = str(timestamp) if timestamp else "Unknown"
+
+            formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
+
+        return formatted_results, len(formatted_results)
 
     @enforce_types
     @trace_method

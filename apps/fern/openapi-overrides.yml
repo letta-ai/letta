@@ -450,6 +450,18 @@ paths:
           required: true
           schema:
             type: string
+  /v1/agents/{agent_id}/archival-memory/search:
+    get:
+      x-fern-sdk-group-name:
+        - agents
+        - passages
+      x-fern-sdk-method-name: search
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
   /v1/agents/{agent_id}/reset-messages:
     patch:
       x-fern-sdk-group-name:

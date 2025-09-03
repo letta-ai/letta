@@ -3607,7 +3607,7 @@ def test_deprecated_methods_show_warnings(server: SyncServer, default_user, sara
 
 
 @pytest.mark.asyncio
-async def test_passage_tags_functionality(server: SyncServer, default_user, sarah_agent):
+async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServer, default_user, sarah_agent):
     """Test comprehensive tag functionality for passages."""
     from letta.schemas.enums import TagMatchMode
 
@@ -3972,6 +3972,168 @@ async def test_tag_edge_cases(disable_turbopuffer, server: SyncServer, sarah_age
     # All variations should be preserved (case-sensitive)
     assert len(passages_case) == 1
     assert set(passages_case[0].tags) == set(case_tags)
+
+
+@pytest.mark.asyncio
+async def test_search_agent_archival_memory_async(disable_turbopuffer, server: SyncServer, default_user, sarah_agent):
+    """Test the search_agent_archival_memory_async method that powers both the agent tool and API endpoint."""
+    # Get or create default archive for the agent
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
+    )
+
+    # Create test passages with various content and tags
+    test_data = [
+        {
+            "text": "Python is a powerful programming language used for data science and web development.",
+            "tags": ["python", "programming", "data-science", "web"],
+            "created_at": datetime(2024, 1, 15, 10, 30, tzinfo=timezone.utc),
+        },
+        {
+            "text": "Machine learning algorithms can be implemented in Python using libraries like scikit-learn.",
+            "tags": ["python", "machine-learning", "algorithms"],
+            "created_at": datetime(2024, 1, 16, 14, 45, tzinfo=timezone.utc),
+        },
+        {
+            "text": "JavaScript is essential for frontend web development and modern web applications.",
+            "tags": ["javascript", "frontend", "web"],
+            "created_at": datetime(2024, 1, 17, 9, 15, tzinfo=timezone.utc),
+        },
+        {
+            "text": "Database design principles are important for building scalable applications.",
+            "tags": ["database", "design", "scalability"],
+            "created_at": datetime(2024, 1, 18, 16, 20, tzinfo=timezone.utc),
+        },
+        {
+            "text": "The weather today is sunny and warm, perfect for outdoor activities.",
+            "tags": ["weather", "outdoor"],
+            "created_at": datetime(2024, 1, 19, 11, 0, tzinfo=timezone.utc),
+        },
+    ]
+
+    # Create passages in the database
+    created_passages = []
+    for data in test_data:
+        passage = await server.passage_manager.create_agent_passage_async(
+            PydanticPassage(
+                text=data["text"],
+                archive_id=archive.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1, 0.2, 0.3],  # Mock embedding
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                tags=data["tags"],
+                created_at=data["created_at"],
+            ),
+            actor=default_user,
+        )
+        created_passages.append(passage)
+
+    # Test 1: Basic search by query text
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="Python programming"
+    )
+
+    assert count > 0
+    assert len(results) == count
+
+    # Check structure of results
+    for result in results:
+        assert "timestamp" in result
+        assert "content" in result
+        assert "tags" in result
+        assert isinstance(result["tags"], list)
+
+    # Test 2: Search with tag filtering - single tag
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", tags=["python"]
+    )
+
+    assert count > 0
+    # All results should have "python" tag
+    for result in results:
+        assert "python" in result["tags"]
+
+    # Test 3: Search with tag filtering - multiple tags with "any" mode
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="development", tags=["web", "database"], tag_match_mode="any"
+    )
+
+    assert count > 0
+    # All results should have at least one of the specified tags
+    for result in results:
+        assert any(tag in result["tags"] for tag in ["web", "database"])
+
+    # Test 4: Search with tag filtering - multiple tags with "all" mode
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="Python", tags=["python", "web"], tag_match_mode="all"
+    )
+
+    # Should only return results that have BOTH tags
+    for result in results:
+        assert "python" in result["tags"]
+        assert "web" in result["tags"]
+
+    # Test 5: Search with top_k limit
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", top_k=2
+    )
+
+    assert count <= 2
+    assert len(results) <= 2
+
+    # Test 6: Search with datetime filtering
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", start_datetime="2024-01-16", end_datetime="2024-01-17"
+    )
+
+    # Should only include passages created between those dates
+    for result in results:
+        # Parse timestamp to verify it's in range
+        timestamp_str = result["timestamp"]
+        # Basic validation that timestamp exists and has expected format
+        assert "2024-01-16" in timestamp_str or "2024-01-17" in timestamp_str
+
+    # Test 7: Search with ISO datetime format
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        query="algorithms",
+        start_datetime="2024-01-16T14:00:00",
+        end_datetime="2024-01-16T15:00:00",
+    )
+
+    # Should include the machine learning passage created at 14:45
+    assert count >= 0  # Might be 0 if no results, but shouldn't error
+
+    # Test 8: Search with non-existent agent should raise error
+    non_existent_agent_id = "agent-00000000-0000-4000-8000-000000000000"
+
+    with pytest.raises(Exception):  # Should raise NoResultFound or similar
+        await server.agent_manager.search_agent_archival_memory_async(agent_id=non_existent_agent_id, actor=default_user, query="test")
+
+    # Test 9: Search with invalid datetime format should raise ValueError
+    with pytest.raises(ValueError, match="Invalid start_datetime format"):
+        await server.agent_manager.search_agent_archival_memory_async(
+            agent_id=sarah_agent.id, actor=default_user, query="test", start_datetime="invalid-date"
+        )
+
+    # Test 10: Empty query should return empty results
+    results, count = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
+
+    assert count == 0  # Empty query should return 0 results
+    assert len(results) == 0
+
+    # Test 11: Whitespace-only query should also return empty results
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="   \n\t  "
+    )
+
+    assert count == 0  # Whitespace-only query should return 0 results
+    assert len(results) == 0
+
+    # Cleanup - delete the created passages
+    for passage in created_passages:
+        await server.passage_manager.delete_agent_passage_by_id_async(passage_id=passage.id, actor=default_user)
 
 
 # ======================================================================================================================

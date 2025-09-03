@@ -168,6 +168,8 @@ import type {
   ListPassagesResponse,
   CreatePassageData,
   CreatePassageResponse,
+  SearchArchivalMemoryData,
+  SearchArchivalMemoryResponse,
   DeletePassageData,
   DeletePassageResponse,
   ListMessagesData,
@@ -2702,6 +2704,50 @@ export class AgentsService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Search Archival Memory
+   * Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+   *
+   * This endpoint allows manual triggering of archival memory searches, enabling users to query
+   * an agent's archival memory store directly via the API. The search uses the same functionality
+   * as the agent's archival_memory_search tool but is accessible for external API usage.
+   * @param data The data for the request.
+   * @param data.agentId
+   * @param data.query String to search for using semantic similarity
+   * @param data.tags Optional list of tags to filter search results
+   * @param data.tagMatchMode How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags
+   * @param data.topK Maximum number of results to return. Uses system default if not specified
+   * @param data.startDatetime Filter results to passages created after this datetime. ISO 8601 format
+   * @param data.endDatetime Filter results to passages created before this datetime. ISO 8601 format
+   * @param data.userId
+   * @returns ArchivalMemorySearchResponse Successful Response
+   * @throws ApiError
+   */
+  public static searchArchivalMemory(
+    data: SearchArchivalMemoryData,
+    headers?: { user_id: string },
+  ): CancelablePromise<SearchArchivalMemoryResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/agents/{agent_id}/archival-memory/search',
+      path: {
+        agent_id: data.agentId,
+      },
+      query: {
+        query: data.query,
+        tags: data.tags,
+        tag_match_mode: data.tagMatchMode,
+        top_k: data.topK,
+        start_datetime: data.startDatetime,
+        end_datetime: data.endDatetime,
+      },
       errors: {
         422: 'Validation Error',
       },

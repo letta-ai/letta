@@ -1489,6 +1489,54 @@ Args:
     reason: (Optional[str]) An optional explanation for the provided approval status`,
 } as const;
 
+export const $ArchivalMemorySearchResponse = {
+  properties: {
+    results: {
+      items: {
+        $ref: '#/components/schemas/ArchivalMemorySearchResult',
+      },
+      type: 'array',
+      title: 'Results',
+      description: 'List of search results matching the query',
+    },
+    count: {
+      type: 'integer',
+      title: 'Count',
+      description: 'Total number of results returned',
+    },
+  },
+  type: 'object',
+  required: ['results', 'count'],
+  title: 'ArchivalMemorySearchResponse',
+} as const;
+
+export const $ArchivalMemorySearchResult = {
+  properties: {
+    timestamp: {
+      type: 'string',
+      title: 'Timestamp',
+      description:
+        "Timestamp of when the memory was created, formatted in agent's timezone",
+    },
+    content: {
+      type: 'string',
+      title: 'Content',
+      description: 'Text content of the archival memory passage',
+    },
+    tags: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Tags',
+      description: 'List of tags associated with this memory',
+    },
+  },
+  type: 'object',
+  required: ['timestamp', 'content'],
+  title: 'ArchivalMemorySearchResult',
+} as const;
+
 export const $AssistantMessage = {
   properties: {
     id: {

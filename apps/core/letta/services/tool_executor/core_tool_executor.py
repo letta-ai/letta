@@ -284,92 +284,19 @@ class LettaCoreToolExecutor(ToolExecutor):
             str: Query result string containing matching passages with timestamps, content, and tags.
         """
         try:
-            # Parse datetime parameters if provided
-            from datetime import datetime
-
-            start_date = None
-            end_date = None
-
-            if start_datetime:
-                try:
-                    # Try parsing as full datetime first (with time)
-                    start_date = datetime.fromisoformat(start_datetime)
-                except ValueError:
-                    try:
-                        # Fall back to date-only format
-                        start_date = datetime.strptime(start_datetime, "%Y-%m-%d")
-                        # Set to beginning of day
-                        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                    except ValueError:
-                        raise ValueError(
-                            f"Invalid start_datetime format: {start_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
-                        )
-
-                # Apply agent's timezone if datetime is naive
-                if start_date.tzinfo is None and agent_state.timezone:
-                    tz = ZoneInfo(agent_state.timezone)
-                    start_date = start_date.replace(tzinfo=tz)
-
-            if end_datetime:
-                try:
-                    # Try parsing as full datetime first (with time)
-                    end_date = datetime.fromisoformat(end_datetime)
-                except ValueError:
-                    try:
-                        # Fall back to date-only format
-                        end_date = datetime.strptime(end_datetime, "%Y-%m-%d")
-                        # Set to end of day for end dates
-                        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-                    except ValueError:
-                        raise ValueError(
-                            f"Invalid end_datetime format: {end_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
-                        )
-
-                # Apply agent's timezone if datetime is naive
-                if end_date.tzinfo is None and agent_state.timezone:
-                    tz = ZoneInfo(agent_state.timezone)
-                    end_date = end_date.replace(tzinfo=tz)
-
-            # Convert string to TagMatchMode enum
-            tag_mode = TagMatchMode.ANY if tag_match_mode == "any" else TagMatchMode.ALL
-
-            # Get results using passage manager
-            limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-            all_results = await self.agent_manager.query_agent_passages_async(
-                actor=actor,
+            # Use the shared service method to get results
+            formatted_results, count = await self.agent_manager.search_agent_archival_memory_async(
                 agent_id=agent_state.id,
-                query_text=query,
-                limit=limit,
-                embedding_config=agent_state.embedding_config,
-                embed_query=True,
+                actor=actor,
+                query=query,
                 tags=tags,
-                tag_match_mode=tag_mode,
-                start_date=start_date,
-                end_date=end_date,
+                tag_match_mode=tag_match_mode,
+                top_k=top_k,
+                start_datetime=start_datetime,
+                end_datetime=end_datetime,
             )
 
-            # Format results to include tags with friendly timestamps
-            formatted_results = []
-            for result in all_results:
-                # Format timestamp in agent's timezone if available
-                timestamp = result.created_at
-                if timestamp and agent_state.timezone:
-                    try:
-                        # Convert to agent's timezone
-                        tz = ZoneInfo(agent_state.timezone)
-                        local_time = timestamp.astimezone(tz)
-                        # Format as ISO string with timezone
-                        formatted_timestamp = local_time.isoformat()
-                    except Exception:
-                        # Fallback to ISO format if timezone conversion fails
-                        formatted_timestamp = str(timestamp)
-                else:
-                    # Use ISO format if no timezone is set
-                    formatted_timestamp = str(timestamp) if timestamp else "Unknown"
-
-                formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
-
-            return formatted_results, len(formatted_results)
+            return formatted_results, count
 
         except Exception as e:
             raise e
