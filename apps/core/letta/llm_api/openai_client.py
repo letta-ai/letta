@@ -363,10 +363,19 @@ class OpenAIClient(LLMClientBase):
         if isinstance(e, openai.BadRequestError):
             logger.warning(f"[OpenAI] Bad request (400): {str(e)}")
             # BadRequestError can signify different issues (e.g., invalid args, context length)
-            # Check message content if finer-grained errors are needed
-            # Example: if "context_length_exceeded" in str(e): return LLMContextLengthExceededError(...)
-            # TODO: This is a super soft check. Not sure if we can do better, needs more investigation.
-            if "This model's maximum context length is" in str(e):
+            # Check for context_length_exceeded error code in the error body
+            error_code = None
+            if e.body and isinstance(e.body, dict):
+                error_details = e.body.get("error", {})
+                if isinstance(error_details, dict):
+                    error_code = error_details.get("code")
+
+            # Check both the error code and message content for context length issues
+            if (
+                error_code == "context_length_exceeded"
+                or "This model's maximum context length is" in str(e)
+                or "Input tokens exceed the configured limit" in str(e)
+            ):
                 return ContextWindowExceededError(
                     message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )
