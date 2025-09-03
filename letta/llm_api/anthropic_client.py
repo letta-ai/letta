@@ -680,7 +680,7 @@ def _clean_property_schema(prop_schema: dict) -> dict:
         if key not in ["type", "default"]:  # Skip 'default' field
             if key == "properties" and isinstance(value, dict):
                 # Recursively clean nested properties
-                cleaned["properties"] = {k: clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
+                cleaned["properties"] = {k: _clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
             else:
                 cleaned[key] = value
 
