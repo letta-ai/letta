@@ -7,12 +7,14 @@ import {
 } from '@letta-cloud/ui-component-library';
 import './DashboardLike.scss';
 import {
-  DashboardHeader,
   NavigationSidebar,
-  SIDEBAR_OVERLAY_MOUNT_POINT_ID,
 } from './DashboardNavigation/DashboardNavigation';
 import { DashboardTransition } from './DashboardTransition/DashboardTransition';
 import { IntercomSetup } from '$web/client/components/IntercomSetup/IntercomSetup';
+import {
+  DashboardHeader,
+  SIDEBAR_OVERLAY_MOUNT_POINT_ID
+} from '$web/client/components/DashboardLikeLayout/DashboardNavigation';
 
 interface DashboardLikeLayoutProps {
   children: ReactNode;

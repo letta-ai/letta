@@ -42,7 +42,7 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { useRouter } from 'next/navigation';
 import { DeploymentButton } from '$web/client/components/ADEPage/DeploymentButton/DeploymentButton';
-import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation';
 import { useCurrentAgent } from '$web/client/hooks/useCurrentAgent/useCurrentAgent';
 import { useNetworkInspectorVisibility } from '@letta-cloud/ui-ade-components';
 import { PublishAgentFileSettingsDialog } from '$web/client/components/ADEPage/PublishAgentFileSettingsDialog/PublishAgentFileSettingsDialog';

@@ -16,8 +16,8 @@ import { Messages } from '@letta-cloud/ui-ade-components';
 import React, { useRef } from 'react';
 import { useSendMessage } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
-import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
 import type { RoleOption } from '@letta-cloud/ui-component-library';
+import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation';
 
 function useChatId() {
   const params = useParams<{ chatId: string }>();

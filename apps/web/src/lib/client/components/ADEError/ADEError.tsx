@@ -7,7 +7,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
-import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigation';
+import { ProfilePopover } from '$web/client/components/DashboardLikeLayout/DashboardNavigation';
 
 interface ADEErrorProps {
   errorCode: 'agentNotFound' | 'templateNotFound';
