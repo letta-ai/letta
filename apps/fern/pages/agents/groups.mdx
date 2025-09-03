@@ -119,9 +119,11 @@ group = client.groups.create(
 )
 
 # Send messages to the group
-response = client.groups.messages.send(
+response = client.groups.messages.create(
     group_id=group.id,
-    message="Let's discuss our project roadmap"
+    messages=[
+        {"role": "user", "content": "Let's discuss our project roadmap"}
+    ]
 )
 ```
 
@@ -165,9 +167,11 @@ const group = await client.groups.create({
 });
 
 // Send messages to the group
-const response = await client.groups.messages.send(
+const response = await client.groups.messages.create(
     group.id,
-    {message: "Let's discuss our project roadmap"}
+    {
+        messages: [{role: "user", content: "Let's discuss our project roadmap"}]
+    }
 );
 ```
 </CodeGroup>
@@ -245,9 +249,11 @@ group = client.groups.create(
 )
 
 # Send a message to the group
-response = client.groups.messages.send(
+response = client.groups.messages.create(
     group_id=group.id,
-    message="Hello group, what are your thoughts on this topic?"
+    messages=[
+        {"role": "user", "content": "Hello group, what are your thoughts on this topic?"}
+    ]
 )
 ```
 
@@ -289,9 +295,11 @@ const group = await client.groups.create({
 });
 
 // Send a message to the group
-const response = await client.groups.messages.send(
+const response = await client.groups.messages.create(
     group.id,
-    {message: "Hello group, what are your thoughts on this topic?"}
+    {
+        messages: [{role: "user", content: "Hello group, what are your thoughts on this topic?"}]
+    }
 );
 ```
 </CodeGroup>
@@ -374,9 +382,11 @@ group = client.groups.create(
 )
 
 # Send a message to the group
-response = client.groups.messages.send(
+response = client.groups.messages.create(
     group_id=group.id,
-    message="Analyze this data and prepare a report"
+    messages=[
+        {"role": "user", "content": "Analyze this data and prepare a report"}
+    ]
 )
 ```
 
@@ -426,9 +436,11 @@ const group = await client.groups.create({
 });
 
 // Send a message to the group
-const response = await client.groups.messages.send(
+const response = await client.groups.messages.create(
     group.id,
-    {message: "Analyze this data and prepare a report"}
+    {
+        messages: [{role: "user", content: "Analyze this data and prepare a report"}]
+    }
 );
 ```
 </CodeGroup>
@@ -513,9 +525,11 @@ group = client.groups.create(
 )
 
 # Send a message to the group
-response = client.groups.messages.send(
+response = client.groups.messages.create(
     group_id=group.id,
-    message="Let's design a new product. Who should start?"
+    messages=[
+        {"role": "user", "content": "Let's design a new product. Who should start?"}
+    ]
 )
 ```
 
@@ -567,9 +581,11 @@ const group = await client.groups.create({
 });
 
 // Send a message to the group
-const response = await client.groups.messages.send(
+const response = await client.groups.messages.create(
     group.id,
-    {message: "Let's design a new product. Who should start?"}
+    {
+        messages: [{role: "user", content: "Let's design a new product. Who should start?"}]
+    }
 );
 ```
 </CodeGroup>
