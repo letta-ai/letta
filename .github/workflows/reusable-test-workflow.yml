@@ -370,6 +370,8 @@ jobs:
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
 
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+
           # Docker-specific environment variables
           PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}
 

@@ -37,7 +37,7 @@ locals {
     "dev_ci_OPENAI_API_KEY"      = var.dev_ci_OPENAI_API_KEY
     "dev_ci_SERPAPI_API_KEY"     = var.dev_ci_SERPAPI_API_KEY
     "dev_ci_TOGETHER_API_KEY"    = var.dev_ci_TOGETHER_API_KEY
-    "dev_ci_FIRECRAWL_API_KEY"   = var.dev_ci_FIRECRAWL_API_KEY
+    "dev_ci_EXA_API_KEY"         = var.dev_ci_EXA_API_KEY
     "dev_ci_LETTA_API_KEY"       = var.dev_ci_LETTA_API_KEY
     "dev_ci_LETTA_TPUF_API_KEY" = var.dev_ci_LETTA_TPUF_API_KEY
 

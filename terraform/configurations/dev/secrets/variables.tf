@@ -85,8 +85,8 @@ variable "dev_ci_TOGETHER_API_KEY" {
   sensitive   = true
 }
 
-variable "dev_ci_FIRECRAWL_API_KEY" {
-  description = "Firecrawl API Key for dev CI"
+variable "dev_ci_EXA_API_KEY" {
+  description = "Exa API Key for dev CI"
   type        = string
   sensitive   = true
 }

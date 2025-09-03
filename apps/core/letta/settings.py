@@ -23,7 +23,7 @@ class ToolSettings(BaseSettings):
 
     # Search Providers
     tavily_api_key: str | None = Field(default=None, description="API key for using Tavily as a search provider.")
-    firecrawl_api_key: str | None = Field(default=None, description="API key for using Firecrawl as a search provider.")
+    exa_api_key: str | None = Field(default=None, description="API key for using Exa as a search provider.")
 
     # Local Sandbox configurations
     tool_exec_dir: Optional[str] = None

@@ -142,7 +142,7 @@
     {
       "created_at": "2025-08-14T21:31:27.793445+00:00",
       "description": null,
-      "key": "FIRECRAWL_API_KEY",
+      "key": "EXA_API_KEY",
       "updated_at": "2025-08-14T21:31:27.793445+00:00",
       "value": ""
     },

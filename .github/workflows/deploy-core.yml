@@ -132,7 +132,7 @@ jobs:
           LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
           MCP_READ_FROM_CONFIG: false
           MCP_DISABLE_STDIO: true
-          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: |
