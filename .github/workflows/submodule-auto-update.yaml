@@ -1,0 +1,193 @@
+name: 🔄 Auto-Update Letta Core Submodule
+
+on:
+  repository_dispatch:
+    types: [letta-main-updated]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Specific commit SHA to update to (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: submodule-update
+  cancel-in-progress: false
+
+jobs:
+  update-and-verify:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.update-submodule.outputs.should_skip }}
+      old_sha: ${{ steps.update-submodule.outputs.old_sha }}
+      new_sha: ${{ steps.update-submodule.outputs.new_sha }}
+      tests_passed: ${{ steps.check-tests.outputs.all_passed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: true
+          fetch-depth: 0
+
+      - name: Update submodule to latest main
+        id: update-submodule
+        run: |
+          cd apps/core
+          git fetch origin
+
+          # Use specific commit if provided, otherwise use latest main
+          if [ -n "${{ github.event.inputs.commit_sha }}" ]; then
+            TARGET_SHA="${{ github.event.inputs.commit_sha }}"
+          elif [ -n "${{ github.event.client_payload.commit_sha }}" ]; then
+            TARGET_SHA="${{ github.event.client_payload.commit_sha }}"
+          else
+            TARGET_SHA=$(git rev-parse origin/main)
+          fi
+
+          echo "Updating submodule to commit: $TARGET_SHA"
+          git checkout $TARGET_SHA
+
+          # Check if this is actually a new commit
+          cd ..
+          CURRENT_SHA=$(git rev-parse HEAD:apps/core)
+          if [ "$CURRENT_SHA" = "$TARGET_SHA" ]; then
+            echo "Submodule already at target commit $TARGET_SHA"
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Updated from $CURRENT_SHA to $TARGET_SHA"
+          echo "old_sha=$CURRENT_SHA" >> $GITHUB_OUTPUT
+          echo "new_sha=$TARGET_SHA" >> $GITHUB_OUTPUT
+          echo "should_skip=false" >> $GITHUB_OUTPUT
+
+      - name: Commit submodule update to temporary branch
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        run: |
+          # Create a temporary branch for testing
+          BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout -b $BRANCH_NAME
+          git add apps/core
+          git commit -m "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}"
+          git push origin $BRANCH_NAME
+          echo "TEMP_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Wait for and check test results
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        id: check-tests
+        run: |
+          echo "Waiting for tests to complete on branch $TEMP_BRANCH..."
+
+          # Wait up to 45 minutes for tests to complete
+          MAX_WAIT=2700  # 45 minutes
+          WAIT_TIME=0
+          SLEEP_INTERVAL=60  # Check every minute
+
+          while [ $WAIT_TIME -lt $MAX_WAIT ]; do
+            echo "Checking test status... (waited ${WAIT_TIME}s)"
+
+            # Get all check runs for the latest commit on our temp branch
+            COMMIT_SHA=$(git rev-parse $TEMP_BRANCH)
+
+            # Check status of key workflows
+            WEB_E2E_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("End-to-End Tests")) | .conclusion' | head -1)
+            CLOUD_API_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Stability")) | .conclusion' | head -1)
+            WEB_TESTS_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web] Lint and Test")) | .conclusion' | head -1)
+
+            echo "Test status - E2E: $WEB_E2E_STATUS, Cloud API: $CLOUD_API_STATUS, Web: $WEB_TESTS_STATUS"
+
+            # Check if any tests failed
+            if [[ "$WEB_E2E_STATUS" == "failure" ]] || [[ "$CLOUD_API_STATUS" == "failure" ]] || [[ "$WEB_TESTS_STATUS" == "failure" ]]; then
+              echo "Tests failed! Stopping."
+              echo "all_passed=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            # Check if all required tests passed
+            if [[ "$WEB_E2E_STATUS" == "success" ]] && [[ "$CLOUD_API_STATUS" == "success" ]] && [[ "$WEB_TESTS_STATUS" == "success" ]]; then
+              echo "All tests passed!"
+              echo "all_passed=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            # If tests are still running, wait
+            sleep $SLEEP_INTERVAL
+            WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
+          done
+
+          echo "Tests did not complete within timeout"
+          echo "all_passed=false" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  merge-to-main:
+    needs: update-and-verify
+    if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Merge update to main branch
+        run: |
+          TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Checkout main and merge the temp branch
+          git checkout main
+          git pull origin main
+          git merge origin/$TEMP_BRANCH --no-ff -m "chore: update letta core submodule to ${{ needs.update-and-verify.outputs.new_sha }}
+
+          Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
+
+          Tests passed:
+          ✅ End-to-End Tests
+          ✅ Cloud API Stability Tests
+          ✅ Web Lint and Unit Tests
+
+
+      - name: Push to main
+        run: git push origin main
+
+      - name: Clean up temporary branch
+        run: |
+          TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
+          git push origin --delete $TEMP_BRANCH
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup-on-failure:
+    needs: update-and-verify
+    if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up temporary branch and notify
+        run: |
+          TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
+          git push origin --delete $TEMP_BRANCH || true
+
+          echo "🚨 Submodule update failed - tests did not pass"
+          echo "Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"
+
+          # Optionally create an issue or send notification here
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
