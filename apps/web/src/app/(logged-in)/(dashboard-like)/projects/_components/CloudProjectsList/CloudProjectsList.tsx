@@ -179,6 +179,31 @@ function ProjectCard(props: ProjectCardProps) {
         </div>
       )}
 
+      {recentAgentsAndTemplatesEnabled && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '7.25rem',
+            left: '1rem',
+            right: '1rem',
+            zIndex: 10,
+          }}
+        >
+          <CardButtonGroup
+            projectUrl={url}
+            isLoading={isLoadingRecentItems}
+            items={recentItems}
+            minRows={3}
+            emptyConfig={{
+              className: 'h-[100px]',
+              label: t('projectsList.projectItem.noTemplatesAndAgents'),
+            }}
+            className={'h-[100px]'}
+            projectLabel={projectName}
+          />
+        </div>
+      )}
+
       {!recentAgentsAndTemplatesEnabled ? (
         <Card
           href={url}
@@ -248,30 +273,6 @@ function ProjectCard(props: ProjectCardProps) {
                   <Typography variant="body3" color="lighter">
                     {t('projectsList.projectItem.lastWorkedOn')}
                   </Typography>
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '7.25rem',
-                      left: '1rem',
-                      zIndex: 10,
-                      width: '300px',
-                    }}
-                  >
-                    <CardButtonGroup
-                      projectUrl={url}
-                      isLoading={isLoadingRecentItems}
-                      items={recentItems}
-                      minRows={3}
-                      emptyConfig={{
-                        className: 'h-[100px]',
-                        label: t(
-                          'projectsList.projectItem.noTemplatesAndAgents',
-                        ),
-                      }}
-                      className={'h-[100px]'}
-                      projectLabel={projectName}
-                    />
-                  </div>
                 </VStack>
               </VStack>
             </VStack>
