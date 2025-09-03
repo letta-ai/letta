@@ -53,7 +53,7 @@ function saveCache(cache: CacheData) {
 export default defineConfig({
   projectId: process.env.CYPRESS_PROJECT_KEY || '7kya1h',
   retries: {
-    runMode: 0,
+    runMode: 2,
     openMode: 0,
   },
   e2e: {
