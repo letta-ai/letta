@@ -5,7 +5,7 @@ import { useSessionStorage } from '@mantine/hooks';
 import type { OptionType } from '@letta-cloud/ui-component-library';
 import { useEmptyBaseTemplateValue } from '../../../../app/(logged-in)/(dashboard-like)/projects/[projectSlug]/observability/_components/hooks/useEmptyBaseTemplateValue/useEmptyBaseTemplateValue';
 import type { TimeRange, TimeGranularity } from './timeConfig';
-import { getTimeConfig, computeStartEndDates } from './timeConfig';
+import { getTimeConfig, computeStartEndDates, roundToNearest5Minutes } from './timeConfig';
 
 export type ChartType = 'activity' | 'all' | 'errors' | 'performance';
 
@@ -107,8 +107,8 @@ export function ObservabilityProvider({
           // Reset custom dates when switching away from custom
           const { startDate: newStart, endDate: newEnd } =
             computeStartEndDates(newTimeRange);
-          setCustomStartDate(newStart);
-          setCustomEndDate(newEnd);
+          setCustomStartDate(roundToNearest5Minutes(newStart));
+          setCustomEndDate(roundToNearest5Minutes(newEnd));
         }
       },
       setDateRange: (startDate: Date, endDate: Date) => {

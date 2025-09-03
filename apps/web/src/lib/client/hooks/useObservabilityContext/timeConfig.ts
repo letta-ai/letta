@@ -64,6 +64,11 @@ export function getTimeConfig(timeRange: TimeRange): TimeGranularity {
   return TIME_CONFIGS[timeRange];
 }
 
+export function roundToNearest5Minutes(date: Date): Date {
+  const ms = 1000 * 60 * 5; // 5 minutes in milliseconds
+  return new Date(Math.round(date.getTime() / ms) * ms);
+}
+
 export function computeStartEndDates(timeRange: TimeRange): {
   startDate: Date;
   endDate: Date;
@@ -91,7 +96,7 @@ export function computeStartEndDates(timeRange: TimeRange): {
   );
 
   return {
-    startDate: new Date(now.getTime() - config.durationMs),
-    endDate: extendedEndTime,
+    startDate: roundToNearest5Minutes(new Date(now.getTime() - config.durationMs)),
+    endDate: roundToNearest5Minutes(extendedEndTime),
   };
 }
