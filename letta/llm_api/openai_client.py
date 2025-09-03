@@ -5,6 +5,7 @@ import openai
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from openai.types.responses import ResponseIncludable, ResponseReasoningItem
 from openai.types.responses.response import Response
 
 from letta.constants import LETTA_MODEL_ENDPOINT
@@ -38,7 +39,7 @@ from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cas
 from letta.schemas.openai.chat_completion_response import (
     ChatCompletionResponse,
     Choice,
-    Message,
+    Message as ChoiceMessage,
     ToolCall,
     FunctionCall,
     UsageStatistics,
@@ -386,8 +387,12 @@ class OpenAIClient(LLMClientBase):
             "model": llm_config.model,
             "input": self._extract_user_input(messages),
         }
-        # By default, don't store anything for responses API for now
+        # By default, don't store. This is becasue we want to get the reasoning content ourselves
         request_params["store"] = False
+
+        # Include reasoning encrypted content in the response
+        if is_openai_reasoning_model(llm_config.model):
+            request_params["include"] : List[ResponseIncludable] = ["reasoning.encrypted_content"]
 
         # Add instructions from system messages
         instructions = self._extract_instructions(messages)
@@ -409,6 +414,18 @@ class OpenAIClient(LLMClientBase):
 
         # Handle tools conversion from Chat Completions to Responses format
         if tools:
+            # Add inner thoughts to tools if needed (same logic as chat completions API)
+            if llm_config.put_inner_thoughts_in_kwargs:
+                inner_thoughts_desc = (
+                    INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST if ":1234" in llm_config.model_endpoint else INNER_THOUGHTS_KWARG_DESCRIPTION
+                )
+                tools = add_inner_thoughts_to_functions(
+                    functions=tools,
+                    inner_thoughts_key=INNER_THOUGHTS_KWARG,
+                    inner_thoughts_description=inner_thoughts_desc,
+                    put_inner_thoughts_first=True,
+                )
+            
             try:
                 responses_tools = convert_chat_completions_tools_to_responses_format(tools)
                 if responses_tools:  # Only add if we have valid tools
@@ -552,7 +569,7 @@ class OpenAIClient(LLMClientBase):
         
         # Parse the responses API response using the official SDK schema
         try:
-            responses_response = Response(**response_data)
+            responses_response: Response = Response(**response_data)
         except Exception as e:
             logger.warning(f"Failed to parse responses API response with official schema: {e}")
             # Fallback to raw dict parsing
@@ -597,11 +614,22 @@ class OpenAIClient(LLMClientBase):
                 completion_tokens=0,
                 total_tokens=0,
             )
+
+        # assuming that there is just reasoning and then a tool call
+        if responses_response and responses_response.output:
+            first_output = responses_response.output[0]
+            
+            # Type-safe check for reasoning item
+            if isinstance(first_output, ResponseReasoningItem):
+                reasoning_content_signature = first_output.encrypted_content
+            else:
+                reasoning_content_signature = None
         
         # Create Message Pydantic object
-        message = Message(
+        message = ChoiceMessage(
             role="assistant",
             content=output_content,
+            reasoning_content_signature=reasoning_content_signature,
             tool_calls=tool_calls,
         )
         
@@ -640,12 +668,23 @@ class OpenAIClient(LLMClientBase):
     async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
+        Supports both chat completions and responses APIs.
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
-            **request_data, stream=True, stream_options={"include_usage": True}
-        )
+        
+        if should_use_responses_api(llm_config):
+            # Use the responses API streaming
+            response_stream = await client.responses.create(
+                **request_data, stream=True
+            )
+        else:
+            # Use the traditional chat completions API streaming
+            response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+                **request_data, stream=True, stream_options={"include_usage": True}
+            )
+        print(response_stream)
+        
         return response_stream
 
     @trace_method
