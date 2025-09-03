@@ -340,7 +340,7 @@ CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 20000
 
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
-BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
+BASE_FUNCTION_RETURN_CHAR_LIMIT = 50000  # same as regular function limit
 FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
 MAX_PAUSE_HEARTBEATS = 360  # in min
