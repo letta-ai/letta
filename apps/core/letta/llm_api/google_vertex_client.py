@@ -3,6 +3,7 @@ import uuid
 from typing import List, Optional
 
 from google import genai
+from google.genai import errors
 from google.genai.types import (
     FunctionCallingConfig,
     FunctionCallingConfigMode,
@@ -67,11 +68,21 @@ class GoogleVertexClient(LLMClientBase):
         retry_count = 1
         should_retry = True
         while should_retry and retry_count <= self.MAX_RETRIES:
-            response = await client.aio.models.generate_content(
-                model=llm_config.model,
-                contents=request_data["contents"],
-                config=request_data["config"],
-            )
+            try:
+                response = await client.aio.models.generate_content(
+                    model=llm_config.model,
+                    contents=request_data["contents"],
+                    config=request_data["config"],
+                )
+            except errors.APIError as e:
+                # Retry on 503 and 500 errors as well, usually ephemeral from Gemini
+                if e.code == 503 or e.code == 500:
+                    logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
+                    retry_count += 1
+                    continue
+                raise e
+            except Exception as e:
+                raise e
             response_data = response.model_dump()
             is_malformed_function_call = self.is_malformed_function_call(response_data)
             if is_malformed_function_call:
