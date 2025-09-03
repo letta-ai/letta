@@ -11,6 +11,7 @@ export * from './useCurrentAgentActiveRuns/useCurrentAgentActiveRuns';
 export * from './useAgentBaseNameType/useAgentBaseNameType';
 export * from './useCurrentAgentMetaData/useCurrentAgentMetaData';
 export * from './useCurrentGroup/useCurrentGroup';
+export * from './useSyncUpdateCurrentGroup/useSyncUpdateCurrentGroup';
 export * from './useOrderedTraces/useOrderedTraces';
 export * from './useNetworkInspectorVisibility/useNetworkInspectorVisibility';
 export * from './useUpdateSimulatedMemoryBlocksOnVariableInjection/useUpdateSimulatedMemoryBlocksOnVariableInjection';
