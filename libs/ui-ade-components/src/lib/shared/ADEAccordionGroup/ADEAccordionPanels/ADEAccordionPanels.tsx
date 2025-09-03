@@ -28,6 +28,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
   const { item: panel, panelRefs, idx, open, onOpenChange, lastOpen } = props;
   const { id, label, content, minHeight, WrapperComponent } = panel;
 
+  console.log(id)
   const element = (
     <div
       ref={(el) => {
@@ -38,6 +39,8 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         lastOpen ? 'flex-1' : '',
         'flex flex-col  ade-accordion-item border-r',
         open ? 'open' : 'close min-h-[32px]',
+        // this is a hack because of some weird css deeper in the core memories panel, this allows the panel to flex properly
+        open && id === 'core-memories' ? 'zero-height-open' : '',
       )}
       data-id={id}
       data-testid={id}

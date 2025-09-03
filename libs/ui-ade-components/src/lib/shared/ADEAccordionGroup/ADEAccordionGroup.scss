@@ -20,7 +20,13 @@
   &.close {
     height: 32px;
   }
+
+  &.zero-height-open {
+    height: 0;
+  }
 }
+
+
 
 
 .sticky-button {
