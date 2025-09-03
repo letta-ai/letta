@@ -642,6 +642,7 @@ function AgentSimulatorOnboarding(props: AgentSimulatorOnboardingProps) {
       totalSteps={4}
       nextStep={
         <Button
+          data-testid="onboarding-next-to-memory"
           fullWidth
           size="large"
           bold

@@ -45,6 +45,7 @@ function RestartOnboarding() {
       })}
     >
       <Button
+        data-testid="retry-onboarding-button"
         color="secondary"
         label={t('RestartOnboarding.button')}
         onClick={() => {
@@ -66,6 +67,7 @@ function UnpauseOnboarding() {
     <StatusUI title={t('UnpauseOnboarding.title')}>
       <Button
         color="secondary"
+        data-testid="unpause-onboarding-button"
         label={t('UnpauseOnboarding.button')}
         onClick={() => {
           unpauseOnboarding();

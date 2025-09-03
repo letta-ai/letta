@@ -419,6 +419,7 @@ function ToolsOnboarding(props: ToolsOnboardingProps) {
         totalSteps={4}
         nextStep={
           <Button
+            data-testid="onboarding-next-finish"
             fullWidth
             size="large"
             bold

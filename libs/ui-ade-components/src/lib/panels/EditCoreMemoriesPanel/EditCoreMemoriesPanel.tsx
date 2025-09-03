@@ -360,6 +360,7 @@ function QuickMemoryOnboarding(props: QuickMemoryOnboardingProps) {
       totalSteps={4}
       nextStep={
         <Button
+          data-testid="onboarding-next-to-tools"
           fullWidth
           size="large"
           bold

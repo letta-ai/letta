@@ -102,6 +102,7 @@ export function StartOnboardingDialog() {
             </VStack>
             <VStack>
               <Button
+                data-testid="start-onboarding-button"
                 color="primary"
                 fullWidth
                 size="large"
