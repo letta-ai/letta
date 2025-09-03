@@ -57,7 +57,7 @@ dependencies = [
     "marshmallow-sqlalchemy>=1.4.1",
     "datamodel-code-generator[http]>=0.25.0",
     "mcp[cli]>=1.9.4",
-    "firecrawl-py>=2.8.0,<3.0.0",
+    "exa-py>=1.15.4",
     "apscheduler>=3.11.0",
     "aiomultiprocess>=0.9.1",
     "matplotlib>=3.10.1",
@@ -125,7 +125,7 @@ external-tools = [
     "langchain>=0.3.7",
     "wikipedia>=1.4.0",
     "langchain-community>=0.3.7",
-    "firecrawl-py>=2.8.0,<3.0.0",
+    "exa-py>=1.15.4",
     "turbopuffer>=0.5.17",
 ]
 desktop = [

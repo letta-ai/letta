@@ -4,7 +4,7 @@ import threading
 import time
 import uuid
 from typing import List
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 from letta_client import Letta, MessageCreate
 from letta_client.types import ToolReturnMessage
 
-from letta.constants import WEB_SEARCH_MODEL_ENV_VAR_NAME
-from letta.functions.types import SearchTask
 from letta.schemas.agent import AgentState
 from letta.schemas.llm_config import LLMConfig
 from letta.services.tool_executor.builtin_tool_executor import LettaBuiltinToolExecutor
@@ -74,6 +72,7 @@ def client(server_url: str) -> Letta:
 def agent_state(client: Letta) -> AgentState:
     """
     Creates and returns an agent state for testing with a pre-configured agent.
+    Uses system-level EXA_API_KEY setting.
     """
     client.tools.upsert_base_tools()
 
@@ -87,50 +86,6 @@ def agent_state(client: Letta) -> AgentState:
         model="openai/gpt-4o",
         embedding="letta/letta-free",
         tags=["test_builtin_tools_agent"],
-    )
-    yield agent_state_instance
-
-
-@pytest.fixture(scope="module")
-def agent_state_with_firecrawl_key(client: Letta) -> AgentState:
-    """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    """
-    client.tools.upsert_base_tools()
-
-    send_message_tool = client.tools.list(name="send_message")[0]
-    run_code_tool = client.tools.list(name="run_code")[0]
-    web_search_tool = client.tools.list(name="web_search")[0]
-    agent_state_instance = client.agents.create(
-        name="test_builtin_tools_agent",
-        include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["test_builtin_tools_agent"],
-        tool_exec_environment_variables={"FIRECRAWL_API_KEY": tool_settings.firecrawl_api_key},
-    )
-    yield agent_state_instance
-
-
-@pytest.fixture(scope="module")
-def agent_state_with_web_search_env_var(client: Letta) -> AgentState:
-    """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    """
-    client.tools.upsert_base_tools()
-
-    send_message_tool = client.tools.list(name="send_message")[0]
-    run_code_tool = client.tools.list(name="run_code")[0]
-    web_search_tool = client.tools.list(name="web_search")[0]
-    agent_state_instance = client.agents.create(
-        name="test_builtin_tools_agent",
-        include_base_tools=False,
-        tool_ids=[send_message_tool.id, run_code_tool.id, web_search_tool.id],
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["test_builtin_tools_agent"],
-        tool_exec_environment_variables={WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"},
     )
     yield agent_state_instance
 
@@ -185,11 +140,9 @@ def reference_partition(n: int) -> int:
 
 
 @pytest.mark.parametrize("language", TEST_LANGUAGES, ids=TEST_LANGUAGES)
-@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
 def test_run_code(
     client: Letta,
     agent_state: AgentState,
-    llm_config: LLMConfig,
     language: str,
 ) -> None:
     """
@@ -223,12 +176,40 @@ def test_run_code(
     )
 
 
-@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
+@patch("exa_py.Exa")
 def test_web_search(
+    mock_exa_class,
     client: Letta,
     agent_state: AgentState,
-    llm_config: LLMConfig,
 ) -> None:
+    # Mock Exa search result with education information
+    mock_exa_result = MagicMock()
+    mock_exa_result.results = [
+        MagicMock(
+            title="Charles Packer - UC Berkeley PhD in Computer Science",
+            url="https://example.com/charles-packer-profile",
+            published_date="2023-01-01",
+            author="UC Berkeley",
+            text=None,  # include_text=False by default
+            highlights=["Charles Packer completed his PhD at UC Berkeley", "Research in artificial intelligence and machine learning"],
+            summary="Charles Packer is the CEO of Letta who earned his PhD in Computer Science from UC Berkeley, specializing in AI research.",
+        ),
+        MagicMock(
+            title="Letta Leadership Team",
+            url="https://letta.com/team",
+            published_date="2023-06-01",
+            author="Letta",
+            text=None,
+            highlights=["CEO Charles Packer brings academic expertise"],
+            summary="Leadership team page featuring CEO Charles Packer's educational background.",
+        ),
+    ]
+
+    # Setup mock
+    mock_exa_client = MagicMock()
+    mock_exa_class.return_value = mock_exa_client
+    mock_exa_client.search_and_contents.return_value = mock_exa_result
+
     user_message = MessageCreate(
         role="user",
         content="I am executing a test. Use the web search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
@@ -250,136 +231,71 @@ def test_web_search(
     assert len(returns) > 0, "No tool returns found"
     response_json = json.loads(returns[0])
 
-    # Basic structure assertions
-    assert "api_key_source" in response_json, "Missing 'api_key_source' field in response"
+    # Basic structure assertions for new Exa format
+    assert "query" in response_json, "Missing 'query' field in response"
     assert "results" in response_json, "Missing 'results' field in response"
-    assert response_json["api_key_source"] == "system_settings"
 
-    # Get the first result from the results dictionary
+    # Verify we got search results
     results = response_json["results"]
-    assert len(results) > 0, "No results found in response"
+    assert len(results) == 2, "Should have found exactly 2 search results from mock"
 
-    # Get the first (and typically only) result
-    first_result_key = list(results.keys())[0]
-    result_data = results[first_result_key]
+    # Check each result has the expected structure
+    found_education_info = False
+    for result in results:
+        assert "title" in result, "Result missing title"
+        assert "url" in result, "Result missing URL"
 
-    # Basic structure assertions for the result data
-    assert "query" in result_data, "Missing 'query' field in result"
-    assert "question" in result_data, "Missing 'question' field in result"
+        # text should not be present since include_text=False by default
+        assert "text" not in result or result["text"] is None, "Text should not be included by default"
 
-    # Check if we have the new response format with raw_results
-    if "raw_results" in result_data:
-        # New format with raw_results
-        assert "raw_results" in result_data, "Missing 'raw_results' field in result"
-        raw_results = result_data["raw_results"]
+        # Check for education-related information in summary and highlights
+        result_text = ""
+        if "summary" in result and result["summary"]:
+            result_text += " " + result["summary"].lower()
+        if "highlights" in result and result["highlights"]:
+            for highlight in result["highlights"]:
+                result_text += " " + highlight.lower()
 
-        assert "success" in raw_results, "Missing 'success' field in raw_results"
-        assert "data" in raw_results, "Missing 'data' field in raw_results"
+        # Look for education keywords
+        if any(keyword in result_text for keyword in ["berkeley", "university", "phd", "ph.d", "education", "student"]):
+            found_education_info = True
 
-        # Verify we got search results
-        assert len(raw_results["data"]) > 0, "Should have found at least one search result"
+    assert found_education_info, "Should have found education-related information about Charles Packer"
 
-        # Check if we found education-related information in the search results
-        found_education_info = False
-        for item in raw_results["data"]:
-            # Check in description
-            if "description" in item:
-                desc_lower = item["description"].lower()
-                if any(keyword in desc_lower for keyword in ["berkeley", "university", "education", "phd", "student"]):
-                    found_education_info = True
-                    break
-
-            # Also check in markdown content if available
-            if "markdown" in item:
-                markdown_lower = item["markdown"].lower()
-                if any(keyword in markdown_lower for keyword in ["berkeley", "university", "phd", "student"]):
-                    found_education_info = True
-                    break
-
-        # We should find education info since we now have successful scraping with markdown content
-        assert found_education_info, "Should have found education-related information about Charles Packer"
-
-    else:
-        # Parsed format with total_sources, total_citations, sources
-        assert "total_sources" in result_data, "Missing 'total_sources' field in result"
-        assert "total_citations" in result_data, "Missing 'total_citations' field in result"
-        assert "sources" in result_data, "Missing 'sources' field in result"
-
-        # Content assertions
-        assert result_data["total_sources"] > 0, "Should have found at least one source"
-        assert result_data["total_citations"] > 0, "Should have found at least one citation"
-        assert len(result_data["sources"]) == result_data["total_sources"], "Sources count mismatch"
-
-        # Verify we found information about Charles Packer's education
-        found_education_info = False
-        for source in result_data["sources"]:
-            assert "url" in source, "Source missing URL"
-            assert "title" in source, "Source missing title"
-            assert "citations" in source, "Source missing citations"
-
-            for citation in source["citations"]:
-                assert "text" in citation, "Citation missing text"
-
-                # Check if we found education-related information
-                if any(keyword in citation["text"].lower() for keyword in ["berkeley", "phd", "ph.d", "university", "student"]):
-                    found_education_info = True
-
-        assert found_education_info, "Should have found education-related information about Charles Packer"
-
-    # API key source should be valid
-    assert response_json["api_key_source"] in [
-        "agent_environment",
-        "system_settings",
-    ], f"Invalid api_key_source: {response_json['api_key_source']}"
+    # Verify Exa was called with correct parameters
+    mock_exa_client.search_and_contents.assert_called_once()
+    call_args = mock_exa_client.search_and_contents.call_args
+    assert call_args[1]["type"] == "auto"
+    assert call_args[1]["text"] is False  # Default is False now
 
 
 @pytest.mark.asyncio(scope="function")
-async def test_web_search_uses_agent_env_var_model():
-    """Test that web search uses the model specified in agent tool exec env vars."""
+async def test_web_search_uses_exa():
+    """Test that web search uses Exa API correctly."""
 
-    # create mock agent state with web search model env var
+    # create mock agent state with exa api key
     mock_agent_state = MagicMock()
-    mock_agent_state.get_agent_env_vars_as_dict.return_value = {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}
+    mock_agent_state.get_agent_env_vars_as_dict.return_value = {"EXA_API_KEY": "test-exa-key"}
 
-    # mock openai response
-    mock_openai_response = MagicMock()
-    mock_openai_response.usage = MagicMock()
-    mock_openai_response.usage.total_tokens = 100
-    mock_openai_response.usage.prompt_tokens = 80
-    mock_openai_response.usage.completion_tokens = 20
-    mock_openai_response.choices = [MagicMock()]
-    mock_openai_response.choices[0].message.parsed = MagicMock()
-    mock_openai_response.choices[0].message.parsed.citations = []
+    # Mock exa search result
+    mock_exa_result = MagicMock()
+    mock_exa_result.results = [
+        MagicMock(
+            title="Test Result",
+            url="https://example.com/test",
+            published_date="2023-01-01",
+            author="Test Author",
+            text="This is test content from the search result.",
+            highlights=["This is a highlight"],
+            summary="This is a summary of the content.",
+        )
+    ]
 
-    with (
-        patch("openai.AsyncOpenAI") as mock_openai_class,
-        patch("letta.services.tool_executor.builtin_tool_executor.model_settings") as mock_model_settings,
-        patch.dict(os.environ, {WEB_SEARCH_MODEL_ENV_VAR_NAME: "gpt-4o"}),
-        patch("firecrawl.AsyncFirecrawlApp") as mock_firecrawl_class,
-    ):
-        # setup mocks
-        mock_model_settings.openai_api_key = "test-key"
-
-        mock_openai_client = AsyncMock()
-        mock_openai_class.return_value = mock_openai_client
-        mock_openai_client.beta.chat.completions.parse.return_value = mock_openai_response
-
-        # Mock Firecrawl
-        mock_firecrawl_app = AsyncMock()
-        mock_firecrawl_class.return_value = mock_firecrawl_app
-
-        # Mock search results with markdown content
-        mock_search_result = {
-            "data": [
-                {
-                    "url": "https://example.com/test",
-                    "title": "Test Result",
-                    "description": "Test description",
-                    "markdown": "This is test markdown content for the search result.",
-                }
-            ]
-        }
-        mock_firecrawl_app.search.return_value = mock_search_result
+    with patch("exa_py.Exa") as mock_exa_class:
+        # Mock Exa
+        mock_exa_client = MagicMock()
+        mock_exa_class.return_value = mock_exa_client
+        mock_exa_client.search_and_contents.return_value = mock_exa_result
 
         # create executor with mock dependencies
         executor = LettaBuiltinToolExecutor(
@@ -391,44 +307,22 @@ async def test_web_search_uses_agent_env_var_model():
             actor=MagicMock(),
         )
 
-        task = SearchTask(query="test query", question="test question")
+        result = await executor.web_search(agent_state=mock_agent_state, query="test query", num_results=3, include_text=True)
 
-        await executor.web_search(agent_state=mock_agent_state, tasks=[task], limit=1, return_raw=False)
+        # Verify Exa was called correctly
+        mock_exa_class.assert_called_once_with(api_key="test-exa-key")
+        mock_exa_client.search_and_contents.assert_called_once()
 
-        # verify correct model was used
-        mock_openai_client.beta.chat.completions.parse.assert_called_once()
-        call_args = mock_openai_client.beta.chat.completions.parse.call_args
-        assert call_args[1]["model"] == "gpt-4o"
+        # Check the call arguments
+        call_args = mock_exa_client.search_and_contents.call_args
+        assert call_args[1]["query"] == "test query"
+        assert call_args[1]["num_results"] == 3
+        assert call_args[1]["type"] == "auto"
+        assert call_args[1]["text"] == True
 
-
-@pytest.mark.parametrize("llm_config", TESTED_LLM_CONFIGS, ids=[c.model for c in TESTED_LLM_CONFIGS])
-def test_web_search_using_agent_state_env_var(
-    client: Letta,
-    agent_state_with_firecrawl_key: AgentState,
-    llm_config: LLMConfig,
-) -> None:
-    user_message = MessageCreate(
-        role="user",
-        content="I am executing a test. Use the web search tool to find where I, Charles Packer, the CEO of Letta, went to school.",
-        otid=USER_MESSAGE_OTID,
-    )
-
-    response = client.agents.messages.create(
-        agent_id=agent_state_with_firecrawl_key.id,
-        messages=[user_message],
-    )
-
-    tool_returns = [m for m in response.messages if isinstance(m, ToolReturnMessage)]
-    assert tool_returns, "No ToolReturnMessage found"
-
-    returns = [m.tool_return for m in tool_returns]
-    print(returns)
-
-    # Parse the JSON response from web search
-    assert len(returns) > 0, "No tool returns found"
-    response_json = json.loads(returns[0])
-
-    # Basic structure assertions
-    assert "api_key_source" in response_json, "Missing 'api_key_source' field in response"
-    assert "results" in response_json, "Missing 'results' field in response"
-    assert response_json["api_key_source"] == "agent_environment"
+        # Verify the response format
+        response_json = json.loads(result)
+        assert "query" in response_json
+        assert "results" in response_json
+        assert response_json["query"] == "test query"
+        assert len(response_json["results"]) == 1
