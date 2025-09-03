@@ -1223,6 +1223,9 @@ async def send_message_streaming(
     request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
+    # TODO (cliandy): clean this up
+    redis_client = await get_redis_client()
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
@@ -1263,13 +1266,10 @@ async def send_message_streaming(
             ),
             actor=actor,
         )
+        job_update_metadata = None
+        await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
     else:
         run = None
-
-    job_update_metadata = None
-    # TODO (cliandy): clean this up
-    redis_client = await get_redis_client()
-    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
         if agent_eligible and model_compatible:
@@ -1308,6 +1308,23 @@ async def send_message_streaming(
                     ),
                 )
 
+            if request.stream_tokens and model_compatible_token_streaming:
+                raw_stream = agent_loop.step_stream(
+                    input_messages=request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+            else:
+                raw_stream = agent_loop.step_stream_no_tokens(
+                    request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
             if request.background and settings.track_agent_run:
@@ -1321,23 +1338,6 @@ async def send_message_streaming(
                         ),
                     )
 
-                if request.stream_tokens and model_compatible_token_streaming:
-                    raw_stream = agent_loop.step_stream(
-                        input_messages=request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    )
-                else:
-                    raw_stream = agent_loop.step_stream_no_tokens(
-                        request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    )
-
                 asyncio.create_task(
                     create_background_stream_processor(
                         stream_generator=raw_stream,
@@ -1346,55 +1346,21 @@ async def send_message_streaming(
                     )
                 )
 
-                stream = redis_sse_stream_generator(
+                raw_stream = redis_sse_stream_generator(
                     redis_client=redis_client,
                     run_id=run.id,
                 )
 
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval)
-
-                return StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
-
-            if request.stream_tokens and model_compatible_token_streaming:
-                raw_stream = agent_loop.step_stream(
-                    input_messages=request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
-                # Conditionally wrap with keepalive based on request parameter
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
-                else:
-                    stream = raw_stream
-
-                result = StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
+            # Conditionally wrap with keepalive based on request parameter
+            if request.include_pings and settings.enable_keepalive:
+                stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
             else:
-                raw_stream = agent_loop.step_stream_no_tokens(
-                    request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
-                # Conditionally wrap with keepalive based on request parameter
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
-                else:
-                    stream = raw_stream
+                stream = raw_stream
 
-                result = StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
+            result = StreamingResponseWithStatusCode(
+                stream,
+                media_type="text/event-stream",
+            )
         else:
             result = await server.send_message_to_agent(
                 agent_id=agent_id,
@@ -1409,11 +1375,13 @@ async def send_message_streaming(
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
             )
-        job_status = JobStatus.running
+        if settings.track_agent_run:
+            job_status = JobStatus.running
         return result
     except Exception as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        if settings.track_agent_run:
+            job_update_metadata = {"error": str(e)}
+            job_status = JobStatus.failed
         raise
     finally:
         if settings.track_agent_run:
