@@ -7892,6 +7892,820 @@ export const $InputAudio = {
   title: 'InputAudio',
 } as const;
 
+export const $InternalTemplateAgentCreate = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the agent.',
+    },
+    memory_blocks: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/CreateBlock',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Memory Blocks',
+      description: "The blocks to create in the agent's in-context memory.",
+    },
+    tools: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tools',
+      description: 'The tools used by the agent.',
+    },
+    tool_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Ids',
+      description: 'The ids of the tools used by the agent.',
+    },
+    source_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Source Ids',
+      description: 'The ids of the sources used by the agent.',
+    },
+    block_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Block Ids',
+      description: 'The ids of the blocks used by the agent.',
+    },
+    tool_rules: {
+      anyOf: [
+        {
+          items: {
+            oneOf: [
+              {
+                $ref: '#/components/schemas/ChildToolRule',
+              },
+              {
+                $ref: '#/components/schemas/InitToolRule',
+              },
+              {
+                $ref: '#/components/schemas/TerminalToolRule',
+              },
+              {
+                $ref: '#/components/schemas/ConditionalToolRule',
+              },
+              {
+                $ref: '#/components/schemas/ContinueToolRule',
+              },
+              {
+                $ref: '#/components/schemas/RequiredBeforeExitToolRule',
+              },
+              {
+                $ref: '#/components/schemas/MaxCountPerStepToolRule',
+              },
+              {
+                $ref: '#/components/schemas/ParentToolRule',
+              },
+              {
+                $ref: '#/components/schemas/RequiresApprovalToolRule',
+              },
+            ],
+            discriminator: {
+              propertyName: 'type',
+              mapping: {
+                conditional: '#/components/schemas/ConditionalToolRule',
+                constrain_child_tools: '#/components/schemas/ChildToolRule',
+                continue_loop: '#/components/schemas/ContinueToolRule',
+                exit_loop: '#/components/schemas/TerminalToolRule',
+                max_count_per_step:
+                  '#/components/schemas/MaxCountPerStepToolRule',
+                parent_last_tool: '#/components/schemas/ParentToolRule',
+                required_before_exit:
+                  '#/components/schemas/RequiredBeforeExitToolRule',
+                requires_approval:
+                  '#/components/schemas/RequiresApprovalToolRule',
+                run_first: '#/components/schemas/InitToolRule',
+              },
+            },
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Rules',
+      description: 'The tool rules governing the agent.',
+    },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'The tags associated with the agent.',
+    },
+    system: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'System',
+      description: 'The system prompt used by the agent.',
+    },
+    agent_type: {
+      $ref: '#/components/schemas/AgentType',
+      description: 'The type of agent.',
+    },
+    llm_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/LLMConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The LLM configuration used by the agent.',
+    },
+    embedding_config: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/EmbeddingConfig',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The embedding configuration used by the agent.',
+    },
+    initial_message_sequence: {
+      anyOf: [
+        {
+          items: {
+            $ref: '#/components/schemas/MessageCreate',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Initial Message Sequence',
+      description:
+        "The initial set of messages to put in the agent's in-context memory.",
+    },
+    include_base_tools: {
+      type: 'boolean',
+      title: 'Include Base Tools',
+      description:
+        'If true, attaches the Letta core tools (e.g. core_memory related functions).',
+      default: true,
+    },
+    include_multi_agent_tools: {
+      type: 'boolean',
+      title: 'Include Multi Agent Tools',
+      description:
+        'If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).',
+      default: false,
+    },
+    include_base_tool_rules: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Include Base Tool Rules',
+      description:
+        'If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).',
+    },
+    include_default_source: {
+      type: 'boolean',
+      title: 'Include Default Source',
+      description:
+        'If true, automatically creates and attaches a default data source for this agent.',
+      default: false,
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'The description of the agent.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'The metadata of the agent.',
+    },
+    model: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Model',
+      description:
+        'The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.',
+    },
+    embedding: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding',
+      description:
+        'The embedding configuration handle used by the agent, specified in the format provider/model-name.',
+    },
+    context_window_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Context Window Limit',
+      description: 'The context window limit used by the agent.',
+    },
+    embedding_chunk_size: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Embedding Chunk Size',
+      description: 'The embedding chunk size used by the agent.',
+      default: 300,
+    },
+    max_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Tokens',
+      description:
+        'The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.',
+    },
+    max_reasoning_tokens: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Reasoning Tokens',
+      description:
+        'The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value.',
+    },
+    enable_reasoner: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Reasoner',
+      description:
+        'Whether to enable internal extended thinking step for a reasoner model.',
+      default: true,
+    },
+    reasoning: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Reasoning',
+      description: 'Whether to enable reasoning for this agent.',
+    },
+    from_template: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'From Template',
+      description: 'The template id used to configure the agent',
+    },
+    template: {
+      type: 'boolean',
+      title: 'Template',
+      description: 'Whether the agent is a template',
+      default: false,
+    },
+    project: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project',
+      description:
+        'Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.',
+      deprecated: true,
+    },
+    tool_exec_environment_variables: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tool Exec Environment Variables',
+      description:
+        'The environment variables for tool execution specific to this agent.',
+    },
+    memory_variables: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Memory Variables',
+      description: 'The variables that should be set for the agent.',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The id of the project the agent belongs to.',
+    },
+    template_id: {
+      type: 'string',
+      title: 'Template Id',
+      description: 'The id of the template.',
+    },
+    base_template_id: {
+      type: 'string',
+      title: 'Base Template Id',
+      description: 'The id of the base template.',
+    },
+    identity_ids: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Identity Ids',
+      description: 'The ids of the identities associated with this agent.',
+    },
+    message_buffer_autoclear: {
+      type: 'boolean',
+      title: 'Message Buffer Autoclear',
+      description:
+        'If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.',
+      default: false,
+    },
+    enable_sleeptime: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Enable Sleeptime',
+      description:
+        'If set to True, memory management will move to a background agent thread.',
+    },
+    response_format: {
+      anyOf: [
+        {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/TextResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonSchemaResponseFormat',
+            },
+            {
+              $ref: '#/components/schemas/JsonObjectResponseFormat',
+            },
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              json_object: '#/components/schemas/JsonObjectResponseFormat',
+              json_schema: '#/components/schemas/JsonSchemaResponseFormat',
+              text: '#/components/schemas/TextResponseFormat',
+            },
+          },
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Response Format',
+      description: 'The response format for the agent.',
+    },
+    timezone: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Timezone',
+      description: 'The timezone of the agent (IANA format).',
+    },
+    max_files_open: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Max Files Open',
+      description:
+        'Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    per_file_view_window_char_limit: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Per File View Window Char Limit',
+      description:
+        'The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.',
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the agent will be hidden.',
+    },
+    deployment_id: {
+      type: 'string',
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      type: 'string',
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
+    },
+  },
+  type: 'object',
+  required: ['template_id', 'base_template_id', 'deployment_id', 'entity_id'],
+  title: 'InternalTemplateAgentCreate',
+  description: 'Used for Letta Cloud',
+} as const;
+
+export const $InternalTemplateBlockCreate = {
+  properties: {
+    value: {
+      type: 'string',
+      title: 'Value',
+      description: 'Value of the block.',
+    },
+    limit: {
+      type: 'integer',
+      title: 'Limit',
+      description: 'Character limit of the block.',
+      default: 20000,
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+      description: 'Name of the block if it is a template.',
+    },
+    is_template: {
+      type: 'boolean',
+      title: 'Is Template',
+      default: false,
+    },
+    template_id: {
+      type: 'string',
+      title: 'Template Id',
+      description: 'The id of the template.',
+    },
+    base_template_id: {
+      type: 'string',
+      title: 'Base Template Id',
+      description: 'The id of the base template.',
+    },
+    deployment_id: {
+      type: 'string',
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+    entity_id: {
+      type: 'string',
+      title: 'Entity Id',
+      description: 'The id of the entity within the template.',
+    },
+    preserve_on_migration: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Preserve On Migration',
+      description: 'Preserve the block on template migration.',
+      default: false,
+    },
+    label: {
+      type: 'string',
+      title: 'Label',
+      description: 'Label of the block.',
+    },
+    read_only: {
+      type: 'boolean',
+      title: 'Read Only',
+      description: 'Whether the agent has read-only access to the block.',
+      default: false,
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'Description of the block.',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Metadata of the block.',
+      default: {},
+    },
+  },
+  type: 'object',
+  required: [
+    'value',
+    'template_id',
+    'base_template_id',
+    'deployment_id',
+    'entity_id',
+    'label',
+  ],
+  title: 'InternalTemplateBlockCreate',
+  description: 'Used for Letta Cloud',
+} as const;
+
+export const $InternalTemplateGroupCreate = {
+  properties: {
+    agent_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Agent Ids',
+      description: '',
+    },
+    description: {
+      type: 'string',
+      title: 'Description',
+      description: '',
+    },
+    manager_config: {
+      oneOf: [
+        {
+          $ref: '#/components/schemas/RoundRobinManager',
+        },
+        {
+          $ref: '#/components/schemas/SupervisorManager',
+        },
+        {
+          $ref: '#/components/schemas/DynamicManager',
+        },
+        {
+          $ref: '#/components/schemas/SleeptimeManager',
+        },
+        {
+          $ref: '#/components/schemas/VoiceSleeptimeManager',
+        },
+      ],
+      title: 'Manager Config',
+      description: '',
+      default: {
+        manager_type: 'round_robin',
+      },
+      discriminator: {
+        propertyName: 'manager_type',
+        mapping: {
+          dynamic: '#/components/schemas/DynamicManager',
+          round_robin: '#/components/schemas/RoundRobinManager',
+          sleeptime: '#/components/schemas/SleeptimeManager',
+          supervisor: '#/components/schemas/SupervisorManager',
+          voice_sleeptime: '#/components/schemas/VoiceSleeptimeManager',
+        },
+      },
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
+      description: 'The associated project id.',
+    },
+    shared_block_ids: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Shared Block Ids',
+      description: '',
+      default: [],
+    },
+    base_template_id: {
+      type: 'string',
+      title: 'Base Template Id',
+      description: 'The id of the base template.',
+    },
+    template_id: {
+      type: 'string',
+      title: 'Template Id',
+      description: 'The id of the template.',
+    },
+    deployment_id: {
+      type: 'string',
+      title: 'Deployment Id',
+      description: 'The id of the deployment.',
+    },
+  },
+  type: 'object',
+  required: [
+    'agent_ids',
+    'description',
+    'base_template_id',
+    'template_id',
+    'deployment_id',
+  ],
+  title: 'InternalTemplateGroupCreate',
+  description: 'Used for Letta Cloud',
+} as const;
+
 export const $JSONSchema = {
   properties: {
     name: {

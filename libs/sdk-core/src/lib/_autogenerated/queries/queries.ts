@@ -16,6 +16,7 @@ import {
   GroupsService,
   HealthService,
   IdentitiesService,
+  InternalTemplatesService,
   JobsService,
   LlmsService,
   MessagesService,
@@ -55,6 +56,9 @@ import {
   IdentityType,
   IdentityUpdate,
   IdentityUpsert,
+  InternalTemplateAgentCreate,
+  InternalTemplateBlockCreate,
+  InternalTemplateGroupCreate,
   LettaAsyncRequest,
   LettaRequest,
   LettaStreamingRequest,
@@ -4893,6 +4897,135 @@ export const useIdentitiesServiceCreateIdentity = <
         requestBody,
         userId,
         xProject,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create Group
+ * Create a new multi-agent group with the specified configuration.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns Group Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
+  TData = Common.InternalTemplatesServiceCreateInternalTemplateGroupMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: InternalTemplateGroupCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: InternalTemplateGroupCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      InternalTemplatesService.createInternalTemplateGroup({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create Agent
+ * Create a new agent with template-related fields.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
+  TData = Common.InternalTemplatesServiceCreateInternalTemplateAgentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: InternalTemplateAgentCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: InternalTemplateAgentCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      InternalTemplatesService.createInternalTemplateAgent({
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Create Block
+ * Create a new block with template-related fields.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns Block Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
+  TData = Common.InternalTemplatesServiceCreateInternalTemplateBlockMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: InternalTemplateBlockCreate;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: InternalTemplateBlockCreate;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      InternalTemplatesService.createInternalTemplateBlock({
+        requestBody,
+        userId,
       }) as unknown as Promise<TData>,
     ...options,
   });

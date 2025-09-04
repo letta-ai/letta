@@ -6185,6 +6185,418 @@ export const ImportedAgentsResponse = z.object({
   agent_ids: z.array(z.string()),
 });
 
+export type InternalTemplateAgentCreate = z.infer<
+  typeof InternalTemplateAgentCreate
+>;
+export const InternalTemplateAgentCreate = z.object({
+  name: z.union([z.string(), z.undefined()]).optional(),
+  memory_blocks: z
+    .union([
+      z.array(CreateBlock),
+      z.null(),
+      z.array(z.union([z.array(CreateBlock), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tools: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  source_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  block_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_rules: z
+    .union([
+      z.array(
+        z.union([
+          ChildToolRule,
+          InitToolRule,
+          TerminalToolRule,
+          ConditionalToolRule,
+          ContinueToolRule,
+          RequiredBeforeExitToolRule,
+          MaxCountPerStepToolRule,
+          ParentToolRule,
+          RequiresApprovalToolRule,
+        ]),
+      ),
+      z.null(),
+      z.array(
+        z.union([
+          z.array(
+            z.union([
+              ChildToolRule,
+              InitToolRule,
+              TerminalToolRule,
+              ConditionalToolRule,
+              ContinueToolRule,
+              RequiredBeforeExitToolRule,
+              MaxCountPerStepToolRule,
+              ParentToolRule,
+              RequiresApprovalToolRule,
+            ]),
+          ),
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  system: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  agent_type: z.union([AgentType, z.undefined()]).optional(),
+  llm_config: z
+    .union([
+      LLMConfig,
+      z.null(),
+      z.array(z.union([LLMConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_config: z
+    .union([
+      EmbeddingConfig,
+      z.null(),
+      z.array(z.union([EmbeddingConfig, z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  initial_message_sequence: z
+    .union([
+      z.array(MessageCreate),
+      z.null(),
+      z.array(z.union([z.array(MessageCreate), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  include_base_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  include_multi_agent_tools: z.union([z.boolean(), z.undefined()]).optional(),
+  include_base_tool_rules: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  include_default_source: z.union([z.boolean(), z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  model: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  context_window_limit: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  embedding_chunk_size: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_reasoning_tokens: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  enable_reasoner: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  reasoning: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  from_template: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template: z.union([z.boolean(), z.undefined()]).optional(),
+  project: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  tool_exec_environment_variables: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  memory_variables: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  template_id: z.string(),
+  base_template_id: z.string(),
+  identity_ids: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  message_buffer_autoclear: z.union([z.boolean(), z.undefined()]).optional(),
+  enable_sleeptime: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  response_format: z
+    .union([
+      TextResponseFormat,
+      JsonSchemaResponseFormat,
+      JsonObjectResponseFormat,
+      z.null(),
+      z.array(
+        z.union([
+          TextResponseFormat,
+          JsonSchemaResponseFormat,
+          JsonObjectResponseFormat,
+          z.null(),
+        ]),
+      ),
+      z.undefined(),
+    ])
+    .optional(),
+  timezone: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  max_files_open: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  per_file_view_window_char_limit: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  deployment_id: z.string(),
+  entity_id: z.string(),
+});
+
+export type InternalTemplateBlockCreate = z.infer<
+  typeof InternalTemplateBlockCreate
+>;
+export const InternalTemplateBlockCreate = z.object({
+  value: z.string(),
+  limit: z.union([z.number(), z.undefined()]).optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  is_template: z.union([z.boolean(), z.undefined()]).optional(),
+  template_id: z.string(),
+  base_template_id: z.string(),
+  deployment_id: z.string(),
+  entity_id: z.string(),
+  preserve_on_migration: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  label: z.string(),
+  read_only: z.union([z.boolean(), z.undefined()]).optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type InternalTemplateGroupCreate = z.infer<
+  typeof InternalTemplateGroupCreate
+>;
+export const InternalTemplateGroupCreate = z.object({
+  agent_ids: z.array(z.string()),
+  description: z.string(),
+  manager_config: z
+    .union([
+      RoundRobinManager,
+      SupervisorManager,
+      DynamicManager,
+      SleeptimeManager,
+      VoiceSleeptimeManager,
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+  base_template_id: z.string(),
+  template_id: z.string(),
+  deployment_id: z.string(),
+});
+
 export type Job = z.infer<typeof Job>;
 export const Job = z.object({
   created_by_id: z
@@ -11025,6 +11437,57 @@ export const put_Upsert_identity_properties = {
   response: z.unknown(),
 };
 
+export type post_Create_internal_template_group =
+  typeof post_Create_internal_template_group;
+export const post_Create_internal_template_group = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/_internal_templates/groups'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: InternalTemplateGroupCreate,
+  }),
+  response: Group,
+};
+
+export type post_Create_internal_template_agent =
+  typeof post_Create_internal_template_agent;
+export const post_Create_internal_template_agent = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/_internal_templates/agents'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: InternalTemplateAgentCreate,
+  }),
+  response: AgentState,
+};
+
+export type post_Create_internal_template_block =
+  typeof post_Create_internal_template_block;
+export const post_Create_internal_template_block = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/_internal_templates/blocks'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: InternalTemplateBlockCreate,
+  }),
+  response: Block,
+};
+
 export type get_List_models = typeof get_List_models;
 export const get_List_models = {
   method: z.literal('GET'),
@@ -12625,6 +13088,9 @@ export const EndpointByMethod = {
     '/v1/groups/{group_id}/messages': post_Send_group_message,
     '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
     '/v1/identities/': post_Create_identity,
+    '/v1/_internal_templates/groups': post_Create_internal_template_group,
+    '/v1/_internal_templates/agents': post_Create_internal_template_agent,
+    '/v1/_internal_templates/blocks': post_Create_internal_template_block,
     '/v1/blocks/': post_Create_block,
     '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
     '/v1/sandbox-config/e2b/default':

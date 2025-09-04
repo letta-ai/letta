@@ -2760,6 +2760,305 @@ export type InputAudio = {
 
 export type format2 = 'wav' | 'mp3';
 
+/**
+ * Used for Letta Cloud
+ */
+export type InternalTemplateAgentCreate = {
+  /**
+   * The name of the agent.
+   */
+  name?: string;
+  /**
+   * The blocks to create in the agent's in-context memory.
+   */
+  memory_blocks?: Array<CreateBlock> | null;
+  /**
+   * The tools used by the agent.
+   */
+  tools?: Array<string> | null;
+  /**
+   * The ids of the tools used by the agent.
+   */
+  tool_ids?: Array<string> | null;
+  /**
+   * The ids of the sources used by the agent.
+   */
+  source_ids?: Array<string> | null;
+  /**
+   * The ids of the blocks used by the agent.
+   */
+  block_ids?: Array<string> | null;
+  /**
+   * The tool rules governing the agent.
+   */
+  tool_rules?: Array<
+    | ChildToolRule
+    | InitToolRule
+    | TerminalToolRule
+    | ConditionalToolRule
+    | ContinueToolRule
+    | RequiredBeforeExitToolRule
+    | MaxCountPerStepToolRule
+    | ParentToolRule
+    | RequiresApprovalToolRule
+  > | null;
+  /**
+   * The tags associated with the agent.
+   */
+  tags?: Array<string> | null;
+  /**
+   * The system prompt used by the agent.
+   */
+  system?: string | null;
+  /**
+   * The type of agent.
+   */
+  agent_type?: AgentType;
+  /**
+   * The LLM configuration used by the agent.
+   */
+  llm_config?: LLMConfig | null;
+  /**
+   * The embedding configuration used by the agent.
+   */
+  embedding_config?: EmbeddingConfig | null;
+  /**
+   * The initial set of messages to put in the agent's in-context memory.
+   */
+  initial_message_sequence?: Array<MessageCreate> | null;
+  /**
+   * If true, attaches the Letta core tools (e.g. core_memory related functions).
+   */
+  include_base_tools?: boolean;
+  /**
+   * If true, attaches the Letta multi-agent tools (e.g. sending a message to another agent).
+   */
+  include_multi_agent_tools?: boolean;
+  /**
+   * If true, attaches the Letta base tool rules (e.g. deny all tools not explicitly allowed).
+   */
+  include_base_tool_rules?: boolean | null;
+  /**
+   * If true, automatically creates and attaches a default data source for this agent.
+   */
+  include_default_source?: boolean;
+  /**
+   * The description of the agent.
+   */
+  description?: string | null;
+  /**
+   * The metadata of the agent.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The LLM configuration handle used by the agent, specified in the format provider/model-name, as an alternative to specifying llm_config.
+   */
+  model?: string | null;
+  /**
+   * The embedding configuration handle used by the agent, specified in the format provider/model-name.
+   */
+  embedding?: string | null;
+  /**
+   * The context window limit used by the agent.
+   */
+  context_window_limit?: number | null;
+  /**
+   * The embedding chunk size used by the agent.
+   */
+  embedding_chunk_size?: number | null;
+  /**
+   * The maximum number of tokens to generate, including reasoning step. If not set, the model will use its default value.
+   */
+  max_tokens?: number | null;
+  /**
+   * The maximum number of tokens to generate for reasoning step. If not set, the model will use its default value.
+   */
+  max_reasoning_tokens?: number | null;
+  /**
+   * Whether to enable internal extended thinking step for a reasoner model.
+   */
+  enable_reasoner?: boolean | null;
+  /**
+   * Whether to enable reasoning for this agent.
+   */
+  reasoning?: boolean | null;
+  /**
+   * The template id used to configure the agent
+   */
+  from_template?: string | null;
+  /**
+   * Whether the agent is a template
+   */
+  template?: boolean;
+  /**
+   * Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.
+   * @deprecated
+   */
+  project?: string | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The variables that should be set for the agent.
+   */
+  memory_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The id of the project the agent belongs to.
+   */
+  project_id?: string | null;
+  /**
+   * The id of the template.
+   */
+  template_id: string;
+  /**
+   * The id of the base template.
+   */
+  base_template_id: string;
+  /**
+   * The ids of the identities associated with this agent.
+   */
+  identity_ids?: Array<string> | null;
+  /**
+   * If set to True, the agent will not remember previous messages (though the agent will still retain state via core memory blocks and archival/recall memory). Not recommended unless you have an advanced use case.
+   */
+  message_buffer_autoclear?: boolean;
+  /**
+   * If set to True, memory management will move to a background agent thread.
+   */
+  enable_sleeptime?: boolean | null;
+  /**
+   * The response format for the agent.
+   */
+  response_format?:
+    | TextResponseFormat
+    | JsonSchemaResponseFormat
+    | JsonObjectResponseFormat
+    | null;
+  /**
+   * The timezone of the agent (IANA format).
+   */
+  timezone?: string | null;
+  /**
+   * Maximum number of files that can be open at once for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  max_files_open?: number | null;
+  /**
+   * The per-file view window character limit for this agent. Setting this too high may exceed the context window, which will break the agent.
+   */
+  per_file_view_window_char_limit?: number | null;
+  /**
+   * If set to True, the agent will be hidden.
+   */
+  hidden?: boolean | null;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id: string;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id: string;
+};
+
+/**
+ * Used for Letta Cloud
+ */
+export type InternalTemplateBlockCreate = {
+  /**
+   * Value of the block.
+   */
+  value: string;
+  /**
+   * Character limit of the block.
+   */
+  limit?: number;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  /**
+   * Name of the block if it is a template.
+   */
+  name?: string | null;
+  is_template?: boolean;
+  /**
+   * The id of the template.
+   */
+  template_id: string;
+  /**
+   * The id of the base template.
+   */
+  base_template_id: string;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id: string;
+  /**
+   * The id of the entity within the template.
+   */
+  entity_id: string;
+  /**
+   * Preserve the block on template migration.
+   */
+  preserve_on_migration?: boolean | null;
+  /**
+   * Label of the block.
+   */
+  label: string;
+  /**
+   * Whether the agent has read-only access to the block.
+   */
+  read_only?: boolean;
+  /**
+   * Description of the block.
+   */
+  description?: string | null;
+  /**
+   * Metadata of the block.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+/**
+ * Used for Letta Cloud
+ */
+export type InternalTemplateGroupCreate = {
+  agent_ids: Array<string>;
+  description: string;
+  manager_config?:
+    | RoundRobinManager
+    | SupervisorManager
+    | DynamicManager
+    | SleeptimeManager
+    | VoiceSleeptimeManager;
+  /**
+   * The associated project id.
+   */
+  project_id?: string | null;
+  shared_block_ids?: Array<string>;
+  /**
+   * The id of the base template.
+   */
+  base_template_id: string;
+  /**
+   * The id of the template.
+   */
+  template_id: string;
+  /**
+   * The id of the deployment.
+   */
+  deployment_id: string;
+};
+
 export type JSONSchema = {
   name: string;
   description?: string;
@@ -7476,6 +7775,27 @@ export type UpsertIdentityPropertiesData = {
 
 export type UpsertIdentityPropertiesResponse = unknown;
 
+export type CreateInternalTemplateGroupData = {
+  requestBody: InternalTemplateGroupCreate;
+  userId?: string | null;
+};
+
+export type CreateInternalTemplateGroupResponse = Group;
+
+export type CreateInternalTemplateAgentData = {
+  requestBody: InternalTemplateAgentCreate;
+  userId?: string | null;
+};
+
+export type CreateInternalTemplateAgentResponse = AgentState;
+
+export type CreateInternalTemplateBlockData = {
+  requestBody: InternalTemplateBlockCreate;
+  userId?: string | null;
+};
+
+export type CreateInternalTemplateBlockResponse = Block;
+
 export type ListModelsData = {
   providerCategory?: Array<ProviderCategory> | null;
   providerName?: string | null;
@@ -9869,6 +10189,51 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/_internal_templates/groups': {
+    post: {
+      req: CreateInternalTemplateGroupData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Group;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/_internal_templates/agents': {
+    post: {
+      req: CreateInternalTemplateAgentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: AgentState;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/_internal_templates/blocks': {
+    post: {
+      req: CreateInternalTemplateBlockData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Block;
         /**
          * Validation Error
          */

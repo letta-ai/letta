@@ -11,6 +11,7 @@ import {
   GroupsService,
   HealthService,
   IdentitiesService,
+  InternalTemplatesService,
   JobsService,
   LlmsService,
   MessagesService,
@@ -2260,6 +2261,18 @@ export type GroupsServiceSendGroupMessageStreamingMutationResult = Awaited<
 export type IdentitiesServiceCreateIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.createIdentity>
 >;
+export type InternalTemplatesServiceCreateInternalTemplateGroupMutationResult =
+  Awaited<
+    ReturnType<typeof InternalTemplatesService.createInternalTemplateGroup>
+  >;
+export type InternalTemplatesServiceCreateInternalTemplateAgentMutationResult =
+  Awaited<
+    ReturnType<typeof InternalTemplatesService.createInternalTemplateAgent>
+  >;
+export type InternalTemplatesServiceCreateInternalTemplateBlockMutationResult =
+  Awaited<
+    ReturnType<typeof InternalTemplatesService.createInternalTemplateBlock>
+  >;
 export type BlocksServiceCreateBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.createBlock>
 >;

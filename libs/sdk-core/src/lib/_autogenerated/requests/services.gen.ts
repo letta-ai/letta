@@ -230,6 +230,12 @@ import type {
   DeleteIdentityResponse,
   UpsertIdentityPropertiesData,
   UpsertIdentityPropertiesResponse,
+  CreateInternalTemplateGroupData,
+  CreateInternalTemplateGroupResponse,
+  CreateInternalTemplateAgentData,
+  CreateInternalTemplateAgentResponse,
+  CreateInternalTemplateBlockData,
+  CreateInternalTemplateBlockResponse,
   ListModelsData,
   ListModelsResponse,
   ListEmbeddingModelsData,
@@ -3643,6 +3649,83 @@ export class IdentitiesService {
       path: {
         identity_id: data.identityId,
       },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
+
+export class InternalTemplatesService {
+  /**
+   * Create Group
+   * Create a new multi-agent group with the specified configuration.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Group Successful Response
+   * @throws ApiError
+   */
+  public static createInternalTemplateGroup(
+    data: CreateInternalTemplateGroupData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateInternalTemplateGroupResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/_internal_templates/groups',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Agent
+   * Create a new agent with template-related fields.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static createInternalTemplateAgent(
+    data: CreateInternalTemplateAgentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateInternalTemplateAgentResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/_internal_templates/agents',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Create Block
+   * Create a new block with template-related fields.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static createInternalTemplateBlock(
+    data: CreateInternalTemplateBlockData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateInternalTemplateBlockResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/_internal_templates/blocks',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

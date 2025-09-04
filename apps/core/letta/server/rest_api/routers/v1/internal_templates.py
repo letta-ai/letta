@@ -16,9 +16,6 @@ async def create_group(
     group: InternalTemplateGroupCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    x_project: Optional[str] = Header(
-        None, alias="X-Project", description="The project slug to associate with the group (cloud only)."
-    ),  # Only handled by next js middleware
 ):
     """
     Create a new multi-agent group with the specified configuration.
@@ -35,9 +32,6 @@ async def create_agent(
     agent: InternalTemplateAgentCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    x_project: Optional[str] = Header(
-        None, alias="X-Project", description="The project slug to associate with the agent (cloud only)."
-    ),  # Only handled by next js middleware
 ):
     """
     Create a new agent with template-related fields.
@@ -54,9 +48,6 @@ async def create_block(
     block: InternalTemplateBlockCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    x_project: Optional[str] = Header(
-        None, alias="X-Project", description="The project slug to associate with the block (cloud only)."
-    ),  # Only handled by next js middleware
 ):
     """
     Create a new block with template-related fields.
