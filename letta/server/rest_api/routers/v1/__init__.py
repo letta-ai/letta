@@ -5,6 +5,7 @@ from letta.server.rest_api.routers.v1.folders import router as folders_router
 from letta.server.rest_api.routers.v1.groups import router as groups_router
 from letta.server.rest_api.routers.v1.health import router as health_router
 from letta.server.rest_api.routers.v1.identities import router as identities_router
+from letta.server.rest_api.routers.v1.internal_templates import router as internal_templates_router
 from letta.server.rest_api.routers.v1.jobs import router as jobs_router
 from letta.server.rest_api.routers.v1.llms import router as llm_router
 from letta.server.rest_api.routers.v1.messages import router as messages_router
@@ -25,6 +26,7 @@ ROUTERS = [
     agents_router,
     groups_router,
     identities_router,
+    internal_templates_router,
     llm_router,
     blocks_router,
     jobs_router,
