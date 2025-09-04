@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -1738,6 +1739,193 @@ class TestTurbopufferMessagesIntegration:
 
         # Clean up remaining message (use strict_mode=False since turbopuffer might be mocked)
         await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=False)
+
+    async def wait_for_embedding(
+        self, agent_id: str, message_id: str, organization_id: str, max_wait: float = 10.0, poll_interval: float = 0.5
+    ) -> bool:
+        """Poll Turbopuffer directly to check if a message has been embedded.
+
+        Args:
+            agent_id: Agent ID for the message
+            message_id: ID of the message to find
+            organization_id: Organization ID
+            max_wait: Maximum time to wait in seconds
+            poll_interval: Time between polls in seconds
+
+        Returns:
+            True if message was found in Turbopuffer within timeout, False otherwise
+        """
+        import asyncio
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        client = TurbopufferClient()
+        start_time = asyncio.get_event_loop().time()
+
+        while asyncio.get_event_loop().time() - start_time < max_wait:
+            try:
+                # Query Turbopuffer directly using timestamp mode to get all messages
+                results = await client.query_messages(
+                    agent_id=agent_id,
+                    organization_id=organization_id,
+                    search_mode="timestamp",
+                    top_k=100,  # Get more messages to ensure we find it
+                )
+
+                # Check if our message ID is in the results
+                if any(msg["id"] == message_id for msg, _, _ in results):
+                    return True
+
+            except Exception as e:
+                # Log but don't fail - Turbopuffer might still be processing
+                pass
+
+            await asyncio.sleep(poll_interval)
+
+        return False
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_creation_background_mode(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that messages are embedded in background when strict_mode=False"""
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create message in background mode
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Background test message about Python programming")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=False,  # Background mode
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Message should be in PostgreSQL immediately
+        sql_message = await server.message_manager.get_message_by_id_async(message_id, default_user)
+        assert sql_message is not None
+        assert sql_message.id == message_id
+
+        # Poll for embedding completion by querying Turbopuffer directly
+        embedded = await self.wait_for_embedding(
+            agent_id=sarah_agent.id, message_id=message_id, organization_id=default_user.organization_id, max_wait=10.0, poll_interval=0.5
+        )
+        assert embedded, "Message was not embedded in Turbopuffer within timeout"
+
+        # Now verify it's also searchable through the search API
+        search_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="Python programming",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(search_results) > 0
+        assert any(msg.id == message_id for msg, _ in search_results)
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_update_background_mode(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that message updates work in background mode"""
+        from letta.schemas.message import MessageUpdate
+
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create initial message with strict_mode=True to ensure it's embedded
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Original content about databases")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=True,  # Ensure initial embedding
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Verify initial content is searchable
+        initial_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert any(msg.id == message_id for msg, _ in initial_results)
+
+        # Update message in background mode
+        updated_message = await server.message_manager.update_message_by_id_async(
+            message_id=message_id,
+            message_update=MessageUpdate(content="Updated content about machine learning"),
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=False,  # Background mode
+        )
+
+        assert updated_message.id == message_id
+
+        # PostgreSQL should be updated immediately
+        sql_message = await server.message_manager.get_message_by_id_async(message_id, default_user)
+        assert "machine learning" in server.message_manager._extract_message_text(sql_message)
+
+        # Wait a bit for the background update to process
+        await asyncio.sleep(1.0)
+
+        # Poll for the update to be reflected in Turbopuffer
+        # We check by searching for the new content
+        embedded = await self.wait_for_embedding(
+            agent_id=sarah_agent.id, message_id=message_id, organization_id=default_user.organization_id, max_wait=10.0, poll_interval=0.5
+        )
+        assert embedded, "Updated message was not re-embedded within timeout"
+
+        # Now verify the new content is searchable
+        new_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="machine learning",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert any(msg.id == message_id for msg, _ in new_results)
+
+        # Old content should eventually no longer be searchable
+        # (may take a moment for the delete to process)
+        await asyncio.sleep(2.0)
+        old_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        # The message shouldn't match the old search term anymore
+        if len(old_results) > 0:
+            # If we find results, verify our message doesn't contain the old content
+            for msg, _ in old_results:
+                if msg.id == message_id:
+                    text = server.message_manager._extract_message_text(msg)
+                    assert "databases" not in text.lower()
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")

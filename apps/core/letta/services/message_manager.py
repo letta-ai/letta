@@ -21,7 +21,7 @@ from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import enforce_types, fire_and_forget
 
 logger = get_logger(__name__)
 
@@ -101,7 +101,7 @@ class MessageManager:
                         args = json.loads(tool_call.function.arguments)
                         actual_message = args.get(DEFAULT_MESSAGE_TOOL_KWARG, "")
 
-                        return json.dumps({"thinking": content_str, "message": actual_message})
+                        return json.dumps({"thinking": content_str, "content": actual_message})
                     except (json.JSONDecodeError, KeyError):
                         # fallback if parsing fails
                         pass
@@ -324,6 +324,7 @@ class MessageManager:
             pydantic_msgs: List of Pydantic message models to create
             actor: User performing the action
             embedding_config: Optional embedding configuration to enable message embedding in Turbopuffer
+            strict_mode: If True, wait for embedding to complete; if False, run in background
 
         Returns:
             List of created Pydantic message models
@@ -363,58 +364,79 @@ class MessageManager:
             await session.commit()
 
             # embed messages in turbopuffer if enabled and embedding_config provided
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
             if should_use_tpuf_for_messages() and embedding_config and result:
-                try:
-                    # extract agent_id from the first message (all should have same agent_id)
-                    agent_id = result[0].agent_id
-                    if agent_id:
-                        # extract text content from each message
-                        message_texts = []
-                        message_ids = []
-                        roles = []
-                        created_ats = []
-                        # combine assistant+tool messages before embedding
-                        combined_messages = self._combine_assistant_tool_messages(result)
-
-                        for msg in combined_messages:
-                            text = self._extract_message_text(msg).strip()
-                            if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
-                                message_texts.append(text)
-                                message_ids.append(msg.id)
-                                roles.append(msg.role)
-                                created_ats.append(msg.created_at)
-
-                        if message_texts:
-                            # generate embeddings using provided config
-                            from letta.llm_api.llm_client import LLMClient
-
-                            embedding_client = LLMClient.create(
-                                provider_type=embedding_config.embedding_endpoint_type,
-                                actor=actor,
-                            )
-                            embeddings = await embedding_client.request_embeddings(message_texts, embedding_config)
-
-                            # insert to turbopuffer
-                            tpuf_client = TurbopufferClient()
-                            await tpuf_client.insert_messages(
-                                agent_id=agent_id,
-                                message_texts=message_texts,
-                                embeddings=embeddings,
-                                message_ids=message_ids,
-                                organization_id=actor.organization_id,
-                                roles=roles,
-                                created_ats=created_ats,
-                            )
-                            logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
-                except Exception as e:
-                    logger.error(f"Failed to embed messages in Turbopuffer: {e}")
-
+                # extract agent_id from the first message (all should have same agent_id)
+                agent_id = result[0].agent_id
+                if agent_id:
                     if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+                        # wait for embedding to complete
+                        await self._embed_messages_background(result, embedding_config, actor, agent_id)
+                    else:
+                        # fire and forget - run embedding in background
+                        fire_and_forget(
+                            self._embed_messages_background(result, embedding_config, actor, agent_id),
+                            task_name=f"embed_messages_for_agent_{agent_id}",
+                        )
 
             return result
+
+    async def _embed_messages_background(
+        self, messages: List[PydanticMessage], embedding_config: EmbeddingConfig, actor: PydanticUser, agent_id: str
+    ) -> None:
+        """Background task to embed and store messages in Turbopuffer.
+
+        Args:
+            messages: List of messages to embed
+            embedding_config: Embedding configuration
+            actor: User performing the action
+            agent_id: Agent ID for the messages
+        """
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+            from letta.llm_api.llm_client import LLMClient
+
+            # extract text content from each message
+            message_texts = []
+            message_ids = []
+            roles = []
+            created_ats = []
+
+            # combine assistant+tool messages before embedding
+            combined_messages = self._combine_assistant_tool_messages(messages)
+
+            for msg in combined_messages:
+                text = self._extract_message_text(msg).strip()
+                if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
+                    message_texts.append(text)
+                    message_ids.append(msg.id)
+                    roles.append(msg.role)
+                    created_ats.append(msg.created_at)
+
+            if message_texts:
+                # generate embeddings using provided config
+                embedding_client = LLMClient.create(
+                    provider_type=embedding_config.embedding_endpoint_type,
+                    actor=actor,
+                )
+                embeddings = await embedding_client.request_embeddings(message_texts, embedding_config)
+
+                # insert to turbopuffer
+                tpuf_client = TurbopufferClient()
+                await tpuf_client.insert_messages(
+                    agent_id=agent_id,
+                    message_texts=message_texts,
+                    embeddings=embeddings,
+                    message_ids=message_ids,
+                    organization_id=actor.organization_id,
+                    roles=roles,
+                    created_ats=created_ats,
+                )
+                logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
+        except Exception as e:
+            logger.error(f"Failed to embed messages in Turbopuffer for agent {agent_id}: {e}")
+            # don't re-raise the exception in background mode - just log it
 
     @enforce_types
     @trace_method
@@ -525,6 +547,13 @@ class MessageManager:
         """
         Updates an existing record in the database with values from the provided record object.
         Async version of the function above.
+
+        Args:
+            message_id: ID of the message to update
+            message_update: Update data for the message
+            actor: User performing the action
+            embedding_config: Optional embedding configuration for Turbopuffer
+            strict_mode: If True, wait for embedding update to complete; if False, run in background
         """
         async with db_registry.async_session() as session:
             # Fetch existing message from database
@@ -540,48 +569,67 @@ class MessageManager:
             await session.commit()
 
             # update message in turbopuffer if enabled (delete and re-insert)
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
             if should_use_tpuf_for_messages() and embedding_config and pydantic_message.agent_id:
-                try:
-                    # extract text content from updated message
-                    text = self._extract_message_text(pydantic_message)
+                # extract text content from updated message
+                text = self._extract_message_text(pydantic_message)
 
-                    # only update in turbopuffer if there's text content (role filtering is handled in _extract_message_text)
-                    if text:
-                        tpuf_client = TurbopufferClient()
-
-                        # delete old message from turbopuffer
-                        await tpuf_client.delete_messages(
-                            agent_id=pydantic_message.agent_id, organization_id=actor.organization_id, message_ids=[message_id]
-                        )
-
-                        # generate new embedding
-                        from letta.llm_api.llm_client import LLMClient
-
-                        embedding_client = LLMClient.create(
-                            provider_type=embedding_config.embedding_endpoint_type,
-                            actor=actor,
-                        )
-                        embeddings = await embedding_client.request_embeddings([text], embedding_config)
-
-                        # re-insert with updated content
-                        await tpuf_client.insert_messages(
-                            agent_id=pydantic_message.agent_id,
-                            message_texts=[text],
-                            embeddings=embeddings,
-                            message_ids=[message_id],
-                            organization_id=actor.organization_id,
-                            roles=[pydantic_message.role],
-                            created_ats=[pydantic_message.created_at],
-                        )
-                        logger.info(f"Successfully updated message {message_id} in Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to update message in Turbopuffer: {e}")
+                # only update in turbopuffer if there's text content
+                if text:
                     if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+                        # wait for embedding update to complete
+                        await self._update_message_embedding_background(pydantic_message, text, embedding_config, actor)
+                    else:
+                        # fire and forget - run embedding update in background
+                        fire_and_forget(
+                            self._update_message_embedding_background(pydantic_message, text, embedding_config, actor),
+                            task_name=f"update_message_embedding_{message_id}",
+                        )
 
             return pydantic_message
+
+    async def _update_message_embedding_background(
+        self, message: PydanticMessage, text: str, embedding_config: EmbeddingConfig, actor: PydanticUser
+    ) -> None:
+        """Background task to update a message's embedding in Turbopuffer.
+
+        Args:
+            message: The updated message
+            text: Extracted text content from the message
+            embedding_config: Embedding configuration
+            actor: User performing the action
+        """
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+            from letta.llm_api.llm_client import LLMClient
+
+            tpuf_client = TurbopufferClient()
+
+            # delete old message from turbopuffer
+            await tpuf_client.delete_messages(agent_id=message.agent_id, organization_id=actor.organization_id, message_ids=[message.id])
+
+            # generate new embedding
+            embedding_client = LLMClient.create(
+                provider_type=embedding_config.embedding_endpoint_type,
+                actor=actor,
+            )
+            embeddings = await embedding_client.request_embeddings([text], embedding_config)
+
+            # re-insert with updated content
+            await tpuf_client.insert_messages(
+                agent_id=message.agent_id,
+                message_texts=[text],
+                embeddings=embeddings,
+                message_ids=[message.id],
+                organization_id=actor.organization_id,
+                roles=[message.role],
+                created_ats=[message.created_at],
+            )
+            logger.info(f"Successfully updated message {message.id} in Turbopuffer")
+        except Exception as e:
+            logger.error(f"Failed to update message {message.id} in Turbopuffer: {e}")
+            # don't re-raise the exception in background mode - just log it
 
     def _update_message_by_id_impl(
         self, message_id: str, message_update: MessageUpdate, actor: PydanticUser, message: MessageModel
