@@ -7,7 +7,6 @@ import './observability.scss';
 import { ActiveAgentChart } from './_components/charts/ActiveAgentChart/ActiveAgentChart';
 import { ObservabilityPageWrapper } from './_components/ObservabilityPageWrapper/ObservabilityPageWrapper';
 import { ToolErrorsChart } from './_components/charts/ToolErrorsChart/ToolErrorsChart';
-import { TotalResponseTimeChart } from './_components/charts/TotalResponseTimeChart/TotalResponseTimeChart';
 import { APIErrorsChart } from './_components/charts/APIErrorsChart/APIErrorsChart';
 import { ToolErrorRateChart } from './_components/charts/ToolErrorRateChart/ToolErrorRateChart';
 import { ToolErrorsByNameChart } from './_components/charts/ToolErrorsByNameChart/ToolErrorsByNameChart';
@@ -34,8 +33,9 @@ function ChartRow(props: ChartRowProps) {
 
 const allCharts = [
   <TotalMessagesPerDayChart key="total-messages-per-day-chart" />,
+  <StepDurationByNameChart type="p99" key="step-duration-by-name-chart" />,
   // <ToolErrorsChart key="tool-errors-chart" />,
-  <TotalResponseTimeChart key="total-response-time-chart" />,
+  // <TotalResponseTimeChart key="total-response-time-chart" />,
   <APIErrorsChart key="api-errors-chart" />,
   <ToolErrorRateChart key="tool-error-rate-chart" />,
   <LLMLatencyChart key="llm-latency-chart" />,
@@ -54,7 +54,7 @@ const activityCharts = [
 ];
 
 const performanceCharts = [
-  <TotalResponseTimeChart key="total-response-time-chart" />,
+  // <TotalResponseTimeChart key="total-response-time-chart" />,
   <LLMLatencyChart key="llm-latency-chart" />,
 
   <StepDurationByNameChart type="p50" key="step-duration-by-name-chart" />,
