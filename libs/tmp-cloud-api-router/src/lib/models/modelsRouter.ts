@@ -6,6 +6,7 @@ import { isNull } from 'drizzle-orm';
 import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import type { SDKContext } from '../types';
+import { camelCaseKeys } from '@letta-cloud/utils-shared';
 
 type ListLLMModelsRequest = ServerInferRequest<
   typeof cloudContracts.models.listLLMModels
@@ -21,6 +22,7 @@ async function listLLMModels(
 ): Promise<ListLLMModelsResponse> {
   const { lettaAgentsUserId } = getContextDataHack(req, context);
   const { provider_category } = req.query;
+  const otherQueries = camelCaseKeys(req.query);
 
   if (!lettaAgentsUserId) {
     return {
@@ -34,7 +36,7 @@ async function listLLMModels(
   if (provider_category && !provider_category.includes('base')) {
     const byokModels = await ModelsService.listModels(
       {
-        ...req.query,
+        ...otherQueries,
         providerCategory: ['byok'],
       },
       {
@@ -50,7 +52,7 @@ async function listLLMModels(
 
   const [llmBackends, inferenceModelMetaData, byokModels] = await Promise.all([
     ModelsService.listModels({
-      ...req.query,
+      ...otherQueries,
       providerCategory: ['base'],
     }),
     db.query.inferenceModelsMetadata.findMany({
@@ -69,7 +71,7 @@ async function listLLMModels(
       ? [
           ModelsService.listModels(
             {
-              ...req.query,
+              ...otherQueries,
               providerCategory: ['byok'],
             },
             {
