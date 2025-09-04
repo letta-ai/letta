@@ -6,9 +6,7 @@ import {
   agentTemplateBlockTemplates,
 } from '@letta-cloud/service-database';
 import type { TxType } from '@letta-cloud/service-database';
-import {
-  LettaTemplateTypes,
-} from '@letta-cloud/sdk-core';
+import { LettaTemplateTypes } from '@letta-cloud/sdk-core';
 import type {
   AgentFileSchema,
   letta__schemas__agent_file__AgentSchema,
@@ -24,6 +22,7 @@ import { getNewTemplateName } from '../getNewTemplateName/getNewTemplateName';
 import { createTemplateEntitiesFromAgentFileAgentSchema } from '../createTemplateEntitiesFromAgentState/createTemplateEntitiesFromAgentFileAgentSchema';
 import { nanoid } from 'nanoid';
 import { saveTemplate } from '@letta-cloud/utils-server';
+import { mapToolsFromAgentFile } from '../mapToolsFromAgentFile/mapToolsFromAgentFile';
 
 interface CreateTemplateOptions {
   tx?: TxType;
@@ -48,10 +47,15 @@ export const CREATE_TEMPLATE_ERRORS = {
   UNSUPPORTED_GROUP_TYPE: 'Group type is not supported',
   MISSING_MANAGER_ENTITY_ID: 'Missing manager entity id',
   NO_MANAGER_PROVIDED: 'No manager was provided',
-  TOO_MANY_MANAGERS: 'There are too many group managers provided in this schema, we only support (1)',
+  TOO_MANY_MANAGERS:
+    'There are too many group managers provided in this schema, we only support (1)',
+  TOOLS_MISSING_JSON_CONFIG: 'One or more custom tools provided are missing json_schema configuration',
+  TOOL_CREATION_FAILED: 'Failed to create one or more custom tools',
 };
 
-export function determineTemplateType(base?: AgentFileSchema): LettaTemplateTypesType {
+export function determineTemplateType(
+  base?: AgentFileSchema,
+): LettaTemplateTypesType {
   if (!base) return 'dynamic';
 
   const groupCount = base.groups?.length ?? 0;
@@ -69,6 +73,10 @@ export function determineTemplateType(base?: AgentFileSchema): LettaTemplateType
 
   // Has groups - check first group type
   const firstGroup = base.groups[0];
+
+  if (!firstGroup) {
+    throw new Error(CREATE_TEMPLATE_ERRORS.INVALID_GROUP_CONFIG);
+  }
 
   // Check if it's a sleeptime or voice_sleeptime group
   if (firstGroup.manager_config?.manager_type === 'sleeptime') {
@@ -294,6 +302,15 @@ export async function createTemplate(options: CreateTemplateOptions) {
 
   const templateType = determineTemplateType(base);
 
+  if (base?.tools) {
+    // Validate that all custom tools have json_schema
+    for (const tool of base.tools) {
+      if (tool.tool_type ==='custom' && tool.source_code && !tool.json_schema) {
+        throw new Error(CREATE_TEMPLATE_ERRORS.TOOLS_MISSING_JSON_CONFIG);
+      }
+    }
+  }
+
   async function executeInTransaction(tx: TxType) {
     const name = await getNewTemplateName({
       organizationId,
@@ -304,6 +321,21 @@ export async function createTemplate(options: CreateTemplateOptions) {
     });
 
     const mainAgentEntityId = nanoid(8);
+
+
+    // Create tool mapping from agent file tools to server tool IDs
+    let toolMapping: Record<string, string> = {};
+    if (base) {
+      try {
+        toolMapping = await mapToolsFromAgentFile({
+          base,
+          lettaAgentsId,
+        });
+      } catch (_) {
+        // If tool creation fails, throw a specific error
+        throw new Error(CREATE_TEMPLATE_ERRORS.TOOL_CREATION_FAILED);
+      }
+    }
 
     // Create the letta template first
     const [lettaTemplateResult] = await tx
@@ -371,6 +403,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
                 lettaTemplateId: lettaTemplateResult.id,
                 projectId,
                 tx,
+                toolMapping,
               }),
               createTemplateEntitiesFromAgentFileAgentSchema({
                 agentSchema: {
@@ -383,6 +416,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
                 lettaTemplateId: lettaTemplateResult.id,
                 projectId,
                 tx,
+                toolMapping,
               }),
             ],
           );
@@ -425,6 +459,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
               lettaTemplateId: lettaTemplateResult.id,
               projectId,
               tx,
+              toolMapping,
             });
 
           // Create block associations for classic agent
@@ -467,6 +502,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
                 lettaTemplateId: lettaTemplateResult.id,
                 projectId,
                 tx,
+                toolMapping,
                 entityId:
                   (agent.group_ids || []).length === 1
                     ? mainAgentEntityId
@@ -492,7 +528,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
       }
     }
 
-    return await saveTemplate({
+    const lettaTemplate = await saveTemplate({
       organizationId,
       lettaAgentsId,
       projectSlug: project!.slug,
@@ -500,7 +536,12 @@ export async function createTemplate(options: CreateTemplateOptions) {
       message: 'Init',
       tx,
     });
-  };
+
+    return {
+      lettaTemplate,
+      projectSlug: project!.slug,
+    };
+  }
 
   // If a transaction is provided, use it; otherwise create a new one
   if (tx) {

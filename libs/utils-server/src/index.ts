@@ -32,7 +32,10 @@ export * from './lib/createSimulatedAgent/createSimulatedAgent';
 export * from './lib/getTemplateByName/getTemplateByName';
 export * from './lib/convertV1AgentTemplateToV2Agent/convertV1AgentTemplateToV2Agent';
 export * from './lib/createTemplateFromAgentState/createTemplateFromAgentState';
+export * from './lib/createTemplate/createTemplate';
 export * from './lib/saveTemplateVersion/saveTemplate';
 export * from './lib/migrateEntities/migrateEntities';
 export * from './lib/forkTemplate/forkTemplate';
-export * from './lib/createEntitiesFromTemplate/createEntitiesFromTemplate'
+export * from './lib/createEntitiesFromTemplate/createEntitiesFromTemplate';
+export * from './lib/mapToolsFromAgentFile/mapToolsFromAgentFile';
+export * from './lib/getNewTemplateName/getNewTemplateName'

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { extendZodWithOpenApi } from '@anatine/zod-openapi';
 import { zodTypes } from '@letta-cloud/sdk-core';
 import { TemplateSnapshotSchema } from '@letta-cloud/utils-shared';
+import type { AgentFileSchema } from '@letta-cloud/sdk-core';
 
 extendZodWithOpenApi(z);
 
@@ -115,7 +116,13 @@ const templatesQuery = z.object({
       message: 'Limit must be between 1 and 100',
     })
     .optional(),
-  version: z.string().optional().openapi({ description: 'Specify the version you want to return, otherwise will return the latest version' }),
+  version: z
+    .string()
+    .optional()
+    .openapi({
+      description:
+        'Specify the version you want to return, otherwise will return the latest version',
+    }),
   template_id: z.string().optional(),
   name: z.string().optional(),
   search: z.string().optional(),
@@ -232,10 +239,23 @@ const forkTemplate = c.mutation({
   },
 });
 
+// TypeScript types for createTemplate body
+export type CreateTemplateFromAgent = {
+  type: 'agent';
+  agent_id: string;
+  name?: string;
+};
+
+export type CreateTemplateFromAgentFile = {
+  type: 'agent_file';
+  agent_file: AgentFileSchema;
+  name?: string;
+};
+
 const createTemplate = c.mutation({
   path: '/v1/templates/:project',
   method: 'POST',
-  description: 'Creates a new template from an existing agent',
+  description: 'Creates a new template from an existing agent or agent file',
   summary: 'Create template (Cloud-only)',
   body: z
     .discriminatedUnion('type', [
@@ -261,6 +281,29 @@ const createTemplate = c.mutation({
         .openapi({
           summary: 'From Agent',
           description: 'Create a template from an existing agent',
+        }),
+      z
+        .object({
+          type: z.literal('agent_file'),
+          agent_file: z.record(z.string(), z.any()).openapi({
+            description:
+              'The agent file to use as a template, this should be a JSON file exported from the platform',
+          }),
+          name: z
+            .string()
+            .regex(/^[a-zA-Z0-9_-]+$/, {
+              message:
+                'Template name can only contain alphanumeric characters, underscores, and dashes',
+            })
+            .optional()
+            .openapi({
+              description:
+                'Optional custom name for the template. If not provided, a random name will be generated.',
+            }),
+        })
+        .openapi({
+          summary: 'From Agent File',
+          description: 'Create a template from an uploaded agent file',
         }),
     ])
     .openapi({
@@ -402,12 +445,9 @@ const updateTemplateDescription = c.mutation({
     }),
   }),
   body: z.object({
-    description: z
-      .string()
-      .optional()
-      .openapi({
-        description: 'The new description for the template',
-      }),
+    description: z.string().optional().openapi({
+      description: 'The new description for the template',
+    }),
   }),
   responses: {
     200: z.object({

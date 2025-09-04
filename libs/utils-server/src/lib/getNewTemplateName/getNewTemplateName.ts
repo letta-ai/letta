@@ -10,6 +10,11 @@ interface GetNewTemplateNameProps {
   tx?: TxType;
 }
 
+export const GET_NEW_TEMPLATE_NAME_ERRORS = {
+  NAME_MUST_BE_ALPHANUMERIC: 'Name must be alphanumeric',
+  NAME_ALREADY_EXISTS: 'Name already exists',
+}
+
 export async function getNewTemplateName(
   props: GetNewTemplateNameProps,
 ): Promise<string> {
@@ -18,7 +23,7 @@ export async function getNewTemplateName(
   async function executeWithTransaction(_transaction: TxType): Promise<string> {
     if (suggestedName) {
       if (!/^[a-zA-Z0-9_-]+$/.test(suggestedName)) {
-        throw new Error('Name must be alphanumeric');
+        throw new Error(GET_NEW_TEMPLATE_NAME_ERRORS.NAME_MUST_BE_ALPHANUMERIC);
       }
 
       const exists = await db.query.lettaTemplates.findFirst({
@@ -33,7 +38,7 @@ export async function getNewTemplateName(
         if (allowNameOverride) {
           return findUniqueAgentTemplateName();
         } else {
-          throw new Error('Name already exists');
+          throw new Error(GET_NEW_TEMPLATE_NAME_ERRORS.NAME_ALREADY_EXISTS);
         }
       }
 

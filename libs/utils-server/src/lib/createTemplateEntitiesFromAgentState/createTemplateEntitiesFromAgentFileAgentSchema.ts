@@ -7,6 +7,7 @@ import type { letta__schemas__agent_file__AgentSchema } from '@letta-cloud/sdk-c
 import { nanoid } from 'nanoid';
 import { DEFAULT_LLM_MODEL } from '@letta-cloud/types';
 import { convertRecordMemoryVariablesToMemoryVariablesV1 } from '@letta-cloud/utils-shared';
+import { mapAgentToolIds } from '../mapToolsFromAgentFile/mapToolsFromAgentFile';
 
 interface CreateTemplateFromAgentFileAgentSchemaProps {
   agentSchema?: letta__schemas__agent_file__AgentSchema;
@@ -16,6 +17,7 @@ interface CreateTemplateFromAgentFileAgentSchemaProps {
   projectId: string;
   override_agentTemplateId?: string;
   tx?: TxType;
+  toolMapping?: { [originalToolId: string]: string };
 }
 
 export async function createTemplateEntitiesFromAgentFileAgentSchema(
@@ -29,6 +31,7 @@ export async function createTemplateEntitiesFromAgentFileAgentSchema(
     projectId,
     organizationId,
     lettaTemplateId,
+    toolMapping,
   } = props;
 
   async function executeWithTransaction(transaction: TxType) {
@@ -38,9 +41,12 @@ export async function createTemplateEntitiesFromAgentFileAgentSchema(
       : null;
 
     // Create agent template from AgentSchema
+    // Map tool IDs using the tool mapping
+    const mappedToolIds = toolMapping ? mapAgentToolIds(agentSchema, toolMapping) : (agentSchema?.tool_ids ?? []);
+
     const agentTemplate = {
-      toolIds: agentSchema?.tool_ids ?? [],
-      sourceIds: agentSchema?.source_ids ?? [],
+      toolIds: mappedToolIds,
+      sourceIds: [],
       tags: agentSchema?.tags ?? [],
       identityIds: [],
       agentType: agentSchema?.agent_type ?? 'memgpt_v2_agent',

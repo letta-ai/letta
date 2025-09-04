@@ -12160,7 +12160,7 @@
     },
     "/v1/templates/{project}": {
       "post": {
-        "description": "Creates a new template from an existing agent",
+        "description": "Creates a new template from an existing agent or agent file",
         "summary": "Create template (Cloud-only)",
         "tags": ["templates"],
         "parameters": [
@@ -12204,6 +12204,30 @@
                     "required": ["type", "agent_id"],
                     "summary": "From Agent",
                     "description": "Create a template from an existing agent"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["agent_file"]
+                      },
+                      "agent_file": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "nullable": true
+                        },
+                        "description": "The agent file to use as a template, this should be a JSON file exported from the platform"
+                      },
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "description": "Optional custom name for the template. If not provided, a random name will be generated."
+                      }
+                    },
+                    "required": ["type", "agent_file"],
+                    "summary": "From Agent File",
+                    "description": "Create a template from an uploaded agent file"
                   }
                 ],
                 "summary": "Create template",

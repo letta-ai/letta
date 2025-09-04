@@ -16,6 +16,9 @@ import {
   forkTemplate as forkTemplateFn,
   createTemplateFromAgentState,
   createEntitiesFromTemplate,
+  createTemplate as createTemplateFromAgentFile,
+  CREATE_TEMPLATE_ERRORS,
+  GET_NEW_TEMPLATE_NAME_ERRORS,
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { and, eq, ilike, count, not, desc } from 'drizzle-orm';
@@ -23,7 +26,12 @@ import { validateVersionString } from '@letta-cloud/utils-shared';
 import { generateTemplateSnapshot } from '@letta-cloud/utils-shared';
 import { environment } from '@letta-cloud/config-environment-variables';
 import { startMigrateTemplateEntities } from '@letta-cloud/lettuce-client';
-import { AgentsService, BlocksService } from '@letta-cloud/sdk-core';
+import {
+  type AgentFileSchema,
+  AgentsService,
+  BlocksService,
+  isAPIError
+} from '@letta-cloud/sdk-core';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
   typeof cloudContracts.templates.createAgentsFromTemplate
@@ -210,8 +218,12 @@ async function listTemplates(
   const templatesResponse = await db.query.lettaTemplates.findMany({
     where: and(
       eq(lettaTemplates.organizationId, organizationId),
-      ...(version && version !== 'latest') ? [eq(lettaTemplates.version, version)] : [],
-      ...(!template_id && (!version || version === 'latest') ? [eq(lettaTemplates.latestDeployed, true)] : []),
+      ...(version && version !== 'latest'
+        ? [eq(lettaTemplates.version, version)]
+        : []),
+      ...(!template_id && (!version || version === 'latest')
+        ? [eq(lettaTemplates.latestDeployed, true)]
+        : []),
       ...(search ? [ilike(lettaTemplates.name, `%${search}%`)] : []),
       ...(name && !exact ? [ilike(lettaTemplates.name, `%${name}%`)] : []),
       ...(name && exact ? [eq(lettaTemplates.name, name)] : []),
@@ -509,7 +521,7 @@ async function createTemplate(
     context,
   );
   const { project } = req.params;
-  const { agent_id, name } = req.body;
+  const { name, type } = req.body;
 
   // Get the project by slug
   const projectData = await db.query.projects.findFirst({
@@ -529,65 +541,108 @@ async function createTemplate(
   }
 
   try {
-    // Retrieve the agent to create template from
-    const agentState = await AgentsService.retrieveAgent(
-      {
-        agentId: agent_id,
-      },
-      {
-        user_id: lettaAgentsUserId,
-      },
-    );
+    let lettaTemplate, projectSlug;
 
-    if (!agentState) {
+    if (type === 'agent') {
+      const { agent_id } = req.body;
+      // Retrieve the agent to create template from
+      const agentState = await AgentsService.retrieveAgent(
+        {
+          agentId: agent_id,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        },
+      ).catch((e) => {
+        if (isAPIError(e)) {
+          if (e.status === 404 || e.status === 400) {
+            return null;
+          }
+        }
+
+        throw e;
+      });
+
+      if (!agentState) {
+        return {
+          status: 400,
+          body: {
+            message: 'Agent not found',
+          },
+        };
+      }
+
+      // check if agent has any shared memory blocks, disable
+      const memoryBlockSiblings = await Promise.all(
+        agentState.memory.blocks.map(async (block) => {
+          const agentList = await BlocksService.listAgentsForBlock(
+            {
+              blockId: block.id || '',
+            },
+            {
+              user_id: lettaAgentsUserId,
+            },
+          );
+
+          return agentList.length > 1;
+        }),
+      );
+
+      const hasSharedMemoryBlocks = memoryBlockSiblings.some(
+        (hasShared) => hasShared === true,
+      );
+
+      if (hasSharedMemoryBlocks) {
+        return {
+          status: 400,
+          body: {
+            message:
+              'Cannot create template from agent with shared memory blocks',
+          },
+        };
+      }
+
+      // Create template from agent state
+      const result = await createTemplateFromAgentState({
+        projectId: projectData.id,
+        organizationId,
+        lettaAgentsId: lettaAgentsUserId,
+        userId,
+        agentState,
+        name,
+      });
+      lettaTemplate = result.lettaTemplate;
+      projectSlug = result.projectSlug;
+    } else if (type === 'agent_file') {
+      const { agent_file: agentFileSchema } = req.body;
+
+      if (!agentFileSchema) {
+        return {
+          status: 400,
+          body: {
+            message: 'Agent file schema is required for type agent_file',
+          },
+        };
+      }
+
+      const result = await createTemplateFromAgentFile({
+        projectId: projectData.id,
+        organizationId,
+        lettaAgentsId: lettaAgentsUserId,
+        userId,
+        base: agentFileSchema as AgentFileSchema,
+        name,
+      });
+      lettaTemplate = result.lettaTemplate;
+      projectSlug = result.projectSlug;
+    } else {
       return {
         status: 400,
         body: {
-          message: 'Agent not found',
+          message: 'Invalid template type',
         },
       };
     }
-
-    // check if agent has any shared memory blocks, disable
-    const memoryBlockSiblings = await Promise.all(
-      agentState.memory.blocks.map(async (block) => {
-        const agentList = await BlocksService.listAgentsForBlock(
-          {
-            blockId: block.id || '',
-          },
-          {
-            user_id: lettaAgentsUserId,
-          },
-        );
-
-        return agentList.length > 1;
-      }),
-    );
-
-    const hasSharedMemoryBlocks = memoryBlockSiblings.some(
-      (hasShared) => hasShared === true,
-    );
-
-    if (hasSharedMemoryBlocks) {
-      return {
-        status: 400,
-        body: {
-          message:
-            'Cannot create template from agent with shared memory blocks',
-        },
-      };
-    }
-
-    // Create template from agent state
-    const { lettaTemplate, projectSlug } = await createTemplateFromAgentState({
-      projectId: projectData.id,
-      organizationId,
-      lettaAgentsId: lettaAgentsUserId,
-      userId,
-      agentState,
-      name,
-    });
-
     return {
       status: 201,
       body: {
@@ -602,11 +657,34 @@ async function createTemplate(
       },
     };
   } catch (error) {
-    console.error('Error creating template:', error);
+    if (error instanceof Error) {
+      // Get all createTemplate error messages that should be exposed to users
+      const knownErrors = Object.values({
+        ...CREATE_TEMPLATE_ERRORS,
+        ...GET_NEW_TEMPLATE_NAME_ERRORS,
+      });
+
+      // Check if the error message matches any known error
+      const isKnownError = knownErrors.some((knownError) =>
+        error.message.includes(knownError),
+      );
+
+      if (isKnownError) {
+        return {
+          status: 400,
+          body: {
+            message: error.message,
+          },
+        };
+      }
+    }
+
+    // This catch block should only handle unexpected errors that weren't caught above
+    console.error('Unexpected error in createTemplate:', error);
     return {
-      status: 400,
+      status: 500,
       body: {
-        message: 'Failed to create template from agent',
+        message: 'An unexpected error occurred. Please try again.',
       },
     };
   }

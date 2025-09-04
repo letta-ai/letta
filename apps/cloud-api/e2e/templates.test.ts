@@ -3,6 +3,7 @@ import { BASE_URL, lettaAxiosSDK } from './constants';
 import { destroyRedisInstance } from '@letta-cloud/service-redis';
 import waitOn from 'wait-on';
 import { getAgentByName, getAPIKey } from './helpers';
+import type { TemplateSnapshotSchemaType } from '@letta-cloud/utils-shared';
 
 const testAgentName = 'template-test-agent';
 
@@ -22,6 +23,9 @@ const testRenameTemplateName = `e2e-test-rename-template`;
 const testRenameNewName = `e2e-test-renamed-template`;
 const testDeleteComprehensiveName = `e2e-test-delete-comprehensive`;
 const testEntityIdConsistencyName = `e2e-test-entity-id-consistency`;
+const testClassicAgentFileName = `e2e-test-classic-agent-file`;
+const testDynamicAgentFileName = `e2e-test-dynamic-agent-file`;
+const testSleeptimeAgentFileName = `e2e-test-sleeptime-agent-file`;
 
 const customName = `custom-template-name`;
 
@@ -94,6 +98,9 @@ beforeAll(async () => {
     testRenameNewName,
     testDeleteComprehensiveName,
     testEntityIdConsistencyName,
+    testClassicAgentFileName,
+    testDynamicAgentFileName,
+    testSleeptimeAgentFileName,
   ].forEach(async (name) => {
     try {
       await lettaAxiosSDK.delete(`/v1/templates/${testProject}/${name}`);
@@ -182,6 +189,564 @@ describe('Templates', () => {
       expect(response.status).toBe(400);
       expect(response.data).toHaveProperty('message');
       expect(response.data.message).toBe('Project not found');
+    });
+  });
+
+  describe('createTemplateFromAgentFile', () => {
+    // Sample tool schemas for testing
+    const sampleTools = [
+      {
+        id: 'tool-1',
+        name: 'send_message',
+        description: 'Send a message to a user',
+        source_code: 'def send_message(message: str) -> str:\n    """Send a message to a user"""\n    return f"Message sent: {message}"',
+        source_type: 'python',
+        tags: ['communication'],
+        json_schema: {
+          name: 'send_message',
+          description: 'Send a message to a user',
+          parameters: {
+            type: 'object',
+            properties: {
+              message: {
+                type: 'string',
+                description: 'The message to send',
+              },
+            },
+            required: ['message'],
+          },
+        },
+      },
+      {
+        id: 'tool-2',
+        name: 'calculate_sum',
+        description: 'Calculate the sum of two numbers',
+        source_code: 'def calculate_sum(a: int, b: int) -> int:\n    """Calculate the sum of two numbers"""\n    return a + b',
+        source_type: 'python',
+        tags: ['math', 'calculation'],
+        json_schema: {
+          name: 'calculate_sum',
+          description: 'Calculate the sum of two numbers',
+          parameters: {
+            type: 'object',
+            properties: {
+              a: {
+                type: 'integer',
+                description: 'First number',
+              },
+              b: {
+                type: 'integer',
+                description: 'Second number',
+              },
+            },
+            required: ['a', 'b'],
+          },
+        },
+      },
+      {
+        id: 'tool-3',
+        name: 'get_weather',
+        description: 'Get weather information',
+        source_code: 'def get_weather(location: str) -> str:\n    """Get weather information for a location"""\n    return f"Weather in {location}: Sunny, 72°F"',
+        source_type: 'python',
+        tags: ['weather', 'api'],
+        json_schema: {
+          name: 'get_weather',
+          description: 'Get weather information for a location',
+          parameters: {
+            type: 'object',
+            properties: {
+              location: {
+                type: 'string',
+                description: 'The location to get weather for',
+              },
+            },
+            required: ['location'],
+          },
+        },
+      },
+    ];
+
+    // Classic template: single agent, no groups
+    const classicAgentFile = {
+      agents: [
+        {
+          id: 'agent-1',
+          agent_type: 'memgpt_v2_agent',
+          name: 'Classic Agent',
+          system: 'You are a helpful assistant created from a classic template.',
+          tool_ids: ['tool-1', 'tool-2'],
+          block_ids: ['block-1', 'block-2'],
+          source_ids: ['should-be-stripped'],
+          tags: ['classic', 'test'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.7,
+            context_window: 128000,
+          },
+        },
+      ],
+      groups: [],
+      blocks: [
+        {
+          id: 'block-1',
+          label: 'human',
+          value: 'Test human block for classic template',
+          limit: 1000,
+        },
+        {
+          id: 'block-2',
+          label: 'persona',
+          value: 'Test persona block for classic template',
+          limit: 1000,
+        },
+      ],
+      files: [],
+      sources: [],
+      tools: sampleTools,
+      mcp_servers: [],
+    };
+
+    // Dynamic group template: multiple agents with dynamic group
+    const dynamicAgentFile = {
+      agents: [
+        {
+          id: 'manager-agent',
+          agent_type: 'memgpt_v2_agent',
+          name: 'Manager Agent',
+          system: 'You are a manager agent that coordinates between team members.',
+          tool_ids: ['tool-1', 'tool-3'],
+          block_ids: ['block-3', 'block-4'],
+          source_ids: ['should-be-stripped-1'],
+          tags: ['manager', 'dynamic'],
+          group_ids: ['dynamic-group-1'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.5,
+            context_window: 128000,
+          },
+        },
+        {
+          id: 'worker-agent-1',
+          agent_type: 'memgpt_v2_agent',
+          name: 'Worker Agent 1',
+          system: 'You are a worker agent that handles calculations.',
+          block_ids: ['block-3', 'block-4'],
+          tool_ids: ['tool-2'],
+          source_ids: ['should-be-stripped-2'],
+          tags: ['worker', 'calculation'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.3,
+            context_window: 128000,
+          },
+        },
+        {
+          id: 'worker-agent-2',
+          agent_type: 'memgpt_v2_agent',
+          block_ids: ['block-3'],
+          name: 'Worker Agent 2',
+          system: 'You are a worker agent that handles weather queries.',
+          tool_ids: ['tool-3'],
+          source_ids: ['should-be-stripped-3'],
+          tags: ['worker', 'weather'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.4,
+            context_window: 128000,
+          },
+        },
+      ],
+      groups: [
+        {
+          id: 'dynamic-group-1',
+          name: 'Dynamic Team',
+          manager_config: {
+            manager_type: 'dynamic',
+            manager_agent_id: 'manager-agent',
+            termination_token: 'DONE',
+            max_turns: 10,
+          },
+        },
+      ],
+      blocks: [
+        {
+          id: 'block-3',
+          label: 'human',
+          value: 'Test human block for dynamic template',
+          limit: 1000,
+        },
+        {
+          id: 'block-4',
+          label: 'persona',
+          value: 'Test persona block for dynamic template',
+          limit: 1000,
+        },
+      ],
+      files: [],
+      sources: [],
+      tools: sampleTools,
+      mcp_servers: [],
+    };
+
+    // Sleeptime template: main agent + sleeptime agent
+    const sleeptimeAgentFile = {
+      agents: [
+        {
+          id: 'main-agent',
+          agent_type: 'memgpt_v2_agent',
+          name: 'Main Agent',
+          block_ids: ['block-5', 'block-6'],
+          system: 'You are a main agent in a sleeptime configuration.',
+          tool_ids: ['tool-1', 'tool-2'],
+          source_ids: ['should-be-stripped-main'],
+          tags: ['main', 'sleeptime'],
+          group_ids: ['sleeptime-group-1'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.7,
+            context_window: 128000,
+          },
+        },
+        {
+          id: 'sleeptime-agent',
+          agent_type: 'sleeptime_agent',
+          name: 'Sleeptime Agent',
+          block_ids: ['block-5'],
+          system: 'You are a sleeptime monitoring agent.',
+          tool_ids: ['tool-3'],
+          source_ids: ['should-be-stripped-sleeptime'],
+          tags: ['sleeptime', 'monitor'],
+          llm_config: {
+            model: 'gpt-4o-mini',
+            temperature: 0.1,
+            context_window: 128000,
+          },
+        },
+      ],
+      groups: [
+        {
+          id: 'sleeptime-group-1',
+          name: 'Sleeptime Team',
+          manager_config: {
+            manager_type: 'sleeptime',
+            manager_agent_id: 'main-agent',
+            sleeptime_agent_frequency: 30,
+          },
+        },
+      ],
+      blocks: [
+        {
+          id: 'block-5',
+          label: 'human',
+          value: 'Test human block for sleeptime template',
+          limit: 1000,
+        },
+        {
+          id: 'block-6',
+          label: 'persona',
+          value: 'Test persona block for sleeptime template',
+          limit: 1000,
+        },
+      ],
+      files: [],
+      sources: [],
+      tools: sampleTools,
+      mcp_servers: [],
+    };
+
+    it('should create a classic template from agent file', async () => {
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: classicAgentFile,
+          name: testClassicAgentFileName,
+        },
+      );
+
+      if (response.status !== 201) {
+        console.error('API Error:', JSON.stringify(response.data, null, 2));
+      }
+
+      expect(response.status).toBe(201);
+      expect(response.data).toHaveProperty('id');
+      expect(response.data).toHaveProperty('name');
+      expect(response.data).toHaveProperty('project_id');
+      expect(response.data).toHaveProperty('project_slug');
+      expect(response.data).toHaveProperty('latest_version');
+      expect(response.data).toHaveProperty('description');
+      expect(response.data).toHaveProperty('template_deployment_slug');
+      expect(response.data.latest_version).toEqual('1');
+      expect(response.data.name).toBe(testClassicAgentFileName);
+      expect(response.data.project_slug).toBe(testProject);
+
+      // Get template snapshot to verify structure
+      const snapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testClassicAgentFileName}:latest/snapshot`,
+      );
+
+      expect(snapshotResponse.status).toBe(200);
+      expect(snapshotResponse.data.type).toBe('classic');
+      expect(snapshotResponse.data.agents).toHaveLength(1);
+      expect(snapshotResponse.data.blocks).toHaveLength(2);
+
+      // Verify source_ids were stripped (should be empty)
+      const agent = snapshotResponse.data.agents[0];
+      expect(agent.sourceIds).toEqual([]);
+
+      // Verify tools were created and mapped
+      expect(Array.isArray(agent.toolIds)).toBe(true);
+      expect(agent.toolIds.length).toBe(2); // Should have 2 tools from original agent file
+
+      // Verify tool IDs are server-generated (not the original agent file tool IDs)
+      expect(agent.toolIds).not.toContain('tool-1');
+      expect(agent.toolIds).not.toContain('tool-2');
+
+      // Verify all tool IDs are valid server-generated strings
+      agent.toolIds.forEach((toolId: string) => {
+        expect(typeof toolId).toBe('string');
+        expect(toolId.length).toBeGreaterThan(0);
+        expect(toolId).not.toMatch(/^tool-\d+$/); // Should not match original pattern
+      });
+    });
+
+    it('should create a dynamic template from agent file', async () => {
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: dynamicAgentFile,
+          name: testDynamicAgentFileName,
+        },
+      );
+
+      if (response.status !== 201) {
+        console.error('API Error:', JSON.stringify(response.data, null, 2));
+      }
+
+      expect(response.status).toBe(201);
+      expect(response.data).toHaveProperty('id');
+      expect(response.data).toHaveProperty('name');
+      expect(response.data.name).toBe(testDynamicAgentFileName);
+      expect(response.data.latest_version).toEqual('1');
+
+      // Get template snapshot to verify structure
+      const snapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testDynamicAgentFileName}:latest/snapshot`,
+      );
+
+      expect(snapshotResponse.status).toBe(200);
+      expect(snapshotResponse.data.type).toBe('dynamic');
+      expect(snapshotResponse.data.agents).toHaveLength(3); // manager + 2 workers
+      expect(snapshotResponse.data.blocks).toHaveLength(2);
+
+      // Verify group configuration
+      expect(snapshotResponse.data.configuration).toHaveProperty('managerAgentEntityId');
+      expect(snapshotResponse.data.configuration).toHaveProperty('terminationToken', 'DONE');
+      expect(snapshotResponse.data.configuration).toHaveProperty('maxTurns', 10);
+
+      // Verify source_ids were stripped from all agents
+      snapshotResponse.data.agents.forEach((agent: any) => {
+        expect(agent.sourceIds).toEqual([]);
+      });
+
+      // Verify tools were created and mapped for all agents
+      const managerAgent = snapshotResponse.data.agents.find((a: any) => a.tags?.includes('manager'));
+      const worker1Agent = snapshotResponse.data.agents.find((a: any) => a.tags?.includes('calculation'));
+      const worker2Agent = snapshotResponse.data.agents.find((a: any) => a.tags?.includes('weather'));
+
+      expect(managerAgent).toBeDefined();
+      expect(worker1Agent).toBeDefined();
+      expect(worker2Agent).toBeDefined();
+
+      // Manager should have 2 tools (tool-1, tool-3 mapped to server IDs)
+      expect(Array.isArray(managerAgent.toolIds)).toBe(true);
+      expect(managerAgent.toolIds.length).toBe(2);
+      expect(managerAgent.toolIds).not.toContain('tool-1');
+      expect(managerAgent.toolIds).not.toContain('tool-3');
+
+      // Worker 1 should have 1 tool (tool-2 mapped to server ID)
+      expect(Array.isArray(worker1Agent.toolIds)).toBe(true);
+      expect(worker1Agent.toolIds.length).toBe(1);
+      expect(worker1Agent.toolIds).not.toContain('tool-2');
+
+      // Worker 2 should have 1 tool (tool-3 mapped to server ID)
+      expect(Array.isArray(worker2Agent.toolIds)).toBe(true);
+      expect(worker2Agent.toolIds.length).toBe(1);
+      expect(worker2Agent.toolIds).not.toContain('tool-3');
+
+      // Verify all tool IDs are server-generated
+      [...managerAgent.toolIds, ...worker1Agent.toolIds, ...worker2Agent.toolIds].forEach((toolId: string) => {
+        expect(typeof toolId).toBe('string');
+        expect(toolId.length).toBeGreaterThan(0);
+        expect(toolId).not.toMatch(/^tool-\d+$/); // Should not match original pattern
+      });
+    });
+
+    it('should create a sleeptime template from agent file', async () => {
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: sleeptimeAgentFile,
+          name: testSleeptimeAgentFileName,
+        },
+      );
+
+      if (response.status !== 201) {
+        console.error('API Error:', JSON.stringify(response.data, null, 2));
+      }
+
+      expect(response.status).toBe(201);
+      expect(response.data).toHaveProperty('id');
+      expect(response.data).toHaveProperty('name');
+      expect(response.data.name).toBe(testSleeptimeAgentFileName);
+      expect(response.data.latest_version).toEqual('1');
+
+      // Get template snapshot to verify structure
+      const snapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testSleeptimeAgentFileName}:latest/snapshot`,
+      ) as { status: 200, data: TemplateSnapshotSchemaType }
+
+      expect(snapshotResponse.status).toBe(200);
+      expect(snapshotResponse.data.type).toBe('sleeptime');
+      expect(snapshotResponse.data.agents).toHaveLength(2); // main + sleeptime agent
+      expect(snapshotResponse.data.blocks).toHaveLength(2);
+
+      // Verify group configuration
+      expect(snapshotResponse.data.configuration).toHaveProperty('managerAgentEntityId');
+      expect(snapshotResponse.data.configuration).toHaveProperty('sleeptimeAgentFrequency', 30);
+
+      // Verify source_ids were stripped from all agents
+      snapshotResponse.data.agents.forEach((agent: any) => {
+        expect(agent.sourceIds).toEqual([]);
+      });
+
+      // Verify tools were created and mapped for all agents
+      const mainAgent = snapshotResponse.data.agents.find((a) => a.agentType === 'memgpt_v2_agent');
+      const sleeptimeAgent = snapshotResponse.data.agents.find((a) => a.agentType === 'sleeptime_agent');
+
+      if (!mainAgent || !sleeptimeAgent) {
+        throw new Error('Expected to find both main and sleeptime agents in the snapshot');
+      }
+
+      expect(mainAgent).toBeDefined();
+      expect(sleeptimeAgent).toBeDefined();
+
+      // Main agent should have 2 tools (tool-1, tool-2 mapped to server IDs)
+      expect(Array.isArray(mainAgent?.toolIds)).toBe(true);
+      expect((mainAgent?.toolIds || []).length).toBe(2);
+      expect(mainAgent?.toolIds).not.toContain('tool-1');
+      expect(mainAgent?.toolIds).not.toContain('tool-2');
+
+      // Sleeptime agent should have 1 tool (tool-3 mapped to server ID)
+      expect(Array.isArray(sleeptimeAgent?.toolIds)).toBe(true);
+      expect((sleeptimeAgent?.toolIds || []).length).toBe(1);
+      expect(sleeptimeAgent?.toolIds).not.toContain('tool-3');
+
+      // Verify all tool IDs are server-generated
+      [...(mainAgent?.toolIds || []), ...(sleeptimeAgent?.toolIds || [])].forEach((toolId: string) => {
+        expect(typeof toolId).toBe('string');
+        expect(toolId.length).toBeGreaterThan(0);
+        expect(toolId).not.toMatch(/^tool-\d+$/); // Should not match original pattern
+      });
+    });
+
+    it('should return 400 for invalid agent file structure', async () => {
+      const invalidAgentFile = {
+        agents: [], // Empty agents array should cause error
+        groups: [],
+        blocks: [],
+        files: [],
+        sources: [],
+        tools: [],
+        mcp_servers: [],
+      };
+
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: invalidAgentFile,
+          name: 'invalid-agent-file-template',
+        },
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.data).toHaveProperty('message');
+    });
+
+    it('should return 400 for malformed agent file', async () => {
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'agent_file',
+          agent_file: null, // Invalid agent file
+          name: 'malformed-agent-file-template',
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 for non-existent project with agent file', async () => {
+      const response = await lettaAxiosSDK.post(
+        '/v1/templates/non-existent-project',
+        {
+          type: 'agent_file',
+          agent_file: classicAgentFile,
+          name: 'test-template',
+        },
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.data).toHaveProperty('message');
+      expect(response.data.message).toBe('Project not found');
+    });
+
+    it('should return 400 for invalid template type', async () => {
+      const response = await lettaAxiosSDK.post(
+        `/v1/templates/${testProject}`,
+        {
+          type: 'invalid_type',
+          name: 'invalid-type-template',
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should verify tools were actually created on the server', async () => {
+      // Get the classic template snapshot to extract server tool IDs
+      const snapshotResponse = await lettaAxiosSDK.get(
+        `/v1/templates/${testProject}/${testClassicAgentFileName}:latest/snapshot`,
+      );
+
+      expect(snapshotResponse.status).toBe(200);
+      const agent = snapshotResponse.data.agents[0];
+      const serverToolIds = agent.toolIds;
+
+      expect(serverToolIds.length).toBe(2); // Should have 2 tools
+
+      // Verify we can retrieve each tool by its server-generated ID
+      for (const toolId of serverToolIds) {
+        const toolResponse = await lettaAxiosSDK.get(`/v1/tools/${toolId}`);
+
+        expect(toolResponse.status).toBe(200);
+        expect(toolResponse.data).toHaveProperty('id', toolId);
+        expect(toolResponse.data).toHaveProperty('name');
+        expect(toolResponse.data).toHaveProperty('source_code');
+
+        // Verify it's one of our expected tools by name
+        expect(['send_message', 'calculate_sum']).toContain(toolResponse.data.name);
+
+        // Verify the source code matches what we provided
+      if (toolResponse.data.name === 'calculate_sum') {
+          expect(toolResponse.data.source_code).toContain('def calculate_sum(a: int, b: int) -> int:');
+          expect(toolResponse.data.source_code).toContain('return a + b');
+        }
+      }
     });
   });
 
