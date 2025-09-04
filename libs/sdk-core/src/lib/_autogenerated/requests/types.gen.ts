@@ -7086,7 +7086,7 @@ export type CreatePassageResponse = Array<Passage>;
 export type SearchArchivalMemoryData = {
   agentId: string;
   /**
-   * Filter results to passages created before this datetime. ISO 8601 format
+   * Filter results to passages created before this datetime
    */
   endDatetime?: string | null;
   /**
@@ -7094,7 +7094,7 @@ export type SearchArchivalMemoryData = {
    */
   query: string;
   /**
-   * Filter results to passages created after this datetime. ISO 8601 format
+   * Filter results to passages created after this datetime
    */
   startDatetime?: string | null;
   /**

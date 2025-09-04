@@ -4872,16 +4872,17 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date-time"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter results to passages created after this datetime. ISO 8601 format",
+              "description": "Filter results to passages created after this datetime",
               "title": "Start Datetime"
             },
-            "description": "Filter results to passages created after this datetime. ISO 8601 format"
+            "description": "Filter results to passages created after this datetime"
           },
           {
             "name": "end_datetime",
@@ -4890,16 +4891,17 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date-time"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter results to passages created before this datetime. ISO 8601 format",
+              "description": "Filter results to passages created before this datetime",
               "title": "End Datetime"
             },
-            "description": "Filter results to passages created before this datetime. ISO 8601 format"
+            "description": "Filter results to passages created before this datetime"
           }
         ],
         "responses": {

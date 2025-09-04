@@ -993,8 +993,8 @@ async def search_archival_memory(
         "any", description="How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags"
     ),
     top_k: Optional[int] = Query(None, description="Maximum number of results to return. Uses system default if not specified"),
-    start_datetime: Optional[str] = Query(None, description="Filter results to passages created after this datetime. ISO 8601 format"),
-    end_datetime: Optional[str] = Query(None, description="Filter results to passages created before this datetime. ISO 8601 format"),
+    start_datetime: Optional[datetime] = Query(None, description="Filter results to passages created after this datetime"),
+    end_datetime: Optional[datetime] = Query(None, description="Filter results to passages created before this datetime"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
 ):
@@ -1008,6 +1008,10 @@ async def search_archival_memory(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
+        # convert datetime to string in ISO 8601 format
+        start_datetime = start_datetime.isoformat() if start_datetime else None
+        end_datetime = end_datetime.isoformat() if end_datetime else None
+
         # Use the shared agent manager method
         formatted_results, count = await server.agent_manager.search_agent_archival_memory_async(
             agent_id=agent_id,

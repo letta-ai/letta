@@ -1596,8 +1596,8 @@ export const useAgentsServiceListPassagesSuspense = <
  * @param data.tags Optional list of tags to filter search results
  * @param data.tagMatchMode How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags
  * @param data.topK Maximum number of results to return. Uses system default if not specified
- * @param data.startDatetime Filter results to passages created after this datetime. ISO 8601 format
- * @param data.endDatetime Filter results to passages created before this datetime. ISO 8601 format
+ * @param data.startDatetime Filter results to passages created after this datetime
+ * @param data.endDatetime Filter results to passages created before this datetime
  * @param data.userId
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
