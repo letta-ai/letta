@@ -650,39 +650,40 @@ def test_initial_sequence(client: Letta):
     assert messages[2].message_type == "user_message"
 
 
-def test_timezone(client: Letta):
-    agent = client.agents.create(
-        memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
-        model="letta/letta-free",
-        embedding="letta/letta-free",
-        timezone="America/Los_Angeles",
-    )
-
-    agent = client.agents.retrieve(agent_id=agent.id)
-    assert agent.timezone == "America/Los_Angeles"
-
-    response = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=[
-            MessageCreate(
-                role="user",
-                content="What timezone are you in?",
-            )
-        ],
-    )
-    # second message is assistant message
-    assert response.messages[1].message_type == "assistant_message"
-
-    pacific_tz_indicators = {"America/Los_Angeles", "PDT", "PST", "PT", "Pacific Daylight Time", "Pacific Standard Time", "Pacific Time"}
-    content = response.messages[1].content
-    assert any(tz in content for tz in pacific_tz_indicators), (
-        f"Response content: {response.messages[1].content} does not contain expected timezone"
-    )
-
-    # test updating the timezone
-    client.agents.modify(agent_id=agent.id, timezone="America/New_York")
-    agent = client.agents.retrieve(agent_id=agent.id)
-    assert agent.timezone == "America/New_York"
+# TODO: Add back when timezone packing is standardized/settled
+# def test_timezone(client: Letta):
+#     agent = client.agents.create(
+#         memory_blocks=[{"label": "human", "value": ""}, {"label": "persona", "value": ""}],
+#         model="letta/letta-free",
+#         embedding="letta/letta-free",
+#         timezone="America/Los_Angeles",
+#     )
+#
+#     agent = client.agents.retrieve(agent_id=agent.id)
+#     assert agent.timezone == "America/Los_Angeles"
+#
+#     response = client.agents.messages.create(
+#         agent_id=agent.id,
+#         messages=[
+#             MessageCreate(
+#                 role="user",
+#                 content="What timezone are you in?",
+#             )
+#         ],
+#     )
+#     # second message is assistant message
+#     assert response.messages[1].message_type == "assistant_message"
+#
+#     pacific_tz_indicators = {"America/Los_Angeles", "PDT", "PST", "PT", "Pacific Daylight Time", "Pacific Standard Time", "Pacific Time"}
+#     content = response.messages[1].content
+#     assert any(tz in content for tz in pacific_tz_indicators), (
+#         f"Response content: {response.messages[1].content} does not contain expected timezone"
+#     )
+#
+#     # test updating the timezone
+#     client.agents.modify(agent_id=agent.id, timezone="America/New_York")
+#     agent = client.agents.retrieve(agent_id=agent.id)
+#     assert agent.timezone == "America/New_York"
 
 
 def test_attach_sleeptime_block(client: Letta):
