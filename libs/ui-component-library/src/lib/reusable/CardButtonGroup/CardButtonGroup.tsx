@@ -38,7 +38,7 @@ function CardButtonGroupComponent(props: CardButtonGroupProps) {
 
   if (items && items.length > 0) {
     return items.map((item: CardButtonProps) => (
-      <Tooltip content={t('goTo', { item: item.label })}>
+      <Tooltip key={item.id} content={t('goTo', { item: item.label })}>
         <CardButton
           key={`card-${item.id}`}
           id={item.id}
