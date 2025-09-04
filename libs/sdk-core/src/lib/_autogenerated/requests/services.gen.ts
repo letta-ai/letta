@@ -236,6 +236,10 @@ import type {
   CreateInternalTemplateAgentResponse,
   CreateInternalTemplateBlockData,
   CreateInternalTemplateBlockResponse,
+  ListDeploymentEntitiesData,
+  ListDeploymentEntitiesResponse2,
+  DeleteDeploymentData,
+  DeleteDeploymentResponse2,
   ListModelsData,
   ListModelsResponse,
   ListEmbeddingModelsData,
@@ -3728,6 +3732,64 @@ export class InternalTemplatesService {
       url: '/v1/_internal_templates/blocks',
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Deployment Entities
+   * List all entities (blocks, agents, groups) with the specified deployment_id.
+   * Optionally filter by entity types.
+   * @param data The data for the request.
+   * @param data.deploymentId
+   * @param data.entityTypes Filter by entity types (block, agent, group)
+   * @param data.userId
+   * @returns ListDeploymentEntitiesResponse Successful Response
+   * @throws ApiError
+   */
+  public static listDeploymentEntities(
+    data: ListDeploymentEntitiesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListDeploymentEntitiesResponse2> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/_internal_templates/deployment/{deployment_id}',
+      path: {
+        deployment_id: data.deploymentId,
+      },
+      query: {
+        entity_types: data.entityTypes,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Delete Deployment
+   * Delete all entities (blocks, agents, groups) with the specified deployment_id.
+   * Deletion order: blocks -> agents -> groups to maintain referential integrity.
+   * @param data The data for the request.
+   * @param data.deploymentId
+   * @param data.userId
+   * @returns DeleteDeploymentResponse Successful Response
+   * @throws ApiError
+   */
+  public static deleteDeployment(
+    data: DeleteDeploymentData,
+    headers?: { user_id: string },
+  ): CancelablePromise<DeleteDeploymentResponse2> {
+    return __request(OpenAPI, {
+      method: 'DELETE',
+      url: '/v1/_internal_templates/deployment/{deployment_id}',
+      path: {
+        deployment_id: data.deploymentId,
+      },
       errors: {
         422: 'Validation Error',
       },

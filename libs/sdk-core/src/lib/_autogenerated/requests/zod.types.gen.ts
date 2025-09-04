@@ -5574,6 +5574,36 @@ export const CreateBatch = z.object({
     .optional(),
 });
 
+export type DeleteDeploymentResponse = z.infer<typeof DeleteDeploymentResponse>;
+export const DeleteDeploymentResponse = z.object({
+  deleted_blocks: z.union([z.array(z.string()), z.undefined()]).optional(),
+  deleted_agents: z.union([z.array(z.string()), z.undefined()]).optional(),
+  deleted_groups: z.union([z.array(z.string()), z.undefined()]).optional(),
+  message: z.string(),
+});
+
+export type DeploymentEntity = z.infer<typeof DeploymentEntity>;
+export const DeploymentEntity = z.object({
+  id: z.string(),
+  type: z.string(),
+  name: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
 export type DuplicateFileHandling = z.infer<typeof DuplicateFileHandling>;
 export const DuplicateFileHandling = z.union([
   z.literal('skip'),
@@ -7260,6 +7290,16 @@ export const LettaStreamingRequest = z.object({
   stream_tokens: z.union([z.boolean(), z.undefined()]).optional(),
   include_pings: z.union([z.boolean(), z.undefined()]).optional(),
   background: z.union([z.boolean(), z.undefined()]).optional(),
+});
+
+export type ListDeploymentEntitiesResponse = z.infer<
+  typeof ListDeploymentEntitiesResponse
+>;
+export const ListDeploymentEntitiesResponse = z.object({
+  entities: z.union([z.array(DeploymentEntity), z.undefined()]).optional(),
+  total_count: z.number(),
+  deployment_id: z.string(),
+  message: z.string(),
 });
 
 export type LocalSandboxConfig = z.infer<typeof LocalSandboxConfig>;
@@ -11563,6 +11603,51 @@ export const post_Create_internal_template_block = {
   response: Block,
 };
 
+export type get_List_deployment_entities = typeof get_List_deployment_entities;
+export const get_List_deployment_entities = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/_internal_templates/deployment/{deployment_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      entity_types: z
+        .union([
+          z.array(z.string()),
+          z.null(),
+          z.array(z.union([z.array(z.string()), z.null()])),
+        ])
+        .optional(),
+    }),
+    path: z.object({
+      deployment_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: ListDeploymentEntitiesResponse,
+};
+
+export type delete_Delete_deployment = typeof delete_Delete_deployment;
+export const delete_Delete_deployment = {
+  method: z.literal('DELETE'),
+  path: z.literal('/v1/_internal_templates/deployment/{deployment_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      deployment_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: DeleteDeploymentResponse,
+};
+
 export type get_List_models = typeof get_List_models;
 export const get_List_models = {
   method: z.literal('GET'),
@@ -12992,6 +13077,8 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
     '/v1/groups/{group_id}': delete_Delete_group,
     '/v1/identities/{identity_id}': delete_Delete_identity,
+    '/v1/_internal_templates/deployment/{deployment_id}':
+      delete_Delete_deployment,
     '/v1/blocks/{block_id}': delete_Delete_block,
     '/v1/jobs/{job_id}': delete_Delete_job,
     '/v1/sandbox-config/{sandbox_config_id}':
@@ -13055,6 +13142,8 @@ export const EndpointByMethod = {
     '/v1/identities/': get_List_identities,
     '/v1/identities/count': get_Count_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
+    '/v1/_internal_templates/deployment/{deployment_id}':
+      get_List_deployment_entities,
     '/v1/models/': get_List_models,
     '/v1/models/embedding': get_List_embedding_models,
     '/v1/blocks/': get_List_blocks,

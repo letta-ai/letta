@@ -1302,6 +1302,29 @@ export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
   useIdentitiesServiceRetrieveIdentityKey,
   ...(queryKey ?? [{ identityId, userId }]),
 ];
+export type InternalTemplatesServiceListDeploymentEntitiesDefaultResponse =
+  Awaited<ReturnType<typeof InternalTemplatesService.listDeploymentEntities>>;
+export type InternalTemplatesServiceListDeploymentEntitiesQueryResult<
+  TData = InternalTemplatesServiceListDeploymentEntitiesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useInternalTemplatesServiceListDeploymentEntitiesKey =
+  'InternalTemplatesServiceListDeploymentEntities';
+export const UseInternalTemplatesServiceListDeploymentEntitiesKeyFn = (
+  {
+    deploymentId,
+    entityTypes,
+    userId,
+  }: {
+    deploymentId: string;
+    entityTypes?: string[];
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useInternalTemplatesServiceListDeploymentEntitiesKey,
+  ...(queryKey ?? [{ deploymentId, entityTypes, userId }]),
+];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>
 >;
@@ -2497,6 +2520,9 @@ export type GroupsServiceDeleteGroupMutationResult = Awaited<
 >;
 export type IdentitiesServiceDeleteIdentityMutationResult = Awaited<
   ReturnType<typeof IdentitiesService.deleteIdentity>
+>;
+export type InternalTemplatesServiceDeleteDeploymentMutationResult = Awaited<
+  ReturnType<typeof InternalTemplatesService.deleteDeployment>
 >;
 export type BlocksServiceDeleteBlockMutationResult = Awaited<
   ReturnType<typeof BlocksService.deleteBlock>

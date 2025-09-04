@@ -1860,6 +1860,26 @@ export type CustomFormatText = {
 };
 
 /**
+ * Response model for delete deployment operation.
+ */
+export type DeleteDeploymentResponse = {
+  deleted_blocks?: Array<string>;
+  deleted_agents?: Array<string>;
+  deleted_groups?: Array<string>;
+  message: string;
+};
+
+/**
+ * A deployment entity.
+ */
+export type DeploymentEntity = {
+  id: string;
+  type: string;
+  name?: string | null;
+  description?: string | null;
+};
+
+/**
  * How to handle duplicate filenames when uploading files
  */
 export type DuplicateFileHandling = 'skip' | 'error' | 'suffix' | 'replace';
@@ -3611,6 +3631,16 @@ export type LettaUsageStatistics = {
    * The background task run IDs associated with the agent interaction
    */
   run_ids?: Array<string> | null;
+};
+
+/**
+ * Response model for listing deployment entities.
+ */
+export type ListDeploymentEntitiesResponse = {
+  entities?: Array<DeploymentEntity>;
+  total_count: number;
+  deployment_id: string;
+  message: string;
 };
 
 export type LocalSandboxConfig = {
@@ -7836,6 +7866,24 @@ export type CreateInternalTemplateBlockData = {
 
 export type CreateInternalTemplateBlockResponse = Block;
 
+export type ListDeploymentEntitiesData = {
+  deploymentId: string;
+  /**
+   * Filter by entity types (block, agent, group)
+   */
+  entityTypes?: Array<string> | null;
+  userId?: string | null;
+};
+
+export type ListDeploymentEntitiesResponse2 = ListDeploymentEntitiesResponse;
+
+export type DeleteDeploymentData = {
+  deploymentId: string;
+  userId?: string | null;
+};
+
+export type DeleteDeploymentResponse2 = DeleteDeploymentResponse;
+
 export type ListModelsData = {
   providerCategory?: Array<ProviderCategory> | null;
   providerName?: string | null;
@@ -10274,6 +10322,34 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Block;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/_internal_templates/deployment/{deployment_id}': {
+    get: {
+      req: ListDeploymentEntitiesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ListDeploymentEntitiesResponse;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    delete: {
+      req: DeleteDeploymentData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: DeleteDeploymentResponse;
         /**
          * Validation Error
          */

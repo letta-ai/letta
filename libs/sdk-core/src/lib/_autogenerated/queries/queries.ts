@@ -2145,6 +2145,47 @@ export const useIdentitiesServiceRetrieveIdentity = <
     ...options,
   });
 /**
+ * List Deployment Entities
+ * List all entities (blocks, agents, groups) with the specified deployment_id.
+ * Optionally filter by entity types.
+ * @param data The data for the request.
+ * @param data.deploymentId
+ * @param data.entityTypes Filter by entity types (block, agent, group)
+ * @param data.userId
+ * @returns ListDeploymentEntitiesResponse Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceListDeploymentEntities = <
+  TData = Common.InternalTemplatesServiceListDeploymentEntitiesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    deploymentId,
+    entityTypes,
+    userId,
+  }: {
+    deploymentId: string;
+    entityTypes?: string[];
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseInternalTemplatesServiceListDeploymentEntitiesKeyFn(
+      { deploymentId, entityTypes, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      InternalTemplatesService.listDeploymentEntities({
+        deploymentId,
+        entityTypes,
+        userId,
+      }) as TData,
+    ...options,
+  });
+/**
  * List Llm Models
  * List available LLM models using the asynchronous implementation for improved performance
  * @param data The data for the request.
@@ -8041,6 +8082,50 @@ export const useIdentitiesServiceDeleteIdentity = <
     mutationFn: ({ identityId, userId }) =>
       IdentitiesService.deleteIdentity({
         identityId,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Delete Deployment
+ * Delete all entities (blocks, agents, groups) with the specified deployment_id.
+ * Deletion order: blocks -> agents -> groups to maintain referential integrity.
+ * @param data The data for the request.
+ * @param data.deploymentId
+ * @param data.userId
+ * @returns DeleteDeploymentResponse Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceDeleteDeployment = <
+  TData = Common.InternalTemplatesServiceDeleteDeploymentMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        deploymentId: string;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      deploymentId: string;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ deploymentId, userId }) =>
+      InternalTemplatesService.deleteDeployment({
+        deploymentId,
         userId,
       }) as unknown as Promise<TData>,
     ...options,

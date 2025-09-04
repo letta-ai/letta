@@ -7026,6 +7026,107 @@
         }
       }
     },
+    "/v1/_internal_templates/deployment/{deployment_id}": {
+      "get": {
+        "tags": ["_internal_templates"],
+        "summary": "List Deployment Entities",
+        "description": "List all entities (blocks, agents, groups) with the specified deployment_id.\nOptionally filter by entity types.",
+        "operationId": "list_deployment_entities",
+        "parameters": [
+          {
+            "name": "deployment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Id"
+            }
+          },
+          {
+            "name": "entity_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity types (block, agent, group)",
+              "title": "Entity Types"
+            },
+            "description": "Filter by entity types (block, agent, group)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDeploymentEntitiesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["_internal_templates"],
+        "summary": "Delete Deployment",
+        "description": "Delete all entities (blocks, agents, groups) with the specified deployment_id.\nDeletion order: blocks -> agents -> groups to maintain referential integrity.",
+        "operationId": "delete_deployment",
+        "parameters": [
+          {
+            "name": "deployment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDeploymentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/models/": {
       "get": {
         "tags": ["models", "llms"],
@@ -17489,6 +17590,80 @@
         "required": ["type"],
         "title": "CustomFormatText"
       },
+      "DeleteDeploymentResponse": {
+        "properties": {
+          "deleted_blocks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Blocks",
+            "default": []
+          },
+          "deleted_agents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Agents",
+            "default": []
+          },
+          "deleted_groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Groups",
+            "default": []
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["message"],
+        "title": "DeleteDeploymentResponse",
+        "description": "Response model for delete deployment operation."
+      },
+      "DeploymentEntity": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["id", "type"],
+        "title": "DeploymentEntity",
+        "description": "A deployment entity."
+      },
       "DuplicateFileHandling": {
         "type": "string",
         "enum": ["skip", "error", "suffix", "replace"],
@@ -21686,6 +21861,34 @@
         "type": "object",
         "title": "LettaUsageStatistics",
         "description": "Usage statistics for the agent interaction.\n\nAttributes:\n    completion_tokens (int): The number of tokens generated by the agent.\n    prompt_tokens (int): The number of tokens in the prompt.\n    total_tokens (int): The total number of tokens processed by the agent.\n    step_count (int): The number of steps taken by the agent."
+      },
+      "ListDeploymentEntitiesResponse": {
+        "properties": {
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentEntity"
+            },
+            "type": "array",
+            "title": "Entities",
+            "default": []
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "deployment_id": {
+            "type": "string",
+            "title": "Deployment Id"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["total_count", "deployment_id", "message"],
+        "title": "ListDeploymentEntitiesResponse",
+        "description": "Response model for listing deployment entities."
       },
       "LocalSandboxConfig": {
         "properties": {

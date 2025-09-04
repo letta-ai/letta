@@ -10,6 +10,7 @@ import {
   GroupsService,
   HealthService,
   IdentitiesService,
+  InternalTemplatesService,
   JobsService,
   LlmsService,
   MessagesService,
@@ -2078,6 +2079,47 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
     ),
     queryFn: () =>
       IdentitiesService.retrieveIdentity({ identityId, userId }) as TData,
+    ...options,
+  });
+/**
+ * List Deployment Entities
+ * List all entities (blocks, agents, groups) with the specified deployment_id.
+ * Optionally filter by entity types.
+ * @param data The data for the request.
+ * @param data.deploymentId
+ * @param data.entityTypes Filter by entity types (block, agent, group)
+ * @param data.userId
+ * @returns ListDeploymentEntitiesResponse Successful Response
+ * @throws ApiError
+ */
+export const useInternalTemplatesServiceListDeploymentEntitiesSuspense = <
+  TData = Common.InternalTemplatesServiceListDeploymentEntitiesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    deploymentId,
+    entityTypes,
+    userId,
+  }: {
+    deploymentId: string;
+    entityTypes?: string[];
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseInternalTemplatesServiceListDeploymentEntitiesKeyFn(
+      { deploymentId, entityTypes, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      InternalTemplatesService.listDeploymentEntities({
+        deploymentId,
+        entityTypes,
+        userId,
+      }) as TData,
     ...options,
   });
 /**

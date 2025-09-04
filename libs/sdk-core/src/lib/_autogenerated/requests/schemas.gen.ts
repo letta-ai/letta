@@ -5485,6 +5485,82 @@ export const $CustomFormatText = {
   title: 'CustomFormatText',
 } as const;
 
+export const $DeleteDeploymentResponse = {
+  properties: {
+    deleted_blocks: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Deleted Blocks',
+      default: [],
+    },
+    deleted_agents: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Deleted Agents',
+      default: [],
+    },
+    deleted_groups: {
+      items: {
+        type: 'string',
+      },
+      type: 'array',
+      title: 'Deleted Groups',
+      default: [],
+    },
+    message: {
+      type: 'string',
+      title: 'Message',
+    },
+  },
+  type: 'object',
+  required: ['message'],
+  title: 'DeleteDeploymentResponse',
+  description: 'Response model for delete deployment operation.',
+} as const;
+
+export const $DeploymentEntity = {
+  properties: {
+    id: {
+      type: 'string',
+      title: 'Id',
+    },
+    type: {
+      type: 'string',
+      title: 'Type',
+    },
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  required: ['id', 'type'],
+  title: 'DeploymentEntity',
+  description: 'A deployment entity.',
+} as const;
+
 export const $DuplicateFileHandling = {
   type: 'string',
   enum: ['skip', 'error', 'suffix', 'replace'],
@@ -9897,6 +9973,35 @@ Attributes:
     prompt_tokens (int): The number of tokens in the prompt.
     total_tokens (int): The total number of tokens processed by the agent.
     step_count (int): The number of steps taken by the agent.`,
+} as const;
+
+export const $ListDeploymentEntitiesResponse = {
+  properties: {
+    entities: {
+      items: {
+        $ref: '#/components/schemas/DeploymentEntity',
+      },
+      type: 'array',
+      title: 'Entities',
+      default: [],
+    },
+    total_count: {
+      type: 'integer',
+      title: 'Total Count',
+    },
+    deployment_id: {
+      type: 'string',
+      title: 'Deployment Id',
+    },
+    message: {
+      type: 'string',
+      title: 'Message',
+    },
+  },
+  type: 'object',
+  required: ['total_count', 'deployment_id', 'message'],
+  title: 'ListDeploymentEntitiesResponse',
+  description: 'Response model for listing deployment entities.',
 } as const;
 
 export const $LocalSandboxConfig = {
