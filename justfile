@@ -475,33 +475,44 @@ build-undertaker:
 
     npm run slack-bot-says "Successfully deployed credit undertaker service with tag: {{TAG}}."
 
-# Build all Docker images for GitHub Actions with cache management
+# Build all Docker images for GitHub Actions with cache management (parallelized)
 build-web-images:
-    npm run slack-bot-says "Building web Docker image with tag: {{TAG}}..."
-    @echo "🚧 Building web Docker image with tag: {{TAG}}..."
+    #!/usr/bin/env bash
+    npm run slack-bot-says "Building web Docker images with tag: {{TAG}}..."
+    @echo "🚧 Building web Docker images in parallel with tag: {{TAG}}..."
     docker buildx create --use
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+
+    # Start both builds in parallel with enhanced caching
+    (SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
     --platform linux/{{ BUILD_ARCH }} \
     --secret id=SENTRY_AUTH_TOKEN \
     --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web:latest \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web:{{TAG}} \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-cache:deps \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-cache:builder \
     --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web:latest,mode=max \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-cache:deps,mode=max,target=deps \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-cache:builder,mode=max,target=builder \
     --file apps/web/Dockerfile \
     -t {{DOCKER_REGISTRY}}/web:{{TAG}} \
     --target web \
-    --load .
+    --load . 2>&1 | sed 's/^/[WEB] /') &
 
-    npm run slack-bot-says "Building migrations Docker image with tag: {{TAG}}..."
-    @echo "🚧 Building migrations Docker image with tag: {{TAG}}..."
-    docker buildx create --use
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
+    (SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN docker buildx build \
     --platform linux/{{ BUILD_ARCH }} \
     --secret id=SENTRY_AUTH_TOKEN \
     --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:{{TAG}} \
+    --cache-from type=registry,ref={{DOCKER_REGISTRY}}/web-cache:deps-dev \
     --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-migrations:latest,mode=max \
+    --cache-to type=registry,ref={{DOCKER_REGISTRY}}/web-cache:deps-dev,mode=max,target=deps-dev \
     --file apps/web/Dockerfile \
     -t {{DOCKER_REGISTRY}}/web-migrations:{{TAG}} \
     --target migrations \
-    --load .
+    --load . 2>&1 | sed 's/^/[MIGRATIONS] /') &
+
+    # Wait for both builds to complete
+    wait
 
     @echo "✅ All Docker images built successfully."
     npm run slack-bot-says "Docker images with tag: {{TAG}} built successfully."
