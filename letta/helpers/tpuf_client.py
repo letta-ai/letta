@@ -406,7 +406,7 @@ class TurbopufferClient:
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter passages created after this date
-            end_date: Optional datetime to filter passages created before this date
+            end_date: Optional datetime to filter passages created on or before this date (inclusive)
 
         Returns:
             List of (passage, score, metadata) tuples with relevance rankings
@@ -439,6 +439,13 @@ class TurbopufferClient:
         if start_date:
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
+            # if end_date has no time component (is at midnight), adjust to end of day
+            # to make the filter inclusive of the entire day
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0 and end_date.microsecond == 0:
+                from datetime import timedelta
+
+                # add 1 day and subtract 1 microsecond to get 23:59:59.999999
+                end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters
@@ -531,7 +538,7 @@ class TurbopufferClient:
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
-            end_date: Optional datetime to filter messages created before this date
+            end_date: Optional datetime to filter messages created on or before this date (inclusive)
 
         Returns:
             List of (message_dict, score, metadata) tuples where:
@@ -563,6 +570,13 @@ class TurbopufferClient:
         if start_date:
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
+            # if end_date has no time component (is at midnight), adjust to end of day
+            # to make the filter inclusive of the entire day
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0 and end_date.microsecond == 0:
+                from datetime import timedelta
+
+                # add 1 day and subtract 1 microsecond to get 23:59:59.999999
+                end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters

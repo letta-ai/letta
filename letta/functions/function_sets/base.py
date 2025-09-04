@@ -35,8 +35,8 @@ def conversation_search(
         query (str): String to search for using both text matching and semantic similarity.
         roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
         limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-        start_date (Optional[str]): Filter results to messages created after this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
-        end_date (Optional[str]): Filter results to messages created before this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+        start_date (Optional[str]): Filter results to messages created on or after this date (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes messages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
+        end_date (Optional[str]): Filter results to messages created on or before this date (INCLUSIVE). When using date-only format (e.g., "2024-01-20"), includes all messages from that entire day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20" (includes all of Jan 20), "2024-01-20T17:00" (up to 5 PM on Jan 20).
 
     Examples:
         # Search all messages
@@ -45,8 +45,17 @@ def conversation_search(
         # Search only assistant messages
         conversation_search(query="error handling", roles=["assistant"])
 
-        # Search with date range
+        # Search with date range (inclusive of both dates)
         conversation_search(query="meetings", start_date="2024-01-15", end_date="2024-01-20")
+        # This includes all messages from Jan 15 00:00:00 through Jan 20 23:59:59
+
+        # Search messages from a specific day (inclusive)
+        conversation_search(query="bug reports", start_date="2024-09-04", end_date="2024-09-04")
+        # This includes ALL messages from September 4, 2024
+
+        # Search with specific time boundaries
+        conversation_search(query="deployment", start_date="2024-01-15T09:00", end_date="2024-01-15T17:30")
+        # This includes messages from 9 AM to 5:30 PM on Jan 15
 
         # Search with limit
         conversation_search(query="debugging", limit=10)
