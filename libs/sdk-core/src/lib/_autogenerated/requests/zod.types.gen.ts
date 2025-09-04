@@ -245,6 +245,14 @@ export const CreateBlock = z.object({
       z.undefined(),
     ])
     .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type ChildToolRule = z.infer<typeof ChildToolRule>;
@@ -1475,6 +1483,14 @@ export const GroupSchema = z.object({
     ])
     .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   id: z.string(),
 });
 
@@ -1546,6 +1562,14 @@ export const BlockSchema = z.object({
       z.unknown(),
       z.null(),
       z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -1986,6 +2010,14 @@ export const Block = z.object({
       z.undefined(),
     ])
     .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   id: z.union([z.string(), z.undefined()]).optional(),
   created_by_id: z
     .union([
@@ -2080,6 +2112,14 @@ export const FileBlock = z.object({
       z.unknown(),
       z.null(),
       z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -2353,6 +2393,14 @@ export const Group = z.object({
       z.number(),
       z.null(),
       z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
       z.undefined(),
     ])
     .optional(),
@@ -3153,6 +3201,9 @@ export const BlockUpdate = z.object({
     .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  hidden: z
+    .union([z.boolean(), z.null(), z.array(z.union([z.boolean(), z.null()]))])
     .optional(),
 });
 
@@ -5823,6 +5874,14 @@ export const GroupCreate = z.object({
     ])
     .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type RoundRobinManagerUpdate = z.infer<typeof RoundRobinManagerUpdate>;
@@ -6565,6 +6624,14 @@ export const InternalTemplateBlockCreate = z.object({
       z.undefined(),
     ])
     .optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 export type InternalTemplateGroupCreate = z.infer<
@@ -6592,6 +6659,14 @@ export const InternalTemplateGroupCreate = z.object({
     ])
     .optional(),
   shared_block_ids: z.union([z.array(z.string()), z.undefined()]).optional(),
+  hidden: z
+    .union([
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.boolean(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   base_template_id: z.string(),
   template_id: z.string(),
   deployment_id: z.string(),

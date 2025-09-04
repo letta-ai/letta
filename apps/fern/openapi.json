@@ -14268,6 +14268,18 @@
             "description": "Metadata of the block.",
             "default": {}
           },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
+          },
           "id": {
             "type": "string",
             "pattern": "^block-[a-fA-F0-9]{8}",
@@ -14433,6 +14445,18 @@
             "description": "Metadata of the block.",
             "default": {}
           },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
+          },
           "id": {
             "type": "string",
             "title": "Id",
@@ -14592,6 +14616,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
           }
         },
         "type": "object",
@@ -17391,6 +17427,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
           }
         },
         "type": "object",
@@ -17950,6 +17998,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
           },
           "id": {
             "type": "string",
@@ -18892,6 +18952,18 @@
             ],
             "title": "Min Message Buffer Length",
             "description": "The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving."
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the group will be hidden."
           }
         },
         "additionalProperties": false,
@@ -18968,6 +19040,18 @@
             "title": "Shared Block Ids",
             "description": "",
             "default": []
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the group will be hidden."
           }
         },
         "type": "object",
@@ -19043,6 +19127,18 @@
             "title": "Shared Block Ids",
             "description": "",
             "default": []
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the group will be hidden."
           },
           "id": {
             "type": "string",
@@ -20470,6 +20566,18 @@
             "title": "Metadata",
             "description": "Metadata of the block.",
             "default": {}
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the block will be hidden."
           }
         },
         "type": "object",
@@ -20553,6 +20661,18 @@
             "title": "Shared Block Ids",
             "description": "",
             "default": []
+          },
+          "hidden": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden",
+            "description": "If set to True, the group will be hidden."
           },
           "base_template_id": {
             "type": "string",

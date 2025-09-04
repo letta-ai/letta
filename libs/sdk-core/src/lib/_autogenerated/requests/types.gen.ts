@@ -770,6 +770,10 @@ export type Block = {
     [key: string]: unknown;
   } | null;
   /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
+  /**
    * The human-friendly ID of the Block
    */
   id?: string;
@@ -839,6 +843,10 @@ export type BlockSchema = {
     [key: string]: unknown;
   } | null;
   /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
+  /**
    * Human-readable identifier for this block in the file
    */
   id: string;
@@ -902,6 +910,10 @@ export type BlockUpdate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 export type Body_export_agent_serialized = {
@@ -1825,6 +1837,10 @@ export type CreateBlock = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 export type CustomFormatGrammar = {
@@ -2074,6 +2090,10 @@ export type FileBlock = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
   /**
    * The human-friendly ID of the Block
    */
@@ -2446,6 +2466,10 @@ export type Group = {
    * The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.
    */
   min_message_buffer_length?: number | null;
+  /**
+   * If set to True, the group will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 export type GroupCreate = {
@@ -2462,6 +2486,10 @@ export type GroupCreate = {
    */
   project_id?: string | null;
   shared_block_ids?: Array<string>;
+  /**
+   * If set to True, the group will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 /**
@@ -2481,6 +2509,10 @@ export type GroupSchema = {
    */
   project_id?: string | null;
   shared_block_ids?: Array<string>;
+  /**
+   * If set to True, the group will be hidden.
+   */
+  hidden?: boolean | null;
   /**
    * Human-readable identifier for this group in the file
    */
@@ -3026,6 +3058,10 @@ export type InternalTemplateBlockCreate = {
   metadata?: {
     [key: string]: unknown;
   } | null;
+  /**
+   * If set to True, the block will be hidden.
+   */
+  hidden?: boolean | null;
 };
 
 /**
@@ -3045,6 +3081,10 @@ export type InternalTemplateGroupCreate = {
    */
   project_id?: string | null;
   shared_block_ids?: Array<string>;
+  /**
+   * If set to True, the group will be hidden.
+   */
+  hidden?: boolean | null;
   /**
    * The id of the base template.
    */

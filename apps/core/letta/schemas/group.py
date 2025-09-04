@@ -49,6 +49,10 @@ class Group(GroupBase):
         None,
         description="The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.",
     )
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the group will be hidden.",
+    )
 
     @property
     def manager_config(self) -> ManagerConfig:
@@ -170,6 +174,10 @@ class GroupCreate(BaseModel):
     manager_config: ManagerConfigUnion = Field(RoundRobinManager(), description="")
     project_id: Optional[str] = Field(None, description="The associated project id.")
     shared_block_ids: List[str] = Field([], description="")
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the group will be hidden.",
+    )
 
 
 class InternalTemplateGroupCreate(GroupCreate):

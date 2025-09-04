@@ -2146,6 +2146,18 @@ export const $Block = {
       description: 'Metadata of the block.',
       default: {},
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
+    },
     id: {
       type: 'string',
       pattern: '^block-[a-fA-F0-9]{8}',
@@ -2323,6 +2335,18 @@ export const $BlockSchema = {
       description: 'Metadata of the block.',
       default: {},
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
+    },
     id: {
       type: 'string',
       title: 'Id',
@@ -2485,6 +2509,18 @@ export const $BlockUpdate = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
     },
   },
   type: 'object',
@@ -5384,6 +5420,18 @@ export const $CreateBlock = {
       description: 'Metadata of the block.',
       default: {},
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
+    },
   },
   type: 'object',
   required: ['value', 'label'],
@@ -5959,6 +6007,18 @@ export const $FileBlock = {
       title: 'Metadata',
       description: 'Metadata of the block.',
       default: {},
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
     },
     id: {
       type: 'string',
@@ -6958,6 +7018,18 @@ export const $Group = {
       description:
         'The desired minimum length of messages in the context window of the convo agent. This is a best effort, and may be off-by-one due to user/assistant interleaving.',
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the group will be hidden.',
+    },
   },
   additionalProperties: false,
   type: 'object',
@@ -7035,6 +7107,18 @@ export const $GroupCreate = {
       description: '',
       default: [],
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the group will be hidden.',
+    },
   },
   type: 'object',
   required: ['agent_ids', 'description'],
@@ -7110,6 +7194,18 @@ export const $GroupSchema = {
       title: 'Shared Block Ids',
       description: '',
       default: [],
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the group will be hidden.',
     },
     id: {
       type: 'string',
@@ -8594,6 +8690,18 @@ export const $InternalTemplateBlockCreate = {
       description: 'Metadata of the block.',
       default: {},
     },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the block will be hidden.',
+    },
   },
   type: 'object',
   required: [
@@ -8677,6 +8785,18 @@ export const $InternalTemplateGroupCreate = {
       title: 'Shared Block Ids',
       description: '',
       default: [],
+    },
+    hidden: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Hidden',
+      description: 'If set to True, the group will be hidden.',
     },
     base_template_id: {
       type: 'string',

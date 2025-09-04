@@ -25,6 +25,11 @@ async def list_groups(
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(None, description="Limit for pagination"),
     project_id: Optional[str] = Query(None, description="Search groups by project id"),
+    show_hidden_groups: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include groups marked as hidden in the results.",
+    ),
 ):
     """
     Fetch all multi-agent groups matching query.
@@ -37,6 +42,7 @@ async def list_groups(
         before=before,
         after=after,
         limit=limit,
+        show_hidden_groups=show_hidden_groups,
     )
 
 
