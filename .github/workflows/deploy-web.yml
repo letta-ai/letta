@@ -152,33 +152,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-          buildkitd-flags: |
-            --allow-insecure-entitlement security.insecure
-            --allow-insecure-entitlement network.host
 
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-web-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-web-
-
-      - name: Build with cache optimization
-        run: |
-          export BUILDX_CACHE_FROM="type=local,src=/tmp/.buildx-cache"
-          export BUILDX_CACHE_TO="type=local,dest=/tmp/.buildx-cache-new,mode=max"
-          just build-web-images
-
-          # Move cache to preserve for next build
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
+      - name: Build
+        run: just build-web-images
 
       - name: Extract and deploy static files to CDN
         run: |

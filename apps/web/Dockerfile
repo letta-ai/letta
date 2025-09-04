@@ -9,17 +9,15 @@ WORKDIR /app
 # Copy package.json and lock file
 COPY package.json package-lock.json ./
 
-# Install dependencies with better caching
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production --no-audit --no-fund
+# Install dependencies
+RUN npm install
 
 # Deps with dev dependencies for migrations
 FROM base AS deps-dev
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --no-audit --no-fund
+RUN npm install --production=false
 
 # Build the application
 FROM base AS builder
