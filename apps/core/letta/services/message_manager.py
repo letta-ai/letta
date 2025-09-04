@@ -316,6 +316,7 @@ class MessageManager:
         actor: PydanticUser,
         embedding_config: Optional[EmbeddingConfig] = None,
         strict_mode: bool = False,
+        project_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -325,6 +326,7 @@ class MessageManager:
             actor: User performing the action
             embedding_config: Optional embedding configuration to enable message embedding in Turbopuffer
             strict_mode: If True, wait for embedding to complete; if False, run in background
+            project_id: Optional project ID for the messages (for Turbopuffer indexing)
 
         Returns:
             List of created Pydantic message models
@@ -372,18 +374,23 @@ class MessageManager:
                 if agent_id:
                     if strict_mode:
                         # wait for embedding to complete
-                        await self._embed_messages_background(result, embedding_config, actor, agent_id)
+                        await self._embed_messages_background(result, embedding_config, actor, agent_id, project_id)
                     else:
                         # fire and forget - run embedding in background
                         fire_and_forget(
-                            self._embed_messages_background(result, embedding_config, actor, agent_id),
+                            self._embed_messages_background(result, embedding_config, actor, agent_id, project_id),
                             task_name=f"embed_messages_for_agent_{agent_id}",
                         )
 
             return result
 
     async def _embed_messages_background(
-        self, messages: List[PydanticMessage], embedding_config: EmbeddingConfig, actor: PydanticUser, agent_id: str
+        self,
+        messages: List[PydanticMessage],
+        embedding_config: EmbeddingConfig,
+        actor: PydanticUser,
+        agent_id: str,
+        project_id: Optional[str] = None,
     ) -> None:
         """Background task to embed and store messages in Turbopuffer.
 
@@ -392,6 +399,7 @@ class MessageManager:
             embedding_config: Embedding configuration
             actor: User performing the action
             agent_id: Agent ID for the messages
+            project_id: Optional project ID for the messages
         """
         try:
             from letta.helpers.tpuf_client import TurbopufferClient
@@ -432,6 +440,7 @@ class MessageManager:
                     organization_id=actor.organization_id,
                     roles=roles,
                     created_ats=created_ats,
+                    project_id=project_id,
                 )
                 logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
         except Exception as e:
@@ -543,6 +552,7 @@ class MessageManager:
         actor: PydanticUser,
         embedding_config: Optional[EmbeddingConfig] = None,
         strict_mode: bool = False,
+        project_id: Optional[str] = None,
     ) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
@@ -554,6 +564,7 @@ class MessageManager:
             actor: User performing the action
             embedding_config: Optional embedding configuration for Turbopuffer
             strict_mode: If True, wait for embedding update to complete; if False, run in background
+            project_id: Optional project ID for the message (for Turbopuffer indexing)
         """
         async with db_registry.async_session() as session:
             # Fetch existing message from database
@@ -579,18 +590,18 @@ class MessageManager:
                 if text:
                     if strict_mode:
                         # wait for embedding update to complete
-                        await self._update_message_embedding_background(pydantic_message, text, embedding_config, actor)
+                        await self._update_message_embedding_background(pydantic_message, text, embedding_config, actor, project_id)
                     else:
                         # fire and forget - run embedding update in background
                         fire_and_forget(
-                            self._update_message_embedding_background(pydantic_message, text, embedding_config, actor),
+                            self._update_message_embedding_background(pydantic_message, text, embedding_config, actor, project_id),
                             task_name=f"update_message_embedding_{message_id}",
                         )
 
             return pydantic_message
 
     async def _update_message_embedding_background(
-        self, message: PydanticMessage, text: str, embedding_config: EmbeddingConfig, actor: PydanticUser
+        self, message: PydanticMessage, text: str, embedding_config: EmbeddingConfig, actor: PydanticUser, project_id: Optional[str] = None
     ) -> None:
         """Background task to update a message's embedding in Turbopuffer.
 
@@ -599,6 +610,7 @@ class MessageManager:
             text: Extracted text content from the message
             embedding_config: Embedding configuration
             actor: User performing the action
+            project_id: Optional project ID for the message
         """
         try:
             from letta.helpers.tpuf_client import TurbopufferClient
@@ -625,6 +637,7 @@ class MessageManager:
                 organization_id=actor.organization_id,
                 roles=[message.role],
                 created_ats=[message.created_at],
+                project_id=project_id,
             )
             logger.info(f"Successfully updated message {message.id} in Turbopuffer")
         except Exception as e:

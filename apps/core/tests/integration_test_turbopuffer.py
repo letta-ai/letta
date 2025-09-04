@@ -2097,3 +2097,118 @@ class TestNamespaceTracking:
 
         finally:
             settings.environment = original_env
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_project_id_filtering(self, server, sarah_agent, default_user, enable_turbopuffer, enable_message_embedding):
+        """Test that project_id filtering works correctly in query_messages"""
+        from letta.schemas.letta_message_content import TextContent
+
+        # Create two project IDs
+        project_a_id = str(uuid.uuid4())
+        project_b_id = str(uuid.uuid4())
+
+        # Create messages with different project IDs
+        message_a = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text="Message for project A about Python")],
+        )
+
+        message_b = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text="Message for project B about JavaScript")],
+        )
+
+        # Insert messages with their respective project IDs
+        tpuf_client = TurbopufferClient()
+
+        # Generate embeddings
+        from letta.llm_api.llm_client import LLMClient
+
+        embedding_client = LLMClient.create(
+            provider_type=sarah_agent.embedding_config.embedding_endpoint_type,
+            actor=default_user,
+        )
+        embeddings = await embedding_client.request_embeddings(
+            [message_a.content[0].text, message_b.content[0].text], sarah_agent.embedding_config
+        )
+
+        # Insert message A with project_a_id
+        await tpuf_client.insert_messages(
+            agent_id=sarah_agent.id,
+            message_texts=[message_a.content[0].text],
+            embeddings=[embeddings[0]],
+            message_ids=[message_a.id],
+            organization_id=default_user.organization_id,
+            roles=[message_a.role],
+            created_ats=[message_a.created_at],
+            project_id=project_a_id,
+        )
+
+        # Insert message B with project_b_id
+        await tpuf_client.insert_messages(
+            agent_id=sarah_agent.id,
+            message_texts=[message_b.content[0].text],
+            embeddings=[embeddings[1]],
+            message_ids=[message_b.id],
+            organization_id=default_user.organization_id,
+            roles=[message_b.role],
+            created_ats=[message_b.created_at],
+            project_id=project_b_id,
+        )
+
+        # Poll for message A with project_a_id filter
+        max_retries = 10
+        for i in range(max_retries):
+            results_a = await tpuf_client.query_messages(
+                agent_id=sarah_agent.id,
+                organization_id=default_user.organization_id,
+                search_mode="timestamp",  # Simple timestamp retrieval
+                top_k=10,
+                project_id=project_a_id,
+            )
+            if len(results_a) == 1 and results_a[0][0]["id"] == message_a.id:
+                break
+            await asyncio.sleep(0.5)
+        else:
+            pytest.fail(f"Message A not found after {max_retries} retries")
+
+        assert "Python" in results_a[0][0]["text"]
+
+        # Poll for message B with project_b_id filter
+        for i in range(max_retries):
+            results_b = await tpuf_client.query_messages(
+                agent_id=sarah_agent.id,
+                organization_id=default_user.organization_id,
+                search_mode="timestamp",
+                top_k=10,
+                project_id=project_b_id,
+            )
+            if len(results_b) == 1 and results_b[0][0]["id"] == message_b.id:
+                break
+            await asyncio.sleep(0.5)
+        else:
+            pytest.fail(f"Message B not found after {max_retries} retries")
+
+        assert "JavaScript" in results_b[0][0]["text"]
+
+        # Query without project filter - should find both
+        results_all = await tpuf_client.query_messages(
+            agent_id=sarah_agent.id,
+            organization_id=default_user.organization_id,
+            search_mode="timestamp",
+            top_k=10,
+            project_id=None,  # No filter
+        )
+
+        assert len(results_all) >= 2  # May have other messages from setup
+        message_ids = [r[0]["id"] for r in results_all]
+        assert message_a.id in message_ids
+        assert message_b.id in message_ids
+
+        # Clean up
+        await tpuf_client.delete_messages(
+            agent_id=sarah_agent.id, organization_id=default_user.organization_id, message_ids=[message_a.id, message_b.id]
+        )

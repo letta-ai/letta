@@ -720,7 +720,7 @@ class AgentManager:
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
             await self.message_manager.create_many_messages_async(
-                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config
+                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config, project_id=result.project_id
             )
         return result
 
@@ -1834,6 +1834,8 @@ class AgentManager:
                     message_id=curr_system_message.id,
                     message_update=MessageUpdate(**temp_message.model_dump()),
                     actor=actor,
+                    embedding_config=agent_state.embedding_config,
+                    project_id=agent_state.project_id,
                 )
             else:
                 curr_system_message = temp_message
@@ -1887,7 +1889,9 @@ class AgentManager:
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, embedding_config=agent.embedding_config)
+        messages = await self.message_manager.create_many_messages_async(
+            messages, actor=actor, embedding_config=agent.embedding_config, project_id=agent.project_id
+        )
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)

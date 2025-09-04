@@ -182,6 +182,7 @@ class TurbopufferClient:
         organization_id: str,
         roles: List[MessageRole],
         created_ats: List[datetime],
+        project_id: Optional[str] = None,
     ) -> bool:
         """Insert messages into Turbopuffer.
 
@@ -193,6 +194,7 @@ class TurbopufferClient:
             organization_id: Organization ID for the messages
             roles: List of message roles corresponding to each message
             created_ats: List of creation timestamps for each message
+            project_id: Optional project ID for all messages
 
         Returns:
             True if successful
@@ -221,6 +223,7 @@ class TurbopufferClient:
         agent_ids = []
         message_roles = []
         created_at_timestamps = []
+        project_ids = []
 
         for idx, (text, embedding, role, created_at) in enumerate(zip(message_texts, embeddings, roles, created_ats)):
             message_id = message_ids[idx]
@@ -241,6 +244,7 @@ class TurbopufferClient:
             agent_ids.append(agent_id)
             message_roles.append(role.value)
             created_at_timestamps.append(timestamp)
+            project_ids.append(project_id)
 
         # build column-based upsert data
         upsert_columns = {
@@ -252,6 +256,10 @@ class TurbopufferClient:
             "role": message_roles,
             "created_at": created_at_timestamps,
         }
+
+        # only include project_id if it's provided
+        if project_id is not None:
+            upsert_columns["project_id"] = project_ids
 
         try:
             # Use AsyncTurbopuffer as a context manager for proper resource cleanup
@@ -520,6 +528,7 @@ class TurbopufferClient:
         search_mode: str = "vector",  # "vector", "fts", "hybrid", "timestamp"
         top_k: int = 10,
         roles: Optional[List[MessageRole]] = None,
+        project_id: Optional[str] = None,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
@@ -535,6 +544,7 @@ class TurbopufferClient:
             search_mode: Search mode - "vector", "fts", "hybrid", or "timestamp" (default: "vector")
             top_k: Number of results to return
             roles: Optional list of message roles to filter by
+            project_id: Optional project ID to filter messages by
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
@@ -579,10 +589,17 @@ class TurbopufferClient:
                 end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
             date_filters.append(("created_at", "Lte", end_date))
 
+        # build project_id filter if provided
+        project_filter = None
+        if project_id:
+            project_filter = ("project_id", "Eq", project_id)
+
         # combine all filters
         all_filters = [agent_filter]  # always include agent_id filter
         if role_filter:
             all_filters.append(role_filter)
+        if project_filter:
+            all_filters.append(project_filter)
         if date_filters:
             all_filters.extend(date_filters)
 

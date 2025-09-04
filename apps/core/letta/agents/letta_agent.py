@@ -495,7 +495,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    embedding_config=agent_state.embedding_config,
+                                    project_id=agent_state.project_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -823,7 +826,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    embedding_config=agent_state.embedding_config,
+                                    project_id=agent_state.project_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1259,7 +1265,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    embedding_config=agent_state.embedding_config,
+                                    project_id=agent_state.project_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1667,7 +1676,7 @@ class LettaAgent(BaseAgent):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
             )
             return persisted_messages, continue_stepping, stop_reason
 
@@ -1779,7 +1788,7 @@ class LettaAgent(BaseAgent):
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
         )
 
         if run_id:
