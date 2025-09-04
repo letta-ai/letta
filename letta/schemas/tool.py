@@ -67,6 +67,9 @@ class Tool(BaseTool):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+    default_requires_approval: Optional[bool] = Field(
+        None, description="Default value for whether or not executing this tool requires approval."
+    )
 
     # metadata fields
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
@@ -80,7 +83,8 @@ class Tool(BaseTool):
         """
         from letta.functions.helpers import generate_model_from_args_json_schema
 
-        if self.tool_type == ToolType.CUSTOM:
+        if self.tool_type == ToolType.CUSTOM and not self.json_schema:
+            # attempt various fallbacks to get the JSON schema
             if not self.source_code:
                 logger.error("Custom tool with id=%s is missing source_code field", self.id)
                 raise ValueError(f"Custom tool with id={self.id} is missing source_code field.")
@@ -157,7 +161,7 @@ class Tool(BaseTool):
 
 class ToolCreate(LettaBase):
     description: Optional[str] = Field(None, description="The description of the tool.")
-    tags: List[str] = Field([], description="Metadata tags.")
+    tags: Optional[List[str]] = Field(None, description="Metadata tags.")
     source_code: str = Field(..., description="The source code of the function.")
     source_type: str = Field("python", description="The source type of the function.")
     json_schema: Optional[Dict] = Field(
@@ -167,6 +171,7 @@ class ToolCreate(LettaBase):
     return_char_limit: int = Field(FUNCTION_RETURN_CHAR_LIMIT, description="The maximum number of characters in the response.")
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
+    default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
 
     @classmethod
     def from_mcp(cls, mcp_server_name: str, mcp_tool: MCPTool) -> "ToolCreate":
@@ -213,9 +218,9 @@ class ToolCreate(LettaBase):
         composio_action_schemas = composio_toolset.get_action_schemas(actions=[action_name], check_connected_accounts=False)
 
         assert len(composio_action_schemas) > 0, "User supplied parameters do not match any Composio tools"
-        assert (
-            len(composio_action_schemas) == 1
-        ), f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
+        assert len(composio_action_schemas) == 1, (
+            f"User supplied parameters match too many Composio tools; {len(composio_action_schemas)} > 1"
+        )
 
         composio_action_schema = composio_action_schemas[0]
 
@@ -247,6 +252,7 @@ class ToolUpdate(LettaBase):
     pip_requirements: list[PipRequirement] | None = Field(None, description="Optional list of pip packages required by this tool.")
     npm_requirements: list[NpmRequirement] | None = Field(None, description="Optional list of npm packages required by this tool.")
     metadata_: Optional[Dict[str, Any]] = Field(None, description="A dictionary of additional metadata for the tool.")
+    default_requires_approval: Optional[bool] = Field(None, description="Whether or not to require approval before executing this tool.")
 
     model_config = ConfigDict(extra="ignore")  # Allows extra fields without validation errors
     # TODO: Remove this, and clean usage of ToolUpdate everywhere else

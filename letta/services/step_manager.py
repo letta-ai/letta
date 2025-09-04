@@ -29,7 +29,6 @@ class FeedbackType(str, Enum):
 
 
 class StepManager:
-
     @enforce_types
     @trace_method
     async def list_steps_async(

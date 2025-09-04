@@ -1,8 +1,7 @@
 from contextlib import AsyncExitStack
 from typing import Optional, Tuple
 
-from mcp import ClientSession
-from mcp import Tool as MCPTool
+from mcp import ClientSession, Tool as MCPTool
 from mcp.client.auth import OAuthClientProvider
 from mcp.types import TextContent
 

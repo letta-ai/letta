@@ -102,6 +102,23 @@ class BaseAgent(ABC):
             if tool_rules_solver is not None:
                 tool_constraint_block = tool_rules_solver.compile_tool_rule_prompts()
 
+            # compile archive tags if there's an attached archive
+            from letta.services.archive_manager import ArchiveManager
+
+            archive_manager = ArchiveManager()
+            archive = await archive_manager.get_default_archive_for_agent_async(
+                agent_id=agent_state.id,
+                actor=self.actor,
+            )
+
+            if archive:
+                archive_tags = await self.passage_manager.get_unique_tags_for_archive_async(
+                    archive_id=archive.id,
+                    actor=self.actor,
+                )
+            else:
+                archive_tags = None
+
             # TODO: This is a pretty brittle pattern established all over our code, need to get rid of this
             curr_system_message = in_context_messages[0]
             curr_system_message_text = curr_system_message.content[0].text
@@ -149,6 +166,7 @@ class BaseAgent(ABC):
                 timezone=agent_state.timezone,
                 previous_message_count=num_messages - len(in_context_messages),
                 archival_memory_size=num_archival_memories,
+                archive_tags=archive_tags,
             )
 
             diff = united_diff(curr_system_message_text, new_system_message_str)

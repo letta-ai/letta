@@ -7,7 +7,6 @@ import requests
 
 from letta.constants import CLI_WARNING_PREFIX
 from letta.errors import LettaConfigurationError, RateLimitExceededError
-from letta.llm_api.deepseek import build_deepseek_chat_completions_request, convert_deepseek_response_to_chatcompletion
 from letta.llm_api.helpers import unpack_all_inner_thoughts_from_kwargs
 from letta.llm_api.openai import (
     build_openai_chat_completions_request,
@@ -146,7 +145,7 @@ def create(
 
     # Count the tokens first, if there's an overflow exit early by throwing an error up the stack
     # NOTE: we want to include a specific substring in the error message to trigger summarization
-    messages_oai_format = [m.to_openai_dict() for m in messages]
+    messages_oai_format = Message.to_openai_dicts_from_list(messages)
     prompt_tokens = num_tokens_from_messages(messages=messages_oai_format, model=llm_config.model)
     function_tokens = num_tokens_from_functions(functions=functions, model=llm_config.model) if functions else 0
     if prompt_tokens + function_tokens > llm_config.context_window:
@@ -243,54 +242,6 @@ def create(
         if llm_config.put_inner_thoughts_in_kwargs:
             response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
 
-        return response
-
-    elif llm_config.model_endpoint_type == "deepseek":
-        if model_settings.deepseek_api_key is None and llm_config.model_endpoint == "":
-            # only is a problem if we are *not* using an openai proxy
-            raise LettaConfigurationError(message="DeepSeek key is missing from letta config file", missing_fields=["deepseek_api_key"])
-
-        data = build_deepseek_chat_completions_request(
-            llm_config,
-            messages,
-            user_id,
-            functions,
-            function_call,
-            use_tool_naming,
-            llm_config.max_tokens,
-        )
-        if stream:  # Client requested token streaming
-            data.stream = True
-            assert isinstance(stream_interface, AgentChunkStreamingInterface) or isinstance(
-                stream_interface, AgentRefreshStreamingInterface
-            ), type(stream_interface)
-            response = openai_chat_completions_process_stream(
-                url=llm_config.model_endpoint,
-                api_key=model_settings.deepseek_api_key,
-                chat_completion_request=data,
-                stream_interface=stream_interface,
-                name=name,
-                # TODO should we toggle for R1 vs V3?
-                expect_reasoning_content=True,
-            )
-        else:  # Client did not request token streaming (expect a blocking backend response)
-            data.stream = False
-            if isinstance(stream_interface, AgentChunkStreamingInterface):
-                stream_interface.stream_start()
-            try:
-                response = openai_chat_completions_request(
-                    url=llm_config.model_endpoint,
-                    api_key=model_settings.deepseek_api_key,
-                    chat_completion_request=data,
-                )
-            finally:
-                if isinstance(stream_interface, AgentChunkStreamingInterface):
-                    stream_interface.stream_end()
-        """
-        if llm_config.put_inner_thoughts_in_kwargs:
-            response = unpack_all_inner_thoughts_from_kwargs(response=response, inner_thoughts_key=INNER_THOUGHTS_KWARG)
-        """
-        response = convert_deepseek_response_to_chatcompletion(response)
         return response
 
     # local model

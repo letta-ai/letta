@@ -2,8 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 from anthropic.types.beta.messages import BetaMessageBatch, BetaMessageBatchIndividualResponse
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from sqlalchemy import Dialect
 
 from letta.functions.mcp_client.types import StdioServerConfig
@@ -39,6 +38,7 @@ from letta.schemas.tool_rule import (
     MaxCountPerStepToolRule,
     ParentToolRule,
     RequiredBeforeExitToolRule,
+    RequiresApprovalToolRule,
     TerminalToolRule,
     ToolRule,
 )
@@ -91,8 +91,11 @@ def serialize_tool_rules(tool_rules: Optional[List[ToolRule]]) -> List[Dict[str,
     if not tool_rules:
         return []
 
+    # de-duplicate tool rules using dict.fromkeys (preserves order in Python 3.7+)
+    deduplicated_rules = list(dict.fromkeys(tool_rules))
+
     data = [
-        {**rule.model_dump(mode="json"), "type": rule.type.value} for rule in tool_rules
+        {**rule.model_dump(mode="json"), "type": rule.type.value} for rule in deduplicated_rules
     ]  # Convert Enum to string for JSON compatibility
 
     # Validate ToolRule structure
@@ -136,6 +139,8 @@ def deserialize_tool_rule(
         return ParentToolRule(**data)
     elif rule_type == ToolRuleType.required_before_exit:
         return RequiredBeforeExitToolRule(**data)
+    elif rule_type == ToolRuleType.requires_approval:
+        return RequiresApprovalToolRule(**data)
     raise ValueError(f"Unknown ToolRule type: {rule_type}")
 
 

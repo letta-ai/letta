@@ -60,6 +60,15 @@ class LettaToolNameConflictError(LettaError):
         )
 
 
+class LettaToolNameSchemaMismatchError(LettaToolCreateError):
+    """Error raised when a tool name our source codedoes not match the name in the JSON schema."""
+
+    def __init__(self, tool_name: str, json_schema_name: str, source_code: str):
+        super().__init__(
+            message=f"Tool name '{tool_name}' does not match the name in the JSON schema '{json_schema_name}' or in the source code `{source_code}`",
+        )
+
+
 class LettaConfigurationError(LettaError):
     """Error raised when there are configuration-related issues."""
 

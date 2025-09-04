@@ -9,15 +9,14 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 # tests/test_file_content_flow.py
 import pytest
 from _pytest.python_api import approx
 from anthropic.types.beta import BetaMessage
 from anthropic.types.beta.messages import BetaMessageBatchIndividualResponse, BetaMessageBatchSucceededResult
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import StaleDataError
@@ -48,11 +47,9 @@ from letta.jobs.types import ItemUpdateInfo, RequestStatusUpdateInfo, StepStatus
 from letta.orm import Base, Block
 from letta.orm.block_history import BlockHistory
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
-from letta.orm.file import FileContent as FileContentModel
-from letta.orm.file import FileMetadata as FileMetadataModel
+from letta.orm.file import FileContent as FileContentModel, FileMetadata as FileMetadataModel
 from letta.schemas.agent import CreateAgent, UpdateAgent
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate, CreateBlock
+from letta.schemas.block import Block as PydanticBlock, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import (
     ActorType,
@@ -64,44 +61,35 @@ from letta.schemas.enums import (
     ProviderType,
     SandboxType,
     StepStatus,
+    TagMatchMode,
     ToolType,
 )
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
-from letta.schemas.file import FileMetadata
-from letta.schemas.file import FileMetadata as PydanticFileMetadata
+from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
 from letta.schemas.identity import IdentityCreate, IdentityProperty, IdentityPropertyType, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.schemas.job import BatchJob
-from letta.schemas.job import Job
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.job import BatchJob, Job, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import UpdateAssistantMessage, UpdateReasoningMessage, UpdateSystemMessage, UpdateUserMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.llm_batch_job import AgentStepState, LLMBatchItem
 from letta.schemas.llm_config import LLMConfig
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.message import Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.openai.chat_completion_response import UsageStatistics
-from letta.schemas.organization import Organization
-from letta.schemas.organization import Organization as PydanticOrganization
-from letta.schemas.organization import OrganizationUpdate
+from letta.schemas.organization import Organization, Organization as PydanticOrganization, OrganizationUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.sandbox_config import E2BSandboxConfig, LocalSandboxConfig, SandboxConfigCreate, SandboxConfigUpdate
-from letta.schemas.source import Source as PydanticSource
-from letta.schemas.source import SourceUpdate
-from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolCreate, ToolUpdate
+from letta.schemas.source import Source as PydanticSource, SourceUpdate
+from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.tool_rule import InitToolRule
-from letta.schemas.user import User as PydanticUser
-from letta.schemas.user import UserUpdate
+from letta.schemas.user import User as PydanticUser, UserUpdate
 from letta.server.db import db_registry
 from letta.server.server import SyncServer
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.agent_manager_helper import calculate_base_tools, calculate_multi_agent_tools, validate_agent_exists_async
 from letta.services.step_manager import FeedbackType
-from letta.settings import tool_settings
+from letta.settings import settings, tool_settings
 from letta.utils import calculate_file_defaults_based_on_context_window
 from tests.helpers.utils import comprehensive_agent_checks, validate_context_window_overview
 from tests.utils import random_string
@@ -240,6 +228,42 @@ async def print_tool(server: SyncServer, default_user, default_organization):
     derived_name = derived_json_schema["name"]
     tool.json_schema = derived_json_schema
     tool.name = derived_name
+
+    tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
+
+    # Yield the created tool
+    yield tool
+
+
+@pytest.fixture
+async def bash_tool(server: SyncServer, default_user, default_organization):
+    """Fixture to create a bash tool with requires_approval and clean up after the test."""
+
+    def bash_tool(operation: str):
+        """
+        Args:
+            operation (str): The bash operation to execute.
+
+        Returns:
+            str: The result of the executed operation.
+        """
+        print("scary bash operation")
+        return "success"
+
+    # Set up tool details
+    source_code = parse_source_code(bash_tool)
+    source_type = "python"
+    description = "test_description"
+    tags = ["test"]
+    metadata = {"a": "b"}
+
+    tool = PydanticTool(description=description, tags=tags, source_code=source_code, source_type=source_type, metadata_=metadata)
+    derived_json_schema = derive_openai_json_schema(source_code=tool.source_code, name=tool.name)
+
+    derived_name = derived_json_schema["name"]
+    tool.json_schema = derived_json_schema
+    tool.name = derived_name
+    tool.default_requires_approval = True
 
     tool = await server.tool_manager.create_or_update_tool_async(tool, actor=default_user)
 
@@ -862,7 +886,7 @@ def test_calculate_multi_agent_tools(set_letta_environment):
     """Test that calculate_multi_agent_tools excludes local-only tools in production."""
     result = calculate_multi_agent_tools()
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Production environment should exclude local-only tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert result == expected_tools, "Production should exclude local-only multi-agent tools"
@@ -889,7 +913,7 @@ async def test_upsert_base_tools_excludes_local_only_in_production(server: SyncS
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
     tool_names = {tool.name for tool in tools}
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Production environment should exclude local-only multi-agent tools
         for local_only_tool in LOCAL_ONLY_MULTI_AGENT_TOOLS:
             assert local_only_tool not in tool_names, f"Local-only tool '{local_only_tool}' should not be upserted in production"
@@ -912,7 +936,7 @@ async def test_upsert_multi_agent_tools_only(server: SyncServer, default_user, s
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user, allowed_types={ToolType.LETTA_MULTI_AGENT_CORE})
     tool_names = {tool.name for tool in tools}
 
-    if set_letta_environment == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         # Should only have non-local multi-agent tools
         expected_tools = set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
         assert tool_names == expected_tools, "Production multi-agent upsert should exclude local-only tools"
@@ -991,16 +1015,14 @@ async def test_create_agent_with_default_source(server: SyncServer, default_user
     server.agent_manager.delete_agent(created_agent_no_source.id, default_user)
 
 
-@pytest.fixture(params=["", "PRODUCTION"])
-def set_letta_environment(request):
-    original = os.environ.get("LETTA_ENVIRONMENT")
-    os.environ["LETTA_ENVIRONMENT"] = request.param
+@pytest.fixture(params=[None, "PRODUCTION"])
+def set_letta_environment(request, monkeypatch):
+    # Patch the settings.environment attribute
+    original = settings.environment
+    monkeypatch.setattr(settings, "environment", request.param)
     yield request.param
-    # Restore original environment variable
-    if original is not None:
-        os.environ["LETTA_ENVIRONMENT"] = original
-    else:
-        os.environ.pop("LETTA_ENVIRONMENT", None)
+    # Restore original environment
+    monkeypatch.setattr(settings, "environment", original)
 
 
 async def test_get_context_window_basic(
@@ -1883,6 +1905,76 @@ async def test_detach_all_files_tools_async_idempotent(server: SyncServer, sarah
     assert len(final_agent_state.tools) == tool_count_after_first
 
 
+@pytest.mark.asyncio
+async def test_attach_tool_with_default_requires_approval(server: SyncServer, sarah_agent, bash_tool, default_user):
+    """Test that attaching a tool with default requires_approval adds associated tool rule."""
+    # Attach the tool
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=bash_tool.id, actor=default_user)
+
+    # Verify attachment through get_agent_by_id
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert bash_tool.id in [t.id for t in agent.tools]
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
+    # Verify that attaching the same tool again doesn't cause duplication
+    await server.agent_manager.attach_tool_async(agent_id=sarah_agent.id, tool_id=bash_tool.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
+
+@pytest.mark.asyncio
+async def test_attach_tool_with_default_requires_approval_on_creation(server: SyncServer, bash_tool, default_user):
+    """Test that attaching a tool with default requires_approval adds associated tool rule."""
+    # Create agent with tool
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="agent11",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            tools=[bash_tool.name],
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    assert bash_tool.id in [t.id for t in agent.tools]
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
+    # Verify that attaching the same tool again doesn't cause duplication
+    await server.agent_manager.attach_tool_async(agent_id=agent.id, tool_id=bash_tool.id, actor=default_user)
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
+    # Modify approval on tool after attach
+    await server.agent_manager.modify_approvals_async(
+        agent_id=agent.id, tool_name=bash_tool.name, requires_approval=False, actor=default_user
+    )
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 0
+
+    # Revert override
+    await server.agent_manager.modify_approvals_async(
+        agent_id=agent.id, tool_name=bash_tool.name, requires_approval=True, actor=default_user
+    )
+    agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent.id, actor=default_user)
+    assert len([t for t in agent.tools if t.id == bash_tool.id]) == 1
+    tool_rules = [rule for rule in agent.tool_rules if rule.tool_name == bash_tool.name]
+    assert len(tool_rules) == 1
+    assert tool_rules[0].type == "requires_approval"
+
+
 # ======================================================================================================================
 # AgentManager Tests - Sources Relationship
 # ======================================================================================================================
@@ -2672,21 +2764,18 @@ async def test_refresh_memory_async(server: SyncServer, default_user):
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_basic(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test basic listing functionality of agent passages"""
 
     all_passages = await server.agent_manager.list_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(all_passages) == 5  # 3 source + 2 agent passages
 
-    source_passages = await server.agent_manager.list_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
+    source_passages = await server.agent_manager.query_source_passages_async(actor=default_user, agent_id=sarah_agent.id)
     assert len(source_passages) == 3  # 3 source + 2 agent passages
-
-    agent_passages = await server.agent_manager.list_agent_passages_async(actor=default_user, agent_id=sarah_agent.id)
-    assert len(agent_passages) == 2  # 3 source + 2 agent passages
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_ordering(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test ordering of agent passages"""
 
     # Test ascending order
@@ -2703,7 +2792,7 @@ async def test_agent_list_passages_ordering(server, default_user, sarah_agent, a
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_pagination(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test pagination of agent passages"""
 
     # Test limit
@@ -2744,7 +2833,7 @@ async def test_agent_list_passages_pagination(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_text_search(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test text search functionality of agent passages"""
 
     # Test text search for source passages
@@ -2761,7 +2850,7 @@ async def test_agent_list_passages_text_search(server, default_user, sarah_agent
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup):
+async def test_agent_list_passages_agent_only(server, default_user, sarah_agent, agent_passages_setup, disable_turbopuffer):
     """Test text search functionality of agent passages"""
 
     # Test text search for agent passages
@@ -2770,7 +2859,7 @@ async def test_agent_list_passages_agent_only(server, default_user, sarah_agent,
 
 
 @pytest.mark.asyncio
-async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup):
+async def test_agent_list_passages_filtering(server, default_user, sarah_agent, default_source, agent_passages_setup, disable_turbopuffer):
     """Test filtering functionality of agent passages"""
 
     # Test source filtering
@@ -2806,7 +2895,9 @@ def mock_embed_model(mock_embeddings):
     return mock_model
 
 
-async def test_agent_list_passages_vector_search(server, default_user, sarah_agent, default_source, default_file, mock_embed_model):
+async def test_agent_list_passages_vector_search(
+    server, default_user, sarah_agent, default_source, default_file, mock_embed_model, disable_turbopuffer
+):
     """Test vector search functionality of agent passages"""
     embed_model = mock_embed_model
 
@@ -3063,6 +3154,7 @@ def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_a
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
             metadata={"type": "test_specific"},
+            tags=["python", "test", "agent"],
         ),
         actor=default_user,
     )
@@ -3071,6 +3163,7 @@ def test_create_agent_passage_specific(server: SyncServer, default_user, sarah_a
     assert passage.text == "Test agent passage via specific method"
     assert passage.archive_id == archive.id
     assert passage.source_id is None
+    assert sorted(passage.tags) == sorted(["python", "test", "agent"])
 
 
 def test_create_source_passage_specific(server: SyncServer, default_user, default_file, default_source):
@@ -3084,6 +3177,7 @@ def test_create_source_passage_specific(server: SyncServer, default_user, defaul
             embedding=[0.1],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
             metadata={"type": "test_specific"},
+            tags=["document", "test", "source"],
         ),
         file_metadata=default_file,
         actor=default_user,
@@ -3093,6 +3187,7 @@ def test_create_source_passage_specific(server: SyncServer, default_user, defaul
     assert passage.text == "Test source passage via specific method"
     assert passage.source_id == default_source.id
     assert passage.archive_id is None
+    assert sorted(passage.tags) == sorted(["document", "test", "source"])
 
 
 def test_create_agent_passage_validation(server: SyncServer, default_user, default_source, sarah_agent):
@@ -3406,6 +3501,7 @@ async def test_create_many_agent_passages_async(server: SyncServer, default_user
             organization_id=default_user.organization_id,
             embedding=[0.1 * i],
             embedding_config=DEFAULT_EMBEDDING_CONFIG,
+            tags=["batch", f"item{i}"] if i % 2 == 0 else ["batch", "odd"],
         )
         for i in range(3)
     ]
@@ -3417,6 +3513,8 @@ async def test_create_many_agent_passages_async(server: SyncServer, default_user
         assert passage.text == f"Batch agent passage {i}"
         assert passage.archive_id == archive.id
         assert passage.source_id is None
+        expected_tags = ["batch", f"item{i}"] if i % 2 == 0 else ["batch", "odd"]
+        assert passage.tags == expected_tags
 
 
 @pytest.mark.asyncio
@@ -3508,6 +3606,536 @@ def test_deprecated_methods_show_warnings(server: SyncServer, default_user, sara
         assert any("size is deprecated" in str(warning.message) for warning in w)
 
 
+@pytest.mark.asyncio
+async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServer, default_user, sarah_agent):
+    """Test comprehensive tag functionality for passages."""
+    from letta.schemas.enums import TagMatchMode
+
+    # Get or create default archive for the agent
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
+    )
+
+    # Create passages with different tag combinations
+    test_passages = [
+        {"text": "Python programming tutorial", "tags": ["python", "tutorial", "programming"]},
+        {"text": "Machine learning with Python", "tags": ["python", "ml", "ai"]},
+        {"text": "JavaScript web development", "tags": ["javascript", "web", "frontend"]},
+        {"text": "Python data science guide", "tags": ["python", "tutorial", "data"]},
+        {"text": "No tags passage", "tags": None},
+    ]
+
+    created_passages = []
+    for test_data in test_passages:
+        passage = await server.passage_manager.create_agent_passage_async(
+            PydanticPassage(
+                text=test_data["text"],
+                archive_id=archive.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1, 0.2, 0.3],
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                tags=test_data["tags"],
+            ),
+            actor=default_user,
+        )
+        created_passages.append(passage)
+
+    # Test that tags are properly stored (deduplicated)
+    for i, passage in enumerate(created_passages):
+        expected_tags = test_passages[i]["tags"]
+        if expected_tags:
+            assert set(passage.tags) == set(expected_tags)
+        else:
+            assert passage.tags is None
+
+    # Test querying with tag filtering (if Turbopuffer is enabled)
+    if hasattr(server.agent_manager, "query_agent_passages_async"):
+        # Test querying with python tag (should find 3 passages)
+        python_results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user,
+            agent_id=sarah_agent.id,
+            tags=["python"],
+            tag_match_mode=TagMatchMode.ANY,
+        )
+
+        python_texts = [p.text for p in python_results]
+        assert len([t for t in python_texts if "Python" in t]) >= 2
+
+        # Test querying with multiple tags using ALL mode
+        tutorial_python_results = await server.agent_manager.query_agent_passages_async(
+            actor=default_user,
+            agent_id=sarah_agent.id,
+            tags=["python", "tutorial"],
+            tag_match_mode=TagMatchMode.ALL,
+        )
+
+        tutorial_texts = [p.text for p in tutorial_python_results]
+        expected_matches = [t for t in tutorial_texts if "tutorial" in t and "Python" in t]
+        assert len(expected_matches) >= 1
+
+
+@pytest.mark.asyncio
+async def test_comprehensive_tag_functionality(disable_turbopuffer, server: SyncServer, sarah_agent, default_user):
+    """Comprehensive test for tag functionality including dual storage and junction table."""
+
+    # Test 1: Create passages with tags and verify they're stored in both places
+    passages_with_tags = []
+    test_tags = {
+        "passage1": ["important", "documentation", "python"],
+        "passage2": ["important", "testing"],
+        "passage3": ["documentation", "api"],
+        "passage4": ["python", "testing", "api"],
+        "passage5": [],  # Test empty tags
+    }
+
+    for i, (passage_key, tags) in enumerate(test_tags.items(), 1):
+        text = f"Test passage {i} for comprehensive tag testing"
+        created_passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent,
+            text=text,
+            actor=default_user,
+            tags=tags if tags else None,
+        )
+        assert len(created_passages) == 1
+        passage = created_passages[0]
+
+        # Verify tags are stored in the JSON column (deduplicated)
+        if tags:
+            assert set(passage.tags) == set(tags)
+        else:
+            assert passage.tags is None
+        passages_with_tags.append(passage)
+
+    # Test 2: Verify unique tags for archive
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id,
+        agent_name=sarah_agent.name,
+        actor=default_user,
+    )
+
+    unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Should have all unique tags: "important", "documentation", "python", "testing", "api"
+    expected_unique_tags = {"important", "documentation", "python", "testing", "api"}
+    assert set(unique_tags) == expected_unique_tags
+    assert len(unique_tags) == 5
+
+    # Test 3: Verify tag counts
+    tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Verify counts
+    assert tag_counts["important"] == 2  # passage1 and passage2
+    assert tag_counts["documentation"] == 2  # passage1 and passage3
+    assert tag_counts["python"] == 2  # passage1 and passage4
+    assert tag_counts["testing"] == 2  # passage2 and passage4
+    assert tag_counts["api"] == 2  # passage3 and passage4
+
+    # Test 4: Query passages with ANY tag matching
+    any_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["important", "api"],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should match passages with "important" OR "api" tags (passages 1, 2, 3, 4)
+    [p.text for p in any_results]
+    assert len(any_results) >= 4
+
+    # Test 5: Query passages with ALL tag matching
+    all_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["python", "testing"],
+        tag_match_mode=TagMatchMode.ALL,
+        actor=default_user,
+    )
+
+    # Should only match passage4 which has both "python" AND "testing"
+    all_passage_texts = [p.text for p in all_results]
+    assert any("Test passage 4" in text for text in all_passage_texts)
+
+    # Test 6: Query with non-existent tags
+    no_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="test",
+        limit=10,
+        tags=["nonexistent", "missing"],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should return no results
+    assert len(no_results) == 0
+
+    # Test 7: Verify tags CAN be updated (with junction table properly maintained)
+    first_passage = passages_with_tags[0]
+    new_tags = ["updated", "modified", "changed"]
+    update_data = PydanticPassage(
+        id=first_passage.id,
+        text="Updated text",
+        tags=new_tags,
+        organization_id=first_passage.organization_id,
+        archive_id=first_passage.archive_id,
+        embedding=first_passage.embedding,
+        embedding_config=first_passage.embedding_config,
+    )
+
+    # Update should work and tags should be updated
+    updated = await server.passage_manager.update_agent_passage_by_id_async(
+        passage_id=first_passage.id,
+        passage=update_data,
+        actor=default_user,
+    )
+
+    # Both text and tags should be updated
+    assert updated.text == "Updated text"
+    assert set(updated.tags) == set(new_tags)
+
+    # Verify tags are properly updated in junction table
+    updated_unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # Should include new tags and not include old "important", "documentation", "python" from passage1
+    # But still have tags from other passages
+    assert "updated" in updated_unique_tags
+    assert "modified" in updated_unique_tags
+    assert "changed" in updated_unique_tags
+
+    # Test 8: Delete a passage and verify cascade deletion of tags
+    passage_to_delete = passages_with_tags[1]  # passage2 with ["important", "testing"]
+
+    await server.passage_manager.delete_agent_passage_by_id_async(
+        passage_id=passage_to_delete.id,
+        actor=default_user,
+    )
+
+    # Get updated tag counts
+    updated_tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    # "important" no longer exists (was in passage1 which was updated and passage2 which was deleted)
+    assert "important" not in updated_tag_counts
+    # "testing" count should decrease from 2 to 1 (only in passage4 now)
+    assert updated_tag_counts["testing"] == 1
+
+    # Test 9: Batch create passages with tags
+    batch_texts = [
+        "Batch passage 1",
+        "Batch passage 2",
+        "Batch passage 3",
+    ]
+    batch_tags = ["batch", "test", "multiple"]
+
+    batch_passages = []
+    for text in batch_texts:
+        passages = await server.passage_manager.insert_passage(
+            agent_state=sarah_agent,
+            text=text,
+            actor=default_user,
+            tags=batch_tags,
+        )
+        batch_passages.extend(passages)
+
+    # Verify all batch passages have the same tags
+    for passage in batch_passages:
+        assert set(passage.tags) == set(batch_tags)
+
+    # Test 10: Verify tag counts include batch passages
+    final_tag_counts = await server.passage_manager.get_tag_counts_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    assert final_tag_counts["batch"] == 3
+    assert final_tag_counts["test"] == 3
+    assert final_tag_counts["multiple"] == 3
+
+    # Test 11: Complex query with multiple tags and ALL matching
+    complex_all_results = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="batch",
+        limit=10,
+        tags=["batch", "test", "multiple"],
+        tag_match_mode=TagMatchMode.ALL,
+        actor=default_user,
+    )
+
+    # Should match all 3 batch passages
+    assert len(complex_all_results) >= 3
+
+    # Test 12: Empty tag list should return all passages
+    all_passages = await server.agent_manager.query_agent_passages_async(
+        agent_id=sarah_agent.id,
+        query_text="passage",
+        limit=50,
+        tags=[],
+        tag_match_mode=TagMatchMode.ANY,
+        actor=default_user,
+    )
+
+    # Should return passages based on text search only
+    assert len(all_passages) > 0
+
+
+@pytest.mark.asyncio
+async def test_tag_edge_cases(disable_turbopuffer, server: SyncServer, sarah_agent, default_user):
+    """Test edge cases for tag functionality."""
+
+    # Test 1: Very long tag names
+    long_tag = "a" * 500  # 500 character tag
+    passages = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing long tag names",
+        actor=default_user,
+        tags=[long_tag, "normal_tag"],
+    )
+
+    assert len(passages) == 1
+    assert long_tag in passages[0].tags
+
+    # Test 2: Special characters in tags
+    special_tags = [
+        "tag-with-dash",
+        "tag_with_underscore",
+        "tag.with.dots",
+        "tag/with/slash",
+        "tag:with:colon",
+        "tag@with@at",
+        "tag#with#hash",
+        "tag with spaces",
+        "CamelCaseTag",
+        "数字标签",
+    ]
+
+    passages_special = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing special character tags",
+        actor=default_user,
+        tags=special_tags,
+    )
+
+    assert len(passages_special) == 1
+    assert set(passages_special[0].tags) == set(special_tags)
+
+    # Verify unique tags includes all special character tags
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id,
+        agent_name=sarah_agent.name,
+        actor=default_user,
+    )
+
+    unique_tags = await server.passage_manager.get_unique_tags_for_archive_async(
+        archive_id=archive.id,
+        actor=default_user,
+    )
+
+    for tag in special_tags:
+        assert tag in unique_tags
+
+    # Test 3: Duplicate tags in input (should be deduplicated)
+    duplicate_tags = ["tag1", "tag2", "tag1", "tag3", "tag2", "tag1"]
+    passages_dup = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing duplicate tags",
+        actor=default_user,
+        tags=duplicate_tags,
+    )
+
+    # Should only have unique tags (duplicates removed)
+    assert len(passages_dup) == 1
+    assert set(passages_dup[0].tags) == {"tag1", "tag2", "tag3"}
+    assert len(passages_dup[0].tags) == 3  # Should be deduplicated
+
+    # Test 4: Case sensitivity in tags
+    case_tags = ["Tag", "tag", "TAG", "tAg"]
+    passages_case = await server.passage_manager.insert_passage(
+        agent_state=sarah_agent,
+        text="Testing case sensitive tags",
+        actor=default_user,
+        tags=case_tags,
+    )
+
+    # All variations should be preserved (case-sensitive)
+    assert len(passages_case) == 1
+    assert set(passages_case[0].tags) == set(case_tags)
+
+
+@pytest.mark.asyncio
+async def test_search_agent_archival_memory_async(disable_turbopuffer, server: SyncServer, default_user, sarah_agent):
+    """Test the search_agent_archival_memory_async method that powers both the agent tool and API endpoint."""
+    # Get or create default archive for the agent
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
+    )
+
+    # Create test passages with various content and tags
+    test_data = [
+        {
+            "text": "Python is a powerful programming language used for data science and web development.",
+            "tags": ["python", "programming", "data-science", "web"],
+            "created_at": datetime(2024, 1, 15, 10, 30, tzinfo=timezone.utc),
+        },
+        {
+            "text": "Machine learning algorithms can be implemented in Python using libraries like scikit-learn.",
+            "tags": ["python", "machine-learning", "algorithms"],
+            "created_at": datetime(2024, 1, 16, 14, 45, tzinfo=timezone.utc),
+        },
+        {
+            "text": "JavaScript is essential for frontend web development and modern web applications.",
+            "tags": ["javascript", "frontend", "web"],
+            "created_at": datetime(2024, 1, 17, 9, 15, tzinfo=timezone.utc),
+        },
+        {
+            "text": "Database design principles are important for building scalable applications.",
+            "tags": ["database", "design", "scalability"],
+            "created_at": datetime(2024, 1, 18, 16, 20, tzinfo=timezone.utc),
+        },
+        {
+            "text": "The weather today is sunny and warm, perfect for outdoor activities.",
+            "tags": ["weather", "outdoor"],
+            "created_at": datetime(2024, 1, 19, 11, 0, tzinfo=timezone.utc),
+        },
+    ]
+
+    # Create passages in the database
+    created_passages = []
+    for data in test_data:
+        passage = await server.passage_manager.create_agent_passage_async(
+            PydanticPassage(
+                text=data["text"],
+                archive_id=archive.id,
+                organization_id=default_user.organization_id,
+                embedding=[0.1, 0.2, 0.3],  # Mock embedding
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                tags=data["tags"],
+                created_at=data["created_at"],
+            ),
+            actor=default_user,
+        )
+        created_passages.append(passage)
+
+    # Test 1: Basic search by query text
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="Python programming"
+    )
+
+    assert count > 0
+    assert len(results) == count
+
+    # Check structure of results
+    for result in results:
+        assert "timestamp" in result
+        assert "content" in result
+        assert "tags" in result
+        assert isinstance(result["tags"], list)
+
+    # Test 2: Search with tag filtering - single tag
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", tags=["python"]
+    )
+
+    assert count > 0
+    # All results should have "python" tag
+    for result in results:
+        assert "python" in result["tags"]
+
+    # Test 3: Search with tag filtering - multiple tags with "any" mode
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="development", tags=["web", "database"], tag_match_mode="any"
+    )
+
+    assert count > 0
+    # All results should have at least one of the specified tags
+    for result in results:
+        assert any(tag in result["tags"] for tag in ["web", "database"])
+
+    # Test 4: Search with tag filtering - multiple tags with "all" mode
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="Python", tags=["python", "web"], tag_match_mode="all"
+    )
+
+    # Should only return results that have BOTH tags
+    for result in results:
+        assert "python" in result["tags"]
+        assert "web" in result["tags"]
+
+    # Test 5: Search with top_k limit
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", top_k=2
+    )
+
+    assert count <= 2
+    assert len(results) <= 2
+
+    # Test 6: Search with datetime filtering
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="programming", start_datetime="2024-01-16", end_datetime="2024-01-17"
+    )
+
+    # Should only include passages created between those dates
+    for result in results:
+        # Parse timestamp to verify it's in range
+        timestamp_str = result["timestamp"]
+        # Basic validation that timestamp exists and has expected format
+        assert "2024-01-16" in timestamp_str or "2024-01-17" in timestamp_str
+
+    # Test 7: Search with ISO datetime format
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id,
+        actor=default_user,
+        query="algorithms",
+        start_datetime="2024-01-16T14:00:00",
+        end_datetime="2024-01-16T15:00:00",
+    )
+
+    # Should include the machine learning passage created at 14:45
+    assert count >= 0  # Might be 0 if no results, but shouldn't error
+
+    # Test 8: Search with non-existent agent should raise error
+    non_existent_agent_id = "agent-00000000-0000-4000-8000-000000000000"
+
+    with pytest.raises(Exception):  # Should raise NoResultFound or similar
+        await server.agent_manager.search_agent_archival_memory_async(agent_id=non_existent_agent_id, actor=default_user, query="test")
+
+    # Test 9: Search with invalid datetime format should raise ValueError
+    with pytest.raises(ValueError, match="Invalid start_datetime format"):
+        await server.agent_manager.search_agent_archival_memory_async(
+            agent_id=sarah_agent.id, actor=default_user, query="test", start_datetime="invalid-date"
+        )
+
+    # Test 10: Empty query should return empty results
+    results, count = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
+
+    assert count == 0  # Empty query should return 0 results
+    assert len(results) == 0
+
+    # Test 11: Whitespace-only query should also return empty results
+    results, count = await server.agent_manager.search_agent_archival_memory_async(
+        agent_id=sarah_agent.id, actor=default_user, query="   \n\t  "
+    )
+
+    assert count == 0  # Whitespace-only query should return 0 results
+    assert len(results) == 0
+
+    # Cleanup - delete the created passages
+    for passage in created_passages:
+        await server.passage_manager.delete_agent_passage_by_id_async(passage_id=passage.id, actor=default_user)
+
+
 # ======================================================================================================================
 # User Manager Tests
 # ======================================================================================================================
@@ -3583,7 +4211,7 @@ async def test_user_caching(server: SyncServer, default_user, performance_pct=0.
             actor_cached = await server.user_manager.get_actor_by_id_async(default_user.id)
         duration = timer.elapsed_ns
         durations.append(duration)
-        print(f"Call {i+2}: {duration:.2e}ns")
+        print(f"Call {i + 2}: {duration:.2e}ns")
         assert actor_cached == actor
     for d in durations:
         assert d < duration_first * performance_pct
@@ -3630,6 +4258,13 @@ def test_create_tool_duplicate_name(server: SyncServer, print_tool, default_user
         server.tool_manager.create_tool(tool, actor=default_user)
 
 
+def test_create_tool_requires_approval(server: SyncServer, bash_tool, default_user, default_organization):
+    # Assertions to ensure the created tool matches the expected values
+    assert bash_tool.created_by_id == default_user.id
+    assert bash_tool.tool_type == ToolType.CUSTOM
+    assert bash_tool.default_requires_approval == True
+
+
 def test_get_tool_by_id(server: SyncServer, print_tool, default_user):
     # Fetch the tool by ID using the manager method
     fetched_tool = server.tool_manager.get_tool_by_id(print_tool.id, actor=default_user)
@@ -3668,6 +4303,487 @@ async def test_list_tools(server: SyncServer, print_tool, default_user):
     # Assertions to check that the created tool is listed
     assert len(tools) == 1
     assert any(t.id == print_tool.id for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_tool_types(server: SyncServer, default_user):
+    """Test filtering tools by tool_types parameter."""
+
+    # create tools with different types
+    def calculator_tool(a: int, b: int) -> int:
+        """Add two numbers.
+
+        Args:
+            a: First number
+            b: Second number
+
+        Returns:
+            Sum of a and b
+        """
+        return a + b
+
+    def weather_tool(city: str) -> str:
+        """Get weather for a city.
+
+        Args:
+            city: Name of the city
+
+        Returns:
+            Weather information
+        """
+        return f"Weather in {city}"
+
+    # create custom tools
+    custom_tool1 = PydanticTool(
+        name="calculator",
+        description="Math tool",
+        source_code=parse_source_code(calculator_tool),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    custom_tool1.json_schema = derive_openai_json_schema(source_code=custom_tool1.source_code, name=custom_tool1.name)
+    custom_tool1 = await server.tool_manager.create_or_update_tool_async(custom_tool1, actor=default_user)
+
+    custom_tool2 = PydanticTool(
+        name="weather",
+        description="Weather tool",
+        source_code=parse_source_code(weather_tool),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    custom_tool2.json_schema = derive_openai_json_schema(source_code=custom_tool2.source_code, name=custom_tool2.name)
+    custom_tool2 = await server.tool_manager.create_or_update_tool_async(custom_tool2, actor=default_user)
+
+    # test filtering by single tool type
+    tools = await server.tool_manager.list_tools_async(actor=default_user, tool_types=[ToolType.CUSTOM.value], upsert_base_tools=False)
+    assert len(tools) == 2
+    assert all(t.tool_type == ToolType.CUSTOM for t in tools)
+
+    # test filtering by multiple tool types (should get same result since we only have CUSTOM)
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, tool_types=[ToolType.CUSTOM.value, ToolType.LETTA_CORE.value], upsert_base_tools=False
+    )
+    assert len(tools) == 2
+
+    # test filtering by non-existent tool type
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, tool_types=[ToolType.EXTERNAL_MCP.value], upsert_base_tools=False
+    )
+    assert len(tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_exclude_tool_types(server: SyncServer, default_user, print_tool):
+    """Test excluding tools by exclude_tool_types parameter."""
+    # we already have print_tool which is CUSTOM type
+
+    # create a tool with a different type (simulate by updating tool type directly)
+    def special_tool(msg: str) -> str:
+        """Special tool.
+
+        Args:
+            msg: Message to return
+
+        Returns:
+            The message
+        """
+        return msg
+
+    special = PydanticTool(
+        name="special",
+        description="Special tool",
+        source_code=parse_source_code(special_tool),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    special.json_schema = derive_openai_json_schema(source_code=special.source_code, name=special.name)
+    special = await server.tool_manager.create_or_update_tool_async(special, actor=default_user)
+
+    # test excluding EXTERNAL_MCP (should get all tools since none are MCP)
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, exclude_tool_types=[ToolType.EXTERNAL_MCP.value], upsert_base_tools=False
+    )
+    assert len(tools) == 2  # print_tool and special
+
+    # test excluding CUSTOM (should get no tools)
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, exclude_tool_types=[ToolType.CUSTOM.value], upsert_base_tools=False
+    )
+    assert len(tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_names(server: SyncServer, default_user):
+    """Test filtering tools by names parameter."""
+
+    # create tools with specific names
+    def alpha_tool() -> str:
+        """Alpha tool.
+
+        Returns:
+            Alpha string
+        """
+        return "alpha"
+
+    def beta_tool() -> str:
+        """Beta tool.
+
+        Returns:
+            Beta string
+        """
+        return "beta"
+
+    def gamma_tool() -> str:
+        """Gamma tool.
+
+        Returns:
+            Gamma string
+        """
+        return "gamma"
+
+    alpha = PydanticTool(name="alpha_tool", description="Alpha", source_code=parse_source_code(alpha_tool), source_type="python")
+    alpha.json_schema = derive_openai_json_schema(source_code=alpha.source_code, name=alpha.name)
+    alpha = await server.tool_manager.create_or_update_tool_async(alpha, actor=default_user)
+
+    beta = PydanticTool(name="beta_tool", description="Beta", source_code=parse_source_code(beta_tool), source_type="python")
+    beta.json_schema = derive_openai_json_schema(source_code=beta.source_code, name=beta.name)
+    beta = await server.tool_manager.create_or_update_tool_async(beta, actor=default_user)
+
+    gamma = PydanticTool(name="gamma_tool", description="Gamma", source_code=parse_source_code(gamma_tool), source_type="python")
+    gamma.json_schema = derive_openai_json_schema(source_code=gamma.source_code, name=gamma.name)
+    gamma = await server.tool_manager.create_or_update_tool_async(gamma, actor=default_user)
+
+    # test filtering by single name
+    tools = await server.tool_manager.list_tools_async(actor=default_user, names=["alpha_tool"], upsert_base_tools=False)
+    assert len(tools) == 1
+    assert tools[0].name == "alpha_tool"
+
+    # test filtering by multiple names
+    tools = await server.tool_manager.list_tools_async(actor=default_user, names=["alpha_tool", "gamma_tool"], upsert_base_tools=False)
+    assert len(tools) == 2
+    assert set(t.name for t in tools) == {"alpha_tool", "gamma_tool"}
+
+    # test filtering by non-existent name
+    tools = await server.tool_manager.list_tools_async(actor=default_user, names=["non_existent_tool"], upsert_base_tools=False)
+    assert len(tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_tool_ids(server: SyncServer, default_user):
+    """Test filtering tools by tool_ids parameter."""
+
+    # create multiple tools
+    def tool1() -> str:
+        """Tool 1.
+
+        Returns:
+            String 1
+        """
+        return "1"
+
+    def tool2() -> str:
+        """Tool 2.
+
+        Returns:
+            String 2
+        """
+        return "2"
+
+    def tool3() -> str:
+        """Tool 3.
+
+        Returns:
+            String 3
+        """
+        return "3"
+
+    t1 = PydanticTool(name="tool1", description="First", source_code=parse_source_code(tool1), source_type="python")
+    t1.json_schema = derive_openai_json_schema(source_code=t1.source_code, name=t1.name)
+    t1 = await server.tool_manager.create_or_update_tool_async(t1, actor=default_user)
+
+    t2 = PydanticTool(name="tool2", description="Second", source_code=parse_source_code(tool2), source_type="python")
+    t2.json_schema = derive_openai_json_schema(source_code=t2.source_code, name=t2.name)
+    t2 = await server.tool_manager.create_or_update_tool_async(t2, actor=default_user)
+
+    t3 = PydanticTool(name="tool3", description="Third", source_code=parse_source_code(tool3), source_type="python")
+    t3.json_schema = derive_openai_json_schema(source_code=t3.source_code, name=t3.name)
+    t3 = await server.tool_manager.create_or_update_tool_async(t3, actor=default_user)
+
+    # test filtering by single id
+    tools = await server.tool_manager.list_tools_async(actor=default_user, tool_ids=[t1.id], upsert_base_tools=False)
+    assert len(tools) == 1
+    assert tools[0].id == t1.id
+
+    # test filtering by multiple ids
+    tools = await server.tool_manager.list_tools_async(actor=default_user, tool_ids=[t1.id, t3.id], upsert_base_tools=False)
+    assert len(tools) == 2
+    assert set(t.id for t in tools) == {t1.id, t3.id}
+
+    # test filtering by non-existent id
+    tools = await server.tool_manager.list_tools_async(actor=default_user, tool_ids=["non-existent-id"], upsert_base_tools=False)
+    assert len(tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_tools_with_search(server: SyncServer, default_user):
+    """Test searching tools by partial name match."""
+
+    # create tools with searchable names
+    def calculator_add() -> str:
+        """Calculator add.
+
+        Returns:
+            Add operation
+        """
+        return "add"
+
+    def calculator_subtract() -> str:
+        """Calculator subtract.
+
+        Returns:
+            Subtract operation
+        """
+        return "subtract"
+
+    def weather_forecast() -> str:
+        """Weather forecast.
+
+        Returns:
+            Forecast data
+        """
+        return "forecast"
+
+    calc_add = PydanticTool(
+        name="calculator_add", description="Add numbers", source_code=parse_source_code(calculator_add), source_type="python"
+    )
+    calc_add.json_schema = derive_openai_json_schema(source_code=calc_add.source_code, name=calc_add.name)
+    calc_add = await server.tool_manager.create_or_update_tool_async(calc_add, actor=default_user)
+
+    calc_sub = PydanticTool(
+        name="calculator_subtract", description="Subtract numbers", source_code=parse_source_code(calculator_subtract), source_type="python"
+    )
+    calc_sub.json_schema = derive_openai_json_schema(source_code=calc_sub.source_code, name=calc_sub.name)
+    calc_sub = await server.tool_manager.create_or_update_tool_async(calc_sub, actor=default_user)
+
+    weather = PydanticTool(
+        name="weather_forecast", description="Weather", source_code=parse_source_code(weather_forecast), source_type="python"
+    )
+    weather.json_schema = derive_openai_json_schema(source_code=weather.source_code, name=weather.name)
+    weather = await server.tool_manager.create_or_update_tool_async(weather, actor=default_user)
+
+    # test searching for "calculator" (should find both calculator tools)
+    tools = await server.tool_manager.list_tools_async(actor=default_user, search="calculator", upsert_base_tools=False)
+    assert len(tools) == 2
+    assert all("calculator" in t.name for t in tools)
+
+    # test case-insensitive search
+    tools = await server.tool_manager.list_tools_async(actor=default_user, search="CALCULATOR", upsert_base_tools=False)
+    assert len(tools) == 2
+
+    # test partial match
+    tools = await server.tool_manager.list_tools_async(actor=default_user, search="calc", upsert_base_tools=False)
+    assert len(tools) == 2
+
+    # test search with no matches
+    tools = await server.tool_manager.list_tools_async(actor=default_user, search="nonexistent", upsert_base_tools=False)
+    assert len(tools) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_tools_return_only_letta_tools(server: SyncServer, default_user):
+    """Test filtering for only Letta tools."""
+    # first, upsert base tools to ensure we have Letta tools
+    await server.tool_manager.upsert_base_tools_async(actor=default_user)
+
+    # create a custom tool
+    def custom_tool() -> str:
+        """Custom tool.
+
+        Returns:
+            Custom string
+        """
+        return "custom"
+
+    custom = PydanticTool(
+        name="custom_tool",
+        description="Custom",
+        source_code=parse_source_code(custom_tool),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    custom.json_schema = derive_openai_json_schema(source_code=custom.source_code, name=custom.name)
+    custom = await server.tool_manager.create_or_update_tool_async(custom, actor=default_user)
+
+    # test without filter (should get custom tool + all letta tools)
+    tools = await server.tool_manager.list_tools_async(actor=default_user, return_only_letta_tools=False, upsert_base_tools=False)
+    # should have at least the custom tool and some letta tools
+    assert len(tools) > 1
+    assert any(t.name == "custom_tool" for t in tools)
+
+    # test with filter (should only get letta tools)
+    tools = await server.tool_manager.list_tools_async(actor=default_user, return_only_letta_tools=True, upsert_base_tools=False)
+    assert len(tools) > 0
+    # all tools should have tool_type starting with "letta_"
+    assert all(t.tool_type.value.startswith("letta_") for t in tools)
+    # custom tool should not be in the list
+    assert not any(t.name == "custom_tool" for t in tools)
+
+
+@pytest.mark.asyncio
+async def test_list_tools_combined_filters(server: SyncServer, default_user):
+    """Test combining multiple filters."""
+
+    # create various tools
+    def calc_add() -> str:
+        """Calculator add.
+
+        Returns:
+            Add result
+        """
+        return "add"
+
+    def calc_multiply() -> str:
+        """Calculator multiply.
+
+        Returns:
+            Multiply result
+        """
+        return "multiply"
+
+    def weather_tool() -> str:
+        """Weather tool.
+
+        Returns:
+            Weather data
+        """
+        return "weather"
+
+    calc1 = PydanticTool(
+        name="calculator_add", description="Add", source_code=parse_source_code(calc_add), source_type="python", tool_type=ToolType.CUSTOM
+    )
+    calc1.json_schema = derive_openai_json_schema(source_code=calc1.source_code, name=calc1.name)
+    calc1 = await server.tool_manager.create_or_update_tool_async(calc1, actor=default_user)
+
+    calc2 = PydanticTool(
+        name="calculator_multiply",
+        description="Multiply",
+        source_code=parse_source_code(calc_multiply),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    calc2.json_schema = derive_openai_json_schema(source_code=calc2.source_code, name=calc2.name)
+    calc2 = await server.tool_manager.create_or_update_tool_async(calc2, actor=default_user)
+
+    weather = PydanticTool(
+        name="weather_current",
+        description="Weather",
+        source_code=parse_source_code(weather_tool),
+        source_type="python",
+        tool_type=ToolType.CUSTOM,
+    )
+    weather.json_schema = derive_openai_json_schema(source_code=weather.source_code, name=weather.name)
+    weather = await server.tool_manager.create_or_update_tool_async(weather, actor=default_user)
+
+    # combine search with tool_types
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, search="calculator", tool_types=[ToolType.CUSTOM.value], upsert_base_tools=False
+    )
+    assert len(tools) == 2
+    assert all("calculator" in t.name and t.tool_type == ToolType.CUSTOM for t in tools)
+
+    # combine names with tool_ids
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, names=["calculator_add"], tool_ids=[calc1.id], upsert_base_tools=False
+    )
+    assert len(tools) == 1
+    assert tools[0].id == calc1.id
+
+    # combine search with exclude_tool_types
+    tools = await server.tool_manager.list_tools_async(
+        actor=default_user, search="calculator", exclude_tool_types=[ToolType.EXTERNAL_MCP.value], upsert_base_tools=False
+    )
+    assert len(tools) == 2
+
+
+@pytest.mark.asyncio
+async def test_count_tools_async(server: SyncServer, default_user):
+    """Test counting tools with various filters."""
+
+    # create multiple tools
+    def tool_a() -> str:
+        """Tool A.
+
+        Returns:
+            String a
+        """
+        return "a"
+
+    def tool_b() -> str:
+        """Tool B.
+
+        Returns:
+            String b
+        """
+        return "b"
+
+    def search_tool() -> str:
+        """Search tool.
+
+        Returns:
+            Search result
+        """
+        return "search"
+
+    ta = PydanticTool(
+        name="tool_a", description="A", source_code=parse_source_code(tool_a), source_type="python", tool_type=ToolType.CUSTOM
+    )
+    ta.json_schema = derive_openai_json_schema(source_code=ta.source_code, name=ta.name)
+    ta = await server.tool_manager.create_or_update_tool_async(ta, actor=default_user)
+
+    tb = PydanticTool(
+        name="tool_b", description="B", source_code=parse_source_code(tool_b), source_type="python", tool_type=ToolType.CUSTOM
+    )
+    tb.json_schema = derive_openai_json_schema(source_code=tb.source_code, name=tb.name)
+    tb = await server.tool_manager.create_or_update_tool_async(tb, actor=default_user)
+
+    # upsert base tools to ensure we have Letta tools for counting
+    await server.tool_manager.upsert_base_tools_async(actor=default_user)
+
+    # count all tools (should have 2 custom tools + letta tools)
+    count = await server.tool_manager.count_tools_async(actor=default_user)
+    assert count > 2  # at least our 2 custom tools + letta tools
+
+    # count with tool_types filter
+    count = await server.tool_manager.count_tools_async(actor=default_user, tool_types=[ToolType.CUSTOM.value])
+    assert count == 2  # only our custom tools
+
+    # count with search filter
+    count = await server.tool_manager.count_tools_async(actor=default_user, search="tool")
+    # should at least find our 2 tools (tool_a, tool_b)
+    assert count >= 2
+
+    # count with names filter
+    count = await server.tool_manager.count_tools_async(actor=default_user, names=["tool_a", "tool_b"])
+    assert count == 2
+
+    # count with return_only_letta_tools
+    count = await server.tool_manager.count_tools_async(actor=default_user, return_only_letta_tools=True)
+    assert count > 0  # should have letta tools
+
+    # count with exclude_tool_types (exclude all letta tool types)
+    count = await server.tool_manager.count_tools_async(
+        actor=default_user,
+        exclude_tool_types=[
+            ToolType.LETTA_CORE.value,
+            ToolType.LETTA_MEMORY_CORE.value,
+            ToolType.LETTA_MULTI_AGENT_CORE.value,
+            ToolType.LETTA_SLEEPTIME_CORE.value,
+            ToolType.LETTA_VOICE_SLEEPTIME_CORE.value,
+            ToolType.LETTA_BUILTIN.value,
+            ToolType.LETTA_FILES_CORE.value,
+        ],
+    )
+    assert count == 2  # only our custom tools
 
 
 def test_update_tool_by_id(server: SyncServer, print_tool, default_user):
@@ -3801,7 +4917,7 @@ async def test_upsert_base_tools(server: SyncServer, default_user):
     tools = await server.tool_manager.upsert_base_tools_async(actor=default_user)
 
     # Calculate expected tools accounting for production filtering
-    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         expected_tool_names = sorted(LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_tool_names = sorted(LETTA_TOOL_SET)
@@ -3853,7 +4969,7 @@ async def test_upsert_filtered_base_tools(server: SyncServer, default_user, tool
     tool_names = sorted([t.name for t in tools])
 
     # Adjust expected names for multi-agent tools in production
-    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+    if tool_type == ToolType.LETTA_MULTI_AGENT_CORE and settings.environment == "PRODUCTION":
         expected_sorted = sorted(set(expected_names) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS))
     else:
         expected_sorted = sorted(expected_names)
@@ -3941,7 +5057,7 @@ async def test_bulk_upsert_tools_name_conflict(server: SyncServer, default_user)
         name="unique_name_tool",
         description="Original description",
         tags=["original"],
-        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'`",
+        source_code="def unique_name_tool():\n    '''Original function'''\n    return 'original'",
         source_type="python",
     )
 
@@ -4363,6 +5479,28 @@ async def test_pip_requirements_roundtrip(server: SyncServer, default_user, defa
     assert reqs_dict["numpy"] is None
 
 
+async def test_update_default_requires_approval(server: SyncServer, bash_tool, default_user):
+    # Update field
+    tool_update = ToolUpdate(default_requires_approval=False)
+    await server.tool_manager.update_tool_by_id_async(bash_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(bash_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.default_requires_approval == False
+
+    # Revert update
+    tool_update = ToolUpdate(default_requires_approval=True)
+    await server.tool_manager.update_tool_by_id_async(bash_tool.id, tool_update, actor=default_user)
+
+    # Fetch the updated tool
+    updated_tool = await server.tool_manager.get_tool_by_id_async(bash_tool.id, actor=default_user)
+
+    # Assertions
+    assert updated_tool.default_requires_approval == True
+
+
 # ======================================================================================================================
 # Message Manager Tests
 # ======================================================================================================================
@@ -4553,7 +5691,8 @@ def test_create_block(server: SyncServer, default_user):
         label="human",
         is_template=True,
         value="Sample content",
-        template_name="sample_template",
+        template_name="sample_template_name",
+        template_id="sample_template",
         description="A test block",
         limit=1000,
         metadata={"example": "data"},
@@ -4566,6 +5705,7 @@ def test_create_block(server: SyncServer, default_user):
     assert block.is_template == block_create.is_template
     assert block.value == block_create.value
     assert block.template_name == block_create.template_name
+    assert block.template_id == block_create.template_id
     assert block.description == block_create.description
     assert block.limit == block_create.limit
     assert block.metadata == block_create.metadata
@@ -4796,7 +5936,7 @@ async def test_delete_block_detaches_from_agent(server: SyncServer, sarah_agent,
 
     # Check that block has been detached too
     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
-    assert not (block.id in [b.id for b in agent_state.memory.blocks])
+    assert block.id not in [b.id for b in agent_state.memory.blocks]
 
 
 @pytest.mark.asyncio
@@ -5326,7 +6466,9 @@ def test_undo_concurrency_stale(server: SyncServer, default_user):
 
     # Session1 -> undo to seq=1
     block_manager.undo_checkpoint_block(
-        block_id=block_v1.id, actor=default_user, use_preloaded_block=block_s1  # stale object from session1
+        block_id=block_v1.id,
+        actor=default_user,
+        use_preloaded_block=block_s1,  # stale object from session1
     )
     # This commits first => block now points to seq=1, version increments
 
@@ -5623,7 +6765,7 @@ async def test_attach_detach_identity_from_agent(server: SyncServer, sarah_agent
 
     # Check that block has been detached too
     agent_state = await server.agent_manager.get_agent_by_id_async(agent_id=sarah_agent.id, actor=default_user)
-    assert not identity.id in agent_state.identity_ids
+    assert identity.id not in agent_state.identity_ids
 
 
 @pytest.mark.asyncio
@@ -5662,7 +6804,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
     assert agent_with_identity.id in agent_state_ids
-    assert not agent_without_identity.id in agent_state_ids
+    assert agent_without_identity.id not in agent_state_ids
 
     # Get the agents for identifier key
     agent_states = await server.agent_manager.list_agents_async(identifier_keys=[identity.identifier_key], actor=default_user)
@@ -5673,7 +6815,7 @@ async def test_get_set_agents_for_identities(server: SyncServer, sarah_agent, ch
     assert sarah_agent.id in agent_state_ids
     assert charles_agent.id in agent_state_ids
     assert agent_with_identity.id in agent_state_ids
-    assert not agent_without_identity.id in agent_state_ids
+    assert agent_without_identity.id not in agent_state_ids
 
     # Delete new agents
     server.agent_manager.delete_agent(agent_id=agent_with_identity.id, actor=default_user)
@@ -5764,7 +6906,7 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
     assert block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_without_identity.id not in block_ids
 
     # Get the blocks for identifier key
     blocks = await server.block_manager.get_blocks_async(identifier_keys=[identity.identifier_key], actor=default_user)
@@ -5774,7 +6916,7 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
     assert block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_without_identity.id not in block_ids
 
     # Delete new agents
     server.block_manager.delete_block(block_id=block_with_identity.id, actor=default_user)
@@ -5787,8 +6929,8 @@ async def test_get_set_blocks_for_identities(server: SyncServer, default_block, 
     # Check only initial block in the list
     block_ids = [b.id for b in blocks]
     assert default_block.id in block_ids
-    assert not block_with_identity.id in block_ids
-    assert not block_without_identity.id in block_ids
+    assert block_with_identity.id not in block_ids
+    assert block_without_identity.id not in block_ids
 
     await server.identity_manager.delete_identity_async(identity_id=identity.id, actor=default_user)
 
@@ -7980,11 +9122,11 @@ def test_get_run_messages(server: SyncServer, default_user: PydanticUser, sarah_
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
-                [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
                 else None
             ),
-            tool_call_id=f"call_{i//2}" if i % 2 == 0 else None,
+            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
         )
         for i in range(4)
     ]
@@ -8030,11 +9172,11 @@ def test_get_run_messages_with_assistant_message(server: SyncServer, default_use
             role=MessageRole.tool if i % 2 == 0 else MessageRole.assistant,
             content=[TextContent(text=f"Test message {i}" if i % 2 == 1 else '{"status": "OK"}')],
             tool_calls=(
-                [{"type": "function", "id": f"call_{i//2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
+                [{"type": "function", "id": f"call_{i // 2}", "function": {"name": "custom_tool", "arguments": '{"custom_arg": "test"}'}}]
                 if i % 2 == 1
                 else None
             ),
-            tool_call_id=f"call_{i//2}" if i % 2 == 0 else None,
+            tool_call_id=f"call_{i // 2}" if i % 2 == 0 else None,
         )
         for i in range(4)
     ]
@@ -9039,9 +10181,9 @@ async def test_list_batch_items_pagination(
         llm_batch_id=batch.id, actor=default_user, after=cursor, limit=limit
     )
     # If more than 'limit' items remain, we should only get exactly 'limit' items.
-    assert len(limited_page) == min(
-        limit, expected_remaining
-    ), f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    assert len(limited_page) == min(limit, expected_remaining), (
+        f"Expected {min(limit, expected_remaining)} items with limit {limit}, got {len(limited_page)}"
+    )
 
     # Optional: Test with a cursor beyond the last item returns an empty list.
     last_cursor = sorted_ids[-1]
@@ -9244,12 +10386,43 @@ async def test_count_batch_items(
 
 
 @pytest.mark.asyncio
-async def test_create_mcp_server(server, default_user):
+@patch("letta.services.mcp_manager.MCPManager.get_mcp_client")
+async def test_create_mcp_server(mock_get_client, server, default_user):
     from letta.schemas.mcp import MCPServer, MCPServerType, SSEServerConfig, StdioServerConfig
     from letta.settings import tool_settings
 
     if tool_settings.mcp_read_from_config:
         return
+
+    # create mock client with required methods
+    mock_client = AsyncMock()
+    mock_client.connect_to_server = AsyncMock()
+    mock_client.list_tools = AsyncMock(
+        return_value=[
+            MCPTool(
+                name="get_simple_price",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "ids": {"type": "string"},
+                        "vs_currencies": {"type": "string"},
+                        "include_market_cap": {"type": "boolean"},
+                        "include_24hr_vol": {"type": "boolean"},
+                        "include_24hr_change": {"type": "boolean"},
+                    },
+                    "required": ["ids", "vs_currencies"],
+                    "additionalProperties": False,
+                },
+            )
+        ]
+    )
+    mock_client.execute_tool = AsyncMock(
+        return_value=(
+            '{"bitcoin": {"usd": 50000, "usd_market_cap": 900000000000, "usd_24h_vol": 30000000000, "usd_24h_change": 2.5}}',
+            True,
+        )
+    )
+    mock_get_client.return_value = mock_client
 
     # Test with a valid StdioServerConfig
     server_config = StdioServerConfig(
@@ -9262,8 +10435,8 @@ async def test_create_mcp_server(server, default_user):
     assert created_server.server_type == server_config.type
 
     # Test with a valid SSEServerConfig
-    mcp_server_name = "devin"
-    server_url = "https://mcp.deepwiki.com/sse"
+    mcp_server_name = "coingecko"
+    server_url = "https://mcp.api.coingecko.com/sse"
     sse_mcp_config = SSEServerConfig(server_name=mcp_server_name, server_url=server_url)
     mcp_sse_server = MCPServer(server_name=mcp_server_name, server_type=MCPServerType.SSE, server_url=server_url)
     created_server = await server.mcp_manager.create_or_update_mcp_server(mcp_sse_server, actor=default_user)
@@ -9281,8 +10454,14 @@ async def test_create_mcp_server(server, default_user):
     print(tools)
 
     # call a tool from the sse server
-    tool_name = "ask_question"
-    tool_args = {"repoName": "letta-ai/letta", "question": "What is the primary programming language of this repository?"}
+    tool_name = "get_simple_price"
+    tool_args = {
+        "ids": "bitcoin",
+        "vs_currencies": "usd",
+        "include_market_cap": True,
+        "include_24hr_vol": True,
+        "include_24hr_change": True,
+    }
     result = await server.mcp_manager.execute_mcp_server_tool(
         created_server.server_name, tool_name=tool_name, tool_args=tool_args, actor=default_user, environment_variables={}
     )
@@ -9378,9 +10557,7 @@ async def test_get_mcp_servers_by_ids(server, default_user):
 async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organization, default_user):
     """Deleting an MCP server deletes associated OAuth sessions (same user + URL)."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     test_server_url = "https://test.example.com/mcp"
 
@@ -9422,9 +10599,7 @@ async def test_mcp_server_deletion_cascades_oauth_sessions(server, default_organ
 async def test_oauth_sessions_with_different_url_persist(server, default_organization, default_user):
     """Sessions with different URL should not be deleted when deleting the server for another URL."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test.example.com/mcp"
     other_url = "https://other.example.com/mcp"
@@ -9463,9 +10638,7 @@ async def test_oauth_sessions_with_different_url_persist(server, default_organiz
 async def test_mcp_server_creation_links_orphaned_sessions(server, default_organization, default_user):
     """Creating a server should link any existing orphaned sessions (same user + URL)."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test-atomic-create.example.com/mcp"
 
@@ -9509,9 +10682,7 @@ async def test_mcp_server_creation_links_orphaned_sessions(server, default_organ
 async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, default_organization, default_user):
     """Deleting a server removes both linked and orphaned sessions for same user+URL."""
 
-    from letta.schemas.mcp import MCPOAuthSessionCreate
-    from letta.schemas.mcp import MCPServer as PydanticMCPServer
-    from letta.schemas.mcp import MCPServerType
+    from letta.schemas.mcp import MCPOAuthSessionCreate, MCPServer as PydanticMCPServer, MCPServerType
 
     server_url = "https://test-atomic-cleanup.example.com/mcp"
 
@@ -10201,9 +11372,9 @@ async def test_lru_eviction_on_attach(server, default_user, sarah_agent, default
 
     # Should have closed exactly 2 files (e.g., 7 - 5 = 2 for max_files_open=5)
     expected_closed_count = len(files) - max_files_open
-    assert (
-        len(all_closed_files) == expected_closed_count
-    ), f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    assert len(all_closed_files) == expected_closed_count, (
+        f"Should have closed {expected_closed_count} files, but closed: {all_closed_files}"
+    )
 
     # Check that the oldest files were closed (first N files attached)
     expected_closed = [files[i].file_name for i in range(expected_closed_count)]
@@ -10938,6 +12109,78 @@ FAILED tests/test_managers.py::test_high_concurrency_stress_test - AssertionErro
 #     # Clean up
 #     for block in blocks:
 #         await server.block_manager.delete_block_async(block.id, actor=default_user)
+
+
+def test_create_internal_template_objects(server: SyncServer, default_user):
+    """Test creating agents, groups, and blocks with template-related fields."""
+    from letta.schemas.agent import InternalTemplateAgentCreate
+    from letta.schemas.block import Block, InternalTemplateBlockCreate
+    from letta.schemas.group import InternalTemplateGroupCreate, RoundRobinManager
+
+    base_template_id = "base_123"
+    template_id = "template_456"
+    deployment_id = "deploy_789"
+    entity_id = "entity_012"
+
+    # Create agent with template fields (use sarah_agent as base, then create new one)
+    agent = server.agent_manager.create_agent(
+        InternalTemplateAgentCreate(
+            name="template-agent",
+            base_template_id=base_template_id,
+            template_id=template_id,
+            deployment_id=deployment_id,
+            entity_id=entity_id,
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+    # Verify agent template fields
+    assert agent.base_template_id == base_template_id
+    assert agent.template_id == template_id
+    assert agent.deployment_id == deployment_id
+    assert agent.entity_id == entity_id
+
+    # Create block with template fields
+    block_create = InternalTemplateBlockCreate(
+        label="template_block",
+        value="Test block",
+        base_template_id=base_template_id,
+        template_id=template_id,
+        deployment_id=deployment_id,
+        entity_id=entity_id,
+    )
+    block = server.block_manager.create_or_update_block(Block(**block_create.model_dump()), actor=default_user)
+    # Verify block template fields
+    assert block.base_template_id == base_template_id
+    assert block.template_id == template_id
+    assert block.deployment_id == deployment_id
+    assert block.entity_id == entity_id
+
+    # Create group with template fields (no entity_id for groups)
+    group = server.group_manager.create_group(
+        InternalTemplateGroupCreate(
+            agent_ids=[agent.id],
+            description="Template group",
+            base_template_id=base_template_id,
+            template_id=template_id,
+            deployment_id=deployment_id,
+            manager_config=RoundRobinManager(),
+        ),
+        actor=default_user,
+    )
+    # Verify group template fields and basic functionality
+    assert group.description == "Template group"
+    assert agent.id in group.agent_ids
+    assert group.base_template_id == base_template_id
+    assert group.template_id == template_id
+    assert group.deployment_id == deployment_id
+
+    # Clean up
+    server.group_manager.delete_group(group.id, actor=default_user)
+    server.block_manager.delete_block(block.id, actor=default_user)
+    server.agent_manager.delete_agent(agent.id, actor=default_user)
 
 
 # TODO: I use this as a way to easily wipe my local db lol sorry

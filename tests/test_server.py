@@ -630,7 +630,6 @@ async def test_memory_rebuild_count(server, user, disable_e2b_api_key, base_tool
     )
 
     def count_system_messages_in_recall() -> Tuple[int, List[LettaMessage]]:
-
         # At this stage, there should only be 1 system message inside of recall storage
         letta_messages = server.get_agent_recall(
             user_id=user.id,

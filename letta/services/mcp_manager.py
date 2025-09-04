@@ -33,8 +33,7 @@ from letta.schemas.mcp import (
     UpdateStdioMCPServer,
     UpdateStreamableHTTPMCPServer,
 )
-from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolCreate
+from letta.schemas.tool import Tool as PydanticTool, ToolCreate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.mcp.sse_client import MCP_CONFIG_TOPLEVEL_KEY, AsyncSSEMCPClient
@@ -137,8 +136,7 @@ class MCPManager:
                 if mcp_tool.health:
                     if mcp_tool.health.status == "INVALID":
                         raise ValueError(
-                            f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid."
-                            f"Reasons: {', '.join(mcp_tool.health.reasons)}"
+                            f"Tool {mcp_tool_name} cannot be attached, JSON schema is invalid.Reasons: {', '.join(mcp_tool.health.reasons)}"
                         )
 
                 tool_create = ToolCreate.from_mcp(mcp_server_name=mcp_server_name, mcp_tool=mcp_tool)
@@ -305,7 +303,9 @@ class MCPManager:
 
         async with db_registry.async_session() as session:
             mcp_servers = await MCPServerModel.list_async(
-                db_session=session, organization_id=actor.organization_id, id=mcp_server_ids  # This will use the IN operator
+                db_session=session,
+                organization_id=actor.organization_id,
+                id=mcp_server_ids,  # This will use the IN operator
             )
             return [mcp_server.to_pydantic() for mcp_server in mcp_servers]
 
@@ -407,7 +407,6 @@ class MCPManager:
                 # with the value being the schema from StdioServerParameters
                 if MCP_CONFIG_TOPLEVEL_KEY in mcp_config:
                     for server_name, server_params_raw in mcp_config[MCP_CONFIG_TOPLEVEL_KEY].items():
-
                         # No support for duplicate server names
                         if server_name in mcp_server_list:
                             # Duplicate server names are configuration issues, not system errors

@@ -137,7 +137,7 @@ class Summarizer:
         total_message_count = len(all_in_context_messages)
         assert self.partial_evict_summarizer_percentage >= 0.0 and self.partial_evict_summarizer_percentage <= 1.0
         target_message_start = round((1.0 - self.partial_evict_summarizer_percentage) * total_message_count)
-        logger.info(f"Target message count: {total_message_count}->{(total_message_count-target_message_start)}")
+        logger.info(f"Target message count: {total_message_count}->{(total_message_count - target_message_start)}")
 
         # The summary message we'll insert is role 'user' (vs 'assistant', 'tool', or 'system')
         # We are going to put it at index 1 (index 0 is the system message)
@@ -295,7 +295,9 @@ class Summarizer:
 def simple_formatter(messages: List[Message], include_system: bool = False) -> str:
     """Go from an OpenAI-style list of messages to a concatenated string"""
 
-    parsed_messages = [message.to_openai_dict() for message in messages if message.role != MessageRole.system or include_system]
+    parsed_messages = Message.to_openai_dicts_from_list(
+        [message for message in messages if message.role != MessageRole.system or include_system]
+    )
     return "\n".join(json.dumps(msg) for msg in parsed_messages)
 
 

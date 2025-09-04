@@ -198,23 +198,23 @@ class CLIInterface(AgentInterface):
                         try:
                             msg_dict = eval(function_args)
                             if function_name == "archival_memory_search":
-                                output = f'\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
+                                output = f"\tquery: {msg_dict['query']}, page: {msg_dict['page']}"
                                 if STRIP_UI:
                                     print(output)
                                 else:
                                     print(f"{Fore.RED}{output}{Style.RESET_ALL}")
                             elif function_name == "archival_memory_insert":
-                                output = f'\t→ {msg_dict["content"]}'
+                                output = f"\t→ {msg_dict['content']}"
                                 if STRIP_UI:
                                     print(output)
                                 else:
                                     print(f"{Style.BRIGHT}{Fore.RED}{output}{Style.RESET_ALL}")
                             else:
                                 if STRIP_UI:
-                                    print(f'\t {msg_dict["old_content"]}\n\t→ {msg_dict["new_content"]}')
+                                    print(f"\t {msg_dict['old_content']}\n\t→ {msg_dict['new_content']}")
                                 else:
                                     print(
-                                        f'{Style.BRIGHT}\t{Fore.RED} {msg_dict["old_content"]}\n\t{Fore.GREEN}→ {msg_dict["new_content"]}{Style.RESET_ALL}'
+                                        f"{Style.BRIGHT}\t{Fore.RED} {msg_dict['old_content']}\n\t{Fore.GREEN}→ {msg_dict['new_content']}{Style.RESET_ALL}"
                                     )
                         except Exception as e:
                             printd(str(e))
@@ -223,7 +223,7 @@ class CLIInterface(AgentInterface):
                         print_function_message("🧠", f"searching memory with {function_name}")
                         try:
                             msg_dict = eval(function_args)
-                            output = f'\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
+                            output = f"\tquery: {msg_dict['query']}, page: {msg_dict['page']}"
                             if STRIP_UI:
                                 print(output)
                             else:
@@ -248,7 +248,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages(message_sequence: List[Message], dump=False):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         idx = len(message_sequence)
         for msg in message_sequence:
@@ -291,7 +291,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages_simple(message_sequence: List[Message]):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         for msg in message_sequence:
             role = msg["role"]
@@ -309,7 +309,7 @@ class CLIInterface(AgentInterface):
     @staticmethod
     def print_messages_raw(message_sequence: List[Message]):
         # rewrite to dict format
-        message_sequence = [msg.to_openai_dict() for msg in message_sequence]
+        message_sequence = Message.to_openai_dicts_from_list(message_sequence)
 
         for msg in message_sequence:
             print(msg)

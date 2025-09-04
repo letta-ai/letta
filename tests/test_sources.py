@@ -8,10 +8,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from dotenv import load_dotenv
-from letta_client import CreateBlock
-from letta_client import Letta as LettaSDKClient
-from letta_client import LettaRequest
-from letta_client import MessageCreate as ClientMessageCreate
+from letta_client import CreateBlock, Letta as LettaSDKClient, LettaRequest, MessageCreate as ClientMessageCreate
 from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
@@ -453,7 +450,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     assert "6: " in new_value, f"Expected line 6 to be present, got: {new_value[:200]}..."
     assert "10: " in new_value, f"Expected line 10 to be present, got: {new_value}"
 
-    print(f"Comparing content ranges:")
+    print("Comparing content ranges:")
     print(f"  First range (offset=0, length=5):  '{old_value}'")
     print(f"  Second range (offset=5, length=5): '{new_value}'")
 
@@ -494,7 +491,7 @@ def test_agent_uses_search_files_correctly(disable_pinecone, client: LettaSDKCli
         agent_id=agent_state.id,
         messages=[
             MessageCreate(
-                role="user", content=f"Use ONLY the semantic_search_files tool to search for details regarding the electoral history."
+                role="user", content="Use ONLY the semantic_search_files tool to search for details regarding the electoral history."
             )
         ],
     )
@@ -538,7 +535,7 @@ def test_agent_uses_grep_correctly_basic(disable_pinecone, client: LettaSDKClien
     # Ask agent to use the semantic_search_files tool
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=[MessageCreate(role="user", content=f"Use ONLY the grep_files tool to search for `Nunzia De Girolamo`.")],
+        messages=[MessageCreate(role="user", content="Use ONLY the grep_files tool to search for `Nunzia De Girolamo`.")],
     )
     print(f"Grep request sent, got {len(search_files_response.messages)} message(s) in response")
     print(search_files_response.messages)
@@ -581,7 +578,7 @@ def test_agent_uses_grep_correctly_advanced(disable_pinecone, client: LettaSDKCl
     search_files_response = client.agents.messages.create(
         agent_id=agent_state.id,
         messages=[
-            MessageCreate(role="user", content=f"Use ONLY the grep_files tool to search for `tool-f5b80b08-5a45-4a0a-b2cd-dd8a0177b7ef`.")
+            MessageCreate(role="user", content="Use ONLY the grep_files tool to search for `tool-f5b80b08-5a45-4a0a-b2cd-dd8a0177b7ef`.")
         ],
     )
     print(f"Grep request sent, got {len(search_files_response.messages)} message(s) in response")
@@ -742,9 +739,9 @@ def test_duplicate_file_renaming(disable_pinecone, client: LettaSDKClient):
     for file in files:
         assert file.original_file_name == "test.txt", f"Expected original_file_name='test.txt', got '{file.original_file_name}'"
 
-    print(f"✓ Successfully tested duplicate file renaming:")
+    print("✓ Successfully tested duplicate file renaming:")
     for i, file in enumerate(files):
-        print(f"  File {i+1}: original='{file.original_file_name}' → renamed='{file.file_name}'")
+        print(f"  File {i + 1}: original='{file.original_file_name}' → renamed='{file.file_name}'")
 
 
 def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClient):
@@ -817,9 +814,9 @@ def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClien
 
         replacement_block_content = updated_file_blocks[0].value
         assert replacement_content in replacement_block_content, f"Expected replacement content in block, got: {replacement_block_content}"
-        assert (
-            original_content not in replacement_block_content
-        ), f"Original content should not be present after replacement: {replacement_block_content}"
+        assert original_content not in replacement_block_content, (
+            f"Original content should not be present after replacement: {replacement_block_content}"
+        )
 
         print("✓ Successfully tested DuplicateFileHandling.REPLACE functionality")
 
@@ -948,17 +945,17 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     assert "file_requests" in properties
     file_requests_prop = properties["file_requests"]
     expected_file_requests_desc = "List of file open requests, each specifying file name and optional view range."
-    assert (
-        file_requests_prop["description"] == expected_file_requests_desc
-    ), f"Expected file_requests description: '{expected_file_requests_desc}', got: '{file_requests_prop['description']}'"
+    assert file_requests_prop["description"] == expected_file_requests_desc, (
+        f"Expected file_requests description: '{expected_file_requests_desc}', got: '{file_requests_prop['description']}'"
+    )
 
     # Check close_all_others parameter
     assert "close_all_others" in properties
     close_all_others_prop = properties["close_all_others"]
     expected_close_all_others_desc = "If True, closes all other currently open files first. Defaults to False."
-    assert (
-        close_all_others_prop["description"] == expected_close_all_others_desc
-    ), f"Expected close_all_others description: '{expected_close_all_others_desc}', got: '{close_all_others_prop['description']}'"
+    assert close_all_others_prop["description"] == expected_close_all_others_desc, (
+        f"Expected close_all_others description: '{expected_close_all_others_desc}', got: '{close_all_others_prop['description']}'"
+    )
 
     # Check that file_requests is an array type
     assert file_requests_prop["type"] == "array", f"Expected file_requests type to be 'array', got: '{file_requests_prop['type']}'"
@@ -1031,29 +1028,29 @@ def test_grep_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     assert "pattern" in properties
     pattern_prop = properties["pattern"]
     expected_pattern_desc = "Keyword or regex pattern to search within file contents."
-    assert (
-        pattern_prop["description"] == expected_pattern_desc
-    ), f"Expected pattern description: '{expected_pattern_desc}', got: '{pattern_prop['description']}'"
+    assert pattern_prop["description"] == expected_pattern_desc, (
+        f"Expected pattern description: '{expected_pattern_desc}', got: '{pattern_prop['description']}'"
+    )
     assert pattern_prop["type"] == "string"
 
     # Check include parameter
     assert "include" in properties
     include_prop = properties["include"]
     expected_include_desc = "Optional keyword or regex pattern to filter filenames to include in the search."
-    assert (
-        include_prop["description"] == expected_include_desc
-    ), f"Expected include description: '{expected_include_desc}', got: '{include_prop['description']}'"
+    assert include_prop["description"] == expected_include_desc, (
+        f"Expected include description: '{expected_include_desc}', got: '{include_prop['description']}'"
+    )
     assert include_prop["type"] == "string"
 
     # Check context_lines parameter
     assert "context_lines" in properties
     context_lines_prop = properties["context_lines"]
     expected_context_lines_desc = (
-        "Number of lines of context to show before and after each match.\n" "Equivalent to `-C` in grep_files. Defaults to 1."
+        "Number of lines of context to show before and after each match.\nEquivalent to `-C` in grep_files. Defaults to 1."
     )
-    assert (
-        context_lines_prop["description"] == expected_context_lines_desc
-    ), f"Expected context_lines description: '{expected_context_lines_desc}', got: '{context_lines_prop['description']}'"
+    assert context_lines_prop["description"] == expected_context_lines_desc, (
+        f"Expected context_lines description: '{expected_context_lines_desc}', got: '{context_lines_prop['description']}'"
+    )
     assert context_lines_prop["type"] == "integer"
 
     # Check offset parameter
@@ -1066,9 +1063,9 @@ def test_grep_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
         "offset=40 for third page, etc. The tool will tell you the exact\n"
         "offset to use for the next page."
     )
-    assert (
-        offset_prop["description"] == expected_offset_desc
-    ), f"Expected offset description: '{expected_offset_desc}', got: '{offset_prop['description']}'"
+    assert offset_prop["description"] == expected_offset_desc, (
+        f"Expected offset description: '{expected_offset_desc}', got: '{offset_prop['description']}'"
+    )
     assert offset_prop["type"] == "integer"
 
     # Check return description in main description
@@ -1128,9 +1125,9 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     # Check that results contain expected content
     search_results = tool_returns[0].tool_return
     print(search_results)
-    assert (
-        "electoral" in search_results.lower() or "history" in search_results.lower()
-    ), f"Search results should contain relevant content: {search_results}"
+    assert "electoral" in search_results.lower() or "history" in search_results.lower(), (
+        f"Search results should contain relevant content: {search_results}"
+    )
 
 
 def test_pinecone_list_files_status(client: LettaSDKClient):
@@ -1160,9 +1157,9 @@ def test_pinecone_list_files_status(client: LettaSDKClient):
 
         # verify embedding counts for files that have chunks
         if file_metadata.total_chunks and file_metadata.total_chunks > 0:
-            assert (
-                file_metadata.chunks_embedded == file_metadata.total_chunks
-            ), f"File {file_metadata.file_name} should have all chunks embedded: {file_metadata.chunks_embedded}/{file_metadata.total_chunks}"
+            assert file_metadata.chunks_embedded == file_metadata.total_chunks, (
+                f"File {file_metadata.file_name} should have all chunks embedded: {file_metadata.chunks_embedded}/{file_metadata.total_chunks}"
+            )
 
     # cleanup
     client.sources.delete(source_id=source.id)
@@ -1234,9 +1231,9 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
 
     print(f"Found {len(records_after)} records for files after source deletion")
 
-    assert (
-        len(records_after) == 0
-    ), f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
+    assert len(records_after) == 0, (
+        f"All source records should be removed from Pinecone after source deletion, but found {len(records_after)}"
+    )
 
 
 def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):

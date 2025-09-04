@@ -1,9 +1,8 @@
 import importlib
-import os
 import warnings
 from typing import List, Optional, Set, Union
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from letta.constants import (
     BASE_FUNCTION_RETURN_CHAR_LIMIT,
@@ -19,7 +18,7 @@ from letta.constants import (
     LOCAL_ONLY_MULTI_AGENT_TOOLS,
     MCP_TOOL_TAG_NAME_PREFIX,
 )
-from letta.errors import LettaToolNameConflictError
+from letta.errors import LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
 from letta.log import get_logger
 
@@ -28,8 +27,7 @@ from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import ToolType
-from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool import ToolCreate, ToolUpdate
+from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
@@ -321,19 +319,37 @@ class ToolManager:
     @enforce_types
     @trace_method
     async def list_tools_async(
-        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, upsert_base_tools: bool = True
+        self,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        upsert_base_tools: bool = True,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
     ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
-        tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+        tools = await self._list_tools_async(
+            actor=actor,
+            after=after,
+            limit=limit,
+            tool_types=tool_types,
+            exclude_tool_types=exclude_tool_types,
+            names=names,
+            tool_ids=tool_ids,
+            search=search,
+            return_only_letta_tools=return_only_letta_tools,
+        )
 
         # Check if all base tools are present if we requested all the tools w/o cursor
         # TODO: This is a temporary hack to resolve this issue
         # TODO: This requires a deeper rethink about how we keep all our internal tools up-to-date
         if not after and upsert_base_tools:
             existing_tool_names = {tool.name for tool in tools}
-            base_tool_names = (
-                LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS) if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" else LETTA_TOOL_SET
-            )
+            base_tool_names = LETTA_TOOL_SET - set(LOCAL_ONLY_MULTI_AGENT_TOOLS) if settings.environment == "PRODUCTION" else LETTA_TOOL_SET
             missing_base_tools = base_tool_names - existing_tool_names
 
             # If any base tools are missing, upsert all base tools
@@ -341,22 +357,86 @@ class ToolManager:
                 logger.info(f"Missing base tools detected: {missing_base_tools}. Upserting all base tools.")
                 await self.upsert_base_tools_async(actor=actor)
                 # Re-fetch the tools list after upserting base tools
-                tools = await self._list_tools_async(actor=actor, after=after, limit=limit)
+                tools = await self._list_tools_async(
+                    actor=actor,
+                    after=after,
+                    limit=limit,
+                    tool_types=tool_types,
+                    exclude_tool_types=exclude_tool_types,
+                    names=names,
+                    tool_ids=tool_ids,
+                    search=search,
+                    return_only_letta_tools=return_only_letta_tools,
+                )
 
         return tools
 
     @enforce_types
     @trace_method
-    async def _list_tools_async(self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50) -> List[PydanticTool]:
+    async def _list_tools_async(
+        self,
+        actor: PydanticUser,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
+    ) -> List[PydanticTool]:
         """List all tools with optional pagination."""
         tools_to_delete = []
         async with db_registry.async_session() as session:
-            tools = await ToolModel.list_async(
-                db_session=session,
-                after=after,
-                limit=limit,
-                organization_id=actor.organization_id,
-            )
+            # Use SQLAlchemy directly for all cases - more control and consistency
+            # Start with base query
+            query = select(ToolModel).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply tool_types filter
+            if tool_types is not None:
+                query = query.where(ToolModel.tool_type.in_(tool_types))
+
+            # Apply names filter
+            if names is not None:
+                query = query.where(ToolModel.name.in_(names))
+
+            # Apply tool_ids filter
+            if tool_ids is not None:
+                query = query.where(ToolModel.id.in_(tool_ids))
+
+            # Apply search filter (ILIKE for case-insensitive partial match)
+            if search is not None:
+                query = query.where(ToolModel.name.ilike(f"%{search}%"))
+
+            # Apply exclude_tool_types filter at database level
+            if exclude_tool_types is not None:
+                query = query.where(~ToolModel.tool_type.in_(exclude_tool_types))
+
+            # Apply return_only_letta_tools filter at database level
+            if return_only_letta_tools:
+                query = query.where(ToolModel.tool_type.like("letta_%"))
+
+            # Apply pagination if specified
+            if after is not None:
+                after_tool = await session.get(ToolModel, after)
+                if after_tool:
+                    query = query.where(
+                        or_(
+                            ToolModel.created_at < after_tool.created_at,
+                            and_(ToolModel.created_at == after_tool.created_at, ToolModel.id < after_tool.id),
+                        )
+                    )
+
+            # Apply limit
+            if limit is not None:
+                query = query.limit(limit)
+
+            # Order by created_at and id for consistent pagination
+            query = query.order_by(ToolModel.created_at.desc(), ToolModel.id.desc())
+
+            # Execute query
+            result = await session.execute(query)
+            tools = list(result.scalars())
 
             # Remove any malformed tools
             results = []
@@ -378,6 +458,61 @@ class ToolManager:
             await self.delete_tool_by_id_async(tool.id, actor=actor)
 
         return results
+
+    @enforce_types
+    @trace_method
+    async def count_tools_async(
+        self,
+        actor: PydanticUser,
+        tool_types: Optional[List[str]] = None,
+        exclude_tool_types: Optional[List[str]] = None,
+        names: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        return_only_letta_tools: bool = False,
+        exclude_letta_tools: bool = False,
+    ) -> int:
+        """Count tools with the same filtering logic as list_tools_async."""
+        async with db_registry.async_session() as session:
+            # Use SQLAlchemy directly with COUNT query - same filtering logic as list_tools_async
+            # Start with base query
+            query = select(func.count(ToolModel.id)).where(ToolModel.organization_id == actor.organization_id)
+
+            # Apply tool_types filter
+            if tool_types is not None:
+                query = query.where(ToolModel.tool_type.in_(tool_types))
+
+            # Apply names filter
+            if names is not None:
+                query = query.where(ToolModel.name.in_(names))
+
+            # Apply tool_ids filter
+            if tool_ids is not None:
+                query = query.where(ToolModel.id.in_(tool_ids))
+
+            # Apply search filter (ILIKE for case-insensitive partial match)
+            if search is not None:
+                query = query.where(ToolModel.name.ilike(f"%{search}%"))
+
+            # Apply exclude_tool_types filter at database level
+            if exclude_tool_types is not None:
+                query = query.where(~ToolModel.tool_type.in_(exclude_tool_types))
+
+            # Apply return_only_letta_tools filter at database level
+            if return_only_letta_tools:
+                query = query.where(ToolModel.tool_type.like("letta_%"))
+
+            # Handle exclude_letta_tools logic (if True, exclude Letta tools)
+            if exclude_letta_tools:
+                # Exclude tools that are in the LETTA_TOOL_SET
+                letta_tool_names = list(LETTA_TOOL_SET)
+                query = query.where(~ToolModel.name.in_(letta_tool_names))
+
+            # Execute count query
+            result = await session.execute(query)
+            count = result.scalar()
+
+            return count or 0
 
     @enforce_types
     @trace_method
@@ -406,6 +541,7 @@ class ToolManager:
         updated_tool_type: Optional[ToolType] = None,
         bypass_name_check: bool = False,
     ) -> PydanticTool:
+        # TODO: remove this (legacy non-async)
         """
         Update a tool with complex validation and schema derivation logic.
 
@@ -522,55 +658,36 @@ class ToolManager:
         # Fetch current tool early to allow conditional logic based on tool type
         current_tool = await self.get_tool_by_id_async(tool_id=tool_id, actor=actor)
 
-        # For MCP tools, do NOT derive schema from Python source. Trust provided JSON schema.
-        if current_tool.tool_type == ToolType.EXTERNAL_MCP:
-            # Prefer provided json_schema; fall back to current
-            if "json_schema" in update_data:
-                new_schema = update_data["json_schema"].copy()
-                new_name = new_schema.get("name", current_tool.name)
-            else:
-                new_schema = current_tool.json_schema
-                new_name = current_tool.name
-            # Ensure we don't trigger derive
-            update_data.pop("source_code", None)
-            # If name changes, enforce uniqueness
-            if new_name != current_tool.name:
-                name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
-                if name_exists:
-                    raise LettaToolNameConflictError(tool_name=new_name)
+        # Do NOT derive schema from Python source. Trust provided JSON schema.
+        # Prefer provided json_schema; fall back to current
+        if "json_schema" in update_data:
+            new_schema = update_data["json_schema"].copy()
+            new_name = new_schema.get("name", current_tool.name)
         else:
-            # For non-MCP tools, preserve existing behavior
-            # TODO: Consider this behavior...is this what we want?
-            # TODO: I feel like it's bad if json_schema strays from source code so
-            # if source code is provided, always derive the name from it
-            if "source_code" in update_data.keys() and not bypass_name_check:
-                # Check source type to use appropriate parser
-                source_type = update_data.get("source_type", current_tool.source_type)
-                if source_type == "typescript":
-                    from letta.functions.typescript_parser import derive_typescript_json_schema
+            new_schema = current_tool.json_schema
+            new_name = current_tool.name
 
-                    derived_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
-                else:
-                    # Default to Python for backwards compatibility
-                    derived_schema = derive_openai_json_schema(source_code=update_data["source_code"])
-                new_name = derived_schema["name"]
+        # original tool may no have a JSON schema at all for legacy reasons
+        # in this case, fallback to dangerous schema generation
+        if new_schema is None:
+            if source_type == "typescript":
+                from letta.functions.typescript_parser import derive_typescript_json_schema
 
-                # if json_schema wasn't provided, use the derived schema
-                if "json_schema" not in update_data.keys():
-                    new_schema = derived_schema
-                else:
-                    # if json_schema was provided, update only its name to match the source code
-                    new_schema = update_data["json_schema"].copy()
-                    new_schema["name"] = new_name
-                    # update the json_schema in update_data so it gets applied in the loop
-                    update_data["json_schema"] = new_schema
+                new_schema = derive_typescript_json_schema(source_code=update_data["source_code"])
+            else:
+                new_schema = derive_openai_json_schema(source_code=update_data["source_code"])
 
-                # check if the name is changing and if so, verify it doesn't conflict
-                if new_name != current_tool.name:
-                    # check if a tool with the new name already exists
-                    name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
-                    if name_exists:
-                        raise LettaToolNameConflictError(tool_name=new_name)
+        # If name changes, enforce uniqueness
+        if new_name != current_tool.name:
+            name_exists = await self.tool_name_exists_async(tool_name=new_name, actor=actor)
+            if name_exists:
+                raise LettaToolNameConflictError(tool_name=new_name)
+
+        # NOTE: EXTREMELEY HACKY, we need to stop making assumptions about the source_code
+        if "source_code" in update_data and f"def {new_name}" not in update_data.get("source_code", ""):
+            raise LettaToolNameSchemaMismatchError(
+                tool_name=new_name, json_schema_name=new_schema.get("name"), source_code=update_data.get("source_code")
+            )
 
         # Now perform the update within the session
         async with db_registry.async_session() as session:

@@ -3,15 +3,13 @@ from typing import List, Optional, Tuple, Union
 from letta.orm.provider import Provider as ProviderModel
 from letta.otel.tracing import trace_method
 from letta.schemas.enums import ProviderCategory, ProviderType
-from letta.schemas.providers import Provider as PydanticProvider
-from letta.schemas.providers import ProviderCheck, ProviderCreate, ProviderUpdate
+from letta.schemas.providers import Provider as PydanticProvider, ProviderCheck, ProviderCreate, ProviderUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types
 
 
 class ProviderManager:
-
     @enforce_types
     @trace_method
     def create_provider(self, request: ProviderCreate, actor: PydanticUser) -> PydanticProvider:

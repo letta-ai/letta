@@ -12,7 +12,6 @@ from letta.settings import model_settings
 
 
 class TogetherClient(OpenAIClient):
-
     def requires_auto_tool_choice(self, llm_config: LLMConfig) -> bool:
         return True
 

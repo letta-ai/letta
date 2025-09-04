@@ -1,5 +1,6 @@
-import math
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
+from zoneinfo import ZoneInfo
 
 from letta.constants import (
     CORE_MEMORY_LINE_NUMBER_WARNING,
@@ -8,16 +9,17 @@ from letta.constants import (
     RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
 from letta.helpers.json_helpers import json_dumps
+from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageRole, TagMatchMode
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
-from letta.services.agent_manager import AgentManager
-from letta.services.message_manager import MessageManager
-from letta.services.passage_manager import PassageManager
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
 from letta.utils import get_friendly_error_msg
+
+logger = get_logger(__name__)
 
 
 class LettaCoreToolExecutor(ToolExecutor):
@@ -80,106 +82,262 @@ class LettaCoreToolExecutor(ToolExecutor):
         """
         return "Sent message successfully."
 
-    async def conversation_search(self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0) -> Optional[str]:
-        """
-        Search prior conversation history using case-insensitive string matching.
-
-        Args:
-            query (str): String to search for.
-            page (int): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).
-
-        Returns:
-            str: Query result string
-        """
-        if page is None or (isinstance(page, str) and page.lower().strip() == "none"):
-            page = 0
-        try:
-            page = int(page)
-        except:
-            raise ValueError("'page' argument must be an integer")
-
-        count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-        messages = await MessageManager().list_user_messages_for_agent_async(
-            agent_id=agent_state.id,
-            actor=actor,
-            query_text=query,
-            limit=count,
-        )
-
-        total = len(messages)
-        num_pages = math.ceil(total / count) - 1  # 0 index
-
-        if len(messages) == 0:
-            results_str = "No results found."
-        else:
-            results_pref = f"Showing {len(messages)} of {total} results (page {page}/{num_pages}):"
-            results_formatted = [message.content[0].text for message in messages]
-            results_str = f"{results_pref} {json_dumps(results_formatted)}"
-
-        return results_str
-
-    async def archival_memory_search(
-        self, agent_state: AgentState, actor: User, query: str, page: Optional[int] = 0, start: Optional[int] = 0
+    async def conversation_search(
+        self,
+        agent_state: AgentState,
+        actor: User,
+        query: str,
+        roles: Optional[List[Literal["assistant", "user", "tool"]]] = None,
+        limit: Optional[int] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Search archival memory using semantic (embedding-based) search.
+        Search prior conversation history using hybrid search (text + semantic similarity).
 
         Args:
-            query (str): String to search for.
-            page (Optional[int]): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).
-            start (Optional[int]): Starting index for the search results. Defaults to 0.
+            query (str): String to search for using both text matching and semantic similarity.
+            roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
+            limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
+            start_date (Optional[str]): Filter results to messages created after this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
+            end_date (Optional[str]): Filter results to messages created before this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
 
         Returns:
-            str: Query result string
+            str: Query result string containing matching messages with timestamps and content.
         """
-        if page is None or (isinstance(page, str) and page.lower().strip() == "none"):
-            page = 0
         try:
-            page = int(page)
-        except:
-            raise ValueError("'page' argument must be an integer")
+            # Parse datetime parameters if provided
+            start_datetime = None
+            end_datetime = None
 
-        count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+            if start_date:
+                try:
+                    # Try parsing as full datetime first (with time)
+                    start_datetime = datetime.fromisoformat(start_date)
+                except ValueError:
+                    try:
+                        # Fall back to date-only format
+                        start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+                        # Set to beginning of day
+                        start_datetime = start_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+                    except ValueError:
+                        raise ValueError(f"Invalid start_date format: {start_date}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)")
 
-        try:
-            # Get results using passage manager
-            all_results = await AgentManager().list_agent_passages_async(
-                actor=actor,
+                # Apply agent's timezone if datetime is naive
+                if start_datetime.tzinfo is None and agent_state.timezone:
+                    tz = ZoneInfo(agent_state.timezone)
+                    start_datetime = start_datetime.replace(tzinfo=tz)
+
+            if end_date:
+                try:
+                    # Try parsing as full datetime first (with time)
+                    end_datetime = datetime.fromisoformat(end_date)
+                except ValueError:
+                    try:
+                        # Fall back to date-only format
+                        end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+                        # Set to end of day for end dates
+                        end_datetime = end_datetime.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    except ValueError:
+                        raise ValueError(f"Invalid end_date format: {end_date}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)")
+
+                # Apply agent's timezone if datetime is naive
+                if end_datetime.tzinfo is None and agent_state.timezone:
+                    tz = ZoneInfo(agent_state.timezone)
+                    end_datetime = end_datetime.replace(tzinfo=tz)
+
+            # Convert string roles to MessageRole enum if provided
+            message_roles = None
+            if roles:
+                message_roles = [MessageRole(role) for role in roles]
+
+            # Use provided limit or default
+            search_limit = limit if limit is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+
+            # Search using the message manager's search_messages_async method
+            message_results = await self.message_manager.search_messages_async(
                 agent_id=agent_state.id,
+                actor=actor,
                 query_text=query,
-                limit=count + start,  # Request enough results to handle offset
+                roles=message_roles,
+                limit=search_limit,
+                start_date=start_datetime,
+                end_date=end_datetime,
                 embedding_config=agent_state.embedding_config,
-                embed_query=True,
             )
 
-            # Apply pagination
-            end = min(count + start, len(all_results))
-            paged_results = all_results[start:end]
+            if len(message_results) == 0:
+                results_str = "No results found."
+            else:
+                results_pref = f"Showing {len(message_results)} results:"
+                results_formatted = []
+                # get current time in UTC, then convert to agent timezone for consistent comparison
+                from datetime import timezone
 
-            # Format results to match previous implementation
-            formatted_results = [{"timestamp": str(result.created_at), "content": result.text} for result in paged_results]
+                now_utc = datetime.now(timezone.utc)
+                if agent_state.timezone:
+                    try:
+                        tz = ZoneInfo(agent_state.timezone)
+                        now = now_utc.astimezone(tz)
+                    except Exception:
+                        now = now_utc
+                else:
+                    now = now_utc
 
-            return formatted_results, len(formatted_results)
+                for message, metadata in message_results:
+                    # Format timestamp in agent's timezone if available
+                    timestamp = message.created_at
+                    time_delta_str = ""
+
+                    if timestamp and agent_state.timezone:
+                        try:
+                            # Convert to agent's timezone
+                            tz = ZoneInfo(agent_state.timezone)
+                            local_time = timestamp.astimezone(tz)
+                            # Format as ISO string with timezone
+                            formatted_timestamp = local_time.isoformat()
+
+                            # Calculate time delta
+                            delta = now - local_time
+                            total_seconds = int(delta.total_seconds())
+
+                            if total_seconds < 60:
+                                time_delta_str = f"{total_seconds}s ago"
+                            elif total_seconds < 3600:
+                                minutes = total_seconds // 60
+                                time_delta_str = f"{minutes}m ago"
+                            elif total_seconds < 86400:
+                                hours = total_seconds // 3600
+                                time_delta_str = f"{hours}h ago"
+                            else:
+                                days = total_seconds // 86400
+                                time_delta_str = f"{days}d ago"
+
+                        except Exception:
+                            # Fallback to ISO format if timezone conversion fails
+                            formatted_timestamp = str(timestamp)
+                    else:
+                        # Use ISO format if no timezone is set
+                        formatted_timestamp = str(timestamp) if timestamp else "Unknown"
+
+                    content = self.message_manager._extract_message_text(message)
+
+                    # Create the base result dict
+                    result_dict = {
+                        "timestamp": formatted_timestamp,
+                        "time_ago": time_delta_str,
+                        "role": message.role,
+                    }
+
+                    # Add search relevance metadata if available
+                    if metadata:
+                        # Only include non-None values
+                        relevance_info = {
+                            k: v
+                            for k, v in {
+                                "rrf_score": metadata.get("combined_score"),
+                                "vector_rank": metadata.get("vector_rank"),
+                                "fts_rank": metadata.get("fts_rank"),
+                                "search_mode": metadata.get("search_mode"),
+                            }.items()
+                            if v is not None
+                        }
+
+                        if relevance_info:  # Only add if we have metadata
+                            result_dict["relevance"] = relevance_info
+
+                    # _extract_message_text returns already JSON-encoded strings
+                    # We need to parse them to get the actual content structure
+                    if content:
+                        try:
+                            import json
+
+                            parsed_content = json.loads(content)
+
+                            # Add the parsed content directly to avoid double JSON encoding
+                            if isinstance(parsed_content, dict):
+                                # Merge the parsed content into result_dict
+                                result_dict.update(parsed_content)
+                            else:
+                                # If it's not a dict, add as content
+                                result_dict["content"] = parsed_content
+                        except (json.JSONDecodeError, ValueError):
+                            # if not valid JSON, add as plain content
+                            result_dict["content"] = content
+
+                    results_formatted.append(result_dict)
+
+                # Don't double-encode - results_formatted already has the parsed content
+                results_str = f"{results_pref} {json_dumps(results_formatted)}"
+
+            return results_str
 
         except Exception as e:
             raise e
 
-    async def archival_memory_insert(self, agent_state: AgentState, actor: User, content: str) -> Optional[str]:
+    async def archival_memory_search(
+        self,
+        agent_state: AgentState,
+        actor: User,
+        query: str,
+        tags: Optional[list[str]] = None,
+        tag_match_mode: Literal["any", "all"] = "any",
+        top_k: Optional[int] = None,
+        start_datetime: Optional[str] = None,
+        end_datetime: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+
+        Args:
+            query (str): String to search for using semantic similarity.
+            tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
+            tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
+            top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
+            start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format.
+            end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format.
+
+        Returns:
+            str: Query result string containing matching passages with timestamps, content, and tags.
+        """
+        try:
+            # Use the shared service method to get results
+            formatted_results, count = await self.agent_manager.search_agent_archival_memory_async(
+                agent_id=agent_state.id,
+                actor=actor,
+                query=query,
+                tags=tags,
+                tag_match_mode=tag_match_mode,
+                top_k=top_k,
+                start_datetime=start_datetime,
+                end_datetime=end_datetime,
+            )
+
+            return formatted_results, count
+
+        except Exception as e:
+            raise e
+
+    async def archival_memory_insert(
+        self, agent_state: AgentState, actor: User, content: str, tags: Optional[list[str]] = None
+    ) -> Optional[str]:
         """
         Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
 
         Args:
             content (str): Content to write to the memory. All unicode (including emojis) are supported.
+            tags (Optional[list[str]]): Optional list of tags to associate with this memory for better organization and filtering.
 
         Returns:
             Optional[str]: None is always returned as this function does not produce a response.
         """
-        await PassageManager().insert_passage(
+        await self.passage_manager.insert_passage(
             agent_state=agent_state,
             text=content,
             actor=actor,
+            tags=tags,
         )
-        await AgentManager().rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
+        await self.agent_manager.rebuild_system_prompt_async(agent_id=agent_state.id, actor=actor, force=True)
         return None
 
     async def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
@@ -198,7 +356,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         current_value = str(agent_state.memory.get_block(label).value)
         new_value = current_value + "\n" + str(content)
         agent_state.memory.update_block_value(label=label, value=new_value)
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
     async def core_memory_replace(
@@ -227,7 +385,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             raise ValueError(f"Old content '{old_content}' not found in memory block '{label}'")
         new_value = current_value.replace(str(old_content), str(new_content))
         agent_state.memory.update_block_value(label=label, value=new_value)
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
         return None
 
     async def memory_replace(self, agent_state: AgentState, actor: User, label: str, old_str: str, new_str: str) -> str:
@@ -275,14 +433,13 @@ class LettaCoreToolExecutor(ToolExecutor):
         occurences = current_value.count(old_str)
         if occurences == 0:
             raise ValueError(
-                f"No replacement was performed, old_str `{old_str}` did not appear " f"verbatim in memory block with label `{label}`."
+                f"No replacement was performed, old_str `{old_str}` did not appear verbatim in memory block with label `{label}`."
             )
         elif occurences > 1:
             content_value_lines = current_value.split("\n")
             lines = [idx + 1 for idx, line in enumerate(content_value_lines) if old_str in line]
             raise ValueError(
-                f"No replacement was performed. Multiple occurrences of "
-                f"old_str `{old_str}` in lines {lines}. Please ensure it is unique."
+                f"No replacement was performed. Multiple occurrences of old_str `{old_str}` in lines {lines}. Please ensure it is unique."
             )
 
         # Replace old_str with new_str
@@ -291,7 +448,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write the new content to the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Create a snippet of the edited section
         SNIPPET_LINES = 3
@@ -384,7 +541,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         # Write into the block
         agent_state.memory.update_block_value(label=label, value=new_value)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "
@@ -437,7 +594,7 @@ class LettaCoreToolExecutor(ToolExecutor):
 
         agent_state.memory.update_block_value(label=label, value=new_memory)
 
-        await AgentManager().update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
+        await self.agent_manager.update_memory_if_changed_async(agent_id=agent_state.id, new_memory=agent_state.memory, actor=actor)
 
         # Prepare the success message
         success_msg = f"The core memory block with label `{label}` has been edited. "

@@ -28,6 +28,7 @@ from letta.schemas.agent_file import (
     ToolSchema,
 )
 from letta.schemas.block import Block
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import FileProcessingStatus
 from letta.schemas.file import FileMetadata
 from letta.schemas.group import Group, GroupCreate
@@ -432,6 +433,8 @@ class AgentSerializationManager:
         override_existing_tools: bool = True,
         dry_run: bool = False,
         env_vars: Optional[Dict[str, Any]] = None,
+        override_embedding_config: Optional[EmbeddingConfig] = None,
+        project_id: Optional[str] = None,
     ) -> ImportResult:
         """
         Import AgentFileSchema into the database.
@@ -530,6 +533,12 @@ class AgentSerializationManager:
                 source_names_to_check = [s.name for s in schema.sources]
                 existing_source_names = await self.source_manager.get_existing_source_names(source_names_to_check, actor)
 
+                # override embedding_config
+                if override_embedding_config:
+                    for source_schema in schema.sources:
+                        source_schema.embedding_config = override_embedding_config
+                        source_schema.embedding = override_embedding_config.handle
+
                 for source_schema in schema.sources:
                     source_data = source_schema.model_dump(exclude={"id", "embedding", "embedding_chunk_size"})
 
@@ -577,10 +586,12 @@ class AgentSerializationManager:
             # Start background tasks for file processing
             background_tasks = []
             if schema.files and any(f.content for f in schema.files):
+                # Use override embedding config if provided, otherwise use agent's config
+                embedder_config = override_embedding_config if override_embedding_config else schema.agents[0].embedding_config
                 if should_use_pinecone():
-                    embedder = PineconeEmbedder(embedding_config=schema.agents[0].embedding_config)
+                    embedder = PineconeEmbedder(embedding_config=embedder_config)
                 else:
-                    embedder = OpenAIEmbedder(embedding_config=schema.agents[0].embedding_config)
+                    embedder = OpenAIEmbedder(embedding_config=embedder_config)
                 file_processor = FileProcessor(
                     file_parser=self.file_parser,
                     embedder=embedder,
@@ -613,6 +624,11 @@ class AgentSerializationManager:
 
             # 6. Create agents with empty message history
             for agent_schema in schema.agents:
+                # Override embedding_config if provided
+                if override_embedding_config:
+                    agent_schema.embedding_config = override_embedding_config
+                    agent_schema.embedding = override_embedding_config.handle
+
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
                 agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
                 if append_copy_suffix:
@@ -634,6 +650,10 @@ class AgentSerializationManager:
                     for var in agent_data["tool_exec_environment_variables"]:
                         var["value"] = env_vars.get(var["key"], "")
 
+                # Override project_id if provided
+                if project_id:
+                    agent_data["project_id"] = project_id
+
                 agent_create = CreateAgent(**agent_data)
                 created_agent = await self.agent_manager.create_agent_async(agent_create, actor, _init_with_no_messages=True)
                 file_to_db_ids[agent_schema.id] = created_agent.id
@@ -648,7 +668,7 @@ class AgentSerializationManager:
                 messages = []
                 for message_schema in agent_schema.messages:
                     # Convert MessageSchema back to Message, setting agent_id to new DB ID
-                    message_data = message_schema.model_dump(exclude={"id"})
+                    message_data = message_schema.model_dump(exclude={"id", "type"})
                     message_data["agent_id"] = agent_db_id  # Remap agent_id to new database ID
                     message_obj = Message(**message_data)
                     messages.append(message_obj)

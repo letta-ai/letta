@@ -141,7 +141,7 @@ def create_test_agent(name, actor, test_id: Optional[str] = None, model="anthrop
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=32000,
-        handle=f"anthropic/claude-3-7-sonnet-latest",
+        handle="anthropic/claude-3-7-sonnet-latest",
         put_inner_thoughts_in_kwargs=True,
         max_tokens=4096,
     )
@@ -193,7 +193,7 @@ async def create_test_batch_item(server, batch_id, agent_id, default_user):
         model_endpoint_type="anthropic",
         model_endpoint="https://api.anthropic.com/v1",
         context_window=32000,
-        handle=f"anthropic/claude-3-7-sonnet-latest",
+        handle="anthropic/claude-3-7-sonnet-latest",
         put_inner_thoughts_in_kwargs=True,
         max_tokens=4096,
     )

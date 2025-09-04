@@ -1,19 +1,21 @@
 import json
 import uuid
-from typing import List, Optional, Sequence
+from datetime import datetime
+from typing import List, Optional, Sequence, Tuple
 
 from sqlalchemy import delete, exists, func, select, text
 
+from letta.constants import CONVERSATION_SEARCH_TOOL_NAME, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.log import get_logger
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
-from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageUpdate
+from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType, TextContent
+from letta.schemas.message import Message as PydanticMessage, MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
@@ -30,6 +32,188 @@ class MessageManager:
     def __init__(self):
         """Initialize the MessageManager."""
         self.file_manager = FileManager()
+
+    def _extract_message_text(self, message: PydanticMessage) -> str:
+        """Extract text content from a message's complex content structure.
+
+        Only extracts text from searchable message roles (assistant, user, tool).
+        Returns JSON format for all message types for consistency.
+
+        Args:
+            message: The message to extract text from
+
+        Returns:
+            JSON string with message content, or empty string for non-searchable roles
+        """
+        # only extract text from searchable roles
+        if message.role not in [MessageRole.assistant, MessageRole.user, MessageRole.tool]:
+            return ""
+
+        # skip tool messages related to send_message and conversation_search entirely
+        if message.role == MessageRole.tool and message.name in [DEFAULT_MESSAGE_TOOL, CONVERSATION_SEARCH_TOOL_NAME]:
+            return ""
+
+        if not message.content:
+            return ""
+
+        # extract raw content text
+        if isinstance(message.content, str):
+            content_str = message.content
+        else:
+            text_parts = []
+            for content_item in message.content:
+                text = content_item.to_text()
+                if text:
+                    text_parts.append(text)
+            content_str = " ".join(text_parts)
+
+        # skip heartbeat messages entirely
+        try:
+            if content_str.strip().startswith("{"):
+                parsed_content = json.loads(content_str)
+                if isinstance(parsed_content, dict) and parsed_content.get("type") == "heartbeat":
+                    return ""
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        # format everything as JSON
+        if message.role == MessageRole.user:
+            # check if content_str is already valid JSON to avoid double nesting
+            try:
+                # if it's already valid JSON, return as-is
+                json.loads(content_str)
+                return content_str
+            except (json.JSONDecodeError, ValueError):
+                # if not valid JSON, wrap it
+                return json.dumps({"content": content_str})
+
+        elif message.role == MessageRole.assistant and message.tool_calls:
+            # skip assistant messages that call conversation_search
+            for tool_call in message.tool_calls:
+                if tool_call.function.name == CONVERSATION_SEARCH_TOOL_NAME:
+                    return ""
+
+            # check if any tool call is send_message
+            for tool_call in message.tool_calls:
+                if tool_call.function.name == DEFAULT_MESSAGE_TOOL:
+                    # extract the actual message from tool call arguments
+                    try:
+                        args = json.loads(tool_call.function.arguments)
+                        actual_message = args.get(DEFAULT_MESSAGE_TOOL_KWARG, "")
+
+                        return json.dumps({"thinking": content_str, "message": actual_message})
+                    except (json.JSONDecodeError, KeyError):
+                        # fallback if parsing fails
+                        pass
+
+        # default for other messages (tool responses, assistant without send_message)
+        # check if content_str is already valid JSON to avoid double nesting
+        if message.role == MessageRole.assistant:
+            try:
+                # if it's already valid JSON, return as-is
+                json.loads(content_str)
+                return content_str
+            except (json.JSONDecodeError, ValueError):
+                # if not valid JSON, wrap it
+                return json.dumps({"content": content_str})
+        else:
+            # for tool messages and others, wrap in content
+            return json.dumps({"content": content_str})
+
+    def _combine_assistant_tool_messages(self, messages: List[PydanticMessage]) -> List[PydanticMessage]:
+        """Combine assistant messages with their corresponding tool results when IDs match.
+
+        Args:
+            messages: List of messages to process
+
+        Returns:
+            List of messages with assistant+tool combinations merged
+        """
+        from letta.constants import DEFAULT_MESSAGE_TOOL
+
+        combined_messages = []
+        i = 0
+
+        while i < len(messages):
+            current_msg = messages[i]
+
+            # skip heartbeat messages
+            if self._extract_message_text(current_msg) == "":
+                i += 1
+                continue
+
+            # if this is an assistant message with tool calls, look for matching tool response
+            if current_msg.role == MessageRole.assistant and current_msg.tool_calls and i + 1 < len(messages):
+                next_msg = messages[i + 1]
+
+                # check if next message is a tool response that matches
+                if (
+                    next_msg.role == MessageRole.tool
+                    and next_msg.tool_call_id
+                    and any(tc.id == next_msg.tool_call_id for tc in current_msg.tool_calls)
+                ):
+                    # combine the messages - get raw content to avoid double-processing
+                    assistant_text = current_msg.content[0].text if current_msg.content else ""
+
+                    # for non-send_message tools, include tool result
+                    if next_msg.name != DEFAULT_MESSAGE_TOOL:
+                        tool_result_text = next_msg.content[0].text if next_msg.content else ""
+
+                        # get the tool call that matches this result (we know it exists from the condition above)
+                        matching_tool_call = next((tc for tc in current_msg.tool_calls if tc.id == next_msg.tool_call_id), None)
+
+                        # format tool call with parameters
+                        try:
+                            args = json.loads(matching_tool_call.function.arguments)
+                            if args:
+                                # format parameters nicely
+                                param_strs = [f"{k}={repr(v)}" for k, v in args.items()]
+                                tool_call_str = f"{matching_tool_call.function.name}({', '.join(param_strs)})"
+                            else:
+                                tool_call_str = f"{matching_tool_call.function.name}()"
+                        except (json.JSONDecodeError, KeyError):
+                            tool_call_str = f"{matching_tool_call.function.name}()"
+
+                        # format tool result cleanly
+                        try:
+                            if tool_result_text.strip().startswith("{"):
+                                parsed_result = json.loads(tool_result_text)
+                                if isinstance(parsed_result, dict):
+                                    # extract key information from tool result
+                                    if "message" in parsed_result:
+                                        tool_result_summary = parsed_result["message"]
+                                    elif "status" in parsed_result:
+                                        tool_result_summary = f"Status: {parsed_result['status']}"
+                                    else:
+                                        tool_result_summary = tool_result_text
+                                else:
+                                    tool_result_summary = tool_result_text
+                            else:
+                                tool_result_summary = tool_result_text
+                        except (json.JSONDecodeError, ValueError):
+                            tool_result_summary = tool_result_text
+
+                        combined_data = {"thinking": assistant_text, "tool_call": tool_call_str, "tool_result": tool_result_summary}
+                        combined_text = json.dumps(combined_data)
+                    else:
+                        combined_text = assistant_text
+
+                    # create a new combined message
+                    from letta.schemas.letta_message_content import TextContent
+
+                    combined_message = current_msg.model_copy()
+                    combined_message.content = [TextContent(text=combined_text)]
+                    combined_messages.append(combined_message)
+
+                    # skip the tool message since we combined it
+                    i += 2
+                    continue
+
+            # if no combination, add the message as-is
+            combined_messages.append(current_msg)
+            i += 1
+
+        return combined_messages
 
     @enforce_types
     @trace_method
@@ -126,13 +310,20 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def create_many_messages_async(self, pydantic_msgs: List[PydanticMessage], actor: PydanticUser) -> List[PydanticMessage]:
+    async def create_many_messages_async(
+        self,
+        pydantic_msgs: List[PydanticMessage],
+        actor: PydanticUser,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        strict_mode: bool = False,
+    ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
 
         Args:
             pydantic_msgs: List of Pydantic message models to create
             actor: User performing the action
+            embedding_config: Optional embedding configuration to enable message embedding in Turbopuffer
 
         Returns:
             List of created Pydantic message models
@@ -170,6 +361,59 @@ class MessageManager:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
             await session.commit()
+
+            # embed messages in turbopuffer if enabled and embedding_config provided
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages() and embedding_config and result:
+                try:
+                    # extract agent_id from the first message (all should have same agent_id)
+                    agent_id = result[0].agent_id
+                    if agent_id:
+                        # extract text content from each message
+                        message_texts = []
+                        message_ids = []
+                        roles = []
+                        created_ats = []
+                        # combine assistant+tool messages before embedding
+                        combined_messages = self._combine_assistant_tool_messages(result)
+
+                        for msg in combined_messages:
+                            text = self._extract_message_text(msg).strip()
+                            if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
+                                message_texts.append(text)
+                                message_ids.append(msg.id)
+                                roles.append(msg.role)
+                                created_ats.append(msg.created_at)
+
+                        if message_texts:
+                            # generate embeddings using provided config
+                            from letta.llm_api.llm_client import LLMClient
+
+                            embedding_client = LLMClient.create(
+                                provider_type=embedding_config.embedding_endpoint_type,
+                                actor=actor,
+                            )
+                            embeddings = await embedding_client.request_embeddings(message_texts, embedding_config)
+
+                            # insert to turbopuffer
+                            tpuf_client = TurbopufferClient()
+                            await tpuf_client.insert_messages(
+                                agent_id=agent_id,
+                                message_texts=message_texts,
+                                embeddings=embeddings,
+                                message_ids=message_ids,
+                                organization_id=actor.organization_id,
+                                roles=roles,
+                                created_ats=created_ats,
+                            )
+                            logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
+                except Exception as e:
+                    logger.error(f"Failed to embed messages in Turbopuffer: {e}")
+
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
             return result
 
     @enforce_types
@@ -185,9 +429,9 @@ class MessageManager:
             # modify the tool call for send_message
             # TODO: fix this if we add parallel tool calls
             # TODO: note this only works if the AssistantMessage is generated by the standard send_message
-            assert (
-                message.tool_calls[0].function.name == "send_message"
-            ), f"Expected the first tool call to be send_message, but got {message.tool_calls[0].function.name}"
+            assert message.tool_calls[0].function.name == "send_message", (
+                f"Expected the first tool call to be send_message, but got {message.tool_calls[0].function.name}"
+            )
             original_args = json.loads(message.tool_calls[0].function.arguments)
             original_args["message"] = letta_message_update.content  # override the assistant message
             update_tool_call = message.tool_calls[0].__deepcopy__()
@@ -224,9 +468,9 @@ class MessageManager:
             # modify the tool call for send_message
             # TODO: fix this if we add parallel tool calls
             # TODO: note this only works if the AssistantMessage is generated by the standard send_message
-            assert (
-                message.tool_calls[0].function.name == "send_message"
-            ), f"Expected the first tool call to be send_message, but got {message.tool_calls[0].function.name}"
+            assert message.tool_calls[0].function.name == "send_message", (
+                f"Expected the first tool call to be send_message, but got {message.tool_calls[0].function.name}"
+            )
             original_args = json.loads(message.tool_calls[0].function.arguments)
             original_args["message"] = letta_message_update.content  # override the assistant message
             update_tool_call = message.tool_calls[0].__deepcopy__()
@@ -270,7 +514,14 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def update_message_by_id_async(self, message_id: str, message_update: MessageUpdate, actor: PydanticUser) -> PydanticMessage:
+    async def update_message_by_id_async(
+        self,
+        message_id: str,
+        message_update: MessageUpdate,
+        actor: PydanticUser,
+        embedding_config: Optional[EmbeddingConfig] = None,
+        strict_mode: bool = False,
+    ) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
         Async version of the function above.
@@ -287,6 +538,49 @@ class MessageManager:
             await message.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
             pydantic_message = message.to_pydantic()
             await session.commit()
+
+            # update message in turbopuffer if enabled (delete and re-insert)
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages() and embedding_config and pydantic_message.agent_id:
+                try:
+                    # extract text content from updated message
+                    text = self._extract_message_text(pydantic_message)
+
+                    # only update in turbopuffer if there's text content (role filtering is handled in _extract_message_text)
+                    if text:
+                        tpuf_client = TurbopufferClient()
+
+                        # delete old message from turbopuffer
+                        await tpuf_client.delete_messages(
+                            agent_id=pydantic_message.agent_id, organization_id=actor.organization_id, message_ids=[message_id]
+                        )
+
+                        # generate new embedding
+                        from letta.llm_api.llm_client import LLMClient
+
+                        embedding_client = LLMClient.create(
+                            provider_type=embedding_config.embedding_endpoint_type,
+                            actor=actor,
+                        )
+                        embeddings = await embedding_client.request_embeddings([text], embedding_config)
+
+                        # re-insert with updated content
+                        await tpuf_client.insert_messages(
+                            agent_id=pydantic_message.agent_id,
+                            message_texts=[text],
+                            embeddings=embeddings,
+                            message_ids=[message_id],
+                            organization_id=actor.organization_id,
+                            roles=[pydantic_message.role],
+                            created_ats=[pydantic_message.created_at],
+                        )
+                        logger.info(f"Successfully updated message {message_id} in Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to update message in Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
             return pydantic_message
 
     def _update_message_by_id_impl(
@@ -326,6 +620,41 @@ class MessageManager:
                     actor=actor,
                 )
                 msg.hard_delete(session, actor=actor)
+                # Note: Turbopuffer deletion requires async, use delete_message_by_id_async for full deletion
+            except NoResultFound:
+                raise ValueError(f"Message with id {message_id} not found.")
+
+    @enforce_types
+    @trace_method
+    async def delete_message_by_id_async(self, message_id: str, actor: PydanticUser, strict_mode: bool = False) -> bool:
+        """Delete a message (async version with turbopuffer support)."""
+        async with db_registry.async_session() as session:
+            try:
+                msg = await MessageModel.read_async(
+                    db_session=session,
+                    identifier=message_id,
+                    actor=actor,
+                )
+                agent_id = msg.agent_id
+                await msg.hard_delete_async(session, actor=actor)
+
+                # delete from turbopuffer if enabled
+                from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+                if should_use_tpuf_for_messages() and agent_id:
+                    try:
+                        tpuf_client = TurbopufferClient()
+                        await tpuf_client.delete_messages(
+                            agent_id=agent_id, organization_id=actor.organization_id, message_ids=[message_id]
+                        )
+                        logger.info(f"Successfully deleted message {message_id} from Turbopuffer")
+                    except Exception as e:
+                        logger.error(f"Failed to delete message from Turbopuffer: {e}")
+                        if strict_mode:
+                            raise  # Re-raise the exception in strict mode
+
+                return True
+
             except NoResultFound:
                 raise ValueError(f"Message with id {message_id} not found.")
 
@@ -626,7 +955,9 @@ class MessageManager:
 
     @enforce_types
     @trace_method
-    async def delete_all_messages_for_agent_async(self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None) -> int:
+    async def delete_all_messages_for_agent_async(
+        self, agent_id: str, actor: PydanticUser, exclude_ids: Optional[List[str]] = None, strict_mode: bool = False
+    ) -> int:
         """
         Efficiently deletes all messages associated with a given agent_id,
         while enforcing permission checks and avoiding any ORM‑level loads.
@@ -650,12 +981,31 @@ class MessageManager:
             # 4) commit once
             await session.commit()
 
-            # 5) return the number of rows deleted
+            # 5) delete from turbopuffer if enabled
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages():
+                try:
+                    tpuf_client = TurbopufferClient()
+                    if exclude_ids:
+                        # if we're excluding some IDs, we can't use delete_all
+                        # would need to query all messages first then delete specific ones
+                        # for now, log a warning
+                        logger.warning(f"Turbopuffer deletion with exclude_ids not fully supported, using delete_all for agent {agent_id}")
+                    # delete all messages for the agent from turbopuffer
+                    await tpuf_client.delete_all_messages(agent_id, actor.organization_id)
+                    logger.info(f"Successfully deleted all messages for agent {agent_id} from Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
+            # 6) return the number of rows deleted
             return result.rowcount
 
     @enforce_types
     @trace_method
-    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser) -> int:
+    async def delete_messages_by_ids_async(self, message_ids: List[str], actor: PydanticUser, strict_mode: bool = False) -> int:
         """
         Efficiently deletes messages by their specific IDs,
         while enforcing permission checks.
@@ -664,6 +1014,20 @@ class MessageManager:
             return 0
 
         async with db_registry.async_session() as session:
+            # get agent_ids BEFORE deleting (for turbopuffer)
+            agent_ids = []
+            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+            if should_use_tpuf_for_messages():
+                agent_query = (
+                    select(MessageModel.agent_id)
+                    .where(MessageModel.id.in_(message_ids))
+                    .where(MessageModel.organization_id == actor.organization_id)
+                    .distinct()
+                )
+                agent_result = await session.execute(agent_query)
+                agent_ids = [row[0] for row in agent_result.fetchall() if row[0]]
+
             # issue a CORE DELETE against the mapped class for specific message IDs
             stmt = delete(MessageModel).where(MessageModel.id.in_(message_ids)).where(MessageModel.organization_id == actor.organization_id)
             result = await session.execute(stmt)
@@ -671,5 +1035,162 @@ class MessageManager:
             # commit once
             await session.commit()
 
+            # delete from turbopuffer if enabled
+            if should_use_tpuf_for_messages() and agent_ids:
+                try:
+                    tpuf_client = TurbopufferClient()
+                    # delete from each affected agent's namespace
+                    for agent_id in agent_ids:
+                        await tpuf_client.delete_messages(agent_id=agent_id, organization_id=actor.organization_id, message_ids=message_ids)
+                    logger.info(f"Successfully deleted {len(message_ids)} messages from Turbopuffer")
+                except Exception as e:
+                    logger.error(f"Failed to delete messages from Turbopuffer: {e}")
+                    if strict_mode:
+                        raise  # Re-raise the exception in strict mode
+
             # return the number of rows deleted
             return result.rowcount
+
+    @enforce_types
+    @trace_method
+    async def search_messages_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        query_text: Optional[str] = None,
+        query_embedding: Optional[List[float]] = None,
+        search_mode: str = "hybrid",
+        roles: Optional[List[MessageRole]] = None,
+        limit: int = 50,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        embedding_config: Optional[EmbeddingConfig] = None,
+    ) -> List[Tuple[PydanticMessage, dict]]:
+        """
+        Search messages using Turbopuffer if enabled, otherwise fall back to SQL search.
+
+        Args:
+            agent_id: ID of the agent whose messages to search
+            actor: User performing the search
+            query_text: Text query for full-text search
+            query_embedding: Optional pre-computed embedding for vector search
+            search_mode: "vector", "fts", "hybrid", or "timestamp" (default: "hybrid")
+            roles: Optional list of message roles to filter by
+            limit: Maximum number of results to return
+            start_date: Optional filter for messages created after this date
+            end_date: Optional filter for messages created before this date
+            embedding_config: Optional embedding configuration for generating query embedding
+
+        Returns:
+            List of tuples (message, metadata) where metadata contains relevance scores
+        """
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+        # check if we should use turbopuffer
+        if should_use_tpuf_for_messages():
+            try:
+                # generate embedding if needed and not provided
+                if search_mode in ["vector", "hybrid"] and query_embedding is None and query_text:
+                    if not embedding_config:
+                        # fall back to SQL search if no embedding config
+                        logger.warning("No embedding config provided for vector search, falling back to SQL")
+                        return await self.list_messages_for_agent_async(
+                            agent_id=agent_id,
+                            actor=actor,
+                            query_text=query_text,
+                            roles=roles,
+                            limit=limit,
+                            ascending=False,
+                        )
+
+                    # generate embedding from query text
+                    from letta.llm_api.llm_client import LLMClient
+
+                    embedding_client = LLMClient.create(
+                        provider_type=embedding_config.embedding_endpoint_type,
+                        actor=actor,
+                    )
+                    embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+                    query_embedding = embeddings[0]
+
+                # use turbopuffer for search
+                tpuf_client = TurbopufferClient()
+                results = await tpuf_client.query_messages(
+                    agent_id=agent_id,
+                    organization_id=actor.organization_id,
+                    query_embedding=query_embedding,
+                    query_text=query_text,
+                    search_mode=search_mode,
+                    top_k=limit,
+                    roles=roles,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+
+                # create message-like objects using turbopuffer data (which already has properly extracted text)
+                if results:
+                    # create simplified message objects from turbopuffer data
+                    from letta.schemas.letta_message_content import TextContent
+                    from letta.schemas.message import Message as PydanticMessage
+
+                    message_tuples = []
+                    for msg_dict, score, metadata in results:
+                        # create a message object with the properly extracted text from turbopuffer
+                        message = PydanticMessage(
+                            id=msg_dict["id"],
+                            agent_id=agent_id,
+                            role=MessageRole(msg_dict["role"]),
+                            content=[TextContent(text=msg_dict["text"])],
+                            created_at=msg_dict["created_at"],
+                            updated_at=msg_dict["created_at"],  # use created_at as fallback
+                            created_by_id=actor.id,
+                            last_updated_by_id=actor.id,
+                        )
+                        # Return tuple of (message, metadata)
+                        message_tuples.append((message, metadata))
+
+                    return message_tuples
+                else:
+                    return []
+
+            except Exception as e:
+                logger.error(f"Failed to search messages with Turbopuffer, falling back to SQL: {e}")
+                # fall back to SQL search
+                messages = await self.list_messages_for_agent_async(
+                    agent_id=agent_id,
+                    actor=actor,
+                    query_text=query_text,
+                    roles=roles,
+                    limit=limit,
+                    ascending=False,
+                )
+                combined_messages = self._combine_assistant_tool_messages(messages)
+                # Add basic metadata for SQL fallback
+                message_tuples = []
+                for message in combined_messages:
+                    metadata = {
+                        "search_mode": "sql_fallback",
+                        "combined_score": None,  # SQL doesn't provide scores
+                    }
+                    message_tuples.append((message, metadata))
+                return message_tuples
+        else:
+            # use sql-based search
+            messages = await self.list_messages_for_agent_async(
+                agent_id=agent_id,
+                actor=actor,
+                query_text=query_text,
+                roles=roles,
+                limit=limit,
+                ascending=False,
+            )
+            combined_messages = self._combine_assistant_tool_messages(messages)
+            # Add basic metadata for SQL search
+            message_tuples = []
+            for message in combined_messages:
+                metadata = {
+                    "search_mode": "sql",
+                    "combined_score": None,  # SQL doesn't provide scores
+                }
+                message_tuples.append((message, metadata))
+            return message_tuples

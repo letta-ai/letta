@@ -30,7 +30,7 @@ def upgrade() -> None:
 
     # fill in column with `False`
     op.execute(
-        f"""
+        """
         UPDATE organizations
         SET privileged_tools = False
         """

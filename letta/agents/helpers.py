@@ -9,11 +9,11 @@ from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
-from letta.schemas.message import Message, MessageCreate
+from letta.schemas.message import Message, MessageCreate, MessageCreateBase
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_input_messages
+from letta.server.rest_api.utils import create_approval_response_message_from_input, create_input_messages
 from letta.services.message_manager import MessageManager
 
 logger = get_logger(__name__)
@@ -36,6 +36,8 @@ def _create_letta_response(
     response_messages = Message.to_letta_messages_from_list(
         messages=filter_user_messages, use_assistant_message=use_assistant_message, reverse=False
     )
+    # Filter approval response messages
+    response_messages = [m for m in response_messages if m.message_type != "approval_response_message"]
 
     # Apply message type filtering if specified
     if include_return_message_types is not None:
@@ -115,13 +117,14 @@ async def _prepare_in_context_messages_async(
     new_in_context_messages = await message_manager.create_many_messages_async(
         create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
         actor=actor,
+        embedding_config=agent_state.embedding_config,
     )
 
     return current_in_context_messages, new_in_context_messages
 
 
 async def _prepare_in_context_messages_no_persist_async(
-    input_messages: List[MessageCreate],
+    input_messages: List[MessageCreateBase],
     agent_state: AgentState,
     message_manager: MessageManager,
     actor: User,
@@ -148,10 +151,32 @@ async def _prepare_in_context_messages_no_persist_async(
         # Otherwise, include the full list of messages by ID for context
         current_in_context_messages = await message_manager.get_messages_by_ids_async(message_ids=agent_state.message_ids, actor=actor)
 
-    # Create a new user message from the input but dont store it yet
-    new_in_context_messages = create_input_messages(
-        input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
-    )
+    # Check for approval-related message validation
+    if len(input_messages) == 1 and input_messages[0].type == "approval":
+        # User is trying to send an approval response
+        if current_in_context_messages[-1].role != "approval":
+            raise ValueError(
+                "Cannot process approval response: No tool call is currently awaiting approval. "
+                "Please send a regular message to interact with the agent."
+            )
+        if input_messages[0].approval_request_id != current_in_context_messages[-1].id:
+            raise ValueError(
+                f"Invalid approval request ID. Expected '{current_in_context_messages[-1].id}' "
+                f"but received '{input_messages[0].approval_request_id}'."
+            )
+        new_in_context_messages = create_approval_response_message_from_input(agent_state=agent_state, input_message=input_messages[0])
+    else:
+        # User is trying to send a regular message
+        if current_in_context_messages[-1].role == "approval":
+            raise ValueError(
+                "Cannot send a new message: The agent is waiting for approval on a tool call. "
+                "Please approve or deny the pending request before continuing."
+            )
+
+        # Create a new user message from the input but dont store it yet
+        new_in_context_messages = create_input_messages(
+            input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor
+        )
 
     return current_in_context_messages, new_in_context_messages
 

@@ -13,8 +13,7 @@ from letta.orm.blocks_agents import BlocksAgents
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate
+from letta.schemas.block import Block as PydanticBlock, BlockUpdate
 from letta.schemas.enums import ActorType
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry

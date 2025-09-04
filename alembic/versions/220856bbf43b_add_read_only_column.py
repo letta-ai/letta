@@ -28,7 +28,7 @@ def upgrade() -> None:
     # add default value of `False`
     op.add_column("block", sa.Column("read_only", sa.Boolean(), nullable=True))
     op.execute(
-        f"""
+        """
         UPDATE block
         SET read_only = False
     """

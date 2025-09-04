@@ -50,7 +50,7 @@ def cast_message_to_subtype(m_dict: dict) -> ChatMessage:
         return SystemMessage(**m_dict)
     elif role == "user":
         return UserMessage(**m_dict)
-    elif role == "assistant":
+    elif role == "assistant" or role == "approval":
         return AssistantMessage(**m_dict)
     elif role == "tool":
         return ToolMessage(**m_dict)
@@ -136,6 +136,7 @@ class ChatCompletionRequest(BaseModel):
     parallel_tool_calls: Optional[bool] = None
     instructions: Optional[str] = None
     verbosity: Optional[Literal["low", "medium", "high"]] = None  # For verbosity control in GPT-5 models
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None  # For reasoning effort control in reasoning models
 
     # function-calling related
     tools: Optional[List[Tool]] = None

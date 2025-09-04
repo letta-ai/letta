@@ -185,7 +185,7 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             try:
                 await asyncio.shield(self._protected_stream_response(send))
             except asyncio.CancelledError:
-                logger.info(f"Stream response was cancelled, but shielded task should continue")
+                logger.info("Stream response was cancelled, but shielded task should continue")
             except anyio.ClosedResourceError:
                 logger.info("Client disconnected, but shielded task should continue")
                 self._client_connected = False
@@ -296,9 +296,10 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             raise LettaUnexpectedStreamCancellationError("Stream was terminated due to unexpected cancellation from server")
 
         except Exception as exc:
-            logger.exception("Unhandled Streaming Error")
+            logger.exception(f"Unhandled Streaming Error: {str(exc)}")
             more_body = False
-            error_resp = {"error": {"message": "Internal Server Error"}}
+            # error_resp = {"error": {"message": str(exc)}}
+            error_resp = {"error": str(exc), "code": "INTERNAL_SERVER_ERROR"}
             error_event = f"event: error\ndata: {json.dumps(error_resp)}\n\n".encode(self.charset)
             logger.debug("response_started:", self.response_started)
             if not self.response_started:

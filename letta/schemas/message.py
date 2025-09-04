@@ -7,11 +7,11 @@ import uuid
 import warnings
 from collections import OrderedDict
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from enum import Enum
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
-from pydantic import BaseModel, Field, field_validator
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
@@ -20,6 +20,8 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import (
+    ApprovalRequestMessage,
+    ApprovalResponseMessage,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
@@ -66,13 +68,21 @@ def add_inner_thoughts_to_tool_call(
         raise e
 
 
-class BaseMessage(OrmMetadataBase):
-    __id_prefix__ = "message"
+class MessageCreateType(str, Enum):
+    message = "message"
+    approval = "approval"
 
 
-class MessageCreate(BaseModel):
+class MessageCreateBase(BaseModel):
+    type: MessageCreateType = Field(..., description="The message type to be created.")
+
+
+class MessageCreate(MessageCreateBase):
     """Request to create a message"""
 
+    type: Optional[Literal[MessageCreateType.message]] = Field(
+        default=MessageCreateType.message, description="The message type to be created."
+    )
     # In the simplified format, only allow simple roles
     role: Literal[
         MessageRole.user,
@@ -96,6 +106,18 @@ class MessageCreate(BaseModel):
             if isinstance(data["content"], str):
                 data["content"] = [TextContent(text=data["content"])]
         return data
+
+
+class ApprovalCreate(MessageCreateBase):
+    """Input to approve or deny a tool call request"""
+
+    type: Literal[MessageCreateType.approval] = Field(default=MessageCreateType.approval, description="The message type to be created.")
+    approve: bool = Field(..., description="Whether the tool has been approved")
+    approval_request_id: str = Field(..., description="The message ID of the approval request")
+    reason: Optional[str] = Field(None, description="An optional explanation for the provided approval status")
+
+
+MessageCreateUnion = Union[MessageCreate, ApprovalCreate]
 
 
 class MessageUpdate(BaseModel):
@@ -124,6 +146,10 @@ class MessageUpdate(BaseModel):
             if isinstance(data["content"], str):
                 data["content"] = [TextContent(text=data["content"])]
         return data
+
+
+class BaseMessage(OrmMetadataBase):
+    __id_prefix__ = "message"
 
 
 class Message(BaseMessage):
@@ -174,13 +200,18 @@ class Message(BaseMessage):
     is_err: Optional[bool] = Field(
         default=None, description="Whether this message is part of an error step. Used only for debugging purposes."
     )
+    approval_request_id: Optional[str] = Field(
+        default=None, description="The id of the approval request if this message is associated with a tool call request."
+    )
+    approve: Optional[bool] = Field(default=None, description="Whether tool call is approved.")
+    denial_reason: Optional[str] = Field(default=None, description="The reason the tool call request was denied.")
     # This overrides the optional base orm schema, created_at MUST exist on all messages objects
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")
 
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: str) -> str:
-        roles = ["system", "assistant", "user", "tool"]
+        roles = ["system", "assistant", "user", "tool", "approval"]
         assert v in roles, f"Role must be one of {roles}"
         return v
 
@@ -251,20 +282,77 @@ class Message(BaseMessage):
         include_err: Optional[bool] = None,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
-
-        # TODO (cliandy): break this into more manageable pieces
+        messages = []
         if self.role == MessageRole.assistant:
-            messages = []
-            # Handle reasoning
             if self.content:
-                # Check for ReACT-style COT inside of TextContent
-                if len(self.content) == 1 and isinstance(self.content[0], TextContent):
-                    otid = Message.generate_otid_from_id(self.id, len(messages))
+                messages.extend(self._convert_reasoning_messages())
+            if self.tool_calls is not None:
+                messages.extend(
+                    self._convert_tool_call_messages(
+                        current_message_count=len(messages),
+                        use_assistant_message=use_assistant_message,
+                        assistant_message_tool_name=assistant_message_tool_name,
+                        assistant_message_tool_kwarg=assistant_message_tool_kwarg,
+                    ),
+                )
+        elif self.role == MessageRole.tool:
+            messages.append(self._convert_tool_return_message())
+        elif self.role == MessageRole.user:
+            messages.append(self._convert_user_message())
+        elif self.role == MessageRole.system:
+            messages.append(self._convert_system_message())
+        elif self.role == MessageRole.approval:
+            if self.content:
+                messages.extend(self._convert_reasoning_messages())
+            if self.tool_calls is not None:
+                tool_calls = self._convert_tool_call_messages()
+                assert len(tool_calls) == 1
+                approval_request_message = ApprovalRequestMessage(**tool_calls[0].model_dump(exclude={"message_type"}))
+                messages.append(approval_request_message)
+            else:
+                approval_response_message = ApprovalResponseMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    otid=self.otid,
+                    approve=self.approve,
+                    approval_request_id=self.approval_request_id,
+                    reason=self.denial_reason,
+                )
+                messages.append(approval_response_message)
+        else:
+            raise ValueError(f"Unknown role: {self.role}")
+
+        return messages[::-1] if reverse else messages
+
+    def _convert_reasoning_messages(self, current_message_count: int = 0) -> List[LettaMessage]:
+        messages = []
+        # Check for ReACT-style COT inside of TextContent
+        if len(self.content) == 1 and isinstance(self.content[0], TextContent):
+            otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
+            messages.append(
+                ReasoningMessage(
+                    id=self.id,
+                    date=self.created_at,
+                    reasoning=self.content[0].text,
+                    name=self.name,
+                    otid=otid,
+                    sender_id=self.sender_id,
+                    step_id=self.step_id,
+                    is_err=self.is_err,
+                )
+            )
+        # Otherwise, we may have a list of multiple types
+        else:
+            # TODO we can probably collapse these two cases into a single loop
+            for content_part in self.content:
+                otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
+                if isinstance(content_part, TextContent):
+                    # COT
                     messages.append(
                         ReasoningMessage(
                             id=self.id,
                             date=self.created_at,
-                            reasoning=self.content[0].text,
+                            reasoning=content_part.text,
                             name=self.name,
                             otid=otid,
                             sender_id=self.sender_id,
@@ -272,127 +360,106 @@ class Message(BaseMessage):
                             is_err=self.is_err,
                         )
                     )
-                # Otherwise, we may have a list of multiple types
+                elif isinstance(content_part, ReasoningContent):
+                    # "native" COT
+                    messages.append(
+                        ReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            reasoning=content_part.reasoning,
+                            source="reasoner_model",  # TODO do we want to tag like this?
+                            signature=content_part.signature,
+                            name=self.name,
+                            otid=otid,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
+                    )
+                elif isinstance(content_part, RedactedReasoningContent):
+                    # "native" redacted/hidden COT
+                    messages.append(
+                        HiddenReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            state="redacted",
+                            hidden_reasoning=content_part.data,
+                            name=self.name,
+                            otid=otid,
+                            sender_id=self.sender_id,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
+                    )
+                elif isinstance(content_part, OmittedReasoningContent):
+                    # Special case for "hidden reasoning" models like o1/o3
+                    # NOTE: we also have to think about how to return this during streaming
+                    messages.append(
+                        HiddenReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            state="omitted",
+                            name=self.name,
+                            otid=otid,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
+                    )
                 else:
-                    # TODO we can probably collapse these two cases into a single loop
-                    for content_part in self.content:
-                        otid = Message.generate_otid_from_id(self.id, len(messages))
-                        if isinstance(content_part, TextContent):
-                            # COT
-                            messages.append(
-                                ReasoningMessage(
-                                    id=self.id,
-                                    date=self.created_at,
-                                    reasoning=content_part.text,
-                                    name=self.name,
-                                    otid=otid,
-                                    sender_id=self.sender_id,
-                                    step_id=self.step_id,
-                                    is_err=self.is_err,
-                                )
-                            )
-                        elif isinstance(content_part, ReasoningContent):
-                            # "native" COT
-                            messages.append(
-                                ReasoningMessage(
-                                    id=self.id,
-                                    date=self.created_at,
-                                    reasoning=content_part.reasoning,
-                                    source="reasoner_model",  # TODO do we want to tag like this?
-                                    signature=content_part.signature,
-                                    name=self.name,
-                                    otid=otid,
-                                    step_id=self.step_id,
-                                    is_err=self.is_err,
-                                )
-                            )
-                        elif isinstance(content_part, RedactedReasoningContent):
-                            # "native" redacted/hidden COT
-                            messages.append(
-                                HiddenReasoningMessage(
-                                    id=self.id,
-                                    date=self.created_at,
-                                    state="redacted",
-                                    hidden_reasoning=content_part.data,
-                                    name=self.name,
-                                    otid=otid,
-                                    sender_id=self.sender_id,
-                                    step_id=self.step_id,
-                                    is_err=self.is_err,
-                                )
-                            )
-                        elif isinstance(content_part, OmittedReasoningContent):
-                            # Special case for "hidden reasoning" models like o1/o3
-                            # NOTE: we also have to think about how to return this during streaming
-                            messages.append(
-                                HiddenReasoningMessage(
-                                    id=self.id,
-                                    date=self.created_at,
-                                    state="omitted",
-                                    name=self.name,
-                                    otid=otid,
-                                    step_id=self.step_id,
-                                    is_err=self.is_err,
-                                )
-                            )
-                        else:
-                            warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
+                    warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
+        return messages
 
-            if self.tool_calls is not None:
-                # This is type FunctionCall
-                for tool_call in self.tool_calls:
-                    otid = Message.generate_otid_from_id(self.id, len(messages))
-                    # If we're supporting using assistant message,
-                    # then we want to treat certain function calls as a special case
-                    if use_assistant_message and tool_call.function.name == assistant_message_tool_name:
-                        # We need to unpack the actual message contents from the function call
-                        try:
-                            func_args = parse_json(tool_call.function.arguments)
-                            message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
-                        except KeyError:
-                            raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
-                        messages.append(
-                            AssistantMessage(
-                                id=self.id,
-                                date=self.created_at,
-                                content=message_string,
-                                name=self.name,
-                                otid=otid,
-                                sender_id=self.sender_id,
-                                step_id=self.step_id,
-                                is_err=self.is_err,
-                            )
-                        )
-                    else:
-                        messages.append(
-                            ToolCallMessage(
-                                id=self.id,
-                                date=self.created_at,
-                                tool_call=ToolCall(
-                                    name=tool_call.function.name,
-                                    arguments=tool_call.function.arguments,
-                                    tool_call_id=tool_call.id,
-                                ),
-                                name=self.name,
-                                otid=otid,
-                                sender_id=self.sender_id,
-                                step_id=self.step_id,
-                                is_err=self.is_err,
-                            )
-                        )
+    def _convert_tool_call_messages(
+        self,
+        current_message_count: int = 0,
+        use_assistant_message: bool = False,
+        assistant_message_tool_name: str = DEFAULT_MESSAGE_TOOL,
+        assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
+    ) -> List[LettaMessage]:
+        messages = []
+        # This is type FunctionCall
+        for tool_call in self.tool_calls:
+            otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
+            # If we're supporting using assistant message,
+            # then we want to treat certain function calls as a special case
+            if use_assistant_message and tool_call.function.name == assistant_message_tool_name:
+                # We need to unpack the actual message contents from the function call
+                try:
+                    func_args = parse_json(tool_call.function.arguments)
+                    message_string = validate_function_response(func_args[assistant_message_tool_kwarg], 0, truncate=False)
+                except KeyError:
+                    raise ValueError(f"Function call {tool_call.function.name} missing {assistant_message_tool_kwarg} argument")
+                messages.append(
+                    AssistantMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        content=message_string,
+                        name=self.name,
+                        otid=otid,
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
+                )
+            else:
+                messages.append(
+                    ToolCallMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        tool_call=ToolCall(
+                            name=tool_call.function.name,
+                            arguments=tool_call.function.arguments,
+                            tool_call_id=tool_call.id,
+                        ),
+                        name=self.name,
+                        otid=otid,
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
+                )
+        return messages
 
-        elif self.role == MessageRole.tool:
-            messages = [self._convert_tool_message()]
-        elif self.role == MessageRole.user:
-            messages = [self._convert_user_message()]
-        elif self.role == MessageRole.system:
-            messages = [self._convert_system_message()]
-        else:
-            raise ValueError(f"Unknown role: {self.role}")
-
-        return messages[::-1] if reverse else messages
-
-    def _convert_tool_message(self) -> ToolReturnMessage:
+    def _convert_tool_return_message(self) -> ToolReturnMessage:
         """Convert tool role message to ToolReturnMessage
 
         the tool return is packaged as follows:
@@ -679,8 +746,10 @@ class Message(BaseMessage):
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
-    ) -> dict:
+    ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
+        if self.role == "approval" and self.tool_calls is None:
+            return None
 
         # TODO change to pydantic casting, eg `return SystemMessageModel(self)`
         # If we only have one content part and it's text, treat it as COT
@@ -718,11 +787,11 @@ class Message(BaseMessage):
                 "role": self.role,
             }
 
-        elif self.role == "assistant":
+        elif self.role == "assistant" or self.role == "approval":
             assert self.tool_calls is not None or text_content is not None
             openai_message = {
                 "content": None if (put_inner_thoughts_in_kwargs and self.tool_calls is not None) else text_content,
-                "role": self.role,
+                "role": "assistant",
             }
 
             if self.tool_calls is not None:
@@ -771,17 +840,37 @@ class Message(BaseMessage):
 
         return openai_message
 
+    @staticmethod
+    def to_openai_dicts_from_list(
+        messages: List[Message],
+        max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+        put_inner_thoughts_in_kwargs: bool = False,
+        use_developer_message: bool = False,
+    ) -> List[dict]:
+        result = [
+            m.to_openai_dict(
+                max_tool_id_length=max_tool_id_length,
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
+            )
+            for m in messages
+        ]
+        result = [m for m in result if m is not None]
+        return result
+
     def to_anthropic_dict(
         self,
         inner_thoughts_xml_tag="thinking",
         put_inner_thoughts_in_kwargs: bool = False,
-    ) -> dict:
+    ) -> dict | None:
         """
         Convert to an Anthropic message dictionary
 
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
+        if self.role == "approval" and self.tool_calls is None:
+            return None
 
         # Check for COT
         if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
@@ -839,10 +928,10 @@ class Message(BaseMessage):
                     "role": self.role,
                 }
 
-        elif self.role == "assistant":
+        elif self.role == "assistant" or self.role == "approval":
             assert self.tool_calls is not None or text_content is not None
             anthropic_message = {
-                "role": self.role,
+                "role": "assistant",
             }
             content = []
             # COT / reasoning / thinking
@@ -880,7 +969,6 @@ class Message(BaseMessage):
             # Tool calling
             if self.tool_calls is not None:
                 for tool_call in self.tool_calls:
-
                     if put_inner_thoughts_in_kwargs:
                         tool_call_input = add_inner_thoughts_to_tool_call(
                             tool_call,
@@ -922,6 +1010,22 @@ class Message(BaseMessage):
             raise ValueError(self.role)
 
         return anthropic_message
+
+    @staticmethod
+    def to_anthropic_dicts_from_list(
+        messages: List[Message],
+        inner_thoughts_xml_tag: str = "thinking",
+        put_inner_thoughts_in_kwargs: bool = False,
+    ) -> List[dict]:
+        result = [
+            m.to_anthropic_dict(
+                inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+            )
+            for m in messages
+        ]
+        result = [m for m in result if m is not None]
+        return result
 
     def to_google_ai_dict(self, put_inner_thoughts_in_kwargs: bool = True) -> dict:
         """
@@ -1021,7 +1125,7 @@ class Message(BaseMessage):
             assert self.tool_call_id is not None, vars(self)
 
             if self.name is None:
-                warnings.warn(f"Couldn't find function name on tool call, defaulting to tool ID instead.")
+                warnings.warn("Couldn't find function name on tool call, defaulting to tool ID instead.")
                 function_name = self.tool_call_id
             else:
                 function_name = self.name

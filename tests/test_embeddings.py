@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from letta.config import LettaConfig
 from letta.llm_api.llm_client import LLMClient
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.server.server import SyncServer
@@ -18,6 +19,15 @@ config_files = glob.glob(os.path.join(config_dir, "*.json"))
 embedding_configs = [
     EmbeddingConfig(**json.load(open(config_file))) for config_file in config_files if config_file.split("/")[-1] in included_files
 ]
+
+
+@pytest.fixture
+def server():
+    config = LettaConfig.load()
+    config.save()
+
+    server = SyncServer()
+    return server
 
 
 @pytest.fixture

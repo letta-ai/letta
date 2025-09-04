@@ -20,6 +20,16 @@ class BaseToolRule(LettaBase):
         description="Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
     )
 
+    def __hash__(self):
+        """Base hash using tool_name and type."""
+        return hash((self.tool_name, self.type))
+
+    def __eq__(self, other):
+        """Base equality using tool_name and type."""
+        if not isinstance(other, BaseToolRule):
+            return False
+        return self.tool_name == other.tool_name and self.type == other.type
+
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> set[str]:
         raise NotImplementedError
 
@@ -54,6 +64,16 @@ class ChildToolRule(BaseToolRule):
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
 
+    def __hash__(self):
+        """Hash including children list (sorted for consistency)."""
+        return hash((self.tool_name, self.type, tuple(sorted(self.children))))
+
+    def __eq__(self, other):
+        """Equality including children list."""
+        if not isinstance(other, ChildToolRule):
+            return False
+        return self.tool_name == other.tool_name and self.type == other.type and sorted(self.children) == sorted(other.children)
+
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools
@@ -70,6 +90,16 @@ class ParentToolRule(BaseToolRule):
         default="<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>",
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
+
+    def __hash__(self):
+        """Hash including children list (sorted for consistency)."""
+        return hash((self.tool_name, self.type, tuple(sorted(self.children))))
+
+    def __eq__(self, other):
+        """Equality including children list."""
+        if not isinstance(other, ParentToolRule):
+            return False
+        return self.tool_name == other.tool_name and self.type == other.type and sorted(self.children) == sorted(other.children)
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         last_tool = tool_call_history[-1] if tool_call_history else None
@@ -89,6 +119,24 @@ class ConditionalToolRule(BaseToolRule):
         default="<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>",
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
+
+    def __hash__(self):
+        """Hash including all configuration fields."""
+        # convert dict to sorted tuple of items for consistent hashing
+        mapping_items = tuple(sorted(self.child_output_mapping.items()))
+        return hash((self.tool_name, self.type, self.default_child, mapping_items, self.require_output_mapping))
+
+    def __eq__(self, other):
+        """Equality including all configuration fields."""
+        if not isinstance(other, ConditionalToolRule):
+            return False
+        return (
+            self.tool_name == other.tool_name
+            and self.type == other.type
+            and self.default_child == other.default_child
+            and self.child_output_mapping == other.child_output_mapping
+            and self.require_output_mapping == other.require_output_mapping
+        )
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Determine valid tools based on function output mapping."""
@@ -203,6 +251,16 @@ class MaxCountPerStepToolRule(BaseToolRule):
         description="Optional Jinja2 template for generating agent prompt about this tool rule.",
     )
 
+    def __hash__(self):
+        """Hash including max_count_limit."""
+        return hash((self.tool_name, self.type, self.max_count_limit))
+
+    def __eq__(self, other):
+        """Equality including max_count_limit."""
+        if not isinstance(other, MaxCountPerStepToolRule):
+            return False
+        return self.tool_name == other.tool_name and self.type == other.type and self.max_count_limit == other.max_count_limit
+
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Restricts the tool if it has been called max_count_limit times in the current step."""
         count = tool_call_history.count(self.tool_name)
@@ -211,6 +269,18 @@ class MaxCountPerStepToolRule(BaseToolRule):
         if count >= self.max_count_limit:
             return available_tools - {self.tool_name}
 
+        return available_tools
+
+
+class RequiresApprovalToolRule(BaseToolRule):
+    """
+    Represents a tool rule configuration which requires approval before the tool can be invoked.
+    """
+
+    type: Literal[ToolRuleType.requires_approval] = ToolRuleType.requires_approval
+
+    def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
+        """Does not enforce any restrictions on which tools are valid"""
         return available_tools
 
 
@@ -224,6 +294,7 @@ ToolRule = Annotated[
         RequiredBeforeExitToolRule,
         MaxCountPerStepToolRule,
         ParentToolRule,
+        RequiresApprovalToolRule,
     ],
     Field(discriminator="type"),
 ]

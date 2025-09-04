@@ -1,4 +1,3 @@
-from datetime import datetime
 from functools import partial, reduce
 from operator import add
 from typing import List, Literal, Optional, Union
@@ -14,13 +13,10 @@ from letta.orm.job import Job as JobModel
 from letta.orm.job_messages import JobMessage
 from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
-from letta.orm.step import Step
-from letta.orm.step import Step as StepModel
+from letta.orm.step import Step, Step as StepModel
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole
-from letta.schemas.job import BatchJob as PydanticBatchJob
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import JobUpdate, LettaRequestConfig
+from letta.schemas.job import BatchJob as PydanticBatchJob, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
@@ -28,7 +24,6 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
-from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -337,11 +332,7 @@ class JobManager:
                 conditions = []
                 if before_obj:
                     # records before this cursor (older)
-
                     before_timestamp = before_obj.created_at
-                    # SQLite does not support as granular timestamping, so we need to round the timestamp
-                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_timestamp, datetime):
-                        before_timestamp = before_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
                     conditions.append(
                         or_(
@@ -353,9 +344,6 @@ class JobManager:
                 if after_obj:
                     # records after this cursor (newer)
                     after_timestamp = after_obj.created_at
-                    # SQLite does not support as granular timestamping, so we need to round the timestamp
-                    if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_timestamp, datetime):
-                        after_timestamp = after_timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
                     conditions.append(
                         or_(JobModel.created_at > after_timestamp, and_(JobModel.created_at == after_timestamp, JobModel.id > after_obj.id))

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from jinja2 import Template, TemplateSyntaxError
@@ -325,3 +326,16 @@ class RecallMemorySummary(BaseModel):
 
 class CreateArchivalMemory(BaseModel):
     text: str = Field(..., description="Text to write to archival memory.")
+    tags: Optional[List[str]] = Field(None, description="Optional list of tags to attach to the memory.")
+    created_at: Optional[datetime] = Field(None, description="Optional timestamp for the memory (defaults to current UTC time).")
+
+
+class ArchivalMemorySearchResult(BaseModel):
+    timestamp: str = Field(..., description="Timestamp of when the memory was created, formatted in agent's timezone")
+    content: str = Field(..., description="Text content of the archival memory passage")
+    tags: List[str] = Field(default_factory=list, description="List of tags associated with this memory")
+
+
+class ArchivalMemorySearchResponse(BaseModel):
+    results: List[ArchivalMemorySearchResult] = Field(..., description="List of search results matching the query")
+    count: int = Field(..., description="Total number of results returned")

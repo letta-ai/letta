@@ -29,11 +29,14 @@ from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.openai.chat_completion_request import ChatCompletionRequest
-from letta.schemas.openai.chat_completion_request import FunctionCall as ToolFunctionChoiceFunctionCall
-from letta.schemas.openai.chat_completion_request import FunctionSchema
-from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
-from letta.schemas.openai.chat_completion_request import ToolFunctionChoice, cast_message_to_subtype
+from letta.schemas.openai.chat_completion_request import (
+    ChatCompletionRequest,
+    FunctionCall as ToolFunctionChoiceFunctionCall,
+    FunctionSchema,
+    Tool as OpenAITool,
+    ToolFunctionChoice,
+    cast_message_to_subtype,
+)
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 from letta.settings import model_settings
 
@@ -44,7 +47,7 @@ def is_openai_reasoning_model(model: str) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
 
     # NOTE: needs to be updated with new model releases
-    is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4")
+    is_reasoning = model.startswith("o1") or model.startswith("o3") or model.startswith("o4") or model.startswith("gpt-5")
     return is_reasoning
 
 
@@ -176,13 +179,12 @@ class OpenAIClient(LLMClientBase):
         use_developer_message = accepts_developer_role(llm_config.model)
 
         openai_message_list = [
-            cast_message_to_subtype(
-                m.to_openai_dict(
-                    put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
-                    use_developer_message=use_developer_message,
-                )
+            cast_message_to_subtype(m)
+            for m in PydanticMessage.to_openai_dicts_from_list(
+                messages,
+                put_inner_thoughts_in_kwargs=llm_config.put_inner_thoughts_in_kwargs,
+                use_developer_message=use_developer_message,
             )
-            for m in messages
         ]
 
         if llm_config.model:
@@ -218,6 +220,10 @@ class OpenAIClient(LLMClientBase):
         # Add verbosity control for GPT-5 models
         if supports_verbosity_control(model) and llm_config.verbosity:
             data.verbosity = llm_config.verbosity
+
+        # Add reasoning effort control for reasoning models
+        if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
+            data.reasoning_effort = llm_config.reasoning_effort
 
         if llm_config.frequency_penalty is not None:
             data.frequency_penalty = llm_config.frequency_penalty
@@ -357,10 +363,19 @@ class OpenAIClient(LLMClientBase):
         if isinstance(e, openai.BadRequestError):
             logger.warning(f"[OpenAI] Bad request (400): {str(e)}")
             # BadRequestError can signify different issues (e.g., invalid args, context length)
-            # Check message content if finer-grained errors are needed
-            # Example: if "context_length_exceeded" in str(e): return LLMContextLengthExceededError(...)
-            # TODO: This is a super soft check. Not sure if we can do better, needs more investigation.
-            if "This model's maximum context length is" in str(e):
+            # Check for context_length_exceeded error code in the error body
+            error_code = None
+            if e.body and isinstance(e.body, dict):
+                error_details = e.body.get("error", {})
+                if isinstance(error_details, dict):
+                    error_code = error_details.get("code")
+
+            # Check both the error code and message content for context length issues
+            if (
+                error_code == "context_length_exceeded"
+                or "This model's maximum context length is" in str(e)
+                or "Input tokens exceed the configured limit" in str(e)
+            ):
                 return ContextWindowExceededError(
                     message=f"Bad request to OpenAI (context window exceeded): {str(e)}",
                 )

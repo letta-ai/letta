@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from letta.constants import DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.schemas.letta_message import MessageType
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreateUnion
 
 
 class LettaRequest(BaseModel):
-    messages: List[MessageCreate] = Field(..., description="The messages to be sent to the agent.")
+    messages: List[MessageCreateUnion] = Field(..., description="The messages to be sent to the agent.")
     max_steps: int = Field(
         default=DEFAULT_MAX_STEPS,
         description="Maximum number of steps the agent should take to process the request.",
@@ -36,11 +36,28 @@ class LettaRequest(BaseModel):
         description="If set to True, enables reasoning before responses or tool calls from the agent.",
     )
 
+    @field_validator("messages", mode="before")
+    @classmethod
+    def add_default_type_to_messages(cls, v):
+        """Handle union without discriminator - default to 'message' type if not specified"""
+        if isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict):
+                    # If type is not present, determine based on fields
+                    if "type" not in item:
+                        # If it has approval-specific fields, it's an approval
+                        if "approval_request_id" in item or "approve" in item:
+                            item["type"] = "approval"
+                        else:
+                            # Default to message
+                            item["type"] = "message"
+        return v
+
 
 class LettaStreamingRequest(LettaRequest):
     stream_tokens: bool = Field(
         default=False,
-        description="Flag to determine if individual tokens should be streamed. Set to True for token streaming (requires stream_steps = True).",
+        description="Flag to determine if individual tokens should be streamed, rather than streaming per step.",
     )
     include_pings: bool = Field(
         default=False,

@@ -43,7 +43,6 @@ class EmbeddingConfig(BaseModel):
 
     @classmethod
     def default_config(cls, model_name: Optional[str] = None, provider: Optional[str] = None):
-
         if model_name == "text-embedding-ada-002" and provider == "openai":
             return cls(
                 embedding_model="text-embedding-ada-002",

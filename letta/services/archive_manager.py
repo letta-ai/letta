@@ -2,13 +2,14 @@ from typing import List, Optional
 
 from sqlalchemy import select
 
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
-from letta.orm import ArchivalPassage
-from letta.orm import Archive as ArchiveModel
-from letta.orm import ArchivesAgents
+from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
 from letta.schemas.archive import Archive as PydanticArchive
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import settings
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -27,10 +28,14 @@ class ArchiveManager:
         """Create a new archive."""
         try:
             with db_registry.session() as session:
+                # determine vector db provider based on settings
+                vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+
                 archive = ArchiveModel(
                     name=name,
                     description=description,
                     organization_id=actor.organization_id,
+                    vector_db_provider=vector_db_provider,
                 )
                 archive.create(session, actor=actor)
                 return archive.to_pydantic()
@@ -48,10 +53,14 @@ class ArchiveManager:
         """Create a new archive."""
         try:
             async with db_registry.async_session() as session:
+                # determine vector db provider based on settings
+                vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+
                 archive = ArchiveModel(
                     name=name,
                     description=description,
                     organization_id=actor.organization_id,
+                    vector_db_provider=vector_db_provider,
                 )
                 await archive.create_async(session, actor=actor)
                 return archive.to_pydantic()
@@ -137,6 +146,37 @@ class ArchiveManager:
             )
             session.add(archives_agents)
             await session.commit()
+
+    @enforce_types
+    async def get_default_archive_for_agent_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser = None,
+    ) -> Optional[PydanticArchive]:
+        """Get the agent's default archive if it exists, return None otherwise."""
+        # First check if agent has any archives
+        from letta.services.agent_manager import AgentManager
+
+        agent_manager = AgentManager()
+
+        archive_ids = await agent_manager.get_agent_archive_ids_async(
+            agent_id=agent_id,
+            actor=actor,
+        )
+
+        if archive_ids:
+            # TODO: Remove this check once we support multiple archives per agent
+            if len(archive_ids) > 1:
+                raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported")
+            # Get the archive
+            archive = await self.get_archive_by_id_async(
+                archive_id=archive_ids[0],
+                actor=actor,
+            )
+            return archive
+
+        # No archive found, return None
+        return None
 
     @enforce_types
     async def get_or_create_default_archive_for_agent_async(
@@ -267,3 +307,32 @@ class ArchiveManager:
 
             # For now, return the first agent (backwards compatibility)
             return agent_ids[0]
+
+    @enforce_types
+    async def get_or_set_vector_db_namespace_async(
+        self,
+        archive_id: str,
+    ) -> str:
+        """Get the vector database namespace for an archive, creating it if it doesn't exist."""
+        from sqlalchemy import update
+
+        async with db_registry.async_session() as session:
+            # check if namespace already exists
+            result = await session.execute(select(ArchiveModel._vector_db_namespace).where(ArchiveModel.id == archive_id))
+            row = result.fetchone()
+
+            if row and row[0]:
+                return row[0]
+
+            # generate namespace name using same logic as tpuf_client
+            environment = settings.environment
+            if environment:
+                namespace_name = f"archive_{archive_id}_{environment.lower()}"
+            else:
+                namespace_name = f"archive_{archive_id}"
+
+            # update the archive with the namespace
+            await session.execute(update(ArchiveModel).where(ArchiveModel.id == archive_id).values(_vector_db_namespace=namespace_name))
+            await session.commit()
+
+            return namespace_name

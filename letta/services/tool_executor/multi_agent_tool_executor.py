@@ -1,5 +1,4 @@
 import asyncio
-import os
 from typing import Any, Dict, List, Optional
 
 from letta.log import get_logger
@@ -13,6 +12,7 @@ from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
+from letta.settings import settings
 
 logger = get_logger(__name__)
 
@@ -112,7 +112,7 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             }
 
     async def send_message_to_agent_async(self, agent_state: AgentState, message: str, other_agent_id: str) -> str:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+        if settings.environment == "PRODUCTION":
             raise RuntimeError("This tool is not allowed to be run on Letta Cloud.")
 
         # 1) Build the prefixed system‐message

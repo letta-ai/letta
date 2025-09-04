@@ -377,9 +377,9 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     ):
         """Add an item to the deque"""
         assert self._active, "Generator is inactive"
-        assert (
-            isinstance(item, LettaMessage) or isinstance(item, LegacyLettaMessage) or isinstance(item, MessageStreamStatus)
-        ), f"Wrong type: {type(item)}"
+        assert isinstance(item, LettaMessage) or isinstance(item, LegacyLettaMessage) or isinstance(item, MessageStreamStatus), (
+            f"Wrong type: {type(item)}"
+        )
 
         self._chunks.append(item)
         self._event.set()  # Signal that new data is available
@@ -731,13 +731,11 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
 
                     # If we have main_json, we should output a ToolCallMessage
                     elif updates_main_json:
-
                         # If there's something in the function_name buffer, we should release it first
                         # NOTE: we could output it as part of a chunk that has both name and args,
                         #       however the frontend may expect name first, then args, so to be
                         #       safe we'll output name first in a separate chunk
                         if self.function_name_buffer:
-
                             # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
                             if self.use_assistant_message and self.function_name_buffer == self.assistant_message_tool_name:
                                 processed_chunk = None
@@ -778,7 +776,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         # If there was nothing in the name buffer, we can proceed to
                         # output the arguments chunk as a ToolCallMessage
                         else:
-
                             # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
                             if self.use_assistant_message and (
                                 self.last_flushed_function_name is not None
@@ -860,7 +857,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                                     # clear buffers
                                     self.function_id_buffer = None
                             else:
-
                                 # There may be a buffer from a previous chunk, for example
                                 # if the previous chunk had arguments but we needed to flush name
                                 if self.function_args_buffer:
@@ -997,7 +993,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             # Otherwise, do simple chunks of ToolCallMessage
 
             else:
-
                 tool_call_delta = {}
                 if tool_call.id:
                     tool_call_delta["id"] = tool_call.id
@@ -1073,7 +1068,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
             tool_call = message_delta.tool_calls[0]
 
             if tool_call.function:
-
                 # Track the function name while streaming
                 # If we were previously on a 'send_message', we need to 'toggle' into 'content' mode
                 if tool_call.function.name:
@@ -1154,7 +1148,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
     def internal_monologue(self, msg: str, msg_obj: Optional[Message] = None, chunk_index: Optional[int] = None):
         """Letta generates some internal monologue"""
         if not self.streaming_mode:
-
             # create a fake "chunk" of a stream
             # processed_chunk = {
             #     "internal_monologue": msg,
@@ -1268,7 +1261,6 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                             print(f"Failed to parse function message: {e}")
 
                 else:
-
                     try:
                         func_args = parse_json(function_call.function.arguments)
                     except:

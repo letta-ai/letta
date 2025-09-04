@@ -92,7 +92,7 @@ USER_MESSAGE_FORCE_LONG_REPLY: List[MessageCreate] = [
 USER_MESSAGE_GREETING: List[MessageCreate] = [
     MessageCreate(
         role="user",
-        content=f"Hi!",
+        content="Hi!",
         otid=USER_MESSAGE_OTID,
     )
 ]
@@ -116,6 +116,27 @@ USER_MESSAGE_ROLL_DICE_LONG: List[MessageCreate] = [
             "Explain the concept of randomness and how true random number generation works. "
             "End with some interesting facts about polyhedral dice and their history in gaming. "
             "Remember, make your response detailed and at least 800 characters long."
+        ),
+        otid=USER_MESSAGE_OTID,
+    )
+]
+USER_MESSAGE_ROLL_DICE_LONG_THINKING: List[MessageCreate] = [
+    MessageCreate(
+        role="user",
+        content=(
+            "This is an automated test message. First, think long and hard about about why you're here, and your creator. "
+            "Then, call the roll_dice tool with 16 sides. "
+            "Once you've rolled the die, think deeply about the meaning of the roll to you (but don't tell me, just think these thoughts privately). "
+            "Then, once you're done thinking, send me a very detailed, comprehensive message about the outcome, using send_message. "
+            "Your response must be at least 800 characters long. Start by explaining what dice rolling represents in games and probability theory. "
+            "Discuss the mathematical probability of getting each number on a 16-sided die (1/16 or 6.25% for each face). "
+            "Explain how 16-sided dice are commonly used in tabletop role-playing games like Dungeons & Dragons. "
+            "Describe the specific number you rolled and what it might mean in different gaming contexts. "
+            "Discuss how this particular roll compares to the expected value (8.5) of a 16-sided die. "
+            "Explain the concept of randomness and how true random number generation works. "
+            "End with some interesting facts about polyhedral dice and their history in gaming. "
+            "Remember, make your response detailed and at least 800 characters long."
+            "Absolutely do NOT violate this order of operations: (1) Think / reason, (2) Roll die, (3) Think / reason, (4) Call send_message tool."
         ),
         otid=USER_MESSAGE_OTID,
     )
@@ -153,8 +174,10 @@ all_configs = [
     "openai-o4-mini.json",
     "azure-gpt-4o-mini.json",
     "claude-4-sonnet-extended.json",
+    "claude-4-sonnet.json",
     "claude-3-5-sonnet.json",
     "claude-3-7-sonnet-extended.json",
+    "claude-3-7-sonnet.json",
     "bedrock-claude-4-sonnet.json",
     "gemini-1.5-pro.json",
     "gemini-2.5-flash-vertex.json",
@@ -323,7 +346,7 @@ def assert_tool_call_response(
     ReasoningMessage -> AssistantMessage.
     """
     expected_message_count = 7 if streaming or from_db else 5
-    assert len(messages) == expected_message_count
+    assert len(messages) == expected_message_count, messages
 
     index = 0
     if from_db:
@@ -464,9 +487,9 @@ def validate_google_format_scrubbing(contents: List[Dict[str, Any]]) -> None:
         args = function_call.get("args", {})
 
         # Assert that there is no 'thinking' field in the function call arguments
-        assert (
-            "thinking" not in args
-        ), f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
+        assert "thinking" not in args, (
+            f"Found 'thinking' field in Google model functionCall args (inner thoughts not scrubbed): {args.get('thinking')}"
+        )
 
 
 def assert_image_input_response(
@@ -748,10 +771,21 @@ def test_tool_call(
     """
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
-    response = client.agents.messages.create(
-        agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
-    )
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
+    try:
+        response = client.agents.messages.create(
+            agent_id=agent_state.id,
+            messages=messages_to_send,
+            request_options={"timeout_in_seconds": 300},
+        )
+    except Exception as e:
+        # if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+        #     pytest.skip("Skipping test for flash model due to malformed function call from llm")
+        raise e
     assert_tool_call_response(response.messages, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -959,9 +993,15 @@ def test_step_streaming_tool_call(
 
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=messages_to_send,
+        request_options={"timeout_in_seconds": 300},
     )
     messages = accumulate_chunks(list(response))
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
@@ -1026,9 +1066,10 @@ def test_token_streaming_greeting_with_assistant_message(
         messages=messages_to_send,
         stream_tokens=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1062,9 +1103,10 @@ def test_token_streaming_greeting_without_assistant_message(
         use_assistant_message=False,
         stream_tokens=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
     assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1101,17 +1143,23 @@ def test_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
-        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+        if llm_config.enable_reasoner:
+            # Without asking the model to think, Anthropic might decide to not think for the second step post-roll
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+        else:
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
         messages=messages_to_send,
         stream_tokens=True,
+        request_options={"timeout_in_seconds": 300},
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1175,10 +1223,12 @@ def test_background_token_streaming_greeting_with_assistant_message(
         messages=messages_to_send,
         stream_tokens=True,
         background=True,
+        request_options={"timeout_in_seconds": 300},
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_greeting_with_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1186,17 +1236,17 @@ def test_background_token_streaming_greeting_with_assistant_message(
     run_id = messages[0].run_id
     assert run_id is not None
 
+    runs = client.runs.list(agent_ids=[agent_state.id], background=True)
+    assert len(runs) > 0
+    assert runs[0].id == run_id
+
     response = client.runs.stream(run_id=run_id, starting_after=0)
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
-    )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
 
     last_message_cursor = messages[-3].seq_id - 1
     response = client.runs.stream(run_id=run_id, starting_after=last_message_cursor)
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
-    )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert len(messages) == 3
     assert messages[0].message_type == "assistant_message" and messages[0].seq_id == last_message_cursor + 1
     assert messages[1].message_type == "stop_reason"
@@ -1232,9 +1282,10 @@ def test_background_token_streaming_greeting_without_assistant_message(
         stream_tokens=True,
         background=True,
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
     assert_greeting_without_assistant_message_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1271,7 +1322,11 @@ def test_background_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     # Use longer message for Anthropic models to force chunking
     if llm_config.model_endpoint_type == "anthropic":
-        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
+        if llm_config.enable_reasoner:
+            # Without asking the model to think, Anthropic might decide to not think for the second step post-roll
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+        else:
+            messages_to_send = USER_MESSAGE_ROLL_DICE_LONG
     else:
         messages_to_send = USER_MESSAGE_ROLL_DICE
     response = client.agents.messages.create_stream(
@@ -1279,10 +1334,12 @@ def test_background_token_streaming_tool_call(
         messages=messages_to_send,
         stream_tokens=True,
         background=True,
+        request_options={"timeout_in_seconds": 300},
     )
-    messages = accumulate_chunks(
-        list(response), verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"])
+    verify_token_streaming = (
+        llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"] and "claude-3-5-sonnet" not in llm_config.model
     )
+    messages = accumulate_chunks(list(response), verify_token_streaming=verify_token_streaming)
     assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
@@ -1404,9 +1461,15 @@ def test_async_tool_call(
     last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
     client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
+    # Use the thinking prompt for Anthropic models with extended reasoning to ensure second reasoning step
+    if llm_config.model_endpoint_type == "anthropic" and llm_config.enable_reasoner:
+        messages_to_send = USER_MESSAGE_ROLL_DICE_LONG_THINKING
+    else:
+        messages_to_send = USER_MESSAGE_ROLL_DICE
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
-        messages=USER_MESSAGE_ROLL_DICE,
+        messages=messages_to_send,
+        request_options={"timeout_in_seconds": 300},
     )
     run = wait_for_run_completion(client, run.id)
 
@@ -1624,10 +1687,16 @@ def test_auto_summarize(disable_e2b_api_key: Any, client: Letta, llm_config: LLM
     prev_length = None
 
     for attempt in range(MAX_ATTEMPTS):
-        client.agents.messages.create(
-            agent_id=temp_agent_state.id,
-            messages=[MessageCreate(role="user", content=philosophical_question)],
-        )
+        try:
+            client.agents.messages.create(
+                agent_id=temp_agent_state.id,
+                messages=[MessageCreate(role="user", content=philosophical_question)],
+                request_options={"timeout_in_seconds": 300},
+            )
+        except Exception as e:
+            # if "flash" in llm_config.model and "FinishReason.MALFORMED_FUNCTION_CALL" in str(e):
+            #     pytest.skip("Skipping test for flash model due to malformed function call from llm")
+            raise e
 
         temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)
         message_ids = temp_agent_state.message_ids

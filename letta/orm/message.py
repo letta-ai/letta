@@ -7,10 +7,8 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 from letta.orm.custom_columns import MessageContentColumn, ToolCallColumn, ToolReturnColumn
 from letta.orm.mixins import AgentMixin, OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.letta_message_content import MessageContent
-from letta.schemas.letta_message_content import TextContent as PydanticTextContent
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import ToolReturn
+from letta.schemas.letta_message_content import MessageContent, TextContent as PydanticTextContent
+from letta.schemas.message import Message as PydanticMessage, ToolReturn
 from letta.settings import DatabaseChoice, settings
 
 
@@ -52,6 +50,12 @@ class Message(SqlalchemyBase, OrganizationMixin, AgentMixin):
     is_err: Mapped[Optional[bool]] = mapped_column(
         nullable=True, doc="Whether this message is part of an error step. Used only for debugging purposes."
     )
+    approval_request_id: Mapped[Optional[str]] = mapped_column(
+        nullable=True,
+        doc="The id of the approval request if this message is associated with a tool call request.",
+    )
+    approve: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="Whether tool call is approved.")
+    denial_reason: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The reason the tool call request was denied.")
 
     # Monotonically increasing sequence for efficient/correct listing
     sequence_id: Mapped[int] = mapped_column(

@@ -37,7 +37,7 @@ def get_plugin(plugin_type: str):
             return plugin
         elif type(plugin).__name__ == "class":
             if plugin_register["protocol"] and not isinstance(plugin, type(plugin_register["protocol"])):
-                raise TypeError(f'{plugin} does not implement {type(plugin_register["protocol"]).__name__}')
+                raise TypeError(f"{plugin} does not implement {type(plugin_register['protocol']).__name__}")
             return plugin()
     raise TypeError("Unknown plugin type")
 

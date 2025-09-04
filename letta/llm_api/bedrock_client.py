@@ -16,7 +16,6 @@ logger = get_logger(__name__)
 
 
 class BedrockClient(AnthropicClient):
-
     async def get_byok_overrides_async(self, llm_config: LLMConfig) -> tuple[str, str, str]:
         override_access_key_id, override_secret_access_key, override_default_region = None, None, None
         if llm_config.provider_category == ProviderCategory.byok:
@@ -28,7 +27,7 @@ class BedrockClient(AnthropicClient):
                 llm_config.provider_name,
                 actor=self.actor,
             )
-        return override_access_key_id, override_secret_access_key, override_default_regions
+        return override_access_key_id, override_secret_access_key, override_default_region
 
     @trace_method
     async def _get_anthropic_client_async(

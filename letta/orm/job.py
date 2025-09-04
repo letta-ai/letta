@@ -7,8 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus, JobType
-from letta.schemas.job import Job as PydanticJob
-from letta.schemas.job import LettaRequestConfig
+from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
 
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage

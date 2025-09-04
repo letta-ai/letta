@@ -34,7 +34,7 @@ async def list_blocks(
     ),
     label_search: Optional[str] = Query(
         None,
-        description=("Search blocks by label. If provided, returns blocks that match this label. " "This is a full-text search on labels."),
+        description=("Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."),
     ),
     description_search: Optional[str] = Query(
         None,

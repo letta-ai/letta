@@ -22,6 +22,7 @@ from letta.local_llm.webui.api import get_webui_completion
 from letta.local_llm.webui.legacy_api import get_webui_completion as get_webui_completion_legacy
 from letta.otel.tracing import log_event
 from letta.prompts.gpt_summarize import SYSTEM as SUMMARIZE_SYSTEM_MESSAGE
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, Message, ToolCall, UsageStatistics
 from letta.utils import get_tool_call_id
 
@@ -61,7 +62,7 @@ def get_chat_completion(
 
     # TODO: eventually just process Message object
     if not isinstance(messages[0], dict):
-        messages = [m.to_openai_dict() for m in messages]
+        messages = PydanticMessage.to_openai_dicts_from_list(messages)
 
     if function_call is not None and function_call != "auto":
         raise ValueError(f"function_call == {function_call} not supported (auto or None only)")
@@ -205,7 +206,7 @@ def get_chat_completion(
         raise LocalLLMError(f"usage dict in response was missing fields ({usage})")
 
     if usage["prompt_tokens"] is None:
-        printd(f"usage dict was missing prompt_tokens, computing on-the-fly...")
+        printd("usage dict was missing prompt_tokens, computing on-the-fly...")
         usage["prompt_tokens"] = count_tokens(prompt)
 
     # NOTE: we should compute on-the-fly anyways since we might have to correct for errors during JSON parsing
@@ -220,7 +221,7 @@ def get_chat_completion(
 
     # NOTE: this is the token count that matters most
     if usage["total_tokens"] is None:
-        printd(f"usage dict was missing total_tokens, computing on-the-fly...")
+        printd("usage dict was missing total_tokens, computing on-the-fly...")
         usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
 
     # unpack with response.choices[0].message.content
@@ -261,9 +262,9 @@ def generate_grammar_and_documentation(
 ):
     from letta.utils import printd
 
-    assert not (
-        add_inner_thoughts_top_level and add_inner_thoughts_param_level
-    ), "Can only place inner thoughts in one location in the grammar generator"
+    assert not (add_inner_thoughts_top_level and add_inner_thoughts_param_level), (
+        "Can only place inner thoughts in one location in the grammar generator"
+    )
 
     grammar_function_models = []
     # create_dynamic_model_from_function will add inner thoughts to the function parameters if add_inner_thoughts is True.

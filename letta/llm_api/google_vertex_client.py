@@ -3,6 +3,7 @@ import uuid
 from typing import List, Optional
 
 from google import genai
+from google.genai import errors
 from google.genai.types import (
     FunctionCallingConfig,
     FunctionCallingConfigMode,
@@ -31,6 +32,7 @@ logger = get_logger(__name__)
 
 
 class GoogleVertexClient(LLMClientBase):
+    MAX_RETRIES = model_settings.gemini_max_retries
 
     def _get_client(self):
         timeout_ms = int(settings.llm_request_timeout_seconds * 1000)
@@ -60,12 +62,59 @@ class GoogleVertexClient(LLMClientBase):
         Performs underlying request to llm and returns raw response.
         """
         client = self._get_client()
-        response = await client.aio.models.generate_content(
-            model=llm_config.model,
-            contents=request_data["contents"],
-            config=request_data["config"],
-        )
-        return response.model_dump()
+
+        # Gemini 2.5 models will often return MALFORMED_FUNCTION_CALL, force a retry
+        # https://github.com/googleapis/python-aiplatform/issues/4472
+        retry_count = 1
+        should_retry = True
+        while should_retry and retry_count <= self.MAX_RETRIES:
+            try:
+                response = await client.aio.models.generate_content(
+                    model=llm_config.model,
+                    contents=request_data["contents"],
+                    config=request_data["config"],
+                )
+            except errors.APIError as e:
+                # Retry on 503 and 500 errors as well, usually ephemeral from Gemini
+                if e.code == 503 or e.code == 500:
+                    logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
+                    retry_count += 1
+                    continue
+                raise e
+            except Exception as e:
+                raise e
+            response_data = response.model_dump()
+            is_malformed_function_call = self.is_malformed_function_call(response_data)
+            if is_malformed_function_call:
+                logger.warning(
+                    f"Received FinishReason.MALFORMED_FUNCTION_CALL in response for {llm_config.model}, retrying {retry_count}/{self.MAX_RETRIES}"
+                )
+                # Modify the last message if it's a heartbeat to include warning about special characters
+                if request_data["contents"] and len(request_data["contents"]) > 0:
+                    last_message = request_data["contents"][-1]
+                    if last_message.get("role") == "user" and last_message.get("parts"):
+                        for part in last_message["parts"]:
+                            if "text" in part:
+                                try:
+                                    # Try to parse as JSON to check if it's a heartbeat
+                                    message_json = json_loads(part["text"])
+                                    if message_json.get("type") == "heartbeat" and "reason" in message_json:
+                                        # Append warning to the reason
+                                        warning = f" RETRY {retry_count}/{self.MAX_RETRIES} ***DO NOT USE SPECIAL CHARACTERS OR QUOTATIONS INSIDE FUNCTION CALL ARGUMENTS. IF YOU MUST, MAKE SURE TO ESCAPE THEM PROPERLY***"
+                                        message_json["reason"] = message_json["reason"] + warning
+                                        # Update the text with modified JSON
+                                        part["text"] = json_dumps(message_json)
+                                        logger.warning(
+                                            f"Modified heartbeat message with special character warning for retry {retry_count}/{self.MAX_RETRIES}"
+                                        )
+                                except (json.JSONDecodeError, TypeError):
+                                    # Not a JSON message or not a heartbeat, skip modification
+                                    pass
+
+            should_retry = is_malformed_function_call
+            retry_count += 1
+
+        return response_data
 
     @staticmethod
     def add_dummy_model_messages(messages: List[dict]) -> List[dict]:
@@ -230,10 +279,12 @@ class GoogleVertexClient(LLMClientBase):
             "contents": contents,
             "config": {
                 "temperature": llm_config.temperature,
-                "max_output_tokens": llm_config.max_tokens,
                 "tools": formatted_tools,
             },
         }
+        # Make tokens is optional
+        if llm_config.max_tokens:
+            request_data["config"]["max_output_tokens"] = llm_config.max_tokens
 
         if len(tool_names) == 1 and settings.use_vertex_structured_outputs_experimental:
             request_data["config"]["response_mime_type"] = "application/json"
@@ -298,7 +349,6 @@ class GoogleVertexClient(LLMClientBase):
         }
         }
         """
-
         response = GenerateContentResponse(**response_data)
         try:
             choices = []
@@ -310,7 +360,7 @@ class GoogleVertexClient(LLMClientBase):
                     # This means the response is malformed like MALFORMED_FUNCTION_CALL
                     # NOTE: must be a ValueError to trigger a retry
                     if candidate.finish_reason == "MALFORMED_FUNCTION_CALL":
-                        raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}...")
+                        raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}")
                     else:
                         raise ValueError(f"Error in response data from LLM: {candidate.model_dump()}")
 
@@ -344,9 +394,9 @@ class GoogleVertexClient(LLMClientBase):
                         if llm_config.put_inner_thoughts_in_kwargs:
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                            assert (
-                                INNER_THOUGHTS_KWARG_VERTEX in function_args
-                            ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            assert INNER_THOUGHTS_KWARG_VERTEX in function_args, (
+                                f"Couldn't find inner thoughts in function args:\n{function_call}"
+                            )
                             inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                             assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                         else:
@@ -380,9 +430,9 @@ class GoogleVertexClient(LLMClientBase):
                             if llm_config.put_inner_thoughts_in_kwargs:
                                 from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
-                                assert (
-                                    INNER_THOUGHTS_KWARG_VERTEX in function_args
-                                ), f"Couldn't find inner thoughts in function args:\n{function_call}"
+                                assert INNER_THOUGHTS_KWARG_VERTEX in function_args, (
+                                    f"Couldn't find inner thoughts in function args:\n{function_call}"
+                                )
                                 inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                                 assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                             else:
@@ -406,7 +456,7 @@ class GoogleVertexClient(LLMClientBase):
 
                         except json.decoder.JSONDecodeError:
                             if candidate.finish_reason == "MAX_TOKENS":
-                                raise ValueError(f"Could not parse response data from LLM: exceeded max token limit")
+                                raise ValueError("Could not parse response data from LLM: exceeded max token limit")
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
@@ -463,7 +513,7 @@ class GoogleVertexClient(LLMClientBase):
                 )
             else:
                 # Count it ourselves
-                assert input_messages is not None, f"Didn't get UsageMetadata from the API response, so input_messages is required"
+                assert input_messages is not None, "Didn't get UsageMetadata from the API response, so input_messages is required"
                 prompt_tokens = count_tokens(json_dumps(input_messages))  # NOTE: this is a very rough approximation
                 completion_tokens = count_tokens(json_dumps(openai_response_message.model_dump()))  # NOTE: this is also approximate
                 total_tokens = prompt_tokens + completion_tokens
@@ -515,6 +565,14 @@ class GoogleVertexClient(LLMClientBase):
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return llm_config.model.startswith("gemini-2.5-flash") or llm_config.model.startswith("gemini-2.5-pro")
+
+    def is_malformed_function_call(self, response_data: dict) -> dict:
+        response = GenerateContentResponse(**response_data)
+        for candidate in response.candidates:
+            content = candidate.content
+            if content is None or content.role is None or content.parts is None:
+                return candidate.finish_reason == "MALFORMED_FUNCTION_CALL"
+        return False
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:

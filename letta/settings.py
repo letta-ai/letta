@@ -23,7 +23,7 @@ class ToolSettings(BaseSettings):
 
     # Search Providers
     tavily_api_key: str | None = Field(default=None, description="API key for using Tavily as a search provider.")
-    firecrawl_api_key: str | None = Field(default=None, description="API key for using Firecrawl as a search provider.")
+    exa_api_key: str | None = Field(default=None, description="API key for using Exa as a search provider.")
 
     # Local Sandbox configurations
     tool_exec_dir: Optional[str] = None
@@ -89,7 +89,6 @@ class SummarizerSettings(BaseSettings):
 
 
 class ModelSettings(BaseSettings):
-
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     global_max_context_window_limit: int = 32000
@@ -146,6 +145,7 @@ class ModelSettings(BaseSettings):
     gemini_api_key: Optional[str] = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com/"
     gemini_force_minimum_thinking_budget: bool = False
+    gemini_max_retries: int = 5
 
     # google vertex
     google_cloud_project: Optional[str] = None
@@ -205,6 +205,7 @@ class Settings(BaseSettings):
     letta_dir: Optional[Path] = Field(Path.home() / ".letta", alias="LETTA_DIR")
     debug: Optional[bool] = False
     cors_origins: Optional[list] = cors_origins
+    environment: Optional[str] = Field(default=None, description="Application environment (PRODUCTION, DEV, etc.)")
 
     # SSE Streaming keepalive settings
     enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
@@ -299,7 +300,8 @@ class Settings(BaseSettings):
     # For tpuf - currently only for archival memories
     use_tpuf: bool = False
     tpuf_api_key: Optional[str] = None
-    tpuf_region: str = "gcp-us-central1.turbopuffer.com"
+    tpuf_region: str = "gcp-us-central1"
+    embed_all_messages: bool = False
 
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30

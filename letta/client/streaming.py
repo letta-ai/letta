@@ -23,7 +23,6 @@ def _sse_post(url: str, data: dict, headers: dict) -> Generator[Union[LettaStrea
     # TODO: Please note his is a very generous timeout for e2b reasons
     with httpx.Client(timeout=httpx.Timeout(5 * 60.0, read=5 * 60.0)) as client:
         with connect_sse(client, method="POST", url=url, json=data, headers=headers) as event_source:
-
             # Check for immediate HTTP errors before processing the SSE stream
             if not event_source.response.is_success:
                 response_bytes = event_source.response.read()

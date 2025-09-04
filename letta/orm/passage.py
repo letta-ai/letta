@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import JSON, Column, Index
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -27,6 +27,8 @@ class BasePassage(SqlalchemyBase, OrganizationMixin):
     text: Mapped[str] = mapped_column(doc="Passage text content")
     embedding_config: Mapped[dict] = mapped_column(EmbeddingConfigColumn, doc="Embedding configuration")
     metadata_: Mapped[dict] = mapped_column(JSON, doc="Additional metadata")
+    # dual storage: json column for fast retrieval, junction table for efficient queries
+    tags: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, doc="Tags associated with this passage")
 
     # Vector embedding field based on database type
     if settings.database_engine is DatabaseChoice.POSTGRES:
@@ -74,6 +76,11 @@ class ArchivalPassage(BasePassage, ArchiveMixin):
     """Passages stored in archives as archival memories"""
 
     __tablename__ = "archival_passages"
+
+    # junction table for efficient tag queries (complements json column above)
+    passage_tags: Mapped[List["PassageTag"]] = relationship(
+        "PassageTag", back_populates="passage", cascade="all, delete-orphan", lazy="noload"
+    )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

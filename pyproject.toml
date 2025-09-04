@@ -1,6 +1,6 @@
 [project]
 name = "letta"
-version = "0.11.6"
+version = "0.11.7"
 description = "Create LLM agents with long-term memory and custom tools"
 authors = [
     {name = "Letta Team", email = "contact@letta.com"},
@@ -45,7 +45,7 @@ dependencies = [
     "llama-index>=0.12.2",
     "llama-index-embeddings-openai>=0.3.1",
     "anthropic>=0.49.0",
-    "letta_client>=0.1.277",
+    "letta-client==0.1.307",
     "openai>=1.99.9",
     "opentelemetry-api==1.30.0",
     "opentelemetry-sdk==1.30.0",
@@ -57,7 +57,7 @@ dependencies = [
     "marshmallow-sqlalchemy>=1.4.1",
     "datamodel-code-generator[http]>=0.25.0",
     "mcp[cli]>=1.9.4",
-    "firecrawl-py>=2.8.0,<3.0.0",
+    "exa-py>=1.15.4",
     "apscheduler>=3.11.0",
     "aiomultiprocess>=0.9.1",
     "matplotlib>=3.10.1",
@@ -67,6 +67,9 @@ dependencies = [
     "certifi>=2025.6.15",
     "markitdown[docx,pdf,pptx]>=0.1.2",
     "orjson>=3.11.1",
+    "ruff[dev]>=0.12.10",
+    "trafilatura",
+    "readability-lxml",
 ]
 
 [project.scripts]
@@ -108,11 +111,8 @@ dev = [
     "pytest-mock>=3.14.0",
     "pytest-json-report>=1.5.0",
     "pexpect>=4.9.0",
-    "black[jupyter]>=24.4.2",
     "pre-commit>=3.5.0",
     "pyright>=1.1.347",
-    "autoflake>=2.3.0",
-    "isort>=5.13.2",
     "ipykernel>=6.29.5",
     "ipdb>=0.13.13",
 ]
@@ -125,7 +125,7 @@ external-tools = [
     "langchain>=0.3.7",
     "wikipedia>=1.4.0",
     "langchain-community>=0.3.7",
-    "firecrawl-py>=2.8.0,<3.0.0",
+    "exa-py>=1.15.4",
     "turbopuffer>=0.5.17",
 ]
 desktop = [
@@ -140,6 +140,10 @@ desktop = [
     "aiosqlite>=0.21.0",
     "sqlite-vec>=0.1.7a2",
     "pgvector>=0.2.3",
+    "tiktoken>=0.11.0",
+    "async-lru>=2.0.5",
+    "magika>=0.6.2",
+    "pgserver>=0.1.4",
 ]
 
 [build-system]
@@ -149,18 +153,46 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["letta"]
 
-[tool.black]
-line-length = 140
-target-version = ['py310', 'py311', 'py312', 'py313']
-extend-exclude = "examples/*"
 
-[tool.isort]
-profile = "black"
-line_length = 140
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+extend-exclude = [
+    "examples/*",
+    "tests/data/*",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E402",  # module import not at top of file
+    "E711",  # none-comparison
+    "E712",  # true-false-comparison
+    "E722",  # bare except
+    "E721",  # type comparison
+    "F401",  # unused import
+    "F821",  # undefined name
+    "F811",  # redefined while unused
+    "F841",  # local variable assigned but never used
+    "W293",  # blank line contains whitespace
+]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+combine-as-imports = true
+split-on-trailing-comma = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

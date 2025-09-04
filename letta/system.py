@@ -187,7 +187,7 @@ def package_summarize_message(summary, summary_message_count, hidden_message_cou
 
 def package_summarize_message_no_counts(summary, timezone):
     context_message = (
-        f"Note: prior messages have been hidden from view due to conversation memory constraints.\n"
+        "Note: prior messages have been hidden from view due to conversation memory constraints.\n"
         + f"The following is a summary of the previous messages:\n {summary}"
     )
 

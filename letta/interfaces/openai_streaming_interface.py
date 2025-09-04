@@ -10,7 +10,14 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.llm_api.openai_client import is_openai_reasoning_model
 from letta.local_llm.utils import num_tokens_from_functions, num_tokens_from_messages
 from letta.log import get_logger
-from letta.schemas.letta_message import AssistantMessage, LettaMessage, ReasoningMessage, ToolCallDelta, ToolCallMessage
+from letta.schemas.letta_message import (
+    AssistantMessage,
+    HiddenReasoningMessage,
+    LettaMessage,
+    ReasoningMessage,
+    ToolCallDelta,
+    ToolCallMessage,
+)
 from letta.schemas.letta_message_content import OmittedReasoningContent, TextContent
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
@@ -35,13 +42,15 @@ class OpenAIStreamingInterface:
         is_openai_proxy: bool = False,
         messages: Optional[list] = None,
         tools: Optional[list] = None,
+        put_inner_thoughts_in_kwarg: bool = True,
     ):
         self.use_assistant_message = use_assistant_message
         self.assistant_message_tool_name = DEFAULT_MESSAGE_TOOL
         self.assistant_message_tool_kwarg = DEFAULT_MESSAGE_TOOL_KWARG
+        self.put_inner_thoughts_in_kwarg = put_inner_thoughts_in_kwarg
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
-        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=True)  # TODO: pass in kwarg
+        self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
         self.function_name_buffer = None
         self.function_args_buffer = None
         self.function_id_buffer = None
@@ -75,6 +84,7 @@ class OpenAIStreamingInterface:
         self.tool_call_name: str | None = None
         self.tool_call_id: str | None = None
         self.reasoning_messages = []
+        self.emitted_hidden_reasoning = False  # Track if we've emitted hidden reasoning message
 
     def get_reasoning_content(self) -> list[TextContent | OmittedReasoningContent]:
         content = "".join(self.reasoning_messages).strip()
@@ -113,6 +123,7 @@ class OpenAIStreamingInterface:
             if self.messages:
                 # Convert messages to dict format for token counting
                 message_dicts = [msg.to_openai_dict() if hasattr(msg, "to_openai_dict") else msg for msg in self.messages]
+                message_dicts = [m for m in message_dicts if m is not None]
                 self.fallback_input_tokens = num_tokens_from_messages(message_dicts)  # fallback to gpt-4 cl100k-base
 
             if self.tools:
@@ -184,6 +195,22 @@ class OpenAIStreamingInterface:
             if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
                 tool_call = message_delta.tool_calls[0]
 
+                # For OpenAI reasoning models, emit a hidden reasoning message before the first tool call
+                if not self.emitted_hidden_reasoning and is_openai_reasoning_model(self.model) and not self.put_inner_thoughts_in_kwarg:
+                    self.emitted_hidden_reasoning = True
+                    if prev_message_type and prev_message_type != "hidden_reasoning_message":
+                        message_index += 1
+                    hidden_message = HiddenReasoningMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc),
+                        state="omitted",
+                        hidden_reasoning=None,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    )
+                    yield hidden_message
+                    prev_message_type = hidden_message.message_type
+                    message_index += 1  # Increment for the next message
+
                 if tool_call.function.name:
                     # If we're waiting for the first key, then we should hold back the name
                     # ie add it to a buffer instead of returning it as a chunk
@@ -232,16 +259,13 @@ class OpenAIStreamingInterface:
 
                     # If we have main_json, we should output a ToolCallMessage
                     elif updates_main_json:
-
                         # If there's something in the function_name buffer, we should release it first
                         # NOTE: we could output it as part of a chunk that has both name and args,
                         #       however the frontend may expect name first, then args, so to be
                         #       safe we'll output name first in a separate chunk
                         if self.function_name_buffer:
-
                             # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
                             if self.use_assistant_message and self.function_name_buffer == self.assistant_message_tool_name:
-
                                 # Store the ID of the tool call so allow skipping the corresponding response
                                 if self.function_id_buffer:
                                     self.prev_assistant_message_id = self.function_id_buffer
@@ -373,7 +397,6 @@ class OpenAIStreamingInterface:
                                     # clear buffers
                                     self.function_id_buffer = None
                             else:
-
                                 # There may be a buffer from a previous chunk, for example
                                 # if the previous chunk had arguments but we needed to flush name
                                 if self.function_args_buffer:

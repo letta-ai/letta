@@ -5,12 +5,12 @@ from typing import Dict, List, Optional, Union
 
 import anthropic
 from anthropic import AsyncStream
-from anthropic.types.beta import BetaMessage as AnthropicMessage
-from anthropic.types.beta import BetaRawMessageStreamEvent
+from anthropic.types.beta import BetaMessage as AnthropicMessage, BetaRawMessageStreamEvent
 from anthropic.types.beta.message_create_params import MessageCreateParamsNonStreaming
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
 
+from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
@@ -34,9 +34,14 @@ from letta.otel.tracing import trace_method
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Choice, FunctionCall
-from letta.schemas.openai.chat_completion_response import Message as ChoiceMessage
-from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.openai.chat_completion_response import (
+    ChatCompletionResponse,
+    Choice,
+    FunctionCall,
+    Message as ChoiceMessage,
+    ToolCall,
+    UsageStatistics,
+)
 from letta.settings import model_settings
 
 DUMMY_FIRST_USER_MESSAGE = "User initializing bootup sequence."
@@ -45,7 +50,6 @@ logger = get_logger(__name__)
 
 
 class AnthropicClient(LLMClientBase):
-
     @trace_method
     @deprecated("Synchronous version of this is no longer valid. Will result in model_dump of coroutine")
     def request(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -56,7 +60,12 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
         client = await self._get_anthropic_client_async(llm_config, async_client=True)
-        response = await client.beta.messages.create(**request_data)
+
+        if llm_config.enable_reasoner:
+            response = await client.beta.messages.create(**request_data, betas=["interleaved-thinking-2025-05-14"])
+        else:
+            response = await client.beta.messages.create(**request_data)
+
         return response.model_dump()
 
     @trace_method
@@ -68,6 +77,11 @@ class AnthropicClient(LLMClientBase):
         # This helps reduce buffering when streaming tool call parameters
         # See: https://docs.anthropic.com/en/docs/build-with-claude/tool-use/fine-grained-streaming
         betas = ["fine-grained-tool-streaming-2025-05-14"]
+
+        # If extended thinking, turn on interleaved header
+        # https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#interleaved-thinking
+        if llm_config.enable_reasoner:
+            betas.append("interleaved-thinking-2025-05-14")
 
         return await client.beta.messages.create(**request_data, betas=betas)
 
@@ -173,11 +187,14 @@ class AnthropicClient(LLMClientBase):
             raise NotImplementedError("Only tool calling supported on Anthropic API requests")
 
         if not llm_config.max_tokens:
-            raise ValueError("Max  tokens must be set for anthropic")
+            # TODO strip this default once we add provider-specific defaults
+            max_output_tokens = 4096  # the minimum max tokens (for Haiku 3)
+        else:
+            max_output_tokens = llm_config.max_tokens
 
         data = {
             "model": llm_config.model,
-            "max_tokens": llm_config.max_tokens,
+            "max_tokens": max_output_tokens,
             "temperature": llm_config.temperature,
         }
 
@@ -249,13 +266,11 @@ class AnthropicClient(LLMClientBase):
             raise RuntimeError(f"First message is not a system message, instead has role {messages[0].role}")
         system_content = messages[0].content if isinstance(messages[0].content, str) else messages[0].content[0].text
         data["system"] = self._add_cache_control_to_system_message(system_content)
-        data["messages"] = [
-            m.to_anthropic_dict(
-                inner_thoughts_xml_tag=inner_thoughts_xml_tag,
-                put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
-            )
-            for m in messages[1:]
-        ]
+        data["messages"] = PydanticMessage.to_anthropic_dicts_from_list(
+            messages=messages[1:],
+            inner_thoughts_xml_tag=inner_thoughts_xml_tag,
+            put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
+        )
 
         # Ensure first message is user
         if data["messages"][0]["role"] != "user":
@@ -263,6 +278,10 @@ class AnthropicClient(LLMClientBase):
 
         # Handle alternating messages
         data["messages"] = merge_tool_results_into_user_messages(data["messages"])
+
+        # Strip heartbeat pings if extended thinking
+        if llm_config.enable_reasoner:
+            data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
 
         # Prefix fill
         # https://docs.anthropic.com/en/api/messages#body-messages
@@ -599,14 +618,165 @@ def convert_tools_to_anthropic_format(tools: List[OpenAITool]) -> List[dict]:
     """
     formatted_tools = []
     for tool in tools:
+        # Get the input schema
+        input_schema = tool.function.parameters or {"type": "object", "properties": {}, "required": []}
+
+        # Clean up the properties in the schema
+        # The presence of union types / default fields seems Anthropic to produce invalid JSON for tool calls
+        if isinstance(input_schema, dict) and "properties" in input_schema:
+            cleaned_properties = {}
+            for prop_name, prop_schema in input_schema.get("properties", {}).items():
+                if isinstance(prop_schema, dict):
+                    cleaned_properties[prop_name] = _clean_property_schema(prop_schema)
+                else:
+                    cleaned_properties[prop_name] = prop_schema
+
+            # Create cleaned input schema
+            cleaned_input_schema = {
+                "type": input_schema.get("type", "object"),
+                "properties": cleaned_properties,
+            }
+
+            # Only add required field if it exists and is non-empty
+            if "required" in input_schema and input_schema["required"]:
+                cleaned_input_schema["required"] = input_schema["required"]
+        else:
+            cleaned_input_schema = input_schema
+
         formatted_tool = {
             "name": tool.function.name,
             "description": tool.function.description if tool.function.description else "",
-            "input_schema": tool.function.parameters or {"type": "object", "properties": {}, "required": []},
+            "input_schema": cleaned_input_schema,
         }
         formatted_tools.append(formatted_tool)
 
     return formatted_tools
+
+
+def _clean_property_schema(prop_schema: dict) -> dict:
+    """Clean up a property schema by removing defaults and simplifying union types."""
+    cleaned = {}
+
+    # Handle type field - simplify union types like ["null", "string"] to just "string"
+    if "type" in prop_schema:
+        prop_type = prop_schema["type"]
+        if isinstance(prop_type, list):
+            # Remove "null" from union types to simplify
+            # e.g., ["null", "string"] becomes "string"
+            non_null_types = [t for t in prop_type if t != "null"]
+            if len(non_null_types) == 1:
+                cleaned["type"] = non_null_types[0]
+            elif len(non_null_types) > 1:
+                # Keep as array if multiple non-null types
+                cleaned["type"] = non_null_types
+            else:
+                # If only "null" was in the list, default to string
+                cleaned["type"] = "string"
+        else:
+            cleaned["type"] = prop_type
+
+    # Copy over other fields except 'default'
+    for key, value in prop_schema.items():
+        if key not in ["type", "default"]:  # Skip 'default' field
+            if key == "properties" and isinstance(value, dict):
+                # Recursively clean nested properties
+                cleaned["properties"] = {k: _clean_property_schema(v) if isinstance(v, dict) else v for k, v in value.items()}
+            else:
+                cleaned[key] = value
+
+    return cleaned
+
+
+def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
+    """Check if the message is an automated heartbeat ping"""
+
+    if "role" not in message or message["role"] != "user" or "content" not in message:
+        return False
+
+    try:
+        message_json = json.loads(message["content"])
+    except:
+        return False
+
+    if "reason" not in message_json:
+        return False
+
+    if message_json["type"] != "heartbeat":
+        return False
+
+    if not is_ping:
+        # Just checking if 'type': 'heartbeat'
+        return True
+    else:
+        # Also checking if it's specifically a 'ping' style message
+        # NOTE: this will not catch tool rule heartbeats
+        if REQ_HEARTBEAT_MESSAGE in message_json["reason"] or FUNC_FAILED_HEARTBEAT_MESSAGE in message_json["reason"]:
+            return True
+        else:
+            return False
+
+
+def merge_heartbeats_into_tool_responses(messages: List[dict]):
+    """For extended thinking mode, we don't want anything other than tool responses in-between assistant actions
+
+    Otherwise, the thinking will silently get dropped.
+
+    NOTE: assumes merge_tool_results_into_user_messages has already been called
+    """
+
+    merged_messages = []
+
+    # Loop through messages
+    # For messages with role 'user' and len(content) > 1,
+    #   Check if content[0].type == 'tool_result'
+    #   If so, iterate over content[1:] and while content.type == 'text' and is_heartbeat(content.text),
+    #     merge into content[0].content
+
+    for message in messages:
+        if "role" not in message or "content" not in message:
+            # Skip invalid messages
+            merged_messages.append(message)
+            continue
+
+        if message["role"] == "user" and len(message["content"]) > 1:
+            content_parts = message["content"]
+
+            # If the first content part is a tool result, merge the heartbeat content into index 0 of the content
+            # Two end cases:
+            # 1. It was [tool_result, heartbeat], in which case merged result is [tool_result+heartbeat] (len 1)
+            # 2. It was [tool_result, user_text], in which case it should be unchanged (len 2)
+            if "type" in content_parts[0] and "content" in content_parts[0] and content_parts[0]["type"] == "tool_result":
+                new_content_parts = [content_parts[0]]
+
+                # If the first content part is a tool result, merge the heartbeat content into index 0 of the content
+                for i, content_part in enumerate(content_parts[1:]):
+                    # If it's a heartbeat, add it to the merge
+                    if (
+                        content_part["type"] == "text"
+                        and "text" in content_part
+                        and is_heartbeat({"role": "user", "content": content_part["text"]})
+                    ):
+                        # NOTE: joining with a ','
+                        new_content_parts[0]["content"] += ", " + content_part["text"]
+
+                    # If it's not, break, and concat to finish
+                    else:
+                        # Append the rest directly, no merging of content strings
+                        new_content_parts.extend(content_parts[i + 1 :])
+                        break
+
+                # Set the content_parts
+                message["content"] = new_content_parts
+                merged_messages.append(message)
+
+            else:
+                # Skip invalid messages parts
+                merged_messages.append(message)
+                continue
+        else:
+            merged_messages.append(message)
+
+    return merged_messages
 
 
 def merge_tool_results_into_user_messages(messages: List[dict]):
@@ -647,7 +817,7 @@ def merge_tool_results_into_user_messages(messages: List[dict]):
                 if isinstance(next_message["content"], list)
                 else [{"type": "text", "text": next_message["content"]}]
             )
-            merged_content = current_content + next_content
+            merged_content: list = current_content + next_content
             current_message["content"] = merged_content
         else:
             # Append the current message to result as it's complete

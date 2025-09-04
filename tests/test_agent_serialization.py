@@ -350,9 +350,9 @@ def compare_in_context_message_id_remapping(server, og_agent: AgentState, copy_a
     in_context_messages_copy = server.agent_manager.get_in_context_messages(agent_id=copy_agent.id, actor=copy_user)
 
     # 1. Check if the number of messages is the same
-    assert len(in_context_messages_og) == len(
-        in_context_messages_copy
-    ), f"Original message count ({len(in_context_messages_og)}) differs from copy ({len(in_context_messages_copy)})"
+    assert len(in_context_messages_og) == len(in_context_messages_copy), (
+        f"Original message count ({len(in_context_messages_og)}) differs from copy ({len(in_context_messages_copy)})"
+    )
 
     # 2. Iterate and compare messages by order, checking content equality and ID difference
     if not in_context_messages_og:
@@ -625,6 +625,7 @@ def test_agent_download_upload_flow(server, server_url, serialize_test_agent, de
     response = requests.get(
         f"{server_url}/v1/agents/{agent_id}/export",
         headers={"user_id": default_user.id},
+        params={"use_legacy_format": True},
     )
     assert response.status_code == 200, f"Download failed: {response.text}"
 

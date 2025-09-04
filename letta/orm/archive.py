@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, Index, String
+from sqlalchemy import JSON, Enum, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.archive import Archive as PydanticArchive
+from letta.schemas.enums import VectorDBProvider
 from letta.settings import DatabaseChoice, settings
 
 if TYPE_CHECKING:
@@ -38,7 +39,14 @@ class Archive(SqlalchemyBase, OrganizationMixin):
     # archive-specific fields
     name: Mapped[str] = mapped_column(String, nullable=False, doc="The name of the archive")
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="A description of the archive")
+    vector_db_provider: Mapped[VectorDBProvider] = mapped_column(
+        Enum(VectorDBProvider),
+        nullable=False,
+        default=VectorDBProvider.NATIVE,
+        doc="The vector database provider used for this archive's passages",
+    )
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Additional metadata for the archive")
+    _vector_db_namespace: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="Private field for vector database namespace")
 
     # relationships
     archives_agents: Mapped[List["ArchivesAgents"]] = relationship(

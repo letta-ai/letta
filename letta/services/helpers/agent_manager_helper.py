@@ -1,4 +1,3 @@
-import os
 import uuid
 from datetime import datetime
 from typing import List, Literal, Optional, Set
@@ -465,7 +464,6 @@ def package_initial_message_sequence(
     # create the agent object
     init_messages = []
     for message_create in initial_message_sequence:
-
         if message_create.role == MessageRole.user:
             packed_message = system.package_user_message(
                 user_message=message_create.content,
@@ -499,8 +497,10 @@ def package_initial_message_sequence(
             import json
             import uuid
 
-            from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall
-            from openai.types.chat.chat_completion_message_tool_call import Function as OpenAIFunction
+            from openai.types.chat.chat_completion_message_tool_call import (
+                ChatCompletionMessageToolCall as OpenAIToolCall,
+                Function as OpenAIFunction,
+            )
 
             from letta.constants import DEFAULT_MESSAGE_TOOL
 
@@ -1208,7 +1208,7 @@ def calculate_base_tools(is_v2: bool) -> Set[str]:
 
 def calculate_multi_agent_tools() -> Set[str]:
     """Calculate multi-agent tools, excluding local-only tools in production environment."""
-    if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION":
+    if settings.environment == "PRODUCTION":
         return set(MULTI_AGENT_TOOLS) - set(LOCAL_ONLY_MULTI_AGENT_TOOLS)
     else:
         return set(MULTI_AGENT_TOOLS)

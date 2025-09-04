@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import time
 import traceback
 import warnings
@@ -50,9 +49,7 @@ from letta.schemas.enums import MessageRole, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message_content import ImageContent, TextContent
 from letta.schemas.memory import ContextWindowOverview, Memory
 from letta.schemas.message import Message, MessageCreate, ToolReturn
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
-from letta.schemas.openai.chat_completion_response import Message as ChatCompletionMessage
-from letta.schemas.openai.chat_completion_response import UsageStatistics
+from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, Message as ChatCompletionMessage, UsageStatistics
 from letta.schemas.response_format import ResponseFormatType
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -71,7 +68,7 @@ from letta.services.step_manager import StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
 from letta.services.tool_executor.tool_execution_sandbox import ToolExecutionSandbox
 from letta.services.tool_manager import ToolManager
-from letta.settings import settings, summarizer_settings
+from letta.settings import model_settings, settings, summarizer_settings
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from letta.system import get_heartbeat, get_token_limit_warning, package_function_response, package_summarize_message, package_user_message
 from letta.utils import count_tokens, get_friendly_error_msg, get_tool_call_id, log_telemetry, parse_json, validate_function_response
@@ -872,7 +869,6 @@ class Agent(BaseAgent):
     ) -> AgentStepResponse:
         """Runs a single step in the agent loop (generates at most one LLM call)"""
         try:
-
             # Extract job_id from metadata if present
             job_id = metadata.get("job_id") if metadata else None
 
@@ -1085,9 +1081,9 @@ class Agent(BaseAgent):
         -> agent.step(messages=[Message(role='user', text=...)])
         """
         # Wrap with metadata, dumps to JSON
-        assert user_message_str and isinstance(
-            user_message_str, str
-        ), f"user_message_str should be a non-empty string, got {type(user_message_str)}"
+        assert user_message_str and isinstance(user_message_str, str), (
+            f"user_message_str should be a non-empty string, got {type(user_message_str)}"
+        )
         user_message_json_str = package_user_message(user_message_str, self.agent_state.timezone)
 
         # Validate JSON via save/load
@@ -1110,7 +1106,7 @@ class Agent(BaseAgent):
 
     def summarize_messages_inplace(self):
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
         in_context_messages_openai_no_system = in_context_messages_openai[1:]
         token_counts = get_token_counts_for_messages(in_context_messages)
         logger.info(f"System message token count={token_counts[0]}")
@@ -1216,7 +1212,7 @@ class Agent(BaseAgent):
         # Grab the in-context messages
         # conversion of messages to OpenAI dict format, which is passed to the token counter
         in_context_messages = self.agent_manager.get_in_context_messages(agent_id=self.agent_state.id, actor=self.user)
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
 
         # Check if there's a summary message in the message queue
         if (
@@ -1304,7 +1300,7 @@ class Agent(BaseAgent):
         )
 
     async def get_context_window_async(self) -> ContextWindowOverview:
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" and os.getenv("ANTHROPIC_API_KEY"):
+        if settings.environment == "PRODUCTION" and model_settings.anthropic_api_key:
             return await self.get_context_window_from_anthropic_async()
         return await self.get_context_window_from_tiktoken_async()
 
@@ -1316,7 +1312,7 @@ class Agent(BaseAgent):
         )
 
         # conversion of messages to OpenAI dict format, which is passed to the token counter
-        in_context_messages_openai = [m.to_openai_dict() for m in in_context_messages]
+        in_context_messages_openai = Message.to_openai_dicts_from_list(in_context_messages)
 
         # Extract system, memory and external summary
         if (
@@ -1446,7 +1442,7 @@ class Agent(BaseAgent):
         )
 
         # conversion of messages to anthropic dict format, which is passed to the token counter
-        in_context_messages_anthropic = [m.to_anthropic_dict() for m in in_context_messages]
+        in_context_messages_anthropic = Message.to_anthropic_dicts_from_list(in_context_messages)
 
         # Extract system, memory and external summary
         if (

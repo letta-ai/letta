@@ -379,7 +379,7 @@ async def test_rethink_tool_modify_agent_state(disable_e2b_api_key, server, defa
     )
     agents = [agent]
     batch_requests = [
-        LettaBatchRequest(agent_id=agent.id, messages=[MessageCreate(role="user", content=[TextContent(text=f"Rethink memory.")])])
+        LettaBatchRequest(agent_id=agent.id, messages=[MessageCreate(role="user", content=[TextContent(text="Rethink memory.")])])
         for agent in agents
     ]
 
@@ -520,12 +520,12 @@ async def test_partial_error_from_anthropic_batch(
 
                 print("POST", post_resume_response)
                 print("PRE", pre_resume_response)
-                assert (
-                    post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
-                ), "resume_step_after_request is expected to have the same letta_batch_id"
-                assert (
-                    post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id
-                ), "resume_step_after_request is expected to have different llm_batch_id."
+                assert post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id, (
+                    "resume_step_after_request is expected to have the same letta_batch_id"
+                )
+                assert post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id, (
+                    "resume_step_after_request is expected to have different llm_batch_id."
+                )
                 assert post_resume_response.status == JobStatus.running
                 # NOTE: We only expect 2 agents to continue (succeeded ones)
                 assert post_resume_response.agent_count == 2
@@ -542,13 +542,13 @@ async def test_partial_error_from_anthropic_batch(
 
                 # Confirm that tool_rules_solver state was preserved correctly
                 # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
-                assert all(
-                    "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
-                ), "Expected 'get_weather' in tool_call_history for all new_items"
+                assert all("get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items), (
+                    "Expected 'get_weather' in tool_call_history for all new_items"
+                )
                 # Assert that each new item's step_number was incremented to 1
-                assert all(
-                    item.step_state.step_number == 1 for item in new_items
-                ), "Expected step_number to be incremented to 1 for all new_items"
+                assert all(item.step_state.step_number == 1 for item in new_items), (
+                    "Expected step_number to be incremented to 1 for all new_items"
+                )
 
                 # Old items must have been flipped to completed / finished earlier
                 #     (sanity – we already asserted this above, but we keep it close for clarity)
@@ -572,20 +572,20 @@ async def test_partial_error_from_anthropic_batch(
                         assert after == before, f"Agent {agent.id} should not have extra messages persisted due to Anthropic failure"
                     else:
                         assert after - before >= 2, (
-                            f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
+                            f"Agent {agent.id} should have an assistant tool‑call and tool‑response message persisted."
                         )
 
                 # Check that agent states have been properly modified to have extended in-context messages
                 for agent in agents:
                     refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
                     if refreshed_agent.id == agents_failed[0].id:
-                        assert (
-                            len(refreshed_agent.message_ids) == 4
-                        ), f"Agent's in-context messages have not been extended, are length: {len(refreshed_agent.message_ids)}"
+                        assert len(refreshed_agent.message_ids) == 4, (
+                            f"Agent's in-context messages have not been extended, are length: {len(refreshed_agent.message_ids)}"
+                        )
                     else:
-                        assert (
-                            len(refreshed_agent.message_ids) == 6
-                        ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                        assert len(refreshed_agent.message_ids) == 6, (
+                            f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                        )
 
                 # Check the total list of messages
                 messages = await server.batch_manager.get_messages_for_letta_batch_async(
@@ -688,12 +688,12 @@ async def test_resume_step_some_stop(
                 assert len(new_batch_responses) == 1
                 post_resume_response = new_batch_responses[0]
 
-                assert (
-                    post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
-                ), "resume_step_after_request is expected to have the same letta_batch_id"
-                assert (
-                    post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id
-                ), "resume_step_after_request is expected to have different llm_batch_id."
+                assert post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id, (
+                    "resume_step_after_request is expected to have the same letta_batch_id"
+                )
+                assert post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id, (
+                    "resume_step_after_request is expected to have different llm_batch_id."
+                )
                 assert post_resume_response.status == JobStatus.running
                 # NOTE: We only expect 1 agent to continue
                 assert post_resume_response.agent_count == 1
@@ -710,13 +710,13 @@ async def test_resume_step_some_stop(
 
                 # Confirm that tool_rules_solver state was preserved correctly
                 # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
-                assert all(
-                    "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
-                ), "Expected 'get_weather' in tool_call_history for all new_items"
+                assert all("get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items), (
+                    "Expected 'get_weather' in tool_call_history for all new_items"
+                )
                 # Assert that each new item's step_number was incremented to 1
-                assert all(
-                    item.step_state.step_number == 1 for item in new_items
-                ), "Expected step_number to be incremented to 1 for all new_items"
+                assert all(item.step_state.step_number == 1 for item in new_items), (
+                    "Expected step_number to be incremented to 1 for all new_items"
+                )
 
                 # Old items must have been flipped to completed / finished earlier
                 #     (sanity – we already asserted this above, but we keep it close for clarity)
@@ -730,16 +730,14 @@ async def test_resume_step_some_stop(
                 for agent in agents:
                     before = msg_counts_before[agent.id]  # captured just before resume
                     after = await server.message_manager.size_async(actor=default_user, agent_id=agent.id)
-                    assert after - before >= 2, (
-                        f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
-                    )
+                    assert after - before >= 2, f"Agent {agent.id} should have an assistant tool‑call and tool‑response message persisted."
 
                 # Check that agent states have been properly modified to have extended in-context messages
                 for agent in agents:
                     refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
-                    assert (
-                        len(refreshed_agent.message_ids) == 6
-                    ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                    assert len(refreshed_agent.message_ids) == 6, (
+                        f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                    )
 
                 # Check the total list of messages
                 messages = await server.batch_manager.get_messages_for_letta_batch_async(
@@ -770,9 +768,9 @@ def _assert_descending_order(messages):
         return True
 
     for prev, next in zip(messages[:-1], messages[1:]):
-        assert (
-            prev.created_at >= next.created_at
-        ), f"Order violation: {prev.id} ({prev.created_at}) followed by {next.id} ({next.created_at})"
+        assert prev.created_at >= next.created_at, (
+            f"Order violation: {prev.id} ({prev.created_at}) followed by {next.id} ({next.created_at})"
+        )
     return True
 
 
@@ -853,12 +851,12 @@ async def test_resume_step_after_request_all_continue(
                 assert len(new_batch_responses) == 1
                 post_resume_response = new_batch_responses[0]
 
-                assert (
-                    post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id
-                ), "resume_step_after_request is expected to have the same letta_batch_id"
-                assert (
-                    post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id
-                ), "resume_step_after_request is expected to have different llm_batch_id."
+                assert post_resume_response.letta_batch_id == pre_resume_response.letta_batch_id, (
+                    "resume_step_after_request is expected to have the same letta_batch_id"
+                )
+                assert post_resume_response.last_llm_batch_id != pre_resume_response.last_llm_batch_id, (
+                    "resume_step_after_request is expected to have different llm_batch_id."
+                )
                 assert post_resume_response.status == JobStatus.running
                 assert post_resume_response.agent_count == 3
 
@@ -872,13 +870,13 @@ async def test_resume_step_after_request_all_continue(
 
                 # Confirm that tool_rules_solver state was preserved correctly
                 # Assert every new item's step_state's tool_rules_solver has "get_weather" in the tool_call_history
-                assert all(
-                    "get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items
-                ), "Expected 'get_weather' in tool_call_history for all new_items"
+                assert all("get_weather" in item.step_state.tool_rules_solver.tool_call_history for item in new_items), (
+                    "Expected 'get_weather' in tool_call_history for all new_items"
+                )
                 # Assert that each new item's step_number was incremented to 1
-                assert all(
-                    item.step_state.step_number == 1 for item in new_items
-                ), "Expected step_number to be incremented to 1 for all new_items"
+                assert all(item.step_state.step_number == 1 for item in new_items), (
+                    "Expected step_number to be incremented to 1 for all new_items"
+                )
 
                 # Old items must have been flipped to completed / finished earlier
                 #     (sanity – we already asserted this above, but we keep it close for clarity)
@@ -892,16 +890,14 @@ async def test_resume_step_after_request_all_continue(
                 for agent in agents:
                     before = msg_counts_before[agent.id]  # captured just before resume
                     after = await server.message_manager.size_async(actor=default_user, agent_id=agent.id)
-                    assert after - before >= 2, (
-                        f"Agent {agent.id} should have an assistant tool‑call " f"and tool‑response message persisted."
-                    )
+                    assert after - before >= 2, f"Agent {agent.id} should have an assistant tool‑call and tool‑response message persisted."
 
                 # Check that agent states have been properly modified to have extended in-context messages
                 for agent in agents:
                     refreshed_agent = server.agent_manager.get_agent_by_id(agent_id=agent.id, actor=default_user)
-                    assert (
-                        len(refreshed_agent.message_ids) == 6
-                    ), f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                    assert len(refreshed_agent.message_ids) == 6, (
+                        f"Agent's in-context messages have been extended, are length: {len(refreshed_agent.message_ids)}"
+                    )
 
                 # Check the total list of messages
                 messages = await server.batch_manager.get_messages_for_letta_batch_async(

@@ -1,14 +1,7 @@
 import asyncio
 import json
-import os
-import time
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
-
-from letta.constants import WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE, WEB_SEARCH_MODEL_ENV_VAR_NAME
-from letta.functions.prompts import FIRECRAWL_SEARCH_SYSTEM_PROMPT, get_firecrawl_search_user_prompt
-from letta.functions.types import SearchTask
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -17,34 +10,9 @@ from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
 from letta.services.tool_executor.tool_executor_base import ToolExecutor
-from letta.settings import model_settings, tool_settings
+from letta.settings import tool_settings
 
 logger = get_logger(__name__)
-
-
-class Citation(BaseModel):
-    """A relevant text snippet identified by line numbers in a document."""
-
-    start_line: int  # Starting line number (1-indexed)
-    end_line: int  # Ending line number (1-indexed, inclusive)
-
-
-class CitationWithText(BaseModel):
-    """A citation with the actual extracted text."""
-
-    text: str  # The actual extracted text from the lines
-
-
-class DocumentAnalysis(BaseModel):
-    """Analysis of a document's relevance to a search question."""
-
-    citations: List[Citation]
-
-
-class DocumentAnalysisWithText(BaseModel):
-    """Analysis with extracted text from line citations."""
-
-    citations: List[CitationWithText]
 
 
 class LettaBuiltinToolExecutor(ToolExecutor):
@@ -61,7 +29,7 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
     ) -> ToolExecutionResult:
-        function_map = {"run_code": self.run_code, "web_search": self.web_search}
+        function_map = {"run_code": self.run_code, "web_search": self.web_search, "fetch_webpage": self.fetch_webpage}
 
         if function_name not in function_map:
             raise ValueError(f"Unknown function: {function_name}")
@@ -105,314 +73,166 @@ class LettaBuiltinToolExecutor(ToolExecutor):
         return out
 
     @trace_method
-    async def web_search(self, agent_state: "AgentState", tasks: List[SearchTask], limit: int = 1, return_raw: bool = True) -> str:
+    async def web_search(
+        self,
+        agent_state: "AgentState",
+        query: str,
+        num_results: int = 10,
+        category: Optional[
+            Literal["company", "research paper", "news", "pdf", "github", "tweet", "personal site", "linkedin profile", "financial report"]
+        ] = None,
+        include_text: bool = False,
+        include_domains: Optional[List[str]] = None,
+        exclude_domains: Optional[List[str]] = None,
+        start_published_date: Optional[str] = None,
+        end_published_date: Optional[str] = None,
+        user_location: Optional[str] = None,
+    ) -> str:
         """
-        Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.
-
-        Examples:
-        tasks -> [
-            SearchTask(
-                query="Tesla Q1 2025 earnings report PDF",
-                question="What was Tesla's net profit in Q1 2025?"
-            ),
-            SearchTask(
-                query="Letta API prebuilt tools core_memory_append",
-                question="What does the core_memory_append tool do in Letta?"
-            )
-        ]
+        Search the web using Exa's AI-powered search engine and retrieve relevant content.
 
         Args:
-            tasks (List[SearchTask]): A list of search tasks, each containing a `query` and a corresponding `question`.
-            limit (int, optional): Maximum number of URLs to fetch and analyse per task (must be > 0). Defaults to 3.
-            return_raw (bool, optional): If set to True, returns the raw content of the web pages.
-                                         This should be False unless otherwise specified by the user. Defaults to False.
+            query: The search query to find relevant web content
+            num_results: Number of results to return (1-100)
+            category: Focus search on specific content types
+            include_text: Whether to retrieve full page content (default: False, only returns summary and highlights)
+            include_domains: List of domains to include in search results
+            exclude_domains: List of domains to exclude from search results
+            start_published_date: Only return content published after this date (ISO format)
+            end_published_date: Only return content published before this date (ISO format)
+            user_location: Two-letter country code for localized results
 
         Returns:
-            str: A JSON-encoded string containing a list of search results.
-                 Each result includes ranked snippets with their source URLs and relevance scores,
-                 corresponding to each search task.
+            JSON-encoded string containing search results
         """
-        # # TODO: Temporary, maybe deprecate this field?
-        # if return_raw:
-        #     logger.warning("WARNING! return_raw was set to True, we default to False always. Deprecate this field.")
-        # return_raw = False
         try:
-            from firecrawl import AsyncFirecrawlApp
+            from exa_py import Exa
         except ImportError:
-            raise ImportError("firecrawl-py is not installed in the tool execution environment")
+            raise ImportError("exa-py is not installed in the tool execution environment")
 
-        if not tasks:
-            return json.dumps({"error": "No search tasks provided."})
+        if not query.strip():
+            return json.dumps({"error": "Query cannot be empty", "query": query})
 
-        # Convert dict objects to SearchTask objects
-        search_tasks = []
-        for task in tasks:
-            if isinstance(task, dict):
-                search_tasks.append(SearchTask(**task))
-            else:
-                search_tasks.append(task)
-
-        logger.info(f"[DEBUG] Starting web search with {len(search_tasks)} tasks, limit={limit}, return_raw={return_raw}")
-
-        # Check if the API key exists on the agent state
+        # Get EXA API key from agent environment or tool settings
         agent_state_tool_env_vars = agent_state.get_agent_env_vars_as_dict()
-        firecrawl_api_key = agent_state_tool_env_vars.get("FIRECRAWL_API_KEY") or tool_settings.firecrawl_api_key
-        if not firecrawl_api_key:
-            raise ValueError("FIRECRAWL_API_KEY is not set in environment or on agent_state tool exec environment variables.")
+        exa_api_key = agent_state_tool_env_vars.get("EXA_API_KEY") or tool_settings.exa_api_key
+        if not exa_api_key:
+            raise ValueError("EXA_API_KEY is not set in environment or on agent_state tool execution environment variables.")
 
-        # Track which API key source was used
-        api_key_source = "agent_environment" if agent_state_tool_env_vars.get("FIRECRAWL_API_KEY") else "system_settings"
+        logger.info(f"[DEBUG] Starting Exa web search for query: '{query}' with {num_results} results")
 
-        if limit <= 0:
-            raise ValueError("limit must be greater than 0")
-
-        # Initialize Firecrawl client
-        app = AsyncFirecrawlApp(api_key=firecrawl_api_key)
-
-        # Process all search tasks serially
-        search_results = []
-        for task in search_tasks:
-            try:
-                result = await self._process_single_search_task(app, task, limit, return_raw, api_key_source, agent_state)
-                search_results.append(result)
-            except Exception as e:
-                search_results.append(e)
-
-        # Build final response as a mapping of query -> result
-        final_results = {}
-        successful_tasks = 0
-        failed_tasks = 0
-
-        for i, result in enumerate(search_results):
-            query = search_tasks[i].query
-            if isinstance(result, Exception):
-                logger.error(f"Search task {i} failed: {result}")
-                failed_tasks += 1
-                final_results[query] = {"query": query, "question": search_tasks[i].question, "error": str(result)}
-            else:
-                successful_tasks += 1
-                final_results[query] = result
-
-        logger.info(f"[DEBUG] Web search completed: {successful_tasks} successful, {failed_tasks} failed")
-
-        # Build final response with api_key_source at top level
-        response = {"api_key_source": api_key_source, "results": final_results}
-
-        return json.dumps(response, indent=2, ensure_ascii=False)
-
-    @trace_method
-    async def _process_single_search_task(
-        self, app: "AsyncFirecrawlApp", task: SearchTask, limit: int, return_raw: bool, api_key_source: str, agent_state: "AgentState"
-    ) -> Dict[str, Any]:
-        """Process a single search task."""
-        from firecrawl import ScrapeOptions
-
-        logger.info(f"[DEBUG] Starting Firecrawl search for query: '{task.query}' with limit={limit}")
-
-        # Perform the search for this task
-        scrape_options = ScrapeOptions(
-            formats=["markdown"], excludeTags=["#ad", "#footer"], onlyMainContent=True, parsePDF=True, removeBase64Images=True
-        )
-        search_result = await app.search(task.query, limit=limit, scrape_options=scrape_options)
-
-        logger.info(
-            f"[DEBUG] Firecrawl search completed for '{task.query}': {len(search_result.get('data', [])) if search_result else 0} results"
-        )
-
-        if not search_result or not search_result.get("data"):
-            return {"query": task.query, "question": task.question, "error": "No search results found."}
-
-        # If raw results requested, return them directly
-        if return_raw:
-            return {"query": task.query, "question": task.question, "raw_results": search_result}
-
-        # Check if OpenAI API key is available for semantic parsing
-        if model_settings.openai_api_key:
-            try:
-                from openai import AsyncOpenAI
-
-                logger.info(f"[DEBUG] Starting OpenAI analysis for '{task.query}'")
-
-                # Initialize OpenAI client
-                client = AsyncOpenAI(
-                    api_key=model_settings.openai_api_key,
-                )
-
-                # Process each result with OpenAI concurrently
-                analysis_tasks = []
-                results_with_markdown = []
-                results_without_markdown = []
-
-                for result in search_result.get("data"):
-                    if result.get("markdown"):
-                        # Create async task for OpenAI analysis
-                        analysis_task = self._analyze_document_with_openai(
-                            client, result["markdown"], task.query, task.question, agent_state
-                        )
-                        analysis_tasks.append(analysis_task)
-                        results_with_markdown.append(result)
-                    else:
-                        results_without_markdown.append(result)
-
-                logger.info(f"[DEBUG] Starting parallel OpenAI analysis of {len(analysis_tasks)} documents for '{task.query}'")
-
-                # Fire off all OpenAI requests concurrently
-                analyses = await asyncio.gather(*analysis_tasks, return_exceptions=True)
-
-                logger.info(f"[DEBUG] Completed parallel OpenAI analysis of {len(analyses)} documents for '{task.query}'")
-
-                # Build processed results
-                processed_results = []
-
-                # Check if any analysis failed - if so, fall back to raw results
-                for result, analysis in zip(results_with_markdown, analyses):
-                    if isinstance(analysis, Exception) or analysis is None:
-                        logger.error(f"Analysis failed for {result.get('url')}, falling back to raw results")
-                        return {"query": task.query, "question": task.question, "raw_results": search_result}
-
-                # All analyses succeeded, build processed results
-                for result, analysis in zip(results_with_markdown, analyses):
-                    # Extract actual text from line number citations
-                    analysis_with_text = None
-                    if analysis and analysis.citations:
-                        analysis_with_text = self._extract_text_from_line_citations(analysis, result["markdown"])
-
-                    processed_results.append(
-                        {
-                            "url": result.get("url"),
-                            "title": result.get("title"),
-                            "description": result.get("description"),
-                            "analysis": analysis_with_text.model_dump() if analysis_with_text else None,
-                        }
-                    )
-
-                # Add results without markdown
-                for result in results_without_markdown:
-                    processed_results.append(
-                        {"url": result.get("url"), "title": result.get("title"), "description": result.get("description"), "analysis": None}
-                    )
-
-                # Build final response for this task
-                return self._build_final_response_dict(processed_results, task.query, task.question)
-            except Exception as e:
-                # Log error but continue with raw results
-                logger.error(f"Error with OpenAI processing for task '{task.query}': {e}")
-
-        # Return raw search results if OpenAI processing isn't available or fails
-        return {"query": task.query, "question": task.question, "raw_results": search_result}
-
-    @trace_method
-    async def _analyze_document_with_openai(
-        self, client, markdown_content: str, query: str, question: str, agent_state: "AgentState"
-    ) -> Optional[DocumentAnalysis]:
-        """Use OpenAI to analyze a document and extract relevant passages using line numbers."""
-        original_length = len(markdown_content)
-
-        # Create numbered markdown for the LLM to reference
-        numbered_lines = markdown_content.split("\n")
-        numbered_markdown = "\n".join([f"{i+1:4d}: {line}" for i, line in enumerate(numbered_lines)])
-
-        # Truncate if too long
-        max_content_length = 200000
-        truncated = False
-        if len(numbered_markdown) > max_content_length:
-            numbered_markdown = numbered_markdown[:max_content_length] + "..."
-            truncated = True
-
-        user_prompt = get_firecrawl_search_user_prompt(query, question, numbered_markdown)
-
-        logger.info(
-            f"[DEBUG] Starting OpenAI request with line numbers - Query: '{query}', Content: {original_length} chars (truncated: {truncated})"
-        )
-
-        # Time the OpenAI request
-        start_time = time.time()
-
-        # Check agent state env vars first, then fall back to os.getenv
-        agent_state_tool_env_vars = agent_state.get_agent_env_vars_as_dict()
-        model = agent_state_tool_env_vars.get(WEB_SEARCH_MODEL_ENV_VAR_NAME) or WEB_SEARCH_MODEL_ENV_VAR_DEFAULT_VALUE
-        logger.info(f"Using model {model} for web search result parsing")
-        response = await client.beta.chat.completions.parse(
-            model=model,
-            messages=[{"role": "system", "content": FIRECRAWL_SEARCH_SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
-            response_format=DocumentAnalysis,
-            temperature=0.1,
-        )
-
-        end_time = time.time()
-        request_duration = end_time - start_time
-
-        # Get usage statistics and output length
-        usage = response.usage
-        parsed_result = response.choices[0].message.parsed
-        num_citations = len(parsed_result.citations) if parsed_result else 0
-
-        # Calculate output length (minimal now - just line numbers)
-        output_length = 0
-        if parsed_result and parsed_result.citations:
-            for citation in parsed_result.citations:
-                output_length += 20  # ~20 chars for line numbers only
-
-        logger.info(f"[TIMING] OpenAI request completed in {request_duration:.2f}s - Query: '{query}'")
-        logger.info(f"[TOKENS] Total: {usage.total_tokens} (prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens})")
-        logger.info(f"[OUTPUT] Citations: {num_citations}, Output chars: {output_length} (line-number based)")
-
-        return parsed_result
-
-    def _extract_text_from_line_citations(self, analysis: DocumentAnalysis, original_markdown: str) -> DocumentAnalysisWithText:
-        """Extract actual text from line number citations."""
-        lines = original_markdown.split("\n")
-        citations_with_text = []
-
-        for citation in analysis.citations:
-            try:
-                # Convert to 0-indexed and ensure bounds
-                start_idx = max(0, citation.start_line - 1)
-                end_idx = min(len(lines), citation.end_line)
-
-                # Extract the lines
-                extracted_lines = lines[start_idx:end_idx]
-                extracted_text = "\n".join(extracted_lines)
-
-                citations_with_text.append(CitationWithText(text=extracted_text))
-
-            except Exception as e:
-                logger.info(f"[DEBUG] Failed to extract text for citation lines {citation.start_line}-{citation.end_line}: {e}")
-                # Fall back to including the citation with empty text
-                citations_with_text.append(CitationWithText(text=""))
-
-        return DocumentAnalysisWithText(citations=citations_with_text)
-
-    @trace_method
-    def _build_final_response_dict(self, processed_results: List[Dict], query: str, question: str) -> Dict[str, Any]:
-        """Build the final response dictionary from all processed results."""
-
-        # Build sources array
-        sources = []
-        total_snippets = 0
-
-        for result in processed_results:
-            source = {"url": result.get("url"), "title": result.get("title"), "description": result.get("description")}
-
-            if result.get("analysis") and result["analysis"].get("citations"):
-                analysis = result["analysis"]
-                source["citations"] = analysis["citations"]
-                total_snippets += len(analysis["citations"])
-            else:
-                source["citations"] = []
-
-            sources.append(source)
-
-        # Build final response structure
-        response = {
+        # Build search parameters
+        search_params = {
             "query": query,
-            "question": question,
-            "total_sources": len(sources),
-            "total_citations": total_snippets,
-            "sources": sources,
+            "num_results": min(max(num_results, 1), 100),  # Clamp between 1-100
+            "type": "auto",  # Always use auto search type
         }
 
-        if total_snippets == 0:
-            response["message"] = "No relevant passages found that directly answer the question."
+        # Add optional parameters if provided
+        if category:
+            search_params["category"] = category
+        if include_domains:
+            search_params["include_domains"] = include_domains
+        if exclude_domains:
+            search_params["exclude_domains"] = exclude_domains
+        if start_published_date:
+            search_params["start_published_date"] = start_published_date
+        if end_published_date:
+            search_params["end_published_date"] = end_published_date
+        if user_location:
+            search_params["user_location"] = user_location
 
-        return response
+        # Configure contents retrieval
+        contents_params = {
+            "text": include_text,
+            "highlights": {"num_sentences": 2, "highlights_per_url": 3, "query": query},
+            "summary": {"query": f"Summarize the key information from this content related to: {query}"},
+        }
+
+        def _sync_exa_search():
+            """Synchronous Exa API call to run in thread pool."""
+            exa = Exa(api_key=exa_api_key)
+            return exa.search_and_contents(**search_params, **contents_params)
+
+        try:
+            # Perform search with content retrieval in thread pool to avoid blocking event loop
+            logger.info(f"[DEBUG] Making async Exa API call with params: {search_params}")
+            result = await asyncio.to_thread(_sync_exa_search)
+
+            # Format results
+            formatted_results = []
+            for res in result.results:
+                formatted_result = {
+                    "title": res.title,
+                    "url": res.url,
+                    "published_date": res.published_date,
+                    "author": res.author,
+                }
+
+                # Add content if requested
+                if include_text and hasattr(res, "text") and res.text:
+                    formatted_result["text"] = res.text
+
+                # Add highlights if available
+                if hasattr(res, "highlights") and res.highlights:
+                    formatted_result["highlights"] = res.highlights
+
+                # Add summary if available
+                if hasattr(res, "summary") and res.summary:
+                    formatted_result["summary"] = res.summary
+
+                formatted_results.append(formatted_result)
+
+            response = {"query": query, "results": formatted_results}
+
+            logger.info(f"[DEBUG] Exa search completed successfully with {len(formatted_results)} results")
+            return json.dumps(response, indent=2, ensure_ascii=False)
+
+        except Exception as e:
+            logger.error(f"Exa search failed for query '{query}': {str(e)}")
+            return json.dumps({"query": query, "error": f"Search failed: {str(e)}"})
+
+    async def fetch_webpage(self, agent_state: "AgentState", url: str) -> str:
+        """
+        Fetch a webpage and convert it to markdown/text format using trafilatura with readability fallback.
+
+        Args:
+            url: The URL of the webpage to fetch and convert
+
+        Returns:
+            String containing the webpage content in markdown/text format
+        """
+        import asyncio
+
+        import html2text
+        import requests
+        from readability import Document
+        from trafilatura import extract, fetch_url
+
+        try:
+            # single thread pool call for the entire trafilatura pipeline
+            def trafilatura_pipeline():
+                downloaded = fetch_url(url)  # fetch_url doesn't accept timeout parameter
+                if downloaded:
+                    md = extract(downloaded, output_format="markdown")
+                    return md
+
+            md = await asyncio.to_thread(trafilatura_pipeline)
+            if md:
+                return md
+
+            # single thread pool call for the entire fallback pipeline
+            def readability_pipeline():
+                response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0 (compatible; LettaBot/1.0)"})
+                response.raise_for_status()
+
+                doc = Document(response.text)
+                clean_html = doc.summary(html_partial=True)
+                return html2text.html2text(clean_html)
+
+            return await asyncio.to_thread(readability_pipeline)
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error fetching webpage: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Unexpected error: {str(e)}")

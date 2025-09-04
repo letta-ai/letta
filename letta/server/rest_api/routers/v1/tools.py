@@ -27,7 +27,7 @@ from letta.log import get_logger
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.prompts.gpt_system import get_system_text
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import MessageRole, ToolType
 from letta.schemas.letta_message import ToolReturnMessage
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateStreamableHTTPMCPServer
@@ -62,16 +62,94 @@ async def delete_tool(
 
 @router.get("/count", response_model=int, operation_id="count_tools")
 async def count_tools(
+    name: Optional[str] = None,
+    names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
+    tool_ids: Optional[List[str]] = Query(
+        None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
+    ),
+    search: Optional[str] = Query(None, description="Search tool names (case-insensitive partial match)"),
+    tool_types: Optional[List[str]] = Query(None, description="Filter by tool type(s) - accepts repeated params or comma-separated values"),
+    exclude_tool_types: Optional[List[str]] = Query(
+        None, description="Tool type(s) to exclude - accepts repeated params or comma-separated values"
+    ),
+    return_only_letta_tools: Optional[bool] = Query(False, description="Count only tools with tool_type starting with 'letta_'"),
+    exclude_letta_tools: Optional[bool] = Query(False, description="Exclude built-in Letta tools from the count"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    include_base_tools: Optional[bool] = Query(False, description="Include built-in Letta tools in the count"),
 ):
     """
     Get a count of all tools available to agents belonging to the org of the user.
     """
     try:
+        # Helper function to parse tool types - supports both repeated params and comma-separated values
+        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_types_input is None:
+                return None
+
+            # Flatten any comma-separated values and validate against ToolType enum
+            flattened_types = []
+            for item in tool_types_input:
+                # Split by comma in case user provided comma-separated values
+                types_in_item = [t.strip() for t in item.split(",") if t.strip()]
+                flattened_types.extend(types_in_item)
+
+            # Validate each type against the ToolType enum
+            valid_types = []
+            valid_values = [tt.value for tt in ToolType]
+
+            for tool_type in flattened_types:
+                if tool_type not in valid_values:
+                    raise HTTPException(
+                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
+                    )
+                valid_types.append(tool_type)
+
+            return valid_types if valid_types else None
+
+        # Parse and validate tool types (same logic as list_tools)
+        tool_types_str = parse_tool_types(tool_types)
+        exclude_tool_types_str = parse_tool_types(exclude_tool_types)
+
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.tool_manager.size_async(actor=actor, include_base_tools=include_base_tools)
+
+        # Combine single name with names list for unified processing (same logic as list_tools)
+        combined_names = []
+        if name is not None:
+            combined_names.append(name)
+        if names is not None:
+            combined_names.extend(names)
+
+        # Use None if no names specified, otherwise use the combined list
+        final_names = combined_names if combined_names else None
+
+        # Helper function to parse tool IDs - supports both repeated params and comma-separated values
+        def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_ids_input is None:
+                return None
+
+            # Flatten any comma-separated values
+            flattened_ids = []
+            for item in tool_ids_input:
+                # Split by comma in case user provided comma-separated values
+                ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
+                flattened_ids.extend(ids_in_item)
+
+            return flattened_ids if flattened_ids else None
+
+        # Parse tool IDs (same logic as list_tools)
+        final_tool_ids = parse_tool_ids(tool_ids)
+
+        # Get the count of tools using unified query
+        return await server.tool_manager.count_tools_async(
+            actor=actor,
+            tool_types=tool_types_str,
+            exclude_tool_types=exclude_tool_types_str,
+            names=final_names,
+            tool_ids=final_tool_ids,
+            search=search,
+            return_only_letta_tools=return_only_letta_tools,
+            exclude_letta_tools=exclude_letta_tools,
+        )
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -99,6 +177,16 @@ async def list_tools(
     after: Optional[str] = None,
     limit: Optional[int] = 50,
     name: Optional[str] = None,
+    names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
+    tool_ids: Optional[List[str]] = Query(
+        None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
+    ),
+    search: Optional[str] = Query(None, description="Search tool names (case-insensitive partial match)"),
+    tool_types: Optional[List[str]] = Query(None, description="Filter by tool type(s) - accepts repeated params or comma-separated values"),
+    exclude_tool_types: Optional[List[str]] = Query(
+        None, description="Tool type(s) to exclude - accepts repeated params or comma-separated values"
+    ),
+    return_only_letta_tools: Optional[bool] = Query(False, description="Return only tools with tool_type starting with 'letta_'"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -106,13 +194,76 @@ async def list_tools(
     Get a list of all tools available to agents belonging to the org of the user
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        if name is not None:
-            tool = await server.tool_manager.get_tool_by_name_async(tool_name=name, actor=actor)
-            return [tool] if tool else []
+        # Helper function to parse tool types - supports both repeated params and comma-separated values
+        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_types_input is None:
+                return None
 
-        # Get the list of tools
-        return await server.tool_manager.list_tools_async(actor=actor, after=after, limit=limit)
+            # Flatten any comma-separated values and validate against ToolType enum
+            flattened_types = []
+            for item in tool_types_input:
+                # Split by comma in case user provided comma-separated values
+                types_in_item = [t.strip() for t in item.split(",") if t.strip()]
+                flattened_types.extend(types_in_item)
+
+            # Validate each type against the ToolType enum
+            valid_types = []
+            valid_values = [tt.value for tt in ToolType]
+
+            for tool_type in flattened_types:
+                if tool_type not in valid_values:
+                    raise HTTPException(
+                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
+                    )
+                valid_types.append(tool_type)
+
+            return valid_types if valid_types else None
+
+        # Parse and validate tool types
+        tool_types_str = parse_tool_types(tool_types)
+        exclude_tool_types_str = parse_tool_types(exclude_tool_types)
+
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+        # Combine single name with names list for unified processing
+        combined_names = []
+        if name is not None:
+            combined_names.append(name)
+        if names is not None:
+            combined_names.extend(names)
+
+        # Use None if no names specified, otherwise use the combined list
+        final_names = combined_names if combined_names else None
+
+        # Helper function to parse tool IDs - supports both repeated params and comma-separated values
+        def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_ids_input is None:
+                return None
+
+            # Flatten any comma-separated values
+            flattened_ids = []
+            for item in tool_ids_input:
+                # Split by comma in case user provided comma-separated values
+                ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
+                flattened_ids.extend(ids_in_item)
+
+            return flattened_ids if flattened_ids else None
+
+        # Parse tool IDs
+        final_tool_ids = parse_tool_ids(tool_ids)
+
+        # Get the list of tools using unified query
+        return await server.tool_manager.list_tools_async(
+            actor=actor,
+            after=after,
+            limit=limit,
+            tool_types=tool_types_str,
+            exclude_tool_types=exclude_tool_types_str,
+            names=final_names,
+            tool_ids=final_tool_ids,
+            search=search,
+            return_only_letta_tools=return_only_letta_tools,
+        )
     except Exception as e:
         # Log or print the full exception here for debugging
         print(f"Error occurred: {e}")
@@ -130,7 +281,7 @@ async def create_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        tool = Tool(**request.model_dump())
+        tool = Tool(**request.model_dump(exclude_unset=True))
         return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
         # Log or print the full exception here for debugging
@@ -162,7 +313,9 @@ async def upsert_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        tool = await server.tool_manager.create_or_update_tool_async(pydantic_tool=Tool(**request.model_dump()), actor=actor)
+        tool = await server.tool_manager.create_or_update_tool_async(
+            pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor
+        )
         return tool
     except UniqueConstraintViolationError as e:
         # Log the error and raise a conflict exception
@@ -190,18 +343,17 @@ async def modify_tool(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+        tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
+        print("FINAL TOOL", tool)
+        return tool
     except LettaToolNameConflictError as e:
         # HTTP 409 == Conflict
-        print(f"Tool name conflict during update: {e}")
         raise HTTPException(status_code=409, detail=str(e))
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
-        print(f"Error occurred during tool update: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
-        print(f"Unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
@@ -748,8 +900,8 @@ async def connect_mcp_server(
             except ConnectionError:
                 # TODO: jnjpng make this connection error check more specific to the 401 unauthorized error
                 if isinstance(client, AsyncStdioMCPClient):
-                    logger.warning(f"OAuth not supported for stdio")
-                    yield oauth_stream_event(OauthStreamEvent.ERROR, message=f"OAuth not supported for stdio")
+                    logger.warning("OAuth not supported for stdio")
+                    yield oauth_stream_event(OauthStreamEvent.ERROR, message="OAuth not supported for stdio")
                     return
                 # Continue to OAuth flow
                 logger.info(f"Attempting OAuth flow for {request}...")

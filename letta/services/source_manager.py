@@ -9,8 +9,7 @@ from letta.orm.source import Source as SourceModel
 from letta.orm.sources_agents import SourcesAgents
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.source import Source as PydanticSource
-from letta.schemas.source import SourceUpdate
+from letta.schemas.source import Source as PydanticSource, SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.utils import enforce_types, printd

@@ -1,7 +1,7 @@
 import asyncio
-import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple
+from zoneinfo import ZoneInfo
 
 import sqlalchemy as sa
 from sqlalchemy import delete, func, insert, literal, or_, select, tuple_
@@ -22,52 +22,59 @@ from letta.constants import (
     EXCLUDE_MODEL_KEYWORDS_FROM_BASE_TOOL_RULES,
     FILES_TOOLS,
     INCLUDE_MODEL_KEYWORDS_BASE_TOOL_RULES,
+    RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.llm_api.llm_client import LLMClient
 from letta.log import get_logger
-from letta.orm import Agent as AgentModel
-from letta.orm import AgentsTags, ArchivalPassage
-from letta.orm import Block as BlockModel
-from letta.orm import BlocksAgents
-from letta.orm import Group as GroupModel
-from letta.orm import GroupsAgents, IdentitiesAgents
-from letta.orm import Source as SourceModel
-from letta.orm import SourcePassage, SourcesAgents
-from letta.orm import Tool as ToolModel
-from letta.orm import ToolsAgents
+from letta.orm import (
+    Agent as AgentModel,
+    AgentsTags,
+    ArchivalPassage,
+    Block as BlockModel,
+    BlocksAgents,
+    Group as GroupModel,
+    GroupsAgents,
+    IdentitiesAgents,
+    Source as SourceModel,
+    SourcePassage,
+    SourcesAgents,
+    Tool as ToolModel,
+    ToolsAgents,
+)
 from letta.orm.errors import NoResultFound
-from letta.orm.sandbox_config import AgentEnvironmentVariable
-from letta.orm.sandbox_config import AgentEnvironmentVariable as AgentEnvironmentVariableModel
+from letta.orm.sandbox_config import AgentEnvironmentVariable, AgentEnvironmentVariable as AgentEnvironmentVariableModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState as PydanticAgentState
-from letta.schemas.agent import AgentType, CreateAgent, UpdateAgent, get_prompt_template_for_agent_type
-from letta.schemas.block import DEFAULT_BLOCKS
-from letta.schemas.block import Block as PydanticBlock
-from letta.schemas.block import BlockUpdate
+from letta.schemas.agent import (
+    AgentState as PydanticAgentState,
+    AgentType,
+    CreateAgent,
+    InternalTemplateAgentCreate,
+    UpdateAgent,
+    get_prompt_template_for_agent_type,
+)
+from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType, ToolType
+from letta.schemas.enums import ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
-from letta.schemas.group import Group as PydanticGroup
-from letta.schemas.group import ManagerType
+from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import ContextWindowOverview, Memory
-from letta.schemas.message import Message
-from letta.schemas.message import Message as PydanticMessage
-from letta.schemas.message import MessageCreate, MessageUpdate
+from letta.schemas.message import Message, Message as PydanticMessage, MessageCreate, MessageUpdate
 from letta.schemas.passage import Passage as PydanticPassage
 from letta.schemas.source import Source as PydanticSource
 from letta.schemas.tool import Tool as PydanticTool
-from letta.schemas.tool_rule import ContinueToolRule, TerminalToolRule
+from letta.schemas.tool_rule import ContinueToolRule, RequiresApprovalToolRule, TerminalToolRule
 from letta.schemas.user import User as PydanticUser
 from letta.serialize_schemas import MarshmallowAgentSchema
 from letta.serialize_schemas.marshmallow_message import SerializedMessageSchema
 from letta.serialize_schemas.marshmallow_tool import SerializedToolSchema
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
 from letta.server.db import db_registry
+from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
 from letta.services.context_window_calculator.context_window_calculator import ContextWindowCalculator
 from letta.services.context_window_calculator.token_counter import AnthropicTokenCounter, TiktokenCounter
@@ -117,6 +124,7 @@ class AgentManager:
         self.passage_manager = PassageManager()
         self.identity_manager = IdentityManager()
         self.file_agent_manager = FileAgentManager()
+        self.archive_manager = ArchiveManager()
 
     @staticmethod
     def _should_exclude_model_from_base_tool_rules(model: str) -> bool:
@@ -162,14 +170,16 @@ class AgentManager:
         return name_to_id, id_to_name
 
     @staticmethod
-    async def _resolve_tools_async(session, names: Set[str], ids: Set[str], org_id: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+    async def _resolve_tools_async(
+        session, names: Set[str], ids: Set[str], org_id: str
+    ) -> Tuple[Dict[str, str], Dict[str, str], List[str]]:
         """
         Bulk‑fetch all ToolModel rows matching either name ∈ names or id ∈ ids
         (and scoped to this organization), and return two maps:
           name_to_id, id_to_name.
         Raises if any requested name or id was not found.
         """
-        stmt = select(ToolModel.id, ToolModel.name).where(
+        stmt = select(ToolModel.id, ToolModel.name, ToolModel.default_requires_approval).where(
             ToolModel.organization_id == org_id,
             or_(
                 ToolModel.name.in_(names),
@@ -180,6 +190,7 @@ class AgentManager:
         rows = result.fetchall()  # Use fetchall()
         name_to_id = {row[1]: row[0] for row in rows}  # row[1] is name, row[0] is id
         id_to_name = {row[0]: row[1] for row in rows}  # row[0] is id, row[1] is name
+        requires_approval = [row[1] for row in rows if row[2]]  # row[1] is name, row[2] is default_requires_approval
 
         missing_names = names - set(name_to_id.keys())
         missing_ids = ids - set(id_to_name.keys())
@@ -188,7 +199,7 @@ class AgentManager:
         if missing_ids:
             raise ValueError(f"Tools not found by id:   {missing_ids}")
 
-        return name_to_id, id_to_name
+        return name_to_id, id_to_name, requires_approval
 
     @staticmethod
     def _bulk_insert_pivot(session, table, rows: list[dict]):
@@ -402,6 +413,13 @@ class AgentManager:
                     per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
 
+                # Set template fields for InternalTemplateAgentCreate (similar to group creation)
+                if isinstance(agent_create, InternalTemplateAgentCreate):
+                    new_agent.base_template_id = agent_create.base_template_id
+                    new_agent.template_id = agent_create.template_id
+                    new_agent.deployment_id = agent_create.deployment_id
+                    new_agent.entity_id = agent_create.entity_id
+
                 if _test_only_force_id:
                     new_agent.id = _test_only_force_id
 
@@ -482,7 +500,6 @@ class AgentManager:
         # blocks
         block_ids = list(agent_create.block_ids or [])
         if agent_create.memory_blocks:
-
             pydantic_blocks = [PydanticBlock(**b.model_dump(to_orm=True)) for b in agent_create.memory_blocks]
 
             # Inject a description for the default blocks if the user didn't specify them
@@ -548,7 +565,7 @@ class AgentManager:
         async with db_registry.async_session() as session:
             async with session.begin():
                 # Note: This will need to be modified if _resolve_tools needs an async version
-                name_to_id, id_to_name = await self._resolve_tools_async(
+                name_to_id, id_to_name, requires_approval = await self._resolve_tools_async(
                     session,
                     tool_names,
                     supplied_ids,
@@ -580,6 +597,9 @@ class AgentManager:
                         elif tn in (BASE_TOOLS + BASE_MEMORY_TOOLS + BASE_MEMORY_TOOLS_V2 + BASE_SLEEPTIME_TOOLS):
                             tool_rules.append(ContinueToolRule(tool_name=tn))
 
+                for tool_with_requires_approval in requires_approval:
+                    tool_rules.append(RequiresApprovalToolRule(tool_name=tool_with_requires_approval))
+
                 if tool_rules:
                     check_supports_structured_output(model=agent_create.llm_config.model, tool_rules=tool_rules)
 
@@ -610,6 +630,13 @@ class AgentManager:
                     max_files_open=agent_create.max_files_open,
                     per_file_view_window_char_limit=agent_create.per_file_view_window_char_limit,
                 )
+
+                # Set template fields for InternalTemplateAgentCreate (similar to group creation)
+                if isinstance(agent_create, InternalTemplateAgentCreate):
+                    new_agent.base_template_id = agent_create.base_template_id
+                    new_agent.template_id = agent_create.template_id
+                    new_agent.deployment_id = agent_create.deployment_id
+                    new_agent.entity_id = agent_create.entity_id
 
                 if _test_only_force_id:
                     new_agent.id = _test_only_force_id
@@ -692,7 +719,9 @@ class AgentManager:
 
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
-            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor)
+            await self.message_manager.create_many_messages_async(
+                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config
+            )
         return result
 
     @enforce_types
@@ -777,7 +806,6 @@ class AgentManager:
         agent_update: UpdateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-
         new_tools = set(agent_update.tool_ids or [])
         new_sources = set(agent_update.source_ids or [])
         new_blocks = set(agent_update.block_ids or [])
@@ -785,7 +813,6 @@ class AgentManager:
         new_tags = set(agent_update.tags or [])
 
         with db_registry.session() as session, session.begin():
-
             agent: AgentModel = AgentModel.read(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id
@@ -902,7 +929,6 @@ class AgentManager:
         agent_update: UpdateAgent,
         actor: PydanticUser,
     ) -> PydanticAgentState:
-
         new_tools = set(agent_update.tool_ids or [])
         new_sources = set(agent_update.source_ids or [])
         new_blocks = set(agent_update.block_ids or [])
@@ -910,7 +936,6 @@ class AgentManager:
         new_tags = set(agent_update.tags or [])
 
         async with db_registry.async_session() as session, session.begin():
-
             agent: AgentModel = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
             agent.updated_at = datetime.now(timezone.utc)
             agent.last_updated_by_id = actor.id
@@ -1861,8 +1886,8 @@ class AgentManager:
     async def append_to_in_context_messages_async(
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
-        messages = await self.message_manager.create_many_messages_async(messages, actor=actor)
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, embedding_config=agent.embedding_config)
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
@@ -2507,7 +2532,20 @@ class AgentManager:
         embedding_config: Optional[EmbeddingConfig] = None,
         agent_only: bool = False,
     ) -> List[PydanticPassage]:
-        """Lists all passages attached to an agent."""
+        """
+        DEPRECATED: Use query_source_passages_async or query_agent_passages_async instead.
+        This method is kept only for test compatibility and will be removed in a future version.
+
+        Lists all passages attached to an agent (combines both source and agent passages).
+        """
+        import warnings
+
+        warnings.warn(
+            "list_passages_async is deprecated. Use query_source_passages_async or query_agent_passages_async instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         async with db_registry.async_session() as session:
             main_query = await build_passage_query(
                 actor=actor,
@@ -2554,7 +2592,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_source_passages_async(
+    async def query_source_passages_async(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2602,7 +2640,7 @@ class AgentManager:
 
     @enforce_types
     @trace_method
-    async def list_agent_passages_async(
+    async def query_agent_passages_async(
         self,
         actor: PydanticUser,
         agent_id: Optional[str] = None,
@@ -2615,8 +2653,57 @@ class AgentManager:
         embed_query: bool = False,
         ascending: bool = True,
         embedding_config: Optional[EmbeddingConfig] = None,
+        tags: Optional[List[str]] = None,
+        tag_match_mode: Optional[TagMatchMode] = None,
     ) -> List[PydanticPassage]:
         """Lists all passages attached to an agent."""
+        # Check if we should use Turbopuffer for vector search
+        if embed_query and agent_id and query_text and embedding_config:
+            # Get archive IDs for the agent
+            archive_ids = await self.get_agent_archive_ids_async(agent_id=agent_id, actor=actor)
+
+            if archive_ids:
+                # TODO: Remove this restriction once we support multiple archives with mixed vector DB providers
+                if len(archive_ids) > 1:
+                    raise ValueError(f"Agent {agent_id} has multiple archives, which is not yet supported for vector search")
+
+                # Get archive to check vector_db_provider
+                archive = await self.archive_manager.get_archive_by_id_async(archive_id=archive_ids[0], actor=actor)
+
+                # Use Turbopuffer for vector search if archive is configured for TPUF
+                if archive.vector_db_provider == VectorDBProvider.TPUF:
+                    from letta.helpers.tpuf_client import TurbopufferClient
+                    from letta.llm_api.llm_client import LLMClient
+
+                    # Generate embedding for query
+                    embedding_client = LLMClient.create(
+                        provider_type=embedding_config.embedding_endpoint_type,
+                        actor=actor,
+                    )
+                    embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
+                    query_embedding = embeddings[0]
+
+                    # Query Turbopuffer - use hybrid search when text is available
+                    tpuf_client = TurbopufferClient()
+                    # use hybrid search to combine vector and full-text search
+                    passages_with_scores = await tpuf_client.query_passages(
+                        archive_id=archive_ids[0],
+                        query_embedding=query_embedding,
+                        query_text=query_text,  # pass text for potential hybrid search
+                        search_mode="hybrid",  # use hybrid mode for better results
+                        top_k=limit,
+                        tags=tags,
+                        tag_match_mode=tag_match_mode or TagMatchMode.ANY,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+
+                    # Return just the passages (without scores)
+                    return [passage for passage, _ in passages_with_scores]
+            else:
+                return []
+
+        # Fall back to SQL-based search for non-vector queries or NATIVE archives
         async with db_registry.async_session() as session:
             main_query = await build_agent_passage_query(
                 actor=actor,
@@ -2642,7 +2729,151 @@ class AgentManager:
             passages = result.scalars().all()
 
             # Convert to Pydantic models
-            return [p.to_pydantic() for p in passages]
+            pydantic_passages = [p.to_pydantic() for p in passages]
+
+            # TODO: Integrate tag filtering directly into the SQL query for better performance.
+            # Currently using post-filtering which is less efficient but simpler to implement.
+            # Future optimization: Add JOIN with passage_tags table and WHERE clause for tag filtering.
+            if tags:
+                filtered_passages = []
+                for passage in pydantic_passages:
+                    if passage.tags:
+                        passage_tags = set(passage.tags)
+                        query_tags = set(tags)
+
+                        if tag_match_mode == TagMatchMode.ALL:
+                            # ALL mode: passage must have all query tags
+                            if query_tags.issubset(passage_tags):
+                                filtered_passages.append(passage)
+                        else:
+                            # ANY mode (default): passage must have at least one query tag
+                            if query_tags.intersection(passage_tags):
+                                filtered_passages.append(passage)
+
+                return filtered_passages
+
+            return pydantic_passages
+
+    @enforce_types
+    @trace_method
+    async def search_agent_archival_memory_async(
+        self,
+        agent_id: str,
+        actor: PydanticUser,
+        query: str,
+        tags: Optional[List[str]] = None,
+        tag_match_mode: Literal["any", "all"] = "any",
+        top_k: Optional[int] = None,
+        start_datetime: Optional[str] = None,
+        end_datetime: Optional[str] = None,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """
+        Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+
+        This is a shared method used by both the agent tool and API endpoint to ensure consistent behavior.
+
+        Args:
+            agent_id: ID of the agent whose archival memory to search
+            actor: User performing the search
+            query: String to search for using semantic similarity
+            tags: Optional list of tags to filter search results
+            tag_match_mode: How to match tags - "any" or "all"
+            top_k: Maximum number of results to return
+            start_datetime: Filter results after this datetime (ISO 8601 format)
+            end_datetime: Filter results before this datetime (ISO 8601 format)
+
+        Returns:
+            Tuple of (formatted_results, count)
+        """
+        # Handle empty or whitespace-only queries
+        if not query or not query.strip():
+            return [], 0
+
+        # Get the agent to access timezone and embedding config
+        agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+        # Parse datetime parameters if provided
+        start_date = None
+        end_date = None
+
+        if start_datetime:
+            try:
+                # Try parsing as full datetime first (with time)
+                start_date = datetime.fromisoformat(start_datetime)
+            except ValueError:
+                try:
+                    # Fall back to date-only format
+                    start_date = datetime.strptime(start_datetime, "%Y-%m-%d")
+                    # Set to beginning of day
+                    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                except ValueError:
+                    raise ValueError(
+                        f"Invalid start_datetime format: {start_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+                    )
+
+            # Apply agent's timezone if datetime is naive
+            if start_date.tzinfo is None and agent_state.timezone:
+                tz = ZoneInfo(agent_state.timezone)
+                start_date = start_date.replace(tzinfo=tz)
+
+        if end_datetime:
+            try:
+                # Try parsing as full datetime first (with time)
+                end_date = datetime.fromisoformat(end_datetime)
+            except ValueError:
+                try:
+                    # Fall back to date-only format
+                    end_date = datetime.strptime(end_datetime, "%Y-%m-%d")
+                    # Set to end of day for end dates
+                    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                except ValueError:
+                    raise ValueError(f"Invalid end_datetime format: {end_datetime}. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM)")
+
+            # Apply agent's timezone if datetime is naive
+            if end_date.tzinfo is None and agent_state.timezone:
+                tz = ZoneInfo(agent_state.timezone)
+                end_date = end_date.replace(tzinfo=tz)
+
+        # Convert string to TagMatchMode enum
+        tag_mode = TagMatchMode.ANY if tag_match_mode == "any" else TagMatchMode.ALL
+
+        # Get results using existing passage query method
+        limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+        all_results = await self.query_agent_passages_async(
+            actor=actor,
+            agent_id=agent_id,
+            query_text=query,
+            limit=limit,
+            embedding_config=agent_state.embedding_config,
+            embed_query=True,
+            tags=tags,
+            tag_match_mode=tag_mode,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # Format results to include tags with friendly timestamps
+        formatted_results = []
+        for result in all_results:
+            # Format timestamp in agent's timezone if available
+            timestamp = result.created_at
+            if timestamp and agent_state.timezone:
+                try:
+                    # Convert to agent's timezone
+                    tz = ZoneInfo(agent_state.timezone)
+                    local_time = timestamp.astimezone(tz)
+                    # Format as ISO string with timezone
+                    formatted_timestamp = local_time.isoformat()
+                except Exception:
+                    # Fallback to ISO format if timezone conversion fails
+                    formatted_timestamp = str(timestamp)
+            else:
+                # Use ISO format if no timezone is set
+                formatted_timestamp = str(timestamp) if timestamp else "Unknown"
+
+            formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
+
+        return formatted_results, len(formatted_results)
 
     @enforce_types
     @trace_method
@@ -2784,12 +3015,15 @@ class AgentManager:
 
             # verify tool exists and belongs to organization in a single query with the insert
             # first, check if tool exists with correct organization
-            tool_check_query = select(func.count(ToolModel.id)).where(
+            tool_check_query = select(ToolModel.name, ToolModel.default_requires_approval).where(
                 ToolModel.id == tool_id, ToolModel.organization_id == actor.organization_id
             )
-            tool_result = await session.execute(tool_check_query)
-            if tool_result.scalar() == 0:
+            result = await session.execute(tool_check_query)
+            tool_rows = result.fetchall()
+
+            if len(tool_rows) == 0:
                 raise NoResultFound(f"Tool with id={tool_id} not found in organization={actor.organization_id}")
+            tool_name, default_requires_approval = tool_rows[0]
 
             # use postgresql on conflict or mysql on duplicate key update for atomic operation
             if settings.letta_pg_uri_no_default:
@@ -2812,6 +3046,17 @@ class AgentManager:
                     await session.execute(insert_stmt)
                 else:
                     logger.info(f"Tool id={tool_id} is already attached to agent id={agent_id}")
+
+            if default_requires_approval:
+                agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+                existing_rules = [rule for rule in agent.tool_rules if rule.tool_name == tool_name and rule.type == "requires_approval"]
+                if len(existing_rules) == 0:
+                    # Create a new list to ensure SQLAlchemy detects the change
+                    # This is critical for JSON columns - modifying in place doesn't trigger change detection
+                    tool_rules = list(agent.tool_rules) if agent.tool_rules else []
+                    tool_rules.append(RequiresApprovalToolRule(tool_name=tool_name))
+                    agent.tool_rules = tool_rules
+                    session.add(agent)
 
             await session.commit()
 
@@ -3077,6 +3322,33 @@ class AgentManager:
             else:
                 logger.info(f"Detached all {detached_count} tools from agent {agent_id}")
 
+            await session.commit()
+
+    @enforce_types
+    @trace_method
+    async def modify_approvals_async(self, agent_id: str, tool_name: str, requires_approval: bool, actor: PydanticUser) -> None:
+        def is_target_rule(rule):
+            return rule.tool_name == tool_name and rule.type == "requires_approval"
+
+        async with db_registry.async_session() as session:
+            agent = await AgentModel.read_async(db_session=session, identifier=agent_id, actor=actor)
+            existing_rules = [rule for rule in agent.tool_rules if is_target_rule(rule)]
+
+            if len(existing_rules) == 1 and not requires_approval:
+                tool_rules = [rule for rule in agent.tool_rules if not is_target_rule(rule)]
+            elif len(existing_rules) == 0 and requires_approval:
+                # Create a new list to ensure SQLAlchemy detects the change
+                # This is critical for JSON columns - modifying in place doesn't trigger change detection
+                tool_rules = list(agent.tool_rules) if agent.tool_rules else []
+                tool_rules.append(RequiresApprovalToolRule(tool_name=tool_name))
+            else:
+                tool_rules = None
+
+            if tool_rules is None:
+                return
+
+            agent.tool_rules = tool_rules
+            session.add(agent)
             await session.commit()
 
     @enforce_types
@@ -3409,7 +3681,7 @@ class AgentManager:
         )
         calculator = ContextWindowCalculator()
 
-        if os.getenv("LETTA_ENVIRONMENT") == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
+        if settings.environment == "PRODUCTION" or agent_state.llm_config.model_endpoint_type == "anthropic":
             anthropic_client = LLMClient.create(provider_type=ProviderType.anthropic, actor=actor)
             model = agent_state.llm_config.model if agent_state.llm_config.model_endpoint_type == "anthropic" else None
 
@@ -3426,3 +3698,45 @@ class AgentManager:
             num_archival_memories=num_archival_memories,
             num_messages=num_messages,
         )
+
+    async def get_or_set_vector_db_namespace_async(
+        self,
+        agent_id: str,
+        organization_id: str,
+    ) -> str:
+        """Get the vector database namespace for an agent, creating it if it doesn't exist.
+
+        Args:
+            agent_id: Agent ID to check/store namespace
+            organization_id: Organization ID for namespace generation
+
+        Returns:
+            The org-scoped namespace name
+        """
+        from sqlalchemy import update
+
+        from letta.settings import settings
+
+        async with db_registry.async_session() as session:
+            # check if namespace already exists
+            result = await session.execute(select(AgentModel._vector_db_namespace).where(AgentModel.id == agent_id))
+            row = result.fetchone()
+
+            if row and row[0]:
+                return row[0]
+
+            # TODO: In the future, we might use agent_id for sharding the namespace
+            # For now, all messages in an org share the same namespace
+
+            # generate org-scoped namespace name
+            environment = settings.environment
+            if environment:
+                namespace_name = f"messages_{organization_id}_{environment.lower()}"
+            else:
+                namespace_name = f"messages_{organization_id}"
+
+            # update the agent with the namespace (keeps agent-level tracking for future sharding)
+            await session.execute(update(AgentModel).where(AgentModel.id == agent_id).values(_vector_db_namespace=namespace_name))
+            await session.commit()
+
+            return namespace_name

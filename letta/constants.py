@@ -132,7 +132,7 @@ MEMORY_TOOLS_LINE_NUMBER_PREFIX_REGEX = re.compile(
 )
 
 # Built in tools
-BUILTIN_TOOLS = ["run_code", "web_search"]
+BUILTIN_TOOLS = ["run_code", "web_search", "fetch_webpage"]
 
 # Built in tools
 FILES_TOOLS = ["open_files", "grep_files", "semantic_search_files"]
@@ -166,6 +166,9 @@ def FUNCTION_RETURN_VALUE_TRUNCATED(return_str, return_char: int, return_char_li
 # or in cases where the agent has no concept of messaging a user (e.g. a workflow agent)
 DEFAULT_MESSAGE_TOOL = SEND_MESSAGE_TOOL_NAME
 DEFAULT_MESSAGE_TOOL_KWARG = "message"
+
+# The name of the conversation search tool - messages with this tool should not be indexed
+CONVERSATION_SEARCH_TOOL_NAME = "conversation_search"
 
 PRE_EXECUTION_MESSAGE_ARG = "pre_exec_msg"
 
@@ -210,12 +213,12 @@ LLM_MAX_TOKENS = {
     "deepseek-reasoner": 64000,
     ## OpenAI models: https://platform.openai.com/docs/models/overview
     # gpt-5
-    "gpt-5": 400000,
-    "gpt-5-2025-08-07": 400000,
-    "gpt-5-mini": 400000,
-    "gpt-5-mini-2025-08-07": 400000,
-    "gpt-5-nano": 400000,
-    "gpt-5-nano-2025-08-07": 400000,
+    "gpt-5": 272000,
+    "gpt-5-2025-08-07": 272000,
+    "gpt-5-mini": 272000,
+    "gpt-5-mini-2025-08-07": 272000,
+    "gpt-5-nano": 272000,
+    "gpt-5-nano-2025-08-07": 272000,
     # reasoners
     "o1": 200000,
     # "o1-pro": 200000,  # responses API only
@@ -340,7 +343,7 @@ CORE_MEMORY_BLOCK_CHAR_LIMIT: int = 20000
 
 # Function return limits
 FUNCTION_RETURN_CHAR_LIMIT = 50000  # ~300 words
-BASE_FUNCTION_RETURN_CHAR_LIMIT = 1000000  # very high (we rely on implementation)
+BASE_FUNCTION_RETURN_CHAR_LIMIT = 50000  # same as regular function limit
 FILE_IS_TRUNCATED_WARNING = "# NOTE: This block is truncated, use functions to view the full content."
 
 MAX_PAUSE_HEARTBEATS = 360  # in min

@@ -2,7 +2,7 @@ import asyncio
 import json
 import traceback
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -32,9 +32,15 @@ from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
-from letta.schemas.memory import ContextWindowOverview, CreateArchivalMemory, Memory
+from letta.schemas.memory import (
+    ArchivalMemorySearchResponse,
+    ArchivalMemorySearchResult,
+    ContextWindowOverview,
+    CreateArchivalMemory,
+    Memory,
+)
 from letta.schemas.message import MessageCreate
-from letta.schemas.passage import Passage, PassageUpdate
+from letta.schemas.passage import Passage
 from letta.schemas.run import Run
 from letta.schemas.source import Source
 from letta.schemas.tool import Tool
@@ -155,8 +161,8 @@ async def export_agent_serialized(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
     use_legacy_format: bool = Query(
-        True,
-        description="If true, exports using the legacy single-agent format. If false, exports using the new multi-entity format.",
+        False,
+        description="If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).",
     ),
     # do not remove, used to autogeneration of spec
     # TODO: Think of a better way to export AgentFileSchema
@@ -252,6 +258,7 @@ async def import_agent(
     project_id: str | None = None,
     strip_messages: bool = False,
     env_vars: Optional[dict[str, Any]] = None,
+    override_embedding_handle: Optional[str] = None,
 ) -> List[str]:
     """
     Import an agent using the new AgentFileSchema format.
@@ -262,12 +269,19 @@ async def import_agent(
         raise HTTPException(status_code=422, detail=f"Invalid agent file schema: {e!s}")
 
     try:
+        if override_embedding_handle:
+            embedding_config_override = await server.get_cached_embedding_config_async(actor=actor, handle=override_embedding_handle)
+        else:
+            embedding_config_override = None
+
         import_result = await server.agent_serialization_manager.import_file(
             schema=agent_schema,
             actor=actor,
             append_copy_suffix=append_copy_suffix,
             override_existing_tools=override_existing_tools,
             env_vars=env_vars,
+            override_embedding_config=embedding_config_override,
+            project_id=project_id,
         )
 
         if not import_result.success:
@@ -296,10 +310,15 @@ async def import_agent_serialized(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
+    x_override_embedding_model: str | None = Header(None, alias="x-override-embedding-model"),
     append_copy_suffix: bool = Form(True, description='If set to True, appends "_copy" to the end of the agent name.'),
     override_existing_tools: bool = Form(
         True,
         description="If set to True, existing tools can get their source code overwritten by the uploaded tool definitions. Note that Letta core tools can never be updated externally.",
+    ),
+    override_embedding_handle: Optional[str] = Form(
+        None,
+        description="Override import with specific embedding handle.",
     ),
     project_id: str | None = Form(None, description="The project ID to associate the uploaded agent with."),
     strip_messages: bool = Form(
@@ -333,6 +352,9 @@ async def import_agent_serialized(
         if not isinstance(env_vars, dict):
             raise HTTPException(status_code=400, detail="env_vars_json must be a valid JSON string")
 
+    # Prioritize header over form data for override_embedding_handle
+    final_override_embedding_handle = x_override_embedding_model or override_embedding_handle
+
     # Check if the JSON is AgentFileSchema or AgentSchema
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
@@ -346,6 +368,7 @@ async def import_agent_serialized(
             project_id=project_id,
             strip_messages=strip_messages,
             env_vars=env_vars,
+            override_embedding_handle=final_override_embedding_handle,
         )
     else:
         # This is a legacy AgentSchema
@@ -460,6 +483,25 @@ async def detach_tool(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
+    # TODO: Unfortunately we need this to preserve our current API behavior
+    return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
+
+
+@router.patch("/{agent_id}/tools/approval/{tool_name}", response_model=AgentState, operation_id="modify_approval")
+async def modify_approval(
+    agent_id: str,
+    tool_name: str,
+    requires_approval: bool,
+    server: "SyncServer" = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Attach a tool to an agent.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    await server.agent_manager.modify_approvals_async(
+        agent_id=agent_id, tool_name=tool_name, requires_approval=requires_approval, actor=actor
+    )
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
 
@@ -937,22 +979,62 @@ async def create_passage(
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    return await server.insert_archival_memory_async(agent_id=agent_id, memory_contents=request.text, actor=actor)
+    return await server.insert_archival_memory_async(
+        agent_id=agent_id, memory_contents=request.text, actor=actor, tags=request.tags, created_at=request.created_at
+    )
 
 
-@router.patch("/{agent_id}/archival-memory/{memory_id}", response_model=list[Passage], operation_id="modify_passage")
-def modify_passage(
+@router.get("/{agent_id}/archival-memory/search", response_model=ArchivalMemorySearchResponse, operation_id="search_archival_memory")
+async def search_archival_memory(
     agent_id: str,
-    memory_id: str,
-    passage: PassageUpdate = Body(...),
+    query: str = Query(..., description="String to search for using semantic similarity"),
+    tags: Optional[List[str]] = Query(None, description="Optional list of tags to filter search results"),
+    tag_match_mode: Literal["any", "all"] = Query(
+        "any", description="How to match tags - 'any' to match passages with any of the tags, 'all' to match only passages with all tags"
+    ),
+    top_k: Optional[int] = Query(None, description="Maximum number of results to return. Uses system default if not specified"),
+    start_datetime: Optional[datetime] = Query(None, description="Filter results to passages created after this datetime"),
+    end_datetime: Optional[datetime] = Query(None, description="Filter results to passages created before this datetime"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
-    Modify a memory in the agent's archival memory store.
+    Search archival memory using semantic (embedding-based) search with optional temporal filtering.
+
+    This endpoint allows manual triggering of archival memory searches, enabling users to query
+    an agent's archival memory store directly via the API. The search uses the same functionality
+    as the agent's archival_memory_search tool but is accessible for external API usage.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
-    return server.modify_archival_memory(agent_id=agent_id, memory_id=memory_id, passage=passage, actor=actor)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    try:
+        # convert datetime to string in ISO 8601 format
+        start_datetime = start_datetime.isoformat() if start_datetime else None
+        end_datetime = end_datetime.isoformat() if end_datetime else None
+
+        # Use the shared agent manager method
+        formatted_results, count = await server.agent_manager.search_agent_archival_memory_async(
+            agent_id=agent_id,
+            actor=actor,
+            query=query,
+            tags=tags,
+            tag_match_mode=tag_match_mode,
+            top_k=top_k,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+        )
+
+        # Convert to proper response schema
+        search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
+
+        return ArchivalMemorySearchResponse(results=search_results, count=count)
+
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error during archival memory search: {str(e)}")
 
 
 # TODO(ethan): query or path parameter for memory_id?
@@ -1049,6 +1131,8 @@ async def send_message(
     Process a user message and return the agent's response.
     This endpoint accepts a message from a user and processes it through the agent.
     """
+    if len(request.messages) == 0:
+        raise ValueError("Messages must not be empty")
     request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
@@ -1067,6 +1151,7 @@ async def send_message(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     # Create a new run for execution tracking
@@ -1197,6 +1282,9 @@ async def send_message_streaming(
     request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
+    # TODO (cliandy): clean this up
+    redis_client = await get_redis_client()
+
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
@@ -1212,8 +1300,9 @@ async def send_message_streaming(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
-    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]
+    model_compatible_token_streaming = agent.llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock", "deepseek"]
 
     # Create a new job for execution tracking
     if settings.track_agent_run:
@@ -1236,13 +1325,10 @@ async def send_message_streaming(
             ),
             actor=actor,
         )
+        job_update_metadata = None
+        await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
     else:
         run = None
-
-    job_update_metadata = None
-    # TODO (cliandy): clean this up
-    redis_client = await get_redis_client()
-    await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
         if agent_eligible and model_compatible:
@@ -1281,6 +1367,23 @@ async def send_message_streaming(
                     ),
                 )
 
+            if request.stream_tokens and model_compatible_token_streaming:
+                raw_stream = agent_loop.step_stream(
+                    input_messages=request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+            else:
+                raw_stream = agent_loop.step_stream_no_tokens(
+                    request.messages,
+                    max_steps=request.max_steps,
+                    use_assistant_message=request.use_assistant_message,
+                    request_start_timestamp_ns=request_start_timestamp_ns,
+                    include_return_message_types=request.include_return_message_types,
+                )
+
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
             if request.background and settings.track_agent_run:
@@ -1294,23 +1397,6 @@ async def send_message_streaming(
                         ),
                     )
 
-                if request.stream_tokens and model_compatible_token_streaming:
-                    raw_stream = agent_loop.step_stream(
-                        input_messages=request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    )
-                else:
-                    raw_stream = agent_loop.step_stream_no_tokens(
-                        request.messages,
-                        max_steps=request.max_steps,
-                        use_assistant_message=request.use_assistant_message,
-                        request_start_timestamp_ns=request_start_timestamp_ns,
-                        include_return_message_types=request.include_return_message_types,
-                    )
-
                 asyncio.create_task(
                     create_background_stream_processor(
                         stream_generator=raw_stream,
@@ -1319,55 +1405,21 @@ async def send_message_streaming(
                     )
                 )
 
-                stream = redis_sse_stream_generator(
+                raw_stream = redis_sse_stream_generator(
                     redis_client=redis_client,
                     run_id=run.id,
                 )
 
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval)
-
-                return StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
-
-            if request.stream_tokens and model_compatible_token_streaming:
-                raw_stream = agent_loop.step_stream(
-                    input_messages=request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
-                # Conditionally wrap with keepalive based on request parameter
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
-                else:
-                    stream = raw_stream
-
-                result = StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
+            # Conditionally wrap with keepalive based on request parameter
+            if request.include_pings and settings.enable_keepalive:
+                stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
             else:
-                raw_stream = agent_loop.step_stream_no_tokens(
-                    request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
-                # Conditionally wrap with keepalive based on request parameter
-                if request.include_pings and settings.enable_keepalive:
-                    stream = add_keepalive_to_stream(raw_stream, keepalive_interval=settings.keepalive_interval)
-                else:
-                    stream = raw_stream
+                stream = raw_stream
 
-                result = StreamingResponseWithStatusCode(
-                    stream,
-                    media_type="text/event-stream",
-                )
+            result = StreamingResponseWithStatusCode(
+                stream,
+                media_type="text/event-stream",
+            )
         else:
             result = await server.send_message_to_agent(
                 agent_id=agent_id,
@@ -1382,11 +1434,13 @@ async def send_message_streaming(
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
             )
-        job_status = JobStatus.running
+        if settings.track_agent_run:
+            job_status = JobStatus.running
         return result
     except Exception as e:
-        job_update_metadata = {"error": str(e)}
-        job_status = JobStatus.failed
+        if settings.track_agent_run:
+            job_update_metadata = {"error": str(e)}
+            job_status = JobStatus.failed
         raise
     finally:
         if settings.track_agent_run:
@@ -1469,7 +1523,10 @@ async def _process_message_background(
             "google_vertex",
             "bedrock",
             "ollama",
+            "azure",
+            "xai",
             "groq",
+            "deepseek",
         ]
         if agent_eligible and model_compatible:
             if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
@@ -1660,6 +1717,7 @@ async def preview_raw_payload(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     if agent_eligible and model_compatible:
@@ -1731,6 +1789,7 @@ async def summarize_agent_conversation(
         "azure",
         "xai",
         "groq",
+        "deepseek",
     ]
 
     if agent_eligible and model_compatible:
