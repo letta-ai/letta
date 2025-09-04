@@ -55,33 +55,31 @@ def conversation_search(
         str: Query result string containing matching messages with timestamps and content.
     """
 
-    import math
-
     from letta.constants import RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
     from letta.helpers.json_helpers import json_dumps
 
-    if page is None or (isinstance(page, str) and page.lower().strip() == "none"):
-        page = 0
-    try:
-        page = int(page)
-    except:
-        raise ValueError("'page' argument must be an integer")
-    count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-    # TODO: add paging by page number. currently cursor only works with strings.
-    # original: start=page * count
+    # Use provided limit or default
+    if limit is None:
+        limit = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
+
     messages = self.message_manager.list_messages_for_agent(
         agent_id=self.agent_state.id,
         actor=self.user,
         query_text=query,
-        limit=count,
+        roles=roles,
+        limit=limit,
     )
-    total = len(messages)
-    num_pages = math.ceil(total / count) - 1  # 0 index
+
     if len(messages) == 0:
         results_str = "No results found."
     else:
-        results_pref = f"Showing {len(messages)} of {total} results (page {page}/{num_pages}):"
-        results_formatted = [message.content[0].text for message in messages]
+        results_pref = f"Found {len(messages)} results:"
+        results_formatted = []
+        for message in messages:
+            # Extract text content from message
+            text_content = message.content[0].text if message.content else ""
+            result_entry = {"role": message.role, "content": text_content}
+            results_formatted.append(result_entry)
         results_str = f"{results_pref} {json_dumps(results_formatted)}"
     return results_str
 

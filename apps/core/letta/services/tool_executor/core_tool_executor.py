@@ -155,7 +155,7 @@ class LettaCoreToolExecutor(ToolExecutor):
             search_limit = limit if limit is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
 
             # Search using the message manager's search_messages_async method
-            messages = await self.message_manager.search_messages_async(
+            message_results = await self.message_manager.search_messages_async(
                 agent_id=agent_state.id,
                 actor=actor,
                 query_text=query,
@@ -166,10 +166,10 @@ class LettaCoreToolExecutor(ToolExecutor):
                 embedding_config=agent_state.embedding_config,
             )
 
-            if len(messages) == 0:
+            if len(message_results) == 0:
                 results_str = "No results found."
             else:
-                results_pref = f"Showing {len(messages)} results:"
+                results_pref = f"Showing {len(message_results)} results:"
                 results_formatted = []
                 # get current time in UTC, then convert to agent timezone for consistent comparison
                 from datetime import timezone
@@ -184,7 +184,7 @@ class LettaCoreToolExecutor(ToolExecutor):
                 else:
                     now = now_utc
 
-                for message in messages:
+                for message, metadata in message_results:
                     # Format timestamp in agent's timezone if available
                     timestamp = message.created_at
                     time_delta_str = ""
@@ -228,6 +228,23 @@ class LettaCoreToolExecutor(ToolExecutor):
                         "time_ago": time_delta_str,
                         "role": message.role,
                     }
+
+                    # Add search relevance metadata if available
+                    if metadata:
+                        # Only include non-None values
+                        relevance_info = {
+                            k: v
+                            for k, v in {
+                                "rrf_score": metadata.get("combined_score"),
+                                "vector_rank": metadata.get("vector_rank"),
+                                "fts_rank": metadata.get("fts_rank"),
+                                "search_mode": metadata.get("search_mode"),
+                            }.items()
+                            if v is not None
+                        }
+
+                        if relevance_info:  # Only add if we have metadata
+                            result_dict["relevance"] = relevance_info
 
                     # _extract_message_text returns already JSON-encoded strings
                     # We need to parse them to get the actual content structure

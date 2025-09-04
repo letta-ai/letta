@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 from sqlalchemy import delete, exists, func, select, text
 
@@ -1065,7 +1065,7 @@ class MessageManager:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         embedding_config: Optional[EmbeddingConfig] = None,
-    ) -> List[PydanticMessage]:
+    ) -> List[Tuple[PydanticMessage, dict]]:
         """
         Search messages using Turbopuffer if enabled, otherwise fall back to SQL search.
 
@@ -1082,7 +1082,7 @@ class MessageManager:
             embedding_config: Optional embedding configuration for generating query embedding
 
         Returns:
-            List of matching messages
+            List of tuples (message, metadata) where metadata contains relevance scores
         """
         from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
 
@@ -1133,8 +1133,8 @@ class MessageManager:
                     from letta.schemas.letta_message_content import TextContent
                     from letta.schemas.message import Message as PydanticMessage
 
-                    turbopuffer_messages = []
-                    for msg_dict, score in results:
+                    message_tuples = []
+                    for msg_dict, score, metadata in results:
                         # create a message object with the properly extracted text from turbopuffer
                         message = PydanticMessage(
                             id=msg_dict["id"],
@@ -1146,9 +1146,10 @@ class MessageManager:
                             created_by_id=actor.id,
                             last_updated_by_id=actor.id,
                         )
-                        turbopuffer_messages.append(message)
+                        # Return tuple of (message, metadata)
+                        message_tuples.append((message, metadata))
 
-                    return turbopuffer_messages
+                    return message_tuples
                 else:
                     return []
 
@@ -1163,7 +1164,16 @@ class MessageManager:
                     limit=limit,
                     ascending=False,
                 )
-                return self._combine_assistant_tool_messages(messages)
+                combined_messages = self._combine_assistant_tool_messages(messages)
+                # Add basic metadata for SQL fallback
+                message_tuples = []
+                for message in combined_messages:
+                    metadata = {
+                        "search_mode": "sql_fallback",
+                        "combined_score": None,  # SQL doesn't provide scores
+                    }
+                    message_tuples.append((message, metadata))
+                return message_tuples
         else:
             # use sql-based search
             messages = await self.list_messages_for_agent_async(
@@ -1174,4 +1184,13 @@ class MessageManager:
                 limit=limit,
                 ascending=False,
             )
-            return self._combine_assistant_tool_messages(messages)
+            combined_messages = self._combine_assistant_tool_messages(messages)
+            # Add basic metadata for SQL search
+            message_tuples = []
+            for message in combined_messages:
+                metadata = {
+                    "search_mode": "sql",
+                    "combined_score": None,  # SQL doesn't provide scores
+                }
+                message_tuples.append((message, metadata))
+            return message_tuples
