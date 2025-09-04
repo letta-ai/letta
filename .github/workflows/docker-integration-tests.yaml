@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
 
 concurrency:
   group: docker-tests-${{ github.ref }}
@@ -11,6 +15,8 @@ concurrency:
 
 jobs:
   docker-tests:
+    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: 'docker'

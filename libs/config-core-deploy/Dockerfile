@@ -17,7 +17,7 @@ WORKDIR /app
 COPY apps/core/pyproject.toml apps/core/uv.lock apps/core/README.md ./
 COPY apps/core/letta ./letta
 # necessary to pin Python version bc google-cloud-profiler doesn't support 3.13
-RUN uv sync --frozen --no-dev --all-extras --python 3.12
+RUN uv sync --frozen --no-dev --python 3.12 --extra postgres --extra redis --extra pinecone --extra experimental --extra bedrock --extra google --extra external-tools --extra cloud-tool-sandbox --extra modal
 
 # The collector image, used to get the OpenTelemetry Collector
 FROM otel/opentelemetry-collector-contrib:0.96.0 AS collector
