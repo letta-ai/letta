@@ -6,6 +6,7 @@ class ProviderType(str, Enum):
     google_ai = "google_ai"
     google_vertex = "google_vertex"
     openai = "openai"
+    openai_compatible = "openai_compatible"
     letta = "letta"
     deepseek = "deepseek"
     cerebras = "cerebras"
