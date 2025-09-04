@@ -558,6 +558,48 @@ def test_insert_archival_memory(client: LettaSDKClient, agent: AgentState):
     assert "This is a test passage" not in passage_texts, f"Memory was not deleted: {passage_texts}"
 
 
+def test_search_archival_memory(client: LettaSDKClient, agent: AgentState):
+    from datetime import datetime, timezone
+
+    client.agents.passages.create(
+        agent_id=agent.id,
+        text="This is a test passage",
+    )
+    client.agents.passages.create(
+        agent_id=agent.id,
+        text="This is another test passage",
+    )
+    client.agents.passages.create(agent_id=agent.id, text="cats")
+    # insert old passage: 09/03/2001
+    old_passage = "OLD PASSAGE"
+    client.agents.passages.create(
+        agent_id=agent.id,
+        text=old_passage,
+        created_at=datetime(2001, 9, 3, 0, 0, 0, 0, timezone.utc),
+    )
+
+    # test seaching for old passage
+    search_results = client.agents.passages.search(agent_id=agent.id, query="cats", top_k=1)
+    assert len(search_results.results) == 1
+    assert search_results.results[0].content == "cats"
+
+    # test seaching for old passage
+    search_results = client.agents.passages.search(agent_id=agent.id, query="cats", top_k=4)
+    assert len(search_results.results) == 4
+    assert search_results.results[0].content == "cats"
+
+    # search for old passage
+    search_results = client.agents.passages.search(
+        agent_id=agent.id,
+        query="cats",
+        top_k=4,
+        start_datetime=datetime(2001, 8, 3, 0, 0, 0, 0, timezone.utc),
+        end_datetime=datetime(2001, 10, 3, 0, 0, 0, 0, timezone.utc),
+    )
+    assert len(search_results.results) == 1
+    assert search_results.results[0].content == old_passage
+
+
 def test_function_return_limit(disable_e2b_api_key, client: LettaSDKClient, agent: AgentState):
     """Test to see if the function return limit works"""
 
