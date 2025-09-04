@@ -1126,7 +1126,7 @@ class MessageManager:
             roles: Optional list of message roles to filter by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
-            end_date: Optional filter for messages created before this date
+            end_date: Optional filter for messages created on or before this date (inclusive)
             embedding_config: Optional embedding configuration for generating query embedding
 
         Returns:
