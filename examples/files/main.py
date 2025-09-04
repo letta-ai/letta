@@ -63,7 +63,6 @@ except Exception as e:
 # 1. From an existing file
 # 2. From a string by encoding it into a base64 string
 #
-#
 
 # 1. From an existing file
 # "rb" means "read binary"
