@@ -474,8 +474,16 @@ class TurbopufferClient:
                 # for hybrid mode, we get a multi-query response
                 vector_results = self._process_single_query_results(result.results[0], archive_id, tags)
                 fts_results = self._process_single_query_results(result.results[1], archive_id, tags, is_fts=True)
-                # use backwards-compatible wrapper which calls generic RRF
-                return self._reciprocal_rank_fusion(vector_results, fts_results, vector_weight, fts_weight, top_k)
+                # use RRF and return only (passage, score) for backwards compatibility
+                results_with_metadata = self._reciprocal_rank_fusion(
+                    vector_results=[passage for passage, _ in vector_results],
+                    fts_results=[passage for passage, _ in fts_results],
+                    get_id_func=lambda p: p.id,
+                    vector_weight=vector_weight,
+                    fts_weight=fts_weight,
+                    top_k=top_k,
+                )
+                return [(passage, rrf_score) for passage, rrf_score, metadata in results_with_metadata]
             else:
                 # for single queries (vector, fts, timestamp)
                 is_fts = search_mode == "fts"
@@ -499,7 +507,7 @@ class TurbopufferClient:
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> List[Tuple[dict, float]]:
+    ) -> List[Tuple[dict, float, dict]]:
         """Query messages from Turbopuffer using vector search, full-text search, or hybrid search.
 
         Args:
@@ -516,7 +524,10 @@ class TurbopufferClient:
             end_date: Optional datetime to filter messages created before this date
 
         Returns:
-            List of (message_dict, score) tuples where message_dict contains id, text, role, created_at
+            List of (message_dict, score, metadata) tuples where:
+            - message_dict contains id, text, role, created_at
+            - score is the final relevance score
+            - metadata contains individual scores and ranking information
         """
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
@@ -576,9 +587,9 @@ class TurbopufferClient:
             if search_mode == "hybrid":
                 # for hybrid mode, we get a multi-query response
                 vector_results = self._process_message_query_results(result.results[0])
-                fts_results = self._process_message_query_results(result.results[1], is_fts=True)
-                # use generic RRF with lambda to extract ID from dict
-                return self._generic_reciprocal_rank_fusion(
+                fts_results = self._process_message_query_results(result.results[1])
+                # use RRF with lambda to extract ID from dict - returns metadata
+                results_with_metadata = self._reciprocal_rank_fusion(
                     vector_results=vector_results,
                     fts_results=fts_results,
                     get_id_func=lambda msg_dict: msg_dict["id"],
@@ -586,18 +597,32 @@ class TurbopufferClient:
                     fts_weight=fts_weight,
                     top_k=top_k,
                 )
+                # return results with metadata
+                return results_with_metadata
             else:
                 # for single queries (vector, fts, timestamp)
-                is_fts = search_mode == "fts"
-                return self._process_message_query_results(result, is_fts=is_fts)
+                results = self._process_message_query_results(result)
+                # add simple metadata for single search modes
+                results_with_metadata = []
+                for idx, msg_dict in enumerate(results):
+                    metadata = {
+                        "combined_score": 1.0 / (idx + 1),  # Use rank-based score for single mode
+                        "search_mode": search_mode,
+                        f"{search_mode}_rank": idx + 1,  # Add the rank for this search mode
+                    }
+                    results_with_metadata.append((msg_dict, metadata["combined_score"], metadata))
+                return results_with_metadata
 
         except Exception as e:
             logger.error(f"Failed to query messages from Turbopuffer: {e}")
             raise
 
-    def _process_message_query_results(self, result, is_fts: bool = False) -> List[Tuple[dict, float]]:
-        """Process results from a message query into message dicts with scores."""
-        messages_with_scores = []
+    def _process_message_query_results(self, result) -> List[dict]:
+        """Process results from a message query into message dicts.
+
+        For RRF, we only need the rank order - scores are not used.
+        """
+        messages = []
 
         for row in result.rows:
             # Build message dict with key fields
@@ -609,19 +634,9 @@ class TurbopufferClient:
                 "role": getattr(row, "role", None),
                 "created_at": getattr(row, "created_at", None),
             }
+            messages.append(message_dict)
 
-            # handle score based on search type
-            if is_fts:
-                # for FTS, use the BM25 score directly (higher is better)
-                score = getattr(row, "$score", 0.0)
-            else:
-                # for vector search, convert distance to similarity score
-                distance = getattr(row, "$dist", 0.0)
-                score = 1.0 - distance
-
-            messages_with_scores.append((message_dict, score))
-
-        return messages_with_scores
+        return messages
 
     def _process_single_query_results(
         self, result, archive_id: str, tags: Optional[List[str]], is_fts: bool = False
@@ -663,73 +678,77 @@ class TurbopufferClient:
 
         return passages_with_scores
 
-    def _generic_reciprocal_rank_fusion(
+    def _reciprocal_rank_fusion(
         self,
-        vector_results: List[Tuple[Any, float]],
-        fts_results: List[Tuple[Any, float]],
+        vector_results: List[Any],
+        fts_results: List[Any],
         get_id_func: Callable[[Any], str],
         vector_weight: float,
         fts_weight: float,
         top_k: int,
-    ) -> List[Tuple[Any, float]]:
-        """Generic RRF implementation that works with any object type.
+    ) -> List[Tuple[Any, float, dict]]:
+        """RRF implementation that works with any object type.
 
-        RRF score = vector_weight * (1/(k + vector_rank)) + fts_weight * (1/(k + fts_rank))
+        RRF score = vector_weight * (1/(k + rank)) + fts_weight * (1/(k + rank))
         where k is a constant (typically 60) to avoid division by zero
 
+        This is a pure rank-based fusion following the standard RRF algorithm.
+
         Args:
-            vector_results: List of (item, score) tuples from vector search
-            fts_results: List of (item, score) tuples from FTS
+            vector_results: List of items from vector search (ordered by relevance)
+            fts_results: List of items from FTS (ordered by relevance)
             get_id_func: Function to extract ID from an item
             vector_weight: Weight for vector search results
             fts_weight: Weight for FTS results
             top_k: Number of results to return
 
         Returns:
-            List of (item, score) tuples sorted by RRF score
+            List of (item, score, metadata) tuples sorted by RRF score
+            metadata contains ranks from each result list
         """
-        k = 60  # standard RRF constant
+        k = 60  # standard RRF constant from Cormack et al. (2009)
 
-        # create rank mappings using the get_id_func
-        vector_ranks = {get_id_func(item): rank + 1 for rank, (item, _) in enumerate(vector_results)}
-        fts_ranks = {get_id_func(item): rank + 1 for rank, (item, _) in enumerate(fts_results)}
+        # create rank mappings based on position in result lists
+        # rank starts at 1, not 0
+        vector_ranks = {get_id_func(item): rank + 1 for rank, item in enumerate(vector_results)}
+        fts_ranks = {get_id_func(item): rank + 1 for rank, item in enumerate(fts_results)}
 
-        # combine all unique items
+        # combine all unique items from both result sets
         all_items = {}
-        for item, _ in vector_results:
+        for item in vector_results:
             all_items[get_id_func(item)] = item
-        for item, _ in fts_results:
+        for item in fts_results:
             all_items[get_id_func(item)] = item
 
-        # calculate RRF scores
+        # calculate RRF scores based purely on ranks
         rrf_scores = {}
+        score_metadata = {}
         for item_id in all_items:
-            vector_score = vector_weight / (k + vector_ranks.get(item_id, k + top_k))
-            fts_score = fts_weight / (k + fts_ranks.get(item_id, k + top_k))
-            rrf_scores[item_id] = vector_score + fts_score
+            # RRF formula: sum of 1/(k + rank) across result lists
+            # If item not in a list, we don't add anything (equivalent to rank = infinity)
+            vector_rrf_score = 0.0
+            fts_rrf_score = 0.0
 
-        # sort by RRF score and return top_k
-        sorted_results = sorted([(all_items[iid], score) for iid, score in rrf_scores.items()], key=lambda x: x[1], reverse=True)
+            if item_id in vector_ranks:
+                vector_rrf_score = vector_weight / (k + vector_ranks[item_id])
+            if item_id in fts_ranks:
+                fts_rrf_score = fts_weight / (k + fts_ranks[item_id])
+
+            combined_score = vector_rrf_score + fts_rrf_score
+
+            rrf_scores[item_id] = combined_score
+            score_metadata[item_id] = {
+                "combined_score": combined_score,  # Final RRF score
+                "vector_rank": vector_ranks.get(item_id),
+                "fts_rank": fts_ranks.get(item_id),
+            }
+
+        # sort by RRF score and return with metadata
+        sorted_results = sorted(
+            [(all_items[iid], score, score_metadata[iid]) for iid, score in rrf_scores.items()], key=lambda x: x[1], reverse=True
+        )
 
         return sorted_results[:top_k]
-
-    def _reciprocal_rank_fusion(
-        self,
-        vector_results: List[Tuple[PydanticPassage, float]],
-        fts_results: List[Tuple[PydanticPassage, float]],
-        vector_weight: float,
-        fts_weight: float,
-        top_k: int,
-    ) -> List[Tuple[PydanticPassage, float]]:
-        """Wrapper for backwards compatibility - uses generic RRF for passages."""
-        return self._generic_reciprocal_rank_fusion(
-            vector_results=vector_results,
-            fts_results=fts_results,
-            get_id_func=lambda p: p.id,
-            vector_weight=vector_weight,
-            fts_weight=fts_weight,
-            top_k=top_k,
-        )
 
     @trace_method
     async def delete_passage(self, archive_id: str, passage_id: str) -> bool:
