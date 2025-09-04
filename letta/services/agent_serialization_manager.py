@@ -675,7 +675,12 @@ class AgentSerializationManager:
                     # Map file ID to the generated database ID immediately
                     message_file_to_db_ids[message_schema.id] = message_obj.id
 
-                created_messages = await self.message_manager.create_many_messages_async(pydantic_msgs=messages, actor=actor)
+                created_messages = await self.message_manager.create_many_messages_async(
+                    pydantic_msgs=messages,
+                    actor=actor,
+                    embedding_config=created_agent.embedding_config,
+                    project_id=created_agent.project_id,
+                )
                 imported_count += len(created_messages)
 
                 # Remap in_context_message_ids from file IDs to database IDs
