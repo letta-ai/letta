@@ -1,0 +1,29 @@
+name: Notify Submodule Repos
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.NOTIFIER_APP_ID }}
+          private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+          repositories: letta-cloud
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: letta-ai/letta-cloud
+          event-type: letta-main-updated
+          client-payload: |
+            {
+              "commit_sha": "${{ github.sha }}",
+              "ref": "${{ github.ref }}"
+            }

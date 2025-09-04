@@ -36,7 +36,6 @@ COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-# TODO: strip this out into more selective dependency installation
 RUN uv sync --frozen --no-dev --all-extras --python 3.11
 
 # Runtime stage
