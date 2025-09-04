@@ -1013,7 +1013,7 @@ async def search_archival_memory(
         end_datetime = end_datetime.isoformat() if end_datetime else None
 
         # Use the shared agent manager method
-        formatted_results, count = await server.agent_manager.search_agent_archival_memory_async(
+        formatted_results = await server.agent_manager.search_agent_archival_memory_async(
             agent_id=agent_id,
             actor=actor,
             query=query,
@@ -1027,7 +1027,7 @@ async def search_archival_memory(
         # Convert to proper response schema
         search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
 
-        return ArchivalMemorySearchResponse(results=search_results, count=count)
+        return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
 
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")

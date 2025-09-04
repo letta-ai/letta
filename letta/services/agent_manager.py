@@ -2655,7 +2655,7 @@ class AgentManager:
         embedding_config: Optional[EmbeddingConfig] = None,
         tags: Optional[List[str]] = None,
         tag_match_mode: Optional[TagMatchMode] = None,
-    ) -> List[PydanticPassage]:
+    ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Lists all passages attached to an agent."""
         # Check if we should use Turbopuffer for vector search
         if embed_query and agent_id and query_text and embedding_config:
@@ -2698,8 +2698,8 @@ class AgentManager:
                         end_date=end_date,
                     )
 
-                    # Return just the passages (without scores)
-                    return [passage for passage, _ in passages_with_scores]
+                    # Return full tuples with metadata
+                    return passages_with_scores
             else:
                 return []
 
@@ -2750,9 +2750,11 @@ class AgentManager:
                             if query_tags.intersection(passage_tags):
                                 filtered_passages.append(passage)
 
-                return filtered_passages
+                # Return as tuples with empty metadata for SQL path
+                return [(p, 0.0, {}) for p in filtered_passages]
 
-            return pydantic_passages
+            # Return as tuples with empty metadata for SQL path
+            return [(p, 0.0, {}) for p in pydantic_passages]
 
     @enforce_types
     @trace_method
@@ -2766,7 +2768,7 @@ class AgentManager:
         top_k: Optional[int] = None,
         start_datetime: Optional[str] = None,
         end_datetime: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> List[Dict[str, Any]]:
         """
         Search archival memory using semantic (embedding-based) search with optional temporal filtering.
 
@@ -2783,11 +2785,11 @@ class AgentManager:
             end_datetime: Filter results before this datetime (ISO 8601 format)
 
         Returns:
-            Tuple of (formatted_results, count)
+            List of formatted results with relevance metadata
         """
         # Handle empty or whitespace-only queries
         if not query or not query.strip():
-            return [], 0
+            return []
 
         # Get the agent to access timezone and embedding config
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -2839,7 +2841,7 @@ class AgentManager:
 
         # Get results using existing passage query method
         limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-        all_results = await self.query_agent_passages_async(
+        passages_with_metadata = await self.query_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             query_text=query,
@@ -2852,11 +2854,11 @@ class AgentManager:
             end_date=end_date,
         )
 
-        # Format results to include tags with friendly timestamps
+        # Format results to include tags with friendly timestamps and relevance metadata
         formatted_results = []
-        for result in all_results:
+        for passage, score, metadata in passages_with_metadata:
             # Format timestamp in agent's timezone if available
-            timestamp = result.created_at
+            timestamp = passage.created_at
             if timestamp and agent_state.timezone:
                 try:
                     # Convert to agent's timezone
@@ -2871,9 +2873,26 @@ class AgentManager:
                 # Use ISO format if no timezone is set
                 formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-            formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
+            result_dict = {"timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
 
-        return formatted_results, len(formatted_results)
+            # Add relevance metadata if available
+            if metadata:
+                relevance_info = {
+                    k: v
+                    for k, v in {
+                        "rrf_score": metadata.get("combined_score"),
+                        "vector_rank": metadata.get("vector_rank"),
+                        "fts_rank": metadata.get("fts_rank"),
+                    }.items()
+                    if v is not None
+                }
+
+                if relevance_info:  # Only add if we have metadata
+                    result_dict["relevance"] = relevance_info
+
+            formatted_results.append(result_dict)
+
+        return formatted_results
 
     @enforce_types
     @trace_method

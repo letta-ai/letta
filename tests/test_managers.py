@@ -3658,7 +3658,7 @@ async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServe
             tag_match_mode=TagMatchMode.ANY,
         )
 
-        python_texts = [p.text for p in python_results]
+        python_texts = [p.text for p, _, _ in python_results]
         assert len([t for t in python_texts if "Python" in t]) >= 2
 
         # Test querying with multiple tags using ALL mode
@@ -3669,7 +3669,7 @@ async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServe
             tag_match_mode=TagMatchMode.ALL,
         )
 
-        tutorial_texts = [p.text for p in tutorial_python_results]
+        tutorial_texts = [p.text for p, _, _ in tutorial_python_results]
         expected_matches = [t for t in tutorial_texts if "tutorial" in t and "Python" in t]
         assert len(expected_matches) >= 1
 
@@ -3747,7 +3747,7 @@ async def test_comprehensive_tag_functionality(disable_turbopuffer, server: Sync
     )
 
     # Should match passages with "important" OR "api" tags (passages 1, 2, 3, 4)
-    [p.text for p in any_results]
+    [p.text for p, _, _ in any_results]
     assert len(any_results) >= 4
 
     # Test 5: Query passages with ALL tag matching
@@ -3761,7 +3761,7 @@ async def test_comprehensive_tag_functionality(disable_turbopuffer, server: Sync
     )
 
     # Should only match passage4 which has both "python" AND "testing"
-    all_passage_texts = [p.text for p in all_results]
+    all_passage_texts = [p.text for p, _, _ in all_results]
     assert any("Test passage 4" in text for text in all_passage_texts)
 
     # Test 6: Query with non-existent tags
@@ -4029,12 +4029,11 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         created_passages.append(passage)
 
     # Test 1: Basic search by query text
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="Python programming"
     )
 
-    assert count > 0
-    assert len(results) == count
+    assert len(results) > 0
 
     # Check structure of results
     for result in results:
@@ -4044,27 +4043,27 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert isinstance(result["tags"], list)
 
     # Test 2: Search with tag filtering - single tag
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", tags=["python"]
     )
 
-    assert count > 0
+    assert len(results) > 0
     # All results should have "python" tag
     for result in results:
         assert "python" in result["tags"]
 
     # Test 3: Search with tag filtering - multiple tags with "any" mode
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="development", tags=["web", "database"], tag_match_mode="any"
     )
 
-    assert count > 0
+    assert len(results) > 0
     # All results should have at least one of the specified tags
     for result in results:
         assert any(tag in result["tags"] for tag in ["web", "database"])
 
     # Test 4: Search with tag filtering - multiple tags with "all" mode
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="Python", tags=["python", "web"], tag_match_mode="all"
     )
 
@@ -4074,15 +4073,14 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert "web" in result["tags"]
 
     # Test 5: Search with top_k limit
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", top_k=2
     )
 
-    assert count <= 2
     assert len(results) <= 2
 
     # Test 6: Search with datetime filtering
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", start_datetime="2024-01-16", end_datetime="2024-01-17"
     )
 
@@ -4094,7 +4092,7 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert "2024-01-16" in timestamp_str or "2024-01-17" in timestamp_str
 
     # Test 7: Search with ISO datetime format
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id,
         actor=default_user,
         query="algorithms",
@@ -4103,7 +4101,7 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
     )
 
     # Should include the machine learning passage created at 14:45
-    assert count >= 0  # Might be 0 if no results, but shouldn't error
+    assert len(results) >= 0  # Might be 0 if no results, but shouldn't error
 
     # Test 8: Search with non-existent agent should raise error
     non_existent_agent_id = "agent-00000000-0000-4000-8000-000000000000"
@@ -4118,18 +4116,14 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         )
 
     # Test 10: Empty query should return empty results
-    results, count = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
+    results = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
 
-    assert count == 0  # Empty query should return 0 results
-    assert len(results) == 0
+    assert len(results) == 0  # Empty query should return 0 results
 
     # Test 11: Whitespace-only query should also return empty results
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
-        agent_id=sarah_agent.id, actor=default_user, query="   \n\t  "
-    )
+    results = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="   \n\t  ")
 
-    assert count == 0  # Whitespace-only query should return 0 results
-    assert len(results) == 0
+    assert len(results) == 0  # Whitespace-only query should return 0 results
 
     # Cleanup - delete the created passages
     for passage in created_passages:
