@@ -11841,59 +11841,6 @@
                             },
                             "nullable": true
                           },
-                          "properties": {
-                            "type": "object",
-                            "properties": {
-                              "enable_reasoner": {
-                                "type": "boolean",
-                                "nullable": true
-                              },
-                              "put_inner_thoughts_in_kwargs": {
-                                "type": "boolean",
-                                "nullable": true
-                              },
-                              "context_window_limit": {
-                                "type": "number",
-                                "nullable": true
-                              },
-                              "max_tokens": {
-                                "type": "number",
-                                "nullable": true
-                              },
-                              "max_reasoning_tokens": {
-                                "type": "number",
-                                "nullable": true
-                              },
-                              "max_files_open": {
-                                "type": "number",
-                                "nullable": true
-                              },
-                              "message_buffer_autoclear": {
-                                "type": "boolean",
-                                "nullable": true
-                              },
-                              "per_file_view_window_char_limit": {
-                                "type": "number",
-                                "nullable": true
-                              },
-                              "temperature": {
-                                "type": "number",
-                                "nullable": true
-                              }
-                            },
-                            "required": [
-                              "enable_reasoner",
-                              "put_inner_thoughts_in_kwargs",
-                              "context_window_limit",
-                              "max_tokens",
-                              "max_reasoning_tokens",
-                              "max_files_open",
-                              "message_buffer_autoclear",
-                              "per_file_view_window_char_limit",
-                              "temperature"
-                            ],
-                            "nullable": true
-                          },
                           "memoryVariables": {
                             "type": "object",
                             "properties": {
@@ -12171,6 +12118,71 @@
                               "voice_sleeptime_agent"
                             ]
                           },
+                          "properties": {
+                            "type": "object",
+                            "properties": {
+                              "enable_reasoner": {
+                                "type": "boolean",
+                                "nullable": true
+                              },
+                              "put_inner_thoughts_in_kwargs": {
+                                "type": "boolean",
+                                "nullable": true
+                              },
+                              "context_window_limit": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_tokens": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_reasoning_tokens": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "max_files_open": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "message_buffer_autoclear": {
+                                "type": "boolean",
+                                "nullable": true
+                              },
+                              "verbosity_level": {
+                                "type": "string",
+                                "enum": ["low", "medium", "high"],
+                                "nullable": true
+                              },
+                              "reasoning_effort": {
+                                "type": "string",
+                                "enum": ["minimal", "low", "medium", "high"],
+                                "nullable": true
+                              },
+                              "per_file_view_window_char_limit": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "temperature": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "enable_reasoner",
+                              "put_inner_thoughts_in_kwargs",
+                              "context_window_limit",
+                              "max_tokens",
+                              "max_reasoning_tokens",
+                              "max_files_open",
+                              "message_buffer_autoclear",
+                              "verbosity_level",
+                              "reasoning_effort",
+                              "per_file_view_window_char_limit",
+                              "temperature"
+                            ],
+                            "nullable": true
+                          },
                           "entityId": {
                             "type": "string"
                           },
@@ -12183,13 +12195,13 @@
                           "systemPrompt",
                           "toolIds",
                           "sourceIds",
-                          "properties",
                           "memoryVariables",
                           "toolVariables",
                           "tags",
                           "identityIds",
                           "toolRules",
                           "agentType",
+                          "properties",
                           "entityId",
                           "name"
                         ]

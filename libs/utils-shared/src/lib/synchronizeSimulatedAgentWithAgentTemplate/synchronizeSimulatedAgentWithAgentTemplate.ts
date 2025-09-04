@@ -140,6 +140,8 @@ export function synchronizeSimulatedAgentWithAgentTemplate(
     properties: {
       temperature: agentState.llm_config?.temperature ?? 0.7,
       enable_reasoner: agentState.llm_config?.enable_reasoner ?? false,
+      verbosity_level: agentState.llm_config?.verbosity ?? null,
+      reasoning_effort: agentState.llm_config?.reasoning_effort ?? null,
       put_inner_thoughts_in_kwargs: agentState.llm_config?.put_inner_thoughts_in_kwargs ?? false,
       context_window_limit: agentState.llm_config?.context_window ?? null,
       max_tokens: agentState.llm_config?.max_tokens ?? null,

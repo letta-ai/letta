@@ -27,7 +27,7 @@ export const BlockTemplateSchema = z.object({
 
 type AgentTemplateStateToolRuleFix = Omit<
   AgentTemplateStateWithNoMetadata,
-  'toolRules' | 'agentType'
+  'toolRules' | 'agentType' | 'properties'
 >;
 
 /* there's a "bug" with ToZod that doesnt accept any types */
@@ -37,7 +37,6 @@ const AgentTemplateSchemaResponseSchemaBase: ToZod<AgentTemplateStateToolRuleFix
     systemPrompt: z.string(),
     toolIds: z.array(z.string()).nullable(),
     sourceIds: z.array(z.string()).nullable(),
-    properties: AgentTemplateProperties.nullable(),
     memoryVariables: VariableStoreVersionOne.nullable(),
     toolVariables: VariableStoreVersionOne.nullable(),
     tags: z.array(z.string()).nullable(),
@@ -47,6 +46,7 @@ const AgentTemplateSchemaResponseSchemaBase: ToZod<AgentTemplateStateToolRuleFix
 export const AgentTemplateState = AgentTemplateSchemaResponseSchemaBase.extend({
   toolRules: ToolRulesSchema,
   agentType: SupportedAgentTypeSchema,
+  properties: AgentTemplateProperties.nullable(),
 });
 
 export const AgentTemplateSchemaResponseSchema = AgentTemplateState.extend({

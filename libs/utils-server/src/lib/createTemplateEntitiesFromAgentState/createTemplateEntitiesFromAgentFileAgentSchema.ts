@@ -56,6 +56,8 @@ export async function createTemplateEntitiesFromAgentFileAgentSchema(
       toolVariables,
       memoryVariables: null,
       properties: {
+        verbosity_level: agentSchema?.llm_config?.verbosity ?? null,
+        reasoning_effort: agentSchema?.llm_config?.reasoning_effort ?? null,
         temperature: agentSchema?.llm_config?.temperature ?? 0.7,
         enable_reasoner: agentSchema?.llm_config?.enable_reasoner ?? false,
         put_inner_thoughts_in_kwargs: agentSchema?.llm_config?.put_inner_thoughts_in_kwargs ?? false,

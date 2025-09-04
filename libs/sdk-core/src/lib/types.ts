@@ -274,6 +274,8 @@ export const AgentTemplateProperties = z.object({
   max_reasoning_tokens: z.number().nullable(),
   max_files_open: z.number().nullable(),
   message_buffer_autoclear: z.boolean().nullable(),
+  verbosity_level: z.enum(['low', 'medium', 'high']).nullable(),
+  reasoning_effort: z.enum(['minimal', 'low', 'medium', 'high']).nullable(),
   per_file_view_window_char_limit: z.number().nullable(),
   temperature: z.number().nullable(),
 });

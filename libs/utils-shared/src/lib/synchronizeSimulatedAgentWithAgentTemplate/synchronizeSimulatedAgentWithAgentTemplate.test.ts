@@ -124,9 +124,11 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         max_tokens: 1000,
         max_reasoning_tokens: 2000,
         max_files_open: 10,
-          temperature: 0.7,
+        temperature: 0.7,
         per_file_view_window_char_limit: 2000,
         message_buffer_autoclear: null,
+        reasoning_effort: null,
+        verbosity_level: null,
       },
     });
 
@@ -198,6 +200,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
         max_files_open: null,
         per_file_view_window_char_limit: null,
         message_buffer_autoclear: null,
+        reasoning_effort: null,
+        verbosity_level: null,
       },
     });
 
@@ -250,6 +254,8 @@ describe('synchronizeSimulatedAgentWithAgentTemplate', () => {
       per_file_view_window_char_limit: null,
       temperature: 0.7,
       message_buffer_autoclear: null,
+      reasoning_effort: null,
+      verbosity_level: null,
     });
 
     expect(result.agentTemplateBlocks).toEqual([

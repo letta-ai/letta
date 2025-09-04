@@ -39,6 +39,8 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
     'put_inner_thoughts_in_kwargs', // Different from 'reasoning' field
     'timezone',
     'reasoning',
+    'verbosity_level', // No equivalent in UpdateAgent
+    'reasoning_effort', // No equivalent in UpdateAgent
   ]);
 
   // Define UpdateAgent properties that can be mapped from AgentTemplateState
@@ -116,6 +118,8 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
         context_window_limit: 8000,
         max_tokens: 2000,
         max_reasoning_tokens: 1000,
+        verbosity_level: null,
+        reasoning_effort: null,
       },
     };
 
@@ -272,6 +276,8 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
         context_window_limit: 8000,
         max_tokens: 2000,
         max_reasoning_tokens: 1000,
+        verbosity_level: null,
+        reasoning_effort: null,
       },
     };
 

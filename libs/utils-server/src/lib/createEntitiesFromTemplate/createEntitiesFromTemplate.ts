@@ -135,6 +135,8 @@ export async function createEntitiesFromTemplate(
   llmConfig.temperature = agentTemplate.properties?.temperature || llmConfig.temperature;
   llmConfig.context_window = agentTemplate.properties?.context_window_limit || llmConfig.context_window;
   llmConfig.max_reasoning_tokens = agentTemplate.properties?.max_reasoning_tokens || llmConfig.max_reasoning_tokens;
+  llmConfig.verbosity = agentTemplate.properties?.verbosity_level || llmConfig.verbosity;
+  llmConfig.reasoning_effort = agentTemplate.properties?.reasoning_effort || llmConfig.reasoning_effort;
 
   // Create the agent
   const createAgentRequest: CreateAgentRequest = {

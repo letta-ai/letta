@@ -361,6 +361,14 @@ export async function updateAgentFromAgentTemplateId(
     nextLLMConfig.temperature = agentTemplate.properties.temperature;
   }
 
+  if (agentTemplate.properties?.verbosity_level) {
+    nextLLMConfig.verbosity = agentTemplate.properties.verbosity_level;
+  }
+
+  if (agentTemplate.properties?.reasoning_effort) {
+    nextLLMConfig.reasoning_effort = agentTemplate.properties.reasoning_effort;
+  }
+
   requestBody.llm_config = nextLLMConfig;
   requestBody.reasoning = nextLLMConfig.enable_reasoner || nextLLMConfig.put_inner_thoughts_in_kwargs;
 

@@ -41,6 +41,8 @@ describe('generateTemplateSnapshot', () => {
     max_files_open: 10,
     message_buffer_autoclear: true,
     per_file_view_window_char_limit: 2000,
+    verbosity_level: null,
+    reasoning_effort: null,
   };
 
   const mockGroupConfiguration: GroupConfigurationType = {
