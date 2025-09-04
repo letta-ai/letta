@@ -55,7 +55,8 @@ async def create_block(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.block_manager.create_or_update_block_async(block, actor=actor)
+        block_obj = Block(**block.model_dump())
+        return await server.block_manager.create_or_update_block_async(block_obj, actor=actor)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
