@@ -48,6 +48,7 @@ import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { MCPToolSimulator } from '../MCPToolSimulator/MCPToolSimulator';
+import { UseToolsServiceListMcpToolsByServerKeyFn } from '@letta-cloud/sdk-core';
 
 interface RemoveMCPServerDialogProps {
   serverName: string;
@@ -130,10 +131,28 @@ function ServerToolsList(props: ServerToolsListProps) {
   const t = useTranslations('ToolManager/SingleMCPServer');
   const { tools } = useCurrentAgent();
 
+  const queryClient = useQueryClient();
+  const queryKey = UseToolsServiceListMcpToolsByServerKeyFn({
+    mcpServerName: serverName,
+  });
+  const cachedState = queryClient.getQueryState(queryKey);
+  const hasError = cachedState?.error != null;
+
   const { data, isError, isFetching, refetch } =
-    useToolsServiceListMcpToolsByServer({
-      mcpServerName: serverName,
-    });
+    useToolsServiceListMcpToolsByServer(
+      {
+        mcpServerName: serverName,
+      },
+      undefined,
+      {
+        retry: 0,
+        enabled: !hasError,
+        staleTime: 60 * 60 * 1000,
+        gcTime: 24 * 60 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+      }
+    );
 
   useImperativeHandle(ref, () => ({
     reload: () => {

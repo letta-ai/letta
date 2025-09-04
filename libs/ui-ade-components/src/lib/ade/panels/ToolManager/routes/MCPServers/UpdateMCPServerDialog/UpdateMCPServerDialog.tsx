@@ -191,6 +191,22 @@ function UpdateStreamableHttpServerForm(
   const { mutate, isPending, isError, error, reset } =
     useToolsServiceUpdateMcpServer({
       onSuccess: (updatedServer) => {
+        // Update MCP servers list query with the updated server
+        queryClient.setQueriesData<ListMcpServersResponse | undefined>(
+          {
+            queryKey: UseToolsServiceListMcpServersKeyFn(),
+          },
+          (oldData) => {
+            if (!oldData) return oldData;
+
+            // Update the specific server in the cache
+            return {
+              ...oldData,
+              [updatedServer.server_name]: updatedServer,
+            };
+          },
+        );
+
         // Invalidate tools for this specific server
         void queryClient.invalidateQueries({
           queryKey: UseToolsServiceListMcpToolsByServerKeyFn({
