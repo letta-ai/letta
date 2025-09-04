@@ -29,8 +29,6 @@ function AllAgentsSection() {
     return firstPage?.totalCount ? `${firstPage?.totalCount}` : '???';
   }, [firstPage]);
 
-  console.log(firstPage);
-
   // {/*TODO: HARDCODE FEATURED AGENTS BELOW*/}
   const featuredAgentfiles = [
     // Co, personal knowledge assistant

@@ -28,7 +28,6 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
   const { item: panel, panelRefs, idx, open, onOpenChange, lastOpen } = props;
   const { id, label, content, minHeight, WrapperComponent } = panel;
 
-  console.log(id)
   const element = (
     <div
       ref={(el) => {

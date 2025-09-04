@@ -205,7 +205,6 @@ export function EditMessage(props: EditMessageProps) {
                             m.id === message.id &&
                             message.message_type === 'user_message'
                           ) {
-                            console.log(m);
                             return {
                               ...m,
                               content: submitData.text,

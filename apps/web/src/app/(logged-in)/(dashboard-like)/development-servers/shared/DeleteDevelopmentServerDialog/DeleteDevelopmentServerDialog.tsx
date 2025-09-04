@@ -56,7 +56,7 @@ export function DeleteDevelopmentServerDialog(
     },
   );
 
-  const { mutate, isPending, isSuccess, isError, error } =
+  const { mutate, isPending, isSuccess, isError } =
     webApi.developmentServers.deleteDevelopmentServer.useMutation({
       onSuccess: () => {
         // Update the development servers list by removing the deleted server
@@ -99,8 +99,6 @@ export function DeleteDevelopmentServerDialog(
         }
       },
     });
-
-  console.log(error);
 
   const handleSubmit = useCallback(() => {
     mutate({
