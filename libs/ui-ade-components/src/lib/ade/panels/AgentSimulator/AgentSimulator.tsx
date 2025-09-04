@@ -46,7 +46,7 @@ import {
   useCurrentAgentMetaData,
 } from '../../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { get } from 'lodash-es';
+import { get, debounce } from 'lodash-es';
 import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
 import { useLocalStorage } from '@mantine/hooks';
@@ -100,6 +100,93 @@ function extractMessageTextFromContent(
   return '';
 }
 
+interface LastAgentRunData {
+  [runId: string]: number; // seq_id
+}
+
+function useBackgroundMode() {
+  const { id: currentAgentId } = useCurrentSimulatedAgent();
+
+  const [_, setlastAgentRun] = useLocalStorage<LastAgentRunData>({
+    key: currentAgentId,
+    defaultValue: {},
+  });
+
+  // Debounced function to save seq_id
+  const debouncedSaveSeqId = useMemo(
+    () =>
+      debounce((runId: string, seqId: number) => {
+        setlastAgentRun((prev) => ({
+          ...prev,
+          [runId]: seqId,
+        }));
+      }, 100),
+    [setlastAgentRun],
+  );
+
+  const handleBackgroundMode = useCallback(
+    (extracted: z.infer<typeof AgentMessageSchema>) => {
+      const runId = extracted.run_id;
+
+      if (!runId || typeof runId !== 'string') return;
+
+      // Save run_id - initialize with seq_id 0 if not exists
+      setlastAgentRun((prev) => ({
+        ...prev,
+        [runId]: prev[runId] ?? 0,
+      }));
+
+      // Debounce seq_id updates (only thing that changes frequently)
+      if ('seq_id' in extracted && typeof extracted.seq_id === 'number') {
+        debouncedSaveSeqId(runId, extracted.seq_id);
+      }
+    },
+    [debouncedSaveSeqId, setlastAgentRun],
+  );
+
+  const removeRunIdFromBackgroundMode = useCallback(
+    (runIdToRemove: string) => {
+      debouncedSaveSeqId.cancel();
+
+      setlastAgentRun((prev) => {
+        const newData = { ...prev };
+        delete newData[runIdToRemove];
+
+        // If there's only one key-value pair left or none, remove the entire agent_id from localstorage
+        if (Object.keys(newData).length <= 1) {
+          // Return undefined to remove the localStorage key entirely with Mantine's useLocalStorage
+          return undefined as any;
+        }
+
+        return newData;
+      });
+    },
+    [debouncedSaveSeqId, setlastAgentRun],
+  );
+
+  const flushPendingSave = useCallback(() => {
+    debouncedSaveSeqId.flush();
+  }, [debouncedSaveSeqId]);
+
+  // Flush pending localStorage saves on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushPendingSave();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [flushPendingSave]);
+
+  return {
+    handleBackgroundMode,
+    removeBackgroundModeData: removeRunIdFromBackgroundMode,
+    flushPendingSave,
+  };
+}
+
 export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [isPending, setIsPending] = useAtom(isSendingMessageAtom);
   const abortController = useRef<AbortController>(undefined);
@@ -107,6 +194,9 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
   const { addNetworkRequest, updateNetworkRequest } = useNetworkRequest();
+  const { handleBackgroundMode, removeBackgroundModeData } =
+    useBackgroundMode();
+  const { data: isBackgroundModeEnabled } = useFeatureFlag('BACKGROUND_MODE');
 
   const { baseUrl, password } = useLettaAgentsAPI();
 
@@ -128,6 +218,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       setErrorCode(undefined);
 
       const userMessageOtid = uuidv4();
+      let currentRunId: string | null = null;
 
       function handleError(
         message: string,
@@ -248,6 +339,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         },
         stream_steps: true,
         stream_tokens: true,
+        background: isBackgroundModeEnabled || false,
         use_assistant_message: false,
         messages: [
           {
@@ -404,6 +496,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
                 options.onStreamCompletion();
               }
 
+              if (isBackgroundModeEnabled && currentRunId) {
+                removeBackgroundModeData(currentRunId);
+              }
+
               continue;
             }
 
@@ -421,6 +517,14 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             try {
               // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
               const extracted = AgentMessageSchema.parse(JSON.parse(data));
+
+              if (isBackgroundModeEnabled) {
+                handleBackgroundMode(extracted);
+                // Track the current run_id for cleanup when streaming is done
+                if (extracted.run_id) {
+                  currentRunId = extracted.run_id;
+                }
+              }
 
               queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
                 {
@@ -515,7 +619,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           }
         }
       } catch (error) {
-        if (error instanceof TypeError && (error.message === 'network error' || error.message === 'Load failed')) {
+        if (
+          error instanceof TypeError &&
+          (error.message === 'network error' || error.message === 'Load failed')
+        ) {
           // Network error, allow backend request to continue
           return;
         }
@@ -531,7 +638,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         setFailedToSendMessage(true);
         setErrorCode('INTERNAL_SERVER_ERROR');
 
-
         options?.onFailedToSendMessage?.(message);
       }
     },
@@ -543,6 +649,11 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       setIsPending,
       addNetworkRequest,
       updateNetworkRequest,
+      removeBackgroundModeData,
+      handleBackgroundMode,
+      setFailedToSendMessage,
+      setErrorCode,
+      isBackgroundModeEnabled,
     ],
   );
 
@@ -712,7 +823,7 @@ function useBillingTier() {
     });
 
   return useMemo(() => {
-    return data?.body.billingTier || 'enterprise'
+    return data?.body.billingTier || 'enterprise';
   }, [data?.body.billingTier]);
 }
 
@@ -748,7 +859,9 @@ export function AgentSimulator() {
         clearOptimisticActiveRuns();
       }
     },
-    onStreamCompletion: isPollActiveRunsEnabled ? clearOptimisticActiveRuns : undefined,
+    onStreamCompletion: isPollActiveRunsEnabled
+      ? clearOptimisticActiveRuns
+      : undefined,
   });
 
   const hasFailedToSendMessageText = useMemo(() => {

@@ -1,5 +1,4 @@
 import { db, lettaTemplates, projects } from '@letta-cloud/service-database';
-import { findUniqueAgentTemplateName } from '../findUniqueAgentTemplateName/findUniqueAgentTemplateName';
 import { and, eq } from 'drizzle-orm';
 import { trackServerSideEvent } from '@letta-cloud/service-analytics/server';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
@@ -31,9 +30,7 @@ export async function createTemplateFromAgentState(
     agentState,
   } = props;
 
-  let {
-    name: suggestedName,
-  } = props;
+  let { name: suggestedName } = props;
 
   // get project
   const project = await db.query.projects.findFirst({
@@ -53,9 +50,6 @@ export async function createTemplateFromAgentState(
     user_id: userId,
   });
 
-
-
-
   const lettaTemplate = await db.transaction(async (tx) => {
     const name = await getNewTemplateName({
       organizationId,
@@ -63,7 +57,7 @@ export async function createTemplateFromAgentState(
       suggestedName,
       allowNameOverride,
       tx,
-    })
+    });
 
     const [lettaTemplate] = await tx
       .insert(lettaTemplates)
