@@ -2,6 +2,8 @@ import asyncio
 import signal
 import sys
 import traceback
+import os
+from typing import Optional
 
 import websockets
 
@@ -9,13 +11,33 @@ import letta.server.ws_api.protocol as protocol
 from letta.server.constants import WS_DEFAULT_PORT
 from letta.server.server import SyncServer
 from letta.server.ws_api.interface import SyncWebSocketInterface
+from letta.server.webhook.factory import create_streaming_interface_from_env
 
 
 class WebSocketServer:
-    def __init__(self, host="localhost", port=WS_DEFAULT_PORT):
+    def __init__(self, host="localhost", port=WS_DEFAULT_PORT, webhook_url: Optional[str] = None, webhook_token: Optional[str] = None):
         self.host = host
         self.port = port
-        self.interface = SyncWebSocketInterface()
+        self.webhook_url = webhook_url
+        self.webhook_token = webhook_token
+        
+        # Create base interface
+        base_interface = SyncWebSocketInterface()
+        
+        # Create webhook interface if configured
+        if self.webhook_url:
+            from letta.server.webhook.webhook_interface import WebhookStreamingInterface
+            webhook_interface = WebhookStreamingInterface(
+                webhook_url=self.webhook_url,
+                webhook_token=self.webhook_token
+            )
+            
+            # Use a composite interface to handle both WebSocket and webhook events
+            from letta.streaming_interface import CompositeStreamingInterface
+            self.interface = CompositeStreamingInterface([base_interface, webhook_interface])
+        else:
+            self.interface = base_interface
+            
         self.server = SyncServer(default_interface=self.interface)
 
     def shutdown_server(self):
@@ -113,8 +135,19 @@ def start_server():
             port = int(sys.argv[1])
         except ValueError:
             print(f"Invalid port number. Using default port {port}.")
-
-    server = WebSocketServer(port=port)
+    
+    # Get webhook settings from environment
+    webhook_url = os.getenv("LETTA_WEBHOOK_URL")
+    webhook_token = os.getenv("LETTA_WEBHOOK_TOKEN", "")
+    
+    if webhook_url:
+        print(f"Webhook enabled: {webhook_url}")
+    
+    server = WebSocketServer(
+        port=port,
+        webhook_url=webhook_url,
+        webhook_token=webhook_token
+    )
 
     def handle_sigterm(*args):
         # Perform necessary cleanup
