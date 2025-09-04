@@ -1796,6 +1796,13 @@
       "overrideExistingTools": {
         "label": "覆盖现有工具",
         "info": "如果已存在同名工具，这将覆盖现有工具"
+      },
+      "envVars": {
+        "label": "工具环境变量",
+        "keyPlaceholder": "变量名称",
+        "valuePlaceholder": "变量值",
+        "addVariable": "添加变量",
+        "removeVariable": "删除变量"
       }
     },
     "warning": {

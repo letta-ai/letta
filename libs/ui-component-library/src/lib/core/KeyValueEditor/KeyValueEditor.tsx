@@ -20,6 +20,7 @@ interface KeyValueEditorProps {
   keyPlaceholder?: string;
   addVariableLabel?: string;
   removeVariableLabel?: string;
+  fullWidth?: boolean;
   disableKey?: boolean;
   defaultValue?: KeyValue[];
   valuePlaceholder?: string;
@@ -37,6 +38,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
     disableKey,
     value,
     highlightDuplicateKeys,
+    fullWidth,
     freezeRows,
     removeVariableLabel,
     valuePlaceholder,
@@ -98,7 +100,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
   const t = useTranslations('ui-component-library/KeyValueEditor');
 
   return (
-    <VStack gap="small">
+    <VStack fullWidth={fullWidth} gap="small">
       {!disabled && !freezeRows && keyValuePairs.length === 0 && (
         <Button
           onClick={addRow}
@@ -125,7 +127,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
             >
               <input
                 className={cn(
-                  'text-base min-w-[200px] border-r px-2 bg-transparent disabled:bg-background-grey',
+                  'text-base min-w-[100px] border-r px-2 bg-transparent disabled:bg-background-grey',
                 )}
                 type="text"
                 value={key}
@@ -139,7 +141,7 @@ function KeyValueEditorPrimitive(props: KeyValueEditorProps) {
               <input
                 type="text"
                 data-testid={`key-value-editor-value-${index}`}
-                className="text-base w-full min-w-[150px] px-2 bg-transparent disabled:bg-background-grey"
+                className="text-base w-full min-w-[100px] px-2 bg-transparent disabled:bg-background-grey"
                 value={value}
                 disabled={disabled}
                 placeholder={valuePlaceholder || 'value'}

@@ -2729,7 +2729,15 @@
         "label": "Override existing tools",
         "info": "If a tool with the same name already exists, this will override the existing tool"
       },
-      "backToAgentfileDirectory": "Back to agentfile.directory"
+      "backToAgentfileDirectory": "Back to agentfile.directory",
+      "envVars": {
+        "description": "Add or modify existing environment variables for this agentfile",
+        "label": "Tool Environment Variables",
+        "keyPlaceholder": "Variable name",
+        "valuePlaceholder": "Variable value",
+        "addVariable": "Add variable",
+        "removeVariable": "Remove variable"
+      }
     },
     "warning": {
       "content": "You are about to import an agent from a third-party source, please ensure you trust the source before proceeding.",

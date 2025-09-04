@@ -13,6 +13,7 @@ import {
   FormProvider,
   HStack,
   JSONViewer,
+  KeyValueEditor,
   LettaInvaderIcon,
   MiniApp,
   Switch,
@@ -68,7 +69,7 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
       borderLeft
       overflowY="auto"
       color="background"
-      className="flex-1 largerThanMobile:max-w-[350px]"
+      className="flex-1 largerThanMobile:max-w-[400px]"
     >
       <HStack padding="medium" borderBottom align="center">
         <LettaInvaderIcon />
@@ -144,6 +145,29 @@ function AgentsDialogSidebar(props: AgentsDialogSidebarProps) {
               name="importAsTemplate"
             />
           )}
+          <FormField
+            render={({ field }) => (
+              <KeyValueEditor
+                fullWidth
+                description={t('AgentsDialogSidebar.envVars.description')}
+                label={t('AgentsDialogSidebar.envVars.label')}
+                value={field.value || []}
+                onValueChange={field.onChange}
+                keyPlaceholder={t('AgentsDialogSidebar.envVars.keyPlaceholder')}
+                valuePlaceholder={t(
+                  'AgentsDialogSidebar.envVars.valuePlaceholder',
+                )}
+
+                addVariableLabel={t('AgentsDialogSidebar.envVars.addVariable')}
+                removeVariableLabel={t(
+                  'AgentsDialogSidebar.envVars.removeVariable',
+                )}
+                disabled={isImporting}
+                highlightDuplicateKeys
+              />
+            )}
+            name="envVars"
+          />
         </VStack>
         <Button
           data-testid="import-button"
@@ -202,6 +226,14 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
         overrideExistingTools: z.boolean(),
         appendCopySuffix: z.boolean(),
         importAsTemplate: z.boolean().optional(),
+        envVars: z
+          .array(
+            z.object({
+              key: z.string(),
+              value: z.string(),
+            }),
+          )
+          .optional(),
       }),
     [t, showProjectSelector],
   );
@@ -272,6 +304,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       overrideExistingTools: false,
       appendCopySuffix: false,
       importAsTemplate: defaultTemplateImport,
+      envVars: [],
     },
   });
 
@@ -331,12 +364,23 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       }
 
       // Handle regular agent import
+      const envVarsObject = (values.envVars || []).reduce(
+        (acc, envVar) => {
+          if (envVar.key && envVar.value) {
+            acc[envVar.key] = envVar.value;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
       importAgent({
         formData: {
           file: fileToImport,
           ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
           append_copy_suffix: values.appendCopySuffix,
           override_existing_tools: values.overrideExistingTools,
+          env_vars_json: envVarsObject ? JSON.stringify(envVarsObject) : '{}',
         },
       });
     },
@@ -370,6 +414,30 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
       const content = event.target?.result as string;
 
       try {
+        const contentJson: Partial<AgentFileSchema> = JSON.parse(content);
+
+        if ('agents' in contentJson) {
+          // extract environment variables from all agents
+          const extractedEnvMap = new Map<string, string>();
+
+          contentJson.agents?.forEach((agent) => {
+            Object.entries(agent.tool_exec_environment_variables || {}).forEach(
+              ([key, value]) => {
+                if (!extractedEnvMap.has(key)) {
+                  extractedEnvMap.set(key, value);
+                }
+              },
+            );
+          });
+
+          const asArray = Array.from(extractedEnvMap, ([key, value]) => ({
+            key,
+            value,
+          }));
+
+          form.setValue('envVars', asArray);
+        }
+
         setFileData(JSON.parse(content));
       } catch (_e) {
         setFile(null);
@@ -380,7 +448,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     return () => {
       reader.abort();
     };
-  }, [file, t]);
+  }, [file, form, t]);
 
   const handleDropFile = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -414,9 +482,20 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     if (fileInputRef.current?.value) {
       fileInputRef.current.value = '';
     }
-    form.reset();
+    form.reset({
+      file: null,
+      overrideExistingTools: false,
+      appendCopySuffix: false,
+      importAsTemplate: defaultTemplateImport,
+      envVars: [],
+    });
     resetImportAgent();
-  }, [form, resetImportAgent, resetImportTemplate]);
+  }, [
+    form,
+    resetImportAgent,
+    resetImportTemplate,
+    defaultTemplateImport,
+  ]);
 
   const handleDialogOpenChange = useCallback(
     (nextOpen: boolean) => {
