@@ -302,7 +302,7 @@ class LettaCoreToolExecutor(ToolExecutor):
         """
         try:
             # Use the shared service method to get results
-            formatted_results, count = await self.agent_manager.search_agent_archival_memory_async(
+            formatted_results = await self.agent_manager.search_agent_archival_memory_async(
                 agent_id=agent_state.id,
                 actor=actor,
                 query=query,
@@ -313,7 +313,7 @@ class LettaCoreToolExecutor(ToolExecutor):
                 end_datetime=end_datetime,
             )
 
-            return formatted_results, count
+            return formatted_results
 
         except Exception as e:
             raise e

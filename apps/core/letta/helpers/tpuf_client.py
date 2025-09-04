@@ -392,7 +392,7 @@ class TurbopufferClient:
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> List[Tuple[PydanticPassage, float]]:
+    ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Query passages from Turbopuffer using vector search, full-text search, or hybrid search.
 
         Args:
@@ -409,7 +409,7 @@ class TurbopufferClient:
             end_date: Optional datetime to filter passages created before this date
 
         Returns:
-            List of (passage, score) tuples
+            List of (passage, score, metadata) tuples with relevance rankings
         """
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
@@ -474,7 +474,7 @@ class TurbopufferClient:
                 # for hybrid mode, we get a multi-query response
                 vector_results = self._process_single_query_results(result.results[0], archive_id, tags)
                 fts_results = self._process_single_query_results(result.results[1], archive_id, tags, is_fts=True)
-                # use RRF and return only (passage, score) for backwards compatibility
+                # use RRF and include metadata with ranks
                 results_with_metadata = self._reciprocal_rank_fusion(
                     vector_results=[passage for passage, _ in vector_results],
                     fts_results=[passage for passage, _ in fts_results],
@@ -483,11 +483,21 @@ class TurbopufferClient:
                     fts_weight=fts_weight,
                     top_k=top_k,
                 )
-                return [(passage, rrf_score) for passage, rrf_score, metadata in results_with_metadata]
+                # Return (passage, score, metadata) with ranks
+                return results_with_metadata
             else:
-                # for single queries (vector, fts, timestamp)
+                # for single queries (vector, fts, timestamp) - add basic metadata
                 is_fts = search_mode == "fts"
-                return self._process_single_query_results(result, archive_id, tags, is_fts=is_fts)
+                results = self._process_single_query_results(result, archive_id, tags, is_fts=is_fts)
+                # Add simple metadata for single search modes
+                results_with_metadata = []
+                for idx, (passage, score) in enumerate(results):
+                    metadata = {
+                        "combined_score": score,
+                        f"{search_mode}_rank": idx + 1,  # Add the rank for this search mode
+                    }
+                    results_with_metadata.append((passage, score, metadata))
+                return results_with_metadata
 
         except Exception as e:
             logger.error(f"Failed to query passages from Turbopuffer: {e}")
