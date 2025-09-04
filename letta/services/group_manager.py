@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import List, Optional, Union
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, asc, delete, desc, or_, select
 from sqlalchemy.orm import Session
 
 from letta.orm.agent import Agent as AgentModel
@@ -13,6 +14,7 @@ from letta.schemas.letta_message import LettaMessage
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.settings import DatabaseChoice, settings
 from letta.utils import enforce_types
 
 
@@ -27,20 +29,34 @@ class GroupManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        show_hidden_groups: Optional[bool] = None,
     ) -> list[PydanticGroup]:
         async with db_registry.async_session() as session:
-            filters = {"organization_id": actor.organization_id}
+            from sqlalchemy import select
+
+            from letta.orm.sqlalchemy_base import AccessType
+
+            query = select(GroupModel)
+            query = GroupModel.apply_access_predicate(query, actor, ["read"], AccessType.ORGANIZATION)
+
+            # Apply filters
             if project_id:
-                filters["project_id"] = project_id
+                query = query.where(GroupModel.project_id == project_id)
             if manager_type:
-                filters["manager_type"] = manager_type
-            groups = await GroupModel.list_async(
-                db_session=session,
-                before=before,
-                after=after,
-                limit=limit,
-                **filters,
-            )
+                query = query.where(GroupModel.manager_type == manager_type)
+
+            # Apply hidden filter
+            if not show_hidden_groups:
+                query = query.where((GroupModel.hidden.is_(None)) | (GroupModel.hidden == False))
+
+            # Apply pagination
+            query = await _apply_group_pagination_async(query, before, after, session, ascending=True)
+
+            if limit:
+                query = query.limit(limit)
+
+            result = await session.execute(query)
+            groups = result.scalars().all()
             return [group.to_pydantic() for group in groups]
 
     @enforce_types
@@ -561,3 +577,50 @@ class GroupManager:
         # 3) ordering
         if max_value <= min_value:
             raise ValueError(f"'{max_name}' must be greater than '{min_name}' (got {max_name}={max_value} <= {min_name}={min_value})")
+
+
+def _cursor_filter(sort_col, id_col, ref_sort_col, ref_id, forward: bool):
+    """
+    Returns a SQLAlchemy filter expression for cursor-based pagination for groups.
+
+    If `forward` is True, returns records after the reference.
+    If `forward` is False, returns records before the reference.
+    """
+    if forward:
+        return or_(
+            sort_col > ref_sort_col,
+            and_(sort_col == ref_sort_col, id_col > ref_id),
+        )
+    else:
+        return or_(
+            sort_col < ref_sort_col,
+            and_(sort_col == ref_sort_col, id_col < ref_id),
+        )
+
+
+async def _apply_group_pagination_async(query, before: Optional[str], after: Optional[str], session, ascending: bool = True) -> any:
+    """Apply cursor-based pagination to group queries."""
+    sort_column = GroupModel.created_at
+
+    if after:
+        result = (await session.execute(select(sort_column, GroupModel.id).where(GroupModel.id == after))).first()
+        if result:
+            after_sort_value, after_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(after_sort_value, datetime):
+                after_sort_value = after_sort_value.strftime("%Y-%m-%d %H:%M:%S")
+            query = query.where(_cursor_filter(sort_column, GroupModel.id, after_sort_value, after_id, forward=ascending))
+
+    if before:
+        result = (await session.execute(select(sort_column, GroupModel.id).where(GroupModel.id == before))).first()
+        if result:
+            before_sort_value, before_id = result
+            # SQLite does not support as granular timestamping, so we need to round the timestamp
+            if settings.database_engine is DatabaseChoice.SQLITE and isinstance(before_sort_value, datetime):
+                before_sort_value = before_sort_value.strftime("%Y-%m-%d %H:%M:%S")
+            query = query.where(_cursor_filter(sort_column, GroupModel.id, before_sort_value, before_id, forward=not ascending))
+
+    # Apply ordering
+    order_fn = asc if ascending else desc
+    query = query.order_by(order_fn(sort_column), order_fn(GroupModel.id))
+    return query

@@ -494,7 +494,8 @@ class VoiceAgent(BaseAgent):
             start_date=start_date,
             end_date=end_date,
         )
-        formatted_archival_results = [{"timestamp": str(result.created_at), "content": result.text} for result in archival_results]
+        # Extract passages from tuples and format
+        formatted_archival_results = [{"timestamp": str(passage.created_at), "content": passage.text} for passage, _, _ in archival_results]
         response = {
             "archival_search_results": formatted_archival_results,
         }

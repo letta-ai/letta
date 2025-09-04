@@ -38,6 +38,10 @@ class BaseBlock(LettaBase, validate_assignment=True):
     # metadata
     description: Optional[str] = Field(None, description="Description of the block.")
     metadata: Optional[dict] = Field({}, description="Metadata of the block.")
+    hidden: Optional[bool] = Field(
+        None,
+        description="If set to True, the block will be hidden.",
+    )
 
     # def __len__(self):
     #     return len(self.value)

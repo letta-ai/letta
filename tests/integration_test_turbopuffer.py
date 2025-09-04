@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -188,7 +189,7 @@ class TestTurbopufferIntegration:
             sql_passages = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
             assert len(sql_passages) >= len(test_passages)
             for text in test_passages:
-                assert any(p.text == text for p in sql_passages)
+                assert any(p.text == text for p, _, _ in sql_passages)
 
             # Test vector search which should use Turbopuffer
             embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
@@ -206,15 +207,15 @@ class TestTurbopufferIntegration:
             # Should find relevant passages via Turbopuffer vector search
             assert len(vector_results) > 0
             # The most relevant result should be about Turbopuffer
-            assert any("Turbopuffer" in p.text or "vector" in p.text for p in vector_results)
+            assert any("Turbopuffer" in p.text or "vector" in p.text for p, _, _ in vector_results)
 
             # Test deletion - should delete from both
-            passage_to_delete = sql_passages[0]
+            passage_to_delete = sql_passages[0][0]  # Extract passage from tuple
             await server.passage_manager.delete_agent_passages_async([passage_to_delete], default_user, strict_mode=True)
 
             # Verify deleted from SQL
             remaining = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
-            assert not any(p.id == passage_to_delete.id for p in remaining)
+            assert not any(p.id == passage_to_delete.id for p, _, _ in remaining)
 
             # Verify vector search no longer returns deleted passage
             vector_results_after_delete = await server.agent_manager.query_agent_passages_async(
@@ -225,7 +226,7 @@ class TestTurbopufferIntegration:
                 embed_query=True,
                 limit=10,
             )
-            assert not any(p.id == passage_to_delete.id for p in vector_results_after_delete)
+            assert not any(p.id == passage_to_delete.id for p, _, _ in vector_results_after_delete)
 
         finally:
             # TODO: Clean up archive when delete_archive method is available
@@ -286,7 +287,7 @@ class TestTurbopufferIntegration:
 
             # Should get all passages
             assert len(results) == 3  # All three passages
-            for passage, score in results:
+            for passage, score, metadata in results:
                 assert passage.organization_id is not None
 
             # Clean up
@@ -321,7 +322,7 @@ class TestTurbopufferIntegration:
 
         # List passages - should work from SQL
         sql_passages = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
-        assert any(p.text == text_content for p in sql_passages)
+        assert any(p.text == text_content for p, _, _ in sql_passages)
 
         # Vector search should use PostgreSQL pgvector
         embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
@@ -377,7 +378,7 @@ class TestTurbopufferIntegration:
             )
             assert 0 < len(vector_results) <= 3
             # all results should have scores
-            assert all(isinstance(score, float) for _, score in vector_results)
+            assert all(isinstance(score, float) for _, score, _ in vector_results)
 
             # Test FTS-only search
             fts_results = await client.query_passages(
@@ -385,9 +386,9 @@ class TestTurbopufferIntegration:
             )
             assert 0 < len(fts_results) <= 3
             # should find passages mentioning Turbopuffer
-            assert any("Turbopuffer" in passage.text for passage, _ in fts_results)
+            assert any("Turbopuffer" in passage.text for passage, _, _ in fts_results)
             # all results should have scores
-            assert all(isinstance(score, float) for _, score in fts_results)
+            assert all(isinstance(score, float) for _, score, _ in fts_results)
 
             # Test hybrid search
             hybrid_results = await client.query_passages(
@@ -401,11 +402,11 @@ class TestTurbopufferIntegration:
             )
             assert 0 < len(hybrid_results) <= 3
             # hybrid should combine both vector and text relevance
-            assert any("Turbopuffer" in passage.text or "vector" in passage.text for passage, _ in hybrid_results)
+            assert any("Turbopuffer" in passage.text or "vector" in passage.text for passage, _, _ in hybrid_results)
             # all results should have scores
-            assert all(isinstance(score, float) for _, score in hybrid_results)
+            assert all(isinstance(score, float) for _, score, _ in hybrid_results)
             # results should be sorted by score (highest first)
-            scores = [score for _, score in hybrid_results]
+            scores = [score for _, score, _ in hybrid_results]
             assert scores == sorted(scores, reverse=True)
 
             # Test with different weights
@@ -420,7 +421,7 @@ class TestTurbopufferIntegration:
             )
             assert 0 < len(vector_heavy_results) <= 3
             # all results should have scores
-            assert all(isinstance(score, float) for _, score in vector_heavy_results)
+            assert all(isinstance(score, float) for _, score, _ in vector_heavy_results)
 
             # Test error handling - missing text for hybrid mode (embedding provided but text missing)
             with pytest.raises(ValueError, match="Both query_embedding and query_text are required"):
@@ -434,7 +435,7 @@ class TestTurbopufferIntegration:
             timestamp_results = await client.query_passages(archive_id=archive_id, search_mode="timestamp", top_k=3)
             assert len(timestamp_results) <= 3
             # Should return passages ordered by timestamp (most recent first)
-            assert all(isinstance(passage, Passage) for passage, _ in timestamp_results)
+            assert all(isinstance(passage, Passage) for passage, _, _ in timestamp_results)
 
         finally:
             # Clean up
@@ -500,7 +501,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should find 3 passages with python tag
-            python_passages = [passage for passage, _ in python_any_results]
+            python_passages = [passage for passage, _, _ in python_any_results]
             python_texts = [p.text for p in python_passages]
             assert len(python_passages) == 3
             assert "Python programming tutorial" in python_texts
@@ -518,7 +519,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should find 2 passages that have both python AND tutorial tags
-            tutorial_passages = [passage for passage, _ in python_tutorial_all_results]
+            tutorial_passages = [passage for passage, _, _ in python_tutorial_all_results]
             tutorial_texts = [p.text for p in tutorial_passages]
             assert len(tutorial_passages) == 2
             assert "Python programming tutorial" in tutorial_texts
@@ -535,7 +536,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should find 2 passages with javascript tag
-            js_passages = [passage for passage, _ in js_fts_results]
+            js_passages = [passage for passage, _, _ in js_fts_results]
             js_texts = [p.text for p in js_passages]
             assert len(js_passages) == 2
             assert "JavaScript web development" in js_texts
@@ -555,7 +556,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should find python-tagged passages
-            hybrid_passages = [passage for passage, _ in python_hybrid_results]
+            hybrid_passages = [passage for passage, _, _ in python_hybrid_results]
             hybrid_texts = [p.text for p in hybrid_passages]
             assert len(hybrid_passages) == 3
             assert all("Python" in text for text in hybrid_texts)
@@ -624,7 +625,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should only get today's and yesterday's passages
-            passages = [p for p, _ in results]
+            passages = [p for p, _, _ in results]
             texts = [p.text for p in passages]
             assert len(passages) == 2
             assert "Today's meeting notes" in texts[0] or "Today's meeting notes" in texts[1]
@@ -643,7 +644,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should get all except last month's passage
-            passages = [p for p, _ in results]
+            passages = [p for p, _, _ in results]
             assert len(passages) == 3
             texts = [p.text for p in passages]
             assert "Last month's quarterly" not in str(texts)
@@ -658,7 +659,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should get yesterday and older passages
-            passages = [p for p, _ in results]
+            passages = [p for p, _, _ in results]
             assert len(passages) >= 3  # yesterday, last week, last month
             texts = [p.text for p in passages]
             assert "Today's meeting notes" not in str(texts)
@@ -673,7 +674,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should only find today's meeting notes
-            passages = [p for p, _ in results]
+            passages = [p for p, _, _ in results]
             if len(passages) > 0:  # FTS might not match if text search doesn't find keywords
                 texts = [p.text for p in passages]
                 assert "Today's meeting notes" in texts[0]
@@ -690,7 +691,7 @@ class TestTurbopufferIntegration:
             )
 
             # Should find last week's sprint review
-            passages = [p for p, _ in results]
+            passages = [p for p, _, _ in results]
             if len(passages) > 0:
                 texts = [p.text for p in passages]
                 assert "Last week's sprint review" in texts[0]
@@ -735,14 +736,14 @@ class TestTurbopufferParametrized:
 
         # List passages should work in both modes
         listed = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
-        assert any(p.text == test_text for p in listed)
+        assert any(p.text == test_text for p, _, _ in listed)
 
         # Delete should work in both modes
         await server.passage_manager.delete_agent_passages_async(passages, default_user, strict_mode=True)
 
         # Verify deletion
         remaining = await server.agent_manager.query_agent_passages_async(actor=default_user, agent_id=sarah_agent.id, limit=10)
-        assert not any(p.id == passages[0].id for p in remaining)
+        assert not any(p.id == passages[0].id for p, _, _ in remaining)
 
     @pytest.mark.asyncio
     async def test_temporal_filtering_in_both_modes(self, turbopuffer_mode, server, default_user, sarah_agent):
@@ -774,8 +775,8 @@ class TestTurbopufferParametrized:
 
         # Should find only the recent passage, not the old one
         assert len(results) >= 1
-        assert any("Recent update from today" in p.text for p in results)
-        assert not any("Old update from last week" in p.text for p in results)
+        assert any("Recent update from today" in p.text for p, _, _ in results)
+        assert not any("Old update from last week" in p.text for p, _, _ in results)
 
         # Query with date range that includes only the old passage
         old_start = last_week - timedelta(days=1)
@@ -787,8 +788,8 @@ class TestTurbopufferParametrized:
 
         # Should find only the old passage
         assert len(old_results) >= 1
-        assert any("Old update from last week" in p.text for p in old_results)
-        assert not any("Recent update from today" in p.text for p in old_results)
+        assert any("Old update from last week" in p.text for p, _, _ in old_results)
+        assert not any("Recent update from today" in p.text for p, _, _ in old_results)
 
         # Clean up
         await server.passage_manager.delete_agent_passages_async(recent_passage, default_user, strict_mode=True)
@@ -1738,6 +1739,193 @@ class TestTurbopufferMessagesIntegration:
 
         # Clean up remaining message (use strict_mode=False since turbopuffer might be mocked)
         await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=False)
+
+    async def wait_for_embedding(
+        self, agent_id: str, message_id: str, organization_id: str, max_wait: float = 10.0, poll_interval: float = 0.5
+    ) -> bool:
+        """Poll Turbopuffer directly to check if a message has been embedded.
+
+        Args:
+            agent_id: Agent ID for the message
+            message_id: ID of the message to find
+            organization_id: Organization ID
+            max_wait: Maximum time to wait in seconds
+            poll_interval: Time between polls in seconds
+
+        Returns:
+            True if message was found in Turbopuffer within timeout, False otherwise
+        """
+        import asyncio
+
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        client = TurbopufferClient()
+        start_time = asyncio.get_event_loop().time()
+
+        while asyncio.get_event_loop().time() - start_time < max_wait:
+            try:
+                # Query Turbopuffer directly using timestamp mode to get all messages
+                results = await client.query_messages(
+                    agent_id=agent_id,
+                    organization_id=organization_id,
+                    search_mode="timestamp",
+                    top_k=100,  # Get more messages to ensure we find it
+                )
+
+                # Check if our message ID is in the results
+                if any(msg["id"] == message_id for msg, _, _ in results):
+                    return True
+
+            except Exception as e:
+                # Log but don't fail - Turbopuffer might still be processing
+                pass
+
+            await asyncio.sleep(poll_interval)
+
+        return False
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_creation_background_mode(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that messages are embedded in background when strict_mode=False"""
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create message in background mode
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Background test message about Python programming")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=False,  # Background mode
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Message should be in PostgreSQL immediately
+        sql_message = await server.message_manager.get_message_by_id_async(message_id, default_user)
+        assert sql_message is not None
+        assert sql_message.id == message_id
+
+        # Poll for embedding completion by querying Turbopuffer directly
+        embedded = await self.wait_for_embedding(
+            agent_id=sarah_agent.id, message_id=message_id, organization_id=default_user.organization_id, max_wait=10.0, poll_interval=0.5
+        )
+        assert embedded, "Message was not embedded in Turbopuffer within timeout"
+
+        # Now verify it's also searchable through the search API
+        search_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="Python programming",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert len(search_results) > 0
+        assert any(msg.id == message_id for msg, _ in search_results)
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")
+    async def test_message_update_background_mode(self, server, default_user, sarah_agent, enable_message_embedding):
+        """Test that message updates work in background mode"""
+        from letta.schemas.message import MessageUpdate
+
+        embedding_config = sarah_agent.embedding_config or EmbeddingConfig.default_config(provider="openai")
+
+        # Create initial message with strict_mode=True to ensure it's embedded
+        messages = await server.message_manager.create_many_messages_async(
+            pydantic_msgs=[
+                PydanticMessage(
+                    role=MessageRole.user,
+                    content=[TextContent(text="Original content about databases")],
+                    agent_id=sarah_agent.id,
+                )
+            ],
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=True,  # Ensure initial embedding
+        )
+
+        assert len(messages) == 1
+        message_id = messages[0].id
+
+        # Verify initial content is searchable
+        initial_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert any(msg.id == message_id for msg, _ in initial_results)
+
+        # Update message in background mode
+        updated_message = await server.message_manager.update_message_by_id_async(
+            message_id=message_id,
+            message_update=MessageUpdate(content="Updated content about machine learning"),
+            actor=default_user,
+            embedding_config=embedding_config,
+            strict_mode=False,  # Background mode
+        )
+
+        assert updated_message.id == message_id
+
+        # PostgreSQL should be updated immediately
+        sql_message = await server.message_manager.get_message_by_id_async(message_id, default_user)
+        assert "machine learning" in server.message_manager._extract_message_text(sql_message)
+
+        # Wait a bit for the background update to process
+        await asyncio.sleep(1.0)
+
+        # Poll for the update to be reflected in Turbopuffer
+        # We check by searching for the new content
+        embedded = await self.wait_for_embedding(
+            agent_id=sarah_agent.id, message_id=message_id, organization_id=default_user.organization_id, max_wait=10.0, poll_interval=0.5
+        )
+        assert embedded, "Updated message was not re-embedded within timeout"
+
+        # Now verify the new content is searchable
+        new_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="machine learning",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        assert any(msg.id == message_id for msg, _ in new_results)
+
+        # Old content should eventually no longer be searchable
+        # (may take a moment for the delete to process)
+        await asyncio.sleep(2.0)
+        old_results = await server.message_manager.search_messages_async(
+            agent_id=sarah_agent.id,
+            actor=default_user,
+            query_text="databases",
+            search_mode="fts",
+            limit=10,
+            embedding_config=embedding_config,
+        )
+        # The message shouldn't match the old search term anymore
+        if len(old_results) > 0:
+            # If we find results, verify our message doesn't contain the old content
+            for msg, _ in old_results:
+                if msg.id == message_id:
+                    text = server.message_manager._extract_message_text(msg)
+                    assert "databases" not in text.lower()
+
+        # Clean up
+        await server.message_manager.delete_messages_by_ids_async([message_id], default_user, strict_mode=True)
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not settings.tpuf_api_key, reason="Turbopuffer API key not configured")

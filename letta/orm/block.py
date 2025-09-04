@@ -41,6 +41,7 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
 
     # permissions of the agent
     read_only: Mapped[bool] = mapped_column(doc="whether the agent has read-only access to the block", default=False)
+    hidden: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="If set to True, the block will be hidden.")
 
     # history pointers / locking mechanisms
     current_history_entry_id: Mapped[Optional[str]] = mapped_column(

@@ -24,6 +24,7 @@ class Group(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateMixin):
     min_message_buffer_length: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     turns_counter: Mapped[Optional[int]] = mapped_column(nullable=True, doc="")
     last_processed_message_id: Mapped[Optional[str]] = mapped_column(nullable=True, doc="")
+    hidden: Mapped[Optional[bool]] = mapped_column(nullable=True, doc="If set to True, the group will be hidden.")
 
     # relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="groups")

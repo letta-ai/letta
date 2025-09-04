@@ -1,7 +1,7 @@
 name: Send Message SDK Tests
 on:
   pull_request_target:
-    # branches: [main] # TODO: uncomment before merge
+    branches: [main] # TODO: uncomment before merge
     types: [labeled]
     paths:
       - 'letta/**'
