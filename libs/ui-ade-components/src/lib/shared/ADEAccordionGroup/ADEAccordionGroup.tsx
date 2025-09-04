@@ -3,7 +3,6 @@
 import { useRef, useState, useMemo } from 'react';
 import React from 'react';
 import './ADEAccordionGroup.scss';
-import { ADEAccordionFooter } from './ADEAccordionFooter/ADEAccordionFooter';
 import {
   ADEAccordionPanels,
   type PanelItem,
@@ -14,10 +13,8 @@ interface ADEAccordionGroupProps {
   topOffset?: number;
 }
 
-const STICKY_HEADER_HEIGHT = 32; // Height of the sticky header in pixels
-
 export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
-  const { panels, topOffset = 0 } = props;
+  const { panels } = props;
   const panelRefs = useRef<Array<HTMLDivElement | null>>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,30 +36,6 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
     });
   };
 
-  function handleScrollToAnchor(targetSection: string) {
-    const container = containerRef.current;
-    const target = document.querySelector(`[data-id="${targetSection}"]`);
-    const targetIndex = panels.findIndex((p) => p.id === targetSection);
-    const diff = (targetIndex - 1) * STICKY_HEADER_HEIGHT; // to account for number of sticky headers
-
-    if (container && target) {
-      const targetTop = (target as HTMLElement).offsetTop;
-      container.scrollTo({
-        top: targetTop - topOffset - diff - STICKY_HEADER_HEIGHT, // adjust for sticky headers
-        behavior: 'smooth',
-      });
-
-      // also open the panel if it's not already open
-      setOpenStates((prev) => {
-        const newStates = [...prev];
-        if (!newStates[targetIndex]) {
-          newStates[targetIndex] = true;
-        }
-        return newStates;
-      });
-    }
-  }
-
   const lastOpenIndex = useMemo(() => {
     return openStates.lastIndexOf(true);
   }, [openStates]);
@@ -81,12 +54,6 @@ export function ADEAccordionGroup(props: ADEAccordionGroupProps) {
           panelRefs={panelRefs}
         />
       </div>
-      <ADEAccordionFooter
-        panels={panels}
-        panelRefs={panelRefs}
-        containerRef={containerRef}
-        handleScrollToAnchor={handleScrollToAnchor}
-      />
     </div>
   );
 }
