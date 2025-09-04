@@ -124,18 +124,24 @@ async def archival_memory_search(
         tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
         tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
         top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-        start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
-        end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+        start_datetime (Optional[str]): Filter results to passages created on or after this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes passages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
+        end_datetime (Optional[str]): Filter results to passages created on or before this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-20"), includes all passages from that entire day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20" (includes all of Jan 20), "2024-01-20T17:00" (up to 5 PM on Jan 20).
 
     Examples:
         # Search all passages
         archival_memory_search(query="project updates")
 
-        # Search with date range (full days)
+        # Search with date range (inclusive of both dates)
         archival_memory_search(query="meetings", start_datetime="2024-01-15", end_datetime="2024-01-20")
+        # This includes all passages from Jan 15 00:00:00 through Jan 20 23:59:59
+
+        # Search passages from a specific day (inclusive)
+        archival_memory_search(query="bug reports", start_datetime="2024-09-04", end_datetime="2024-09-04")
+        # This includes ALL passages from September 4, 2024
 
         # Search with specific time range
         archival_memory_search(query="error logs", start_datetime="2024-01-15T09:30", end_datetime="2024-01-15T17:30")
+        # This includes passages from 9:30 AM to 5:30 PM on Jan 15
 
         # Search from a specific point in time onwards
         archival_memory_search(query="customer feedback", start_datetime="2024-01-15T14:00")
