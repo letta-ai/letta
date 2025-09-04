@@ -12,8 +12,6 @@ on:
 concurrency:
   group: docker-tests-${{ github.ref }}
   cancel-in-progress: true
-
-jobs:
   docker-tests:
     # Run on pull_request OR on pull_request_target only when labeled "safe to test"
     if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
