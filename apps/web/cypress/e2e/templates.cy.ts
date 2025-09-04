@@ -413,6 +413,10 @@ describe(
               'contain.value',
               'This is test content for the cypress memory block',
             );
+
+            // cooldown
+            cy.wait(4000);
+
           });
 
           // PHASE 2: Migration verification after block addition

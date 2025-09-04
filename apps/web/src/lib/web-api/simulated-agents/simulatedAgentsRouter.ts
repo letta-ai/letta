@@ -680,7 +680,9 @@ async function syncDefaultSimulatedAgent(
       },
     };
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, {
+      data: "SIMULATED_AGENT_FAIL"
+    });
     return {
       status: 500,
       body: {
