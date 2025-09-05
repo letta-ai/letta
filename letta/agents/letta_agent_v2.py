@@ -429,6 +429,7 @@ class LettaAgentV2(BaseAgentV2):
                 self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
                 raise
 
+            step_progression = StepProgression.RESPONSE_RECEIVED
             stream_end_time_ns = get_utc_timestamp_ns()
             llm_request_ns = stream_end_time_ns - provider_request_start_timestamp_ns
             step_metrics.llm_request_ns = llm_request_ns
@@ -478,6 +479,7 @@ class LettaAgentV2(BaseAgentV2):
                 ),
                 self.stop_reason,
             )
+            step_progression = StepProgression.STEP_LOGGED
 
         new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
         self.response_messages.extend(persisted_messages[new_message_idx:])
@@ -497,6 +499,8 @@ class LettaAgentV2(BaseAgentV2):
             for message in letta_messages:
                 if include_return_message_types is None or message.message_type in include_return_message_types:
                     yield message
+
+        step_progression = StepProgression.FINISHED
 
     def _initialize_state(self):
         self.should_continue = True
