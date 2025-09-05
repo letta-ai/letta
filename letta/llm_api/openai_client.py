@@ -271,9 +271,13 @@ class OpenAIClient(LLMClientBase):
         """
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
 
-        print("CHAT REQUEST DATA: ", json.dumps(request_data, indent=4))
         responses_request_data = convert_chat_to_response(request_data)
-        print("RESPONSES REQUEST DATA: ", json.dumps(responses_request_data, indent=4))
+        
+        # Write request data to local JSON files for debugging
+        with open("chat_request_data.json", "w") as f:
+            json.dump(request_data, f, indent=4)
+        with open("responses_request_data.json", "w") as f:
+            json.dump(responses_request_data, f, indent=4)
         query_response =  client.responses.create(**responses_request_data)
         return query_response.model_dump()
 
@@ -285,8 +289,15 @@ class OpenAIClient(LLMClientBase):
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
 
-        response: ChatCompletion = await client.chat.completions.create(**request_data)
-        return response.model_dump()
+        responses_request_data = convert_chat_to_response(request_data)
+        
+        # Write request data to local JSON files for debugging
+        with open("async_chat_request_data.json", "w") as f:
+            json.dump(request_data, f, indent=4)
+        with open("async_responses_request_data.json", "w") as f:
+            json.dump(responses_request_data, f, indent=4)
+        query_response = await client.responses.create(**responses_request_data)
+        return query_response.model_dump()
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return is_openai_reasoning_model(llm_config.model)
@@ -302,9 +313,14 @@ class OpenAIClient(LLMClientBase):
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
-        # OpenAI's response structure directly maps to ChatCompletionResponse
-        # We just need to instantiate the Pydantic model for validation and type safety.
-        chat_completion_response = ChatCompletionResponse(**response_data)
+        # Check if this is a Responses API response (has "output" field)
+        if "output" in response_data:
+            # This is a Responses API response, convert it to Chat Completion format
+            chat_completion_response = convert_responses_api_to_chat_completion(response_data, llm_config)
+        else:
+            # OpenAI's response structure directly maps to ChatCompletionResponse
+            # We just need to instantiate the Pydantic model for validation and type safety.
+            chat_completion_response = ChatCompletionResponse(**response_data)
         chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
@@ -514,7 +530,6 @@ def convert_chat_to_response(chat: dict):
         "input": "",
         "store": False,
         "parallel_tool_calls": False,
-        "include": ["reasoning.encrypted_content"]
     }
 
     #need to remove system prompt from messages and pass as instructions?  
@@ -569,20 +584,53 @@ def convert_chat_to_response(chat: dict):
     else:
         response_request_data["input"] = []
         for message in chat["messages"]:
-            response_request_data["input"].append({
-                "role": message["role"],
-                "content": [ 
-                    {
-                        "type": "input_text" if (message["role"] == "user" or message["role"] == "developer") else "output_text",
-                        "text": message["content"]
-                    }
-                ]
-            })    
+            # Handle regular messages with roles supported by Responses API
+            if message["role"] in ["user", "developer", "system"]:
+                response_request_data["input"].append({
+                    "role": message["role"],
+                    "content": message["content"]
+                })
+            
+            # Handle assistant messages (may have tool_calls)
+            elif message["role"] == "assistant":
+                # Check if assistant message has tool_calls
+                if "tool_calls" in message and message["tool_calls"] is not None and len(message["tool_calls"]) > 0:
+                    # Add assistant message first (if it has content)
+                    if message.get("content"):
+                        response_request_data["input"].append({
+                            "role": "assistant",
+                            "content": message["content"]
+                        })
+                    
+                    # Convert each tool call to ResponsesToolCall format
+                    for tool_call in message["tool_calls"]:
+                        response_request_data["input"].append({
+                            "id": "fc_" + tool_call.get("id", ""),
+                            "call_id": "fc_" + tool_call.get("id", ""), #quick hack to add fc_
+                            "type": "function_call",
+                            "name": tool_call["function"]["name"],
+                            "arguments": tool_call["function"]["arguments"],
+                            "status": "completed"  # Assuming completed calls
+                        })
+                else:
+                    # Regular assistant message without tool calls
+                    response_request_data["input"].append({
+                        "role": "assistant",
+                        "content": message["content"]
+                    })
+            
+            # Handle tool/function messages (convert to ResponsesToolMessage)
+            elif message["role"] == "tool":
+                response_request_data["input"].append({
+                    "output": message["content"],
+                    "type": "function_call_output",
+                    "call_id": "fc_" + message.get("tool_call_id", "") #quick hack to add fc_
+                })    
     return response_request_data
 
 
 #convert from responses response to chat completion response
-def convert_response_to_chat_completion(
+def convert_responses_api_to_chat_completion(
         response_data: dict,
         llm_config: LLMConfig,
     ) -> ChatCompletionResponse: 
@@ -690,7 +738,7 @@ if __name__ == "__main__":
             response = client.request(request_data, llm_config)
             print("Request Data:", json.dumps(request_data, indent=2))
             # print("Response:", json.dumps(response, indent=2))
-            print ("CONVERTING BACK: ", json.dumps(convert_response_to_chat_completion(response, llm_config).model_dump(),indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
         except Exception as e:
             print(f"Error: {e}")
     
@@ -721,7 +769,7 @@ if __name__ == "__main__":
             request_data = client.build_request_data(messages, llm_config)
             response = client.request(request_data, llm_config)
             print("Request Data:", json.dumps(request_data, indent=2))
-            print ("CONVERTING BACK: ", json.dumps(convert_response_to_chat_completion(response, llm_config).model_dump(),indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
         except Exception as e:
             print(f"Error: {e}")
     
@@ -782,7 +830,7 @@ if __name__ == "__main__":
             request_data = client.build_request_data(messages, llm_config, tools=tools)
             response = client.request(request_data, llm_config)
             print("Request Data:", json.dumps(request_data, indent=2))
-            print ("CONVERTING BACK: ", json.dumps(convert_response_to_chat_completion(response, llm_config).model_dump(),indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
         except Exception as e:
             print(f"Error: {e}")
     
