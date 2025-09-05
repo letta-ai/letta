@@ -9883,7 +9883,7 @@ export const $LettaStreamingRequest = {
       title: 'Include Pings',
       description:
         'Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.',
-      default: false,
+      default: true,
     },
     background: {
       type: 'boolean',
@@ -12170,7 +12170,7 @@ export const $RetrieveStreamRequest = {
       title: 'Include Pings',
       description:
         'Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.',
-      default: false,
+      default: true,
     },
     poll_interval: {
       anyOf: [
