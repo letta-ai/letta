@@ -733,7 +733,7 @@ class LettaAgentV2(BaseAgentV2):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
             )
             return persisted_messages, continue_stepping, stop_reason
 
@@ -845,7 +845,7 @@ class LettaAgentV2(BaseAgentV2):
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
         )
 
         if run_id:
