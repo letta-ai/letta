@@ -419,6 +419,8 @@ class LettaAgentV2(BaseAgentV2):
                     messages=messages,
                     tools=valid_tools,
                     use_assistant_message=use_assistant_message,
+                    step_id=step_id,
+                    actor=self.actor,
                 )
                 async for chunk in invocation:
                     if llm_adapter.supports_token_streaming():
