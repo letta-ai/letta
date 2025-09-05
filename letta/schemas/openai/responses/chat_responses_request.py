@@ -173,9 +173,7 @@ if __name__ == "__main__":
     # Initialize OpenAI client
     # You can set your API key as an environment variable: export OPENAI_API_KEY="your-key-here"
     # Or pass it directly: client = OpenAI(api_key="your-key-here")
-    client = OpenAI(
-        api_key=""
-    )
+    client = OpenAI()
     
     def test_single_user_message(verbosity=None, reasoning_effort=None):
         """Test single user message with optional verbosity and reasoning effort"""
