@@ -33,7 +33,7 @@ function CardInner(props: CardButtonProps) {
       paddingX="small"
       className={cn(
         url
-          ? 'cursor-pointer hover:bg-gray-50 whitespace-nowrap'
+          ? 'cursor-pointer hover:bg-background-grey2 whitespace-nowrap'
           : 'cursor-default',
       )}
     >
