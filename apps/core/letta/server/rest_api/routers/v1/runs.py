@@ -14,7 +14,11 @@ from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
 from letta.schemas.step import Step
 from letta.server.rest_api.redis_stream_manager import redis_sse_stream_generator
-from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
+from letta.server.rest_api.streaming_response import (
+    StreamingResponseWithStatusCode,
+    add_keepalive_to_stream,
+    cancellation_aware_stream_wrapper,
+)
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
@@ -295,6 +299,14 @@ async def retrieve_stream(
         poll_interval=request.poll_interval,
         batch_size=request.batch_size,
     )
+
+    if settings.enable_cancellation_aware_streaming:
+        stream = cancellation_aware_stream_wrapper(
+            stream_generator=stream,
+            job_manager=server.job_manager,
+            job_id=run_id,
+            actor=actor,
+        )
 
     if request.include_pings and settings.enable_keepalive:
         stream = add_keepalive_to_stream(stream, keepalive_interval=settings.keepalive_interval)

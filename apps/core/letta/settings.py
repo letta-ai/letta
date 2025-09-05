@@ -211,6 +211,9 @@ class Settings(BaseSettings):
     enable_keepalive: bool = Field(True, description="Enable keepalive messages in SSE streams to prevent timeouts")
     keepalive_interval: float = Field(50.0, description="Seconds between keepalive messages (default: 50)")
 
+    # SSE Streaming cancellation settings
+    enable_cancellation_aware_streaming: bool = Field(True, description="Enable cancellation aware streaming")
+
     # default handles
     default_llm_handle: Optional[str] = None
     default_embedding_handle: Optional[str] = None
