@@ -1,8 +1,12 @@
+import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
+from letta.schemas.provider_trace import ProviderTraceCreate
+from letta.schemas.user import User
+from letta.settings import settings
 
 
 class LettaLLMRequestAdapter(LettaLLMAdapter):
@@ -20,7 +24,9 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
         messages: list,
         tools: list,
         use_assistant_message: bool,
-    ) -> AsyncGenerator[LettaMessage, None]:
+        step_id: str | None = None,
+        actor: str | None = None,
+    ) -> AsyncGenerator[LettaMessage | None, None]:
         """
         Execute a blocking LLM request and yield the response.
 
@@ -70,5 +76,33 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
         self.usage.prompt_tokens = self.chat_completions_response.usage.prompt_tokens
         self.usage.total_tokens = self.chat_completions_response.usage.total_tokens
 
+        self.log_provider_trace(step_id=step_id, actor=actor)
+
         yield None
         return
+
+    def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
+        """
+        Log provider trace data for telemetry purposes in a fire-and-forget manner.
+
+        Creates an async task to log the request/response data without blocking
+        the main execution flow. The task runs in the background.
+
+        Args:
+            step_id: The step ID associated with this request for logging purposes
+            actor: The user associated with this request for logging purposes
+        """
+        if step_id is None or actor is None or not settings.track_provider_trace:
+            return
+
+        asyncio.create_task(
+            self.telemetry_manager.create_provider_trace_async(
+                actor=actor,
+                provider_trace_create=ProviderTraceCreate(
+                    request_json=self.request_data,
+                    response_json=self.response_data,
+                    step_id=step_id,  # Use original step_id for telemetry
+                    organization_id=actor.organization_id,
+                ),
+            )
+        )

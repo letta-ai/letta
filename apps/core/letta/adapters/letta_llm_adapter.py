@@ -7,6 +7,8 @@ from letta.schemas.letta_message_content import ReasoningContent, RedactedReason
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse, ToolCall
 from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.user import User
+from letta.services.telemetry_manager import TelemetryManager
 
 
 class LettaLLMAdapter(ABC):
@@ -18,7 +20,7 @@ class LettaLLMAdapter(ABC):
     through a consistent API.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig):
+    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig) -> None:
         self.llm_client: LLMClientBase = llm_client
         self.llm_config: LLMConfig = llm_config
         self.message_id: str | None = None
@@ -28,6 +30,7 @@ class LettaLLMAdapter(ABC):
         self.reasoning_content: list[TextContent | ReasoningContent | RedactedReasoningContent] | None = None
         self.tool_call: ToolCall | None = None
         self.usage: LettaUsageStatistics = LettaUsageStatistics()
+        self.telemetry_manager: TelemetryManager = TelemetryManager()
 
     @abstractmethod
     async def invoke_llm(
@@ -36,7 +39,9 @@ class LettaLLMAdapter(ABC):
         messages: list,
         tools: list,
         use_assistant_message: bool,
-    ) -> AsyncGenerator[LettaMessage, None]:
+        step_id: str | None = None,
+        actor: User | None = None,
+    ) -> AsyncGenerator[LettaMessage | None, None]:
         """
         Execute the LLM call and yield results as they become available.
 
@@ -45,6 +50,8 @@ class LettaLLMAdapter(ABC):
             messages: The messages in context for the request
             tools: The tools available for the LLM to use
             use_assistant_message: If true, use assistant messages when streaming response
+            step_id: The step ID associated with this request. If provided, logs request and response data.
+            actor: The optional actor associated with this request for logging purposes.
 
         Yields:
             LettaMessage: Chunks of data for streaming adapters, or None for blocking adapters
@@ -52,4 +59,20 @@ class LettaLLMAdapter(ABC):
         raise NotImplementedError
 
     def supports_token_streaming(self) -> bool:
+        """
+        Check if the adapter supports token-level streaming.
+
+        Returns:
+            bool: True if the adapter can stream back tokens as they are generated, False otherwise
+        """
         return False
+
+    def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
+        """
+        Log provider trace data for telemetry purposes.
+
+        Args:
+            step_id: The step ID associated with this request for logging purposes
+            actor: The user associated with this request for logging purposes
+        """
+        raise NotImplementedError

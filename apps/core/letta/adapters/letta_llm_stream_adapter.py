@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
@@ -7,7 +8,10 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
+from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.usage import LettaUsageStatistics
+from letta.schemas.user import User
+from letta.settings import settings
 
 
 class LettaLLMStreamAdapter(LettaLLMAdapter):
@@ -20,7 +24,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
     specific streaming formats.
     """
 
-    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig):
+    def __init__(self, llm_client: LLMClientBase, llm_config: LLMConfig) -> None:
         super().__init__(llm_client, llm_config)
         self.interface: OpenAIStreamingInterface | AnthropicStreamingInterface | None = None
 
@@ -30,6 +34,8 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         messages: list,
         tools: list,
         use_assistant_message: bool,
+        step_id: str | None = None,
+        actor: User | None = None,
     ) -> AsyncGenerator[LettaMessage, None]:
         """
         Execute a streaming LLM request and yield tokens/chunks as they arrive.
@@ -109,5 +115,50 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         # Store any additional data from the interface
         self.message_id = self.interface.letta_message_id
 
+        # Log request and response data
+        self.log_provider_trace(step_id=step_id, actor=actor)
+
     def supports_token_streaming(self) -> bool:
         return True
+
+    def log_provider_trace(self, step_id: str | None, actor: User | None) -> None:
+        """
+        Log provider trace data for telemetry purposes in a fire-and-forget manner.
+
+        Creates an async task to log the request/response data without blocking
+        the main execution flow. For streaming adapters, this includes the final
+        tool call and reasoning content collected during streaming.
+
+        Args:
+            step_id: The step ID associated with this request for logging purposes
+            actor: The user associated with this request for logging purposes
+        """
+        if step_id is None or actor is None or not settings.track_provider_trace:
+            return
+
+        asyncio.create_task(
+            self.telemetry_manager.create_provider_trace_async(
+                actor=actor,
+                provider_trace_create=ProviderTraceCreate(
+                    request_json=self.request_data,
+                    response_json={
+                        "content": {
+                            "tool_call": self.tool_call.model_dump_json(),
+                            "reasoning": [content.model_dump_json() for content in self.reasoning_content],
+                        },
+                        "id": self.interface.message_id,
+                        "model": self.interface.model,
+                        "role": "assistant",
+                        # "stop_reason": "",
+                        # "stop_sequence": None,
+                        "type": "message",
+                        "usage": {
+                            "input_tokens": self.usage.prompt_tokens,
+                            "output_tokens": self.usage.completion_tokens,
+                        },
+                    },
+                    step_id=step_id,  # Use original step_id for telemetry
+                    organization_id=actor.organization_id,
+                ),
+            )
+        )
