@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, field_validator
 from openai.types.responses import (
     # Input content types
     ResponseInputText,
-    ResponseInputImage,
     ResponseFormatTextConfig,
     ResponseFormatTextJSONSchemaConfig,
 )
@@ -23,70 +22,105 @@ class ReasoningEffort:
     HIGH = "high"
 
 # Input content types - inherit from OpenAI base types for extensibility
-class ResponseInputTextContent(ResponseInputText):
-    """Text input for Responses API. Extends OpenAI base type for future customization."""
+class ResponsesInputTextContent(ResponseInputText):
+    """Text input for Responses API. Can extend if needed."""
     pass
 
-class ResponseInputImageContent(ResponseInputImage):
-    """Image input for Responses API. Extends OpenAI base type for future customization."""
-    pass
 
 # Input content union type
-ResponseInputUnion = Union[str, List[Union[ResponseInputTextContent, ResponseInputImageContent]]]
 
 # Message types for conversation history
-class ResponseSystemMessage(BaseModel):
-    content: str
+class ResponsesSystemMessage(BaseModel):
+    content: Union[str, ResponsesInputTextContent]
     role: Literal["system"] = "system"
-    name: Optional[str] = None
 
-class ResponseUserMessage(BaseModel):
-    content: Union[str, List[Union[ResponseInputTextContent, ResponseInputImageContent]]]
+class ResponsesUserMessage(BaseModel):
+    content: Union[str, ResponsesInputTextContent]
     role: Literal["user"] = "user"
-    name: Optional[str] = None
 
-class ResponseDeveloperMessage(BaseModel):
-    content: Union[str, List[Union[ResponseInputTextContent, ResponseInputImageContent]]]
+class ResponsesDeveloperMessage(BaseModel):
+    content: Union[str, ResponsesInputTextContent]
     role: Literal["developer"] = "developer"
-    name: Optional[str] = None
 
-class ResponseAssistantMessage(BaseModel):
-    content: Optional[str] = None
+# Tool call structures for assistant messages
+class ResponsesToolCall(BaseModel):
+    id: str
+    call_id: str
+    type: Literal["function_call"] = "function_call"
+    name: str
+    arguments: str
+    status: Literal["in_progress", "error", "completed"]
+
+class ResponsesAssistantMessage(BaseModel):
+    content: Optional[Union[str, ResponsesInputTextContent]] = "" #assistant message should not be nulable
     role: Literal["assistant"] = "assistant"
-    name: Optional[str] = None
+
+# For returning tool call output to model in input
+# https://platform.openai.com/docs/guides/function-calling
+class ResponsesToolMessage(BaseModel):
+    output: str # json formatter string
+    type: Literal["function_call_output"] = "function_call_output"
+    call_id: str
 
 # Union type for conversation messages
-ResponseMessage = Union[ResponseSystemMessage, ResponseUserMessage, ResponseDeveloperMessage, ResponseAssistantMessage]
+ResponsesMessage = Union[str, ResponsesSystemMessage, ResponsesUserMessage, ResponsesDeveloperMessage, ResponsesAssistantMessage, ResponsesToolMessage, ResponsesToolCall]
 
-# Tool types - inherit from OpenAI base types
-class ResponseFunctionSchema(BaseModel):
-    """Function schema for Responses API tools"""
+class AnthropicToolChoiceTool(BaseModel):
+    type: str = "tool"
     name: str
+    disable_parallel_tool_use: Optional[bool] = False
+
+
+class AnthropicToolChoiceAny(BaseModel):
+    type: str = "any"
+    disable_parallel_tool_use: Optional[bool] = False
+
+
+class AnthropicToolChoiceAuto(BaseModel):
+    type: str = "auto"
+    disable_parallel_tool_use: Optional[bool] = False
+
+
+class ResponsesToolDefinition(BaseModel):
+    # The type of the tool. Currently, only function is supported
+    type: Literal["function"] = "function"
+    name: str  # Required: The name of the function
     description: Optional[str] = None
     parameters: Optional[Dict[str, Any]] = None  # JSON Schema for the parameters
-    strict: Optional[bool] = False
+    strict: bool = True # responses defaults to strict as true, should we default to false?
+    additionalProperties: bool = False
 
-class ResponseFunctionTool(BaseModel):
-    """Function tool for Responses API. Compatible with OpenAI structure."""
+
+## tool_choice ##
+class FunctionCall(BaseModel):
+    name: str
+
+# for specifying tools in tool choice
+class ToolChoiceFunction(BaseModel):
+    # The type of the tool. Currently, only function is supported
     type: Literal["function"] = "function"
-    function: ResponseFunctionSchema
+    function: FunctionCall
 
-# Tool choice and format types - use OpenAI types directly
-ResponseTool = Union[ResponseFunctionTool]  # Only function tools, no file search or web search
-ResponseToolChoice = Union[Literal["auto", "none", "required"], Dict[str, Any]]
-ResponseFormat = Union[ResponseFormatTextConfig, ResponseFormatTextJSONSchemaConfig]
 
-def cast_response_message_to_subtype(m_dict: dict) -> ResponseMessage:
-    """Cast a dictionary to one of the individual response message types"""
+
+ResponsesToolChoice = Union[
+    Literal["none", "auto", "required", "any"], ToolChoiceFunction, AnthropicToolChoiceTool, AnthropicToolChoiceAny, AnthropicToolChoiceAuto
+]
+ResponsesFormat = Union[ResponseFormatTextConfig, ResponseFormatTextJSONSchemaConfig]
+
+def cast_responses_message_to_subtype(m_dict: dict) -> ResponsesMessage:
+    """Cast a dictionary to one of the individual responses message types"""
     role = m_dict.get("role")
     if role == "system":
-        return ResponseSystemMessage(**m_dict)
+        return ResponsesSystemMessage(**m_dict)
     elif role == "user":
-        return ResponseUserMessage(**m_dict)
+        return ResponsesUserMessage(**m_dict)
     elif role == "developer":
-        return ResponseDeveloperMessage(**m_dict)
+        return ResponsesDeveloperMessage(**m_dict)
     elif role == "assistant":
-        return ResponseAssistantMessage(**m_dict)
+        return ResponsesAssistantMessage(**m_dict)
+    elif role == "tool":
+        return ResponsesToolMessage(**m_dict)
     else:
         raise ValueError(f"Unknown message role: {role}")
 
@@ -98,29 +132,28 @@ class ResponsesRequest(BaseModel):
     Based on: https://platform.openai.com/docs/api-reference/responses/create
     """
     
-    # Required parameters (equivalent to ChatCompletionRequest)
     model: str
     
-    # Input content - equivalent to messages in ChatCompletionRequest
-    input: ResponseInputUnion
+    input: Union[ResponsesMessage, List[ResponsesMessage]] #input is either plain string for single message w assumed user role or conversation history
     
     # Optional parameters with equivalent functionality to ChatCompletionRequest
-    instructions: Optional[str] = None  # equivalent to system message
-    conversation: Optional[List[Union[ResponseMessage, Dict]]] = None  # equivalent to messages
+    instructions: Optional[str] = None  # equivalent to some stateful system message? mostly used for stateful i think
+    conversation: Optional[List[Union[str, dict]]] = None  # equivalent to messages/conversation history for stateful -> can probably ignore or remove
     
     # Tool support (equivalent to ChatCompletionRequest tools)
-    tools: Optional[List[ResponseTool]] = None
-    tool_choice: Optional[ResponseToolChoice] = None
+    tools: Optional[List[ResponsesToolDefinition]] = None
+    tool_choice: Optional[ResponsesToolChoice] = None
     
     # Response configuration (equivalent to ChatCompletionRequest)
-    response_format: Optional[ResponseFormat] = None
+    text: Optional[ResponsesFormat] = None
     max_output_tokens: Optional[int] = None  # equivalent to max_completion_tokens
     
-    # Control parameters (equivalent to ChatCompletionRequest)
+    # inference parameters (equivalent to ChatCompletionRequest)
     temperature: Optional[float] = None
     top_p: Optional[float] = None
+    top_logprobs: Optional[int] = None
     stream: Optional[bool] = False
-    user: Optional[str] = None  # unique ID of the end-user (for monitoring)
+    user: Optional[str] = None  # unique ID of the end-user (for monitoring) -> do we need this?
     
     # Responses API specific parameters
     background: Optional[bool] = False
@@ -130,20 +163,51 @@ class ResponsesRequest(BaseModel):
     
     # Reasoning parameters (for reasoning models, equivalent to reasoning_effort in ChatCompletionRequest)
     reasoning: Optional[Reasoning] = None  # e.g., ReasoningConfig(effort="high")
+
+    #Verbosity weirdly goes under text
+    #https://github.com/openai/openai-python/issues/2528
+    # verbosity: Optional[Literal["low", "medium", "high"]] = None  # For verbosity control in GPT-5 models
+
+    
+    @field_validator("input", mode="before")
+    @classmethod
+    def validate_input(cls, v):
+        """Validate and process input field"""
+        if v is None:
+            return v
+        
+        # If it's already a string, return as-is
+        if isinstance(v, str):
+            return v
+            
+        # If it's a list, ensure all items are proper content objects
+        if isinstance(v, list):
+            processed_items = []
+            for item in v:
+                if isinstance(item, dict):
+                    # Convert dict to appropriate content type based on 'type' field
+                    if item.get('type') == 'text':
+                        processed_items.append(ResponsesInputTextContent(**item))
+                    else:
+                        # Default to text if no type specified but has text content
+                        if 'text' in item:
+                            processed_items.append(ResponsesInputTextContent(**item))
+                        else:
+                            processed_items.append(item)
+                else:
+                    processed_items.append(item)
+            return processed_items
+            
+        return v
     
     @field_validator("conversation", mode="before")
     @classmethod
     def cast_all_conversation_messages(cls, v):
         if v is None:
             return v
-        return [cast_response_message_to_subtype(m) if isinstance(m, dict) else m for m in v]
+        return [cast_responses_message_to_subtype(m) if isinstance(m, dict) else m for m in v]
 
-# Alias for consistency with chat completions naming
-ChatResponsesRequest = ResponsesRequest
 
-# Legacy aliases for backwards compatibility
-TextInputTypes = ResponseInputTextContent
-ImageInputType = ResponseInputImageContent
 
 # Example usage:
 # request = ResponsesRequest(
@@ -169,11 +233,12 @@ ImageInputType = ResponseInputImageContent
 if __name__ == "__main__":
     import json
     from openai import OpenAI
+    import os
     
     # Initialize OpenAI client
     # You can set your API key as an environment variable: export OPENAI_API_KEY="your-key-here"
     # Or pass it directly: client = OpenAI(api_key="your-key-here")
-    client = OpenAI()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     def test_single_user_message(verbosity=None, reasoning_effort=None):
         """Test single user message with optional verbosity and reasoning effort"""
@@ -335,7 +400,7 @@ if __name__ == "__main__":
                 call_id="call_abc123",
                 type="function_call",
                 name="get_weather",
-                arguments='{"location": "San Francisco, CA"}'
+                arguments='{"location": "San Francisco, CA"}',
                 status="completed"
             ),
             ResponsesToolMessage(
@@ -388,13 +453,13 @@ if __name__ == "__main__":
     
     # # Basic tests - start with simple ones
     # print("\n" + "="*50)
-    # test_single_user_message()
+    test_single_user_message()
     
     # print("\n" + "="*50)
-    # test_conversation_history()
+    test_conversation_history()
     
     # print("\n" + "="*50)
-    # test_with_tools()
+    test_with_tools()
     
     # Uncomment to test more advanced scenarios
     # print("\n" + "="*50)
