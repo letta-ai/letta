@@ -719,9 +719,7 @@ class AgentManager:
 
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
-            await self.message_manager.create_many_messages_async(
-                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config, project_id=result.project_id
-            )
+            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor, project_id=result.project_id)
         return result
 
     @enforce_types
@@ -1834,7 +1832,6 @@ class AgentManager:
                     message_id=curr_system_message.id,
                     message_update=MessageUpdate(**temp_message.model_dump()),
                     actor=actor,
-                    embedding_config=agent_state.embedding_config,
                     project_id=agent_state.project_id,
                 )
             else:
@@ -1889,9 +1886,7 @@ class AgentManager:
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        messages = await self.message_manager.create_many_messages_async(
-            messages, actor=actor, embedding_config=agent.embedding_config, project_id=agent.project_id
-        )
+        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, project_id=agent.project_id)
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
@@ -2692,7 +2687,6 @@ class AgentManager:
                     # use hybrid search to combine vector and full-text search
                     passages_with_scores = await tpuf_client.query_passages(
                         archive_id=archive_ids[0],
-                        query_embedding=query_embedding,
                         query_text=query_text,  # pass text for potential hybrid search
                         search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
@@ -2700,6 +2694,7 @@ class AgentManager:
                         tag_match_mode=tag_match_mode or TagMatchMode.ANY,
                         start_date=start_date,
                         end_date=end_date,
+                        actor=actor,
                     )
 
                     # Return full tuples with metadata

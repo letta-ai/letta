@@ -1187,3 +1187,26 @@ class ToolReturn(BaseModel):
     stdout: Optional[List[str]] = Field(default=None, description="Captured stdout (e.g. prints, logs) from the tool invocation")
     stderr: Optional[List[str]] = Field(default=None, description="Captured stderr from the tool invocation")
     # func_return: Optional[Any] = Field(None, description="The function return object")
+
+
+class MessageSearchRequest(BaseModel):
+    """Request model for searching messages across the organization"""
+
+    query_text: Optional[str] = Field(None, description="Text query for full-text search")
+    search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
+    roles: Optional[List[MessageRole]] = Field(None, description="Filter messages by role")
+    project_id: Optional[str] = Field(None, description="Filter messages by project ID")
+    limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
+    start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
+    end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")
+
+
+class MessageSearchResult(BaseModel):
+    """Result from a message search operation with scoring details."""
+
+    message: Message = Field(..., description="The message content and metadata")
+    fts_score: Optional[float] = Field(None, description="Full-text search (BM25) score if FTS was used")
+    fts_rank: Optional[int] = Field(None, description="Full-text search rank position if FTS was used")
+    vector_score: Optional[float] = Field(None, description="Vector similarity score if vector search was used")
+    vector_rank: Optional[int] = Field(None, description="Vector search rank position if vector search was used")
+    rrf_score: float = Field(..., description="Reciprocal Rank Fusion combined score")

@@ -163,7 +163,6 @@ class LettaCoreToolExecutor(ToolExecutor):
                 limit=search_limit,
                 start_date=start_datetime,
                 end_date=end_datetime,
-                embedding_config=agent_state.embedding_config,
             )
 
             if len(message_results) == 0:

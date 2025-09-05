@@ -195,7 +195,6 @@ class Summarizer:
         await self.message_manager.create_many_messages_async(
             pydantic_msgs=[summary_message_obj],
             actor=self.actor,
-            embedding_config=agent_state.embedding_config,
             project_id=agent_state.project_id,
         )
 
