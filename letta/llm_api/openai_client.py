@@ -498,8 +498,8 @@ def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_mes
     return new_message_list
 
 
-#convert chat completions into responses format
-#doesnt support tool outputs or images or a few other things yet
+# convert chat completions into responses format
+# doesnt support tool outputs or images or a few other things yet
 def convert_chat_to_response(chat: dict):
     """
     Converts a chat completion request to a response style request.
@@ -508,7 +508,7 @@ def convert_chat_to_response(chat: dict):
 
     # need to do a better job of passing through here hmm
     # goal is to only modify the data that needs to be modifies and then pass through all other params like temp or topP etc
-    
+    # 1 idea is copy with a responses object def then prune with pydantic or "union" 
     response_request_data = {
         "model": chat["model"],
         "input": "",
@@ -517,7 +517,8 @@ def convert_chat_to_response(chat: dict):
         "include": ["reasoning.encrypted_content"]
     }
 
-    #need to remove system prompt from messages and pass as instructions
+    #need to remove system prompt from messages and pass as instructions?  
+    #this is sus, dont really understand how instructions works
     system_message = list(filter(lambda msg: msg["role"] == "system", chat["messages"]))
 
     if len(system_message) > 0:
@@ -580,7 +581,6 @@ def convert_chat_to_response(chat: dict):
     return response_request_data
 
 
-
 #convert from responses response to chat completion response
 def convert_response_to_chat_completion(
         response_data: dict,
@@ -628,7 +628,6 @@ def convert_response_to_chat_completion(
                 role="assistant",
                 content=content,
                 reasoning_content=reasoning_content,
-                reasoning_content_signature=reasoning_content_signature,
                 redacted_reasoning_content=redacted_reasoning_content,
                 tool_calls=tool_calls,
             ),
@@ -851,8 +850,8 @@ if __name__ == "__main__":
     
     # Basic tests
     # test_single_user_message()
-    # test_conversation_history()
-    test_with_tools()
+    test_conversation_history()
+    # test_with_tools()
     
     # # Parameter-specific tests
     # test_reasoning_effort_levels()
