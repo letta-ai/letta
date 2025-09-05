@@ -60,10 +60,10 @@ The agent will use your denial reason to reformulate its approach, so the more s
 ## Setting Up Approval Requirements
 
 There are two methods for configuring tool approval requirements, each suited for different use cases. Choose the approach that best fits your security model and operational needs.
+a
+### Method 1: Create/Upsert Tool with Default Approval Requirement
 
-### Method 1: Default Tool Approval
-
-Set approval requirements at the tool level when creating or updating a tool. This approach ensures consistent security policies across all agents that use the tool. The `default_requires_approval` flag will be applied to all future agent-tool attachments:
+Set approval requirements at the tool level when creating or upserting a tool. This approach ensures consistent security policies across all agents that use the tool. The `default_requires_approval` flag will be applied to all future agent-tool attachments:
 
 <CodeGroup>
 ```curl curl maxLines=50
@@ -128,7 +128,61 @@ const agent = await client.agents.create({
 ```
 </CodeGroup>
 
-### Method 2: Per-Agent Tool Approval
+### Method 2: Modify Existing Tool with Default Approval Requirement
+
+<Note>
+Modifying the tool-level setting will not retroactively apply to existing agent-tool attachments - it only sets the default for future attachments. This means that if the tool is already attached to an agent, the agent will continue using the tool without approval. To modify an existing agent-tool attachment, refer to Method 3 below.
+</Note>
+
+For an already existing tool, you can modify the tool to set approval requirements on future agent-tool attachments. The `default_requires_approval` flag will be applied to all future agent-tool attachments:
+
+<CodeGroup>
+```curl curl maxLines=50
+curl --request PATCH \
+  --url http://localhost:8283/v1/tools/$TOOL_ID \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "default_requires_approval": true
+  }'
+
+# All agents using this tool will require approval
+curl --request POST \
+  --url http://localhost:8283/v1/agents \
+  --header 'Content-Type: application/json' \
+  --data '{
+   "tools": ["sensitive_operation"],
+   // ... other configuration
+  }'
+```
+```python python maxLines=50
+# Create a tool that requires approval by default
+approval_tool = client.tools.modify(
+    tool_id=sensitive_operation.id,
+    default_requires_approval=True,
+)
+
+# All agents using this tool will require approval
+agent = client.agents.create(
+    tools=['sensitive_operation'],
+    # ... other configuration
+)
+```
+```typescript node.js maxLines=50
+// Create a tool that requires approval by default
+const approvalTool = await client.tools.modify({
+    tool_id=sensitive_operation.id,
+    defaultRequiresApproval: true,
+});
+
+// All agents using this tool will require approval
+const agent = await client.agents.create({
+    tools: ["sensitive_operation"],
+    // ... other configuration
+});
+```
+</CodeGroup>
+
+### Method 3: Per-Agent Tool Approval
 
 Configure approval requirements for specific agent-tool combinations, allowing fine-grained control over individual agent behaviors. This method is particularly useful for:
 
