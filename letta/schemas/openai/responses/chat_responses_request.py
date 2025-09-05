@@ -159,4 +159,249 @@ ImageInputType = ResponseInputImageContent
 #     reasoning=Reasoning(effort="high")
 # )
 
-# role user is assumed if input is just a string -> logic handled in client
+# role user is assumed if input is just a string -> logic should be handled in client
+
+
+# Testing Here
+
+
+
+if __name__ == "__main__":
+    import json
+    from openai import OpenAI
+    
+    # Initialize OpenAI client
+    # You can set your API key as an environment variable: export OPENAI_API_KEY="your-key-here"
+    # Or pass it directly: client = OpenAI(api_key="your-key-here")
+    client = OpenAI(
+        api_key=""
+    )
+    
+    def test_single_user_message(verbosity=None, reasoning_effort=None):
+        """Test single user message with optional verbosity and reasoning effort"""
+        print(f"\n=== Testing Single User Message (verbosity={verbosity}, reasoning_effort={reasoning_effort}) ===")
+        
+        # Build request parameters
+        request_params = {
+            "model": "gpt-4o",
+            "input": "What is the capital of France?",
+            "instructions": "Return your answer in French always"
+        }
+        
+        if verbosity:
+            request_params["verbosity"] = verbosity
+        if reasoning_effort:
+            request_params["reasoning"] = Reasoning(effort=reasoning_effort)
+            
+        try:
+            request = ResponsesRequest(**request_params)
+            print("Request Data:", json.dumps(request.model_dump(), indent=2))
+            
+            # Make actual API call to OpenAI responses endpoint
+            response = client.responses.create(**request.model_dump())
+            print("Response:", json.dumps(response.model_dump() if hasattr(response, 'model_dump') else dict(response), indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_conversation_history(verbosity=None):
+        """Test text-only conversation history"""
+        print(f"\n=== Testing Conversation History (verbosity={verbosity}) ===")
+        
+        # Create conversation history using local schema types
+        input = [
+            ResponsesUserMessage(content="Hello, I need help with math"),
+            ResponsesAssistantMessage(content="I'd be happy to help you with math! What specific topic are you working on?"),
+            ResponsesUserMessage(content="I'm struggling with calculus derivatives"),
+            ResponsesAssistantMessage(content="Derivatives can be tricky! Let's start with the basics. What's your current understanding of limits?")
+        ]
+        
+        request_params = {
+            "model": "gpt-4o",
+            "input": input        }
+        
+        if verbosity:
+            request_params["verbosity"] = verbosity
+            
+        try:
+            request = ResponsesRequest(**request_params)
+            print("Request Data:", json.dumps(request.model_dump(), indent=2))
+            
+            # Make actual API call to OpenAI responses endpoint
+            response = client.responses.create(**request.model_dump())
+            print("Response:", json.dumps(response.model_dump() if hasattr(response, 'model_dump') else dict(response), indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_with_tools(reasoning_effort=None):
+        """Test single user message with sample tools"""
+        print(f"\n=== Testing with Tools (reasoning_effort={reasoning_effort}) ===")
+        
+        # Create tools using local schema
+        tools = [
+            ResponsesToolDefinition(
+                type="function",
+                name="get_weather",
+                description="Get the current weather for a location",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The city and state, e.g. San Francisco, CA"
+                        }
+                    },
+                    "required": ["location"],
+                    "additionalProperties": False
+                }
+            ),
+            ResponsesToolDefinition(
+                type="function",
+                name="calculate",
+                description="Perform mathematical calculations",
+                parameters={
+                    "type": "object", 
+                    "properties": {
+                        "expression": {
+                            "type": "string",
+                            "description": "Mathematical expression to evaluate"
+                        }
+                    },
+                    "required": ["expression"],
+                    "additionalProperties": False
+                }
+            )
+        ]
+        
+        request_params = {
+            "model": "gpt-4o",
+            "input": "What's the weather like in New York and calculate 15 * 23 for me?",
+            "tools": tools,
+            "tool_choice": "auto"
+        }
+        
+        if reasoning_effort:
+            request_params["reasoning"] = Reasoning(effort=reasoning_effort)
+        
+        try:
+            request = ResponsesRequest(**request_params)
+            print("Request Data:", json.dumps(request.model_dump(), indent=2))
+            
+            # Make actual API call to OpenAI responses endpoint
+            response = client.responses.create(**request.model_dump())
+            print("Response:", json.dumps(response.model_dump() if hasattr(response, 'model_dump') else dict(response), indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_reasoning_effort_levels():
+        """Test different reasoning effort levels"""
+        print(f"\n=== Testing Reasoning Effort Levels ===")
+        
+        reasoning_levels = ["minimal", "low", "medium", "high"]
+        
+        for effort in reasoning_levels:
+            print(f"\n--- Testing reasoning_effort={effort} ---")
+            test_single_user_message(reasoning_effort=effort)
+    
+    def test_verbosity_levels():
+        """Test different verbosity levels"""
+        print(f"\n=== Testing Verbosity Levels ===")
+        
+        verbosity_levels = ["low", "medium", "high"]
+        
+        for verbosity in verbosity_levels:
+            print(f"\n--- Testing verbosity={verbosity} ---")
+            test_single_user_message(verbosity=verbosity)
+    
+    def test_parameter_combinations():
+        """Test combinations of different parameters"""
+        print(f"\n=== Testing Parameter Combinations ===")
+        
+        # Test reasoning + tools
+        print(f"\n--- Testing reasoning_effort=medium + tools ---")
+        test_with_tools(reasoning_effort="medium")
+        
+        # Test conversation history
+        print(f"\n--- Testing conversation history ---")
+        test_conversation_history()
+    
+    def test_tool_calling_conversation():
+        """Test conversation with tool calling"""
+        print(f"\n=== Testing Tool Calling Conversation ===")
+        
+        # Create conversation with function calls and function call outputs
+        input = [
+            ResponsesUserMessage(content="What's the weather like in San Francisco?"),
+            ResponsesAssistantMessage(content="I'll check the weather for you."),
+            ResponsesToolCall(
+                id="fc_abc123",
+                call_id="call_abc123",
+                type="function_call",
+                name="get_weather",
+                arguments='{"location": "San Francisco, CA"}'
+                status="completed"
+            ),
+            ResponsesToolMessage(
+                output='{"temperature": 72, "condition": "sunny", "humidity": 65}',
+                call_id="call_abc123"
+            ),
+            ResponsesAssistantMessage(
+                content="The weather in San Francisco is currently sunny with a temperature of 72°F and 65% humidity. It's a beautiful day!"
+            )
+        ]
+        
+        request_params = {
+            "model": "gpt-4o",
+            "input": input + [{"role": "user", "content": "What about in New York?"}],
+            "tools": [
+                ResponsesToolDefinition(
+                    type="function",
+                    name="get_weather",
+                    description="Get current weather for a location",
+                    parameters={
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string",
+                                "description": "City and state/country"
+                            }
+                        },
+                        "required": ["location"],
+                        "additionalProperties": False
+                    }
+                )
+            ],
+            "tool_choice": "auto"
+        }
+        
+        try:
+            request = ResponsesRequest(**request_params)
+            print("Request Data:", json.dumps(request.model_dump(), indent=2))
+            
+            # Make actual API call to OpenAI responses endpoint
+            response = client.responses.create(**request.model_dump())
+            print("Response:", json.dumps(response.model_dump() if hasattr(response, 'model_dump') else dict(response), indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    # Run all tests
+    print("Starting OpenAI Responses API Tests...")
+    print("Make sure to set your OpenAI API key as OPENAI_API_KEY environment variable")
+    print("or update the client initialization with your key.")
+    
+    # # Basic tests - start with simple ones
+    # print("\n" + "="*50)
+    # test_single_user_message()
+    
+    # print("\n" + "="*50)
+    # test_conversation_history()
+    
+    # print("\n" + "="*50)
+    # test_with_tools()
+    
+    # Uncomment to test more advanced scenarios
+    # print("\n" + "="*50)
+    test_tool_calling_conversation()
+    
+
+    
+    print("\n=== All tests completed ===")
