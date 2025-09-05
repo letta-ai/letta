@@ -623,12 +623,13 @@ class PassageManager:
                     passage_texts = [p.text for p in passages]
 
                     # Insert to Turbopuffer with the same IDs as SQL
+                    # TurbopufferClient will generate embeddings internally using default config
                     await tpuf_client.insert_archival_memories(
                         archive_id=archive.id,
                         text_chunks=passage_texts,
-                        embeddings=embeddings,
                         passage_ids=passage_ids,  # Use same IDs as SQL
                         organization_id=actor.organization_id,
+                        actor=actor,
                         tags=tags,
                         created_at=passages[0].created_at if passages else None,
                     )

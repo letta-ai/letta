@@ -4,25 +4,36 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, List, Optional, Tuple
 
+from letta.constants import DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.otel.tracing import trace_method
+from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, TagMatchMode
 from letta.schemas.passage import Passage as PydanticPassage
-from letta.settings import settings
+from letta.settings import model_settings, settings
 
 logger = logging.getLogger(__name__)
 
 
 def should_use_tpuf() -> bool:
+    # We need OpenAI since we default to their embedding model
     return bool(settings.use_tpuf) and bool(settings.tpuf_api_key)
 
 
 def should_use_tpuf_for_messages() -> bool:
     """Check if Turbopuffer should be used for messages."""
-    return should_use_tpuf() and bool(settings.embed_all_messages)
+    return should_use_tpuf() and bool(settings.embed_all_messages) and bool(model_settings.openai_api_key)
 
 
 class TurbopufferClient:
     """Client for managing archival memory with Turbopuffer vector database."""
+
+    default_embedding_config = EmbeddingConfig(
+        embedding_model="text-embedding-3-small",
+        embedding_endpoint_type="openai",
+        embedding_endpoint="https://api.openai.com/v1",
+        embedding_dim=1536,
+        embedding_chunk_size=DEFAULT_EMBEDDING_CHUNK_SIZE,
+    )
 
     def __init__(self, api_key: str = None, region: str = None):
         """Initialize Turbopuffer client."""
@@ -37,6 +48,26 @@ class TurbopufferClient:
 
         if not self.api_key:
             raise ValueError("Turbopuffer API key not provided")
+
+    @trace_method
+    async def _generate_embeddings(self, texts: List[str], actor: "PydanticUser") -> List[List[float]]:
+        """Generate embeddings using the default embedding configuration.
+
+        Args:
+            texts: List of texts to embed
+            actor: User actor for embedding generation
+
+        Returns:
+            List of embedding vectors
+        """
+        from letta.llm_api.llm_client import LLMClient
+
+        embedding_client = LLMClient.create(
+            provider_type=self.default_embedding_config.embedding_endpoint_type,
+            actor=actor,
+        )
+        embeddings = await embedding_client.request_embeddings(texts, self.default_embedding_config)
+        return embeddings
 
     @trace_method
     async def _get_archive_namespace_name(self, archive_id: str) -> str:
@@ -61,9 +92,9 @@ class TurbopufferClient:
         self,
         archive_id: str,
         text_chunks: List[str],
-        embeddings: List[List[float]],
         passage_ids: List[str],
         organization_id: str,
+        actor: "PydanticUser",
         tags: Optional[List[str]] = None,
         created_at: Optional[datetime] = None,
     ) -> List[PydanticPassage]:
@@ -72,9 +103,9 @@ class TurbopufferClient:
         Args:
             archive_id: ID of the archive
             text_chunks: List of text chunks to store
-            embeddings: List of embedding vectors corresponding to text chunks
             passage_ids: List of passage IDs (must match 1:1 with text_chunks)
             organization_id: Organization ID for the passages
+            actor: User actor for embedding generation
             tags: Optional list of tags to attach to all passages
             created_at: Optional timestamp for retroactive entries (defaults to current UTC time)
 
@@ -82,6 +113,9 @@ class TurbopufferClient:
             List of PydanticPassage objects that were inserted
         """
         from turbopuffer import AsyncTurbopuffer
+
+        # generate embeddings using the default config
+        embeddings = await self._generate_embeddings(text_chunks, actor)
 
         namespace_name = await self._get_archive_namespace_name(archive_id)
 
@@ -102,8 +136,6 @@ class TurbopufferClient:
             raise ValueError("passage_ids must be provided for Turbopuffer insertion")
         if len(passage_ids) != len(text_chunks):
             raise ValueError(f"passage_ids length ({len(passage_ids)}) must match text_chunks length ({len(text_chunks)})")
-        if len(passage_ids) != len(embeddings):
-            raise ValueError(f"passage_ids length ({len(passage_ids)}) must match embeddings length ({len(embeddings)})")
 
         # prepare column-based data for turbopuffer - optimized for batch insert
         ids = []
@@ -137,7 +169,7 @@ class TurbopufferClient:
                 metadata_={},
                 tags=tags or [],  # Include tags in the passage
                 embedding=embedding,
-                embedding_config=None,  # Will be set by caller if needed
+                embedding_config=self.default_embedding_config,  # Will be set by caller if needed
             )
             passages.append(passage)
 
@@ -177,9 +209,9 @@ class TurbopufferClient:
         self,
         agent_id: str,
         message_texts: List[str],
-        embeddings: List[List[float]],
         message_ids: List[str],
         organization_id: str,
+        actor: "PydanticUser",
         roles: List[MessageRole],
         created_ats: List[datetime],
         project_id: Optional[str] = None,
@@ -189,9 +221,9 @@ class TurbopufferClient:
         Args:
             agent_id: ID of the agent
             message_texts: List of message text content to store
-            embeddings: List of embedding vectors corresponding to message texts
             message_ids: List of message IDs (must match 1:1 with message_texts)
             organization_id: Organization ID for the messages
+            actor: User actor for embedding generation
             roles: List of message roles corresponding to each message
             created_ats: List of creation timestamps for each message
             project_id: Optional project ID for all messages
@@ -201,6 +233,9 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
+        # generate embeddings using the default config
+        embeddings = await self._generate_embeddings(message_texts, actor)
+
         namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
 
         # validation checks
@@ -208,8 +243,6 @@ class TurbopufferClient:
             raise ValueError("message_ids must be provided for Turbopuffer insertion")
         if len(message_ids) != len(message_texts):
             raise ValueError(f"message_ids length ({len(message_ids)}) must match message_texts length ({len(message_texts)})")
-        if len(message_ids) != len(embeddings):
-            raise ValueError(f"message_ids length ({len(message_ids)}) must match embeddings length ({len(embeddings)})")
         if len(message_ids) != len(roles):
             raise ValueError(f"message_ids length ({len(message_ids)}) must match roles length ({len(roles)})")
         if len(message_ids) != len(created_ats):
@@ -390,7 +423,7 @@ class TurbopufferClient:
     async def query_passages(
         self,
         archive_id: str,
-        query_embedding: Optional[List[float]] = None,
+        actor: "PydanticUser",
         query_text: Optional[str] = None,
         search_mode: str = "vector",  # "vector", "fts", "hybrid"
         top_k: int = 10,
@@ -405,8 +438,8 @@ class TurbopufferClient:
 
         Args:
             archive_id: ID of the archive
-            query_embedding: Embedding vector for vector search (required for "vector" and "hybrid" modes)
-            query_text: Text query for full-text search (required for "fts" and "hybrid" modes)
+            actor: User actor for embedding generation
+            query_text: Text query for search (used for embedding in vector/hybrid modes, and FTS in fts/hybrid modes)
             search_mode: Search mode - "vector", "fts", or "hybrid" (default: "vector")
             top_k: Number of results to return
             tags: Optional list of tags to filter by
@@ -419,6 +452,12 @@ class TurbopufferClient:
         Returns:
             List of (passage, score, metadata) tuples with relevance rankings
         """
+        # generate embedding for vector/hybrid search if query_text is provided
+        query_embedding = None
+        if query_text and search_mode in ["vector", "hybrid"]:
+            embeddings = await self._generate_embeddings([query_text], actor)
+            query_embedding = embeddings[0]
+
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
             # Fallback to retrieving most recent passages when no search query is provided
@@ -519,11 +558,11 @@ class TurbopufferClient:
             raise
 
     @trace_method
-    async def query_messages(
+    async def query_messages_by_agent_id(
         self,
         agent_id: str,
         organization_id: str,
-        query_embedding: Optional[List[float]] = None,
+        actor: "PydanticUser",
         query_text: Optional[str] = None,
         search_mode: str = "vector",  # "vector", "fts", "hybrid", "timestamp"
         top_k: int = 10,
@@ -539,8 +578,8 @@ class TurbopufferClient:
         Args:
             agent_id: ID of the agent (used for filtering results)
             organization_id: Organization ID for namespace lookup
-            query_embedding: Embedding vector for vector search (required for "vector" and "hybrid" modes)
-            query_text: Text query for full-text search (required for "fts" and "hybrid" modes)
+            actor: User actor for embedding generation
+            query_text: Text query for search (used for embedding in vector/hybrid modes, and FTS in fts/hybrid modes)
             search_mode: Search mode - "vector", "fts", "hybrid", or "timestamp" (default: "vector")
             top_k: Number of results to return
             roles: Optional list of message roles to filter by
@@ -556,6 +595,12 @@ class TurbopufferClient:
             - score is the final relevance score
             - metadata contains individual scores and ranking information
         """
+        # generate embedding for vector/hybrid search if query_text is provided
+        query_embedding = None
+        if query_text and search_mode in ["vector", "hybrid"]:
+            embeddings = await self._generate_embeddings([query_text], actor)
+            query_embedding = embeddings[0]
+
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
             # Fallback to retrieving most recent messages when no search query is provided
@@ -658,6 +703,159 @@ class TurbopufferClient:
             logger.error(f"Failed to query messages from Turbopuffer: {e}")
             raise
 
+    async def query_messages_by_org_id(
+        self,
+        organization_id: str,
+        actor: "PydanticUser",
+        query_text: Optional[str] = None,
+        search_mode: str = "hybrid",  # "vector", "fts", "hybrid"
+        top_k: int = 10,
+        roles: Optional[List[MessageRole]] = None,
+        project_id: Optional[str] = None,
+        vector_weight: float = 0.5,
+        fts_weight: float = 0.5,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[Tuple[dict, float, dict]]:
+        """Query messages from Turbopuffer across an entire organization.
+
+        Args:
+            organization_id: Organization ID for namespace lookup (required)
+            actor: User actor for embedding generation
+            query_text: Text query for search (used for embedding in vector/hybrid modes, and FTS in fts/hybrid modes)
+            search_mode: Search mode - "vector", "fts", or "hybrid" (default: "hybrid")
+            top_k: Number of results to return
+            roles: Optional list of message roles to filter by
+            project_id: Optional project ID to filter messages by
+            vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
+            fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
+            start_date: Optional datetime to filter messages created after this date
+            end_date: Optional datetime to filter messages created on or before this date (inclusive)
+
+        Returns:
+            List of (message_dict, score, metadata) tuples where:
+            - message_dict contains id, text, role, created_at, agent_id
+            - score is the final relevance score (RRF score for hybrid, rank-based for single mode)
+            - metadata contains individual scores and ranking information
+        """
+        # generate embedding for vector/hybrid search if query_text is provided
+        query_embedding = None
+        if query_text and search_mode in ["vector", "hybrid"]:
+            embeddings = await self._generate_embeddings([query_text], actor)
+            query_embedding = embeddings[0]
+        # namespace is org-scoped
+        namespace_name = f"letta_messages_{organization_id}"
+
+        # build filters
+        all_filters = []
+
+        # role filter
+        if roles:
+            role_values = [r.value for r in roles]
+            if len(role_values) == 1:
+                all_filters.append(("role", "Eq", role_values[0]))
+            else:
+                all_filters.append(("role", "In", role_values))
+
+        # project filter
+        if project_id:
+            all_filters.append(("project_id", "Eq", project_id))
+
+        # date filters
+        if start_date:
+            all_filters.append(("created_at", "Gte", start_date))
+        if end_date:
+            # make end_date inclusive of the entire day
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0 and end_date.microsecond == 0:
+                from datetime import timedelta
+
+                end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
+            all_filters.append(("created_at", "Lte", end_date))
+
+        # combine filters
+        final_filter = None
+        if len(all_filters) == 1:
+            final_filter = all_filters[0]
+        elif len(all_filters) > 1:
+            final_filter = ("And", all_filters)
+
+        try:
+            # execute query
+            result = await self._execute_query(
+                namespace_name=namespace_name,
+                search_mode=search_mode,
+                query_embedding=query_embedding,
+                query_text=query_text,
+                top_k=top_k,
+                include_attributes=["text", "organization_id", "agent_id", "role", "created_at"],
+                filters=final_filter,
+                vector_weight=vector_weight,
+                fts_weight=fts_weight,
+            )
+
+            # process results based on search mode
+            if search_mode == "hybrid":
+                # for hybrid mode, we get a multi-query response
+                vector_results = self._process_message_query_results(result.results[0])
+                fts_results = self._process_message_query_results(result.results[1])
+
+                # use existing RRF method - it already returns metadata with ranks
+                results_with_metadata = self._reciprocal_rank_fusion(
+                    vector_results=vector_results,
+                    fts_results=fts_results,
+                    get_id_func=lambda msg_dict: msg_dict["id"],
+                    vector_weight=vector_weight,
+                    fts_weight=fts_weight,
+                    top_k=top_k,
+                )
+
+                # add raw scores to metadata if available
+                vector_scores = {}
+                for row in result.results[0].rows:
+                    if hasattr(row, "dist"):
+                        vector_scores[row.id] = row.dist
+
+                fts_scores = {}
+                for row in result.results[1].rows:
+                    if hasattr(row, "score"):
+                        fts_scores[row.id] = row.score
+
+                # enhance metadata with raw scores
+                enhanced_results = []
+                for msg_dict, rrf_score, metadata in results_with_metadata:
+                    msg_id = msg_dict["id"]
+                    if msg_id in vector_scores:
+                        metadata["vector_score"] = vector_scores[msg_id]
+                    if msg_id in fts_scores:
+                        metadata["fts_score"] = fts_scores[msg_id]
+                    enhanced_results.append((msg_dict, rrf_score, metadata))
+
+                return enhanced_results
+            else:
+                # for single queries (vector or fts)
+                results = self._process_message_query_results(result)
+                results_with_metadata = []
+                for idx, msg_dict in enumerate(results):
+                    metadata = {
+                        "combined_score": 1.0 / (idx + 1),
+                        "search_mode": search_mode,
+                        f"{search_mode}_rank": idx + 1,
+                    }
+
+                    # add raw score if available
+                    if hasattr(result.rows[idx], "dist"):
+                        metadata["vector_score"] = result.rows[idx].dist
+                    elif hasattr(result.rows[idx], "score"):
+                        metadata["fts_score"] = result.rows[idx].score
+
+                    results_with_metadata.append((msg_dict, metadata["combined_score"], metadata))
+
+                return results_with_metadata
+
+        except Exception as e:
+            logger.error(f"Failed to query messages from Turbopuffer: {e}")
+            raise
+
     def _process_message_query_results(self, result) -> List[dict]:
         """Process results from a message query into message dicts.
 
@@ -703,7 +901,7 @@ class TurbopufferClient:
                 tags=passage_tags,  # Set the actual tags from the passage
                 # Set required fields to empty/default values since we don't store embeddings
                 embedding=[],  # Empty embedding since we don't return it from Turbopuffer
-                embedding_config=None,  # No embedding config needed for retrieved passages
+                embedding_config=self.default_embedding_config,  # No embedding config needed for retrieved passages
             )
 
             # handle score based on search type

@@ -3952,6 +3952,75 @@ export type MessageRole =
   | 'system'
   | 'approval';
 
+/**
+ * Request model for searching messages across the organization
+ */
+export type MessageSearchRequest = {
+  /**
+   * Text query for full-text search
+   */
+  query_text?: string | null;
+  /**
+   * Search mode to use
+   */
+  search_mode?: 'vector' | 'fts' | 'hybrid';
+  /**
+   * Filter messages by role
+   */
+  roles?: Array<MessageRole> | null;
+  /**
+   * Filter messages by project ID
+   */
+  project_id?: string | null;
+  /**
+   * Maximum number of results to return
+   */
+  limit?: number;
+  /**
+   * Filter messages created after this date
+   */
+  start_date?: string | null;
+  /**
+   * Filter messages created on or before this date
+   */
+  end_date?: string | null;
+};
+
+/**
+ * Search mode to use
+ */
+export type search_mode = 'vector' | 'fts' | 'hybrid';
+
+/**
+ * Result from a message search operation with scoring details.
+ */
+export type MessageSearchResult = {
+  /**
+   * The message content and metadata
+   */
+  message: Message;
+  /**
+   * Full-text search (BM25) score if FTS was used
+   */
+  fts_score?: number | null;
+  /**
+   * Full-text search rank position if FTS was used
+   */
+  fts_rank?: number | null;
+  /**
+   * Vector similarity score if vector search was used
+   */
+  vector_score?: number | null;
+  /**
+   * Vector search rank position if vector search was used
+   */
+  vector_rank?: number | null;
+  /**
+   * Reciprocal Rank Fusion combined score
+   */
+  rrf_score: number;
+};
+
 export type MessageType =
   | 'system_message'
   | 'user_message'
@@ -7578,6 +7647,13 @@ export type CancelAgentRunResponse = {
   [key: string]: unknown;
 };
 
+export type SearchMessagesData = {
+  requestBody: MessageSearchRequest;
+  userId?: string | null;
+};
+
+export type SearchMessagesResponse = Array<MessageSearchResult>;
+
 export type CreateAgentMessageAsyncData = {
   agentId: string;
   requestBody: LettaAsyncRequest;
@@ -9922,6 +9998,21 @@ export type $OpenApiTs = {
         200: {
           [key: string]: unknown;
         };
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/agents/messages/search': {
+    post: {
+      req: SearchMessagesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<MessageSearchResult>;
         /**
          * Validation Error
          */

@@ -5411,6 +5411,51 @@
         }
       }
     },
+    "/v1/agents/messages/search": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Search Messages",
+        "description": "Search messages across the entire organization with optional project filtering.\nReturns messages with FTS/vector ranks and total RRF score.\n\nRequires message embedding and Turbopuffer to be enabled.",
+        "operationId": "search_messages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageSearchResult"
+                  },
+                  "title": "Response Search Messages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/{agent_id}/messages/async": {
       "post": {
         "tags": ["agents"],
@@ -22623,6 +22668,158 @@
         "type": "string",
         "enum": ["assistant", "user", "tool", "function", "system", "approval"],
         "title": "MessageRole"
+      },
+      "MessageSearchRequest": {
+        "properties": {
+          "query_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Text",
+            "description": "Text query for full-text search"
+          },
+          "search_mode": {
+            "type": "string",
+            "enum": ["vector", "fts", "hybrid"],
+            "title": "Search Mode",
+            "description": "Search mode to use",
+            "default": "hybrid"
+          },
+          "roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessageRole"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roles",
+            "description": "Filter messages by role"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Filter messages by project ID"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "description": "Maximum number of results to return",
+            "default": 50
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Filter messages created after this date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Filter messages created on or before this date"
+          }
+        },
+        "type": "object",
+        "title": "MessageSearchRequest",
+        "description": "Request model for searching messages across the organization"
+      },
+      "MessageSearchResult": {
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/Message",
+            "description": "The message content and metadata"
+          },
+          "fts_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fts Score",
+            "description": "Full-text search (BM25) score if FTS was used"
+          },
+          "fts_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fts Rank",
+            "description": "Full-text search rank position if FTS was used"
+          },
+          "vector_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Score",
+            "description": "Vector similarity score if vector search was used"
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank",
+            "description": "Vector search rank position if vector search was used"
+          },
+          "rrf_score": {
+            "type": "number",
+            "title": "Rrf Score",
+            "description": "Reciprocal Rank Fusion combined score"
+          }
+        },
+        "type": "object",
+        "required": ["message", "rrf_score"],
+        "title": "MessageSearchResult",
+        "description": "Result from a message search operation with scoring details."
       },
       "MessageType": {
         "type": "string",

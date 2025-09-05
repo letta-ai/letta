@@ -66,6 +66,7 @@ import {
   MCPToolExecuteRequest,
   ManagerType,
   MessageRole,
+  MessageSearchRequest,
   OrganizationCreate,
   OrganizationUpdate,
   ProviderCategory,
@@ -4594,6 +4595,52 @@ export const useAgentsServiceCancelAgentRun = <
     mutationFn: ({ agentId, requestBody, userId }) =>
       AgentsService.cancelAgentRun({
         agentId,
+        requestBody,
+        userId,
+      }) as unknown as Promise<TData>,
+    ...options,
+  });
+/**
+ * Search Messages
+ * Search messages across the entire organization with optional project filtering.
+ * Returns messages with FTS/vector ranks and total RRF score.
+ *
+ * Requires message embedding and Turbopuffer to be enabled.
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @param data.userId
+ * @returns MessageSearchResult Successful Response
+ * @throws ApiError
+ */
+export const useAgentsServiceSearchMessages = <
+  TData = Common.AgentsServiceSearchMessagesMutationResult,
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: Omit<
+    UseMutationOptions<
+      TData,
+      TError,
+      {
+        requestBody: MessageSearchRequest;
+        userId?: string;
+      },
+      TContext
+    >,
+    'mutationFn'
+  >,
+) =>
+  useMutation<
+    TData,
+    TError,
+    {
+      requestBody: MessageSearchRequest;
+      userId?: string;
+    },
+    TContext
+  >({
+    mutationFn: ({ requestBody, userId }) =>
+      AgentsService.searchMessages({
         requestBody,
         userId,
       }) as unknown as Promise<TData>,

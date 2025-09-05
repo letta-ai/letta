@@ -7413,6 +7413,71 @@ export const MCPToolExecuteRequest = z.object({
   args: z.unknown().optional(),
 });
 
+export type MessageSearchRequest = z.infer<typeof MessageSearchRequest>;
+export const MessageSearchRequest = z.object({
+  query_text: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  search_mode: z
+    .union([z.literal('vector'), z.literal('fts'), z.literal('hybrid')])
+    .optional(),
+  roles: z
+    .union([
+      z.array(MessageRole),
+      z.null(),
+      z.array(z.union([z.array(MessageRole), z.null()])),
+    ])
+    .optional(),
+  project_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  limit: z.number().optional(),
+  start_date: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  end_date: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
+export type MessageSearchResult = z.infer<typeof MessageSearchResult>;
+export const MessageSearchResult = z.object({
+  message: Message,
+  fts_score: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  fts_rank: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  vector_score: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  vector_rank: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  rrf_score: z.number(),
+});
+
 export type ModalSandboxConfig = z.infer<typeof ModalSandboxConfig>;
 export const ModalSandboxConfig = z.object({
   timeout: z.number().optional(),
@@ -11015,6 +11080,22 @@ export const post_Cancel_agent_run = {
   response: z.unknown(),
 };
 
+export type post_Search_messages = typeof post_Search_messages;
+export const post_Search_messages = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/agents/messages/search'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: MessageSearchRequest,
+  }),
+  response: z.array(MessageSearchResult),
+};
+
 export type post_Create_agent_message_async =
   typeof post_Create_agent_message_async;
 export const post_Create_agent_message_async = {
@@ -13244,6 +13325,7 @@ export const EndpointByMethod = {
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
     '/v1/agents/{agent_id}/messages/cancel': post_Cancel_agent_run,
+    '/v1/agents/messages/search': post_Search_messages,
     '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
     '/v1/agents/{agent_id}/messages/preview-raw-payload':
       post_Preview_raw_payload,

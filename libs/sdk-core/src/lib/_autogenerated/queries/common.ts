@@ -2263,6 +2263,9 @@ export type AgentsServiceCreateAgentMessageStreamMutationResult = Awaited<
 export type AgentsServiceCancelAgentRunMutationResult = Awaited<
   ReturnType<typeof AgentsService.cancelAgentRun>
 >;
+export type AgentsServiceSearchMessagesMutationResult = Awaited<
+  ReturnType<typeof AgentsService.searchMessages>
+>;
 export type AgentsServiceCreateAgentMessageAsyncMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgentMessageAsync>
 >;

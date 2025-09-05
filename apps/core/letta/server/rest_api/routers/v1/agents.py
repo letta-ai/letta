@@ -39,7 +39,7 @@ from letta.schemas.memory import (
     CreateArchivalMemory,
     Memory,
 )
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreate, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -1496,6 +1496,42 @@ async def cancel_agent_run(
         )
         results[run_id] = "cancelled" if success else "failed"
     return results
+
+
+@router.post("/messages/search", response_model=List[MessageSearchResult], operation_id="search_messages")
+async def search_messages(
+    request: MessageSearchRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Search messages across the entire organization with optional project filtering.
+    Returns messages with FTS/vector ranks and total RRF score.
+
+    Requires message embedding and Turbopuffer to be enabled.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # get embedding config from the default agent if needed
+    # check if any agents exist in the org
+    agent_count = await server.agent_manager.size_async(actor=actor)
+    if agent_count == 0:
+        raise HTTPException(status_code=400, detail="No agents found in organization to derive embedding configuration from")
+
+    try:
+        results = await server.message_manager.search_messages_org_async(
+            actor=actor,
+            query_text=request.query_text,
+            search_mode=request.search_mode,
+            roles=request.roles,
+            project_id=request.project_id,
+            limit=request.limit,
+            start_date=request.start_date,
+            end_date=request.end_date,
+        )
+        return results
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def _process_message_background(

@@ -182,6 +182,8 @@ import type {
   CreateAgentMessageStreamResponse,
   CancelAgentRunData,
   CancelAgentRunResponse,
+  SearchMessagesData,
+  SearchMessagesResponse,
   CreateAgentMessageAsyncData,
   CreateAgentMessageAsyncResponse,
   ResetMessagesData,
@@ -2951,6 +2953,34 @@ export class AgentsService {
       path: {
         agent_id: data.agentId,
       },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Search Messages
+   * Search messages across the entire organization with optional project filtering.
+   * Returns messages with FTS/vector ranks and total RRF score.
+   *
+   * Requires message embedding and Turbopuffer to be enabled.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @returns MessageSearchResult Successful Response
+   * @throws ApiError
+   */
+  public static searchMessages(
+    data: SearchMessagesData,
+    headers?: { user_id: string },
+  ): CancelablePromise<SearchMessagesResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/agents/messages/search',
       body: data.requestBody,
       mediaType: 'application/json',
       errors: {

@@ -117,7 +117,6 @@ async def _prepare_in_context_messages_async(
     new_in_context_messages = await message_manager.create_many_messages_async(
         create_input_messages(input_messages=input_messages, agent_id=agent_state.id, timezone=agent_state.timezone, actor=actor),
         actor=actor,
-        embedding_config=agent_state.embedding_config,
         project_id=agent_state.project_id,
     )
 
