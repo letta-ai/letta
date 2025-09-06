@@ -3959,7 +3959,7 @@ export type MessageSearchRequest = {
   /**
    * Text query for full-text search
    */
-  query_text?: string | null;
+  query?: string | null;
   /**
    * Search mode to use
    */
@@ -3996,21 +3996,17 @@ export type search_mode = 'vector' | 'fts' | 'hybrid';
  */
 export type MessageSearchResult = {
   /**
-   * The message content and metadata
+   * The embedded content (LLM-friendly)
+   */
+  embedded_text: string;
+  /**
+   * The raw message object
    */
   message: Message;
-  /**
-   * Full-text search (BM25) score if FTS was used
-   */
-  fts_score?: number | null;
   /**
    * Full-text search rank position if FTS was used
    */
   fts_rank?: number | null;
-  /**
-   * Vector similarity score if vector search was used
-   */
-  vector_score?: number | null;
   /**
    * Vector search rank position if vector search was used
    */

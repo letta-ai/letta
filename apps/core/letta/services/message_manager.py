@@ -1260,19 +1260,23 @@ class MessageManager:
             return []
 
         # create message mapping
-        message_ids = [msg_dict["id"] for msg_dict, _, _ in results]
+        message_ids = []
+        embedded_text = {}
+        for msg_dict, _, _ in results:
+            message_ids.append(msg_dict["id"])
+            embedded_text[msg_dict["id"]] = msg_dict["text"]
         messages = await self.get_messages_by_ids_async(message_ids=message_ids, actor=actor)
         message_mapping = {message.id: message for message in messages}
 
         # create search results using list comprehension
         return [
             MessageSearchResult(
-                message=message_mapping.get(msg_dict["id"]),
-                fts_score=metadata.get("fts_score"),
+                embedded_text=embedded_text[msg_id],
+                message=message_mapping[msg_id],
                 fts_rank=metadata.get("fts_rank"),
-                vector_score=metadata.get("vector_score"),
                 vector_rank=metadata.get("vector_rank"),
                 rrf_score=rrf_score,
             )
             for msg_dict, rrf_score, metadata in results
+            if (msg_id := msg_dict.get("id")) in message_mapping
         ]

@@ -10795,7 +10795,7 @@ export const $MessageRole = {
 
 export const $MessageSearchRequest = {
   properties: {
-    query_text: {
+    query: {
       anyOf: [
         {
           type: 'string',
@@ -10804,7 +10804,7 @@ export const $MessageSearchRequest = {
           type: 'null',
         },
       ],
-      title: 'Query Text',
+      title: 'Query',
       description: 'Text query for full-text search',
     },
     search_mode: {
@@ -10883,21 +10883,14 @@ export const $MessageSearchRequest = {
 
 export const $MessageSearchResult = {
   properties: {
+    embedded_text: {
+      type: 'string',
+      title: 'Embedded Text',
+      description: 'The embedded content (LLM-friendly)',
+    },
     message: {
       $ref: '#/components/schemas/Message',
-      description: 'The message content and metadata',
-    },
-    fts_score: {
-      anyOf: [
-        {
-          type: 'number',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Fts Score',
-      description: 'Full-text search (BM25) score if FTS was used',
+      description: 'The raw message object',
     },
     fts_rank: {
       anyOf: [
@@ -10910,18 +10903,6 @@ export const $MessageSearchResult = {
       ],
       title: 'Fts Rank',
       description: 'Full-text search rank position if FTS was used',
-    },
-    vector_score: {
-      anyOf: [
-        {
-          type: 'number',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Vector Score',
-      description: 'Vector similarity score if vector search was used',
     },
     vector_rank: {
       anyOf: [
@@ -10942,7 +10923,7 @@ export const $MessageSearchResult = {
     },
   },
   type: 'object',
-  required: ['message', 'rrf_score'],
+  required: ['embedded_text', 'message', 'rrf_score'],
   title: 'MessageSearchResult',
   description: 'Result from a message search operation with scoring details.',
 } as const;

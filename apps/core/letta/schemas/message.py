@@ -1192,7 +1192,7 @@ class ToolReturn(BaseModel):
 class MessageSearchRequest(BaseModel):
     """Request model for searching messages across the organization"""
 
-    query_text: Optional[str] = Field(None, description="Text query for full-text search")
+    query: Optional[str] = Field(None, description="Text query for full-text search")
     search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
     roles: Optional[List[MessageRole]] = Field(None, description="Filter messages by role")
     project_id: Optional[str] = Field(None, description="Filter messages by project ID")
@@ -1204,9 +1204,8 @@ class MessageSearchRequest(BaseModel):
 class MessageSearchResult(BaseModel):
     """Result from a message search operation with scoring details."""
 
-    message: Message = Field(..., description="The message content and metadata")
-    fts_score: Optional[float] = Field(None, description="Full-text search (BM25) score if FTS was used")
+    embedded_text: str = Field(..., description="The embedded content (LLM-friendly)")
+    message: Message = Field(..., description="The raw message object")
     fts_rank: Optional[int] = Field(None, description="Full-text search rank position if FTS was used")
-    vector_score: Optional[float] = Field(None, description="Vector similarity score if vector search was used")
     vector_rank: Optional[int] = Field(None, description="Vector search rank position if vector search was used")
     rrf_score: float = Field(..., description="Reciprocal Rank Fusion combined score")

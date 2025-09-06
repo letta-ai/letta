@@ -1937,7 +1937,7 @@ class TestNamespaceTracking:
     async def test_agent_namespace_tracking(self, server, default_user, sarah_agent, enable_message_embedding):
         """Test that agent message namespaces are properly tracked in database"""
         # Get namespace - should be generated and stored
-        namespace = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id, default_user.organization_id)
+        namespace = await server.agent_manager.get_or_set_vector_db_namespace_async(default_user.organization_id)
 
         # Should have messages_org_ prefix and environment suffix
         expected_prefix = "messages_"
@@ -1947,7 +1947,7 @@ class TestNamespaceTracking:
             assert settings.environment.lower() in namespace
 
         # Call again - should return same namespace from database
-        namespace2 = await server.agent_manager.get_or_set_vector_db_namespace_async(sarah_agent.id, default_user.organization_id)
+        namespace2 = await server.agent_manager.get_or_set_vector_db_namespace_async(default_user.organization_id)
         assert namespace == namespace2
 
     @pytest.mark.asyncio

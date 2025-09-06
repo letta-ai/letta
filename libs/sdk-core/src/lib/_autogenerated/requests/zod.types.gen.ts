@@ -7419,7 +7419,7 @@ export const MCPToolExecuteRequest = z.object({
 
 export type MessageSearchRequest = z.infer<typeof MessageSearchRequest>;
 export const MessageSearchRequest = z.object({
-  query_text: z
+  query: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
   search_mode: z
@@ -7446,24 +7446,9 @@ export const MessageSearchRequest = z.object({
 
 export type MessageSearchResult = z.infer<typeof MessageSearchResult>;
 export const MessageSearchResult = z.object({
+  embedded_text: z.string(),
   message: Message,
-  fts_score: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
   fts_rank: z
-    .union([
-      z.number(),
-      z.null(),
-      z.array(z.union([z.number(), z.null()])),
-      z.undefined(),
-    ])
-    .optional(),
-  vector_score: z
     .union([
       z.number(),
       z.null(),

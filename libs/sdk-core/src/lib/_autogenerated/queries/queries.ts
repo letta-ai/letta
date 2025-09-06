@@ -4602,10 +4602,9 @@ export const useAgentsServiceCancelAgentRun = <
   });
 /**
  * Search Messages
- * Search messages across the entire organization with optional project filtering.
- * Returns messages with FTS/vector ranks and total RRF score.
+ * Search messages across the entire organization with optional project filtering. Returns messages with FTS/vector ranks and total RRF score.
  *
- * Requires message embedding and Turbopuffer to be enabled.
+ * This is a cloud-only feature.
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId

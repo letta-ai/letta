@@ -54,6 +54,7 @@ def client() -> LettaSDKClient:
         thread = threading.Thread(target=run_server, daemon=True)
         thread.start()
         time.sleep(5)
+
     print("Running client tests with server:", server_url)
     client = LettaSDKClient(base_url=server_url, token=None, timeout=300.0)
     yield client
@@ -103,6 +104,63 @@ def fibonacci_tool(client: LettaSDKClient):
     tool = client.tools.upsert_from_function(func=calculate_fibonacci, tags=["math", "utility"])
     yield tool
     client.tools.delete(tool.id)
+
+
+def test_messages_search(client: LettaSDKClient, agent: AgentState):
+    """Exercise org-wide message search with query and filters.
+
+    Skips when Turbopuffer/OpenAI are not configured or unavailable in this environment.
+    """
+    from datetime import timezone
+
+    from letta.settings import model_settings, settings
+
+    # Require TPUF + OpenAI to be configured; otherwise this is a cloud-only feature
+    if not getattr(settings, "tpuf_api_key", None) or not getattr(model_settings, "openai_api_key", None):
+        pytest.skip("Message search requires Turbopuffer and OpenAI; skipping.")
+
+    original_use_tpuf = settings.use_tpuf
+    original_embed_all = settings.embed_all_messages
+    try:
+        # Enable TPUF + message embedding for this test run
+        settings.use_tpuf = True
+        settings.embed_all_messages = True
+
+        unique_term = f"kitten-cats-{uuid.uuid4().hex[:8]}"
+
+        # Create a couple of messages to search over
+        client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[MessageCreate(role="user", content=f"I love {unique_term} dearly")],
+        )
+        client.agents.messages.create(
+            agent_id=agent.id,
+            messages=[MessageCreate(role="user", content=f"Recorded preference: {unique_term}")],
+        )
+
+        # Allow brief time for background indexing (if enabled)
+        time.sleep(2)
+
+        # Call the SDK using the OpenAPI fields
+        results = client.agents.messages.search(
+            query=unique_term,
+            search_mode="hybrid",
+            roles=["user"],
+            project_id=agent.project_id,
+            limit=10,
+            start_date=None,
+            end_date=None,
+        )
+
+        # Validate shape of response
+        assert isinstance(results, list) and len(results) >= 1
+        top = results[0]
+        assert getattr(top, "message", None) is not None
+        assert top.message.role == "user"  # role filter applied
+        assert hasattr(top, "rrf_score") and top.rrf_score is not None
+    finally:
+        settings.use_tpuf = original_use_tpuf
+        settings.embed_all_messages = original_embed_all
 
 
 @pytest.fixture(scope="function")
