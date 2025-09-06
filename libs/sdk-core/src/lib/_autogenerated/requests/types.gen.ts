@@ -477,7 +477,7 @@ export type ApprovalRequestMessage = {
   /**
    * The tool call that has been requested by the llm to run
    */
-  tool_call: ToolCall;
+  tool_call: ToolCall | ToolCallDelta;
 };
 
 /**

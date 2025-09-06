@@ -1341,7 +1341,15 @@ export const $ApprovalRequestMessage = {
       title: 'Run Id',
     },
     tool_call: {
-      $ref: '#/components/schemas/ToolCall',
+      anyOf: [
+        {
+          $ref: '#/components/schemas/ToolCall',
+        },
+        {
+          $ref: '#/components/schemas/ToolCallDelta',
+        },
+      ],
+      title: 'Tool Call',
       description: 'The tool call that has been requested by the llm to run',
     },
   },

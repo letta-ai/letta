@@ -2844,6 +2844,19 @@ export const ToolCall = z.object({
   tool_call_id: z.string(),
 });
 
+export type ToolCallDelta = z.infer<typeof ToolCallDelta>;
+export const ToolCallDelta = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  arguments: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  tool_call_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
 export type ApprovalRequestMessage = z.infer<typeof ApprovalRequestMessage>;
 export const ApprovalRequestMessage = z.object({
   id: z.string(),
@@ -2905,7 +2918,11 @@ export const ApprovalRequestMessage = z.object({
       z.undefined(),
     ])
     .optional(),
-  tool_call: ToolCall,
+  tool_call: z.union([
+    ToolCall,
+    ToolCallDelta,
+    z.array(z.union([ToolCall, ToolCallDelta])),
+  ]),
 });
 
 export type ApprovalResponseMessage = z.infer<typeof ApprovalResponseMessage>;
@@ -7037,19 +7054,6 @@ export const ReasoningMessage = z.object({
       z.array(z.union([z.string(), z.null()])),
       z.undefined(),
     ])
-    .optional(),
-});
-
-export type ToolCallDelta = z.infer<typeof ToolCallDelta>;
-export const ToolCallDelta = z.object({
-  name: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  arguments: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-    .optional(),
-  tool_call_id: z
-    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
 });
 
