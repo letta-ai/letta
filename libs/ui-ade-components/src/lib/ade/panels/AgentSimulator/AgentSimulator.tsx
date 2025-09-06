@@ -45,7 +45,7 @@ import {
   useCurrentAgentActiveRuns,
   useCurrentAgentMetaData,
 } from '../../../hooks';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { get, debounce } from 'lodash-es';
 import type { z } from 'zod';
 import { useTranslations } from '@letta-cloud/translations';
@@ -72,11 +72,25 @@ import type { MessagesDisplayMode } from '../Messages/types';
 
 type ErrorCode = z.infer<typeof ErrorMessageSchema>['code'];
 
-interface SendMessagePayload {
+const MESSAGE_PAYLOAD_TYPE = {
+  NEW: 'new',
+  RESUME: 'resume',
+} as const;
+
+interface NewMessagePayload {
+  type: 'new';
   role: RoleOption;
   agentId: string;
   content: LettaUserMessageContentUnion[] | string;
 }
+
+interface ResumeStreamPayload {
+  type: 'resume';
+  agentId: string;
+  overrideSeqId?: number;
+}
+
+type SendMessagePayload = NewMessagePayload | ResumeStreamPayload;
 
 const FAILED_ID = 'failed';
 export type SendMessageType = (payload: SendMessagePayload) => void;
@@ -144,6 +158,23 @@ function useBackgroundMode() {
     [debouncedSaveSeqId, setlastAgentRun],
   );
 
+  const getAgentRuns = useCallback(() => {
+    const agentRunsInStorage = localStorage.getItem(currentAgentId);
+    if (!agentRunsInStorage) {
+      return null;
+    }
+
+    const agentRuns = JSON.parse(agentRunsInStorage);
+
+    // Get the first run ID directly since we currently only work with one run at a time
+    const runId = Object.keys(agentRuns)[0];
+    if (runId) {
+      return { runId, seqId: agentRuns[runId] };
+    }
+
+    return null;
+  }, [currentAgentId]);
+
   const removeRunIdFromBackgroundMode = useCallback(
     (runIdToRemove: string) => {
       debouncedSaveSeqId.cancel();
@@ -182,9 +213,182 @@ function useBackgroundMode() {
 
   return {
     handleBackgroundMode,
-    removeBackgroundModeData: removeRunIdFromBackgroundMode,
+    removeRunIdFromBackgroundMode,
     flushPendingSave,
+    getAgentRuns,
   };
+}
+
+function handleResponseError(
+  response: Response,
+  body: any,
+  message: string,
+  requestId: string,
+  handleError: (
+    message: string,
+    errorCode: ErrorCode,
+    responseData?: any,
+  ) => void,
+  updateNetworkRequest: (requestId: string, update: any) => void,
+): boolean {
+  if (body.reasons?.includes('free-usage-exceeded')) {
+    handleError(message, 'FREE_USAGE_EXCEEDED', body);
+    updateNetworkRequest(requestId, {
+      status: response.status,
+      response: body,
+    });
+    return true;
+  }
+
+  if (body.reasons?.includes('agents-limit-exceeded')) {
+    handleError(message, 'AGENT_LIMIT_EXCEEDED', body);
+    updateNetworkRequest(requestId, {
+      status: response.status,
+      response: body,
+    });
+    return true;
+  }
+
+  if (body.reasons?.includes('premium-usage-exceeded')) {
+    handleError(message, 'PREMIUM_USAGE_EXCEEDED', body);
+    updateNetworkRequest(requestId, {
+      status: response.status,
+      response: body,
+    });
+    return true;
+  }
+
+  if (response.status === 429) {
+    handleError(message, 'RATE_LIMIT_EXCEEDED', body);
+    updateNetworkRequest(requestId, {
+      status: response.status,
+      response: body,
+    });
+    return true;
+  }
+
+  if (response.status === 402) {
+    handleError(message, 'CREDIT_LIMIT_EXCEEDED', body);
+    updateNetworkRequest(requestId, {
+      status: response.status,
+      response: body,
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function processAgentMessage(
+  data: string,
+  agentId: string,
+  queryClient: QueryClient,
+  isBackgroundModeEnabled: boolean,
+  handleBackgroundMode: (extracted: z.infer<typeof AgentMessageSchema>) => void,
+  setCurrentRunId: (runId: string | null) => void,
+): string | null {
+  try {
+    // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
+    const extracted = AgentMessageSchema.parse(JSON.parse(data));
+
+    if (isBackgroundModeEnabled) {
+      handleBackgroundMode(extracted);
+      // Track the current run_id for cleanup when streaming is done
+      if (extracted.run_id) {
+        setCurrentRunId(extracted.run_id);
+      }
+    }
+
+    queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+      {
+        queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+      },
+      (data) => {
+        if (!data) {
+          return data;
+        }
+
+        const messages = data.pages[0] as LettaMessageUnion[];
+
+        let hasExistingMessage = false;
+
+        let transformedMessages = messages.map((message) => {
+          if (
+            `${message.id}-${message.message_type}` ===
+            `${extracted.id}-${extracted.message_type}`
+          ) {
+            hasExistingMessage = true;
+
+            const newMessage: Record<string, any> = {
+              ...message,
+            };
+
+            // explicit handlers for each message type
+            switch (extracted.message_type) {
+              case 'tool_call_message': {
+                const maybeArguments = get(
+                  newMessage,
+                  'tool_call.arguments',
+                  '',
+                );
+
+                newMessage.tool_call = {
+                  tool_call_id:
+                    newMessage.tool_call.tool_call_id ||
+                    extracted.tool_call.tool_call_id,
+                  message_type:
+                    newMessage.tool_call.message_type ||
+                    extracted.tool_call.message_type,
+                  name: newMessage.tool_call.name || extracted.tool_call.name,
+                  arguments: maybeArguments + extracted.tool_call.arguments,
+                };
+                break;
+              }
+              case 'tool_return_message': {
+                newMessage.tool_return = extracted.tool_return;
+                break;
+              }
+              case 'reasoning_message': {
+                newMessage.reasoning =
+                  (newMessage.reasoning || '') + extracted.reasoning;
+                break;
+              }
+              default: {
+                return newMessage;
+              }
+            }
+
+            return newMessage;
+          }
+
+          return message;
+        });
+
+        if (!hasExistingMessage) {
+          transformedMessages = [
+            ...transformedMessages,
+            {
+              ...extracted,
+              date: new Date().toISOString(),
+            },
+          ];
+        }
+
+        return {
+          ...data,
+          pages: [
+            transformedMessages as LettaMessageUnion[],
+            ...data.pages.slice(1),
+          ],
+        };
+      },
+    );
+
+    return extracted.run_id || null;
+  } catch (_e) {
+    // ignore
+    return null;
+  }
 }
 
 export function useSendMessage(options: UseSendMessageOptions = {}) {
@@ -194,7 +398,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [failedToSendMessage, setFailedToSendMessage] = useState(false);
   const [errorCode, setErrorCode] = useState<ErrorCode | undefined>(undefined);
   const { addNetworkRequest, updateNetworkRequest } = useNetworkRequest();
-  const { handleBackgroundMode, removeBackgroundModeData } =
+  const { handleBackgroundMode, removeRunIdFromBackgroundMode, getAgentRuns } =
     useBackgroundMode();
   const { data: isBackgroundModeEnabled } = useFeatureFlag('BACKGROUND_MODE');
 
@@ -211,8 +415,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
 
   const sendMessage: SendMessageType = useCallback(
     async (payload: SendMessagePayload) => {
-      const { content, role, agentId } = payload;
-      const message = extractMessageTextFromContent(content);
+      const agentId = payload.agentId;
+      const isResumeStream = payload.type === MESSAGE_PAYLOAD_TYPE.RESUME;
+      const overrideSeqId = isResumeStream ? payload?.overrideSeqId : undefined;
+
       setIsPending(true);
       setFailedToSendMessage(false);
       setErrorCode(undefined);
@@ -229,15 +435,27 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         setFailedToSendMessage(true);
         setErrorCode(errorCode);
 
-        trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE_FAILED, {
+        const eventTrackerPayload = {
           agent_id: agentId,
           message_sending_type: 'streaming',
-          message_type:
-            role.value === 'system' ? 'system_message' : 'user_message',
           location: 'ade:agent_simulator',
           error_type: errorCode || 'UNKNOWN',
           error_message: JSON.stringify(responseData),
-        });
+        };
+        if (isResumeStream) {
+          trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE_FAILED, {
+            ...eventTrackerPayload,
+            message_type: 'resume_stream',
+          });
+        } else {
+          trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE_FAILED, {
+            ...eventTrackerPayload,
+            message_type:
+              payload.role.value === 'system'
+                ? 'system_message'
+                : 'user_message',
+          });
+        }
 
         options?.onFailedToSendMessage?.(message);
 
@@ -273,100 +491,36 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         );
       }
 
-      const newMessage: SystemMessage | UserMessage =
-        role.value === 'system'
-          ? {
-              message_type: 'system_message' as const,
-              otid: userMessageOtid,
-              sender_id: role.identityId || '',
-              content: JSON.stringify({
-                type: 'system_alert',
-                message: message,
-                time: new Date().toISOString(),
-              }),
-              date: new Date().toISOString(),
-              id: `${new Date().getTime()}-user_message`,
-            }
-          : {
-              message_type: 'user_message' as const,
-              otid: userMessageOtid,
-              sender_id: role.identityId || '',
-              content: content,
-              date: new Date().toISOString(),
-              id: `${new Date().getTime()}-user_message`,
-            };
-
-      queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
-        {
-          queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-        },
-        (data) => {
-          if (!data) {
-            return data;
-          }
-
-          return {
-            ...data,
-            pages: data.pages.map((page) => [
-              newMessage,
-              ...(page as LettaMessageUnion[]).filter((v) => {
-                // remove any failed messages
-                if (v.id === FAILED_ID) {
-                  return false;
-                }
-
-                return true;
-              }),
-            ]),
-          };
-        },
-      );
-
-      trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE, {
-        agent_id: agentId,
-        message_type:
-          role.value === 'system' ? 'system_message' : 'user_message',
-        message_sending_type: 'streaming',
-        location: 'ade:agent_simulator',
-      });
-
       abortController.current = new AbortController();
-
-      const requestBody = {
-        // extra config to turn off the AssistantMessage parsing for the ADE
-        config: {
-          use_assistant_message: false,
-        },
-        stream_steps: true,
-        stream_tokens: true,
-        background: isBackgroundModeEnabled || false,
-        use_assistant_message: false,
-        messages: [
-          {
-            role: role.value !== 'system' ? 'user' : 'system',
-            ...(role.identityId ? { sender_id: role.identityId } : {}),
-            content: content,
-            otid: userMessageOtid,
-          },
-        ],
-      };
-
-      const requestId = addNetworkRequest({
-        date: new Date(),
-        url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
-        method: 'POST',
-        status: 200,
-        payload: requestBody,
-        response: 'RESULTS WILL APPEAR AFTER THE REQUEST IS COMPLETED',
-      });
 
       let allText = '';
       let data = '';
 
+      let requestId = '';
+      let message = '';
+      let response: Response;
+
       try {
-        const response = await fetch(
-          `${baseUrl}/v1/agents/${agentId}/messages/stream`,
-          {
+        // Resume stream from background mode
+        if (isBackgroundModeEnabled && isResumeStream) {
+          const agentRuns = getAgentRuns();
+          if (!agentRuns) {
+            setIsPending(false);
+            return;
+          }
+
+          const { runId, seqId } = agentRuns;
+
+          requestId = addNetworkRequest({
+            date: new Date(),
+            url: `${baseUrl}/v1/runs/${runId}/stream`,
+            method: 'POST',
+            status: 200,
+            payload: JSON.stringify({ starting_after: overrideSeqId ?? seqId }),
+            response: 'RESULTS WILL APPEAR AFTER THE REQUEST IS COMPLETED',
+          });
+
+          response = await fetch(`${baseUrl}/v1/runs/${runId}/stream`, {
             method: 'POST',
             headers: {
               'X-SOURCE-CLIENT': window.location.pathname,
@@ -379,56 +533,142 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
                   }
                 : {}),
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify({ starting_after: overrideSeqId ?? seqId }),
             signal: abortController.current.signal,
-          },
-        );
+          });
+
+          setIsPending(true);
+        } else {
+          // For regular message stream
+          if (payload.type === MESSAGE_PAYLOAD_TYPE.NEW) {
+            const content = payload.content;
+            const role = payload.role;
+
+            message = extractMessageTextFromContent(content);
+
+            const requestBody = {
+              // extra config to turn off the AssistantMessage parsing for the ADE
+              config: {
+                use_assistant_message: false,
+              },
+              stream_steps: true,
+              stream_tokens: true,
+              background: isBackgroundModeEnabled || false,
+              use_assistant_message: false,
+              messages: [
+                {
+                  role: role.value !== 'system' ? 'user' : 'system',
+                  ...(role.identityId ? { sender_id: role.identityId } : {}),
+                  content: content,
+                  otid: userMessageOtid,
+                },
+              ],
+            };
+
+            requestId = addNetworkRequest({
+              date: new Date(),
+              url: `${baseUrl}/v1/agents/${agentId}/messages/stream`,
+              method: 'POST',
+              status: 200,
+              payload: requestBody,
+              response: 'RESULTS WILL APPEAR AFTER THE REQUEST IS COMPLETED',
+            });
+
+            trackClientSideEvent(AnalyticsEvent.SEND_MESSAGE, {
+              agent_id: agentId,
+              message_type:
+                role.value === 'system' ? 'system_message' : 'user_message',
+              message_sending_type: 'streaming',
+              location: 'ade:agent_simulator',
+            });
+
+            const newMessage: SystemMessage | UserMessage =
+              role.value === 'system'
+                ? {
+                    message_type: 'system_message' as const,
+                    otid: userMessageOtid,
+                    sender_id: role.identityId || '',
+                    content: JSON.stringify({
+                      type: 'system_alert',
+                      message: message,
+                      time: new Date().toISOString(),
+                    }),
+                    date: new Date().toISOString(),
+                    id: `${new Date().getTime()}-user_message`,
+                  }
+                : {
+                    message_type: 'user_message' as const,
+                    otid: userMessageOtid,
+                    sender_id: role.identityId || '',
+                    content: content,
+                    date: new Date().toISOString(),
+                    id: `${new Date().getTime()}-user_message`,
+                  };
+
+            queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
+              {
+                queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
+              },
+              (data) => {
+                if (!data) {
+                  return data;
+                }
+
+                return {
+                  ...data,
+                  pages: data.pages.map((page) => [
+                    newMessage,
+                    ...(page as LettaMessageUnion[]).filter((v) => {
+                      // remove any failed messages
+                      if (v.id === FAILED_ID) {
+                        return false;
+                      }
+
+                      return true;
+                    }),
+                  ]),
+                };
+              },
+            );
+
+            response = await fetch(
+              `${baseUrl}/v1/agents/${agentId}/messages/stream`,
+              {
+                method: 'POST',
+                headers: {
+                  'X-SOURCE-CLIENT': window.location.pathname,
+                  'Content-Type': 'application/json',
+                  Accept: 'text/event-stream',
+                  ...(password
+                    ? {
+                        Authorization: `Bearer ${password}`,
+                        'X-BARE-PASSWORD': `password ${password}`,
+                      }
+                    : {}),
+                },
+                body: JSON.stringify(requestBody),
+                signal: abortController.current.signal,
+              },
+            );
+          } else {
+            // TODO: REMOVE THIS ENTIRE ELSE BLOCK AFTER TAKING OUT BACKGROUND MODE FEATURE FLAG!!!
+            return;
+          }
+        }
 
         if (!response.ok) {
           const body = await response.json();
 
-          if (body.reasons?.includes('free-usage-exceeded')) {
-            handleError(message, 'FREE_USAGE_EXCEEDED', body);
-            updateNetworkRequest(requestId, {
-              status: response.status,
-              response: body,
-            });
-            return;
-          }
+          const wasHandled = handleResponseError(
+            response,
+            body,
+            message,
+            requestId,
+            handleError,
+            updateNetworkRequest,
+          );
 
-          if (body.reasons?.includes('agents-limit-exceeded')) {
-            handleError(message, 'AGENT_LIMIT_EXCEEDED', body);
-            updateNetworkRequest(requestId, {
-              status: response.status,
-              response: body,
-            });
-            return;
-          }
-
-          if (body.reasons?.includes('premium-usage-exceeded')) {
-            handleError(message, 'PREMIUM_USAGE_EXCEEDED', body);
-            updateNetworkRequest(requestId, {
-              status: response.status,
-              response: body,
-            });
-            return;
-          }
-
-          if (response.status === 429) {
-            handleError(message, 'RATE_LIMIT_EXCEEDED', body);
-            updateNetworkRequest(requestId, {
-              status: response.status,
-              response: body,
-            });
-            return;
-          }
-
-          if (response.status === 402) {
-            handleError(message, 'CREDIT_LIMIT_EXCEEDED', body);
-            updateNetworkRequest(requestId, {
-              status: response.status,
-              response: body,
-            });
+          if (wasHandled) {
             return;
           }
 
@@ -497,7 +737,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
               }
 
               if (isBackgroundModeEnabled && currentRunId) {
-                removeBackgroundModeData(currentRunId);
+                removeRunIdFromBackgroundMode(currentRunId);
               }
 
               continue;
@@ -514,107 +754,18 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
               // ignore
             }
 
-            try {
-              // TODO (cliandy): handle {"message_type":"usage_statistics"} or don't pass through
-              const extracted = AgentMessageSchema.parse(JSON.parse(data));
-
-              if (isBackgroundModeEnabled) {
-                handleBackgroundMode(extracted);
-                // Track the current run_id for cleanup when streaming is done
-                if (extracted.run_id) {
-                  currentRunId = extracted.run_id;
-                }
-              }
-
-              queryClient.setQueriesData<InfiniteData<ListMessagesResponse>>(
-                {
-                  queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-                },
-                (data) => {
-                  if (!data) {
-                    return data;
-                  }
-
-                  const messages = data.pages[0] as LettaMessageUnion[];
-
-                  let hasExistingMessage = false;
-
-                  let transformedMessages = messages.map((message) => {
-                    if (
-                      `${message.id}-${message.message_type}` ===
-                      `${extracted.id}-${extracted.message_type}`
-                    ) {
-                      hasExistingMessage = true;
-
-                      const newMessage: Record<string, any> = {
-                        ...message,
-                      };
-
-                      // explicit handlers for each message type
-                      switch (extracted.message_type) {
-                        case 'tool_call_message': {
-                          const maybeArguments = get(
-                            newMessage,
-                            'tool_call.arguments',
-                            '',
-                          );
-
-                          newMessage.tool_call = {
-                            tool_call_id:
-                              newMessage.tool_call.tool_call_id ||
-                              extracted.tool_call.tool_call_id,
-                            message_type:
-                              newMessage.tool_call.message_type ||
-                              extracted.tool_call.message_type,
-                            name:
-                              newMessage.tool_call.name ||
-                              extracted.tool_call.name,
-                            arguments:
-                              maybeArguments + extracted.tool_call.arguments,
-                          };
-                          break;
-                        }
-                        case 'tool_return_message': {
-                          newMessage.tool_return = extracted.tool_return;
-                          break;
-                        }
-                        case 'reasoning_message': {
-                          newMessage.reasoning =
-                            (newMessage.reasoning || '') + extracted.reasoning;
-                          break;
-                        }
-                        default: {
-                          return newMessage;
-                        }
-                      }
-
-                      return newMessage;
-                    }
-
-                    return message;
-                  });
-
-                  if (!hasExistingMessage) {
-                    transformedMessages = [
-                      ...transformedMessages,
-                      {
-                        ...extracted,
-                        date: new Date().toISOString(),
-                      },
-                    ];
-                  }
-
-                  return {
-                    ...data,
-                    pages: [
-                      transformedMessages as LettaMessageUnion[],
-                      ...data.pages.slice(1),
-                    ],
-                  };
-                },
-              );
-            } catch (_e) {
-              // ignore
+            const runId = processAgentMessage(
+              data,
+              agentId,
+              queryClient,
+              isBackgroundModeEnabled || false,
+              handleBackgroundMode,
+              (runId) => {
+                currentRunId = runId;
+              },
+            );
+            if (runId) {
+              currentRunId = runId;
             }
           }
         }
@@ -624,6 +775,12 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           (error.message === 'network error' || error.message === 'Load failed')
         ) {
           // Network error, allow backend request to continue
+          if (isBackgroundModeEnabled) {
+            sendMessage({
+              type: MESSAGE_PAYLOAD_TYPE.RESUME,
+              agentId,
+            });
+          }
           return;
         }
 
@@ -649,11 +806,12 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       setIsPending,
       addNetworkRequest,
       updateNetworkRequest,
-      removeBackgroundModeData,
+      removeRunIdFromBackgroundMode,
       handleBackgroundMode,
       setFailedToSendMessage,
       setErrorCode,
       isBackgroundModeEnabled,
+      getAgentRuns,
     ],
   );
 
@@ -841,10 +999,14 @@ export function AgentSimulator() {
   const { data: isPollActiveRunsEnabled } = useFeatureFlag(
     'POLL_ACTIVE_RUNS_IN_SIMULATOR',
   );
+
+  const { data: isBackgroundModeEnabled } = useFeatureFlag('BACKGROUND_MODE');
+
   const { hasActiveRuns, setOptimisticActiveRun, clearOptimisticActiveRuns } =
     useCurrentAgentActiveRuns();
 
   const ref = useRef<ChatInputRef | null>(null);
+  const hasRunOnce = useRef(false);
 
   const {
     sendMessage,
@@ -863,6 +1025,18 @@ export function AgentSimulator() {
       ? clearOptimisticActiveRuns
       : undefined,
   });
+
+  useEffect(() => {
+    // Run on page mount
+    if (isBackgroundModeEnabled && agentIdToUse && !hasRunOnce.current) {
+      hasRunOnce.current = true;
+      sendMessage({
+        type: MESSAGE_PAYLOAD_TYPE.RESUME,
+        agentId: agentIdToUse || '',
+        overrideSeqId: 0,
+      });
+    }
+  }, [agentIdToUse, sendMessage, isBackgroundModeEnabled]);
 
   const hasFailedToSendMessageText = useMemo(() => {
     if (!hasFailedToSendMessage) {
@@ -1114,7 +1288,12 @@ export function AgentSimulator() {
                     if (isPollActiveRunsEnabled) {
                       setOptimisticActiveRun();
                     }
-                    sendMessage({ role, content, agentId: agentIdToUse || '' });
+                    sendMessage({
+                      type: 'new',
+                      role,
+                      content,
+                      agentId: agentIdToUse || '',
+                    });
 
                     handleOnboardingStepChange();
                   }}

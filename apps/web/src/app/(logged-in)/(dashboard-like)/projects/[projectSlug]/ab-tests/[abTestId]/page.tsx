@@ -14,9 +14,7 @@ import React, { Fragment, useMemo } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import { TemplateChatSimulator } from './_components/TemplateChatSimulator/TemplateChatSimulator';
 import { AttachTemplateToSimulator } from './_components/AttachTemplateToSimulator/AttachTemplateToSimulator';
-import {
-  useSendMessage,
-} from '@letta-cloud/ui-ade-components';
+import { useSendMessage } from '@letta-cloud/ui-ade-components';
 import { isFetchError } from '@ts-rest/react-query/v5';
 
 function ABTests() {
@@ -115,6 +113,7 @@ function ABTests() {
             onSendMessage={(role, content) => {
               templates.forEach((template) => {
                 sendMessage({
+                  type: 'new',
                   role,
                   content,
                   agentId: template.coreAgentId,
@@ -144,7 +143,7 @@ export default function ABTestPage() {
   return (
     <VStack fullHeight fullWidth gap={false} overflow="hidden">
       <VStack collapseHeight gap={false} flex>
-          <ABTests />
+        <ABTests />
       </VStack>
     </VStack>
   );

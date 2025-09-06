@@ -116,7 +116,7 @@ export default function ChatPage() {
               role: RoleOption,
               content: LettaUserMessageContentUnion[] | string,
             ) => {
-              sendMessage({ role, content, agentId });
+              sendMessage({ type: 'new', role, content, agentId });
             }}
             isSendingMessage={isPending}
           />
