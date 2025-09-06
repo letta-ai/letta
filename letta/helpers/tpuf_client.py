@@ -75,17 +75,22 @@ class TurbopufferClient:
         return await self.archive_manager.get_or_set_vector_db_namespace_async(archive_id)
 
     @trace_method
-    async def _get_message_namespace_name(self, agent_id: str, organization_id: str) -> str:
+    async def _get_message_namespace_name(self, organization_id: str) -> str:
         """Get namespace name for messages (org-scoped).
 
         Args:
-            agent_id: Agent ID (stored for future sharding)
             organization_id: Organization ID for namespace generation
 
         Returns:
             The org-scoped namespace name for messages
         """
-        return await self.agent_manager.get_or_set_vector_db_namespace_async(agent_id, organization_id)
+        environment = settings.environment
+        if environment:
+            namespace_name = f"messages_{organization_id}_{environment.lower()}"
+        else:
+            namespace_name = f"messages_{organization_id}"
+
+        return namespace_name
 
     @trace_method
     async def insert_archival_memories(
@@ -236,7 +241,7 @@ class TurbopufferClient:
         # generate embeddings using the default config
         embeddings = await self._generate_embeddings(message_texts, actor)
 
-        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
+        namespace_name = await self._get_message_namespace_name(organization_id)
 
         # validation checks
         if not message_ids:
@@ -606,7 +611,7 @@ class TurbopufferClient:
             # Fallback to retrieving most recent messages when no search query is provided
             search_mode = "timestamp"
 
-        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
+        namespace_name = await self._get_message_namespace_name(organization_id)
 
         # build agent_id filter
         agent_filter = ("agent_id", "Eq", agent_id)
@@ -744,7 +749,7 @@ class TurbopufferClient:
             embeddings = await self._generate_embeddings([query_text], actor)
             query_embedding = embeddings[0]
         # namespace is org-scoped
-        namespace_name = f"letta_messages_{organization_id}"
+        namespace_name = await self._get_message_namespace_name(organization_id)
 
         # build filters
         all_filters = []
@@ -1054,7 +1059,7 @@ class TurbopufferClient:
         if not message_ids:
             return True
 
-        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
+        namespace_name = await self._get_message_namespace_name(organization_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
@@ -1072,7 +1077,7 @@ class TurbopufferClient:
         """Delete all messages for an agent from Turbopuffer."""
         from turbopuffer import AsyncTurbopuffer
 
-        namespace_name = await self._get_message_namespace_name(agent_id, organization_id)
+        namespace_name = await self._get_message_namespace_name(organization_id)
 
         try:
             async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
