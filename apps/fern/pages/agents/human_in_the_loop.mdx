@@ -6,6 +6,19 @@ subtitle: How to integrate human-in-the-loop workflows for tool approval
 
 Human-in-the-loop (HITL) workflows allow you to maintain control over critical agent actions by requiring human approval before executing certain tools. This is essential for operations that could have significant consequences, such as database modifications, financial transactions, or external API calls with cost implications.
 
+```mermaid
+flowchart LR
+    Agent[Agent] -->|Calls Tool| Check{Requires<br/>Approval?}
+    Check -->|No| Execute[Execute Tool]
+    Check -->|Yes| Request[Request Approval]
+    Request --> Human[Human Review]
+    Human -->|Approve| Execute
+    Human -->|Deny| Error[Return Error]
+    Execute --> Result[Return Result]
+    Error --> Agent
+    Result --> Agent
+```
+
 ## Overview
 
 When a tool is marked as requiring approval, the agent will pause execution and wait for human approval or denial before proceeding. This creates a checkpoint in the agent's workflow where human judgment can be applied. The approval workflow is designed to be non-blocking and supports both synchronous and streaming message interfaces, making it suitable for interactive applications as well as batch processing systems.
@@ -26,6 +39,7 @@ The approval workflow follows a clear sequence of steps that ensures human overs
 3. **Human Review**: The approval request includes the tool name, arguments, and context, allowing you to make an informed decision
 4. **Approval/Denial**: Send an approval response to either execute the tool or provide feedback for the agent to adjust its approach
 5. **Continuation**: The agent receives the tool result (on approval) or an error message (on denial) and continues processing
+
 
 ## Best Practices
 
@@ -60,7 +74,7 @@ The agent will use your denial reason to reformulate its approach, so the more s
 ## Setting Up Approval Requirements
 
 There are two methods for configuring tool approval requirements, each suited for different use cases. Choose the approach that best fits your security model and operational needs.
-a
+
 ### Method 1: Create/Upsert Tool with Default Approval Requirement
 
 Set approval requirements at the tool level when creating or upserting a tool. This approach ensures consistent security policies across all agents that use the tool. The `default_requires_approval` flag will be applied to all future agent-tool attachments:
@@ -565,3 +579,96 @@ const response = await client.agents.messages.create({
 }
 ```
 </CodeGroup>
+
+### Streaming + Background Mode
+
+For streaming clients using background mode, approvals are best handled via `agents.messages.createStream(..., background: true)`. The approval response may include the `tool_return_message` on the approval stream itself, and follow‑up reasoning/assistant messages can be read by resuming that stream’s `run_id`.
+
+<Note>
+Do not assume the `tool_return_message` will repeat after you resume. Treat the one on the approval stream as the source of truth, then resume to continue reading subsequent tokens.
+</Note>
+
+<CodeGroup>
+```curl curl maxLines=70
+# Approve in background after receiving approval_request_message
+curl --request POST   --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream   --header 'Content-Type: application/json'   --data '{
+  "messages": [{"type": "approval", "approve": true, "approval_request_id": "message-abc"}],
+  "stream_tokens": true,
+  "background": true
+}'
+
+# Example approval stream output (tool result arrives here):
+data: {"run_id":"run-new","seq_id":0,"message_type":"tool_return_message","status":"success","tool_return":"..."}
+
+# Continue by resuming the approval stream's run
+curl --request GET   --url http://localhost:8283/v1/runs/$RUN_ID/stream   --header 'Accept: text/event-stream'   --data '{
+  "starting_after": 0
+}'
+```
+```python python maxLines=70
+# Receive an approval_request_message, then approve in background
+approve = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"type": "approval", "approve": True, "approval_request_id": approval_request_id}],
+    stream_tokens=True,
+    background=True,
+)
+
+run_id = None
+last_seq = 0
+for chunk in approve:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id
+        last_seq = chunk.seq_id
+    if getattr(chunk, "message_type", None) == "tool_return_message":
+        # Tool result arrives here on the approval stream
+        break
+
+# Continue consuming output by resuming the background run
+if run_id:
+    for chunk in client.runs.stream(run_id, starting_after=last_seq):
+        print(chunk)
+```
+```typescript node.js maxLines=70
+// Receive an approval_request_message, then approve in background
+const approve = await client.agents.messages.createStream({
+  agentId: agent.id,
+  requestBody: {
+    messages: [{ type: "approval", approve: true, approvalRequestId }],
+    streamTokens: true,
+    background: true,
+  }
+});
+
+let runId: string | null = null;
+let lastSeq = 0;
+for await (const chunk of approve) {
+  if (chunk.run_id && chunk.seq_id) { runId = chunk.run_id; lastSeq = chunk.seq_id; }
+  if (chunk.message_type === "tool_return_message") {
+    // Tool result arrives here on the approval stream
+    break;
+  }
+}
+
+// Continue consuming output by resuming the background run
+if (runId) {
+  const resume = await client.runs.stream(runId, { startingAfter: lastSeq });
+  for await (const chunk of resume) {
+    console.log(chunk);
+  }
+}
+```
+</CodeGroup>
+
+
+
+<Note>
+**Run switching in background mode:** Approvals are separate background requests and create a new `run_id`. Save the approval stream cursor and resume that run. The original paused run will not deliver the tool result — do not wait for the tool return there.
+</Note>
+
+See [background mode](/guides/agents/long-running) for resumption patterns.
+### IDs and UI Triggers
+
+- **approval_request_id**: Always send approvals/denials using the `approval_request_message.id`.
+- **tool_call_id**: Informational only; not accepted for approval/denial.
+- **UI trigger**: Open the approval UI on `approval_request_message` only; do not drive UI from `stop_reason`.

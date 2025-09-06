@@ -109,7 +109,186 @@ for await (const chunk of client.runs.stream(runId, {startingAfter: lastSeqId}))
     console.log(chunk);
 }
 ```
+```python python maxLines=60
+# 1) Start background stream and capture approval request
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Do a sensitive operation"}],
+    stream_tokens=True,
+    background=True,
+)
+
+approval_request_id = None
+orig_run_id = None
+last_seq_id = 0
+for chunk in stream:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        orig_run_id = chunk.run_id
+        last_seq_id = chunk.seq_id
+    if getattr(chunk, "message_type", None) == "approval_request_message":
+        approval_request_id = chunk.id
+        break
+
+# 2) Approve in background; capture the approval stream cursor (this creates a new run)
+approve = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"type": "approval", "approve": True, "approval_request_id": approval_request_id}],
+    stream_tokens=True,
+    background=True,
+)
+
+run_id = None
+approve_seq = 0
+for chunk in approve:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id
+        approve_seq = chunk.seq_id
+    if getattr(chunk, "message_type", None) == "tool_return_message":
+        # Tool result arrives here on the approval stream
+        break
+
+# 3) Resume that run to read follow-up tokens
+for chunk in client.runs.stream(run_id, starting_after=approve_seq):
+    print(chunk)
+```
 </CodeGroup>
+
+### HITL in Background Mode
+
+When [Human‑in‑the‑Loop (HITL) approval](/guides/agents/human-in-the-loop) is enabled for a tool, your background stream may pause and emit an `approval_request_message`. In background mode, send the approval via a separate background stream and capture that stream’s `run_id`/`seq_id`.
+
+<Note>
+Approval responses in background mode emit the `tool_return_message` on the approval stream itself (with a new `run_id`, different from the original stream). Save the approval stream cursor, then resume with `runs.stream` to consume subsequent reasoning/assistant messages.
+</Note>
+
+<CodeGroup>
+```curl curl maxLines=70
+# 1) Start background stream; capture approval request
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "messages": [{"role": "user", "content": "Do a sensitive operation"}],
+  "stream_tokens": true,
+  "background": true
+}'
+
+# Example stream output (approval request arrives):
+data: {"run_id":"run-abc","seq_id":0,"message_type":"reasoning_message","reasoning":"..."}
+data: {"run_id":"run-abc","seq_id":1,"message_type":"approval_request_message","id":"message-abc","tool_call":{"name":"sensitive_operation","arguments":"{...}","tool_call_id":"tool-xyz"}}
+
+# 2) Approve in background; capture approval stream cursor (this creates a new run)
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages/stream \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "messages": [{"type": "approval", "approve": true, "approval_request_id": "message-abc"}],
+  "stream_tokens": true,
+  "background": true
+}'
+
+# Example approval stream output (tool result arrives here):
+data: {"run_id":"run-new","seq_id":0,"message_type":"tool_return_message","status":"success","tool_return":"..."}
+
+# 3) Resume the approval stream's run to continue
+curl --request GET \
+  --url http://localhost:8283/v1/runs/$RUN_ID/stream \
+  --header 'Accept: text/event-stream' \
+  --data '{
+  "starting_after": 0
+}'
+```
+```python python maxLines=70
+# 1) Start background stream and capture approval request
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Do a sensitive operation"}],
+    stream_tokens=True,
+    background=True,
+)
+
+approval_request_id = None
+orig_run_id = None
+last_seq_id = 0
+for chunk in stream:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        orig_run_id = chunk.run_id
+        last_seq_id = chunk.seq_id
+    if getattr(chunk, "message_type", None) == "approval_request_message":
+        approval_request_id = chunk.id
+        break
+
+# 2) Approve in background; capture the approval stream cursor (this creates a new run)
+approve = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"type": "approval", "approve": True, "approval_request_id": approval_request_id}],
+    stream_tokens=True,
+    background=True,
+)
+
+run_id = None
+approve_seq = 0
+for chunk in approve:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id
+        approve_seq = chunk.seq_id
+    if getattr(chunk, "message_type", None) == "tool_return_message":
+        # Tool result arrives here on the approval stream
+        break
+
+# 3) Resume that run to read follow-up tokens
+for chunk in client.runs.stream(run_id, starting_after=approve_seq):
+    print(chunk)
+```
+```typescript node.js maxLines=70
+// 1) Start background stream and capture approval request
+const stream = await client.agents.messages.createStream({
+  agentId: agent.id,
+  requestBody: {
+    messages: [{ role: "user", content: "Do a sensitive operation" }],
+    streamTokens: true,
+    background: true,
+  }
+});
+
+let approvalRequestId: string | null = null;
+let origRunId: string | null = null;
+let lastSeqId = 0;
+for await (const chunk of stream) {
+  if (chunk.run_id && chunk.seq_id) { origRunId = chunk.run_id; lastSeqId = chunk.seq_id; }
+  if (chunk.message_type === "approval_request_message") {
+    approvalRequestId = chunk.id; break;
+  }
+}
+
+// 2) Approve in background; capture the approval stream cursor (this creates a new run)
+const approve = await client.agents.messages.createStream({
+  agentId: agent.id,
+  requestBody: {
+    messages: [{ type: "approval", approve: true, approvalRequestId }],
+    streamTokens: true,
+    background: true,
+  }
+});
+
+let runId: string | null = null;
+let approveSeq = 0;
+for await (const chunk of approve) {
+  if (chunk.run_id && chunk.seq_id) { runId = chunk.run_id; approveSeq = chunk.seq_id; }
+  if (chunk.message_type === "tool_return_message") {
+    // Tool result arrives here on the approval stream
+    break;
+  }
+}
+
+// 3) Resume that run to read follow-up tokens
+const resume = await client.runs.stream(runId!, { startingAfter: approveSeq });
+for await (const chunk of resume) {
+  console.log(chunk);
+}
+```
+</CodeGroup>
+
 
 ### Discovering and Resuming Active Streams
 
