@@ -3,6 +3,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from typing import List, Optional, Tuple
 
+from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
@@ -168,10 +169,7 @@ async def _prepare_in_context_messages_no_persist_async(
     else:
         # User is trying to send a regular message
         if current_in_context_messages[-1].role == "approval":
-            raise ValueError(
-                "Cannot send a new message: The agent is waiting for approval on a tool call. "
-                "Please approve or deny the pending request before continuing."
-            )
+            raise PendingApprovalError(pending_request_id=current_in_context_messages[-1].id)
 
         # Create a new user message from the input but dont store it yet
         new_in_context_messages = create_input_messages(

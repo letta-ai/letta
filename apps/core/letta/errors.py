@@ -18,6 +18,7 @@ class ErrorCode(Enum):
     CONTEXT_WINDOW_EXCEEDED = "CONTEXT_WINDOW_EXCEEDED"
     RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
     TIMEOUT = "TIMEOUT"
+    CONFLICT = "CONFLICT"
 
 
 class LettaError(Exception):
@@ -38,6 +39,17 @@ class LettaError(Exception):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(message='{self.message}', code='{self.code}', details={self.details})"
+
+
+class PendingApprovalError(LettaError):
+    """Error raised when attempting an operation while agent is waiting for tool approval."""
+
+    def __init__(self, pending_request_id: Optional[str] = None):
+        self.pending_request_id = pending_request_id
+        message = "Cannot send a new message: The agent is waiting for approval on a tool call. Please approve or deny the pending request before continuing."
+        code = ErrorCode.CONFLICT
+        details = {"error_code": "PENDING_APPROVAL", "pending_request_id": pending_request_id}
+        super().__init__(message=message, code=code, details=details)
 
 
 class LettaToolCreateError(LettaError):
