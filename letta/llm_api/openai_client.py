@@ -291,11 +291,17 @@ class OpenAIClient(LLMClientBase):
 
         responses_request_data = convert_chat_to_response(request_data)
         
+        print("DEBUG: request_async method called!")
+        print(f"DEBUG: About to write to async_chat_request_data.json with {len(str(request_data))} chars")
+        print(f"DEBUG: About to write to async_responses_request_data.json with {len(str(responses_request_data))} chars")
+        
         # Write request data to local JSON files for debugging
         with open("async_chat_request_data.json", "w") as f:
             json.dump(request_data, f, indent=4)
+            print("DEBUG: Successfully wrote async_chat_request_data.json")
         with open("async_responses_request_data.json", "w") as f:
             json.dump(responses_request_data, f, indent=4)
+            print("DEBUG: Successfully wrote async_responses_request_data.json")
         query_response = await client.responses.create(**responses_request_data)
         return query_response.model_dump()
 
@@ -525,6 +531,8 @@ def convert_chat_to_response(chat: dict):
     # need to do a better job of passing through here hmm
     # goal is to only modify the data that needs to be modifies and then pass through all other params like temp or topP etc
     # 1 idea is copy with a responses object def then prune with pydantic or "union" 
+
+    # best thing to do here is prob union types from Responses and Chat and then update to allow pass through
     response_request_data = {
         "model": chat["model"],
         "input": "",
