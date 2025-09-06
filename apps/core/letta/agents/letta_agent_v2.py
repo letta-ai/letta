@@ -360,7 +360,7 @@ class LettaAgentV2(BaseAgentV2):
             LettaMessage or dict: Chunks for streaming mode, or request data for dry_run
         """
         step_progression = StepProgression.START
-        tool_call, reasoning_content, agent_step_span, first_chunk, logged_step = None, None, None, None, None
+        tool_call, reasoning_content, agent_step_span, first_chunk, logged_step, step_start_ns = None, None, None, None, None, None
         valid_tools = await self._get_valid_tools(messages)  # remove messages input
         approval_request, approval_response = await self._maybe_get_approval_messages(messages)
         if approval_request and approval_response:
@@ -413,6 +413,11 @@ class LettaAgentV2(BaseAgentV2):
                 return
 
             provider_request_start_timestamp_ns = get_utc_timestamp_ns()
+            agent_step_span.add_event(
+                name="request_start_to_provider_request_start_ns",
+                attributes={"request_start_to_provider_request_start_ns": ns_to_ms(provider_request_start_timestamp_ns)},
+            )
+
             try:
                 invocation = llm_adapter.invoke_llm(
                     request_data=request_data,
@@ -432,12 +437,9 @@ class LettaAgentV2(BaseAgentV2):
                 raise
 
             step_progression = StepProgression.RESPONSE_RECEIVED
-            stream_end_time_ns = get_utc_timestamp_ns()
-            llm_request_ns = stream_end_time_ns - provider_request_start_timestamp_ns
+            llm_request_ns = llm_adapter.llm_request_finish_timestamp_ns - provider_request_start_timestamp_ns
             step_metrics.llm_request_ns = llm_request_ns
-
-            llm_request_ms = ns_to_ms(llm_request_ns)
-            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": llm_request_ms})
+            agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
 
             self._update_global_usage_stats(llm_adapter.usage)
 
@@ -503,6 +505,10 @@ class LettaAgentV2(BaseAgentV2):
                     yield message
 
         step_progression = StepProgression.FINISHED
+        if agent_step_span is not None:
+            step_ns = get_utc_timestamp_ns() - step_start_ns
+            agent_step_span.add_event(name="step_ms", attributes={"duration_ms": ns_to_ms(step_ns)})
+            agent_step_span.end()
 
     def _initialize_state(self):
         self.should_continue = True

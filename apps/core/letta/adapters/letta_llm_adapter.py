@@ -31,6 +31,7 @@ class LettaLLMAdapter(ABC):
         self.tool_call: ToolCall | None = None
         self.usage: LettaUsageStatistics = LettaUsageStatistics()
         self.telemetry_manager: TelemetryManager = TelemetryManager()
+        self.llm_request_finish_timestamp_ns: int | None = None
 
     @abstractmethod
     async def invoke_llm(
