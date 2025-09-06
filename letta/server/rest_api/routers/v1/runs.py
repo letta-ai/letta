@@ -255,7 +255,26 @@ async def delete_run(
         200: {
             "description": "Successful response",
             "content": {
-                "text/event-stream": {"description": "Server-Sent Events stream"},
+                # Align streaming schema with agents.create_stream so SDKs accept approval messages
+                "text/event-stream": {
+                    "description": "Server-Sent Events stream",
+                    "schema": {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/SystemMessage"},
+                            {"$ref": "#/components/schemas/UserMessage"},
+                            {"$ref": "#/components/schemas/ReasoningMessage"},
+                            {"$ref": "#/components/schemas/HiddenReasoningMessage"},
+                            {"$ref": "#/components/schemas/ToolCallMessage"},
+                            {"$ref": "#/components/schemas/ToolReturnMessage"},
+                            {"$ref": "#/components/schemas/AssistantMessage"},
+                            {"$ref": "#/components/schemas/ApprovalRequestMessage"},
+                            {"$ref": "#/components/schemas/ApprovalResponseMessage"},
+                            {"$ref": "#/components/schemas/LettaPing"},
+                            {"$ref": "#/components/schemas/LettaStopReason"},
+                            {"$ref": "#/components/schemas/LettaUsageStatistics"},
+                        ]
+                    },
+                },
             },
         }
     },
