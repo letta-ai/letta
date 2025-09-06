@@ -71,15 +71,6 @@ class LettaCoreToolExecutor(ToolExecutor):
             )
 
     async def send_message(self, agent_state: AgentState, actor: User, message: str) -> Optional[str]:
-        """
-        Sends a message to the human user.
-
-        Args:
-            message (str): Message contents. All unicode (including emojis) are supported.
-
-        Returns:
-            Optional[str]: None is always returned as this function does not produce a response.
-        """
         return "Sent message successfully."
 
     async def conversation_search(
@@ -92,19 +83,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Optional[str]:
-        """
-        Search prior conversation history using hybrid search (text + semantic similarity).
-
-        Args:
-            query (str): String to search for using both text matching and semantic similarity.
-            roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
-            limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-            start_date (Optional[str]): Filter results to messages created after this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
-            end_date (Optional[str]): Filter results to messages created before this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
-
-        Returns:
-            str: Query result string containing matching messages with timestamps and content.
-        """
         try:
             # Parse datetime parameters if provided
             start_datetime = None
@@ -285,20 +263,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         start_datetime: Optional[str] = None,
         end_datetime: Optional[str] = None,
     ) -> Optional[str]:
-        """
-        Search archival memory using semantic (embedding-based) search with optional temporal filtering.
-
-        Args:
-            query (str): String to search for using semantic similarity.
-            tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
-            tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
-            top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-            start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format.
-            end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format.
-
-        Returns:
-            str: Query result string containing matching passages with timestamps, content, and tags.
-        """
         try:
             # Use the shared service method to get results
             formatted_results = await self.agent_manager.search_agent_archival_memory_async(
@@ -320,16 +284,6 @@ class LettaCoreToolExecutor(ToolExecutor):
     async def archival_memory_insert(
         self, agent_state: AgentState, actor: User, content: str, tags: Optional[list[str]] = None
     ) -> Optional[str]:
-        """
-        Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.
-
-        Args:
-            content (str): Content to write to the memory. All unicode (including emojis) are supported.
-            tags (Optional[list[str]]): Optional list of tags to associate with this memory for better organization and filtering.
-
-        Returns:
-            Optional[str]: None is always returned as this function does not produce a response.
-        """
         await self.passage_manager.insert_passage(
             agent_state=agent_state,
             text=content,
@@ -340,16 +294,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         return None
 
     async def core_memory_append(self, agent_state: AgentState, actor: User, label: str, content: str) -> Optional[str]:
-        """
-        Append to the contents of core memory.
-
-        Args:
-            label (str): Section of the memory to be edited.
-            content (str): Content to write to the memory. All unicode (including emojis) are supported.
-
-        Returns:
-            Optional[str]: None is always returned as this function does not produce a response.
-        """
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
         current_value = str(agent_state.memory.get_block(label).value)
@@ -366,17 +310,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         old_content: str,
         new_content: str,
     ) -> Optional[str]:
-        """
-        Replace the contents of core memory. To delete memories, use an empty string for new_content.
-
-        Args:
-            label (str): Section of the memory to be edited.
-            old_content (str): String to replace. Must be an exact match.
-            new_content (str): Content to write to the memory. All unicode (including emojis) are supported.
-
-        Returns:
-            Optional[str]: None is always returned as this function does not produce a response.
-        """
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
         current_value = str(agent_state.memory.get_block(label).value)
@@ -388,20 +321,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         return None
 
     async def memory_replace(self, agent_state: AgentState, actor: User, label: str, old_str: str, new_str: str) -> str:
-        """
-        The memory_replace command allows you to replace a specific string in a memory
-        block with a new string. This is used for making precise edits.
-
-        Args:
-            label (str): Section of the memory to be edited, identified by its label.
-            old_str (str): The text to replace (must match exactly, including whitespace
-                and indentation). Do not include line number prefixes.
-            new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
-
-        Returns:
-            str: The success message
-        """
-
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
@@ -478,20 +397,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         new_str: str,
         insert_line: int = -1,
     ) -> str:
-        """
-        The memory_insert command allows you to insert text at a specific location
-        in a memory block.
-
-        Args:
-            label (str): Section of the memory to be edited, identified by its label.
-            new_str (str): The text to insert. Do not include line number prefixes.
-            insert_line (int): The line number after which to insert the text (0 for
-                beginning of file). Defaults to -1 (end of the file).
-
-        Returns:
-            str: The success message
-        """
-
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
@@ -558,20 +463,6 @@ class LettaCoreToolExecutor(ToolExecutor):
         return success_msg
 
     async def memory_rethink(self, agent_state: AgentState, actor: User, label: str, new_memory: str) -> str:
-        """
-        The memory_rethink command allows you to completely rewrite the contents of a
-        memory block. Use this tool to make large sweeping changes (e.g. when you want
-        to condense or reorganize the memory blocks), do NOT use this tool to make small
-        precise edits (e.g. add or remove a line, replace a specific string, etc).
-
-        Args:
-            label (str): The memory block to be rewritten, identified by its label.
-            new_memory (str): The new memory contents with information integrated from
-                existing memory blocks and the conversation context. Do not include line number prefixes.
-
-        Returns:
-            str: The success message
-        """
         if agent_state.memory.get_block(label).read_only:
             raise ValueError(f"{READ_ONLY_BLOCK_EDIT_ERROR}")
 
@@ -610,12 +501,4 @@ class LettaCoreToolExecutor(ToolExecutor):
         return success_msg
 
     async def memory_finish_edits(self, agent_state: AgentState, actor: User) -> None:
-        """
-        Call the memory_finish_edits command when you are finished making edits
-        (integrating all new information) into the memory blocks. This function
-        is called when the agent is done rethinking the memory.
-
-        Returns:
-            Optional[str]: None is always returned as this function does not produce a response.
-        """
         return None
