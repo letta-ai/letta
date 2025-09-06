@@ -15,7 +15,13 @@ from starlette.responses import Response, StreamingResponse
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
+from letta.errors import (
+    AgentExportIdMappingError,
+    AgentExportProcessingError,
+    AgentFileImportError,
+    AgentNotFoundForExportError,
+    PendingApprovalError,
+)
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -1239,6 +1245,12 @@ async def send_message(
             )
         job_status = result.stop_reason.stop_reason.run_status
         return result
+    except PendingApprovalError as e:
+        job_update_metadata = {"error": str(e)}
+        job_status = JobStatus.failed
+        raise HTTPException(
+            status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
+        )
     except Exception as e:
         job_update_metadata = {"error": str(e)}
         job_status = JobStatus.failed
@@ -1437,6 +1449,13 @@ async def send_message_streaming(
         if settings.track_agent_run:
             job_status = JobStatus.running
         return result
+    except PendingApprovalError as e:
+        if settings.track_agent_run:
+            job_update_metadata = {"error": str(e)}
+            job_status = JobStatus.failed
+        raise HTTPException(
+            status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
+        )
     except Exception as e:
         if settings.track_agent_run:
             job_update_metadata = {"error": str(e)}
@@ -1625,6 +1644,14 @@ async def _process_message_background(
         )
         await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
+    except PendingApprovalError as e:
+        # Update job status to failed with specific error info
+        job_update = JobUpdate(
+            status=JobStatus.failed,
+            completed_at=datetime.now(timezone.utc),
+            metadata={"error": str(e), "error_code": "PENDING_APPROVAL", "pending_request_id": e.pending_request_id},
+        )
+        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
     except Exception as e:
         # Update job status to failed
         job_update = JobUpdate(
