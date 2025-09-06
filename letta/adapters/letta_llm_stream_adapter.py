@@ -2,6 +2,7 @@ import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
@@ -78,6 +79,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             yield chunk
 
         # After streaming completes, extract the accumulated data
+        self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
         # Extract tool call from the interface
         try:

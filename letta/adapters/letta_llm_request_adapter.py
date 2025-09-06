@@ -2,6 +2,7 @@ import asyncio
 from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, TextContent
 from letta.schemas.provider_trace import ProviderTraceCreate
@@ -42,6 +43,7 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
 
         # Make the blocking LLM request
         self.response_data = await self.llm_client.request_async(request_data, self.llm_config)
+        self.llm_request_finish_timestamp_ns = get_utc_timestamp_ns()
 
         # Convert response to chat completion format
         self.chat_completions_response = self.llm_client.convert_response_to_chat_completion(self.response_data, messages, self.llm_config)
