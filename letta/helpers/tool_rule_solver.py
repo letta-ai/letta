@@ -131,6 +131,10 @@ class ToolRulesSolver(BaseModel):
         """Check if all required-before-exit tools have been called."""
         return len(self.get_uncalled_required_tools(available_tools=available_tools)) == 0
 
+    def get_requires_approval_tools(self, available_tools: set[ToolName]) -> list[ToolName]:
+        """Get the list of tools that require approval."""
+        return [rule.tool_name for rule in self.requires_approval_tool_rules]
+
     def get_uncalled_required_tools(self, available_tools: set[ToolName]) -> list[str]:
         """Get the list of required-before-exit tools that have not been called yet."""
         if not self.required_before_exit_tool_rules:

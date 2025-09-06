@@ -28,6 +28,7 @@ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.schemas.letta_message import (
+    ApprovalRequestMessage,
     AssistantMessage,
     HiddenReasoningMessage,
     LettaMessage,
@@ -59,7 +60,12 @@ class AnthropicStreamingInterface:
     and detection of tool call events.
     """
 
-    def __init__(self, use_assistant_message: bool = False, put_inner_thoughts_in_kwarg: bool = False):
+    def __init__(
+        self,
+        use_assistant_message: bool = False,
+        put_inner_thoughts_in_kwarg: bool = False,
+        requires_approval_tools: list = [],
+    ):
         self.json_parser: JSONParser = PydanticJSONParser()
         self.use_assistant_message = use_assistant_message
 
@@ -89,6 +95,8 @@ class AnthropicStreamingInterface:
 
         # Buffer to handle partial XML tags across chunks
         self.partial_tag_buffer = ""
+
+        self.requires_approval_tools = requires_approval_tools
 
     def get_tool_call_object(self) -> ToolCall:
         """Useful for agent loop"""
@@ -256,13 +264,15 @@ class AnthropicStreamingInterface:
                 self.inner_thoughts_complete = False
 
                 if not self.use_assistant_message:
-                    # Buffer the initial tool call message instead of yielding immediately
-                    tool_call_msg = ToolCallMessage(
-                        id=self.letta_message_id,
-                        tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
-                        date=datetime.now(timezone.utc).isoformat(),
-                    )
-                    self.tool_call_buffer.append(tool_call_msg)
+                    # Only buffer the initial tool call message if it doesn't require approval
+                    # For approval-required tools, we'll create the ApprovalRequestMessage later
+                    if self.tool_call_name not in self.requires_approval_tools:
+                        tool_call_msg = ToolCallMessage(
+                            id=self.letta_message_id,
+                            tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id),
+                            date=datetime.now(timezone.utc).isoformat(),
+                        )
+                        self.tool_call_buffer.append(tool_call_msg)
             elif isinstance(content, BetaThinkingBlock):
                 self.anthropic_mode = EventMode.THINKING
                 # TODO: Can capture signature, etc.
@@ -353,11 +363,36 @@ class AnthropicStreamingInterface:
                     prev_message_type = reasoning_message.message_type
                     yield reasoning_message
 
-                # Check if inner thoughts are complete - if so, flush the buffer
+                # Check if inner thoughts are complete - if so, flush the buffer or create approval message
                 if not self.inner_thoughts_complete and self._check_inner_thoughts_complete(self.accumulated_tool_call_args):
                     self.inner_thoughts_complete = True
-                    # Flush all buffered tool call messages
-                    if len(self.tool_call_buffer) > 0:
+
+                    # Check if this tool requires approval
+                    if self.tool_call_name in self.requires_approval_tools:
+                        # Create ApprovalRequestMessage directly (buffer should be empty)
+                        if prev_message_type and prev_message_type != "approval_request_message":
+                            message_index += 1
+
+                        # Strip out inner thoughts from arguments
+                        tool_call_args = self.accumulated_tool_call_args
+                        if current_inner_thoughts:
+                            tool_call_args = tool_call_args.replace(f'"{INNER_THOUGHTS_KWARG}": "{current_inner_thoughts}"', "")
+
+                        approval_msg = ApprovalRequestMessage(
+                            id=self.letta_message_id,
+                            otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                            date=datetime.now(timezone.utc).isoformat(),
+                            name=self.tool_call_name,
+                            tool_call=ToolCallDelta(
+                                name=self.tool_call_name,
+                                tool_call_id=self.tool_call_id,
+                                arguments=tool_call_args,
+                            ),
+                        )
+                        prev_message_type = approval_msg.message_type
+                        yield approval_msg
+                    elif len(self.tool_call_buffer) > 0:
+                        # Flush buffered tool call messages for non-approval tools
                         if prev_message_type and prev_message_type != "tool_call_message":
                             message_index += 1
 
@@ -371,9 +406,6 @@ class AnthropicStreamingInterface:
                             id=self.tool_call_buffer[0].id,
                             otid=Message.generate_otid_from_id(self.tool_call_buffer[0].id, message_index),
                             date=self.tool_call_buffer[0].date,
-                            name=self.tool_call_buffer[0].name,
-                            sender_id=self.tool_call_buffer[0].sender_id,
-                            step_id=self.tool_call_buffer[0].step_id,
                             tool_call=ToolCallDelta(
                                 name=self.tool_call_name,
                                 tool_call_id=self.tool_call_id,
@@ -404,11 +436,18 @@ class AnthropicStreamingInterface:
                         yield assistant_msg
                 else:
                     # Otherwise, it is a normal tool call - buffer or yield based on inner thoughts status
-                    tool_call_msg = ToolCallMessage(
-                        id=self.letta_message_id,
-                        tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
-                        date=datetime.now(timezone.utc).isoformat(),
-                    )
+                    if self.tool_call_name in self.requires_approval_tools:
+                        tool_call_msg = ApprovalRequestMessage(
+                            id=self.letta_message_id,
+                            tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                            date=datetime.now(timezone.utc).isoformat(),
+                        )
+                    else:
+                        tool_call_msg = ToolCallMessage(
+                            id=self.letta_message_id,
+                            tool_call=ToolCallDelta(name=self.tool_call_name, tool_call_id=self.tool_call_id, arguments=delta.partial_json),
+                            date=datetime.now(timezone.utc).isoformat(),
+                        )
                     if self.inner_thoughts_complete:
                         if prev_message_type and prev_message_type != "tool_call_message":
                             message_index += 1

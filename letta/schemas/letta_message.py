@@ -265,7 +265,7 @@ class ApprovalRequestMessage(LettaMessage):
     message_type: Literal[MessageType.approval_request_message] = Field(
         default=MessageType.approval_request_message, description="The type of the message."
     )
-    tool_call: ToolCall = Field(..., description="The tool call that has been requested by the llm to run")
+    tool_call: Union[ToolCall, ToolCallDelta] = Field(..., description="The tool call that has been requested by the llm to run")
 
 
 class ApprovalResponseMessage(LettaMessage):
