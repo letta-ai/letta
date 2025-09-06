@@ -36,7 +36,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     projects: 10_000,
     dataSources: 5_000_000,
     templates: 2_000,
-    tools: 250,
+    tools: 300,
     blocks: 500_000_000,
     groups: 10,
     fileSize: OneHundredMB, // 100 MB
@@ -56,7 +56,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     projects: 100,
     dataSources: 1000,
     templates: 20,
-    tools: 250,
+    tools: 300,
     filesPerMinute: 150,
     fileSizePerMinute: TwentyFiveMB, // 10 MB per minute
     groups: 10,
@@ -77,7 +77,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     projects: 100,
     dataSources: 1000,
     templates: 100,
-    tools: 250,
+    tools: 300,
     groups: 10,
     fileSizePerMinute: OneHundredMB, // 100 MB per minute
     blocks: 100_000_0000,
@@ -98,7 +98,7 @@ const limitMap: Record<BillingTiersType, UsageLimits> = {
     projects: 25,
     templates: 10,
     blocks: 5_000,
-    tools: 250,
+    tools: 300,
     groups: 1,
     fileSizePerMinute: FiveMB, // 1 MB per minute
     premiumInferencesPerMonth: 50,
