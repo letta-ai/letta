@@ -7,7 +7,7 @@ authors = [
 ]
 license = {text = "Apache License"}
 readme = "README.md"
-requires-python = "<3.14,>=3.11"
+requires-python = "<3.13,>=3.11"
 dependencies = [
     "typer>=0.15.2",
     "questionary>=2.0.1",
@@ -70,23 +70,16 @@ dependencies = [
     "ruff[dev]>=0.12.10",
     "trafilatura",
     "readability-lxml",
+    "sqlite-vec>=0.1.7a2",
 ]
 
 [project.scripts]
 letta = "letta.main:app"
 
 [project.optional-dependencies]
-# ====== Databases ======
-postgres = [
-    "pgvector>=0.2.3",
-    "pg8000>=1.30.3",
-    "psycopg2-binary>=2.9.10",
-    "psycopg2>=2.9.10",
-    "asyncpg>=0.30.0",
-]
 redis = ["redis>=6.2.0"]
 pinecone = ["pinecone[asyncio]>=7.3.0"]
-sqlite = ["aiosqlite>=0.21.0", "sqlite-vec>=0.1.7a2"]
+sqlite = ["aiosqlite>=0.21.0", "sqlite_vec>=0.1.7a2"]
 
 # ====== Server ======
 experimental = ["uvloop>=0.21.0", "granian[uvloop,reload]>=2.3.2", "google-cloud-profiler>=4.1.0"]
@@ -138,7 +131,7 @@ desktop = [
     "langchain-community>=0.3.7",
     "locust>=2.31.5",
     "aiosqlite>=0.21.0",
-    "sqlite-vec>=0.1.7a2",
+    "sqlite_vec>=0.1.7a2",
     "pgvector>=0.2.3",
     "tiktoken>=0.11.0",
     "async-lru>=2.0.5",
