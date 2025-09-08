@@ -349,16 +349,12 @@ jobs:
           AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
-          LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
+          LETTA_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }} # note mismatched names
 
           # External service API Keys (shared across all test types)
           COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
-          PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
 
           # Turbopuffer flags
           LETTA_USE_TPUF: true
@@ -378,7 +374,7 @@ jobs:
 
           # Pinecone flags
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
-          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+          LETTA_ENABLE_PINECONE: true
 
           EXA_API_KEY: ${{ env.EXA_API_KEY }}
 
