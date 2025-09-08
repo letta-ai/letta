@@ -262,26 +262,26 @@ jobs:
 
       - name: Install dependencies with retry
         shell: bash
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           uv sync --no-install-project ${{ inputs.install-args }}
 
       - name: Install custom SDK
         if: inputs.skip-fern-generation != true
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           echo "Fixing Fern SDK pyproject.toml for uv compatibility..."
-          SDK_PYPROJECT="../fern/.preview/fern-python-sdk/pyproject.toml"
+          SDK_PYPROJECT="fern/.preview/fern-python-sdk/pyproject.toml"
           VERSION=$(grep -A 10 '^\[tool\.poetry\]' "$SDK_PYPROJECT" | grep '^version' | head -1 | cut -d'"' -f2)
-          head -n 2 < ../fern/.preview/fern-python-sdk/pyproject.toml > ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          echo "version = \"$VERSION\"" >> ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          tail -n +3 ../fern/.preview/fern-python-sdk/pyproject.toml >> ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          mv ../fern/.preview/fern-python-sdk/pyproject.toml.tmp ../fern/.preview/fern-python-sdk/pyproject.toml
+          head -n 2 < fern/.preview/fern-python-sdk/pyproject.toml > fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          echo "version = \"$VERSION\"" >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          tail -n +3 fern/.preview/fern-python-sdk/pyproject.toml >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          mv fern/.preview/fern-python-sdk/pyproject.toml.tmp fern/.preview/fern-python-sdk/pyproject.toml
 
-          uv pip install -e ../fern/.preview/fern-python-sdk/.
+          uv pip install -e fern/.preview/fern-python-sdk/.
       - name: Migrate database
         if: inputs.use-docker != true && inputs.test-type != 'sqlite'
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         env:
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
@@ -292,7 +292,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           uv run alembic upgrade head
       - name: Inject env vars into environment
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
