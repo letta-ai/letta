@@ -13,8 +13,8 @@ from letta.schemas.user import User
 
 class BaseAgentV2(ABC):
     """
-    Abstract base class for the letta gent loop, handling message management,
-    llm api request, tool execution, and context tracking.
+    Abstract base class for the main agent execution loop for letta agents, handling
+    message management, llm api request, tool execution, and context tracking.
     """
 
     def __init__(self, agent_state: AgentState, actor: User):
@@ -28,8 +28,8 @@ class BaseAgentV2(ABC):
         input_messages: list[MessageCreate],
     ) -> dict:
         """
-        Main execution loop for the agent. This method only returns once the agent completes
-        execution, returning all messages at once.
+        Execute the agent loop in dry_run mode, returning just the generated request
+        payload sent to the underlying llm provider.
         """
         raise NotImplementedError
 
@@ -40,33 +40,21 @@ class BaseAgentV2(ABC):
         max_steps: int = DEFAULT_MAX_STEPS,
     ) -> LettaResponse:
         """
-        Main execution loop for the agent. This method only returns once the agent completes
-        execution, returning all messages at once.
+        Execute the agent loop in blocking mode, returning all messages at once.
         """
         raise NotImplementedError
 
     @abstractmethod
-    async def stream_steps(
+    async def stream(
         self,
         input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
+        stream_tokens: bool = True,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
-        Main execution loop for the agent. This method returns an async generator, streaming
-        each step as it completes on the server side.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    async def stream_tokens(
-        self,
-        input_messages: list[MessageCreate],
-        max_steps: int = DEFAULT_MAX_STEPS,
-    ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
-        """
-        Main execution loop for the agent. This method returns an async generator, streaming
-        each token as it is returned from the underlying llm api. Not all llm providers offer
-        native token streaming functionality; in these cases, this api streams back steps
-        rather than individual tokens.
+        Execute the agent loop in streaming mode, yielding chunks as they become available.
+        If stream_tokens is True, individual tokens are streamed as they arrive from the LLM,
+        providing the lowest latency experience, otherwise each complete step (reasoning +
+        tool call + tool return) is yielded as it completes.
         """
         raise NotImplementedError
