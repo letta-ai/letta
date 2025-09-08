@@ -1,0 +1,75 @@
+---
+title: LM Studio
+slug: guides/server/providers/lmstudio
+---
+
+<Warning>
+LM Studio support is currently experimental. If things aren't working as expected, please reach out to us on [Discord](https://discord.gg/letta)!
+</Warning>
+
+<Tip>
+Models marked as ["native tool use"](https://lmstudio.ai/docs/advanced/tool-use#supported-models) on LM Studio are more likely to work well with Letta.
+</Tip>
+
+## Setup LM Studio
+
+1. Download + install [LM Studio](https://lmstudio.ai) and the model you want to test with
+2. Make sure to start the [LM Studio server](https://lmstudio.ai/docs/api/server)
+
+## Enabling LM Studio as a provider
+To enable the LM Studio provider, you must set the `LMSTUDIO_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on LM Studio.
+
+### Using the `docker run` server with LM Studio
+
+**macOS/Windows:**
+Since LM Studio is running on the host network, you will need to use `host.docker.internal` to connect to the LM Studio server instead of `localhost`.
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e LMSTUDIO_BASE_URL="http://host.docker.internal:1234" \
+  letta/letta:latest
+```
+
+**Linux:**
+Use `--network host` and `localhost`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e LMSTUDIO_BASE_URL="http://localhost:1234" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with LM Studio
+To chat with an agent, run:
+```bash
+export LMSTUDIO_BASE_URL="http://localhost:1234"
+letta run
+```
+To run the Letta server, run:
+```bash
+export LMSTIUDIO_BASE_URL="http://localhost:1234"
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+
+## Model support
+
+<Note>
+FYI Models labelled as MLX are only compatible on Apple Silicon Macs
+</Note>
+The following models have been tested with Letta as of 7-11-2025 on LM Studio `0.3.18`.
+
+- `qwen3-30b-a3b`
+- `qwen3-14b-mlx`
+- `qwen3-8b-mlx`
+- `qwen2.5-32b-instruct`
+- `qwen2.5-14b-instruct-1m`
+- `qwen2.5-7b-instruct`
+- `meta-llama-3.1-8b-instruct`
+
+Some models recommended on [LM Studio](https://lmstudio.ai/docs/advanced/tool-use#supported-models) such as `mlx-community/ministral-8b-instruct-2410` and `bartowski/ministral-8b-instruct-2410` may not work well with Letta due to default prompt templates being incompatible. Adjusting templates can enable compatibility but will impact model performance.

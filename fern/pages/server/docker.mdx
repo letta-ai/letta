@@ -1,0 +1,119 @@
+---
+title: Run Letta with Docker
+slug: guides/server/docker
+---
+
+
+<Note>
+The recommended way to use Letta locally is with Docker.
+To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/).
+For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/).
+You can also install Letta using `pip` (see instructions [here](/server/pip)).
+</Note>
+
+## Running the Letta Server
+
+The Letta server can be connected to various LLM API backends ([OpenAI](https://docs.letta.com/models/openai), [Anthropic](https://docs.letta.com/models/anthropic), [vLLM](https://docs.letta.com/models/vllm), [Ollama](https://docs.letta.com/models/ollama), etc.). To enable access to these LLM API providers, set the appropriate environment variables when you use `docker run`:
+```sh
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
+
+Environment variables will determine which LLM and embedding providers are enabled on your Letta server.
+For example, if you set `OPENAI_API_KEY`, then your Letta server will attempt to connect to OpenAI as a model provider.
+Similarly, if you set `OLLAMA_BASE_URL`, then your Letta server will attempt to connect to an Ollama server to provide local models as LLM options on the server.
+
+If you have many different LLM API keys, you can also set up a `.env` file instead and pass that to `docker run`:
+```sh
+# using a .env file instead of passing environment variables
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  letta/letta:latest
+```
+
+Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the Letta ADE to access and manage your agents in a web interface.
+
+## Setting environment variables
+If you are using a `.env` file, it should contain environment variables for each of the LLM providers you wish to use (replace `...` with your actual API keys and endpoint URLs):
+<CodeGroup>
+```sh .env file
+# To use OpenAI
+OPENAI_API_KEY=...
+
+# To use Anthropic
+ANTHROPIC_API_KEY=...
+
+# To use with Ollama (replace with Ollama server URL)
+OLLAMA_BASE_URL=...
+
+# To use with Google AI
+GEMINI_API_KEY=...
+
+# To use with Azure
+AZURE_API_KEY=...
+AZURE_BASE_URL=...
+
+# To use with vLLM (replace with vLLM server URL)
+VLLM_API_BASE=...
+```
+</CodeGroup>
+
+## Using the development image (advanced)
+When you use the `latest` tag, you will get the latest stable release of Letta.
+
+The `nightly` image is a development image thkat is updated frequently off of `main` (it is not recommended for production use).
+If you would like to use the development image, you can use the `nightly` tag instead of `latest`:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:nightly
+```
+
+## Password protection (advanced)
+To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
+```sh
+# If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  -e SECURE=true \
+  -e LETTA_SERVER_PASSWORD=yourpassword \
+  letta/letta:latest
+```
+
+With password protection enabled, you will have to provide your password in the bearer token header in your API requests:
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer yourpassword' \
+  --data '{
+  "messages": [
+    {
+      "role": "user",
+      "text": "hows it going????"
+    }
+  ]
+}'
+```
+```python title="python" maxLines=50
+# create the client with the token set to your password
+client = Letta(token="yourpassword")
+```
+```typescript maxLines=50 title="node.js"
+// create the client with the token set to your password
+const client = new LettaClient({
+    token: "yourpassword",
+});
+```
+</CodeGroup>

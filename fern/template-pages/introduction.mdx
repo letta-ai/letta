@@ -1,0 +1,59 @@
+---
+title: Letta API
+---
+
+Welcome to the Letta API! Our API is designed to provide developers with powerful tools to manage Letta operations programmatically. Whether you are handling plant inventory, processing orders, or personalizing customer experiences, the Letta API offers the flexibility and scalability to support a variety of tasks.
+
+Below, we highlight a few key features that make our API robust and easy to use.
+
+### Pagination
+
+The Letta API supports **pagination** to help manage large datasets efficiently. Instead of receiving an overwhelming amount of data in a single response, you can retrieve data in smaller, manageable chunks. This is especially useful when handling large inventories or customer order histories.
+
+**Example:**
+
+To request a specific page of results, use the `page` and `limit` parameters:
+
+```bash
+GET /v1/plants?page=2&limit=50
+```
+
+This will return the second page of plant listings, with 50 plants per page.
+
+### Streaming
+
+Our API supports **streaming** to provide real-time data, which is particularly useful when monitoring events such as stock updates, new orders, or customer activity. Streaming allows you to stay up-to-date without needing to constantly poll the API.
+
+**Example:**
+
+You can subscribe to a real-time feed of inventory updates, ensuring you are instantly notified when a plant’s stock level changes.
+
+```bash
+GET /v1/plants/stream
+```
+
+The server will maintain an open connection, streaming updates as they happen.
+
+### Webhooks
+
+**Webhooks** are a powerful way to automate responses to key events within the Letta platform. You can configure webhooks to trigger specific actions when events occur, such as when a new order is placed, a payment is completed, or a plant is running low on stock.
+
+**Example:**
+
+Create a webhook to notify your system when an order is placed:
+
+```json
+{
+  "event": "order.created",
+  "url": "https://your-server.com/webhook"
+}
+```
+
+When the `order.created` event occurs, the Letta API will send a `POST` request to the specified URL with details about the order, allowing you to process the information in real time.
+
+### Rate Limiting
+
+To ensure fair usage and protect the performance of the API, we enforce **rate limits**. This prevents any single client from overwhelming the system with too many requests in a short time. Be sure to handle responses with `429 Too Many Requests` errors by implementing a retry mechanism or adjusting the frequency of your requests.
+
+
+These are just a few of the powerful features the **Letta API** offers. With features like **pagination** for efficient data retrieval, **streaming** for real-time updates, and **webhooks** for automated event handling, you can build flexible and scalable solutions tailored to your business needs. Explore more in our [API Reference](/reference/endpoints) to get started with specific endpoints and functionality.

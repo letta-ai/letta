@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<title>Letta Memory Leaderboard – Cost-capped + warning</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
+<div id="controls" style="display:flex;align-items:center;max-width:800px;margin:10px auto 12px;gap:10px">
+  <input id="search" placeholder="Search models…" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:0;font-size:14px">
+</div>
+
+<table style="width:100%;max-width:800px;margin:auto;border-collapse:collapse;font-size:14px">
+  <thead style="background:#f2f2f2">
+    <tr>
+      <th data-key="model"      style="padding:8px;text-align:left">Model</th>
+      <th data-key="average"    style="padding:8px;text-align:center">Overall&nbsp;Score</th>
+      <th data-key="total_cost" style="padding:8px;text-align:center">Cost</th>
+    </tr>
+  </thead>
+  <tbody id="body"></tbody>
+</table>
+
+<style>
+  html,body{margin:0;font-family:"Manrope",sans-serif;}
+  tr.hidden{display:none!important}
+
+  thead th[data-key]{cursor:pointer;user-select:none;position:relative}
+  thead th.asc::after,
+  thead th.desc::after{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-size:10px;line-height:1;
+  }
+  thead th.asc::after {content:"▲";}
+  thead th.desc::after{content:"▼";}
+
+  .bar-cell{position:relative;padding:8px;overflow:hidden}
+  .bar-viz{
+    position:absolute;left:0;top:50%;transform:translateY(-50%);
+    height:36px;z-index:1;max-width:100%;                /* let full-width bars reach the edge */
+    border-radius:0;
+  }
+  .bar-cell span.value{
+    position:absolute;left:5px;top:50%;transform:translateY(-50%);
+    background:rgba(255,255,255,.7);padding:0 4px;font-size:14px;z-index:2;
+    border-radius:0;
+  }
+  .bar-cell span.warn{
+    position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    font-size:15px;line-height:1;color:#dc3545;cursor:help;z-index:2;
+  }
+
+  .avg        .bar-viz{background:rgba(40,167,69,.35);}  /* green  */
+  .cost-ok    .bar-viz{background:rgba(255,193,7,.35);}  /* amber  */
+  .cost-high  .bar-viz{background:rgba(220,53,69,.35);}  /* red    */
+
+  /* faint ruler + right border */
+  .bar-cell::before{
+    content:"";
+    position:absolute;top:50%;left:0;width:100%;height:8px;
+    transform:translateY(-50%);pointer-events:none;
+    background:repeating-linear-gradient(
+      90deg,
+      rgba(170,170,170,.5) 0 1px,
+      transparent            1px 25%
+    );
+  }
+  .bar-cell::after{
+    content:"";
+    position:absolute;top:50%;right:0;width:1px;height:8px;
+    background:rgba(170,170,170,.5);transform:translateY(-50%);
+    pointer-events:none;
+  }
+
+  tbody tr{height:50px}
+  .metric{width:32%;}
+  table{table-layout:fixed;}
+
+  #search,
+  #search:focus{border-radius:0!important;outline:none;}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script>
+(async () => {
+  /* ---------- settings ---------- */
+  const COST_CAP = 20;        // $20 ⇒ 100 % width; >$20 ⇒ red bar + warning
+
+  /* ---------- load data --------- */
+  const text = await fetch('./data.yaml').then(r => r.text());
+  let rows   = jsyaml.load(text);
+
+  /* ---------- helpers ----------- */
+  const pct  = v => Number(v).toPrecision(3) + '%';
+  const cost = v => '$' + Number(v).toFixed(2);
+
+  /* ---------- state ------------- */
+  const dir     = Object.create(null);
+  const tbody   = document.getElementById('body');
+  const searchI = document.getElementById('search');
+  const headers = document.querySelectorAll('thead th[data-key]');
+
+  /* ---------- render ------------ */
+  const render = () => {
+    const q = searchI.value.toLowerCase();
+    tbody.innerHTML = rows.map(r => {
+      const over     = r.total_cost > COST_CAP;
+      const barW     = over ? '100%' : (r.total_cost / COST_CAP * 100) + '%';
+      const costCls  = over ? 'cost-high' : 'cost-ok';
+      const warnIcon = over
+        ? `<span class="warn" title="Cost exceeds $${COST_CAP} cap – bar is clipped to full width">⚠</span>`
+        : '';
+
+      return `
+        <tr class="${q && !r.model.toLowerCase().includes(q) ? 'hidden' : ''}">
+          <td style="padding:8px">${r.model}</td>
+
+          <td class="bar-cell avg metric">
+            <div class="bar-viz" style="width:${r.average}%"></div>
+            <span class="value">${pct(r.average)}</span>
+          </td>
+
+          <td class="bar-cell ${costCls} metric">
+            <div class="bar-viz" style="width:${barW}"></div>
+            <span class="value">${cost(r.total_cost)}</span>
+            ${warnIcon}
+          </td>
+        </tr>`;
+    }).join('');
+  };
+
+  /* ------ arrow indicators ------ */
+  const setIndicator = activeKey => {
+    headers.forEach(h => {
+      h.classList.remove('asc','desc');
+      if (h.dataset.key === activeKey) h.classList.add(dir[activeKey]);
+    });
+  };
+
+  /* -- initial sort: score ⇩ ----- */
+  dir.average = 'desc';
+  rows.sort((a,b) => b.average - a.average);
+  setIndicator('average');
+  render();
+
+  /* -------- search -------------- */
+  searchI.addEventListener('input', render);
+
+  /* ---- sortable headers -------- */
+  headers.forEach(th => {
+    const key = th.dataset.key;
+    th.addEventListener('click', () => {
+      const asc = dir[key] === 'desc';
+      dir[key]  = asc ? 'asc' : 'desc';
+
+      rows.sort((a, b) => {
+        const va = a[key], vb = b[key];
+        const cmp = (typeof va === 'number')
+          ? va - vb
+          : String(va).localeCompare(String(vb));
+        return asc ? cmp : -cmp;
+      });
+
+      setIndicator(key);
+      render();
+    });
+  });
+})();
+</script>
+</html>

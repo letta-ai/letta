@@ -1,0 +1,57 @@
+---
+title: Together
+slug: guides/server/providers/together
+---
+
+
+<Tip>To use Letta with Together.AI, set the environment variable `TOGETHER_API_KEY=...`</Tip>
+
+You can use Letta with Together.AI if you have an account and API key. Once you have set your `TOGETHER_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+## Enabling Together.AI as a provider
+To enable the Together.AI provider, you must set the `TOGETHER_API_KEY` environment variable. When this is set, Letta will use available LLM models running on Together.AI.
+
+### Using the `docker run` server with Together.AI
+To enable Together.AI models, simply set your `TOGETHER_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e TOGETHER_API_KEY="your_together_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with Together.AI
+To chat with an agent, run:
+```bash
+export TOGETHER_API_KEY="..."
+letta run
+```
+This will prompt you to select a model:
+```bash
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.letta.com]
+   codellama/CodeLlama-34b-Instruct-hf [type=together] [ip=https://api.together.ai/v1]
+   upstage/SOLAR-10.7B-Instruct-v1.0 [type=together] [ip=https://api.together.ai/v1]
+   mistralai/Mixtral-8x7B-v0.1 [type=together] [ip=https://api.together.ai/v1]
+   meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo [type=together] [ip=https://api.together.ai/v1]
+   togethercomputer/Llama-3-8b-chat-hf-int4 [type=together] [ip=https://api.together.ai/v1]
+   google/gemma-2b-it [type=together] [ip=https://api.together.ai/v1]
+   Gryphe/MythoMax-L2-13b [type=together] [ip=https://api.together.ai/v1]
+   mistralai/Mistral-7B-Instruct-v0.1 [type=together] [ip=https://api.together.ai/v1]
+   mistralai/Mistral-7B-Instruct-v0.2 [type=together] [ip=https://api.together.ai/v1]
+   meta-llama/Meta-Llama-3-8B [type=together] [ip=https://api.together.ai/v1]
+   mistralai/Mistral-7B-v0.1 [type=together] [ip=https://api.together.ai/v1]
+   meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo [type=together] [ip=https://api.together.ai/v1]
+   deepseek-ai/deepseek-llm-67b-chat [type=together] [ip=https://api.together.ai/v1]
+   ...
+```
+To run the Letta server, run:
+```bash
+export TOGETHER_API_KEY="..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>

@@ -1,0 +1,48 @@
+# New Upsert Properties API for Identities
+
+The `Upsert Properties` API has been added to the Identities endpoint, allowing you to update or create properties for an identity.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import IdentityProperty, Letta
+client = Letta(
+    token="YOUR_TOKEN",
+)
+client.identities.upsert_properties(
+    identity_id="IDENTITY_ID",
+    request=[
+        IdentityProperty(
+            key="name",
+            value="Caren",
+            type="string",
+        ),
+        IdentityProperty(
+            key="email",
+            value="caren@example.com",
+            type="string",
+        )
+    ],
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.identities.upsertProperties({
+  identity_id: "IDENTITY_ID",
+  properties: [
+    {
+      key: "name",
+      value: "Caren",
+      type: "string",
+    },
+    {
+      key: "email",
+      value: "caren@example.com",
+      type: "string",
+    },
+  ],
+});
+```
+</CodeBlocks>

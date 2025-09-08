@@ -1,0 +1,85 @@
+---
+title: Connecting Letta to Local MCP Servers
+subtitle: Using stdio transport for local development
+slug: guides/mcp/local
+---
+
+<Warning>
+stdio is self-hosted only. Letta Cloud does not support stdio.
+</Warning>
+
+stdio transport launches MCP servers as local subprocesses, ideal for development and testing.
+Local (stdio) MCP servers can be useful for local development, testing, and situations where the MCP server you want to use is only available via stdio.
+
+## Setup
+
+**ADE**: Tool Manager → Add MCP Server → stdio → specify command and args
+
+<CodeGroup>
+```python title="python" maxLines=50
+from letta_client import Letta
+from letta_client.types import StdioServerConfig
+
+# Self-hosted only
+client = Letta(base_url="http://localhost:8283")
+
+# Connect a stdio server (npx example - works in Docker!)
+stdio_config = StdioServerConfig(
+    server_name="github-server",
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-github"],
+    env={"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
+)
+client.tools.add_mcp_server(request=stdio_config)
+
+# List available tools
+tools = client.tools.list_mcp_tools_by_server(
+    mcp_server_name="github-server"
+)
+
+# Add a tool to use with agents
+tool = client.tools.add_mcp_tool(
+    mcp_server_name="github-server",
+    mcp_tool_name="create_repository"
+)
+```
+```typescript title="node.js" maxLines=50
+import { LettaClient } from '@letta-ai/letta-client'
+
+// Self-hosted only
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283"
+});
+
+// Connect a stdio server (npx example - works in Docker!)
+const stdioConfig = {
+    server_name: "github-server",
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-github"],
+    env: {"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token"}
+};
+
+await client.tools.addMcpServer(stdioConfig);
+
+// List available tools
+const tools = await client.tools.listMcpToolsByServer("github-server");
+
+// Add a tool to use with agents
+const tool = await client.tools.addMcpTool("github-server", "create_repository");
+```
+</CodeGroup>
+
+## Docker Support
+
+Letta's Docker image includes `npx`, so npm-based MCP servers work out of the box. Custom Python scripts or missing dependencies require workarounds.
+
+- **Works in Docker**: `npx` servers from the [official MCP repository](https://github.com/modelcontextprotocol/servers)
+- **Challenging**: Custom scripts, local file paths, missing system dependencies
+- **Alternatives**: Use [remote servers](/guides/mcp/sse) or [mcp-proxy](https://github.com/sparfenyuk/mcp-proxy)
+
+
+## Troubleshooting
+
+- **Server won't start**: Check command path, dependencies, environment variables
+- **Connection fails**: Review Letta logs, test command manually
+- **Tools missing**: Verify MCP protocol implementation and tool registration

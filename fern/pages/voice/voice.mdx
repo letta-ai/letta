@@ -1,0 +1,65 @@
+---
+title: Low Latency Voice Agents
+slug: guides/voice/overview
+---
+
+All Letta agents can be connected to a voice provider by using the voice chat completion endpoint at `http://localhost:8283/v1/voice-beta/<AGENT_ID>`. However for voice applications, we recommend using the `voice_convo_agent` agent architecture, which is a low-latency architecture optimized for voice.
+
+## Creating a latency-optimized voice agent
+You can create a latency-optimized voice agent by using the `voice_convo_agent` agent architecture and setting `enable_sleeptime` to `True`.
+```python
+from letta_client import Letta
+
+client = Letta(token=os.getenv('LETTA_API_KEY'))
+
+# create the Letta agent
+agent = client.agents.create(
+    agent_type="voice_convo_agent",
+    memory_blocks=[
+        {"value": "Name: ?", "label": "human"},
+        {"value": "You are a helpful assistant.", "label": "persona"},
+    ],
+    model="openai/gpt-4o-mini", # Use 4o-mini for speed
+    embedding="openai/text-embedding-3-small",
+    enable_sleeptime=True,
+    initial_message_sequence = [],
+)
+```
+This will create a low-latency agent which has a sleep-time agent to manage memory and re-write it's context in the background. You can attach additional tools and blocks to this agent just as you would any other Letta agent.
+
+## Configuring message buffer size
+You can configure the message buffer size of the agent, which controls how many messages can be kept in the buffer until they are evicted. For latency-sensitive applications, we recommend setting a low buffer size.
+
+You can configure:
+* `max_message_buffer_length`: the maximum number of messages in the buffer until a compaction (summarization) is triggered
+* `min_message_buffer_length`: the minimum number of messages to keep in the buffer (to ensure continuity of the conversation)
+
+You can configure these parameters in the ADE or from the SDK:
+```python
+from letta_client import VoiceSleeptimeManagerUpdate
+
+# get the group
+group_id = agent.multi_agent_group.id
+max_message_buffer_length = agent.multi_agent_group.max_message_buffer_length
+min_message_buffer_length = agent.multi_agent_group.min_message_buffer_length
+print(f"Group id: {group_id}, max_message_buffer_length: {max_message_buffer_length},  min_message_buffer_length: {min_message_buffer_length}")
+# change it to be more frequent
+group = client.groups.modify(
+    group_id=group_id,
+    manager_config=VoiceSleeptimeManagerUpdate(
+        max_message_buffer_length=10,
+        min_message_buffer_length=6,
+    )
+)
+```
+## Configuring the sleep-time agent
+Voice agents have a sleep-time agent that manages memory and rewrites context in the background. The sleeptime agent can have a different model type than the main agent. We recommend using bigger models for the sleeptime agent to optimize the context and memory quality, and smaller models for the main voice agent to minimize latency.
+
+For example, you can configure the sleeptime agent to use `claude-sonnet-4` by getting the agent's ID from the group:
+```python
+sleeptime_agent_id = [agent_id for agent_id in group.agent_ids if agent_id != agent.id][0]
+client.agents.modify(
+    agent_id=sleeptime_agent_id,
+    model="anthropic/claude-sonnet-4-20250514"
+)
+```
