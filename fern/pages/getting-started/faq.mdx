@@ -1,0 +1,89 @@
+---
+title: Letta FAQs
+slug: faq
+---
+
+Can't find the answer to your question?
+Feel free to reach out to the Letta development team and community on [Discord](https://discord.gg/letta) or [GitHub](https://github.com/letta-ai/letta/issues)!
+
+## Letta Platform
+<AccordionGroup>
+  <Accordion title="Who is Letta for?">
+Letta is for developers building stateful LLM applications that require advanced memory, such as:
+<Frame>
+* personalized chatbots that require long-term memory and personas that should be updated (self-edited) over time (e.g. companions)
+* agents connected to external data sources, e.g. private enterprise deployments of ChatGPT-like applications (connected to your company’s data), or a medical assistant connected to a patient’s medical records
+* agents connected to custom tools, e.g. a chatbot that can answer questions about the latest news by searching the web
+* automated AI workflows, e.g. an agent that monitors your email inbox and sends you text alerts for urgent emails and a daily email summary
+</Frame>
+... and countless other use cases!
+  </Accordion>
+  <Accordion title="Can I use Letta locally?">
+Yes, Letta is an open source project and you can run it locally on your own machine.
+
+When you run Letta locally, you have the option to connect the agents server to external API providers (e.g. OpenAI, Anthropic) or connect to local or self-hosted LLM providers (e.g. Ollama or vLLM).
+  </Accordion>
+  <Accordion title="Is Letta free to use?">
+The open source Letta software is free to use and permissively licensed under the Apache 2.0 license.
+Letta Desktop is a free application that combines the Letta server and ADE into a single application.
+Letta Cloud is a paid service and requires a Letta Cloud account to use.
+  </Accordion>
+  <Accordion title="What's the difference between open source Letta and Letta Cloud?">
+Letta Cloud is a fully managed service that allows you to create and deploy Letta agents without running any infrastructure.
+If you'd like to build production applications using the Letta API, consider using Letta Cloud.
+  </Accordion>
+</AccordionGroup>
+
+## Agent Development Environment (ADE)
+<AccordionGroup>
+  <Accordion title="How do I use the ADE locally?">
+If you use [Letta Desktop](/quickstart/desktop), the ADE runs inside of Letta Desktop locally on your machine.<br /><br />
+If you are deploying Letta via Docker and want to use the ADE, you can connect the web ADE to your Docker deployment.
+To connect the ADE to your deployed Letta server, simply run your Letta server (if running locally, make sure you can access `localhost:8283`) and go to [https://app.letta.com](https://app.letta.com).
+  </Accordion>
+  <Accordion title="If I connect the web ADE to my local server, does my agent data get uploaded to letta.com?">
+No, the data in your Letta server database stays on your machine.
+The ADE web application simply connects to your local Letta server (via the REST API) and provides a graphical interface on top of it to visualize your local Letta data in your browser's local state.
+If you would like to run the ADE completely locally, you can use [Letta Desktop](/quickstart/desktop) instead.
+  </Accordion>
+  <Accordion title="Do I have to use your ADE? Can I build my own?">
+The ADE is built on top of the (fully open source) Letta server and Letta Agents API.
+You can build your own application like the ADE on top of the REST API (view the documention [here](https://docs.letta.com/api-reference)).
+  </Accordion>
+</AccordionGroup>
+
+## Self-hosted (local) Letta Server
+<AccordionGroup>
+  <Accordion title="Where is my agent data stored?">
+When you run Letta with Docker, the Letta server uses a postgres database to store all your agents' data.
+The postgres instance is bundled into the image, so to have persistent data (across restarts) you need to mount a volume to the container.
+
+Our recommend `docker run` script includes `-v ~/.letta/.persist/pgdata:/var/lib/postgresql/data` as a flag.
+This mounts your local directory `~/.letta/.persist/pgdata` to the container's `/var/lib/postgresql/data` directory (so all your agent data is stored at `~/.letta/.persist/pgdata`).
+If you would like to use a different directory, you can use `-v <path_to_your_directory>:/var/lib/postgresql/data` instead.
+  </Accordion>
+  <Accordion title="How can I back up my postgres data?">
+Postgres has a number of [recommended ways](https://www.postgresql.org/docs/current/backup.html) to backup your data.
+
+We recommend directly `exec`ing into your Docker container and running [`pg_dump`](https://www.postgresql.org/docs/current/app-pgdump.html) from inside the container.
+
+Alternatively, you can run `docker run` with an extra flag to expose the postgres port with `-p 5432:5432` and then run `pg_dump` from your local machine.
+  </Accordion>
+  <Accordion title="Do I need to install Docker to use Letta?">
+No, you can install Letta using `pip` (via `pip install -U letta`), as well as from source (via `uv sync`).
+  </Accordion>
+  <Accordion title="What's the difference between installing with pip vs Docker?">
+Letta gives your agents persistence (they live indefinitely) by storing all your agent data in a database.
+Letta is designed to be used with a [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL) (the world's most popular database), however, it is not possible to install PostgreSQL via `pip`, so the `pip` install of Letta defaults to using [SQLite](https://www.sqlite.org/).
+If you have a PostgreSQL instance running on your own computer, you can still connect Letta (installed via `pip`) to PostgreSQL by setting the environment variable `LETTA_PG_URI`.
+
+**Database migrations are not officially supported for Letta when using SQLite**, so if you would like to ensure that you're able to upgrade to the latest Letta version and migrate your Letta agents data, make sure that you're using PostgreSQL as your Letta database backend.
+Full compatability table below:
+
+| Installation method | Start server command | Database backend | Data migrations supported? |
+|---|---|---|---|
+| `pip install letta` | `letta server` | SQLite | ❌ |
+| `pip install letta` | `export LETTA_PG_URI=...` + `letta server` | PostgreSQL | ✅ |
+| *[Install Docker](https://www.docker.com/get-started/)*  |`docker run ...` | PostgreSQL | ✅ |
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,55 @@
+---
+title: Google Vertex AI
+slug: guides/server/providers/google_vertex
+---
+
+
+<Tip>To enable Vertex AI models with Letta, set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` in your environment variables. </Tip>
+
+You can use Letta with Vertex AI by configuring your GCP project ID and region.
+
+## Enabling Google Vertex AI as a provider
+To start, make sure you are authenticated with Google Vertex AI:
+
+```bash
+gcloud auth application-default login
+```
+
+To enable the Google Vertex AI provider, you must set the `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` environment variables. You can get these values from the Vertex console.
+```bash
+export GOOGLE_CLOUD_PROJECT='your-project-id'
+export GOOGLE_CLOUD_LOCATION='us-central1'
+```
+
+### Using the `docker run` server with Google Vertex AI
+To enable Google Vertex AI models, simply set your `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` as environment variables:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e GOOGLE_CLOUD_PROJECT="your-project-id" \
+  -e GOOGLE_CLOUD_LOCATION="us-central1" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with Google AI
+Make sure you install the required dependencies with:
+```bash
+pip install 'letta[google]'
+```
+To chat with an agent, run:
+```bash
+export GOOGLE_CLOUD_PROJECT='your-project-id'
+export GOOGLE_CLOUD_LOCATION='us-central1'
+letta run
+```
+To run the Letta server, run:
+```bash
+export GOOGLE_CLOUD_PROJECT='your-project-id'
+export GOOGLE_CLOUD_LOCATION='us-central1'
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>

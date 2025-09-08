@@ -1,0 +1,32 @@
+---
+title: Context Hierarchy
+subtitle: How to manage different types of information for Letta agents
+slug: guides/agents/context-hierarchy
+---
+Letta offers multiple abstractions for how to contextualize agents with additional external context and long-term memory:
+
+- You can create a [memory block](/guides/agents/memory-blocks) that persists information in-context
+- You can create a [file](/guides/agents/sources) which the agent can read segments of and search
+- You can write to [archival memory](/) for the agent to later query via built-in tools
+- You can use an external DB (e.g. vector DB, RAG DB) to store data, and make the data accessible to your agent via tool calling (e.g. [MCP](/guides/mcp/overview))
+
+In general, which abstraction to use depends on the scale of data and how important it is for the agent. For smaller amounts of data, it is best to simply place everything into the context window with memory blocks. For larger amounts of data, you may need to store data externally and retrieve it.
+
+See the feature sets and recommended size limit (per block/files/archival memory) and count limits (total blocks/files/archival memories) below:
+| | **Access** | **In-Context** | **Tools** | **Size Limit** | **Count Limit** |
+|---|--------------|---|---|---|---|
+| **Memory Blocks** | Editable (optional read-only) | Yes | `memory_rethink`<br/>`memory_replace`<br/>`memory_insert`<br/>& custom tools | Recommended &lt;50k characters | Recommended &lt;20 blocks per agent |
+| **Files** | Read-only | Partial (files can be opened/closed)     | `open`<br/>`close`<br/>`semantic_search`<br/>`grep` | 5MB | Recommended &lt;100 files per agent |
+| **Archival Memory** | Read-write | No | `archival_memory_insert`<br/>`archival_memory_search`<br/>& custom tools | 300 tokens | Unlimited |
+| **External RAG** | Read-write | No | Custom tools or MCP | Unlimited | Unlimited |
+
+## Examples
+ Below are examples of when to use which abstraction type:
+
+| **Example Use Case** | **Recommended Abstraction** |
+|---|---|
+| Storing very important memories formed by the agent that always need to be remembered (e.g. "user's name is Sarah") | Memory Blocks |
+| Giving your agent access to company communication guidelines that is a 1-2 pages long | Memory Blocks |
+| Giving your agent access to company documentation that is 100s of pages long or consists of dozens of files | Files |
+| Storing less important memories formed by the agent that do not always need to be recalled (e.g. "Today Sarah and I talked about our favorite foods and it was pretty funny") | Archival Memory |
+| Giving your agent access to millions of documents you have scraped | External RAG |
