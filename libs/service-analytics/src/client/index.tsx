@@ -49,6 +49,8 @@ export function PHProvider({ children }: ProvidersProps) {
     }
     posthog.init(posthogKey, {
       api_host: posthogHost,
+      capture_pageview: true,
+      capture_pageleave: true,
     });
     posthog.register({
       platform_type: getPlatformType(),
