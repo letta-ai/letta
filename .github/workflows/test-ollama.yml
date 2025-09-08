@@ -10,13 +10,13 @@ on:
     #     default: ${{ github.sha || github.ref || github.event.pull_request.head.sha }}
   pull_request:
     paths:
-      - 'apps/core/**'
+      - '**'
       - '.github/workflows/test-ollama.yml'
       - '.github/workflows/reusable-test-workflow.yml'
   pull_request_target:
     types: [labeled]
     paths:
-      - 'apps/core/**'
+      - '**'
       - '.github/workflows/test-ollama.yml'
       - '.github/workflows/reusable-test-workflow.yml'
 

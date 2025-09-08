@@ -1,13 +1,9 @@
-name: 🌿 Preview Python SDK
+name: 🌿 Preview TypeScript SDK
 
 on:
   pull_request:
     branches:
       - main
-  pull_request_target:
-    branches:
-      - main
-    types: [labeled]
   push:
     branches:
       - main
@@ -21,8 +17,6 @@ concurrency:
 
 jobs:
   changed-files:
-    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
-    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
     runs-on: [self-hosted, small]
     name: changed-files
     outputs:
@@ -40,14 +34,10 @@ jobs:
           files: |
             fern/openapi.json
             fern/openapi-overrides.yml
-
-  preview-python-sdk:
-    needs: [changed-files]
+  preview-typescript-sdk:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
-    name: preview-python-sdk
+    needs: [changed-files]
     runs-on: [self-hosted, medium]
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -63,25 +53,17 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    steps:
 
+    steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           submodules: true
 
-      - name: Generate cache key
-        id: cache-key
-        run: |
-          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
-
-      - name: Try to restore SDK cache
-        id: restore-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            fern/.preview/fern-python-sdk/
-          key: ${{ steps.cache-key.outputs.key }}
+      - name: Install dependencies
+        shell: bash
+        working-directory: .
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
 
       - name: Inject env vars into environment
         working-directory: .
@@ -93,29 +75,6 @@ jobs:
               echo "$line" >> $GITHUB_ENV
             fi
           done < <(letta_secrets_helper --env dev --service ci)
-
-      - name: Debug environment
-        shell: bash
-        run: |
-          echo "=== Environment Debug ==="
-          echo "PATH: $PATH"
-          echo "USER: $(whoami)"
-          echo "HOME: $HOME"
-          echo "Shell: $SHELL"
-          echo "Working directory: $(pwd)"
-          echo ""
-          echo "=== UV Debug ==="
-          which uv || echo "uv not found in PATH"
-          ls -la /usr/local/bin/uv || echo "/usr/local/bin/uv not found"
-          ls -la /home/ci-runner/.local/bin/uv || echo "ci-runner uv not found"
-          echo ""
-          echo "=== Test uv command ==="
-          uv --version || echo "uv --version failed"
-
-      - name: Install dependencies
-        shell: bash
-        working-directory: .
-        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
 
       - name: Migrate database
         working-directory: .
@@ -145,24 +104,14 @@ jobs:
           # Wait for server to be ready
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
 
-      - name: Generate Python SDK Preview
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+      - name: Generate TypeScript SDK Preview
         working-directory: .
         env:
+          LETTA_ENV: localhost
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
         run: |
-          fern generate --group python-sdk --preview
-          cd fern/.preview/fern-python-sdk
-          poetry install
-          poetry build --format wheel
-          poetry run mypy .
-          poetry run pytest -rP tests/custom/test_client.py --env localhost
-          ls -lah
-
-      - name: Save SDK to cache
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            fern/.preview/fern-python-sdk/
-          key: ${{ steps.cache-key.outputs.key }}
+          fern generate --group ts-sdk --preview
+          cd fern/.preview/fern-typescript-node-sdk
+          yarn install
+          yarn build
+          yarn test tests/custom.test.ts
