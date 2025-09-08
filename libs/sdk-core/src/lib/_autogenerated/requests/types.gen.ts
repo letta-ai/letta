@@ -5207,6 +5207,14 @@ export type StepMetrics = {
    */
   agent_id?: string | null;
   /**
+   * The timestamp of the start of the step in nanoseconds.
+   */
+  step_start_ns?: number | null;
+  /**
+   * The timestamp of the start of the llm request in nanoseconds.
+   */
+  llm_request_start_ns?: number | null;
+  /**
    * Time spent on LLM requests in nanoseconds.
    */
   llm_request_ns?: number | null;

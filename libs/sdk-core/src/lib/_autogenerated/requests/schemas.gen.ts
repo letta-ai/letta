@@ -13892,6 +13892,31 @@ export const $StepMetrics = {
       title: 'Agent Id',
       description: 'The unique identifier of the agent.',
     },
+    step_start_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Step Start Ns',
+      description: 'The timestamp of the start of the step in nanoseconds.',
+    },
+    llm_request_start_ns: {
+      anyOf: [
+        {
+          type: 'integer',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Llm Request Start Ns',
+      description:
+        'The timestamp of the start of the llm request in nanoseconds.',
+    },
     llm_request_ns: {
       anyOf: [
         {

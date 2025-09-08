@@ -8454,6 +8454,22 @@ export const StepMetrics = z.object({
       z.undefined(),
     ])
     .optional(),
+  step_start_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  llm_request_start_ns: z
+    .union([
+      z.number(),
+      z.null(),
+      z.array(z.union([z.number(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   llm_request_ns: z
     .union([
       z.number(),
