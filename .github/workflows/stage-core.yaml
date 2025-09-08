@@ -150,6 +150,7 @@ jobs:
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
           LETTA_TURBOBUFFER_API_KEY: ${{ env.LETTA_TURBOBUFFER_API_KEY }}
           LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
+          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
 
       - name: Wait for deployment rollout to complete

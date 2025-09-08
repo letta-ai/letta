@@ -234,3 +234,9 @@ variable "prod_memgpt_server_LETTA_TPUF_API_KEY" {
   type        = string
   sensitive   = true
 }
+
+variable "prod_memgpt_server_LETTA_ENCRYPTION_KEY" {
+  description = "Encryption key for memgpt-server service"
+  type        = string
+  sensitive   = true
+}

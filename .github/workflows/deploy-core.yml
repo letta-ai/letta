@@ -130,6 +130,7 @@ jobs:
           LETTA_PG_MAX_OVERFLOW: ${{ secrets.LETTA_PG_MAX_OVERFLOW }}
           LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
           LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
+          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
           MCP_READ_FROM_CONFIG: false
           MCP_DISABLE_STDIO: true
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
