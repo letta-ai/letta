@@ -1,0 +1,28 @@
+## Modify Agent API now supports `model` and `embedding` fields
+
+The `Modify Agent` API now supports `model` and `embedding` fields to update the model and embedding used by the agent using the handles rather than specifying the entire configs.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+client.agents.modify(
+    agent_id="AGENT_ID",
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.modify({
+  agent_id: "AGENT_ID",
+  model: "openai/gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small",
+});
+```
+</CodeBlocks>

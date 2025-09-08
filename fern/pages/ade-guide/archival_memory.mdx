@@ -1,0 +1,54 @@
+---
+title: Archival Memory
+subtitle: Manage the agent's external long-term memory
+slug: guides/ade/archival-memory
+---
+
+Archival memory serves as your agent's external knowledge repository: a searchable collection of information that remains outside the immediate context window but can be accessed when needed through specific tool calls.
+
+## What is Archival Memory?
+
+Unlike core memory (which is always in context), archival memory is an "out-of-context" storage system that:
+
+- Allows your agent to store and retrieve large amounts of information
+- Functions through semantic search rather than direct access
+- Scales to potentially millions of entries without increasing token usage
+- Persists information across conversations and agent restarts
+
+<Tip>
+Already have an existing vector database that you'd like to connect your agent to? You can easily connect Letta to your existing database by creating new tools, or by overriding the existing archival memory tools to point at your external database (instead of the default one).
+</Tip>
+
+## How Archival Memory Works
+
+By default, archival memory is implemented as a vector database:
+
+1. **Chunking**: Information is divided into manageable "chunks" of text
+2. **Embedding**: Each chunk is converted into a numerical vector using the agent's embedding model (e.g., OpenAI's `text-embedding-3-small`)
+3. **Storage**: These vectors are stored in a database optimized for similarity search
+4. **Retrieval**: When the agent searches for information, it converts the query to a vector and finds the most similar stored chunks
+
+## Using Archival Memory
+
+Your agent interacts with archival memory through two primary tools:
+
+- **`archival_memory_insert`**: Adds new information to the memory store
+- **`archival_memory_search`**: Retrieves relevant information based on semantic similarity
+
+The ADE's Archival Memory panel provides a direct view into this storage system, allowing you to:
+
+- Browse existing memory entries
+- Search through stored information
+- Add new memories manually
+- Delete irrelevant or outdated entries
+
+## Viewing Archival Memory in the ADE
+
+The Archival Memory panel displays:
+
+- A list of all stored memories
+- The content of each memory chunk
+- Search functionality to find specific memories
+- Metadata including when each memory was created
+
+This visibility helps you understand what knowledge your agent has access to and how it might be retrieved during conversations.

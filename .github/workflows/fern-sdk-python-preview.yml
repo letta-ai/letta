@@ -40,6 +40,8 @@ jobs:
           files: |
             apps/fern/openapi.json
             apps/fern/openapi-overrides.yml
+            fern/openapi.json
+            fern/openapi-overrides.yml
 
   preview-python-sdk:
     needs: [changed-files]

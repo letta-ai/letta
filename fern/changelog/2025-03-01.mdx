@@ -1,0 +1,77 @@
+## Enhanced Tool Definitions with Complex Schemas
+
+### Complex Schema Support for Tool Arguments
+
+You can now use complex Pydantic schemas to define arguments for tools, enabling better type safety and validation for your tool inputs.
+
+```python
+from pydantic import BaseModel
+from typing import List, Optional
+
+class ItemData(BaseModel):
+   name: str
+   sku: str
+   price: float
+   description: Optional[str] = None
+
+class InventoryEntry(BaseModel):
+   item: ItemData
+   location: str
+   current_stock: int
+   minimum_stock: int = 5
+
+class InventoryEntryData(BaseModel):
+   data: InventoryEntry
+   quantity_change: int
+```
+
+## Tool Creation from Function with Complex Schema
+
+Use the args_schema parameter to specify a Pydantic model for tool arguments when creating tools from functions.
+
+```python
+from letta_client import Letta
+
+client = Letta(
+    token="YOUR_API_KEY",
+)
+
+def manage_inventory_mock(data: InventoryEntry, quantity_change: int) -> bool:
+    """
+    Implementation of the manage_inventory tool
+    """
+    print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
+    return True
+
+tool_from_func = client.tools.upsert_from_function(
+    func=manage_inventory_mock,
+    args_schema=InventoryEntryData,
+)
+```
+### BaseTool Class Extension
+
+For more complex tool implementations, you can also extend the `BaseTool` class to create custom tools with full control over the implementation.
+
+```python
+from letta_client import BaseTool
+from typing import Type, List
+from pydantic import BaseModel
+
+class ManageInventoryTool(BaseTool):
+    name: str = "manage_inventory"
+    args_schema: Type[BaseModel] = InventoryEntryData
+    description: str = "Update inventory catalogue with a new data entry"
+    tags: List[str] = ["inventory", "shop"]
+
+    def run(self, data: InventoryEntry, quantity_change: int) -> bool:
+        """
+        Implementation of the manage_inventory tool
+        """
+        # implementation
+        print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
+        return True
+
+custom_tool = client.tools.add(
+    tool=ManageInventoryTool(),
+)
+```

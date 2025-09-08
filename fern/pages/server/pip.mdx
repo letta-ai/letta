@@ -1,0 +1,64 @@
+---
+title: Run Letta with pip
+slug: guides/server/pip
+---
+
+<Warning>
+**Warning: database migrations are not officially support with `SQLite`!**
+
+When you install Letta with `pip`, the default database backend is `SQLite` (you can still use an external `postgres` service with your `pip` install of Letta by setting `LETTA_PG_URI`).
+
+We do not officially support migrations between Letta versions with `SQLite` backends, only `postgres`.
+If you would like to keep your agent data across multiple Letta versions we highly recommend using the [Docker install method](/server/docker) which is the easiest way to use `postgres` with Letta.
+</Warning>
+
+## Installing and Running the Letta Server
+
+When using Letta via [Docker](/guides/server/docker) you don't need to install Letta, instead you simply download the Docker image (done automatically for you when you run `docker run`).
+
+When using Letta via `pip`, running the Letta server requires you first install Letta (via `pip install`).
+After installing, you can then run the Letta server with the `letta server` command.
+
+<Steps>
+  <Step title="Install using pip">
+    To install Letta using `pip`, run:
+    ```
+    pip install -U letta
+    ```
+  </Step>
+  <Step title="Configure model providers">
+    Set environment variables to enable model providers, e.g. OpenAI:
+```sh
+# To use OpenAI
+export OPENAI_API_KEY=...
+
+# To use Anthropic
+export ANTHROPIC_API_KEY=...
+
+# To use with Ollama
+export OLLAMA_BASE_URL=...
+
+# To use with Google AI
+export GEMINI_API_KEY=...
+
+# To use with Azure
+export AZURE_API_KEY=...
+export AZURE_BASE_URL=...
+
+# To use with vLLM
+export VLLM_API_BASE=...
+```
+
+    If you have a PostgreSQL instance running, you can set the `LETTA_PG_URI` environment variable to connect to it:
+    ```bash
+    export LETTA_PG_URI=...
+    ```
+  </Step>
+  <Step title="Run the Letta server">
+    To run the Letta server, run:
+    ```bash
+    letta server
+    ```
+    You can now access the Letta server at `http://localhost:8283`.
+  </Step>
+</Steps>

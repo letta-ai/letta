@@ -1,0 +1,28 @@
+## Message `content` field extended to include Multi-modal content parts
+
+The `content` field on `UserMessage` and `AssistantMessage` objects returned by our Messages endpoints has been extended to support multi-modal content parts, in anticipation of allowing you to send and receive messages with text, images, and other media.
+
+### Before:
+```curl
+  {
+    "id": "message-dea2ceab-0863-44ea-86dc-70cf02c05946",
+    "date": "2025-01-28T01:18:18+00:00",
+    "message_type": "user_message",
+    "content": "Hello, how are you?"
+  }
+```
+
+### After:
+```curl
+  {
+    "id": "message-dea2ceab-0863-44ea-86dc-70cf02c05946",
+    "date": "2025-01-28T01:18:18+00:00",
+    "message_type": "user_message",
+    "content": [
+      {
+        "type": "text",
+        "text": "Hello, how are you?"
+      }
+    ]
+  }
+```
