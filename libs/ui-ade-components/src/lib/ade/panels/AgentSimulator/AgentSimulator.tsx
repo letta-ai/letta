@@ -677,6 +677,16 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             response: body,
           });
 
+          // if the run wasn't created in background mode, skip the error
+          if (isBackgroundModeEnabled) {
+            if (
+              body?.details?.detail ===
+              '400: Run was not created in background mode, so it cannot be retrieved.'
+            ) {
+              return;
+            }
+          }
+
           handleError(message, 'INTERNAL_SERVER_ERROR', body);
           return;
         }
