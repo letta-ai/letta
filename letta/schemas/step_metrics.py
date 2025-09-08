@@ -15,6 +15,8 @@ class StepMetrics(StepMetricsBase):
     provider_id: Optional[str] = Field(None, description="The unique identifier of the provider.")
     job_id: Optional[str] = Field(None, description="The unique identifier of the job.")
     agent_id: Optional[str] = Field(None, description="The unique identifier of the agent.")
+    step_start_ns: Optional[int] = Field(None, description="The timestamp of the start of the step in nanoseconds.")
+    llm_request_start_ns: Optional[int] = Field(None, description="The timestamp of the start of the llm request in nanoseconds.")
     llm_request_ns: Optional[int] = Field(None, description="Time spent on LLM requests in nanoseconds.")
     tool_execution_ns: Optional[int] = Field(None, description="Time spent on tool execution in nanoseconds.")
     step_ns: Optional[int] = Field(None, description="Total time for the step in nanoseconds.")

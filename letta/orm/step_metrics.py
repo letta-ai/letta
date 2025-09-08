@@ -43,6 +43,16 @@ class StepMetrics(SqlalchemyBase, ProjectMixin, AgentMixin):
         nullable=True,
         doc="The unique identifier of the job",
     )
+    step_start_ns: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        nullable=True,
+        doc="The timestamp of the start of the step in nanoseconds",
+    )
+    llm_request_start_ns: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        nullable=True,
+        doc="The timestamp of the start of the LLM request in nanoseconds",
+    )
     llm_request_ns: Mapped[Optional[int]] = mapped_column(
         BigInteger,
         nullable=True,
