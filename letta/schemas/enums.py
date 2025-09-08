@@ -180,6 +180,7 @@ class VectorDBProvider(str, Enum):
 
     NATIVE = "native"
     TPUF = "tpuf"
+    PINECONE = "pinecone"
 
 
 class TagMatchMode(str, Enum):
