@@ -306,6 +306,9 @@ class Settings(BaseSettings):
     tpuf_region: str = "gcp-us-central1"
     embed_all_messages: bool = False
 
+    # For encryption
+    encryption_key: Optional[str] = None
+
     # File processing timeout settings
     file_processing_timeout_minutes: int = 30
     file_processing_timeout_error_message: str = "File processing timed out after {} minutes. Please try again."
