@@ -29,7 +29,6 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/core/alembic/**
             alembic/**
             .github/workflows/alembic-validation.yml
 
@@ -41,25 +40,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: Detect core directory
-        id: detect-core-dir
-        run: |
-          if [ -d "apps/core" ]; then
-            echo "dir=apps/core" >> $GITHUB_OUTPUT
-            echo "detected=cloud" >> $GITHUB_OUTPUT
-          else
-            echo "dir=." >> $GITHUB_OUTPUT
-            echo "detected=oss" >> $GITHUB_OUTPUT
-          fi
-          echo "Using core directory: $(cat $GITHUB_OUTPUT | grep '^dir=' | cut -d'=' -f2)"
-      
+
       - name: Install dependencies
         shell: bash
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: uv sync --no-install-project ${{ inputs.install-args || '--extra sqlite --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Test alembic migration
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           uv run alembic upgrade head
           # kinda janky but I think this might not matter for sqlite?
@@ -67,7 +54,7 @@ jobs:
 
       - name: Cleanup persistent data
         if: ${{ always() }}
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           echo "Cleaning up persistent data..."
           sudo rm -rf ~/.letta || true
@@ -94,25 +81,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: Detect core directory
-        id: detect-core-dir
-        run: |
-          if [ -d "apps/core" ]; then
-            echo "dir=apps/core" >> $GITHUB_OUTPUT
-            echo "detected=cloud" >> $GITHUB_OUTPUT
-          else
-            echo "dir=." >> $GITHUB_OUTPUT
-            echo "detected=oss" >> $GITHUB_OUTPUT
-          fi
-          echo "Using core directory: $(cat $GITHUB_OUTPUT | grep '^dir=' | cut -d'=' -f2)"
-      
+
       - name: Install dependencies
         shell: bash
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
       - name: Test alembic migration
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         env:
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
