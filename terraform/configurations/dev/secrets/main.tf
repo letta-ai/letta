@@ -41,6 +41,8 @@ locals {
     "dev_ci_LETTA_API_KEY"       = var.dev_ci_LETTA_API_KEY
     "dev_ci_LETTA_TPUF_API_KEY" = var.dev_ci_LETTA_TPUF_API_KEY
 
+    "dev_ci_DD_API_KEY" = var.dev_ci_DD_API_KEY
+
     # Cypress test secrets
     "dev_cypress_ANTHROPIC_API_KEY"      = var.dev_cypress_ANTHROPIC_API_KEY
     "dev_cypress_OPENAI_API_KEY"         = var.dev_cypress_OPENAI_API_KEY

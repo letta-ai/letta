@@ -108,6 +108,53 @@ sudo -u ci-runner ./config.sh --unattended \
 # Install the runner service
 sudo ./svc.sh install ci-runner
 
+DD_API_KEY=$(letta_secrets_helper --service ci --env dev | grep DD_API_KEY | cut -d= -f2-)
+DD_SITE="us5.datadoghq.com"
+bash -c "DD_API_KEY=$DD_API_KEY DD_SITE=$DD_SITE $(curl -L https://install.datadoghq.com/scripts/install_script_agent7.sh)"
+
+# Verify installation
+echo "Verifying Datadog Agent installation..."
+sudo systemctl status datadog-agent --no-pager || true
+
+# Enable the service to start on boot
+echo "Enabling Datadog Agent service..."
+sudo systemctl enable datadog-agent
+
+# Start the service
+echo "Starting Datadog Agent service..."
+sudo systemctl start datadog-agent
+
+# Optional: Create a basic configuration file
+echo "Creating basic Datadog Agent configuration..."
+sudo mkdir -p /etc/datadog-agent
+
+# Create a basic config (this will extend the default config)
+sudo tee /etc/datadog-agent/datadog.yaml > /dev/null <<EOF
+# Basic Datadog configuration
+api_key: $DD_API_KEY
+site: $DD_SITE
+
+# Enable logs collection
+logs_enabled: true
+
+# Enable process monitoring
+process_config:
+  enabled: "true"
+
+# Enable network monitoring
+network_config:
+  enabled: true
+
+# Tags for this host
+tags:
+  - env:${env}
+  - service:ci
+EOF
+
+# Restart the agent to pick up the new configuration
+echo "Restarting Datadog Agent to apply configuration..."
+sudo systemctl restart datadog-agent
+
 # inject last minute commands
 ${final_steps}
 
