@@ -25,6 +25,10 @@ jobs:
         with:
           files: |
             apps/core/**
+            letta/**
+            tests/**
+            *.py
+            pyproject.toml
             .github/workflows/core-lint.yml
   main:
     needs: [ changed-files ]
@@ -37,9 +41,24 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    - name: Detect core directory
+      id: detect-core-dir
+      run: |
+        # Default to current directory (.), fallback to apps/core if it exists
+        if [ -d "apps/core" ]; then
+          echo "dir=apps/core" >> $GITHUB_OUTPUT
+          echo "detected=cloud" >> $GITHUB_OUTPUT
+          echo "📁 Using apps/core directory (cloud environment detected)"
+        else
+          echo "dir=." >> $GITHUB_OUTPUT
+          echo "detected=oss" >> $GITHUB_OUTPUT
+          echo "📁 Using current directory (OSS environment detected)"
+        fi
+    
     - name: Install dependencies
       shell: bash
-      working-directory: apps/core
+      working-directory: ${{ steps.detect-core-dir.outputs.dir }}
       run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
     - name: Validate PR Title
       if: github.event_name == 'pull_request'
@@ -55,9 +74,9 @@ jobs:
       continue-on-error: true
 
     - name: Run Ruff Check
-      working-directory: apps/core
+      working-directory: ${{ steps.detect-core-dir.outputs.dir }}
       run: uv run ruff check --config pyproject.toml --diff .
 
     - name: Run Ruff Format
-      working-directory: apps/core
+      working-directory: ${{ steps.detect-core-dir.outputs.dir }}
       run: uv run ruff format --config pyproject.toml --check --diff .
