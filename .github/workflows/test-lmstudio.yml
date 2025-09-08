@@ -31,7 +31,7 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: "integration"
-      install-args: "-E dev -E postgres -E external-tools -E tests -E cloud-tool-sandbox -E google"
+      install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google"
       test-command: "uv run pytest -svv tests/"
       timeout-minutes: 60
       runner: '["self-hosted", "gpu", "lmstudio"]'
