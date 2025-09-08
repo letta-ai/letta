@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "name": "test_export_import_5297564a-d35a-4b42-9572-1ae313041430",
+      "name": "test_export_import_f72735f5-a08b-4ff0-8f8e-761af82dee33",
       "memory_blocks": [],
       "tools": [],
       "tool_ids": [
@@ -21,7 +21,7 @@
       ],
       "tool_rules": [
         {
-          "tool_name": "memory_insert",
+          "tool_name": "conversation_search",
           "type": "continue_loop",
           "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
         },
@@ -31,14 +31,14 @@
           "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
         },
         {
+          "tool_name": "memory_insert",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
           "tool_name": "send_message",
           "type": "exit_loop",
           "prompt_template": "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
-        },
-        {
-          "tool_name": "conversation_search",
-          "type": "continue_loop",
-          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
         }
       ],
       "tags": [
@@ -59,13 +59,14 @@
         "put_inner_thoughts_in_kwargs": true,
         "handle": "openai/gpt-4.1-mini",
         "temperature": 0.7,
-        "max_tokens": 4096,
+        "max_tokens": null,
         "enable_reasoner": true,
         "reasoning_effort": null,
         "max_reasoning_tokens": 0,
         "frequency_penalty": 1.0,
         "compatibility_type": null,
-        "verbosity": "medium"
+        "verbosity": null,
+        "tier": null
       },
       "embedding_config": {
         "embedding_endpoint_type": "openai",
@@ -122,11 +123,12 @@
       ],
       "messages": [
         {
+          "type": "message",
           "role": "system",
           "content": [
             {
               "type": "text",
-              "text": "You are a helpful assistant specializing in data analysis and mathematical computations.\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<persona>\n<description>\nThe persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n</description>\n<metadata>\n- chars_current=195\n- chars_limit=8000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: You are Alex, a data analyst and mathematician who helps users with calculations and insights. You have extensive experience in statistical analysis and prefer to provide clear, accurate results.\n</value>\n</persona>\n\n<human>\n<description>\nThe human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n</description>\n<metadata>\n- chars_current=175\n- chars_limit=4000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: username: sarah_researcher\nLine 2: occupation: data scientist\nLine 3: interests: machine learning, statistics, fibonacci sequences\nLine 4: preferred_communication: detailed explanations with examples\n</value>\n</human>\n\n<project_context>\n<description>\nNone\n</description>\n<metadata>\n- chars_current=210\n- chars_limit=6000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: Current project: Building predictive models for financial markets. Sarah is working on sequence analysis and pattern recognition. Recently interested in mathematical sequences like Fibonacci for trend analysis.\n</value>\n</project_context>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\nmemory_insert requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_replace requires continuing your response when called\n</tool_rule>\n<tool_rule>\nconversation_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n\n\n<memory_metadata>\n- The current time is: 2025-08-21 05:49:47 PM UTC+0000\n- Memory blocks were last modified: 2025-08-21 05:49:47 PM UTC+0000\n- -1 previous messages between you and the user are stored in recall memory (use tools to access them)\n- 2 total memories you created are stored in archival memory (use tools to access them)\n</memory_metadata>"
+              "text": "You are a helpful assistant specializing in data analysis and mathematical computations.\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<project_context>\n<description>\nNone\n</description>\n<metadata>\n- chars_current=210\n- chars_limit=6000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: Current project: Building predictive models for financial markets. Sarah is working on sequence analysis and pattern recognition. Recently interested in mathematical sequences like Fibonacci for trend analysis.\n</value>\n</project_context>\n\n<human>\n<description>\nThe human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n</description>\n<metadata>\n- chars_current=175\n- chars_limit=4000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: username: sarah_researcher\nLine 2: occupation: data scientist\nLine 3: interests: machine learning, statistics, fibonacci sequences\nLine 4: preferred_communication: detailed explanations with examples\n</value>\n</human>\n\n<persona>\n<description>\nThe persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n</description>\n<metadata>\n- chars_current=195\n- chars_limit=8000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: You are Alex, a data analyst and mathematician who helps users with calculations and insights. You have extensive experience in statistical analysis and prefer to provide clear, accurate results.\n</value>\n</persona>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\nconversation_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_replace requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_insert requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n\n\n<memory_metadata>\n- The current system date is: September 08, 2025\n- Memory blocks were last modified: 2025-09-08 05:53:05 PM UTC+0000\n- -1 previous messages between you and the user are stored in recall memory (use tools to access them)\n- 2 total memories you created are stored in archival memory (use tools to access them)\n</memory_metadata>"
             }
           ],
           "name": null,
@@ -140,9 +142,10 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:45.737357+00:00"
+          "created_at": "2025-09-08T17:53:02.499443+00:00"
         },
         {
+          "type": "message",
           "role": "assistant",
           "content": [
             {
@@ -160,7 +163,7 @@
           "agent_id": "agent-0",
           "tool_calls": [
             {
-              "id": "3691c2df-84e5-479c-a871-3d5da7f0a7ee",
+              "id": "c1ec5c60-7dbc-4b53-bfbb-c2af5d5a222f",
               "function": {
                 "arguments": "{\n  \"message\": \"More human than human is our motto.\"\n}",
                 "name": "send_message"
@@ -170,14 +173,15 @@
           ],
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:45.739574+00:00"
+          "created_at": "2025-09-08T17:53:02.499491+00:00"
         },
         {
+          "type": "message",
           "role": "tool",
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-08-21 05:49:45 PM UTC+0000\"\n}"
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-09-08 05:53:02 PM UTC+0000\"\n}"
             }
           ],
           "name": "send_message",
@@ -189,16 +193,17 @@
           "model": "gpt-4.1-mini",
           "agent_id": "agent-0",
           "tool_calls": null,
-          "tool_call_id": "3691c2df-84e5-479c-a871-3d5da7f0a7ee",
+          "tool_call_id": "c1ec5c60-7dbc-4b53-bfbb-c2af5d5a222f",
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:45.739814+00:00"
+          "created_at": "2025-09-08T17:53:02.499526+00:00"
         },
         {
+          "type": "message",
           "role": "user",
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-08-21 05:49:45 PM UTC+0000\"\n}"
+              "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-09-08 05:53:02 PM UTC+0000\"\n}"
             }
           ],
           "name": null,
@@ -212,9 +217,10 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:45.739827+00:00"
+          "created_at": "2025-09-08T17:53:02.499541+00:00"
         },
         {
+          "type": "message",
           "role": "user",
           "content": [
             {
@@ -233,9 +239,10 @@
           "tool_calls": null,
           "tool_call_id": null,
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:46.969096+00:00"
+          "created_at": "2025-09-08T17:53:05.017966+00:00"
         },
         {
+          "type": "message",
           "role": "assistant",
           "content": [
             {
@@ -253,24 +260,25 @@
           "agent_id": "agent-0",
           "tool_calls": [
             {
-              "id": "call_CR0Pvrt3B7fUk4vz3b1MDQdR",
+              "id": "call_sMVo2qIYhILKKNT0YiOdsU24",
               "function": {
-                "arguments": "{\"message\": \"Test message received successfully. Let me know how I can assist you further!\", \"request_heartbeat\": false}",
+                "arguments": "{\"message\": \"Test message received successfully. Ready to assist you with any questions or tasks.\", \"request_heartbeat\": false}",
                 "name": "send_message"
               },
               "type": "function"
             }
           ],
-          "tool_call_id": "call_CR0Pvrt3B7fUk4vz3b1MDQdR",
+          "tool_call_id": "call_sMVo2qIYhILKKNT0YiOdsU24",
           "tool_returns": [],
-          "created_at": "2025-08-21T17:49:47.926707+00:00"
+          "created_at": "2025-09-08T17:53:06.600989+00:00"
         },
         {
+          "type": "message",
           "role": "tool",
           "content": [
             {
               "type": "text",
-              "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-21 05:49:47 PM UTC+0000\"\n}"
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-09-08 05:53:06 PM UTC+0000\"\n}"
             }
           ],
           "name": "send_message",
@@ -282,7 +290,7 @@
           "model": "gpt-4.1-mini",
           "agent_id": "agent-0",
           "tool_calls": null,
-          "tool_call_id": "call_CR0Pvrt3B7fUk4vz3b1MDQdR",
+          "tool_call_id": "call_sMVo2qIYhILKKNT0YiOdsU24",
           "tool_returns": [
             {
               "status": "success",
@@ -290,7 +298,7 @@
               "stderr": null
             }
           ],
-          "created_at": "2025-08-21T17:49:47.926951+00:00"
+          "created_at": "2025-09-08T17:53:06.601180+00:00"
         }
       ],
       "files_agents": [],
@@ -305,11 +313,16 @@
       "project_id": null,
       "template_name": null,
       "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
       "preserve_on_migration": false,
       "label": "human",
       "read_only": false,
       "description": "The human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.",
       "metadata": {},
+      "hidden": null,
       "id": "block-1"
     },
     {
@@ -318,11 +331,16 @@
       "project_id": null,
       "template_name": null,
       "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
       "preserve_on_migration": false,
       "label": "persona",
       "read_only": false,
       "description": "The persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.",
       "metadata": {},
+      "hidden": null,
       "id": "block-0"
     },
     {
@@ -331,11 +349,16 @@
       "project_id": null,
       "template_name": null,
       "is_template": false,
+      "template_id": null,
+      "base_template_id": null,
+      "deployment_id": null,
+      "entity_id": null,
       "preserve_on_migration": false,
       "label": "project_context",
       "read_only": false,
       "description": null,
       "metadata": {},
+      "hidden": null,
       "id": "block-2"
     }
   ],
@@ -343,10 +366,10 @@
   "sources": [],
   "tools": [
     {
-      "id": "tool-2",
+      "id": "tool-6",
       "tool_type": "custom",
       "description": "Analyze data and provide insights.",
-      "source_type": "python",
+      "source_type": "json",
       "name": "analyze_data",
       "tags": [
         "analysis",
@@ -381,15 +404,16 @@
       "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-5",
+      "id": "tool-2",
       "tool_type": "custom",
       "description": "Calculate the nth Fibonacci number.",
-      "source_type": "python",
+      "source_type": "json",
       "name": "calculate_fibonacci",
       "tags": [
         "math",
@@ -416,14 +440,15 @@
       "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-4",
+      "id": "tool-3",
       "tool_type": "letta_core",
-      "description": "Search prior conversation history using case-insensitive string matching.",
+      "description": "Search prior conversation history using hybrid search (text + semantic similarity).\n\nExamples:\n        # Search all messages\n        conversation_search(query=\"project updates\")\n\n        # Search only assistant messages\n        conversation_search(query=\"error handling\", roles=[\"assistant\"])\n\n        # Search with date range (inclusive of both dates)\n        conversation_search(query=\"meetings\", start_date=\"2024-01-15\", end_date=\"2024-01-20\")\n        # This includes all messages from Jan 15 00:00:00 through Jan 20 23:59:59\n\n        # Search messages from a specific day (inclusive)\n        conversation_search(query=\"bug reports\", start_date=\"2024-09-04\", end_date=\"2024-09-04\")\n        # This includes ALL messages from September 4, 2024\n\n        # Search with specific time boundaries\n        conversation_search(query=\"deployment\", start_date=\"2024-01-15T09:00\", end_date=\"2024-01-15T17:30\")\n        # This includes messages from 9 AM to 5:30 PM on Jan 15\n\n        # Search with limit\n        conversation_search(query=\"debugging\", limit=10)\n\n    Returns:\n        str: Query result string containing matching messages with timestamps and content.",
       "source_type": "python",
       "name": "conversation_search",
       "tags": [
@@ -432,17 +457,37 @@
       "source_code": null,
       "json_schema": {
         "name": "conversation_search",
-        "description": "Search prior conversation history using case-insensitive string matching.",
+        "description": "Search prior conversation history using hybrid search (text + semantic similarity).\n\nExamples:\n        # Search all messages\n        conversation_search(query=\"project updates\")\n\n        # Search only assistant messages\n        conversation_search(query=\"error handling\", roles=[\"assistant\"])\n\n        # Search with date range (inclusive of both dates)\n        conversation_search(query=\"meetings\", start_date=\"2024-01-15\", end_date=\"2024-01-20\")\n        # This includes all messages from Jan 15 00:00:00 through Jan 20 23:59:59\n\n        # Search messages from a specific day (inclusive)\n        conversation_search(query=\"bug reports\", start_date=\"2024-09-04\", end_date=\"2024-09-04\")\n        # This includes ALL messages from September 4, 2024\n\n        # Search with specific time boundaries\n        conversation_search(query=\"deployment\", start_date=\"2024-01-15T09:00\", end_date=\"2024-01-15T17:30\")\n        # This includes messages from 9 AM to 5:30 PM on Jan 15\n\n        # Search with limit\n        conversation_search(query=\"debugging\", limit=10)\n\n    Returns:\n        str: Query result string containing matching messages with timestamps and content.",
         "parameters": {
           "type": "object",
           "properties": {
             "query": {
               "type": "string",
-              "description": "String to search for."
+              "description": "String to search for using both text matching and semantic similarity."
             },
-            "page": {
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "assistant",
+                  "user",
+                  "tool"
+                ]
+              },
+              "description": "Optional list of message roles to filter by."
+            },
+            "limit": {
               "type": "integer",
-              "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+              "description": "Maximum number of results to return. Uses system default if not specified."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "Filter results to messages created on or after this date (INCLUSIVE). When using date-only format (e.g., \"2024-01-15\"), includes messages starting from 00:00:00 of that day. ISO 8601 format: \"YYYY-MM-DD\" or \"YYYY-MM-DDTHH:MM\". Examples: \"2024-01-15\" (from start of Jan 15), \"2024-01-15T14:30\" (from 2:30 PM on Jan 15)."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "Filter results to messages created on or before this date (INCLUSIVE). When using date-only format (e.g., \"2024-01-20\"), includes all messages from that entire day. ISO 8601 format: \"YYYY-MM-DD\" or \"YYYY-MM-DDTHH:MM\". Examples: \"2024-01-20\" (includes all of Jan 20), \"2024-01-20T17:00\" (up to 5 PM on Jan 20)."
             }
           },
           "required": [
@@ -451,18 +496,19 @@
         }
       },
       "args_json_schema": null,
-      "return_char_limit": 1000000,
+      "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-0",
+      "id": "tool-1",
       "tool_type": "custom",
       "description": "Get user preferences for a specific category.",
-      "source_type": "python",
+      "source_type": "json",
       "name": "get_user_preferences",
       "tags": [
         "user",
@@ -489,14 +535,15 @@
       "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-6",
+      "id": "tool-0",
       "tool_type": "letta_sleeptime_core",
-      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
       "source_type": "python",
       "name": "memory_insert",
       "tags": [
@@ -505,7 +552,7 @@
       "source_code": null,
       "json_schema": {
         "name": "memory_insert",
-        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.\n\nExamples:\n        # Update a block containing information about the user (append to the end of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\")\n\n        # Update a block containing information about the user (insert at the beginning of the block)\n        memory_insert(label=\"customer\", new_str=\"The customer's ticket number is 12345\", insert_line=0)\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -529,17 +576,18 @@
         }
       },
       "args_json_schema": null,
-      "return_char_limit": 1000000,
+      "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-3",
+      "id": "tool-4",
       "tool_type": "letta_sleeptime_core",
-      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_str=\"- [ ] Step 5: Search the web\", new_str=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_str=\"Line 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_str=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
       "source_type": "python",
       "name": "memory_replace",
       "tags": [
@@ -548,7 +596,7 @@
       "source_code": null,
       "json_schema": {
         "name": "memory_replace",
-        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.\n\nExamples:\n        # Update a block containing information about the user\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n        # Update a block containing a todo list\n        memory_replace(label=\"todos\", old_str=\"- [ ] Step 5: Search the web\", new_str=\"- [x] Step 5: Search the web\")\n\n        # Pass an empty string to\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"\")\n\n        # Bad example - do NOT add (view-only) line numbers to the args\n        memory_replace(label=\"human\", old_str=\"Line 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Bad example - do NOT include the number number warning either\n        memory_replace(label=\"human\", old_str=\"# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice\", new_str=\"Line 1: Their name is Bob\")\n\n        # Good example - no line numbers or line number warning (they are view-only), just the text\n        memory_replace(label=\"human\", old_str=\"Their name is Alice\", new_str=\"Their name is Bob\")\n\n    Returns:\n        str: The success message",
         "parameters": {
           "type": "object",
           "properties": {
@@ -573,15 +621,16 @@
         }
       },
       "args_json_schema": null,
-      "return_char_limit": 1000000,
+      "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
     },
     {
-      "id": "tool-1",
+      "id": "tool-5",
       "tool_type": "letta_core",
       "description": "Sends a message to the human user.",
       "source_type": "python",
@@ -607,9 +656,10 @@
         }
       },
       "args_json_schema": null,
-      "return_char_limit": 1000000,
+      "return_char_limit": 50000,
       "pip_requirements": null,
       "npm_requirements": null,
+      "default_requires_approval": null,
       "created_by_id": "user-00000000-0000-4000-8000-000000000000",
       "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
       "metadata_": {}
@@ -617,7 +667,7 @@
   ],
   "mcp_servers": [],
   "metadata": {
-    "revision_id": "ffb17eb241fc"
+    "revision_id": "5b804970e6a0"
   },
-  "created_at": "2025-08-21T17:49:48.078363+00:00"
+  "created_at": "2025-09-08T17:53:06.749694+00:00"
 }
