@@ -374,6 +374,9 @@ jobs:
           LETTA_USE_TPUF: true
           LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
 
+          # Encryption key
+          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
+
           # Google Cloud (shared across all test types)
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
