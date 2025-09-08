@@ -220,6 +220,7 @@ class TurbopufferClient:
         roles: List[MessageRole],
         created_ats: List[datetime],
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> bool:
         """Insert messages into Turbopuffer.
 
@@ -232,6 +233,7 @@ class TurbopufferClient:
             roles: List of message roles corresponding to each message
             created_ats: List of creation timestamps for each message
             project_id: Optional project ID for all messages
+            template_id: Optional template ID for all messages
 
         Returns:
             True if successful
@@ -262,6 +264,7 @@ class TurbopufferClient:
         message_roles = []
         created_at_timestamps = []
         project_ids = []
+        template_ids = []
 
         for idx, (text, embedding, role, created_at) in enumerate(zip(message_texts, embeddings, roles, created_ats)):
             message_id = message_ids[idx]
@@ -283,6 +286,7 @@ class TurbopufferClient:
             message_roles.append(role.value)
             created_at_timestamps.append(timestamp)
             project_ids.append(project_id)
+            template_ids.append(template_id)
 
         # build column-based upsert data
         upsert_columns = {
@@ -298,6 +302,10 @@ class TurbopufferClient:
         # only include project_id if it's provided
         if project_id is not None:
             upsert_columns["project_id"] = project_ids
+
+        # only include template_id if it's provided
+        if template_id is not None:
+            upsert_columns["template_id"] = template_ids
 
         try:
             # Use AsyncTurbopuffer as a context manager for proper resource cleanup
@@ -573,6 +581,7 @@ class TurbopufferClient:
         top_k: int = 10,
         roles: Optional[List[MessageRole]] = None,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
@@ -589,6 +598,7 @@ class TurbopufferClient:
             top_k: Number of results to return
             roles: Optional list of message roles to filter by
             project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
@@ -644,12 +654,19 @@ class TurbopufferClient:
         if project_id:
             project_filter = ("project_id", "Eq", project_id)
 
+        # build template_id filter if provided
+        template_filter = None
+        if template_id:
+            template_filter = ("template_id", "Eq", template_id)
+
         # combine all filters
         all_filters = [agent_filter]  # always include agent_id filter
         if role_filter:
             all_filters.append(role_filter)
         if project_filter:
             all_filters.append(project_filter)
+        if template_filter:
+            all_filters.append(template_filter)
         if date_filters:
             all_filters.extend(date_filters)
 
@@ -717,6 +734,7 @@ class TurbopufferClient:
         top_k: int = 10,
         roles: Optional[List[MessageRole]] = None,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
         vector_weight: float = 0.5,
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
@@ -732,6 +750,7 @@ class TurbopufferClient:
             top_k: Number of results to return
             roles: Optional list of message roles to filter by
             project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
@@ -765,6 +784,10 @@ class TurbopufferClient:
         # project filter
         if project_id:
             all_filters.append(("project_id", "Eq", project_id))
+
+        # template filter
+        if template_id:
+            all_filters.append(("template_id", "Eq", template_id))
 
         # date filters
         if start_date:

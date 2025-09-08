@@ -498,6 +498,7 @@ class LettaAgent(BaseAgent):
                                     initial_messages,
                                     actor=self.actor,
                                     project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -828,6 +829,7 @@ class LettaAgent(BaseAgent):
                                     initial_messages,
                                     actor=self.actor,
                                     project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1269,6 +1271,7 @@ class LettaAgent(BaseAgent):
                                     initial_messages,
                                     actor=self.actor,
                                     project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1676,7 +1679,7 @@ class LettaAgent(BaseAgent):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, project_id=agent_state.project_id
+                messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
             )
             return persisted_messages, continue_stepping, stop_reason
 
@@ -1787,7 +1790,7 @@ class LettaAgent(BaseAgent):
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, project_id=agent_state.project_id
+            messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
 
         if run_id:

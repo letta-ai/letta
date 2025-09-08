@@ -679,6 +679,7 @@ class AgentSerializationManager:
                     pydantic_msgs=messages,
                     actor=actor,
                     project_id=created_agent.project_id,
+                    template_id=created_agent.template_id,
                 )
                 imported_count += len(created_messages)
 
