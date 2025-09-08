@@ -5415,7 +5415,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Search Messages",
-        "description": "Search messages across the entire organization with optional project filtering. Returns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
+        "description": "Search messages across the entire organization with optional project and template filtering. Returns messages with FTS/vector ranks and total RRF score.\n\nThis is a cloud-only feature.",
         "operationId": "search_messages",
         "parameters": [],
         "requestBody": {
@@ -22764,6 +22764,18 @@
             ],
             "title": "Project Id",
             "description": "Filter messages by project ID"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "Filter messages by template ID"
           },
           "limit": {
             "type": "integer",

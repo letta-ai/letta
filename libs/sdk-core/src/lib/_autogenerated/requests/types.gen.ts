@@ -3973,6 +3973,10 @@ export type MessageSearchRequest = {
    */
   project_id?: string | null;
   /**
+   * Filter messages by template ID
+   */
+  template_id?: string | null;
+  /**
    * Maximum number of results to return
    */
   limit?: number;

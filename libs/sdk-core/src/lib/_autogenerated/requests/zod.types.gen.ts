@@ -7435,6 +7435,9 @@ export const MessageSearchRequest = z.object({
   project_id: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  template_id: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
   limit: z.number().optional(),
   start_date: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])

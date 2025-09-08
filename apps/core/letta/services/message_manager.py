@@ -315,6 +315,7 @@ class MessageManager:
         actor: PydanticUser,
         strict_mode: bool = False,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -324,6 +325,7 @@ class MessageManager:
             actor: User performing the action
             strict_mode: If True, wait for embedding to complete; if False, run in background
             project_id: Optional project ID for the messages (for Turbopuffer indexing)
+            template_id: Optional template ID for the messages (for Turbopuffer indexing)
 
         Returns:
             List of created Pydantic message models
@@ -371,11 +373,11 @@ class MessageManager:
                 if agent_id:
                     if strict_mode:
                         # wait for embedding to complete
-                        await self._embed_messages_background(result, actor, agent_id, project_id)
+                        await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
                     else:
                         # fire and forget - run embedding in background
                         fire_and_forget(
-                            self._embed_messages_background(result, actor, agent_id, project_id),
+                            self._embed_messages_background(result, actor, agent_id, project_id, template_id),
                             task_name=f"embed_messages_for_agent_{agent_id}",
                         )
 
@@ -387,6 +389,7 @@ class MessageManager:
         actor: PydanticUser,
         agent_id: str,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> None:
         """Background task to embed and store messages in Turbopuffer.
 
@@ -395,6 +398,7 @@ class MessageManager:
             actor: User performing the action
             agent_id: Agent ID for the messages
             project_id: Optional project ID for the messages
+            template_id: Optional template ID for the messages
         """
         try:
             from letta.helpers.tpuf_client import TurbopufferClient
@@ -428,6 +432,7 @@ class MessageManager:
                     roles=roles,
                     created_ats=created_ats,
                     project_id=project_id,
+                    template_id=template_id,
                 )
                 logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
         except Exception as e:
@@ -539,6 +544,7 @@ class MessageManager:
         actor: PydanticUser,
         strict_mode: bool = False,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
@@ -550,6 +556,7 @@ class MessageManager:
             actor: User performing the action
             strict_mode: If True, wait for embedding update to complete; if False, run in background
             project_id: Optional project ID for the message (for Turbopuffer indexing)
+            template_id: Optional template ID for the message (for Turbopuffer indexing)
         """
         async with db_registry.async_session() as session:
             # Fetch existing message from database
@@ -575,18 +582,18 @@ class MessageManager:
                 if text:
                     if strict_mode:
                         # wait for embedding update to complete
-                        await self._update_message_embedding_background(pydantic_message, text, actor, project_id)
+                        await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
                     else:
                         # fire and forget - run embedding update in background
                         fire_and_forget(
-                            self._update_message_embedding_background(pydantic_message, text, actor, project_id),
+                            self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
                             task_name=f"update_message_embedding_{message_id}",
                         )
 
             return pydantic_message
 
     async def _update_message_embedding_background(
-        self, message: PydanticMessage, text: str, actor: PydanticUser, project_id: Optional[str] = None
+        self, message: PydanticMessage, text: str, actor: PydanticUser, project_id: Optional[str] = None, template_id: Optional[str] = None
     ) -> None:
         """Background task to update a message's embedding in Turbopuffer.
 
@@ -595,6 +602,7 @@ class MessageManager:
             text: Extracted text content from the message
             actor: User performing the action
             project_id: Optional project ID for the message
+            template_id: Optional template ID for the message
         """
         try:
             from letta.helpers.tpuf_client import TurbopufferClient
@@ -614,6 +622,7 @@ class MessageManager:
                 roles=[message.role],
                 created_ats=[message.created_at],
                 project_id=project_id,
+                template_id=template_id,
             )
             logger.info(f"Successfully updated message {message.id} in Turbopuffer")
         except Exception as e:
@@ -1097,6 +1106,8 @@ class MessageManager:
         query_text: Optional[str] = None,
         search_mode: str = "hybrid",
         roles: Optional[List[MessageRole]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -1110,6 +1121,8 @@ class MessageManager:
             query_text: Text query (used for embedding in vector/hybrid modes, and FTS in fts/hybrid modes)
             search_mode: "vector", "fts", "hybrid", or "timestamp" (default: "hybrid")
             roles: Optional list of message roles to filter by
+            project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
             end_date: Optional filter for messages created on or before this date (inclusive)
@@ -1132,6 +1145,8 @@ class MessageManager:
                     search_mode=search_mode,
                     top_k=limit,
                     roles=roles,
+                    project_id=project_id,
+                    template_id=template_id,
                     start_date=start_date,
                     end_date=end_date,
                 )
@@ -1211,6 +1226,7 @@ class MessageManager:
         search_mode: str = "hybrid",
         roles: Optional[List[MessageRole]] = None,
         project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -1224,6 +1240,7 @@ class MessageManager:
             search_mode: "vector", "fts", or "hybrid" (default: "hybrid")
             roles: Optional list of message roles to filter by
             project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
             end_date: Optional filter for messages created on or before this date (inclusive)
@@ -1251,6 +1268,7 @@ class MessageManager:
             top_k=limit,
             roles=roles,
             project_id=project_id,
+            template_id=template_id,
             start_date=start_date,
             end_date=end_date,
         )

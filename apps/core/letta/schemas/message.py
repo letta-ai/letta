@@ -1196,6 +1196,7 @@ class MessageSearchRequest(BaseModel):
     search_mode: Literal["vector", "fts", "hybrid"] = Field("hybrid", description="Search mode to use")
     roles: Optional[List[MessageRole]] = Field(None, description="Filter messages by role")
     project_id: Optional[str] = Field(None, description="Filter messages by project ID")
+    template_id: Optional[str] = Field(None, description="Filter messages by template ID")
     limit: int = Field(50, description="Maximum number of results to return", ge=1, le=100)
     start_date: Optional[datetime] = Field(None, description="Filter messages created after this date")
     end_date: Optional[datetime] = Field(None, description="Filter messages created on or before this date")

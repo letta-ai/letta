@@ -1524,7 +1524,7 @@ async def search_messages(
     actor_id: str | None = Header(None, alias="user_id"),
 ):
     """
-    Search messages across the entire organization with optional project filtering. Returns messages with FTS/vector ranks and total RRF score.
+    Search messages across the entire organization with optional project and template filtering. Returns messages with FTS/vector ranks and total RRF score.
 
     This is a cloud-only feature.
     """
@@ -1543,6 +1543,7 @@ async def search_messages(
             search_mode=request.search_mode,
             roles=request.roles,
             project_id=request.project_id,
+            template_id=request.template_id,
             limit=request.limit,
             start_date=request.start_date,
             end_date=request.end_date,

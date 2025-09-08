@@ -196,6 +196,7 @@ class Summarizer:
             pydantic_msgs=[summary_message_obj],
             actor=self.actor,
             project_id=agent_state.project_id,
+            template_id=agent_state.template_id,
         )
 
         updated_in_context_messages = all_in_context_messages[assistant_message_index:]

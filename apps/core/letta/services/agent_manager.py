@@ -719,7 +719,9 @@ class AgentManager:
 
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
-            await self.message_manager.create_many_messages_async(pydantic_msgs=init_messages, actor=actor, project_id=result.project_id)
+            await self.message_manager.create_many_messages_async(
+                pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
+            )
         return result
 
     @enforce_types
@@ -1886,7 +1888,9 @@ class AgentManager:
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, project_id=agent.project_id)
+        messages = await self.message_manager.create_many_messages_async(
+            messages, actor=actor, project_id=agent.project_id, template_id=agent.template_id
+        )
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)

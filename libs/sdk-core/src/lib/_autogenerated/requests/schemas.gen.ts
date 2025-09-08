@@ -10841,6 +10841,18 @@ export const $MessageSearchRequest = {
       title: 'Project Id',
       description: 'Filter messages by project ID',
     },
+    template_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Template Id',
+      description: 'Filter messages by template ID',
+    },
     limit: {
       type: 'integer',
       maximum: 100,
