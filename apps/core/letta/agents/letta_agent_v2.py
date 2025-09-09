@@ -789,7 +789,7 @@ class LettaAgentV2(BaseAgentV2):
             if agent_step_span is not None:
                 agent_step_span.add_event(name="step_ms", attributes={"duration_ms": ns_to_ms(step_ns)})
                 agent_step_span.end()
-        self._record_step_metrics(step_id=step_metrics.id, step_metrics=step_metrics)
+            self._record_step_metrics(step_id=step_metrics.id, step_metrics=step_metrics)
         return StepProgression.FINISHED, step_metrics
 
     def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
