@@ -399,6 +399,9 @@ class LettaAgentV2(BaseAgentV2):
                             messages=messages,
                             tools=valid_tools,
                             use_assistant_message=use_assistant_message,
+                            requires_approval_tools=self.tool_rules_solver.get_requires_approval_tools(
+                                set([t["name"] for t in valid_tools])
+                            ),
                             step_id=step_id,
                             actor=self.actor,
                         )
@@ -476,10 +479,11 @@ class LettaAgentV2(BaseAgentV2):
             self.response_messages.extend(persisted_messages[new_message_idx:])
 
             if llm_adapter.supports_token_streaming():
-                tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
-                if not (use_assistant_message and tool_return.name == "send_message"):
-                    if include_return_message_types is None or tool_return.message_type in include_return_message_types:
-                        yield tool_return
+                if persisted_messages[-1].role != "approval":
+                    tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
+                    if not (use_assistant_message and tool_return.name == "send_message"):
+                        if include_return_message_types is None or tool_return.message_type in include_return_message_types:
+                            yield tool_return
             else:
                 filter_user_messages = [m for m in persisted_messages[new_message_idx:] if m.role != "user"]
                 letta_messages = Message.to_letta_messages_from_list(

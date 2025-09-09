@@ -40,6 +40,7 @@ class LettaLLMAdapter(ABC):
         messages: list,
         tools: list,
         use_assistant_message: bool,
+        requires_approval_tools: list[str] = [],
         step_id: str | None = None,
         actor: User | None = None,
     ) -> AsyncGenerator[LettaMessage | None, None]:
@@ -51,6 +52,7 @@ class LettaLLMAdapter(ABC):
             messages: The messages in context for the request
             tools: The tools available for the LLM to use
             use_assistant_message: If true, use assistant messages when streaming response
+            requires_approval_tools: The subset of tools that require approval before use
             step_id: The step ID associated with this request. If provided, logs request and response data.
             actor: The optional actor associated with this request for logging purposes.
 
