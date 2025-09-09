@@ -379,7 +379,7 @@ class LettaAgentV2(BaseAgentV2):
 
                 messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
-                for llm_request_attempt in summarizer_settings.max_summarizer_retries:
+                for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
                         request_data = self.llm_client.build_request_data(
                             messages=messages,
