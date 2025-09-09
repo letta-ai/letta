@@ -587,6 +587,48 @@ async def list_mcp_tools_by_server(
         return mcp_tools
 
 
+@router.post("/mcp/servers/{mcp_server_name}/resync", operation_id="resync_mcp_server_tools")
+async def resync_mcp_server_tools(
+    mcp_server_name: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: Optional[str] = Header(None, alias="user_id"),
+    agent_id: Optional[str] = None,
+):
+    """
+    Resync tools for an MCP server by:
+    1. Fetching current tools from the MCP server
+    2. Deleting tools that no longer exist on the server
+    3. Updating schemas for existing tools
+    4. Adding new tools from the server
+
+    Returns a summary of changes made.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    try:
+        result = await server.mcp_manager.resync_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor, agent_id=agent_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "MCPServerNotFoundError",
+                "message": str(e),
+                "mcp_server_name": mcp_server_name,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error refreshing MCP server tools: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "MCPRefreshError",
+                "message": f"Failed to refresh MCP server tools: {str(e)}",
+                "mcp_server_name": mcp_server_name,
+            },
+        )
+
+
 @router.post("/mcp/servers/{mcp_server_name}/{mcp_tool_name}", response_model=Tool, operation_id="add_mcp_tool")
 async def add_mcp_tool(
     mcp_server_name: str,

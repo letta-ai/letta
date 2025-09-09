@@ -622,7 +622,7 @@ def generate_tool_schema_for_mcp(
                             format_value = option["format"]
                 if types:
                     # Deduplicate types using set
-                    field_props["type"] = list(set(types))
+                    field_props["type"] = list(dict.fromkeys(types))
                     # Only add format if the field is not optional (doesn't have null type)
                     if format_value and len(field_props["type"]) == 1 and "null" not in field_props["type"]:
                         field_props["format"] = format_value
