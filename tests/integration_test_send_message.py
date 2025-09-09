@@ -212,7 +212,9 @@ def assert_greeting_with_assistant_message_response(
     ReasoningMessage -> AssistantMessage.
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
-    messages = [msg for msg in messages if not isinstance(msg, LettaPing)]
+    messages = [
+        msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
+    ]
     expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
@@ -260,7 +262,9 @@ def assert_greeting_no_reasoning_response(
     AssistantMessage (no ReasoningMessage when put_inner_thoughts_in_kwargs is False).
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
-    messages = [msg for msg in messages if not isinstance(msg, LettaPing)]
+    messages = [
+        msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
+    ]
     expected_message_count = 3 if streaming else 2 if from_db else 1
     assert len(messages) == expected_message_count
 
@@ -300,7 +304,9 @@ def assert_greeting_without_assistant_message_response(
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage.
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
-    messages = [msg for msg in messages if not isinstance(msg, LettaPing)]
+    messages = [
+        msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
+    ]
     expected_message_count = 5 if streaming else 4 if from_db else 3
     assert len(messages) == expected_message_count
 
@@ -353,7 +359,9 @@ def assert_tool_call_response(
     ReasoningMessage -> AssistantMessage.
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
-    messages = [msg for msg in messages if not isinstance(msg, LettaPing)]
+    messages = [
+        msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
+    ]
     expected_message_count = 7 if streaming or from_db else 5
     assert len(messages) == expected_message_count, messages
 
@@ -513,7 +521,9 @@ def assert_image_input_response(
     ReasoningMessage -> AssistantMessage.
     """
     # Filter out LettaPing messages which are keep-alive messages for SSE streams
-    messages = [msg for msg in messages if not isinstance(msg, LettaPing)]
+    messages = [
+        msg for msg in messages if not (isinstance(msg, LettaPing) or (hasattr(msg, "message_type") and msg.message_type == "ping"))
+    ]
     expected_message_count = 4 if streaming else 3 if from_db else 2
     assert len(messages) == expected_message_count
 
