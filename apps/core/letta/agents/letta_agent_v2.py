@@ -10,6 +10,7 @@ from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.adapters.letta_llm_stream_adapter import LettaLLMStreamAdapter
 from letta.agents.base_agent_v2 import BaseAgentV2
+from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _pop_heartbeat,
@@ -18,6 +19,7 @@ from letta.agents.helpers import (
     generate_step_id,
 )
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
+from letta.errors import ContextWindowExceededError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
@@ -52,7 +54,7 @@ from letta.services.step_manager import StepManager
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
-from letta.settings import settings, summarizer_settings
+from letta.settings import model_settings, settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
 from letta.utils import log_telemetry, united_diff, validate_function_response
@@ -93,10 +95,21 @@ class LettaAgentV2(BaseAgentV2):
         self.step_manager = StepManager()
         self.telemetry_manager = TelemetryManager()
 
+        # TODO: Expand to more
+        if summarizer_settings.enable_summarization and model_settings.openai_api_key:
+            self.summarization_agent = EphemeralSummaryAgent(
+                target_block_label="conversation_summary",
+                agent_id=self.agent_state.id,
+                block_manager=self.block_manager,
+                message_manager=self.message_manager,
+                agent_manager=self.agent_manager,
+                actor=self.actor,
+            )
+
         # Initialize summarizer for context window management
         self.summarizer = Summarizer(
             mode=summarizer_settings.mode,
-            summarizer_agent=None,  # TODO: Add summary agent if needed
+            summarizer_agent=self.summarization_agent,
             message_buffer_limit=summarizer_settings.message_buffer_limit,
             message_buffer_min=summarizer_settings.message_buffer_min,
             partial_evict_summarizer_percentage=summarizer_settings.partial_evict_summarizer_percentage,
@@ -366,35 +379,46 @@ class LettaAgentV2(BaseAgentV2):
 
                 messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
-                request_data = self.llm_client.build_request_data(
-                    messages=messages,
-                    llm_config=self.agent_state.llm_config,
-                    tools=valid_tools,
-                    force_tool_call=force_tool_call,
-                )
-                if dry_run:
-                    yield request_data
-                    return
+                for llm_request_attempt in summarizer_settings.max_summarizer_retries:
+                    try:
+                        request_data = self.llm_client.build_request_data(
+                            messages=messages,
+                            llm_config=self.agent_state.llm_config,
+                            tools=valid_tools,
+                            force_tool_call=force_tool_call,
+                        )
+                        if dry_run:
+                            yield request_data
+                            return
 
-                step_progression, step_metrics = self._step_checkpoint_llm_request_start(step_metrics, agent_step_span)
+                        step_progression, step_metrics = self._step_checkpoint_llm_request_start(step_metrics, agent_step_span)
 
-                try:
-                    invocation = llm_adapter.invoke_llm(
-                        request_data=request_data,
-                        messages=messages,
-                        tools=valid_tools,
-                        use_assistant_message=use_assistant_message,
-                        step_id=step_id,
-                        actor=self.actor,
-                    )
-                    async for chunk in invocation:
-                        if llm_adapter.supports_token_streaming():
-                            if include_return_message_types is None or chunk.message_type in include_return_message_types:
-                                first_chunk = True
-                                yield chunk
-                except ValueError:
-                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
-                    raise
+                        invocation = llm_adapter.invoke_llm(
+                            request_data=request_data,
+                            messages=messages,
+                            tools=valid_tools,
+                            use_assistant_message=use_assistant_message,
+                            step_id=step_id,
+                            actor=self.actor,
+                        )
+                        async for chunk in invocation:
+                            if llm_adapter.supports_token_streaming():
+                                if include_return_message_types is None or chunk.message_type in include_return_message_types:
+                                    first_chunk = True
+                                    yield chunk
+                    except ValueError as e:
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
+                        raise e
+                    except Exception as e:
+                        if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
+                            messages = await self._rebuild_context_window(
+                                in_context_messages=messages,
+                                new_letta_messages=self.response_messages,
+                                llm_config=self.agent_state.llm_config,
+                                force=True,
+                            )
+                        else:
+                            raise e
 
                 step_progression, step_metrics = self._step_checkpoint_llm_request_finish(
                     step_metrics, agent_step_span, llm_adapter.llm_request_finish_timestamp_ns
