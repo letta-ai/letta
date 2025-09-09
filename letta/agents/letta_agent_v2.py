@@ -359,23 +359,8 @@ class LettaAgentV2(BaseAgentV2):
                     return
 
                 step_id = generate_step_id()
-                step_progression, step_metrics, agent_step_span = self._step_checkpoint_start(step_id=step_id)
-
-                # Create step early with PENDING status
-                logged_step = await self.step_manager.log_step_async(
-                    actor=self.actor,
-                    agent_id=self.agent_state.id,
-                    provider_name=self.agent_state.llm_config.model_endpoint_type,
-                    provider_category=self.agent_state.llm_config.provider_category or "base",
-                    model=self.agent_state.llm_config.model,
-                    model_endpoint=self.agent_state.llm_config.model_endpoint,
-                    context_window_limit=self.agent_state.llm_config.context_window,
-                    usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
-                    provider_id=None,
-                    job_id=run_id,
-                    step_id=step_id,
-                    project_id=self.agent_state.project_id,
-                    status=StepStatus.PENDING,
+                step_progression, logged_step, step_metrics, agent_step_span = self._step_checkpoint_start(
+                    step_id=step_id, run_id=run_id
                 )
 
                 messages = await self._refresh_messages(messages)
@@ -461,20 +446,6 @@ class LettaAgentV2(BaseAgentV2):
                 denial_reason=approval_response.denial_reason if approval_response is not None else None,
             )
 
-            # Update step with actual usage now that we have it (if step was created)
-            if logged_step:
-                await self.step_manager.update_step_success_async(
-                    self.actor,
-                    step_id,
-                    UsageStatistics(
-                        completion_tokens=self.usage.completion_tokens,
-                        prompt_tokens=self.usage.prompt_tokens,
-                        total_tokens=self.usage.total_tokens,
-                    ),
-                    self.stop_reason,
-                )
-                step_progression = StepProgression.STEP_LOGGED
-
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(persisted_messages[new_message_idx:])
 
@@ -495,7 +466,7 @@ class LettaAgentV2(BaseAgentV2):
                     if include_return_message_types is None or message.message_type in include_return_message_types:
                         yield message
 
-            step_progression, step_metrics = self._step_checkpoint_finish(step_metrics, agent_step_span, run_id)
+            step_progression, step_metrics = self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             self.logger.error(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
@@ -756,12 +727,28 @@ class LettaAgentV2(BaseAgentV2):
             request_span.end()
         return None
 
-    def _step_checkpoint_start(self, step_id: str) -> Tuple[StepProgression, StepMetrics, Span]:
+    async def _step_checkpoint_start(self, step_id: str, run_id: str | None) -> Tuple[StepProgression, Step, StepMetrics, Span]:
         step_start_ns = get_utc_timestamp_ns()
         step_metrics = StepMetrics(id=step_id, step_start_ns=step_start_ns)
         agent_step_span = tracer.start_span("agent_step", start_time=step_start_ns)
         agent_step_span.set_attributes({"step_id": step_id})
-        return StepProgression.START, step_metrics, agent_step_span
+        # Create step early with PENDING status
+        logged_step = await self.step_manager.log_step_async(
+            actor=self.actor,
+            agent_id=self.agent_state.id,
+            provider_name=self.agent_state.llm_config.model_endpoint_type,
+            provider_category=self.agent_state.llm_config.provider_category or "base",
+            model=self.agent_state.llm_config.model,
+            model_endpoint=self.agent_state.llm_config.model_endpoint,
+            context_window_limit=self.agent_state.llm_config.context_window,
+            usage=UsageStatistics(completion_tokens=0, prompt_tokens=0, total_tokens=0),
+            provider_id=None,
+            job_id=run_id,
+            step_id=step_id,
+            project_id=self.agent_state.project_id,
+            status=StepStatus.PENDING,
+        )
+        return StepProgression.START, logged_step, step_metrics, agent_step_span
 
     def _step_checkpoint_llm_request_start(self, step_metrics: StepMetrics, agent_step_span: Span) -> Tuple[StepProgression, StepMetrics]:
         llm_request_start_ns = get_utc_timestamp_ns()
@@ -780,8 +767,8 @@ class LettaAgentV2(BaseAgentV2):
         agent_step_span.add_event(name="llm_request_ms", attributes={"duration_ms": ns_to_ms(llm_request_ns)})
         return StepProgression.RESPONSE_RECEIVED, step_metrics
 
-    def _step_checkpoint_finish(
-        self, step_metrics: StepMetrics, agent_step_span: Span | None, run_id: str | None
+    async def _step_checkpoint_finish(
+        self, step_metrics: StepMetrics, agent_step_span: Span | None, logged_step: Step | None
     ) -> Tuple[StepProgression, StepMetrics]:
         if step_metrics.step_start_ns:
             step_ns = get_utc_timestamp_ns() - step_metrics.step_start_ns
@@ -790,6 +777,19 @@ class LettaAgentV2(BaseAgentV2):
                 agent_step_span.add_event(name="step_ms", attributes={"duration_ms": ns_to_ms(step_ns)})
                 agent_step_span.end()
             self._record_step_metrics(step_id=step_metrics.id, step_metrics=step_metrics)
+
+        # Update step with actual usage now that we have it (if step was created)
+        if logged_step:
+            await self.step_manager.update_step_success_async(
+                self.actor,
+                step_metrics.id,
+                UsageStatistics(
+                    completion_tokens=self.usage.completion_tokens,
+                    prompt_tokens=self.usage.prompt_tokens,
+                    total_tokens=self.usage.total_tokens,
+                ),
+                self.stop_reason,
+            )
         return StepProgression.FINISHED, step_metrics
 
     def _update_global_usage_stats(self, step_usage_stats: LettaUsageStatistics):
