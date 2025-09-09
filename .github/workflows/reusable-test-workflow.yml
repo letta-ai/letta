@@ -349,7 +349,7 @@ jobs:
           AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
           AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
-          LETTA_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }} # note mismatched names
+          LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
 
           # External service API Keys (shared across all test types)
           COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
