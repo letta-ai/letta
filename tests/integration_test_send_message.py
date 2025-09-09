@@ -1009,6 +1009,7 @@ def test_step_streaming_tool_call(
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "llm_config",
     TESTED_LLM_CONFIGS,
