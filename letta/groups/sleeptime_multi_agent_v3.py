@@ -191,7 +191,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
             ]
 
             # Load sleeptime agent
-            sleeptime_agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=sleeptime_agent_id)
+            sleeptime_agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=sleeptime_agent_id, actor=self.actor)
             sleeptime_agent = LettaAgentV2(
                 agent_state=sleeptime_agent_state,
                 actor=self.actor,
@@ -210,7 +210,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                 completed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 metadata={
                     "result": result.model_dump(mode="json"),
-                    "agent_id": sleeptime_agent.id,
+                    "agent_id": sleeptime_agent_state.id,
                 },
             )
             await self.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=self.actor)
