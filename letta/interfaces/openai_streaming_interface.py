@@ -166,7 +166,7 @@ class OpenAIStreamingInterface:
         except Exception as e:
             import traceback
 
-            logger.error("Error processing stream: %s", e, traceback.format_exc())
+            logger.error("Error processing stream: %s\n%s", e, traceback.format_exc())
             ttft_span.add_event(
                 name="stop_reason",
                 attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
