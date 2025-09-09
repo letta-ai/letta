@@ -7,12 +7,12 @@ on:
         description: "The version of the Python SDK that you would like to release"
         required: true
         type: string
-  workflow_run:
-    workflows: ["🌿 Preview Python SDK"]
-    types:
-      - completed
-    branches:
-      - main
+  # workflow_run:
+  #   workflows: ["🌿 Preview Python SDK"]
+  #   types:
+  #     - completed
+  #   branches:
+  #     - main
 
 jobs:
   release:
