@@ -1,0 +1,58 @@
+---
+title: Key concepts
+subtitle: Learn about the key ideas behind Letta
+slug: concepts/letta
+---
+
+
+## MemGPT
+
+**[Letta](https://letta.com)** was created by the same team that created **[MemGPT](https://research.memgpt.ai)**.
+
+**MemGPT a _research paper_** that introduced the idea of self-editing memory in LLMs as well as other "LLM OS" concepts.
+To understand the key ideas behind the MemGPT paper, see our [MemGPT concepts guide](/letta_memgpt).
+
+MemGPT also refers to a particular **agent architecture** popularized by the research paper and open source, where the agent has a particular set of memory tools that make the agent particularly useful for long-range chat applications and document search.
+
+**Letta is a _framework_** that allows you to build complex agents (such as MemGPT agents, or even more complex agent architectures) and run them as **services** behind REST APIs.
+
+The **Letta Cloud platform** allows you easily build and scale agent deployments to power production applications.
+The **Letta ADE** (Agent Developer Environment) is an application for agent developers that makes it easy to design and debug complex agents.
+
+## Agents ("LLM agents")
+Agents are LLM processes which can:
+
+1. Have internal **state** (i.e. memory)
+
+2. Can take **actions** to modify their state
+
+3. Run **autonomously**
+
+Agents have existed as a concept in [reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) for a long time (as well as in other fields, such as [economics](https://en.wikipedia.org/wiki/Agent_(economics))). In Letta, LLM tool calling is used to both allow agents to run autonomously (by having the LLM determine whether to continue executing) as well as to edit state (by leveraging LLM tool calling.)
+Letta uses a database (DB) backend to manage the internal state of the agent, represented in the `AgentState` object.
+
+## Self-editing memory
+The MemGPT paper introduced the idea of implementing self-editing memory in LLMs. The basic idea is to use LLM tools to allow an agent to both edit its own context window ("core memory"), as well as edit external storage (i.e. "archival memory").
+
+## LLM OS ("operating systems for LLMs")
+The LLM OS is the code that manages the inputs and outputs to the LLM and manages the program state.
+We refer to this code as the "stateful layer" or "memory layer".
+It includes the "agent runtime", which manages the execution of functions requested by the agent, as well as the "agentic loop" which enables multi-step reasoning.
+
+## Persistence ("statefulness")
+In Letta, all state is *persisted* by default. This means that each time the LLM is run, the state of the agent such as its memories, message history, and tools are all persisted to a DB backend.
+
+Because all state is persisted, you can always re-load agents, tools, sources, etc. at a later point in time.
+You can also load the same agent accross multiple machines or services, as long as they can can connect to the same DB backend.
+
+## Agent microservices ("agents-as-a-service")
+Letta follows the model of treating agents as individual services. That is, you interact with agents through a REST API:
+```
+POST /agents/{agent_id}/messages
+```
+Since agents are designed to be services, they can be *deployed* and connected to external applications.
+
+For example, you want to create a personalizated chatbot, you can create an agent per-user, where each agent has its own custom memory about the individual user.
+
+## Stateful vs stateless APIs
+`ChatCompletions` is the standard for interacting with LLMs as a service. Since it is a stateless API (no notion of sessions or identify accross requests, and no state management on the server-side), client-side applications must manage things like agent memory, user personalization, and message history, and translate this state back into the `ChatCompletions` API format. Letta's APIs are designed to be *stateful*, so that this state management is done on the server, not the client.

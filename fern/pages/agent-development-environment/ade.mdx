@@ -1,0 +1,147 @@
+---
+title: ADE overview
+subtitle: How to use the Agent Development Environment
+slug: agent-development-environment/ade
+---
+
+
+<Card horizontal="true" title="Agent Development Environment (ADE)" icon="alien-8bit" iconType="solid" href="https://app.letta.com">
+The Letta ADE is a graphical user interface for creating, deploying, interacting and observing with your Letta agents. The ADE is free to use and is fully compatible with local Letta servers!
+</Card>
+
+<img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+
+<Note>The [ADE](https://app.letta.com) is currently in public beta. Your feedback (e.g. via [Discord](https://discord.gg/letta)) is appreciated!</Note>
+
+# ADE components
+The ADE is an integrated development environment which allows you to create, edit, interact with and monitor Letta agents.
+You can use the ADE to chat with agents you've already created, or to design new agents from scratch - editing their memory state, data sources, and even customizing their tools all from within the ADE.
+
+## Agent simulator
+The agent simulator visualizes the event/conversation history of your agent.
+The agent's event history is comprised of *messages*, which can be:
+
+<AccordionGroup>
+  <Accordion title="User messages" icon="user">
+    Chat messages from the user to the agent.
+  </Accordion>
+
+  <Accordion title="System messages" icon="window">
+    Non-user messages, for example, event notices like `[Alert] The user just logged on`.
+  </Accordion>
+
+  <Accordion title="Agent messages" icon="alien-8bit">
+    Assistant messages are messages sent by the agent to the user.
+  </Accordion>
+
+  <Accordion title="Function (tool) messages" icon="rectangle-terminal">
+    Tools that the agent has attempted to execute, and the result of their execution.
+  </Accordion>
+</AccordionGroup>
+
+## Context window viewer
+The context window viewer visualizes the current status of the agent's context window, which includes:
+
+<AccordionGroup>
+  <Accordion title="System instructions">
+    The top-level system prompt which guides the behavior of the agent (this can often be left unchanged).
+  </Accordion>
+
+  <Accordion title="Function (tool) definitions">
+    The JSON schema definitions of the tools available to the agent, which describe to the agent how to use them.
+  </Accordion>
+
+  <Accordion title="Core (in-context) memory blocks">
+    The long-term memory of the agent, for example the long-term memory about the user ("human") and agent's own "persona".
+  </Accordion>
+
+  <Accordion title="External (out-of-context) memory statistics">
+    Statistics about the archival memory (out-of-context) of the agent, such as the total number of memories available.
+  </Accordion>
+
+  <Accordion title="Recursive summary">
+    A recursive (rolling) summary of the event history, which is updated when the context window is truncated.
+  </Accordion>
+
+  <Accordion title="Event (message) queue">
+    The current event queue, which stores a chronological list of events (messages) that the agent has processed.
+  </Accordion>
+</AccordionGroup>
+
+### Configuring the max context length
+<Tip>Letta allows you to artificially limit the maximum context window length of your agent's underlying LLM. Even though some LLM API providers support large context windows (e.g. 200k+), artifically constraining the LLM context window can improve your agent's performance / stability and decrease overall cost / latency.</Tip>
+
+The max length of the context window is configurable in Letta (under "Advanced" agent settings).
+For example, if you're using Claude Sonnet 3.5, but do not want the context window to exceed 16k for performance/cost/latency reasons, you can set the max context window in Letta to 16k (instead of the 200k default). When the context window reaches its max length, Letta will automatically evict old events/messages to external storage (they are not deleted, and are still accessible to the agent via tool calls).
+
+## Core memory
+Core memory is comprised of memory *blocks*, which are text segments which are pinned to the context window (always visible) and are editable by the agent.
+
+For example, if the agent learns a new fact about the user, it can store this fact by editing its core memory (for example, by using the tool `core_memory_append`).
+
+Because the core memory blocks are persistent (and because the context window is finite), core memory blocks have length limits. Blocks have a default length limit, which can be edited through the API or via the ADE core memory editor.
+
+## Archival memory
+<Tip>Already have an existing vector database that you'd like to connect your agent to? You can easily connect Letta to your existing database by creating new tools, or by overriding the existing archival memory tools to point at your external database (instead of the default one).</Tip>
+
+Archival memory is an out-of-context memory store that's is accessible to the agent via tool calls (`archival_memory_search` and `archival_memory_insert`).
+
+By default, archival memory is implemented as a vector database store: the memories inside archival memory are "chunks", each of which has a corresponding embedding (based on the default embedding model of the agent, for example OpenAI's `text-embedding-3-small`).
+
+## Data sources
+Data sources allow you to connect large datasets or file uploads to your agent. To connect your agent to a data source:
+1. Create a new data source (or select an existing one), for example *Business Guidelines*
+2. If you created a new data source, upload your data to the data source (for example, the PDF files related to your business guidelines).
+3. Attach the data source to the agent
+
+The agent will now be able to view data in the data source via its `archival_memory_search` tool. You can detach a data source from an agent at any time.
+
+## Tools
+Use the tools panel to view the current tools attached to your agent, and add new tools to the agent.
+Tools can be added and removed from existing agents (you do not have to recreate your agent if you add/remove a tool).
+
+To add a new tool to your agent, click "Add tool", which will bring you to the tool browser.
+From the tool browser page, you can either select and existing tool and add it to your agent, or create a new tool from scratch.
+
+<Note>Tools must have typed arguments and valid docstrings (including docs for all arguments) in order to be processed properly by the Letta server.</Note>
+
+<img className="block w-300 dark:hidden" src="../images/ade_screenshot_tool_debugger_light.png" />
+<img className="hidden w-300 dark:block" src="../images/ade_screenshot_tool_debugger.png" />
+
+The tool creation page allows you to dynamically run your tool (in a sandboxed environment) to help you debug and design your tools.
+Pressing `Run` will attempt to run your tool code with the arguments provided (arguments must be provided in JSON format).
+
+## Agent settings
+
+You can change your agent name and system instructions in the "Agent Settings" panel.
+The agent ID is shown below the agent name, and is what you use to identify your agent when interacting with it via the [Letta APIs / SDKs](https://docs.letta.com/api-reference).
+
+### Changing the LLM model
+You can change the LLM model of your agent to any model registered on the Letta server.
+To enable more models on your Letta server, follow the Letta server [model configuration instructions](/models).
+
+### Changing the embedding model
+<Warning>We do not recommend changing the embedding model of your agent frequently. If you already have existing data in archival memory, those memories will have to be re-embedded if you change your embedding model backend.</Warning>
+You can also change the embedding model of your agent under "Advanced" agent settings.
+
+
+# Connecting your Letta server to the ADE
+
+The ADE is available at [https://app.letta.com](https://app.letta.com) and can be configured to connect to a Letta server running on your local computer, or a Letta server running remotely.
+
+See the [connecting](/agent-development-environment/connect) page for instructions on how to connect your Letta server to the ADE.
+
+# Frequently asked questions
+
+> _"How do I use the ADE locally?"_
+
+To connect the ADE to your local Letta server, simply run your Letta server (make sure you can access `localhost:8283`) and go to [https://app.letta.com](https://app.letta.com). If you would like to use the old version of the ADE (that runs on `localhost`), downgrade to Letta version `<=0.5.0`.
+
+> _"If I connect the ADE to my local server, does my agent data get uploaded to letta.com?"_
+
+No, the data in your Letta server database stays on your machine. The Letta ADE web application simply connects to your local Letta server (via the REST API) and provides a graphical interface on top of it to visualize your local Letta data in your browser's local state.
+
+> _"Do I have to use your ADE? Can I build my own?"_
+
+The ADE is built on top of the (fully open source) Letta server and Letta Agents API. You can build your own application like the ADE on top of the REST API (view the documention [here](https://docs.letta.com/api-reference)).

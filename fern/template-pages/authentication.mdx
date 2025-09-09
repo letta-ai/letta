@@ -1,0 +1,81 @@
+---
+title: Authentication
+---
+
+To access the **Letta API**, all requests must be authenticated using an API key. This key ensures that only authorized users can interact with the system, whether retrieving data or performing actions like updating inventory or processing orders.
+
+## Getting Your API Key
+
+You can generate your API key from the **Letta Developer Portal**. Follow these steps to get your key:
+
+<Steps>
+<Step>
+Log in to your Letta account.
+</Step>
+<Step>
+Navigate to the **Developer** section.
+</Step>
+<Step>
+Click **Generate API Key**.
+</Step>
+<Step>
+Copy the key and store it securely.
+</Step>
+</Steps>
+
+<Warning>
+Keep your API key private. Do not expose it in client-side code, public repositories, or logs.
+</Warning>
+
+## Authentication Method
+
+The **Letta API** uses **Bearer Token Authentication**. When making a request, include your API key:
+
+<CodeBlocks>
+```bash cURL
+curl -X GET "https://api.hedra.com/v1/plants" \
+-H "Authorization: Bearer YOUR_API_KEY" \
+-H "Content-Type: application/json"
+```
+```js SDK
+const Letta = require('plant-store-api-sdk');
+
+const hedra = new Letta({
+  apiKey: 'YOUR_API_KEY'
+});
+
+hedra.getPlants()
+  .then(plants => {
+    console.log('Available plants:', plants);
+  })
+  .catch(error => {
+    console.error('Error fetching plants:', error);
+  });
+```
+</CodeBlocks>
+
+Replace `YOUR_API_KEY` with the actual API key you received from the Developer Portal.
+
+## Error Handling
+
+If your API key is invalid, expired, or missing, the API will return an authentication error. Common authentication errors include:
+
+- **401 Unauthorized**: The request was made without a valid API key or the key was incorrect.
+- **403 Forbidden**: The API key is valid, but the user does not have permission to perform the requested action.
+
+**Example error response:**
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid API Key"
+}
+```
+
+## Securing Your API Key
+
+To keep your API key secure:
+
+- **Do not hardcode it** into your application. Instead, use environment variables to store it securely.
+- **Rotate keys periodically** to enhance security.
+- **Monitor usage** of your API key from the Developer Portal and revoke keys if any suspicious activity is detected.

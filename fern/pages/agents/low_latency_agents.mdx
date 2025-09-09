@@ -1,0 +1,88 @@
+---
+title: Low-latency Agents
+subtitle: Agents optimized for low-latency environments like voice
+slug: guides/agents/architectures/low-latency
+---
+
+Low-latency agents optimize for minimal response time by using a constrained context window and aggressive memory management. They're ideal for real-time applications like voice interfaces where latency matters more than context retention.
+
+## Architecture
+
+Low-latency agents use a **much smaller context window** than standard MemGPT agents, reducing the time-to-first-token at the cost of much more limited conversation history and memory block size. A sleep-time agent aggressively manages memory to keep only the most relevant information in context.
+
+**Key differences from MemGPT v2:**
+* Artificially constrained context window for faster response times
+* More aggressive memory management with smaller memory blocks
+* Optimized sleep-time agent tuned for minimal context size
+* Prioritizes speed over comprehensive context retention
+
+To learn more about how to use low-latency agents for voice applications, see our [Voice Agents guide](/guides/voice/overview).
+
+## Creating Low-latency Agents
+
+Use the `voice_convo_agent` agent type to create a low-latency agent.
+Set `enable_sleeptime` to `true` to enable the sleep-time agent which will manage the memory state of the low-latency agent in the background.
+Additionally, set `initial_message_sequence` to an empty array to start the conversation with no initial messages for a completely empty initial message buffer.
+
+<CodeGroup>
+```python title="python"
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+# create the Letta agent
+agent = client.agents.create(
+    agent_type="voice_convo_agent",
+    memory_blocks=[
+        {"value": "Name: ?", "label": "human"},
+        {"value": "You are a helpful assistant.", "label": "persona"},
+    ],
+    model="openai/gpt-4o-mini", # Use 4o-mini for speed
+    embedding="openai/text-embedding-3-small",
+    enable_sleeptime=True,
+    initial_message_sequence = [],
+)
+```
+
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create the Letta agent
+const agent = await client.agents.create({
+    agentType: "voice_convo_agent",
+    memoryBlocks: [
+        { value: "Name: ?", label: "human" },
+        { value: "You are a helpful assistant.", label: "persona" },
+    ],
+    model: "openai/gpt-4o-mini", // Use 4o-mini for speed
+    embedding: "openai/text-embedding-3-small",
+    enableSleeptime: true,
+    initialMessageSequence: [],
+});
+```
+
+```bash title="curl"
+curl -X POST https://api.letta.com/v1/agents \
+     -H "Authorization: Bearer $LETTA_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "agent_type": "voice_convo_agent",
+  "memory_blocks": [
+    {
+      "value": "Name: ?",
+      "label": "human"
+    },
+    {
+      "value": "You are a helpful assistant.",
+      "label": "persona"
+    }
+  ],
+  "model": "openai/gpt-4o-mini",
+  "embedding": "openai/text-embedding-3-small",
+  "enable_sleeptime": true,
+  "initial_message_sequence": []
+}'
+```
+</CodeGroup>

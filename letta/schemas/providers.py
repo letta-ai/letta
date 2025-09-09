@@ -777,7 +777,6 @@ class AnthropicProvider(Provider):
 
         configs = []
         for model in models:
-
             if model["type"] != "model":
                 continue
 
@@ -1069,7 +1068,7 @@ class GroqProvider(OpenAIProvider):
         response = openai_get_model_list(self.base_url, api_key=self.api_key)
         configs = []
         for model in response["data"]:
-            if not "context_window" in model:
+            if "context_window" not in model:
                 continue
             configs.append(
                 LLMConfig(

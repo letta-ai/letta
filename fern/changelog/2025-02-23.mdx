@@ -1,0 +1,85 @@
+## Core Memory and Archival Memory SDK APIs Renamed to Blocks and Passages
+
+<Note> This is a breaking SDK change and is not backwards compatible. </Note>
+
+Given the confusion around our advanced functionality for managing memory, we've renamed the Core Memory SDK API to `blocks` and the Archival Memory SDK API to `passages` so that our API naming reflects the unit of memory stored. This change only affects our SDK, and does not affect Letta's Rest API.
+
+#### Before
+<CodeBlocks>
+```python title="python"
+from letta_client import CreateBlock, Letta
+client = Letta(
+  token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-3-small"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+blocks = client.agents.core_memory.list_blocks(agent_id=agent.id)
+client.agents.core_memory.detach_block(agent_id=agent.id, block_id=blocks[0].id)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  model: "gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small"
+  memory_blocks: [
+    {
+      label: "human",
+      value: "name: Caren"
+    },
+  ],
+});
+const blocks = await client.agents.coreMemory.listBlocks(agent.id);
+await client.agents.coreMemory.detachBlock(agent.id, blocks[0].id);
+```
+</CodeBlocks>
+
+#### After
+<CodeBlocks>
+```python title="python"
+from letta_client import CreateBlock, Letta
+client = Letta(
+  token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-3-small"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+blocks = client.agents.blocks.list(agent_id=agent.id)
+client.agents.blocks.detach(agent_id=agent.id, block_id=blocks[0].id)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  model: "gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small"
+  memory_blocks: [
+    {
+      label: "human",
+      value: "name: Caren"
+    },
+  ],
+});
+const blocks = client.agents.blocks.list(agent.id)
+await client.agents.blocks.detach(agent.id, blocks[0].id)
+```
+</CodeBlocks>

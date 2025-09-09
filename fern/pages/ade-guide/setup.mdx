@@ -1,0 +1,46 @@
+---
+title: Initial Setup and Connection
+subtitle: Get started with the Agent Development Environment
+slug: guides/ade/setup
+---
+
+The Agent Development Environment (ADE) is your gateway to building, testing, and monitoring stateful agents. This guide will help you access the ADE and connect it to your Letta server, whether it's running locally or deployed remotely.
+
+Letta offers two ways to access the Agent Development Environment: via the browser (the **web ADE**), and **Letta Desktop**.
+
+## Web ADE
+
+<Note>
+Letta Cloud is currently in [early access](https://forms.letta.com/early-access), but you do **not** need Letta Cloud access to use the web ADE to connect to self-hosted Letta servers.
+</Note>
+
+The browser-based (web) ADE is available at [https://app.letta.com](https://app.letta.com). You can use the web ADE to connect to both Letta Cloud, and agents running on your own self-hosted Letta deployments (both on `localhost`, and remotely).
+
+To use the web ADE to connect to your own self-hosted Letta server, simply go to [https://app.letta.com](https://app.letta.com), sign in with any of the supported login methods, then navigate to the `Self-hosted` tab on the left panel.
+
+[Read the full web ADE setup guide →](/guides/ade/browser)
+
+## Letta Desktop
+
+<Warning>
+Letta Desktop is currently in beta and has known installation issues. If you are running into problems, please report your bug on [Discord](https://discord.gg/letta), or try using the web ADE instead.
+</Warning>
+
+[Letta Desktop](/guides/desktop/install) provides an all-in-one solution that includes both the Letta server and the ADE in a single application.
+
+Key features of Letta Desktop:
+- Combines the Letta server and ADE in one application
+- Automatically establishes connection between components
+- Ideal for offline development (no internet connection required)
+- Runs on Windows (x64), macOS (M-series), and Linux (x64)
+
+[Install Letta Desktop on MacOS, Windows, or Linux →](/guides/desktop/install)
+
+## Next Steps
+
+Now that you've connected the ADE to your Letta server, you're ready to start building agents! Here are some recommended next steps:
+
+1. **Create your first agent** using the "Create Agent" button
+2. **Explore the [Agent Simulator](/guides/ade/simulator)** to interact with your agent
+3. **Learn about [Tools](/guides/ade/tools)** to extend your agent's capabilities
+4. **Configure [Core Memory](/guides/ade/core-memory)** to give your agent persistent in-context knowledge

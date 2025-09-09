@@ -1,0 +1,53 @@
+auth-schemes:
+  token:
+    header: Authorization
+    prefix: Bearer
+    type: optional<string>
+api:
+  auth: token
+  headers:
+    X-Project:
+      type: optional<string>
+      name: project
+  specs:
+    - openapi: openapi.json
+      overrides: openapi-overrides.yml
+      settings:
+        title-as-schema-name: false
+        prefer-undiscriminated-unions-with-literals: true
+groups:
+  python-sdk:
+    generators:
+      - name: fernapi/fern-python-sdk
+        version: 4.25.6
+        output:
+          location: pypi
+          package-name: letta-client
+          token: ${PYPI_TOKEN}
+        github:
+          repository: letta-ai/letta-python
+        config:
+          package_name: letta_client
+          pydantic_config:
+            skip_validation: true
+          client:
+            class_name: LettaBase
+            filename: base_client.py
+            exported_class_name: Letta
+            exported_filename: client.py
+  ts-sdk:
+    generators:
+      - name: fernapi/fern-typescript-node-sdk
+        version: 0.51.7
+        output:
+          location: npm
+          package-name: "@letta-ai/letta-client"
+          token: ${NPM_TOKEN}
+        github:
+          repository: "letta-ai/letta-node"
+        config:
+          namespaceExport: Letta
+          allowCustomFetcher: true
+          skipResponseValidation: true
+          includeApiReference: true
+        smart-casing: true

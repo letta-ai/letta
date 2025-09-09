@@ -392,7 +392,7 @@ class TurbopufferClient:
         fts_weight: float = 0.5,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> List[Tuple[PydanticPassage, float]]:
+    ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Query passages from Turbopuffer using vector search, full-text search, or hybrid search.
 
         Args:
@@ -406,10 +406,10 @@ class TurbopufferClient:
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter passages created after this date
-            end_date: Optional datetime to filter passages created before this date
+            end_date: Optional datetime to filter passages created on or before this date (inclusive)
 
         Returns:
-            List of (passage, score) tuples
+            List of (passage, score, metadata) tuples with relevance rankings
         """
         # Check if we should fallback to timestamp-based retrieval
         if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
@@ -439,6 +439,13 @@ class TurbopufferClient:
         if start_date:
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
+            # if end_date has no time component (is at midnight), adjust to end of day
+            # to make the filter inclusive of the entire day
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0 and end_date.microsecond == 0:
+                from datetime import timedelta
+
+                # add 1 day and subtract 1 microsecond to get 23:59:59.999999
+                end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters
@@ -474,7 +481,7 @@ class TurbopufferClient:
                 # for hybrid mode, we get a multi-query response
                 vector_results = self._process_single_query_results(result.results[0], archive_id, tags)
                 fts_results = self._process_single_query_results(result.results[1], archive_id, tags, is_fts=True)
-                # use RRF and return only (passage, score) for backwards compatibility
+                # use RRF and include metadata with ranks
                 results_with_metadata = self._reciprocal_rank_fusion(
                     vector_results=[passage for passage, _ in vector_results],
                     fts_results=[passage for passage, _ in fts_results],
@@ -483,11 +490,21 @@ class TurbopufferClient:
                     fts_weight=fts_weight,
                     top_k=top_k,
                 )
-                return [(passage, rrf_score) for passage, rrf_score, metadata in results_with_metadata]
+                # Return (passage, score, metadata) with ranks
+                return results_with_metadata
             else:
-                # for single queries (vector, fts, timestamp)
+                # for single queries (vector, fts, timestamp) - add basic metadata
                 is_fts = search_mode == "fts"
-                return self._process_single_query_results(result, archive_id, tags, is_fts=is_fts)
+                results = self._process_single_query_results(result, archive_id, tags, is_fts=is_fts)
+                # Add simple metadata for single search modes
+                results_with_metadata = []
+                for idx, (passage, score) in enumerate(results):
+                    metadata = {
+                        "combined_score": score,
+                        f"{search_mode}_rank": idx + 1,  # Add the rank for this search mode
+                    }
+                    results_with_metadata.append((passage, score, metadata))
+                return results_with_metadata
 
         except Exception as e:
             logger.error(f"Failed to query passages from Turbopuffer: {e}")
@@ -521,7 +538,7 @@ class TurbopufferClient:
             vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
             fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
             start_date: Optional datetime to filter messages created after this date
-            end_date: Optional datetime to filter messages created before this date
+            end_date: Optional datetime to filter messages created on or before this date (inclusive)
 
         Returns:
             List of (message_dict, score, metadata) tuples where:
@@ -553,6 +570,13 @@ class TurbopufferClient:
         if start_date:
             date_filters.append(("created_at", "Gte", start_date))
         if end_date:
+            # if end_date has no time component (is at midnight), adjust to end of day
+            # to make the filter inclusive of the entire day
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0 and end_date.microsecond == 0:
+                from datetime import timedelta
+
+                # add 1 day and subtract 1 microsecond to get 23:59:59.999999
+                end_date = end_date + timedelta(days=1) - timedelta(microseconds=1)
             date_filters.append(("created_at", "Lte", end_date))
 
         # combine all filters

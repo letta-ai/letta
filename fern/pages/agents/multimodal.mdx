@@ -1,0 +1,163 @@
+---
+title: "Multi-modal (image inputs)"
+subtitle: "Send images to your agents"
+slug: "multimodal"
+---
+
+<Note>
+Multi-modal features require compatible language models. Ensure your agent is configured with a multi-modal capable model.
+</Note>
+
+Letta agents support image inputs, enabling richer conversations and more powerful agent capabilities.
+
+## Model Support
+
+Multi-modal capabilities depend on the underlying language model.
+You can check which models from the API providers support image inputs by checking their individual model pages:
+
+- **[OpenAI](https://platform.openai.com/docs/models)**: GPT-4.1, o1/3/4, GPT-4o
+- **[Anthropic](https://docs.anthropic.com/en/docs/about-claude/models/overview)**: Claude Opus 4, Claude Sonnet 4
+- **[Gemini](https://ai.google.dev/gemini-api/docs/models)**: Gemini 2.5 Pro, Gemini 2.5 Flash
+
+If the provider you're using doesn't support image inputs, your images will still appear in the context window, but as a text message telling the agent that an image exists.
+
+## ADE Support
+
+You can pass images to your agents by drag-and-dropping them into the chat window, or clicking the image icon to select a manual file upload.
+
+<img className="light" src="/images/ade-mm.png" />
+<img className="dark" src="/images/ade-mm-dark.png" />
+
+## Usage Examples (SDK)
+
+### Sending an Image via URL
+
+<CodeGroup>
+```python title="python" maxLines=100
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "url",
+                        "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": "Describe this image."
+                }
+            ],
+        }
+    ],
+)
+```
+```typescript title="node.js" maxLines=100
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "image",
+                        source: {
+                            type: "url",
+                            url: "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg",
+                        },
+                    },
+                    {
+                        type: "text",
+                        text: "Describe this image."
+                    }
+                ],
+            }
+        ],
+    }
+);
+```
+</CodeGroup>
+
+### Sending an Image via Base64
+
+<CodeGroup>
+```python title="python" maxLines=100
+import base64
+import httpx
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+image_url = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
+image_data = base64.standard_b64encode(httpx.get(image_url).content).decode("utf-8")
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_data,
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": "Describe this image."
+                }
+            ],
+        }
+    ],
+)
+```
+```typescript title="node.js" maxLines=100
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+const imageUrl = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg";
+const imageResponse = await fetch(imageUrl);
+const imageBuffer = await imageResponse.arrayBuffer();
+const imageData = Buffer.from(imageBuffer).toString('base64');
+
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "image",
+                        source: {
+                            type: "base64",
+                            media_type: "image/jpeg",
+                            data: imageData,
+                        },
+                    },
+                    {
+                        type: "text",
+                        text: "Describe this image."
+                    }
+                ],
+            }
+        ],
+    }
+);
+```
+</CodeGroup>

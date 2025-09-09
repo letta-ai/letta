@@ -1,0 +1,62 @@
+---
+title: xAI (Grok)
+slug: guides/server/providers/xai
+---
+<Tip>To enable xAI (Grok) models with Letta, set `XAI_API_KEY` in your environment variables. </Tip>
+
+## Enabling xAI (Grok) models
+To enable the xAI provider, set your key as an environment variable:
+```bash
+export XAI_API_KEY="..."
+```
+Now, xAI models will be enabled with you run `letta run` or start the Letta server.
+
+### Using the `docker run` server with xAI
+To enable xAI models, simply set your `XAI_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e XAI_API_KEY="your_xai_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with xAI
+To chat with an agent, run:
+```bash
+export XAI_API_KEY="sk-ant-..."
+letta run
+```
+This will prompt you to select an xAI model.
+```
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.letta.com]
+   grok-2-1212 [type=xai] [ip=https://api.x.ai/v1]
+```
+To run the Letta server, run:
+```bash
+export XAI_API_KEY="..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+
+## Configuring xAI (Grok) models
+
+When creating agents, you must specify the LLM and embedding models to use. You can additionally specify a context window limit (which must be less than or equal to the maximum size). Note that xAI does not have embedding models, so you will need to use another provider.
+
+```python
+from letta_client import Letta
+
+client = Letta(base_url="http://localhost:8283")
+
+agent = client.agents.create(
+    model="xai/grok-2-1212",
+    embedding="openai/text-embedding-3-small",
+    # optional configuration
+    context_window_limit=30000
+)
+```
+xAI (Grok) models have very large context windows, which will be very expensive and high latency. We recommend setting a lower `context_window_limit` when using xAI (Grok) models.

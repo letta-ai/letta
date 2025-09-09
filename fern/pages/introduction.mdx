@@ -1,0 +1,100 @@
+---
+title: Welcome to Letta
+subtitle: Letta is an AI platform for building stateful LLM applications.
+slug: introduction
+---
+
+
+<Note>**Letta Cloud** is our hosted service that lets you easily deploy your agents applications at scale. Sign up [here](https://forms.letta.com/early-access) to request early access.</Note>
+
+## What is Letta?
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/0kW6oClCesE"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+Letta adds state to your LLMs to give them advanced reasoning capabilities and transparent **long-term memory**.
+
+The Letta open source framework is **model-agnostic** and **white box**: as a developer, you can use any LLM you want and have full visibility into the inner workings your LLMs and LLM agents.
+
+Letta runs as a service: to use Letta, you deploy a **Letta server** which powers your AI application (web app, mobile app, Discord bot, workflow, etc.). Your application state and LLM calls are managed by the Letta server,
+and your frontend application connects to the Letta server via the Letta REST APIs.
+
+<Frame caption="Letta enables you to build advanced agents compatible with any model. Letta agents have long-term memory, which is highly configurable and can even be shared between different agents.">
+  <img src="images/letta_overview.png" />
+</Frame>
+
+## Who is Letta for?
+
+Letta is for developers building stateful LLM applications that require advanced memory, such as:
+* **personalized chatbots** that require long-term memory and personas that should be updated (self-edited) over time (e.g. companions)
+* **agents connected to external data sources**, e.g. private enterprise deployments of ChatGPT-like applications (connected to your company's data), or a medical assistant connected to a patient's medical records
+* **agents connected to custom tools**, e.g. a chatbot that can answer questions about the latest news by searching the web
+* **automated AI workflows**, e.g. an agent that monitors your email inbox and sends you text alerts for urgent emails and a daily email summary
+
+... and countless other use cases!
+
+### [Letta ADE](https://app.letta.com) (Agent Development Environment)
+<Frame caption="The ADE is a graphical user interface for creating, deploying, interacting with and observing your Letta agents.">
+  <img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+  <img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+</Frame>
+
+<Note>
+The Letta [ADE](https://app.letta.com) is currently in public beta. Your feedback (e.g. via [Discord](https://discord.gg/letta)) is appreciated!
+</Note>
+
+The Letta ADE is web application that allows you to create, edit, and monitor agents in your Letta server.
+You can connect the ADE to your local Letta server, or to a Letta server running on a remote server.
+For more information, see the [Agent Development Environment](/agent-development-environment/ade) page.
+
+
+### [Letta API](https://docs.letta.com/api-reference)
+The Letta server exposes a REST API that allows you to programatically interact with your Letta agents.
+You can use the API to deploy agents with long-term memory, custom tools, access to external data sources (RAG), multi-step reasoning, and more.
+
+### Letta SDKs
+
+<Note>
+We are currently previewing our **TypeScript SDK**, available [here](https://github.com/letta-ai/letta-node).
+</Note>
+
+If you're building an application in Python, you can use the Letta **[Python SDK](https://github.com/letta-ai/letta-python)** to interact with Letta (instead of calling REST APIs directly) for a more seamless experience.
+
+## Getting started
+
+If you're new to Letta, start by learning the key concepts - or jump straight into creating your first agent!
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Create and message your first agent with the Letta CLI
+  </Card>
+  <Card title="Intro to Letta" icon="cubes" href="/concepts">
+    Learn the key concepts behind the Letta platform
+  </Card>
+  <Card title="Deploy" icon="rocket" href="/deployment">
+    Learn how to deploy a Letta server on a remote service
+  </Card>
+</CardGroup>
+
+## Tutorials
+
+Check out our [YouTube channel](https://www.youtube.com/@letta-ai) for more tutorials. If you have an idea for a tutorial, let us know by suggesting an idea on [Discord](https://discord.gg/letta)!
+
+<CardGroup cols={3}>
+  <Card title="ADE overview" icon="square-1" href="/agent-development-environment/ade">
+    Learn the basics of the ADE
+  </Card>
+  <Card title="Python SDK" icon="square-2" href="https://docs.letta.com/python-reference">
+    Learn how to use the Letta Python SDK
+  </Card>
+  <Card title="Multi-agent example" icon="square-3" href="/quickstart">
+    Create a multi-agent recruiting workflow
+  </Card>
+</CardGroup>

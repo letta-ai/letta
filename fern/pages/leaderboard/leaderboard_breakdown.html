@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<title>Letta Memory Leaderboard - Benchmark view</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
+<div id="controls" style="display:flex;align-items:center;max-width:900px;margin:10px auto 12px;gap:10px">
+  <input id="search" placeholder="Search models…" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:0;font-size:14px">
+</div>
+
+<table style="width:100%;max-width:900px;margin:auto;border-collapse:collapse;font-size:14px">
+  <thead style="background:#f2f2f2">
+    <tr>
+      <th data-key="model"                           style="padding:8px;text-align:left">Model</th>
+      <th data-key="core_memory_read_benchmark"      style="padding:8px;text-align:center">Core&nbsp;Read</th>
+      <th data-key="core_memory_write_benchmark"     style="padding:8px;text-align:center">Core&nbsp;Write</th>
+      <th data-key="archival_memory_read_benchmark"  style="padding:8px;text-align:center">Archival&nbsp;Read</th>
+    </tr>
+  </thead>
+  <tbody id="body"></tbody>
+</table>
+
+<style>
+  html,body{margin:0;font-family:"Manrope",sans-serif;}
+  tr.hidden{display:none!important}
+
+  thead th[data-key]{cursor:pointer;user-select:none;position:relative}
+  thead th.asc::after,
+  thead th.desc::after{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-size:10px;line-height:1;
+  }
+  thead th.asc::after {content:"▲";}
+  thead th.desc::after{content:"▼";}
+
+  .bar-cell{position:relative;padding:8px;overflow:hidden}
+  .bar-viz{
+    position:absolute;left:0;top:50%;transform:translateY(-50%);
+    height:36px;z-index:1;max-width:calc(100% - 8px);
+    border-radius:0;
+  }
+  .bar-cell span{
+    position:absolute;left:5px;top:50%;transform:translateY(-50%);
+    background:rgba(255,255,255,.7);padding:0 4px;font-size:14px;z-index:2;
+    border-radius:0;
+  }
+
+  /* colours (keep “original look”) */
+  .core  .bar-viz{background:rgba(13,110,253,.35);}   /* blue  */
+  .arch  .bar-viz{background:rgba(13,110,253,.35);}   /* same blue */
+
+  /* faint ruler + right border */
+  .bar-cell::before{
+    content:"";
+    position:absolute;top:50%;left:0;width:100%;height:8px;
+    transform:translateY(-50%);pointer-events:none;
+    background:repeating-linear-gradient(
+      90deg,
+      rgba(170,170,170,.5) 0 1px,
+      transparent            1px 25%
+    );
+  }
+  .bar-cell::after{
+    content:"";
+    position:absolute;top:50%;right:0;width:1px;height:8px;
+    background:rgba(170,170,170,.5);transform:translateY(-50%);
+    pointer-events:none;
+  }
+
+  tbody tr{height:50px}
+  .metric{width:26%;}
+  table{table-layout:fixed;}
+
+  #search,
+  #search:focus{border-radius:0!important;outline:none;}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script>
+(async () => {
+  /* ------------- load data --------------- */
+  const text = await fetch('./data.yaml').then(r => r.text());
+  let rows   = jsyaml.load(text);
+
+  /* ------------- helpers ----------------- */
+  const fmt = v => Number(v).toPrecision(3);  // percent w/ 3 sig-figs
+
+  /* ------------- state ------------------- */
+  const dir      = Object.create(null);
+  const tbody    = document.getElementById('body');
+  const searchI  = document.getElementById('search');
+  const headers  = document.querySelectorAll('thead th[data-key]');
+
+  /* ------------- render ------------------ */
+  const render = () => {
+    const q = searchI.value.toLowerCase();
+    tbody.innerHTML = rows.map(r => `
+      <tr class="${q && !r.model.toLowerCase().includes(q) ? 'hidden' : ''}">
+        <td style="padding:8px">${r.model}</td>
+
+        <td class="bar-cell core metric">
+          <div class="bar-viz" style="width:${r.core_memory_read_benchmark}%"></div>
+          <span>${fmt(r.core_memory_read_benchmark)}%</span>
+        </td>
+
+        <td class="bar-cell core metric">
+          <div class="bar-viz" style="width:${r.core_memory_write_benchmark}%"></div>
+          <span>${fmt(r.core_memory_write_benchmark)}%</span>
+        </td>
+
+        <td class="bar-cell arch metric">
+          <div class="bar-viz" style="width:${r.archival_memory_read_benchmark}%"></div>
+          <span>${fmt(r.archival_memory_read_benchmark)}%</span>
+        </td>
+      </tr>
+    `).join('');
+  };
+
+  /* ---------- arrow indicators ----------- */
+  const setIndicator = activeKey => {
+    headers.forEach(h => {
+      h.classList.remove('asc','desc');
+      if (h.dataset.key === activeKey) h.classList.add(dir[activeKey]);
+    });
+  };
+
+  /* ------ initial sort: Core Read ↓ ------ */
+  dir.core_memory_read_benchmark = 'desc';
+  rows.sort((a,b) => b.core_memory_read_benchmark - a.core_memory_read_benchmark);
+  setIndicator('core_memory_read_benchmark');
+  render();
+
+  /* --------------- search ---------------- */
+  searchI.addEventListener('input', render);
+
+  /* -------- sortable headers ------------- */
+  headers.forEach(th => {
+    const key = th.dataset.key;
+    th.addEventListener('click', () => {
+      const asc = dir[key] === 'desc';
+      dir[key]  = asc ? 'asc' : 'desc';
+
+      rows.sort((a, b) => {
+        const va = a[key], vb = b[key];
+        const cmp = (typeof va === 'number')
+          ? va - vb
+          : String(va).localeCompare(String(vb));
+        return asc ? cmp : -cmp;
+      });
+
+      setIndicator(key);
+      render();
+    });
+  });
+})();
+</script>
+</html>

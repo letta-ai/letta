@@ -1,0 +1,96 @@
+---
+title: Ollama
+slug: guides/server/providers/ollama
+---
+
+<Warning>
+Make sure to use **tags** when downloading Ollama models!
+
+For example, don't do **`ollama pull dolphin2.2-mistral`**, instead do **`ollama pull dolphin2.2-mistral:7b-q6_K`** (add the `:7b-q6_K` tag).
+
+If you don't specify a tag, Ollama may default to using a highly compressed model variant (e.g. Q4).
+We highly recommend **NOT** using a compression level below Q5 when using GGUF (stick to Q6 or Q8 if possible).
+In our testing, certain models start to become extremely unstable (when used with Letta/MemGPT) below Q6.
+</Warning>
+
+## Setup Ollama
+
+1. Download + install [Ollama](https://github.com/ollama/ollama) and the model you want to test with
+2. Download a model to test with by running `ollama pull <MODEL_NAME>` in the terminal (check the [Ollama model library](https://ollama.ai/library) for available models)
+
+For example, if we want to use Dolphin 2.2.1 Mistral, we can download it by running:
+
+```sh
+# Let's use the q6_K variant
+ollama pull dolphin2.2-mistral:7b-q6_K
+```
+
+```sh
+pulling manifest
+pulling d8a5ee4aba09... 100% |█████████████████████████████████████████████████████████████████████████| (4.1/4.1 GB, 20 MB/s)
+pulling a47b02e00552... 100% |██████████████████████████████████████████████████████████████████████████████| (106/106 B, 77 B/s)
+pulling 9640c2212a51... 100% |████████████████████████████████████████████████████████████████████████████████| (41/41 B, 22 B/s)
+pulling de6bcd73f9b4... 100% |████████████████████████████████████████████████████████████████████████████████| (58/58 B, 28 B/s)
+pulling 95c3d8d4429f... 100% |█████████████████████████████████████████████████████████████████████████████| (455/455 B, 330 B/s)
+verifying sha256 digest
+writing manifest
+removing any unused layers
+success
+```
+
+## Enabling Ollama as a provider
+To enable the Ollama provider, you must set the `OLLAMA_BASE_URL` environment variable. When this is set, Letta will use available LLM and embedding models running on Ollama.
+
+### Using the `docker run` server with Ollama
+
+**macOS/Windows:**
+Since Ollama is running on the host network, you will need to use `host.docker.internal` to connect to the Ollama server instead of `localhost`.
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
+  letta/letta:latest
+```
+
+**Linux:**
+Use `--network host` and `localhost`:
+```bash
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e OLLAMA_BASE_URL="http://localhost:11434" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with Ollama
+To chat with an agent, run:
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+letta run
+```
+To run the Letta server, run:
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+
+## Specifying agent models
+When creating agents, you must specify the LLM and embedding models to use via a *handle*. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
+
+```python
+from letta_client import Letta
+
+client = Letta(base_url="http://localhost:8283")
+
+ollama_agent = client.agents.create(
+    model="ollama/thewindmom/hermes-3-llama-3.1-8b:latest",
+    embedding="ollama/mxbai-embed-large:latest",
+    # optional configuration
+    context_window_limit=16000,
+)
+```

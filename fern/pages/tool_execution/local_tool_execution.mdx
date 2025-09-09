@@ -1,0 +1,102 @@
+---
+title: Local tool execution
+subtitle: Learn how to enable your agents to execute local code
+slug: guides/tool-execution/local
+---
+
+Often times, tool definitions will rely on importing code from other files or packages:
+```python
+def my_tool():
+    # import code from other files
+    from my_repo.subfolder1.module import my_function
+
+    # import packages
+    import cowsay
+
+    # custom code
+
+```
+To ensure that your tools are able to run, you need to make sure that the files and packages they rely on are accessible from the Letta server. When running Letta locally, the tools are executed inside of the Docker container running the Letta service, and the files and packages they rely on must be accessible from the Docker container.
+
+
+## Importing modules from external files
+Tool definitions will often rely on importing code from other files. For example, say you have a repo with the following structure:
+```
+my_repo/
+├── requirements.txt
+├── subfolder1/
+    └── module.py
+```
+We want to import code from `module.py` in a custom tool as follows:
+```python
+def my_tool():
+    from my_repo.subfolder1.module import my_function # MUST be inside the function scope
+    return my_function()
+```
+<Warning>Any imports MUST be inside the function scope, since only the code inside the function scope is executed.</Warning>
+To ensure you can properly import `my_function`, you need to mount your repository in the Docker container and also explicitly set the location of tool execution by setting the `TOOL_EXEC_DIR` environment variable.
+```sh
+docker run \
+  -v /path/to/my_repo:/app/my_repo \ # mount the volume
+  -e TOOL_EXEC_DIR="/app/my_repo" \ # specify the directory
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  letta/letta:latest
+```
+This will ensure that tools are executed inside of `/app/my_repo` and the files inside of `my_repo` are accessible via the volume.
+
+## Specifying `pip` packages
+You can specify packages to be installed in the tool execution environment by setting the `TOOL_EXEC_VENV_NAME` environment variable. This will enable Letta to explicitly create a virtual environment and and install packages specified by `requirements.txt` at the server start time.
+```sh
+docker run \
+  -v /path/to/my_repo:/app/my_repo \ # mount the volume
+  -e TOOL_EXEC_DIR="/app/my_repo" \ # specify the directory
+  -e TOOL_EXEC_VENV_NAME="env" \ # specify the virtual environment name
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  letta/letta:latest
+```
+This will ensure that the packages specified in `/app/my_repo/requirements.txt` are installed in the virtual environment where the tools are executed.
+
+<Warning>Letta needs to create and link the virtual environment, so do not create a virtual environment manually with the same name as `TOOL_EXEC_VENV_NAME`. </Warning>
+
+## Attaching the tool to an agent
+Now, you can create a tool that imports modules from your tool execution directory or from the packages specified in `requirements.txt`. When defining custom tools, make sure you have a properly formatting docstring (so it can be parsed into the OpenAI tool schema) or use the `args_schema` parameter to specify the arguments for the tool.
+```python
+from letta_client import Letta
+
+def my_tool(my_arg: str) -> str:
+    """
+    A custom tool that imports code from other files and packages.
+
+    Args:
+        my_arg (str): A string argument
+    """
+    # import code from other files
+    from my_repo.subfolder1.module import my_function
+
+    # import packages
+    import cowsay
+
+    # custom code
+    return my_function(my_arg)
+
+client = Letta(base_url="http://localhost:8283")
+
+# create the tool
+tool = client.tools.upsert_from_function(
+    func=my_tool
+)
+
+# create the agent with the tool
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_ids=[tool.id]
+)
+```
+See more on creating custom tools [here](/guides/agents/custom-tools).

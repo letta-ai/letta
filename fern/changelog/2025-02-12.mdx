@@ -1,0 +1,9 @@
+## New Features
+
+### Google Vertex support
+
+Google Vertex is now a supported endpoint type for Letta agents.
+
+### Option to disable message persistence for a given agent
+
+Letta agents now have an optional `message_buffer_autoclear` flag. If set to True (default False), the message history will not be persisted in-context between requests (though the agent will still have access to core, archival, and recall memory).

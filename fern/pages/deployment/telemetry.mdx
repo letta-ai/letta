@@ -1,0 +1,50 @@
+---
+title: Collecting Traces & Telemetry
+slug: guides/server/otel
+---
+
+Letta uses [ClickHouse](https://clickhouse.com/) to store telemetry. ClickHouse is a database optimized for storing logs and traces. Traces can be used to view raw requests to LLM providers and also understand your agent's system performance metrics.
+
+## Configuring ClickHouse
+You will need to have a ClickHouse DB (either running locally or with [ClickHouse Cloud](https://console.clickhouse.cloud/)) to connect to Letta.
+
+You can configure ClickHouse by passing the required enviornment variables:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  ...
+  -e CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT} \
+  -e CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE} \
+  -e CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME} \
+  -e CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+  -e LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+  letta/letta:latest
+```
+
+### Finding your credentials in ClickHouse Cloud
+You can find these variable inside of ClickHouse Cloud by selecting the "Connection" button in the dashboard.
+
+<img src="/images/clickhouse_config.png" />
+
+## Connecting to Grafana
+We recommend connecting ClickHouse to Grafana to query and view traces. Grafana can be run [locally](https://grafana.com/oss/grafana/), or via [Grafana Cloud](https://grafana.com/grafana/).
+
+
+# Other Integrations
+
+Letta also supports other exporters when running in a containerized environment. To request support for another exporter, please open an issue on [GitHub](https://github.com/letta-ai/letta/issues/new/choose).
+
+## Configuring Signoz
+
+You can configure Signoz by passing the required enviornment variables:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  ...
+  -e SIGNOZ_ENDPOINT=${SIGNOZ_ENDPOINT} \
+  -e SIGNOZ_INGESTION_KEY=${SIGNOZ_INGESTION_KEY} \
+  -e LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+  letta/letta:latest
+```

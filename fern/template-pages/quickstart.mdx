@@ -1,0 +1,84 @@
+---
+title: Quickstart
+force-toc: true
+---
+
+Welcome to the **Letta API** Quickstart! This guide will help you make your first API call in just a few minutes. Follow the steps below to get up and running quickly.
+
+## Requirements
+
+Before getting started, make sure you have the following:
+
+- **API Key**: You will need an API key, which can be generated from the Letta Developer Portal. [Learn more about getting an API key](/reference/authentication).
+- **Node.js**: Ensure you have [Node.js](https://nodejs.org/) installed (version 14 or later).
+- **A Code Editor**: We recommend using [Visual Studio Code](https://code.visualstudio.com/).
+- **Letta SDK**: Make sure you have the latest version of the Letta SDK installed. [Learn more about installing the SDK](/docs/get-started/installation).
+
+## Get started
+
+<Steps>
+### Import the SDK
+[Once the SDK is installed](/docs/get-started/installation), you can import it into your project and begin using it to interact with the API. Below is a simple example of how to import and use the SDK.
+
+```js
+// Import the Letta API SDK
+const PlantStore = require('plant-store-api-sdk');
+
+// Initialize the SDK with your API key
+const plantStore = new PlantStore({
+  apiKey: 'YOUR_API_KEY'
+});
+
+// Example: Fetch a list of available plants
+plantStore.getPlants().then(plants => {
+  console.log(plants);
+}).catch(error => {
+  console.error('Error fetching plants:', error);
+});
+```
+
+<Info>
+Replace `'YOUR_API_KEY'` with your actual API key.
+</Info>
+
+### Environment Configuration (Optional)
+For best security practices, it's recommended to store your API key in an environment variable. Here's how you can set up your environment configuration:
+  1. Create a `.env` file in the root of your project:
+    ```bash
+    touch .env
+    ```
+  2. Add your API key to the `.env` file:
+    ```bash
+    PLANT_STORE_API_KEY=your-api-key-here
+    ```
+  3. Use `dotenv` to load environment variables in your app:
+    ```bash
+    npm install dotenv
+    ```
+  4. Modify your code to load the API key from the `.env` file:
+    ```js
+    require('dotenv').config();
+
+    const PlantStore = require('plant-store-api-sdk');
+
+    const plantStore = new PlantStore({
+      apiKey: process.env.PLANT_STORE_API_KEY
+    });
+
+    plantStore.getPlants().then(plants => {
+      console.log(plants);
+    }).catch(error => {
+      console.error('Error fetching plants:', error);
+    });
+    ```
+
+### Test Your Installation
+To make sure everything is set up correctly, run your project and make a test request. You should be able to fetch data from the Letta API without issues.
+```bash
+node index.js
+```
+
+If you see a list of plants logged to the console, congratulations! You have successfully installed and set up the Letta API SDK.
+</Steps>
+
+For more advanced configuration options or troubleshooting, visit our [FAQs](/docs/resources/faqs).

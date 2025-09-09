@@ -188,6 +188,7 @@ class BlockManager:
         connected_to_agents_count_lt: Optional[int] = None,
         connected_to_agents_count_eq: Optional[List[int]] = None,
         ascending: bool = True,
+        show_hidden_blocks: Optional[bool] = None,
     ) -> List[PydanticBlock]:
         """Async version of get_blocks method. Retrieve blocks based on various optional filters."""
         from sqlalchemy import select
@@ -227,6 +228,10 @@ class BlockManager:
 
             if value_search:
                 query = query.where(BlockModel.value.ilike(f"%{value_search}%"))
+
+            # Apply hidden filter
+            if not show_hidden_blocks:
+                query = query.where((BlockModel.hidden.is_(None)) | (BlockModel.hidden == False))
 
             needs_distinct = False
 

@@ -1,0 +1,88 @@
+---
+slug: python-reference/Message
+---
+
+<a id="letta.schemas.message.Message"></a>
+
+## Message
+
+```python
+class Message(BaseMessage)
+```
+
+Letta's internal representation of a message. Includes methods to convert to/from LLM provider formats.
+
+**Attributes**:
+
+- `id` _str_ - The unique identifier of the message.
+- `role` _MessageRole_ - The role of the participant.
+- `content` _List[MessageContent]_ - The content of the message.
+- `user_id` _str_ - The unique identifier of the user.
+- `agent_id` _str_ - The unique identifier of the agent.
+- `model` _str_ - The model used to make the function call.
+- `name` _str_ - The name of the participant.
+- `created_at` _datetime_ - The time the message was created.
+- `tool_calls` _List[ToolCall]_ - The list of tool calls requested.
+- `tool_call_id` _str_ - The id of the tool call.
+
+<a id="letta.schemas.message.Message.to_letta_message"></a>
+
+#### to\_letta\_message
+
+```python
+def to_letta_message() -> List[LettaMessage]
+```
+
+Convert message object (in DB format) to the style used by the original Letta API
+
+<a id="letta.schemas.message.Message.dict_to_message"></a>
+
+#### dict\_to\_message
+
+```python
+@staticmethod
+def dict_to_message(user_id: str,
+                    agent_id: str,
+                    openai_message_dict: dict,
+                    model: Optional[str] = None,
+                    allow_functions_style: bool = False,
+                    created_at: Optional[datetime] = None,
+                    id: Optional[str] = None)
+```
+
+Convert a ChatCompletion message object into a Message object (synced to DB)
+
+<a id="letta.schemas.message.Message.to_openai_dict"></a>
+
+#### to\_openai\_dict
+
+```python
+def to_openai_dict(max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+                   put_inner_thoughts_in_kwargs: bool = False) -> dict
+```
+
+Go from Message class to ChatCompletion message object
+
+<a id="letta.schemas.message.Message.to_anthropic_dict"></a>
+
+#### to\_anthropic\_dict
+
+```python
+def to_anthropic_dict(inner_thoughts_xml_tag="thinking") -> dict
+```
+
+Convert to an Anthropic message dictionary
+
+**Arguments**:
+
+- `inner_thoughts_xml_tag` _str_ - The XML tag to wrap around inner thoughts
+
+<a id="letta.schemas.message.Message.to_google_ai_dict"></a>
+
+#### to\_google\_ai\_dict
+
+```python
+def to_google_ai_dict(put_inner_thoughts_in_kwargs: bool = True) -> dict
+```
+
+Go from Message class to Google AI REST message object

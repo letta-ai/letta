@@ -1,0 +1,113 @@
+## Project Slug Moved to Request Header
+
+<Note> Projects are only available for Letta Cloud. </Note>
+
+Project slug can now be specified via request header `X-Project` for agent creation. The existing `project` parameter will soon be deprecated.
+
+#### Before
+<CodeBlocks>
+```curl title="curl"
+curl -X POST https://app.letta.com/v1/agents \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "project":"YOUR_PROJECT_SLUG"
+    "model":"gpt-4o-mini",
+    "embedding":"openai/text-embedding-3-small"
+    "memory_blocks": [
+      {
+        "label": "human",
+        "value": "name: Caren"
+      }
+    ],
+  }'
+```
+```python title="python"
+from letta_client import CreateBlock, Letta
+client = Letta(
+  token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+  project="YOUR_PROJECT_SLUG",
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-3-small"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  project: "YOUR_PROJECT_SLUG",
+  model: "gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small"
+  memory_blocks: [
+    {
+      label: "human",
+      value: "name: Caren"
+    },
+  ],
+});
+```
+</CodeBlocks>
+
+#### After
+<CodeBlocks>
+```curl title="curl"
+curl -X POST https://app.letta.com/v1/agents \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'X-Project: YOUR_PROJECT_SLUG' \
+  -d '{
+    "model":"gpt-4o-mini",
+    "embedding":"openai/text-embedding-3-small"
+    "memory_blocks": [
+      {
+        "label": "human",
+        "value": "name: Caren"
+      }
+    ],
+  }'
+```
+```python title="python"
+from letta_client import CreateBlock, Letta
+client = Letta(
+  token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+  x_project="YOUR_PROJECT_SLUG",
+  model="gpt-4o-mini",
+  embedding="openai/text-embedding-3-small"
+  memory_blocks=[
+    CreateBlock(
+      "label": "human",
+      "value": "name: Caren"
+    ),
+  ],
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  x_project: "YOUR_PROJECT_SLUG",
+  model: "gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small"
+  memory_blocks: [
+    {
+      label: "human",
+      value: "name: Caren"
+    },
+  ],
+});
+```
+</CodeBlocks>

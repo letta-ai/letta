@@ -1,0 +1,24 @@
+---
+slug: python-reference/Block
+---
+
+<a id="letta.schemas.block.Block"></a>
+
+## Block
+
+```python
+class Block(BaseBlock)
+```
+
+A Block represents a reserved section of the LLM's context window which is editable. `Block` objects contained in the `Memory` object, which is able to edit the Block values.
+
+**Arguments**:
+
+- `name` _str_ - The name of the block.
+- `value` _str_ - The value of the block. This is the string that is represented in the context window.
+- `limit` _int_ - The character limit of the block.
+- `template` _bool_ - Whether the block is a template (e.g. saved human/persona options). Non-template blocks are not stored in the database and are ephemeral, while templated blocks are stored in the database.
+- `label` _str_ - The label of the block (e.g. 'human', 'persona'). This defines a category for the block.
+- `description` _str_ - Description of the block.
+- `metadata` _Dict_ - Metadata of the block.
+- `user_id` _str_ - The unique identifier of the user associated with the block.

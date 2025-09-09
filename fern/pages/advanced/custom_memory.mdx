@@ -1,0 +1,75 @@
+---
+title: Creating custom memory classes
+subtitle: Learn how to create custom memory classes
+slug: guides/agents/custom-memory
+---
+
+
+## Customizing in-context memory management
+
+We can extend both the `BaseMemory` and `ChatMemory` classes to implement custom in-context memory management for agents.
+For example, you can add an additional memory section to "human" and "persona" such as "organization".
+
+In this example, we'll show how to implement in-context memory management that treats memory as a task queue.
+We'll call this `TaskMemory` and extend the `ChatMemory` class so that we have both the original `ChatMemory` tools (`core_memory_replace` & `core_memory_append`) as well as the "human" and "persona" fields.
+
+We show an implementation of `TaskMemory` below:
+```python
+from letta.memory import ChatMemory, MemoryModule
+from typing import Optional, List
+
+class TaskMemory(ChatMemory):
+
+    def __init__(self, human: str, persona: str, tasks: List[str]):
+        super().__init__(human=human, persona=persona)
+        self.memory["tasks"] = MemoryModule(limit=2000, value=tasks) # create an empty list
+
+
+
+    def task_queue_push(self, task_description: str) -> Optional[str]:
+        """
+        Push to a task queue stored in core memory.
+
+        Args:
+            task_description (str): A description of the next task you must accomplish.
+
+        Returns:
+            Optional[str]: None is always returned as this function does not produce a response.
+        """
+        self.memory["tasks"].value.append(task_description)
+        return None
+
+    def task_queue_pop(self) -> Optional[str]:
+        """
+        Get the next task from the task queue
+
+        Returns:
+            Optional[str]: The description of the task popped from the queue,
+            if there are still tasks in queue. Otherwise, returns None (the
+            task queue is empty)
+        """
+        if len(self.memory["tasks"].value) == 0:
+            return None
+        task = self.memory["tasks"].value[0]
+        self.memory["tasks"].value = self.memory["tasks"].value[1:]
+        return task
+```
+
+To create an agent with this custom memory type, we can simply pass in an instance of `TaskMemory` into the agent creation.
+We also will modify the persona of the agent to explain how the "tasks" section of memory should be used:
+```python
+task_agent_state = client.create_agent(
+    name="task_agent",
+    memory=TaskMemory(
+        human="My name is Sarah",
+        persona="You have an additional section of core memory called `tasks`. " \
+        + "This section of memory contains of list of tasks you must do." \
+        + "Use the `task_queue_push` tool to write down tasks so you don't forget to do them." \
+        + "If there are tasks in the task queue, you should call `task_queue_pop` to retrieve and remove them. " \
+        + "Keep calling `task_queue_pop` until there are no more tasks in the queue. " \
+        + "Do *not* call `send_message` until you have completed all tasks in your queue. " \
+        + "If you call `task_queue_pop`, you must always do what the popped task specifies",
+        tasks=["start calling yourself Bob", "tell me a haiku with my name"],
+    )
+)
+```

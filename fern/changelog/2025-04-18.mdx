@@ -1,0 +1,31 @@
+## SDK Method Name Changes
+
+In an effort to keep our SDK method names consistent with our conventions, we have renamed the following methods:
+
+### Before and After
+
+| SDK Method Name | Before | After |
+| --- | --- | --- |
+| List Tags | `client.tags.list_tags` | `client.tags.list` |
+| Export Agent | `client.agents.export_agent_serialized` | `client.agents.export` |
+| Import Agent | `client.agents.import_agent_serialized` | `client.agents.import` |
+| Modify Agent Passage | `client.agents.modify_passage` | `client.agents.passages.modify` |
+| Reset Agent Messages | `client.agents.reset_messages` | `client.agents.messages.reset` |
+| List Agent Groups | `client.agents.list_agent_groups` | `client.agents.groups.list` |
+| Reset Group Messages | `client.groups.reset_messages` | `client.groups.messages.reset` |
+| Upsert Identity Properties | `client.identities.upsert_identity_properties` | `client.identities.properties.upsert` |
+| Retrieve Source by Name | `client.sources.get_by_name` | `client.sources.retrieve_by_name` |
+| List Models | `client.models.list_llms` | `client.models.list` |
+| List Embeddings | `client.models.list_embedding_models` | `client.embeddings.list` |
+| List Agents for Block | `client.blocks.list_agents_for_block` | `client.blocks.agents.list` |
+| List Providers | `client.providers.list_providers` | `client.providers.list` |
+| Create Provider | `client.providers.create_providers` | `client.providers.create` |
+| Modify Provider | `client.providers.modify_providers` | `client.providers.modify` |
+| Delete Provider | `client.providers.delete_providers` | `client.providers.delete` |
+| List Runs | `client.runs.list_runs` | `client.runs.list` |
+| List Active Runs | `client.runs.list_active_runs` | `client.runs.list_active` |
+| Retrieve Run | `client.runs.retrieve_run` | `client.runs.retrieve` |
+| Delete Run | `client.runs.delete_run` | `client.runs.delete` |
+| List Run Messages | `client.runs.list_run_messages` | `client.runs.messages.list` |
+| List Run Steps | `client.runs.list_run_steps` | `client.runs.steps.list` |
+| Retrieve Run Usage | `client.runs.retrieve_run_usage` | `client.runs.usage.retrieve` |

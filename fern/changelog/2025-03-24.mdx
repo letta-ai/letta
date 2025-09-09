@@ -1,0 +1,30 @@
+## New fields to support reasoning models
+
+The `LlmConfig` object now includes a `enable_reasoner` field, enables toggling on thinking steps for reasoning models like Sonnet 3.7. This change also includes support for specifying this along with `max_reasoning_tokens` in the agent creation API.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+    model="claude/sonnet-3-7",
+    enable_reasoner=True,
+    max_reasoning_tokens=10000,
+    max_tokens=100000
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  model: "claude/sonnet-3-7",
+  enable_reasoner: true,
+  max_reasoning_tokens: 10000,
+  max_tokens: 100000
+});
+```
+</CodeBlocks>

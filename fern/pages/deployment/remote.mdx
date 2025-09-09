@@ -1,0 +1,58 @@
+---
+title: Deploying a Letta server remotely
+slug: guides/server/remote
+---
+
+The Letta server can be deployed remotely, for example on cloud services like [Railway](https://railway.com/), or also on your own self-hosted infrastructure.
+For an example guide on how to remotely deploy the Letta server, see our [Railway deployment guide](/guides/server/railway).
+
+## Connecting the cloud/web ADE to your remote server
+<Warning>
+The cloud/web ADE can only connect to remote servers running on `https`.
+</Warning>
+The cloud (web) ADE is only able to connect to remote servers running on `https` - the only exception is `localhost`, for which `http` is allowed (except for Safari, where it is also blocked).
+
+Most cloud services have ingress tools that will handle certificate management for you and you will automatically be provisioned an `https` address (for example Railway will automatically generate a static `https` address for your deployment).
+
+### Using a reverse proxy to generate an `https` address
+If you are running your Letta server on self-hosted infrastructure, you may need to manually create an `https` address for your server.
+This can be done in numerous ways using reverse proxies:
+
+1. Use a service like [ngrok](https://ngrok.com/) to get an `https` address (on ngrok) for your server
+2. Use [Caddy](https://github.com/caddyserver/caddy) or [Traefik](https://github.com/traefik/traefik) as a reverse proxy (which will manage the certificates for you)
+3. Use [nginx](https://nginx.org/) with [Let's Encrypt](https://letsencrypt.org/) as a reverse proxy (manage the certificates yourself)
+
+### Port forwarding to localhost
+Alternatively, you can also forward your server's `http` address to `localhost`, since the `https` restriction does not apply to `localhost` (on browsers other than Safari):
+```sh
+ssh -L 8283:localhost:8283 your_server_username@your_server_ip
+```
+
+If you use the port forwarding approach, then you will not need to "Add remote server" in the ADE, instead the server will be accessible under "Local server".
+
+## Securing your Letta server
+<Warning>
+Do not expose your Letta server to the public internet unless it is password protected (either via the `SECURE` environment variable, or your own protection mechanism).
+</Warning>
+If you are running your Letta server on a cloud service (like Railway) that exposes your server via a static IP address, you will likely want to secure your Letta server with a password by using the `SECURE` environment variable.
+For more information, see our [password guide](/guides/server/docker#password-protection-advanced).
+
+Note that the `SECURE` variable does **not** have anything to do with `https`, it simply turns on basic password protection to the API requests going to your Letta server. Make sure to also enable [tool sandboxing](/guides/selfhosting#tool-sandboxing) if you are allowing untrusted users to create tools on your Letta server.
+
+## Connecting to a persistent database volume
+<Warning>
+If you do not mount a persistent database volume, your agent data will be lost when your Docker container restarts.
+</Warning>
+The Postgres database inside the Letta Docker image will look attempt to store data at `/var/lib/postgresql/data`, so to make sure your state persists across container restarts, you need to mount a volume (with a persistent data store) to that directory.
+
+For example, the recommend `docker run` command includes `-v ~/.letta/.persist/pgdata:/var/lib/postgresql/data` as a flag, which mounts your local directory `~/.letta/.persist/pgdata` to the container's `/var/lib/postgresql/data` directory (so all your agent data is stored at `~/.letta/.persist/pgdata`).
+
+Different cloud infrastructure platforms will handle mounting differently. You can view our [Railway deployment guide](/guides/server/railway) for an example of how to do this.
+
+## Connecting to an external Postgres database
+<Tip>
+Unless you have a specific reason to use an external database, we recommend using the internal database provided by the Letta Docker image, and simply mounting a volume to make sure your database is persistent across restarts.
+</Tip>
+
+You can connect Letta to an external Postgres database by setting the `LETTA_PG_URI` environment variable to the connection string of your Postgres database.
+To have the server connect to the external Postgres properly, you will need to use `alembic` or manually create the database and tables.

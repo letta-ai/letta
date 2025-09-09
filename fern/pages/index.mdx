@@ -1,0 +1,97 @@
+---
+title: Home
+layout: custom
+hide-feedback: true
+no-image-zoom: true
+slug: /
+---
+
+<style>
+  {`
+    img {
+      cursor: pointer !important;
+    }
+    .rm-Lightbox-trigger {
+      cursor: pointer !important;
+    }
+    [data-rmiz-wrap="visible"],
+    [data-rmiz-wrap="hidden"] {
+      cursor: pointer !important;
+    }
+
+    [data-radix-popper-content-wrapper]:has(span[id^="radix-"]) {
+      display: none !important;
+    }
+  `}
+</style>
+
+<div className="landing-page">
+  <div className="w-full letta-header">
+    <div className="mx-auto px-8 py-16 text-center">
+      <div className="letta-header-bg">
+        <div className="hero-image-container mx-auto overflow-hidden h-full">
+          <img src="/images/hero/letta-hero-bg.svg" className="hero-image light" alt="Letta Hero Wheel Diagram" />
+          <img src="/images/hero/letta-hero-bg-dark.svg" className="hero-image dark" alt="Letta Hero Wheel Diagram" />
+        </div>
+      </div>
+      <h1 className="text-7xl mb-6 text-left">Build with Letta</h1>
+      <p className="text-3xl font-light mb-8 text-left">
+        Learn how to build and deploy stateful agents
+      </p>
+      <div className="mt-10">
+        <a href="/overview" className="text-xl text-left font-normal hover:opacity-90 transition-opacity">
+          Get started →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {/* Main Content */}
+  <div className="landingbody max-w-4xl mx-auto px-8 py-12 mt-12">
+    <CardGroup cols={3}>
+      <Card
+        title="Letta Quickstart"
+        icon="fa-sharp fa-light fa-bolt"
+        href="/quickstart"
+      >
+    Create your first stateful agent in a few minutes
+      </Card>
+      <Card
+        title="Agent Development Environment"
+        icon="fa-sharp fa-light fa-browser"
+        href="/guides/ade/overview"
+      >
+        Learn how to use the Agent Development Environment (ADE)
+      </Card>
+      <Card
+        title="REST API and SDKs"
+        icon="fa-sharp fa-light fa-code"
+        href="/api-reference/overview"
+      >
+        Integrate Letta into your application with a few lines of code
+      </Card>
+      <Card
+        title="MCP Support"
+        icon="fa-brands fa-usb"
+        href="/guides/mcp/overview"
+      >
+        Connect Letta agents to tool libraries via Model Context Protocol (MCP)
+      </Card>
+      <Card
+        title="Cookbooks and Tutorials"
+        icon="fa-sharp fa-light fa-books"
+        href="/cookbooks"
+      >
+        Learn how to build with Letta using tutorials and pre-made apps
+      </Card>
+      <Card
+        title="DeepLearning.AI Course"
+        icon="fa-sharp fa-light fa-graduation-cap"
+        href="https://www.deeplearning.ai/short-courses/llms-as-operating-systems-agent-memory/?utm_campaign=memgpt-launch&utm_content=331638345&utm_medium=social&utm_source=docs&hss_channel=tw-992153930095251456"
+      >
+        Take our free DeepLearning.AI course on agent memory
+      </Card>
+    </CardGroup>
+
+  </div>
+</div>

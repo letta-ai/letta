@@ -1,0 +1,194 @@
+---
+title: Define and customize tools
+slug: guides/agents/custom-tools
+---
+
+You can create custom tools in Letta using the Python SDK, as well as via the [ADE tool builder](/guides/ade/tools).
+
+For your agent to call a tool, Letta constructs an OpenAI tool schema (contained in `json_schema` field) from the function you define. Letta can either parse this automatically from a properly formatting docstring, or you can pass in the schema explicitly by providing a Pydantic object that defines the argument schema.
+
+## Creating a custom tool
+
+### Specifying tools via Pydantic models
+To create a custom tool, you can extend the `BaseTool` class and specify the following:
+* `name` - The name of the tool
+* `args_schema` - A Pydantic model that defines the arguments for the tool
+* `description` - A description of the tool
+* `tags` - (Optional) A list of tags for the tool to query
+You must also define a `run(..)` method for the tool code that takes in the fields from the `args_schema`.
+
+Below is an example of how to create a tool by extending `BaseTool`:
+```python title="python" maxLines=50
+from letta_client import Letta
+from letta_client.client import BaseTool
+from pydantic import BaseModel
+from typing import List, Type
+
+class InventoryItem(BaseModel):
+    sku: str  # Unique product identifier
+    name: str  # Product name
+    price: float  # Current price
+    category: str  # Product category (e.g., "Electronics", "Clothing")
+
+class InventoryEntry(BaseModel):
+    timestamp: int  # Unix timestamp of the transaction
+    item: InventoryItem  # The product being updated
+    transaction_id: str  # Unique identifier for this inventory update
+
+class InventoryEntryData(BaseModel):
+    data: InventoryEntry
+    quantity_change: int  # Change in quantity (positive for additions, negative for removals)
+
+
+class ManageInventoryTool(BaseTool):
+    name: str = "manage_inventory"
+    args_schema: Type[BaseModel] = InventoryEntryData
+    description: str = "Update inventory catalogue with a new data entry"
+    tags: List[str] = ["inventory", "shop"]
+
+    def run(self, data: InventoryEntry, quantity_change: int) -> bool:
+        print(f"Updated inventory for {data.item.name} with a quantity change of {quantity_change}")
+        return True
+
+# create a client to connect to your local Letta server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+# create the tool
+tool_from_class = client.tools.add(
+    tool=ManageInventoryTool(),
+)
+```
+
+### Specifying tools via function docstrings
+You can create a tool by passing in a function with a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) specifying the arguments and description of the tool:
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create a client to connect to your local Letta server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# define a function with a docstring
+def roll_dice() -> str:
+    """
+    Simulate the roll of a 20-sided die (d20).
+
+    This function generates a random integer between 1 and 20, inclusive,
+    which represents the outcome of a single roll of a d20.
+
+    Returns:
+        str: The result of the die roll.
+    """
+    import random
+
+    dice_role_outcome = random.randint(1, 20)
+    output_string = f"You rolled a {dice_role_outcome}"
+    return output_string
+
+# create the tool
+tool = client.tools.create_from_function(
+    func=roll_dice
+)
+```
+The tool creation will return a `Tool` object. You can update the tool with `client.tools.upsert_from_function(...)`.
+
+
+### Specifying arguments via Pydantic models
+To specify the arguments for a complex tool, you can use the `args_schema` parameter.
+
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+class Step(BaseModel):
+    name: str = Field(
+        ...,
+        description="Name of the step.",
+    )
+    description: str = Field(
+        ...,
+        description="An exhaustic description of what this step is trying to achieve and accomplish.",
+    )
+
+
+class StepsList(BaseModel):
+    steps: list[Step] = Field(
+        ...,
+        description="List of steps to add to the task plan.",
+    )
+    explanation: str = Field(
+        ...,
+        description="Explanation for the list of steps.",
+    )
+
+def create_task_plan(steps, explanation):
+    """ Creates a task plan for the current task. """
+    return steps
+
+
+tool = client.tools.upsert_from_function(
+    func=create_task_plan,
+    args_schema=StepsList
+)
+```
+Note: this path for updating tools is currently only supported in Python.
+
+### Creating a tool from a file
+You can also define a tool from a file that contains source code. For example, you may have the following file:
+```python title="custom_tool.py" maxLines=50
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+
+class Order(BaseModel):
+    order_number: int = Field(
+        ...,
+        description="The order number to check on.",
+    )
+    customer_name: str = Field(
+        ...,
+        description="The customer name to check on.",
+    )
+
+def check_order_status(
+    orders: List[Order]
+):
+    """
+    Check status of a provided list of orders
+
+    Args:
+        orders (List[Order]): List of orders to check
+
+    Returns:
+        str: The status of the order (e.g. cancelled, refunded, processed, processing, shipping).
+    """
+    # TODO: implement
+    return "ok"
+
+```
+Then, you can define the tool in Letta via the `source_code` parameter:
+```python title="python" maxLines=50
+tool = client.tools.create(
+    source_code = open("custom_tool.py", "r").read()
+)
+```
+Note that in this case, `check_order_status` will become the name of your tool, since it is the last Python function in the file. Make sure it includes a [Google Style Python docstring](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) to define the tool’s arguments and description.
+
+# (Advanced) Accessing Agent State
+<Warning>
+Tools that use `agent_state` currently do not work in the ADE live tool tester (they will error when you press "Run"), however if the tool is correct it will work once you attach it to an agent.
+</Warning>
+If you need to directly access the state of an agent inside a tool, you can use the reserved `agent_state` keyword argument, for example:
+```python title="python"
+def get_agent_id(agent_state: "AgentState") -> str:
+    """
+    A custom tool that returns the agent ID
+
+    Returns:
+        str: The agent ID
+    """
+    return agent_state.id
+```

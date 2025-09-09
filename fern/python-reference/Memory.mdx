@@ -1,0 +1,231 @@
+---
+slug: python-reference/Memory
+---
+
+<a id="letta.schemas.memory.Memory"></a>
+
+## Memory
+
+```python
+class Memory(BaseModel)
+```
+
+Represents the in-context memory of the agent. This includes both the `Block` objects (labelled by sections), as well as tools to edit the blocks.
+
+**Attributes**:
+
+- `memory` _Dict[str, Block]_ - Mapping from memory block section to memory block.
+
+<a id="letta.schemas.memory.Memory.get_prompt_template"></a>
+
+#### get\_prompt\_template
+
+```python
+def get_prompt_template() -> str
+```
+
+Return the current Jinja2 template string.
+
+<a id="letta.schemas.memory.Memory.set_prompt_template"></a>
+
+#### set\_prompt\_template
+
+```python
+def set_prompt_template(prompt_template: str)
+```
+
+Set a new Jinja2 template string.
+Validates the template syntax and compatibility with current memory structure.
+
+<a id="letta.schemas.memory.Memory.load"></a>
+
+#### load
+
+```python
+@classmethod
+def load(cls, state: dict)
+```
+
+Load memory from dictionary object
+
+<a id="letta.schemas.memory.Memory.compile"></a>
+
+#### compile
+
+```python
+def compile() -> str
+```
+
+Generate a string representation of the memory in-context using the Jinja2 template
+
+<a id="letta.schemas.memory.Memory.to_dict"></a>
+
+#### to\_dict
+
+```python
+def to_dict()
+```
+
+Convert to dictionary representation
+
+<a id="letta.schemas.memory.Memory.to_flat_dict"></a>
+
+#### to\_flat\_dict
+
+```python
+def to_flat_dict()
+```
+
+Convert to a dictionary that maps directly from block names to values
+
+<a id="letta.schemas.memory.Memory.list_block_names"></a>
+
+#### list\_block\_names
+
+```python
+def list_block_names() -> List[str]
+```
+
+Return a list of the block names held inside the memory object
+
+<a id="letta.schemas.memory.Memory.get_block"></a>
+
+#### get\_block
+
+```python
+def get_block(name: str) -> Block
+```
+
+Correct way to index into the memory.memory field, returns a Block
+
+<a id="letta.schemas.memory.Memory.get_blocks"></a>
+
+#### get\_blocks
+
+```python
+def get_blocks() -> List[Block]
+```
+
+Return a list of the blocks held inside the memory object
+
+<a id="letta.schemas.memory.Memory.link_block"></a>
+
+#### link\_block
+
+```python
+def link_block(name: str, block: Block, override: Optional[bool] = False)
+```
+
+Link a new block to the memory object
+
+<a id="letta.schemas.memory.Memory.update_block_value"></a>
+
+#### update\_block\_value
+
+```python
+def update_block_value(name: str, value: str)
+```
+
+Update the value of a block
+
+<a id="letta.schemas.memory.BasicBlockMemory"></a>
+
+## BasicBlockMemory
+
+```python
+class BasicBlockMemory(Memory)
+```
+
+BasicBlockMemory is a basic implemention of the Memory class, which takes in a list of blocks and links them to the memory object. These are editable by the agent via the core memory functions.
+
+**Attributes**:
+
+- `memory` _Dict[str, Block]_ - Mapping from memory block section to memory block.
+
+
+**Methods**:
+
+- `core_memory_append` - Append to the contents of core memory.
+- `core_memory_replace` - Replace the contents of core memory.
+
+<a id="letta.schemas.memory.BasicBlockMemory.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(blocks: List[Block] = [])
+```
+
+Initialize the BasicBlockMemory object with a list of pre-defined blocks.
+
+**Arguments**:
+
+- `blocks` _List[Block]_ - List of blocks to be linked to the memory object.
+
+<a id="letta.schemas.memory.BasicBlockMemory.core_memory_append"></a>
+
+#### core\_memory\_append
+
+```python
+def core_memory_append(name: str, content: str) -> Optional[str]
+```
+
+Append to the contents of core memory.
+
+**Arguments**:
+
+- `name` _str_ - Section of the memory to be edited (persona or human).
+- `content` _str_ - Content to write to the memory. All unicode (including emojis) are supported.
+
+
+**Returns**:
+
+- `Optional[str]` - None is always returned as this function does not produce a response.
+
+<a id="letta.schemas.memory.BasicBlockMemory.core_memory_replace"></a>
+
+#### core\_memory\_replace
+
+```python
+def core_memory_replace(name: str, old_content: str,
+                        new_content: str) -> Optional[str]
+```
+
+Replace the contents of core memory. To delete memories, use an empty string for new_content.
+
+**Arguments**:
+
+- `name` _str_ - Section of the memory to be edited (persona or human).
+- `old_content` _str_ - String to replace. Must be an exact match.
+- `new_content` _str_ - Content to write to the memory. All unicode (including emojis) are supported.
+
+
+**Returns**:
+
+- `Optional[str]` - None is always returned as this function does not produce a response.
+
+<a id="letta.schemas.memory.ChatMemory"></a>
+
+## ChatMemory
+
+```python
+class ChatMemory(BasicBlockMemory)
+```
+
+ChatMemory initializes a BaseChatMemory with two default blocks, `human` and `persona`.
+
+<a id="letta.schemas.memory.ChatMemory.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(persona: str, human: str, limit: int = 2000)
+```
+
+Initialize the ChatMemory object with a persona and human string.
+
+**Arguments**:
+
+- `persona` _str_ - The starter value for the persona block.
+- `human` _str_ - The starter value for the human block.
+- `limit` _int_ - The character limit for each block.

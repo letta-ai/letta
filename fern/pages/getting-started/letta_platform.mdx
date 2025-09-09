@@ -1,0 +1,127 @@
+---
+title: Letta Overview
+subtitle: Create stateful AI agents that truly remember, learn, and evolve.
+slug: overview
+---
+
+Letta enables you to build and deploy stateful AI agents that maintain memory and context across long-running conversations. Develop agents that truly learn and evolve from interactions without starting from scratch each time.
+
+<img className="light" src="/images/platform_overview.png" />
+<img className="dark" src="/images/platform_overview_dark.png" />
+
+## Build agents with intelligent memory, not limited context
+
+Letta's advanced context management system - built by the [researchers behind MemGPT](https://www.letta.com/research) - transforms how agents remember and learn. Unlike basic agents that forget when their context window fills up, Letta agents maintain memories across sessions and continuously improve, even while they [sleep](/guides/agents/sleep-time-agents) <Icon icon="fa-light fa-snooze"/>.
+
+## Start building in minutes
+
+Our quickstart and examples work on both [Letta Cloud](/guides/cloud) and [self-hosted](/guides/selfhosting) Letta.
+
+<CardGroup>
+<Card
+    title="Developer quickstart"
+    icon="fa-sharp fa-light fa-bolt"
+    iconPosition="left"
+    href="/quickstart"
+>
+Create your first stateful agent using the Letta API & ADE
+</Card>
+<Card
+    title="Starter kits"
+    icon="fa-sharp fa-light fa-square-code"
+    iconPosition="left"
+    href="https://github.com/letta-ai/create-letta-app"
+>
+Build a full agents application using `create-letta-app`
+</Card>
+</CardGroup>
+
+## Build stateful agents with your favorite tools
+
+Connect to agents running in a Letta server using any of your preferred development frameworks. Letta integrates seamlessly with the developer tools you already know and love.
+
+<CardGroup cols={2}>
+<Card
+    title="TypeScript (Node.js)"
+    icon="fa-brands node-js"
+    iconPosition="left"
+    href="https://github.com/letta-ai/letta-node"
+>
+Core SDK for our REST API
+</Card>
+<Card
+    title="Python"
+    icon="fa-brands python"
+    iconPosition="left"
+    href="https://github.com/letta-ai/letta-python"
+>
+Core SDK for our REST API
+</Card>
+<Card
+    title="Vercel AI SDK"
+    icon="fa-sharp fa-solid sparkles"
+    iconPosition="left"
+    href="https://ai-sdk.dev/providers/community-providers/letta"
+>
+Framework integration
+</Card>
+<Card
+    title="Next.js"
+    icon="fa-brands js"
+    iconPosition="left"
+    href="https://www.npmjs.com/package/@letta-ai/letta-nextjs"
+>
+Framework integration
+</Card>
+<Card
+    title="React"
+    icon="fa-brands react"
+    iconPosition="left"
+    href="https://www.npmjs.com/package/@letta-ai/letta-react"
+>
+Framework integration
+</Card>
+<Card
+    title="Flask"
+    icon="fa-solid fa-flask"
+    iconPosition="left"
+    href="https://github.com/letta-ai/letta-flask"
+>
+Framework integration
+</Card>
+</CardGroup>
+
+## See what your agents are thinking
+
+The Agent Development Environment (ADE) provides complete visibility into your agent's memory, context window, and decision-making process - essential for developing and debugging production agent applications.
+
+<img className="w-300 light" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="w-300 dark" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+
+## Run agents as services, not libraries
+
+**Letta is fundamentally different from other agent frameworks.** While most frameworks are *libraries* that wrap model APIs, Letta provides a dedicated *service* where agents live and operate autonomously. Agents continue to exist and maintain state even when your application isn't running, with computation happening on the server and all memory, context, and tool connections handled by the Letta server.
+
+<img className="light" src="/images/platform_system.png" />
+<img className="dark" src="/images/platform_system_dark.png" />
+
+## Everything you need for production agents
+
+Letta provides a complete suite of capabilities for building and deploying advanced AI agents:
+
+* <Icon icon="fa-sharp fa-solid fa-browser" /> [Agent Development Environment](/agent-development-environment) (agent builder + monitoring UI)
+* <Icon icon="brands fa-python" /> [Python SDK](/api-reference/overview) + <Icon icon="brands fa-js" /> [TypeScript SDK](/api-reference/overview) + [REST API](/api-reference/overview)
+* <Icon icon="fa-sharp fa-solid fa-brain-circuit" /> [Memory management](/guides/agents/memory)
+* <Icon icon="fa-solid fa-database" /> [Persistence](/guides/agents/overview#agents-vs-threads) (all agent state is stored in a database)
+* <Icon icon="fa-sharp fa-solid fa-square-terminal" /> [Tool calling & execution](/guides/agents/tools) (support for custom tools & [pre-made tools](/guides/agents/composio))
+* <Icon icon="fa-sharp fa-solid fa-code-fork" /> [Tool rules](/guides/agents/tool-rules) (constraining an agent's action set in a graph-like structure)
+* <Icon icon="fa-sharp fa-solid fa-message-dots" /> [Streaming support](/guides/agents/streaming)
+* <Icon icon="fa-sharp fa-solid fa-people-group" /> [Native multi-agent support](/guides/agents/multi-agent) and [multi-user support](/guides/agents/multi-user)
+* <Icon icon="fa-sharp fa-solid fa-globe" /> Model-agnostic across closed ([OpenAI](/guides/server/providers/openai), etc.) and open providers ([LM Studio](/guides/server/providers/lmstudio), [vLLM](/guides/server/providers/vllm), etc.)
+* <Icon icon="fa-sharp fa-solid fa-rocket" /> Production-ready deployment ([self-hosted with Docker](/quickstart/docker) or [Letta Cloud](/quickstart/cloud))
+
+## Join our developer community
+
+Building something with Letta? Join our [Discord](https://discord.gg/letta) to connect with other developers creating stateful agents and share what you're working on.
+
+[Start building today →](/quickstart)

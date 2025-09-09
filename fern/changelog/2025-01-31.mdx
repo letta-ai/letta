@@ -1,0 +1,22 @@
+### Tool rules improvements
+
+ToolRule objects no longer should specify a `type` at instantiation, as this field is now immutable.
+
+#### Before:
+```python
+  rule = InitToolRule(
+    tool_name="secret_message",
+    type="run_first"
+)
+```
+
+#### After:
+```python
+  rule = InitToolRule(tool_name="secret_message")
+```
+
+Letta also now supports smarter retry behavior for tool rules in the case of unrecoverable failures.
+
+### New API routes to query agent steps
+
+The [`List Steps`](https://docs.letta.com/api-reference/steps/list-steps) and [`Retrieve Step`](https://docs.letta.com/api-reference/steps/retrieve-step) routes have been added to enable querying for additional metadata around agent execution.

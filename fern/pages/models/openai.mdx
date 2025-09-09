@@ -1,0 +1,87 @@
+---
+title: OpenAI
+slug: guides/server/providers/openai
+---
+
+<Tip>To enable OpenAI models with Letta, set `OPENAI_API_KEY` in your environment variables. </Tip>
+
+You can use Letta with OpenAI if you have an OpenAI account and API key. Once you have set your `OPENAI_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+Currently, Letta supports the following OpenAI models:
+- `gpt-4` (recommended for advanced reasoning)
+- `gpt-4o-mini` (recommended for low latency and cost)
+- `gpt-4o`
+- `gpt-4-turbo` (*not* recommended, should use `gpt-4o-mini` instead)
+- `gpt-3.5-turbo` (*not* recommended, should use `gpt-4o-mini` instead)
+
+
+## Enabling OpenAI models
+To enable the OpenAI provider, set your key as an environment variable:
+```
+export OPENAI_API_KEY=...
+```
+Now, OpenAI models will be enabled with you run `letta run` or the letta service.
+
+### Using the `docker run` server with OpenAI
+To enable OpenAI models, simply set your `OPENAI_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with OpenAI
+To chat with an agent, run:
+```bash
+export OPENAI_API_KEY="sk-..."
+letta run
+```
+This will prompt you to select an OpenAI model.
+```
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.letta.com]
+   gpt-4o-mini-2024-07-18 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4o-mini [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4o-2024-08-06 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4o-2024-05-13 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4o [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-turbo-preview [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-turbo-2024-04-09 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-turbo [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-1106-preview [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-0613 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4-0125-preview [type=openai] [ip=https://api.openai.com/v1]
+   gpt-4 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-3.5-turbo-instruct [type=openai] [ip=https://api.openai.com/v1]
+   gpt-3.5-turbo-16k [type=openai] [ip=https://api.openai.com/v1]
+   gpt-3.5-turbo-1106 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-3.5-turbo-0125 [type=openai] [ip=https://api.openai.com/v1]
+   gpt-3.5-turbo [type=openai] [ip=https://api.openai.com/v1]
+```
+To run the Letta server, run:
+```bash
+export OPENAI_API_KEY="sk-..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+
+## Configuring OpenAI models in the Python SDK
+When creating agents, you must specify the LLM and embedding models to use. You can additionally specify a context window limit (which must be less than or equal to the maximum size).
+
+```python
+from letta_client import Letta
+
+client = Letta(base_url="http://localhost:8283")
+
+openai_agent = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    # optional configuration
+    context_window_limit=16000
+)
+```

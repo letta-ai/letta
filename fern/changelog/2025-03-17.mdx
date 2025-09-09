@@ -1,0 +1,39 @@
+## Max invocation count tool rule
+
+A new tool rule has been introduced for configuring a max step count per tool rule.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_rules=[
+        MaxCountPerStepToolRule(
+            tool_name="manage_inventory",
+            max_count_limit=10
+        )
+    ]
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  model: "openai/gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small",
+  tool_rules: [
+    {
+      type: "max_count_per_step",
+      tool_name: "manage_inventory",
+      max_count_limit: 10
+    }
+  ]
+});
+```
+</CodeBlocks>

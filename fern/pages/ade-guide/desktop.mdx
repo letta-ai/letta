@@ -1,0 +1,120 @@
+---
+title:  Installing Letta Desktop
+subtitle: Install Letta Desktop on your MacOS, Windows, or Linux machine
+slug: guides/ade/desktop
+---
+
+<img className="w-full light" src="/images/letta_desktop_screenshot.png" />
+<img className="w-full dark" src="/images/letta_desktop_screenshot_dark.png" />
+
+Letta Desktop bundles the Letta server and ADE into a single local application. When running, it provides full access to the Letta API at `https://localhost:8283`.
+
+## Download Letta Desktop
+
+<CardGroup>
+<Card
+    title="Download Letta Desktop for Mac (Apple Silicon)"
+    icon="fa-brands fa-apple"
+    iconPosition="left"
+    href="https://downloads.letta.com/mac/dmg/arm64"
+>
+</Card>
+<Card
+    title="Download Letta Desktop for Windows (x64)"
+    icon="fa-brands fa-windows"
+    iconPosition="left"
+    href="https://downloads.letta.com/windows/nsis/x64"
+>
+</Card>
+<Card
+    title="Download Letta Desktop for Linux (x64)"
+    icon="fa-brands fa-linux"
+    iconPosition="left"
+    href="https://downloads.letta.com/linux/appImage/x64"
+>
+</Card>
+</CardGroup>
+
+<Note>
+Note: Since version 0.8.9, Letta uses sqlite as the embedded DB. If you wish to continue using Postgres, migrate your data and use the `external Postgres` support.
+</Note>
+
+## Configuration Modes
+
+Letta Desktop can run in two primary modes:
+
+### 1. Embedded Server Mode (Default)
+
+This is the default mode where Letta Desktop runs its own embedded server with a SQLite database. No additional setup is required - just install and run!
+
+To manually configure embedded mode, create or edit `~/.letta/desktop_config.json`:
+
+```json
+{
+  "version": "1",
+  "databaseConfig": {
+    "type": "embedded",
+    "embeddedType": "sqlite"
+  }
+}
+```
+
+### 2. Self-Hosted Server Mode
+
+Connect Letta Desktop to your own self-hosted Letta server. This is useful for teams or when you want more control over your server infrastructure.
+
+To configure self-hosted mode, create or edit `~/.letta/desktop_config.json`:
+
+```json
+{
+  "version": "1",
+  "databaseConfig": {
+    "type": "local",
+    "url": "http://localhost:8283",
+    "token": "your-auth-token"
+  }
+}
+```
+
+Replace `url` with your server's address and `token` with your authentication token if required.
+
+### Embedded Server with PostgreSQL (Deprecated)
+
+<Warning>
+This mode is deprecated and will be removed in a future release. We recommend using SQLite for embedded deployments or connecting to an external PostgreSQL instance for production use.
+</Warning>
+
+For backwards compatibility, you can still run the embedded server with PostgreSQL:
+
+```json
+{
+  "version": "1",
+  "databaseConfig": {
+    "type": "embedded",
+    "embeddedType": "pgserver"
+  }
+}
+```
+
+## Adding LLM backends
+The Letta server can be connected to various LLM API backends.
+You can add additional LLM API backends by opening the integrations panel (clicking the <Icon icon="square-rss" /> icon).
+When you configure a new integration (by setting the environment variable in the dialog), the Letta server will be restarted to load the new LLM API backend.
+
+<img className="block w-300" src="/images/letta_desktop_integrations.png" />
+
+You can also edit the environment variable file directly, located at `~/.letta/env`.
+
+For this quickstart demo, we'll add an OpenAI API key (once we enter our key and **click confirm**, the Letta server will automatically restart):
+<img className="w-300" src="/images/letta_desktop_openai.png" />
+
+
+## Beta Status
+
+Letta Desktop is currently in **beta**. View known issues and FAQ [here](/guides/desktop/troubleshooting).
+
+For a more stable development experience, we recommend installing Letta via Docker.
+
+## Support
+
+For bug reports and feature requests, contact us on [Discord](https://discord.gg/letta).

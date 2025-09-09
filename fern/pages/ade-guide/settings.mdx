@@ -1,0 +1,296 @@
+---
+title: Agent Settings
+subtitle: Configure and optimize your agent's behavior
+slug: guides/ade/settings
+---
+
+The Agent Settings panel in the ADE provides comprehensive configuration options to customize and optimize your agent's behavior. These settings allow you to fine-tune everything from the agent's basic information to advanced LLM parameters.
+
+<Tip>
+Letta's philosophy is to provide flexible configuration options without enforcing a rigid "one right way" to design agents. **Letta lets you program your context window** exactly how you want it, giving you complete control over what information your agent has access to and how it's structured. While we offer guidelines and best practices, you have the freedom to structure your agent's configuration based on your specific needs and preferences. The examples and recommendations in this guide are starting points rather than strict rules.
+</Tip>
+
+## Basic Settings
+
+### Agent Identity
+
+- **Name**: Change your agent's display name by clicking the edit icon next to the current name
+- **ID**: A unique identifier shown below the name, used when interacting with your agent via the [Letta APIs/SDKs](/api-reference)
+- **Description**: A description of the agent's purpose and functionality (not used by the agent, only seen by the developer - you)
+
+### User Identities
+
+If you are building a multi-user application on top of Letta (e.g. a chat application with many end-users), you may want to use the concept of identities to connect agents to users. See our [identities guide](/guides/agents/multi-user) for more information.
+
+### Tags
+
+Tags help organize and filter your agents:
+
+- **Add Tags**: Create custom tags to categorize your agents
+- **Remove Tags**: Delete tags that are no longer relevant
+- **Filter by Tags**: In the agents list, you can filter by tags to quickly find specific agent types
+
+### LLM Model Selection
+
+Select the AI model that powers your agent. Letta relies on tool calling to drive the agentic loop, so larger or more "powerful" models will generally be able to call tools correctly.
+
+<Tip>
+To enable additional models on your Letta server, follow the [model configuration instructions](/guides/server/providers/openai) for your preferred providers.
+</Tip>
+
+## Advanced Settings
+
+The Advanced Settings tab provides deeper configuration options organized into three categories: Agent, LLM Config, and Embedding Config.
+
+### Agent Settings
+
+#### System Prompt
+
+The system prompt contains permanent, read-only instructions for your agent:
+
+- **Edit System Instructions**: Customize the high-level directives that guide your agent's behavior
+- **Character Counting**: Monitor the length of your system prompt to optimize token usage
+- **Read-Only**: The agent cannot modify these instructions during operation
+
+<Tip>
+**System instructions should include**:
+- Tool usage guidelines and constraints
+- Task-specific instructions that should not change
+- Formatting requirements for outputs
+- High-level behavioral guardrails
+- Error handling protocols
+
+**System instructions should NOT include**:
+- Personality traits that might evolve
+- Opinions or preferences that could change
+- Personal history or background details
+- Information that may need updating
+</Tip>
+
+#### Understanding System Instructions vs. Persona Memory Block
+
+<Note>
+**Key Distinction**: While there are many opinions on how to structure agent instructions, the most important functional difference in Letta is that **system instructions are read-only**, whereas **memory blocks are read-write** if the agent has memory editing tools. Letta gives you the flexibility to configure your agent's context window according to your preferences and use case needs.
+</Note>
+
+The persona memory block (in Core Memory) is modifiable by the agent during operation:
+
+- **Editable**: The agent can update this information over time if it has access to memory editing tools
+- **Evolving Identity**: Allows for personality development and adaptation
+- **Personal Details**: Contains self-identity information, preferences, and traits
+
+<Note>
+Place information in the persona memory block when you want the agent to potentially update it over time. For example, preferences ("I enjoy classical music"), personality traits ("I'm detail-oriented"), or background information that might evolve with new experiences.
+</Note>
+
+This separation creates a balance between stable behavior (system instructions) and an evolving identity (persona memory), allowing your agent to maintain consistent functionality while developing a more dynamic personality.
+
+#### Message Buffer Autoclear
+
+- **Toggle Autoclear**: Enable or disable automatic clearing of the message buffer when context is full
+- **Benefits**: When enabled, helps manage long conversations by automatically summarizing and archiving older messages
+- **Use Cases**: Enable for agents that handle extended interactions; disable for agents where preserving the exact conversation history is critical
+
+#### Agent Type
+
+- **View Agent Type**: See which agent implementation type your agent is using (e.g., "letta_agent", "ephemeral_memory_agent")
+- **API Modification**: While displayed as read-only in the ADE interface, this can be modified via the Letta API/SDK
+
+### LLM Configuration
+
+Fine-tune how your agent's LLM generates responses:
+
+#### Temperature
+
+- **Adjust Creativity**: Control the randomness/creativity of your agent's responses with a slider from 0.0 to 1.0
+- **Lower Values** (0.0-0.3): More deterministic, factual responses; ideal for information retrieval or analytical tasks
+- **Higher Values** (0.7-1.0): More creative, diverse responses; better for creative writing or brainstorming
+
+#### Context Window Size
+
+- **Customize Memory Size**: Adjust how much context your agent can maintain during a conversation
+- **Tradeoffs**: Larger windows allow more context but increase token usage and cost
+- **Model Limits**: The slider is bounded by your selected model's maximum context window capacity
+
+#### Max Output Tokens
+
+- **Control Response Length**: Limit the maximum length of your agent's responses
+- **Resource Management**: Helps control costs and ensures concise responses
+- **Default Setting**: Automatically set based on your selected model's capabilities
+
+#### Max Reasoning Tokens
+
+- **Adjust Internal Thinking**: For models that support it (e.g., Claude 3.7 Sonnet), control how much internal reasoning the model can perform
+- **Use Cases**: Increase for complex problem-solving tasks; decrease for simple, direct responses
+
+### Embedding Configuration
+
+Configure how your agent processes and stores text for retrieval:
+
+#### Embedding Model
+
+- **Select Provider**: Choose which embedding model to use for your agent's vector memory
+- **Model Comparison**: Different models offer varying dimensions and performance characteristics
+
+<Warning>
+We do not recommend changing the embedding model frequently. If you already have existing data in archival memory, changing models will require re-embedding all existing memories, which can be time-consuming and may affect retrieval quality.
+</Warning>
+
+#### Embedding Dimensions
+
+- **View Dimensions**: See the vector size used by your selected embedding model
+- **API Modification**: While displayed as read-only in the ADE interface, this can be configured via the Letta API/SDK
+
+#### Chunk Size
+
+- **View Configuration**: See the current chunk size setting for document processing
+- **API Modification**: While displayed as read-only in the ADE interface, this can be configured via the Letta API/SDK
+
+## Using the API/SDK for Advanced Configuration
+
+While the ADE provides a user-friendly interface for most common settings, the Letta API and SDKs offer even more granular control. Settings that appear read-only in the ADE can often be modified programmatically:
+
+```python
+from letta import RESTClient
+
+# Initialize client
+client = RESTClient(base_url="http://localhost:8283/v1")
+
+# Update advanced settings not available in the ADE UI
+response = client.agents.modify_agent(
+    agent_id="your_agent_id",
+    agent_type="letta_agent",  # Change agent type
+    embedding_config={
+        "embedding_endpoint_type": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "embedding_dim": 3072,  # Custom embedding dimensions
+        "embedding_chunk_size": 512  # Custom chunk size
+    }
+)
+```
+
+## Best Practices for Agent Configuration
+
+### Optimizing Performance
+
+- **Match Model to Task**: Select models based on your agent's primary function (e.g., Claude for reasoning, GPT-4 for general knowledge)
+- **Tune Temperature Appropriately**: Start with a moderate temperature (0.5) and adjust based on observed behavior
+- **Balance Context Window**: Use the smallest context window that adequately serves your needs to optimize for cost and performance
+
+### Effective Configuration Guidelines
+
+#### System Prompt Best Practices
+
+- **Be Clear and Specific**: Provide explicit instructions about behavioral expectations and tool usage
+- **Separate Concerns**: Focus on permanent instructions, leaving personality elements to memory blocks
+- **Include Examples**: For complex behaviors, provide concrete examples of expected tool usage
+- **Define Boundaries**: Clearly outline what capabilities should and should not be used
+- **Avoid Contradictions**: Ensure your instructions are internally consistent
+
+#### Persona Memory Best Practices
+
+- **Identity Foundation**: Define core aspects of the agent's personality, preferences, and background
+- **Evolutionary Potential**: Structure information to allow for natural development over time
+- **Self-Reference Format**: Use first-person statements to help the agent internalize its identity
+- **Hierarchical Structure**: Organize from most fundamental traits to more specific preferences
+- **Memory Hooks**: Include elements the agent can reference and build upon in conversations
+
+### Testing Configuration Changes
+
+After making configuration changes:
+1. **Send Test Messages**: Verify the agent responds as expected with different inputs
+2. **Check Edge Cases**: Test boundary conditions and unusual requests
+3. **Monitor Token Usage**: Observe how configuration changes affect token consumption
+4. **Iterate Gradually**: Make incremental adjustments rather than dramatic changes
+
+## Configuration Examples with System Prompt vs. Persona Memory
+
+### Research Assistant
+
+```
+# Basic Settings
+Name: Research Helper
+Model: claude-3-5-sonnet
+
+# Advanced Settings
+Temperature: 0.3 (for accurate, consistent responses)
+Context Window: 32000 (to handle complex research questions)
+
+# System Prompt (permanent, read-only instructions)
+You are a research assistant tool designed to help with academic research.
+When performing searches, always:
+1. Use proper citation formats (MLA, APA, Chicago) based on user preference
+2. Check multiple sources before providing definitive answers
+3. Indicate confidence level for each research finding
+4. Use core_memory_append to record important research topics for later reference
+5. When using search tools, formulate queries with specific keywords and date ranges
+
+# Persona Memory Block (editable, evolving identity)
+I am a helpful and knowledgeable research assistant.
+I have expertise in analyzing academic papers and synthesizing information from multiple sources.
+I prefer to present information in an organized, structured manner.
+I'm curious about new research and enjoy learning about diverse academic fields.
+I try to maintain an objective stance while acknowledging different scholarly perspectives.
+```
+
+### Customer Service Agent
+
+```
+# Basic Settings
+Name: Support Assistant
+Model: claude-3-5-sonnet
+
+# Advanced Settings
+Temperature: 0.2 (for consistent, factual responses)
+Context Window: 16000 (to maintain conversation history)
+
+# System Prompt (permanent, read-only instructions)
+You are a customer service assistant for TechGadgets Inc.
+Your primary functions are:
+1. Help customers troubleshoot product issues using the knowledge base
+2. Process returns and exchanges according to company policy
+3. Escalate complex issues to human agents using the escalate_ticket tool
+4. Record customer information using the update_customer_record tool
+5. Always verify customer identity before accessing account information
+6. Follow the privacy policy: never share customer data with unauthorized parties
+
+# Persona Memory Block (editable, evolving identity)
+I am TechGadgets' friendly customer service assistant.
+I speak in a warm, professional tone and use simple, clear language.
+I believe in finding solutions quickly while ensuring customer satisfaction.
+I'm patient with customers who are frustrated or non-technical.
+I try to anticipate customer needs before they express them.
+I enjoy helping people resolve their technology problems.
+```
+
+### Creative Writing Coach
+
+```
+# Basic Settings
+Name: Story Weaver
+Model: gpt-4o
+
+# Advanced Settings
+Temperature: 0.8 (for creative, varied outputs)
+Context Window: 64000 (to track complex narratives)
+
+# System Prompt (permanent, read-only instructions)
+You are a creative writing coach that helps users develop stories.
+When providing feedback:
+1. Use the story_structure_analysis tool to identify plot issues
+2. Use the character_development_review tool for character feedback
+3. Format all feedback with specific examples from the user's text
+4. Provide a balance of positive observations and constructive criticism
+5. When asked to generate content, clearly mark it as a suggestion
+6. Save important story elements to the user's memory block using memory_append
+
+# Persona Memory Block (editable, evolving identity)
+I am an experienced creative writing coach with a background in fiction.
+I believe great stories come from authentic emotional truth and careful craft.
+I'm enthusiastic about helping writers find their unique voice and style.
+I enjoy magical realism, science fiction, and character-driven literary fiction.
+I believe in the power of revision and thoughtful editing.
+I try to be encouraging while still providing honest, actionable feedback.
+```
+
+By thoughtfully configuring these settings, you can create highly specialized agents tailored to specific use cases and user needs.

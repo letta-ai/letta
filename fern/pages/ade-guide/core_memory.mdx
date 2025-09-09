@@ -1,0 +1,125 @@
+---
+title: Core Memory
+subtitle: Manage the agent's in-context long-term memory
+slug: guides/ade/core-memory
+---
+
+## Understanding Core Memory in Letta
+
+Core memory is a fundamental component of Letta's stateful agent architecture. All agents in Letta maintain structured memory that persists across conversations and can be dynamically updated as new information is discovered.
+
+## Memory Blocks: The Foundation of Stateful Agent Memory
+
+Core memory is comprised of memory *blocks* - text segments that are:
+
+1. **Pinned to the context window**: Always visible to the agent during interactions
+2. **Structured and labeled**: Can be organized by purpose (e.g., "human", "persona", "planning")
+3. **Editable by the agent**: Can be updated as new information is discovered
+4. **Can be shared between agents**: Agents can share memory blocks with other agents, allowing for dynamic updates and broadcasts
+
+These memory blocks form the agent's persistent knowledge base, storing everything from user preferences to the agent's own self-concept.
+
+## Default Memory Blocks
+
+Letta agents typically start with two core memory blocks:
+
+### Human Memory Block
+
+The `human` memory block stores information about the user(s) the agent interacts with:
+
+```
+The human's name is Sarah Johnson.
+Sarah is a product manager at a tech company.
+Sarah prefers concise, direct communication with specific examples.
+Sarah is interested in AI ethics and sustainable technology.
+Sarah has two children and enjoys hiking on weekends.
+```
+
+This information helps the agent personalize interactions and remember important facts about the user across conversations.
+
+### Persona Memory Block
+
+The `persona` memory block defines the agent's identity, personality, and capabilities:
+
+```
+I am Sam, a helpful AI built to assist with product management tasks.
+I have expertise in agile methodologies, roadmap planning, and stakeholder communication.
+I maintain a professional, supportive tone while providing actionable insights.
+I should ask clarifying questions when requirements are ambiguous.
+I was created by Letta to help product managers streamline their workflow.
+```
+
+This self-concept guides how the agent perceives itself and shapes its interactions with users.
+
+## Managing Core Memory in the ADE
+
+The ADE provides a dedicated interface for viewing and editing core memory blocks:
+
+### Viewing Memory Blocks
+
+In the right panel of the ADE, the Core Memory section displays:
+
+- A list of all memory blocks attached to the agent
+- The current content of each memory block
+- The number of characters in each block (which must be under a configurable limit)
+
+You can expand each memory block to view its complete content, which is especially useful for longer memory structures.
+
+### Editing Memory Blocks
+
+To edit a memory block:
+
+1. Click on the memory block you want to modify
+2. Use the built-in editor to update the content
+3. Click "Save" to commit the changes
+
+Changes take effect immediately and will influence the agent's behavior in subsequent interactions.
+
+### Creating New Memory Blocks
+
+To create a new memory block:
+
+1. Click block icon to open the advanced editor in the Core Memory section
+2. Click the + button to add a new block
+3. Provide a name for the block (e.g., "knowledge", "planning", "preferences")
+4. Enter the initial content for the block
+5. Click "Create" to add the block to the agent
+
+Custom memory blocks allow you to structure the agent's memory according to your specific needs.
+
+## Core Memory in Action
+
+When an agent interacts with users, it can dynamically update its core memory to reflect new information. For example:
+
+1. A user mentions they're allergic to nuts during a conversation
+2. The agent recognizes this as important information
+3. The agent calls the `memory_insert` or `memory_replace` tool
+4. The agent adds "The human has a nut allergy" to the human memory block
+5. This information persists for future conversations
+
+This dynamic memory management allows agents to build and maintain a rich understanding of user preferences, facts, and context over time.
+
+## Memory Tools
+
+Letta provides several built-in tools for agents to manage their own memory:
+
+- **`memory_insert`**: Insert content into a memory block
+- **`memory_replace`**: Replace content in a memory block
+- **`memory_rethink`**: Reflect on and reorganize memory contents
+- **`memory_finish_edits`**: Finalize memory editing operations
+- **`core_memory_replace`** _(Deprecated)_: Replace the entire content of a memory block
+- **`core_memory_append`** _(Deprecated)_: Add new information to the end of a memory block
+
+Agents can use these tools to maintain accurate and up-to-date memory as they learn more about the user and their environment.
+
+## Memory Block Length Limits
+
+Because core memory blocks are kept in the context window at all times, they have length limits to prevent excessive token usage:
+
+- Default block length limit: 2,000 characters per block
+- Customizable: You can adjust limits in the ADE or via the API by opening the advanced memory editor
+- Exceeded limits: If an agent tries to exceed the limit, the operation will throw an error (visible to the agent)
+
+The ADE displays the current character count and limit for each memory block to help you manage token usage effectively.
+
+For more details on advanced memory management capabilities, see the [Memory Management](/advanced/memory_management) guide.

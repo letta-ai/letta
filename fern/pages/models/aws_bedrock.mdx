@@ -1,0 +1,53 @@
+---
+title: AWS Bedrock
+slug: guides/server/providers/aws-bedrock
+---
+We support Anthropic models provided via AWS Bedrock.
+
+<Warning>
+To use a model with AWS Bedrock, you must ensure it is enabled in the your AWS Model Catalog. Letta will list all available Anthropic models on Bedrock, even if you do not have access to them via AWS.
+</Warning>
+
+## Enabling AWS Bedrock models
+To enable the AWS Bedrock provider, set your key as an environment variable:
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_DEFAULT_REGION=us-east-1
+
+# Optional: specify API version (default is bedrock-2023-05-31)
+export BEDROCK_ANTHROPIC_VERSION="bedrock-2023-05-31"
+```
+Now, AWS Bedrock models will be enabled with you run the Letta server.
+
+### Using the `docker run` server with AWS Bedrock
+To enable AWS Bedrock models, simply set your `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_DEFAULT_REGION` as environment variables:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e AWS_ACCESS_KEY_ID="your_aws_access_key_id" \
+  -e AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key" \
+  -e AWS_DEFAULT_REGION="your_aws_default_region" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with AWS Bedrock
+To chat with an agent, run:
+```bash
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_DEFAULT_REGION="..."
+letta run
+```
+To run the Letta server, run:
+```bash
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_DEFAULT_REGION="..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>

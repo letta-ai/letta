@@ -1,0 +1,210 @@
+# Scheduling
+
+**Scheduling** is a technique for triggering Letta agents at regular intervals.
+Many real-world applications require proactive behavior, such as checking emails every few hours or scraping news sites.
+Scheduling can support autonomous agents with the capability to manage ongoing processes.
+
+<Note>
+Native scheduling functionality is on the Letta Cloud roadmap. The approaches described in this guide are temporary solutions that work with both self-hosted and cloud deployments.
+</Note>
+
+## Common Use Cases
+
+When building autonomous agents with Letta, you often need to trigger them at regular intervals for tasks like:
+
+- **System Monitoring**: Health checks that adapt based on historical patterns
+- **Data Processing**: Intelligent ETL processes that handle edge cases contextually
+- **Memory Maintenance**: Agents that optimize their own knowledge base over time
+- **Proactive Notifications**: Context-aware alerts that consider user preferences and timing
+- **Continuous Learning**: Agents that regularly ingest new information and update their understanding
+
+This guide covers simple approaches to implement scheduled agent interactions.
+
+## Option 1: Simple Loop
+
+The most straightforward approach for development and testing:
+
+<CodeGroup>
+```python title="python"
+import time
+from letta_client import Letta
+from datetime import datetime
+
+client = Letta(base_url="http://localhost:8283")
+agent_id = "your_agent_id"
+
+while True:
+    response = client.agents.messages.create(
+        agent_id=agent_id,
+        messages=[{
+            "role": "user",
+            "content": f"Scheduled check at {datetime.now()}"
+        }]
+    )
+    print(f"[{datetime.now()}] Agent responded")
+    time.sleep(300)  # 5 minutes
+```
+
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+const agentId = "your_agent_id";
+
+while (true) {
+    const response = await client.agents.messages.create(agentId, {
+        messages: [{
+            role: "user",
+            content: `Scheduled check at ${new Date()}`
+        }]
+    });
+    console.log(`[${new Date()}] Agent responded`);
+    await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
+}
+```
+</CodeGroup>
+
+**Pros:** Simple, easy to debug
+**Cons:** Blocks terminal, stops if process dies
+
+## Option 2: System Cron Jobs
+
+For production deployments, use cron for reliability:
+
+<CodeGroup>
+```python title="python"
+#!/usr/bin/env python3
+from letta_client import Letta
+from datetime import datetime
+
+try:
+    client = Letta(base_url="http://localhost:8283")
+    response = client.agents.messages.create(
+        agent_id="your_agent_id",
+        messages=[{
+            "role": "user",
+            "content": "Scheduled maintenance check"
+        }]
+    )
+    print(f"[{datetime.now()}] Success")
+except Exception as e:
+    print(f"[{datetime.now()}] Error: {e}")
+```
+
+```typescript title="node.js"
+#!/usr/bin/env node
+import { LettaClient } from '@letta-ai/letta-client';
+
+async function sendMessage() {
+    try {
+        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+        const response = await client.agents.messages.create("your_agent_id", {
+            messages: [{
+                role: "user",
+                content: "Scheduled maintenance check"
+            }]
+        });
+        console.log(`[${new Date()}] Success`);
+    } catch (error) {
+        console.error(`[${new Date()}] Error:`, error);
+    }
+}
+
+sendMessage();
+```
+</CodeGroup>
+
+Add to crontab with `crontab -e`:
+```bash
+*/5 * * * * /usr/bin/python3 /path/to/send_message.py >> /var/log/letta_cron.log 2>&1
+# or for Node.js:
+*/5 * * * * /usr/bin/node /path/to/send_message.js >> /var/log/letta_cron.log 2>&1
+```
+
+**Pros:** System-managed, survives reboots
+**Cons:** Requires cron access
+
+## Best Practices
+
+1. **Error Handling**: Always wrap API calls in try-catch blocks
+2. **Logging**: Log both successes and failures for debugging
+3. **Environment Variables**: Store credentials securely
+4. **Rate Limiting**: Respect API limits and add backoff for failures
+
+## Example: Memory Maintenance Bot
+
+Complete example that performs periodic memory cleanup:
+
+<CodeGroup>
+```python title="python"
+#!/usr/bin/env python3
+import logging
+from datetime import datetime
+from letta_client import Letta
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def run_maintenance():
+    try:
+        client = Letta(base_url="http://localhost:8283")
+        agent_id = "your_agent_id"
+
+        response = client.agents.messages.create(
+            agent_id=agent_id,
+            messages=[{
+                "role": "user",
+                "content": "Please review your memory blocks for outdated information and clean up as needed."
+            }]
+        )
+
+        # Print any assistant messages
+        for message in response.messages:
+            if message.message_type == "assistant_message":
+                logging.info(f"Agent response: {message.content[:100]}...")
+
+    except Exception as e:
+        logging.error(f"Maintenance failed: {e}")
+
+if __name__ == "__main__":
+    run_maintenance()
+```
+
+```typescript title="node.js"
+#!/usr/bin/env node
+import { LettaClient } from '@letta-ai/letta-client';
+
+async function runMaintenance() {
+    try {
+        const client = new LettaClient({ baseUrl: "http://localhost:8283" });
+        const agentId = "your_agent_id";
+
+        const response = await client.agents.messages.create(agentId, {
+            messages: [{
+                role: "user",
+                content: "Please review your memory blocks for outdated information and clean up as needed."
+            }]
+        });
+
+        // Print any assistant messages
+        for (const message of response.messages) {
+            if (message.messageType === "assistant_message") {
+                console.log(`Agent response: ${message.content?.substring(0, 100)}...`);
+            }
+        }
+
+    } catch (error) {
+        console.error("Maintenance failed:", error);
+    }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+    runMaintenance();
+}
+```
+</CodeGroup>
+
+Choose the scheduling method that best fits your deployment environment. For production systems, cron offers the best reliability, while simple loops are perfect for development and testing.

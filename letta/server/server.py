@@ -1125,7 +1125,8 @@ class SyncServer(Server):
             ascending=ascending,
             limit=limit,
         )
-        return records
+        # Extract just the passages (SQL path returns empty metadata)
+        return [passage for passage, _, _ in records]
 
     async def insert_archival_memory_async(
         self, agent_id: str, memory_contents: str, actor: User, tags: Optional[List[str]], created_at: Optional[datetime]

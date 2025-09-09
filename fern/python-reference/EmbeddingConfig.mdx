@@ -1,0 +1,24 @@
+---
+slug: python-reference/EmbeddingConfig
+---
+
+<a id="letta.schemas.embedding_config.EmbeddingConfig"></a>
+
+## EmbeddingConfig
+
+```python
+class EmbeddingConfig(BaseModel)
+```
+
+Embedding model configuration. This object specifies all the information necessary to access an embedding model to usage with Letta, except for secret keys.
+
+**Attributes**:
+
+- `embedding_endpoint_type` _str_ - The endpoint type for the model.
+- `embedding_endpoint` _str_ - The endpoint for the model.
+- `embedding_model` _str_ - The model for the embedding.
+- `embedding_dim` _int_ - The dimension of the embedding.
+- `embedding_chunk_size` _int_ - The chunk size of the embedding.
+- `azure_endpoint` _:obj:`str`, optional_ - The Azure endpoint for the model (Azure only).
+- `azure_version` _str_ - The Azure version for the model (Azure only).
+- `azure_deployment` _str_ - The Azure deployment for the model (Azure only).

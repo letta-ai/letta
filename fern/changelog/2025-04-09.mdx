@@ -1,0 +1,39 @@
+## New Parent Tool Rule
+
+A new tool rule has been introduced for configuring a parent tool rule, which only allows a target tool to be called after a parent tool has been run.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agent = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_rules=[
+        ParentToolRule(
+            tool_name="parent_tool",
+            children=["child_tool"]
+        )
+    ]
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.create({
+  model: "openai/gpt-4o-mini",
+  embedding: "openai/text-embedding-3-small",
+  tool_rules: [
+    {
+      type: "parent",
+      tool_name: "parent_tool",
+      children: ["child_tool"]
+    }
+  ]
+});
+```
+</CodeBlocks>

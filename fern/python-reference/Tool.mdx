@@ -1,0 +1,71 @@
+---
+slug: python-reference/Tool
+---
+
+<a id="letta.schemas.tool.Tool"></a>
+
+## Tool
+
+```python
+class Tool(BaseTool)
+```
+
+Representation of a tool, which is a function that can be called by the agent.
+
+**Arguments**:
+
+- `id` _str_ - The unique identifier of the tool.
+- `name` _str_ - The name of the function.
+- `tags` _List[str]_ - Metadata tags.
+- `source_code` _str_ - The source code of the function.
+- `json_schema` _Dict_ - The JSON schema of the function.
+
+<a id="letta.schemas.tool.Tool.to_dict"></a>
+
+#### to\_dict
+
+```python
+def to_dict()
+```
+
+Convert tool into OpenAI representation.
+
+<a id="letta.schemas.tool.Tool.from_langchain"></a>
+
+#### from\_langchain
+
+```python
+@classmethod
+def from_langchain(cls, langchain_tool) -> "Tool"
+```
+
+Class method to create an instance of Tool from a Langchain tool (must be from langchain_community.tools).
+
+**Arguments**:
+
+- `langchain_tool` _LangchainTool_ - An instance of a crewAI BaseTool (BaseTool from crewai)
+
+
+**Returns**:
+
+- `Tool` - A Letta Tool initialized with attributes derived from the provided crewAI BaseTool object.
+
+<a id="letta.schemas.tool.Tool.from_crewai"></a>
+
+#### from\_crewai
+
+```python
+@classmethod
+def from_crewai(cls, crewai_tool) -> "Tool"
+```
+
+Class method to create an instance of Tool from a crewAI BaseTool object.
+
+**Arguments**:
+
+- `crewai_tool` _CrewAIBaseTool_ - An instance of a crewAI BaseTool (BaseTool from crewai)
+
+
+**Returns**:
+
+- `Tool` - A Letta Tool initialized with attributes derived from the provided crewAI BaseTool object.

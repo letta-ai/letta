@@ -1,0 +1,185 @@
+---
+title:  Installing Letta Desktop
+subtitle: Install Letta Desktop on your MacOS, Windows, or Linux machine
+slug: guides/ade/desktop
+---
+
+<Note>
+Letta Desktop is currently in **beta**.
+For a more stable development experience, we recommend using the [cloud ADE](/guides/ade/browser) with [Docker](/guides/selfhosting), or [Letta Cloud](/guides/cloud/overview).
+
+For support, join our community [Discord server](https://discord.gg/letta).
+</Note>
+
+
+<img className="w-full light" src="/images/letta_desktop_screenshot.png" />
+<img className="w-full dark" src="/images/letta_desktop_screenshot_dark.png" />
+
+**Letta Desktop** allows you to run the ADE (Agent Development Environment) as a local application.
+Letta Desktop also bundles a built-in Letta server, so can run Letta Desktop standalone, or you can connect it to a self-hosted Letta server.
+
+## Download Letta Desktop
+
+<CardGroup>
+<Card
+    title="Download Letta Desktop for Mac (Apple Silicon)"
+    icon="fa-brands fa-apple"
+    iconPosition="left"
+    href="https://downloads.letta.com/mac/dmg/arm64"
+>
+</Card>
+<Card
+    title="Download Letta Desktop for Windows (x64)"
+    icon="fa-brands fa-windows"
+    iconPosition="left"
+    href="https://downloads.letta.com/windows/nsis/x64"
+>
+</Card>
+<Card
+    title="Download Letta Desktop for Linux (x64)"
+    icon="fa-brands fa-linux"
+    iconPosition="left"
+    href="https://downloads.letta.com/linux/appImage/x64"
+>
+</Card>
+</CardGroup>
+
+
+## Adding LLM backends
+
+<Note>
+The integrations page is only available when using the embedded Letta server.
+If you are using a self-hosted Letta server, you can add LLM backends by editing the environment variables when you launch your server.
+See [self-hosting](/guides/selfhosting) for more information.
+</Note>
+
+The Letta server can be connected to various LLM API backends.
+You can add additional LLM API backends by opening the integrations panel (clicking the <Icon icon="square-rss" /> icon).
+When you configure a new integration (by setting the environment variable in the dialog), the Letta server will be restarted to load the new LLM API backend.
+
+<img className="block w-300" src="/images/letta_desktop_integrations.png" />
+
+You can also edit the environment variable file directly, located at `~/.letta/env`.
+
+For this quickstart demo, we'll add an OpenAI API key (once we enter our key and **click confirm**, the Letta server will automatically restart):
+<img className="w-300" src="/images/letta_desktop_openai.png" />
+
+
+## Configuration Modes
+
+Letta Desktop can run in two primary modes, which can be configured from the settings menu in the app, or by manually editing the `~/.letta/desktop_config.json` file.
+
+<AccordionGroup>
+  <Accordion title="Embedded server mode" icon="database">
+    In this mode Letta Desktop runs its own embedded Letta server with a SQLite database.
+    No additional setup is required - just install Letta Desktop and start creating stateful agents!
+
+    <Tabs>
+      <Tab title="Configuration">
+        To manually configure embedded mode, create or edit `~/.letta/desktop_config.json`:
+        ```json
+        {
+          "version": "1",
+          "databaseConfig": {
+            "type": "embedded",
+            "embeddedType": "sqlite"
+          }
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="Self-Hosted server mode (recommended)" icon="server">
+    Connect Letta Desktop to your own self-hosted Letta server.
+    You can use this mode to connect to a Letta server running locally (e.g. on `localhost:8283` via Docker), or to a Letta server running on a remote machine.
+
+    <Tabs>
+      <Tab title="Local Server">
+        For a Letta server running locally on your machine:
+        ```json
+        {
+          "version": "1",
+          "databaseConfig": {
+            "type": "local",
+            "url": "http://localhost:8283"
+          }
+        }
+        ```
+      </Tab>
+      <Tab title="Remote Server">
+        For a password-protected Letta server on a remote machine:
+        ```json
+        {
+          "version": "1",
+          "databaseConfig": {
+            "type": "local",
+            "url": "https://remote-machine.com",
+            "token": "your-password"
+          }
+        }
+        ```
+        <Note>
+        If your server is [password protected](/guides/selfhosting), include the `token` field. Otherwise, omit it.
+        </Note>
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="Embedded PostgreSQL (deprecated)" icon="triangle-exclamation">
+    <Warning>
+    This mode is deprecated and will be removed in a future release. See our migration guide if you have existing data in PostgreSQL from Letta Desktop you want to preserve.
+    </Warning>
+
+    <Tabs>
+      <Tab title="Configuration">
+        For backwards compatibility, you can still run the embedded server with PostgreSQL:
+
+        ```json
+        {
+          "version": "1",
+          "databaseConfig": {
+            "type": "embedded",
+            "embeddedType": "pgserver"
+          }
+        }
+        ```
+      </Tab>
+      <Tab title="Migration Guide">
+        If you have existing data in the embedded PostgreSQL database, you can migrate to a Docker-based Letta server that reads from your existing data:
+
+        1. First, locate your PostgreSQL data directory (by default for old versions of Letta Desktop this is `~/.letta/desktop_data`)
+
+        2. Launch a Docker Letta server with your existing data mounted:
+
+        ```bash
+        # Mount your existing Desktop PostgreSQL data to the Docker container
+        docker run \
+          -v ~/.letta/desktop_data:/var/lib/postgresql/data \
+          -p 8283:8283 \
+          -e OPENAI_API_KEY="your_openai_api_key" \
+          -e ANTHROPIC_API_KEY="your_anthropic_api_key" \
+          letta/letta:latest
+        ```
+
+        3. Update your Letta Desktop configuration to connect to this self-hosted server:
+
+        ```json
+        {
+          "version": "1",
+          "databaseConfig": {
+            "type": "local",
+            "url": "http://localhost:8283"
+          }
+        }
+        ```
+
+        Your agents and data will be preserved and accessible through the Docker-based server.
+      </Tab>
+    </Tabs>
+  </Accordion>
+</AccordionGroup>
+
+## Support
+
+For bug reports and feature requests, contact us on [Discord](https://discord.gg/letta).

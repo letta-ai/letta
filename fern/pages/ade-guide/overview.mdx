@@ -1,0 +1,118 @@
+---
+title: Agent Development Environment (ADE)
+slug: guides/ade/overview
+---
+
+<Info>
+The cloud/web ADE is available at [https://app.letta.com](https://app.letta.com), and can connect to your Letta server running on `localhost`, as well as self-hosted deployments.
+
+If you would like to run Letta completely locally (both the server and ADE), you can also use [Letta Desktop](/guides/ade/desktop) instead (currently in alpha).
+</Info>
+
+<Frame>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/OzSCFR0Lp5s?si=pyJMo7eKBcW2zaan" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</Frame>
+
+## What is the Agent Development Environment?
+
+The Agent Development Environment (ADE) is Letta's comprehensive toolkit for creating, testing, and monitoring stateful agents. The ADE provides unprecedented visibility into every aspect of your agent's operation, including all components of its context window (memory, state, and prompts) as well as tool execution.
+
+<img className="block w-300 dark:hidden" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_light.png" />
+<img className="hidden w-300 dark:block" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot.png" />
+
+## Why Use the ADE?
+
+The ADE bridges the gap between development and deployment, providing:
+
+- **Complete Transparency**: See exactly what your agent "sees," thinks, and does
+- **State Control**: Directly read and write to your agent's persistent memory
+- **Rapid Prototyping**: Create and test agents in a fraction of the time required with scripts
+- **Robust Debugging**: Identify and resolve issues by examining your agent's state in real-time
+- **Dynamic Management**: Add or modify tools, memory blocks, and data sources without recreating your agent
+- **Seamless Collaboration**: Share and iterate on agents by importing and exporting with [agent file (.af)](/guides/agents/agent-file), which can be used to checkpoint your agent's state
+
+## Core Components of the ADE
+
+The ADE is organized into three main panels, each focusing on different aspects of agent development:
+
+### 👾 Agent Simulator (Center Panel)
+
+The Agent Simulator is your primary interface for interacting with and testing your agent:
+
+- Chat directly with your agent to test its capabilities
+- Send system messages to simulate events and triggers
+- Monitor the agent's responses, tool usage, and reasoning in real-time
+
+[Learn more about the Agent Simulator →](/guides/ade/simulator)
+
+### ⚙️ Agent Configuration (Left Panel)
+
+The Agent Configuration panel allows you to customize every aspect of your agent:
+
+- **LLM (Model) Selection**: Choose from a variety of language models from providers like OpenAI, Anthropic, and more
+- **System Instructions**: Configure the high-level (read-only) directives that guide your agent's behavior
+- **Tools Management**: Add, remove, and configure the tools available to your agent
+- **Data Sources**: Connect your agent to external knowledge via documents, APIs, and databases
+- **Advanced Settings**: Configure your context window size, temperature, and other parameters
+
+### 🧠 Agent State Visualization (Right Panel)
+
+The State Visualization panel provides real-time insights into your agent's internal state:
+
+- **Context Window Viewer**: Examine exactly what information your agent is currently processing
+- **Core Memory Blocks**: View and edit the persistent knowledge your agent maintains
+- **Archival Memory**: Monitor and search your agent's external (out-of-context) memory store
+
+[Learn more about the Context Window Viewer →](/guides/ade/context-window-viewer)
+
+## Getting Started with the ADE
+
+### Connecting to Your Letta Server
+
+The ADE can connect to:
+
+1. A local Letta server running on your machine
+2. A remote Letta server deployed on your infrastructure
+3. [Letta Cloud](/guides/cloud/overview)
+
+For local development, the ADE automatically detects and connects to your local Letta server. For remote servers, you'll need to configure the connection settings in the ADE.
+
+[Learn how to connect the ADE to your server →](/guides/ade/setup)
+
+### Creating Your First Agent
+
+To create a new agent in the ADE:
+
+1. Click the "Create Agent" button in the agents list
+2. Configure basic settings (name, LLM provider, etc.)
+3. Customize the agent's memory blocks (personality, knowledge, etc.)
+4. Add tools to extend the agent's capabilities
+5. Start chatting with your agent to test its behavior
+
+### Customizing Your Agent
+
+The ADE makes it easy to iterate on your agent design:
+
+- **Adjust LLM Parameters**: Experiment with different base models
+- **Edit Memory Content**: Watch your agent edit its own memory, or manually edit its memory yourself
+- **Add Custom Tools**: Create and test Python tools that extend your agent's capabilities
+- **Connect Data Sources**: Import documents, websites, or other data to enhance your agent's knowledge
+
+## Next Steps
+
+Ready to start building with the ADE? Check out these resources:
+
+<CardGroup cols={2}>
+  <Card title="ADE Setup Guide" icon="rocket" href="/guides/ade/setup">
+    Learn how to set up and connect the ADE to your Letta server
+  </Card>
+  <Card title="Agent Simulator" icon="alien-8bit" href="/guides/ade/simulator">
+    Master the agent testing and debugging interface
+  </Card>
+  <Card title="Tools Management" icon="wrench" href="/guides/ade/tools">
+    Create and configure tools to extend your agent's capabilities
+  </Card>
+  <Card title="Memory Systems" icon="brain" href="/guides/ade/core-memory">
+    Understand and customize your agent's memory architecture
+  </Card>
+</CardGroup>

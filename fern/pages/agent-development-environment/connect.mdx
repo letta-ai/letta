@@ -1,0 +1,41 @@
+---
+title: Connecting to the ADE
+slug: guides/ade/setup
+---
+<Tip>
+The cloud/web ADE is avilable at [https://app.letta.com](https://app.letta.com), and can connect to your Letta server running on `localhost`, as well as self-hosted deployments.
+
+If you would like to run Letta completely locally (both the server and ADE), you can also use [Letta Desktop](/quickstart/desktop) instead (currently in alpha).
+</Tip>
+
+<Frame>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/OzSCFR0Lp5s?si=pyJMo7eKBcW2zaan" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</Frame>
+
+The ADE can connect to self-hosted Letta servers (e.g. a Letta server running on your laptop), as well as the Letta Cloud service.
+When connected to a self-hosted / private server, the ADE uses the Letta REST API to communicate with your server.
+
+## Connecting to a local server
+To connect the ADE with your local Letta server (running on `localhost`), simply:
+1. Start your Letta server (`docker run ...`)
+2. Visit [https://app.letta.com](https://app.letta.com) and you will see "Local server" as an option in the left panel
+
+<img className="w-300 light" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents_light.png" />
+<img className="w-300 dark" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/example_ade_screenshot_agents.png" />
+
+## Connecting to an external (self-hosted) server
+<Warning>
+The cloud/web ADE does **not support** connecting to `http` (non-`https`) IP addresses, *except* for `localhost`.
+
+For example, if your server is running on a home address like `http://192.168.1.10:8283`, the ADE (when running on a browser on another device on the network) will not be able to connect to your server because it is not on `https`.
+
+For more information on `https` proxies, see [this page](/guides/server/remote).
+</Warning>
+If your Letta server isn't running on `localhost` (for example, you deployed it on an external service like EC2):
+1. Click "Add remote server"
+2. Enter your desired server name, the IP address of the server, and the server password (if set, otherwise leave empty)
+
+Note that the remote IP address **must be `https`**, or the ADE will not be able to connect.
+
+<img className="w-300 light" src="../../images/railway_ade_example_light.png" />
+<img className="w-300 dark" src="../../images/railway_ade_example.png" />

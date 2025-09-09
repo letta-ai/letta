@@ -1,0 +1,72 @@
+## Consistency Across Messages APIs
+
+<Note> These are the final changes from our API overhaul, which means they are not backwards compatible to prior versions of our APIs and SDKs. Upgrading may require changes to your code. </Note>
+
+### Flattened `UserMessage` content
+
+The content field on `UserMessage` objects returned by our Messages endpoints have been simplified to flat strings containing raw message text, rather than JSON strings with message text nested inside.
+
+#### Before:
+```python
+  {
+    "id": "message-dea2ceab-0863-44ea-86dc-70cf02c05946",
+    "date": "2025-01-28T01:18:18+00:00",
+    "message_type": "user_message",
+    "content": "{\n  \"type\": \"user_message\",\n  \"message\": \"Hello, how are you?\",\n  \"time\": \"2025-01-28 01:18:18 AM UTC+0000\"\n}"
+  }
+```
+
+#### After:
+```python
+  {
+    "id": "message-dea2ceab-0863-44ea-86dc-70cf02c05946",
+    "date": "2025-01-28T01:18:18+00:00",
+    "message_type": "user_message",
+    "content": "Hello, how are you?"
+  }
+```
+
+### Top-level `use_assistant_message` parameter defaults to True
+
+All message related APIs now include a top-level `use_assistant_message` parameter, which defaults to `True` if not specified. This parameter controls whether the endpoint should parse specific tool call arguments (default `send_message`) as AssistantMessage objects rather than ToolCallMessage objects.
+
+#### Before:
+```python
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        MessageCreate(
+            role="user",
+            content="call the big_return function",
+        ),
+    ],
+    config=LettaRequestConfig(use_assistant_message=False),
+)
+```
+
+#### After:
+```python
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        MessageCreate(
+            role="user",
+            content="call the big_return function",
+        ),
+    ],
+    use_assistant_message=False,
+)
+```
+
+Previously, the `List Messages` endpoint defaulted to False internally, so this change may cause unexpected behavior in your code. To fix this, you can set the `use_assistant_message` parameter to `False` in your request.
+
+```python
+messages = client.agents.messages.list(
+    limit=10,
+    use_assistant_message=False,
+)
+```
+
+### Consistent message return type
+
+All message related APIs return `LettaMessage` objects now, which are simplified versions of `Message` objects stored in the database backend. Previously, our `List Messages` endpoint returned `Message` objects by default, which is no longer an option.

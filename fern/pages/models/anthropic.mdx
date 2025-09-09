@@ -1,0 +1,68 @@
+---
+title: Anthropic
+slug: guides/server/providers/anthropic
+---
+<Tip>To enable Anthropic models with Letta, set `ANTHROPIC_API_KEY` in your environment variables. </Tip>
+
+You can use Letta with Anthropic if you have an Anthropic account and API key.
+Currently, only there are no supported **embedding** models for Anthropic (only LLM models).
+You will need to use a seperate provider (e.g. OpenAI) or the Letta embeddings endpoint (`letta-free`) for embeddings.
+
+## Enabling Anthropic models
+To enable the Anthropic provider, set your key as an environment variable:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+Now, Anthropic models will be enabled with you run `letta run` or start the Letta server.
+
+### Using the `docker run` server with Anthropic
+To enable Anthropic models, simply set your `ANTHROPIC_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e ANTHROPIC_API_KEY="your_anthropic_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with Anthropic
+To chat with an agent, run:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+letta run
+```
+This will prompt you to select an Anthropic model.
+```
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.letta.com]
+   claude-3-opus-20240229 [type=anthropic] [ip=https://api.anthropic.com/v1]
+   claude-3-sonnet-20240229 [type=anthropic] [ip=https://api.anthropic.com/v1]
+   claude-3-haiku-20240307 [type=anthropic] [ip=https://api.anthropic.com/v1]
+```
+To run the Letta server, run:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
+
+## Configuring Anthropic models
+
+When creating agents, you must specify the LLM and embedding models to use. You can additionally specify a context window limit (which must be less than or equal to the maximum size). Note that Anthropic does not have embedding models, so you will need to use another provider.
+
+```python
+from letta_client import Letta
+
+client = Letta(base_url="http://localhost:8283")
+
+agent = client.agents.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    embedding="openai/text-embedding-3-small",
+    # optional configuration
+    context_window_limit=30000
+)
+```
+Anthropic models have very large context windows, which will be very expensive and high latency. We recommend setting a lower `context_window_limit` when using Anthropic models.
