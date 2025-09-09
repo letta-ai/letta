@@ -6,7 +6,7 @@ from letta.log import get_logger
 from letta.otel.context import get_ctx_attributes
 from letta.otel.tracing import log_event, trace_method
 from letta.schemas.agent import AgentState
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import FileProcessingStatus, VectorDBProvider
 from letta.schemas.file import FileMetadata
 from letta.schemas.passage import Passage
 from letta.schemas.user import User
@@ -30,7 +30,6 @@ class FileProcessor:
         file_parser: FileParser,
         embedder: BaseEmbedder,
         actor: User,
-        using_pinecone: bool,
         max_file_size: int = 50 * 1024 * 1024,  # 50MB default
     ):
         self.file_parser = file_parser
@@ -42,7 +41,8 @@ class FileProcessor:
         self.job_manager = JobManager()
         self.agent_manager = AgentManager()
         self.actor = actor
-        self.using_pinecone = using_pinecone
+        # get vector db type from the embedder
+        self.vector_db_type = embedder.vector_db_type
 
     async def _chunk_and_embed_with_fallback(self, file_metadata: FileMetadata, ocr_response, source_id: str) -> List:
         """Chunk text and generate embeddings with fallback to default chunker if needed"""
@@ -218,7 +218,7 @@ class FileProcessor:
                 source_id=source_id,
             )
 
-            if not self.using_pinecone:
+            if self.vector_db_type == VectorDBProvider.NATIVE:
                 all_passages = await self.passage_manager.create_many_source_passages_async(
                     passages=all_passages,
                     file_metadata=file_metadata,
@@ -241,7 +241,8 @@ class FileProcessor:
             )
 
             # update job status
-            if not self.using_pinecone:
+            # pinecone completes slowly, so gets updated later
+            if self.vector_db_type != VectorDBProvider.PINECONE:
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id,
                     actor=self.actor,
@@ -317,14 +318,15 @@ class FileProcessor:
             )
 
             # Create passages in database (unless using Pinecone)
-            if not self.using_pinecone:
+            if self.vector_db_type == VectorDBProvider.NATIVE:
                 all_passages = await self.passage_manager.create_many_source_passages_async(
                     passages=all_passages, file_metadata=file_metadata, actor=self.actor
                 )
                 log_event("file_processor.import_passages_created", {"filename": filename, "total_passages": len(all_passages)})
 
             # Update file status to completed (valid transition from EMBEDDING)
-            if not self.using_pinecone:
+            # pinecone completes slowly, so gets updated later
+            if self.vector_db_type != VectorDBProvider.PINECONE:
                 await self.file_manager.update_file_status(
                     file_id=file_metadata.id, actor=self.actor, processing_status=FileProcessingStatus.COMPLETED
                 )

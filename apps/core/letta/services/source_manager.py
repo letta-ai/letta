@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from sqlalchemy import and_, exists, select
 
+from letta.helpers.pinecone_utils import should_use_pinecone
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.orm import Agent as AgentModel
 from letta.orm.errors import NoResultFound
@@ -18,6 +19,18 @@ from letta.utils import enforce_types, printd
 
 
 class SourceManager:
+    def _get_vector_db_provider(self) -> VectorDBProvider:
+        """
+        determine which vector db provider to use based on configuration.
+        turbopuffer takes precedence when available.
+        """
+        if should_use_tpuf():
+            return VectorDBProvider.TPUF
+        elif should_use_pinecone():
+            return VectorDBProvider.PINECONE
+        else:
+            return VectorDBProvider.NATIVE
+
     """Manager class to handle business logic related to Sources."""
 
     @trace_method
@@ -52,7 +65,7 @@ class SourceManager:
         if db_source:
             return db_source
         else:
-            vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+            vector_db_provider = self._get_vector_db_provider()
 
             async with db_registry.async_session() as session:
                 # Provide default embedding config if not given
@@ -96,7 +109,7 @@ class SourceManager:
         Returns:
             List of created/updated sources
         """
-        vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+        vector_db_provider = self._get_vector_db_provider()
         for pydantic_source in pydantic_sources:
             pydantic_source.vector_db_provider = vector_db_provider
 

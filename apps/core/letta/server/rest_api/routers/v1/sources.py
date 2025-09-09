@@ -15,6 +15,7 @@ from letta.helpers.pinecone_utils import (
     delete_source_records_from_pinecone_index,
     should_use_pinecone,
 )
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -189,7 +190,13 @@ async def delete_source(
     files = await server.file_manager.list_files(source_id, actor)
     file_ids = [f.id for f in files]
 
-    if should_use_pinecone():
+    if should_use_tpuf():
+        logger.info(f"Deleting source {source_id} from Turbopuffer")
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        tpuf_client = TurbopufferClient()
+        await tpuf_client.delete_source_passages(source_id=source_id, organization_id=actor.organization_id)
+    elif should_use_pinecone():
         logger.info(f"Deleting source {source_id} from pinecone index")
         await delete_source_records_from_pinecone_index(source_id=source_id, actor=actor)
 
@@ -435,7 +442,13 @@ async def delete_file_from_source(
 
     await server.remove_file_from_context_windows(source_id=source_id, file_id=deleted_file.id, actor=actor)
 
-    if should_use_pinecone():
+    if should_use_tpuf():
+        logger.info(f"Deleting file {file_id} from Turbopuffer")
+        from letta.helpers.tpuf_client import TurbopufferClient
+
+        tpuf_client = TurbopufferClient()
+        await tpuf_client.delete_file_passages(source_id=source_id, file_id=file_id, organization_id=actor.organization_id)
+    elif should_use_pinecone():
         logger.info(f"Deleting file {file_id} from pinecone index")
         await delete_file_records_from_pinecone_index(file_id=file_id, actor=actor)
 
@@ -481,10 +494,15 @@ async def load_file_to_source_cloud(
     else:
         file_parser = MarkitdownFileParser()
 
-    using_pinecone = should_use_pinecone()
-    if using_pinecone:
+    # determine which embedder to use - turbopuffer takes precedence
+    if should_use_tpuf():
+        from letta.services.file_processor.embedder.turbopuffer_embedder import TurbopufferEmbedder
+
+        embedder = TurbopufferEmbedder(embedding_config=embedding_config)
+    elif should_use_pinecone():
         embedder = PineconeEmbedder(embedding_config=embedding_config)
     else:
         embedder = OpenAIEmbedder(embedding_config=embedding_config)
-    file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=actor, using_pinecone=using_pinecone)
+
+    file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=actor)
     await file_processor.process(agent_states=agent_states, source_id=source_id, content=content, file_metadata=file_metadata)

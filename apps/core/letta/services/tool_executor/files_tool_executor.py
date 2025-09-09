@@ -5,10 +5,13 @@ from typing import Any, Dict, List, Optional
 from letta.constants import PINECONE_TEXT_FIELD_NAME
 from letta.functions.types import FileOpenRequest
 from letta.helpers.pinecone_utils import search_pinecone_index, should_use_pinecone
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.sandbox_config import SandboxConfig
+from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.user import User
@@ -554,18 +557,140 @@ class LettaFileToolExecutor(ToolExecutor):
 
         self.logger.info(f"Semantic search started for agent {agent_state.id} with query '{query}' (limit: {limit})")
 
-        # Check if Pinecone is enabled and use it if available
-        if should_use_pinecone():
-            return await self._search_files_pinecone(agent_state, query, limit)
-        else:
-            return await self._search_files_traditional(agent_state, query, limit)
+        # Check which vector DB to use - Turbopuffer takes precedence
+        attached_sources = await self.agent_manager.list_attached_sources_async(agent_id=agent_state.id, actor=self.actor)
+        attached_tpuf_sources = [source for source in attached_sources if source.vector_db_provider == VectorDBProvider.TPUF]
+        attached_pinecone_sources = [source for source in attached_sources if source.vector_db_provider == VectorDBProvider.PINECONE]
 
-    async def _search_files_pinecone(self, agent_state: AgentState, query: str, limit: int) -> str:
+        if not attached_tpuf_sources and not attached_pinecone_sources:
+            return await self._search_files_native(agent_state, query, limit)
+
+        results = []
+
+        # If both have items, we half the limit roughly
+        # TODO: This is very hacky bc it skips the re-ranking - but this is a temporary stopgap while we think about migrating data
+
+        if attached_tpuf_sources and attached_pinecone_sources:
+            limit = max(limit // 2, 1)
+
+        if should_use_tpuf() and attached_tpuf_sources:
+            tpuf_result = await self._search_files_turbopuffer(agent_state, attached_tpuf_sources, query, limit)
+            results.append(tpuf_result)
+
+        if should_use_pinecone() and attached_pinecone_sources:
+            pinecone_result = await self._search_files_pinecone(agent_state, attached_pinecone_sources, query, limit)
+            results.append(pinecone_result)
+
+        # combine results from both sources
+        if results:
+            return "\n\n".join(results)
+
+        # fallback if no results from either source
+        return "No results found"
+
+    async def _search_files_turbopuffer(self, agent_state: AgentState, attached_sources: List[Source], query: str, limit: int) -> str:
+        """Search files using Turbopuffer vector database."""
+
+        # Get attached sources
+        source_ids = [source.id for source in attached_sources]
+        if not source_ids:
+            return "No valid source IDs found for attached files"
+
+        # Get all attached files for this agent
+        file_agents = await self.files_agents_manager.list_files_for_agent(
+            agent_id=agent_state.id, per_file_view_window_char_limit=agent_state.per_file_view_window_char_limit, actor=self.actor
+        )
+        if not file_agents:
+            return "No files are currently attached to search"
+
+        # Create a map of file_id to file_name for quick lookup
+        file_map = {fa.file_id: fa.file_name for fa in file_agents}
+
+        results = []
+        total_hits = 0
+        files_with_matches = {}
+
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+
+            tpuf_client = TurbopufferClient()
+
+            # Query Turbopuffer for all sources at once
+            search_results = await tpuf_client.query_file_passages(
+                source_ids=source_ids,  # pass all source_ids as a list
+                organization_id=self.actor.organization_id,
+                actor=self.actor,
+                query_text=query,
+                search_mode="hybrid",  # use hybrid search for best results
+                top_k=limit,
+            )
+
+            # Process search results
+            for passage, score, metadata in search_results:
+                if total_hits >= limit:
+                    break
+
+                total_hits += 1
+
+                # get file name from our map
+                file_name = file_map.get(passage.file_id, "Unknown File")
+
+                # group by file name
+                if file_name not in files_with_matches:
+                    files_with_matches[file_name] = []
+                files_with_matches[file_name].append({"text": passage.text, "score": score, "passage_id": passage.id})
+
+        except Exception as e:
+            self.logger.error(f"Turbopuffer search failed: {str(e)}")
+            raise e
+
+        if not files_with_matches:
+            return f"No semantic matches found in Turbopuffer for query: '{query}'"
+
+        # Format results
+        passage_num = 0
+        for file_name, matches in files_with_matches.items():
+            for match in matches:
+                passage_num += 1
+
+                # format each passage with terminal-style header
+                score_display = f"(score: {match['score']:.3f})"
+                passage_header = f"\n=== {file_name} (passage #{passage_num}) {score_display} ==="
+
+                # format the passage text
+                passage_text = match["text"].strip()
+                lines = passage_text.splitlines()
+                formatted_lines = []
+                for line in lines[:20]:  # limit to first 20 lines per passage
+                    formatted_lines.append(f"  {line}")
+
+                if len(lines) > 20:
+                    formatted_lines.append(f"  ... [truncated {len(lines) - 20} more lines]")
+
+                passage_content = "\n".join(formatted_lines)
+                results.append(f"{passage_header}\n{passage_content}")
+
+        # mark access for files that had matches
+        if files_with_matches:
+            matched_file_names = [name for name in files_with_matches.keys() if name != "Unknown File"]
+            if matched_file_names:
+                await self.files_agents_manager.mark_access_bulk(agent_id=agent_state.id, file_names=matched_file_names, actor=self.actor)
+
+        # create summary header
+        file_count = len(files_with_matches)
+        summary = f"Found {total_hits} Turbopuffer matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
+
+        # combine all results
+        formatted_results = [summary, "=" * len(summary)] + results
+
+        self.logger.info(f"Turbopuffer search completed: {total_hits} matches across {file_count} files")
+        return "\n".join(formatted_results)
+
+    async def _search_files_pinecone(self, agent_state: AgentState, attached_sources: List[Source], query: str, limit: int) -> str:
         """Search files using Pinecone vector database."""
 
         # Extract unique source_ids
         # TODO: Inefficient
-        attached_sources = await self.agent_manager.list_attached_sources_async(agent_id=agent_state.id, actor=self.actor)
         source_ids = [source.id for source in attached_sources]
         if not source_ids:
             return "No valid source IDs found for attached files"
@@ -658,7 +783,7 @@ class LettaFileToolExecutor(ToolExecutor):
         self.logger.info(f"Pinecone search completed: {total_hits} matches across {file_count} files")
         return "\n".join(formatted_results)
 
-    async def _search_files_traditional(self, agent_state: AgentState, query: str, limit: int) -> str:
+    async def _search_files_native(self, agent_state: AgentState, query: str, limit: int) -> str:
         """Traditional search using existing passage manager."""
         # Get semantic search results
         passages = await self.agent_manager.query_source_passages_async(

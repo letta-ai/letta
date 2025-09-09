@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 def should_use_tpuf() -> bool:
     # We need OpenAI since we default to their embedding model
-    return bool(settings.use_tpuf) and bool(settings.tpuf_api_key)
+    return bool(settings.use_tpuf) and bool(settings.tpuf_api_key) and bool(model_settings.openai_api_key)
 
 
 def should_use_tpuf_for_messages() -> bool:
     """Check if Turbopuffer should be used for messages."""
-    return should_use_tpuf() and bool(settings.embed_all_messages) and bool(model_settings.openai_api_key)
+    return should_use_tpuf() and bool(settings.embed_all_messages)
 
 
 class TurbopufferClient:
@@ -1112,4 +1112,310 @@ class TurbopufferClient:
                 return True
         except Exception as e:
             logger.error(f"Failed to delete all messages from Turbopuffer: {e}")
+            raise
+
+    # file/source passage methods
+
+    @trace_method
+    async def _get_file_passages_namespace_name(self, organization_id: str) -> str:
+        """Get namespace name for file passages (org-scoped).
+
+        Args:
+            organization_id: Organization ID for namespace generation
+
+        Returns:
+            The org-scoped namespace name for file passages
+        """
+        environment = settings.environment
+        if environment:
+            namespace_name = f"file_passages_{organization_id}_{environment.lower()}"
+        else:
+            namespace_name = f"file_passages_{organization_id}"
+
+        return namespace_name
+
+    @trace_method
+    async def insert_file_passages(
+        self,
+        source_id: str,
+        file_id: str,
+        text_chunks: List[str],
+        organization_id: str,
+        actor: "PydanticUser",
+        created_at: Optional[datetime] = None,
+    ) -> List[PydanticPassage]:
+        """Insert file passages into Turbopuffer using org-scoped namespace.
+
+        Args:
+            source_id: ID of the source containing the file
+            file_id: ID of the file
+            text_chunks: List of text chunks to store
+            organization_id: Organization ID for the passages
+            actor: User actor for embedding generation
+            created_at: Optional timestamp for retroactive entries (defaults to current UTC time)
+
+        Returns:
+            List of PydanticPassage objects that were inserted
+        """
+        from turbopuffer import AsyncTurbopuffer
+
+        if not text_chunks:
+            return []
+
+        # generate embeddings using the default config
+        embeddings = await self._generate_embeddings(text_chunks, actor)
+
+        namespace_name = await self._get_file_passages_namespace_name(organization_id)
+
+        # handle timestamp - ensure UTC
+        if created_at is None:
+            timestamp = datetime.now(timezone.utc)
+        else:
+            # ensure the provided timestamp is timezone-aware and in UTC
+            if created_at.tzinfo is None:
+                # assume UTC if no timezone provided
+                timestamp = created_at.replace(tzinfo=timezone.utc)
+            else:
+                # convert to UTC if in different timezone
+                timestamp = created_at.astimezone(timezone.utc)
+
+        # prepare column-based data for turbopuffer - optimized for batch insert
+        ids = []
+        vectors = []
+        texts = []
+        organization_ids = []
+        source_ids = []
+        file_ids = []
+        created_ats = []
+        passages = []
+
+        for idx, (text, embedding) in enumerate(zip(text_chunks, embeddings)):
+            passage = PydanticPassage(
+                text=text,
+                file_id=file_id,
+                source_id=source_id,
+                embedding=embedding,
+                embedding_config=self.default_embedding_config,
+                organization_id=actor.organization_id,
+            )
+            passages.append(passage)
+
+            # append to columns
+            ids.append(passage.id)
+            vectors.append(embedding)
+            texts.append(text)
+            organization_ids.append(organization_id)
+            source_ids.append(source_id)
+            file_ids.append(file_id)
+            created_ats.append(timestamp)
+
+        # build column-based upsert data
+        upsert_columns = {
+            "id": ids,
+            "vector": vectors,
+            "text": texts,
+            "organization_id": organization_ids,
+            "source_id": source_ids,
+            "file_id": file_ids,
+            "created_at": created_ats,
+        }
+
+        try:
+            # use AsyncTurbopuffer as a context manager for proper resource cleanup
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # turbopuffer recommends column-based writes for performance
+                await namespace.write(
+                    upsert_columns=upsert_columns,
+                    distance_metric="cosine_distance",
+                    schema={"text": {"type": "string", "full_text_search": True}},
+                )
+                logger.info(f"Successfully inserted {len(ids)} file passages to Turbopuffer for source {source_id}, file {file_id}")
+                return passages
+
+        except Exception as e:
+            logger.error(f"Failed to insert file passages to Turbopuffer: {e}")
+            # check if it's a duplicate ID error
+            if "duplicate" in str(e).lower():
+                logger.error("Duplicate passage IDs detected in batch")
+            raise
+
+    @trace_method
+    async def query_file_passages(
+        self,
+        source_ids: List[str],
+        organization_id: str,
+        actor: "PydanticUser",
+        query_text: Optional[str] = None,
+        search_mode: str = "vector",  # "vector", "fts", "hybrid"
+        top_k: int = 10,
+        file_id: Optional[str] = None,  # optional filter by specific file
+        vector_weight: float = 0.5,
+        fts_weight: float = 0.5,
+    ) -> List[Tuple[PydanticPassage, float, dict]]:
+        """Query file passages from Turbopuffer using org-scoped namespace.
+
+        Args:
+            source_ids: List of source IDs to query
+            organization_id: Organization ID for namespace lookup
+            actor: User actor for embedding generation
+            query_text: Text query for search
+            search_mode: Search mode - "vector", "fts", or "hybrid" (default: "vector")
+            top_k: Number of results to return
+            file_id: Optional file ID to filter results to a specific file
+            vector_weight: Weight for vector search results in hybrid mode (default: 0.5)
+            fts_weight: Weight for FTS results in hybrid mode (default: 0.5)
+
+        Returns:
+            List of (passage, score, metadata) tuples with relevance rankings
+        """
+        # generate embedding for vector/hybrid search if query_text is provided
+        query_embedding = None
+        if query_text and search_mode in ["vector", "hybrid"]:
+            embeddings = await self._generate_embeddings([query_text], actor)
+            query_embedding = embeddings[0]
+
+        # check if we should fallback to timestamp-based retrieval
+        if query_embedding is None and query_text is None and search_mode not in ["timestamp"]:
+            # fallback to retrieving most recent passages when no search query is provided
+            search_mode = "timestamp"
+
+        namespace_name = await self._get_file_passages_namespace_name(organization_id)
+
+        # build filters - always filter by source_ids
+        if len(source_ids) == 1:
+            # single source_id, use Eq for efficiency
+            filters = [("source_id", "Eq", source_ids[0])]
+        else:
+            # multiple source_ids, use In operator
+            filters = [("source_id", "In", source_ids)]
+
+        # add file filter if specified
+        if file_id:
+            filters.append(("file_id", "Eq", file_id))
+
+        # combine filters
+        final_filter = filters[0] if len(filters) == 1 else ("And", filters)
+
+        try:
+            # use generic query executor
+            result = await self._execute_query(
+                namespace_name=namespace_name,
+                search_mode=search_mode,
+                query_embedding=query_embedding,
+                query_text=query_text,
+                top_k=top_k,
+                include_attributes=["text", "organization_id", "source_id", "file_id", "created_at"],
+                filters=final_filter,
+                vector_weight=vector_weight,
+                fts_weight=fts_weight,
+            )
+
+            # process results based on search mode
+            if search_mode == "hybrid":
+                # for hybrid mode, we get a multi-query response
+                vector_results = self._process_file_query_results(result.results[0])
+                fts_results = self._process_file_query_results(result.results[1], is_fts=True)
+                # use RRF and include metadata with ranks
+                results_with_metadata = self._reciprocal_rank_fusion(
+                    vector_results=[passage for passage, _ in vector_results],
+                    fts_results=[passage for passage, _ in fts_results],
+                    get_id_func=lambda p: p.id,
+                    vector_weight=vector_weight,
+                    fts_weight=fts_weight,
+                    top_k=top_k,
+                )
+                return results_with_metadata
+            else:
+                # for single queries (vector, fts, timestamp) - add basic metadata
+                is_fts = search_mode == "fts"
+                results = self._process_file_query_results(result, is_fts=is_fts)
+                # add simple metadata for single search modes
+                results_with_metadata = []
+                for idx, (passage, score) in enumerate(results):
+                    metadata = {
+                        "combined_score": score,
+                        f"{search_mode}_rank": idx + 1,  # add the rank for this search mode
+                    }
+                    results_with_metadata.append((passage, score, metadata))
+                return results_with_metadata
+
+        except Exception as e:
+            logger.error(f"Failed to query file passages from Turbopuffer: {e}")
+            raise
+
+    def _process_file_query_results(self, result, is_fts: bool = False) -> List[Tuple[PydanticPassage, float]]:
+        """Process results from a file query into passage objects with scores."""
+        passages_with_scores = []
+
+        for row in result.rows:
+            # build metadata
+            metadata = {}
+
+            # create a passage with minimal fields - embeddings are not returned from Turbopuffer
+            passage = PydanticPassage(
+                id=row.id,
+                text=getattr(row, "text", ""),
+                organization_id=getattr(row, "organization_id", None),
+                source_id=getattr(row, "source_id", None),  # get source_id from the row
+                file_id=getattr(row, "file_id", None),
+                created_at=getattr(row, "created_at", None),
+                metadata_=metadata,
+                tags=[],
+                # set required fields to empty/default values since we don't store embeddings
+                embedding=[],  # empty embedding since we don't return it from Turbopuffer
+                embedding_config=self.default_embedding_config,
+            )
+
+            # handle score based on search type
+            if is_fts:
+                # for FTS, use the BM25 score directly (higher is better)
+                score = getattr(row, "$score", 0.0)
+            else:
+                # for vector search, convert distance to similarity score
+                distance = getattr(row, "$dist", 0.0)
+                score = 1.0 - distance
+
+            passages_with_scores.append((passage, score))
+
+        return passages_with_scores
+
+    @trace_method
+    async def delete_file_passages(self, source_id: str, file_id: str, organization_id: str) -> bool:
+        """Delete all passages for a specific file from Turbopuffer."""
+        from turbopuffer import AsyncTurbopuffer
+
+        namespace_name = await self._get_file_passages_namespace_name(organization_id)
+
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # use delete_by_filter to only delete passages for this file
+                # need to filter by both source_id and file_id
+                filter_expr = ("And", [("source_id", "Eq", source_id), ("file_id", "Eq", file_id)])
+                result = await namespace.write(delete_by_filter=filter_expr)
+                logger.info(
+                    f"Successfully deleted passages for file {file_id} from source {source_id} (deleted {result.rows_affected} rows)"
+                )
+                return True
+        except Exception as e:
+            logger.error(f"Failed to delete file passages from Turbopuffer: {e}")
+            raise
+
+    @trace_method
+    async def delete_source_passages(self, source_id: str, organization_id: str) -> bool:
+        """Delete all passages for a source from Turbopuffer."""
+        from turbopuffer import AsyncTurbopuffer
+
+        namespace_name = await self._get_file_passages_namespace_name(organization_id)
+
+        try:
+            async with AsyncTurbopuffer(api_key=self.api_key, region=self.region) as client:
+                namespace = client.namespace(namespace_name)
+                # delete all passages for this source
+                result = await namespace.write(delete_by_filter=("source_id", "Eq", source_id))
+                logger.info(f"Successfully deleted all passages for source {source_id} (deleted {result.rows_affected} rows)")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to delete source passages from Turbopuffer: {e}")
             raise
