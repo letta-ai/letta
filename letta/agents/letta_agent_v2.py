@@ -29,7 +29,7 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState, UpdateAgent
+from letta.schemas.agent import AgentState, AgentType, UpdateAgent
 from letta.schemas.enums import JobStatus, MessageRole, MessageStreamStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
@@ -51,6 +51,7 @@ from letta.services.job_manager import JobManager
 from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import StepManager
+from letta.services.summarizer.enums import SummarizationMode
 from letta.services.summarizer.summarizer import Summarizer
 from letta.services.telemetry_manager import TelemetryManager
 from letta.services.tool_executor.tool_execution_manager import ToolExecutionManager
@@ -107,7 +108,11 @@ class LettaAgentV2(BaseAgentV2):
 
         # Initialize summarizer for context window management
         self.summarizer = Summarizer(
-            mode=summarizer_settings.mode,
+            mode=(
+                SummarizationMode.STATIC_MESSAGE_BUFFER
+                if self.agent_state.agent_type == AgentType.voice_convo_agent
+                else summarizer_settings.mode
+            ),
             summarizer_agent=self.summarization_agent,
             message_buffer_limit=summarizer_settings.message_buffer_limit,
             message_buffer_min=summarizer_settings.message_buffer_min,
@@ -199,7 +204,7 @@ class LettaAgentV2(BaseAgentV2):
 
         # Rebuild context window after stepping
         if not self.agent_state.message_buffer_autoclear:
-            await self._rebuild_context_window(
+            await self.summarize_conversation_history(
                 in_context_messages=in_context_messages,
                 new_letta_messages=self.response_messages,
                 total_tokens=self.usage.total_tokens,
@@ -284,7 +289,7 @@ class LettaAgentV2(BaseAgentV2):
                 input_messages_to_persist = []
 
             if not self.agent_state.message_buffer_autoclear:
-                await self._rebuild_context_window(
+                await self.summarize_conversation_history(
                     in_context_messages=in_context_messages,
                     new_letta_messages=self.response_messages,
                     total_tokens=self.usage.total_tokens,
@@ -405,7 +410,7 @@ class LettaAgentV2(BaseAgentV2):
                     except Exception as e:
                         if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
                             # Retry case
-                            messages = await self._rebuild_context_window(
+                            messages = await self.summarize_conversation_history(
                                 in_context_messages=messages,
                                 new_letta_messages=self.response_messages,
                                 llm_config=self.agent_state.llm_config,
@@ -1098,7 +1103,7 @@ class LettaAgentV2(BaseAgentV2):
         return tool_execution_result
 
     @trace_method
-    async def _rebuild_context_window(
+    async def summarize_conversation_history(
         self,
         in_context_messages: list[Message],
         new_letta_messages: list[Message],
