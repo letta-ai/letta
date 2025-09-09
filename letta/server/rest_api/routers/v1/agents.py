@@ -1703,7 +1703,7 @@ async def send_message_async(
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
     # Create asyncio task for background processing
-    asyncio.create_task(
+    task = asyncio.create_task(
         _process_message_background(
             run_id=run.id,
             server=server,
@@ -1717,6 +1717,38 @@ async def send_message_async(
             include_return_message_types=request.include_return_message_types,
         )
     )
+
+    def handle_task_completion(t):
+        try:
+            t.result()
+        except asyncio.CancelledError:
+            logger.error(f"Background task for run {run.id} was cancelled")
+            asyncio.create_task(
+                server.job_manager.update_job_by_id_async(
+                    job_id=run.id,
+                    job_update=JobUpdate(
+                        status=JobStatus.failed,
+                        completed_at=datetime.now(timezone.utc),
+                        metadata={"error": "Task was cancelled"},
+                    ),
+                    actor=actor,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
+            asyncio.create_task(
+                server.job_manager.update_job_by_id_async(
+                    job_id=run.id,
+                    job_update=JobUpdate(
+                        status=JobStatus.failed,
+                        completed_at=datetime.now(timezone.utc),
+                        metadata={"error": str(e)},
+                    ),
+                    actor=actor,
+                )
+            )
+
+    task.add_done_callback(handle_task_completion)
 
     return run
 
