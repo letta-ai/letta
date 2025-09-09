@@ -15,6 +15,7 @@ import {
   agentfileStats,
 } from '@letta-cloud/service-database';
 import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
+import type { AgentFileSchema } from '@letta-cloud/sdk-core';
 
 type AgentfileResponse = ServerInferResponses<
   typeof contracts.agentfile.getAgentfile
@@ -87,9 +88,27 @@ export async function getAgentfile(
     };
   }
 
+  // Mismatch on typescript and runtime, so set as unknown first
+  // exportAgentSerialized is typed as string in generated types, but it actually returns an object
+  const parsedAgentfile = exportedAgentfile as unknown as AgentFileSchema;
+
+  // Remove env var values for security reasons
+  const sanitizedAgentfile = {
+    ...parsedAgentfile,
+    agents: parsedAgentfile.agents.map((agent) => ({
+      ...agent,
+      tool_exec_environment_variables: agent.tool_exec_environment_variables
+        ? Object.keys(agent.tool_exec_environment_variables).reduce(
+            (acc, key) => ({ ...acc, [key]: '' }),
+            {},
+          )
+        : undefined,
+    })),
+  };
+
   return {
     status: SERVER_CODE.OK,
-    body: Object.assign({}, exportedAgentfile, {
+    body: Object.assign({}, sanitizedAgentfile, {
       name: permissions.name || '',
       description: permissions.description || '',
       summary: permissions.summary || '',
