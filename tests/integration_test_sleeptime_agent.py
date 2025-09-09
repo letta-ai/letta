@@ -86,6 +86,107 @@ async def test_sleeptime_group_chat(client):
         model="anthropic/claude-3-5-sonnet-20240620",
         embedding="openai/text-embedding-3-small",
         enable_sleeptime=True,
+        ),
+        actor=actor,
+    )
+
+    assert group.manager_type == ManagerType.sleeptime
+    assert group.sleeptime_agent_frequency == 2
+    assert len(group.agent_ids) == 1
+
+    # 3. Verify shared blocks
+    sleeptime_agent_id = group.agent_ids[0]
+    shared_block = server.agent_manager.get_block_with_label(agent_id=main_agent.id, block_label="human", actor=actor)
+    agents = await server.block_manager.get_agents_for_block_async(block_id=shared_block.id, actor=actor)
+    assert len(agents) == 2
+    assert sleeptime_agent_id in [agent.id for agent in agents]
+    assert main_agent.id in [agent.id for agent in agents]
+
+    # 4 Verify sleeptime agent tools
+    sleeptime_agent = server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+    sleeptime_agent_tools = [tool.name for tool in sleeptime_agent.tools]
+    assert "memory_rethink" in sleeptime_agent_tools
+    assert "memory_finish_edits" in sleeptime_agent_tools
+    assert "memory_replace" in sleeptime_agent_tools
+    assert "memory_insert" in sleeptime_agent_tools
+
+    assert len([rule for rule in sleeptime_agent.tool_rules if rule.type == ToolRuleType.exit_loop]) > 0
+
+    # 5. Send messages and verify run ids
+    message_text = [
+        "my favorite color is orange",
+        "not particularly. today is a good day",
+        "actually my favorite color is coral",
+        "let's change the subject",
+        "actually my fav plant is the the african spear",
+        "indeed",
+    ]
+    run_ids = []
+    for i, text in enumerate(message_text):
+        response = await server.send_message_to_agent(
+            agent_id=main_agent.id,
+            actor=actor,
+            input_messages=[
+                MessageCreate(
+                    role="user",
+                    content=text,
+                ),
+            ],
+            stream_steps=False,
+            stream_tokens=False,
+        )
+
+        assert len(response.messages) > 0
+        assert len(response.usage.run_ids or []) == (i + 1) % 2
+        run_ids.extend(response.usage.run_ids or [])
+
+        jobs = server.job_manager.list_jobs(actor=actor, job_type=JobType.RUN)
+        runs = [Run.from_job(job) for job in jobs]
+        agent_runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] == sleeptime_agent_id]
+        assert len(agent_runs) == len(run_ids)
+
+    # 6. Verify run status after sleep
+    time.sleep(2)
+
+    for run_id in run_ids:
+        job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
+        assert job.status == JobStatus.running or job.status == JobStatus.completed
+
+    # 7. Delete agent
+    server.agent_manager.delete_agent(agent_id=main_agent.id, actor=actor)
+
+    with pytest.raises(NoResultFound):
+        server.group_manager.retrieve_group(group_id=group.id, actor=actor)
+    with pytest.raises(NoResultFound):
+        server.agent_manager.get_agent_by_id(agent_id=sleeptime_agent_id, actor=actor)
+
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_sleeptime_group_chat_v2(server, actor):
+    # 0. Refresh base tools
+    server.tool_manager.upsert_base_tools(actor=actor)
+
+    # 1. Create sleeptime agent
+    main_agent = server.create_agent(
+        request=CreateAgent(
+            name="main_agent",
+            memory_blocks=[
+                CreateBlock(
+                    label="persona",
+                    value="You are a personal assistant that helps users with requests.",
+                ),
+                CreateBlock(
+                    label="human",
+                    value="My favorite plant is the fiddle leaf\nMy favorite color is lavender",
+                ),
+            ],
+            # model="openai/gpt-4o-mini",
+            model="anthropic/claude-3-5-sonnet-20240620",
+            embedding="openai/text-embedding-3-small",
+            enable_sleeptime=True,
+            include_base_tool_rules=True,
+        ),
+        actor=actor,
     )
 
     assert main_agent.enable_sleeptime == True

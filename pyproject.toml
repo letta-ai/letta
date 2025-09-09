@@ -143,7 +143,7 @@ desktop = [
     "tiktoken>=0.11.0",
     "async-lru>=2.0.5",
     "magika>=0.6.2",
-    "pgserver>=0.1.4",
+    #"pgserver>=0.1.4",
 ]
 
 [build-system]
