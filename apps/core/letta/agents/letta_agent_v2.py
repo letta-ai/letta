@@ -779,11 +779,12 @@ class LettaAgentV2(BaseAgentV2):
     def _step_checkpoint_finish(
         self, step_metrics: StepMetrics, agent_step_span: Span | None, run_id: str | None
     ) -> Tuple[StepProgression, StepMetrics]:
-        step_ns = get_utc_timestamp_ns() - step_metrics.step_start_ns
-        step_metrics.step_ns = step_ns
-        if agent_step_span is not None:
-            agent_step_span.add_event(name="step_ms", attributes={"duration_ms": ns_to_ms(step_ns)})
-            agent_step_span.end()
+        if step_metrics.step_start_ns:
+            step_ns = get_utc_timestamp_ns() - step_metrics.step_start_ns
+            step_metrics.step_ns = step_ns
+            if agent_step_span is not None:
+                agent_step_span.add_event(name="step_ms", attributes={"duration_ms": ns_to_ms(step_ns)})
+                agent_step_span.end()
         self._record_step_metrics(step_id=step_metrics.id, step_metrics=step_metrics)
         return StepProgression.FINISHED, step_metrics
 
