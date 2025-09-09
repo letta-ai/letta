@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
@@ -95,6 +96,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Set up node
         uses: actions/setup-node@v4
         with:

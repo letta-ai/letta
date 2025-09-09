@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Download Fern
         run: npm install -g fern-api

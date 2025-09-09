@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+        exclude: 'docs/.*|tests/data/.*|configs/.*|helm/.*'
+      - id: end-of-file-fixer
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*|.*/.*\.(scss|css|html)'
+      - id: trailing-whitespace
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
+
+  - repo: local
+    hooks:
+      - id: autoflake
+        name: autoflake
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .'
+        language: system
+        types: [python]
+      - id: isort
+        name: isort
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run isort --profile black .'
+        language: system
+        types: [python]
+        exclude: ^docs/
+      - id: black
+        name: black
+        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run black --line-length 140 --target-version py310 --target-version py311 .'
+        language: system
+        types: [python]
+        exclude: ^docs/

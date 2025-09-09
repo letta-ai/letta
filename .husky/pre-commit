@@ -22,4 +22,4 @@ else
 fi
 
 # Always run the core pre-commit
-cd apps/core && uv run pre-commit run --config=.pre-commit-config.yaml
+UV_PROJECT_ENVIRONMENT="apps/core/.venv" uvx pre-commit run --config=.pre-commit-config.yaml

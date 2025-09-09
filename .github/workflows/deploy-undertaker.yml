@@ -43,6 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
@@ -59,6 +60,8 @@ jobs:
     if: needs.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Create GitHub deployment
         id: deployment

@@ -1,0 +1,3 @@
+[submodule "apps/core"]
+	path = apps/core
+	url = https://github.com/letta-ai/letta

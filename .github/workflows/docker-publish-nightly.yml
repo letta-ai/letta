@@ -21,6 +21,8 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - uses: actions/checkout@v3
+      with:
+        submodules: true
     - name: Build and push the Docker image (letta)
       run: |
         cd apps/core

@@ -80,6 +80,7 @@ jobs:
       with:
         ref: ${{ steps.pr.outputs.branch }}
         token: ${{ secrets.GITHUB_TOKEN }}
+        submodules: true
         fetch-depth: 0
 
     - name: Set up python 3.12

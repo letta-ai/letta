@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
@@ -51,6 +52,8 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Set up python 3.12
         id: setup-python
