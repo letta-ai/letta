@@ -72,11 +72,12 @@ interface IdentifyUserProps {
   userId: string;
   name?: string;
   email?: string;
+  organization?: string | null;
 }
 
 // NOTE: This is not supported on letta-desktop
 export function IdentifyUserForPostHog(props: IdentifyUserProps) {
-  const { userId, name, email } = props;
+  const { userId, name, email, organization } = props;
   const posthogClient = usePostHog();
 
   useEffect(() => {
@@ -85,16 +86,21 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
         !environment.NEXT_PUBLIC_POSTHOG_KEY ||
         !environment.NEXT_PUBLIC_POSTHOG_HOST
       ) {
+        console.error('Error retrieving PH values');
         return;
       }
 
       window.identity = { userId };
 
-      posthogClient.identify(userId, { name: name, email: email }); // posthog distinct id is the user id
+      posthogClient.identify(userId, {
+        name: name,
+        email: email,
+        organization: organization,
+      }); // posthog distinct id is the user id
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
     }
-  }, [userId, email, name, posthogClient]);
+  }, [userId, email, name, posthogClient, organization]);
 
   return null;
 }

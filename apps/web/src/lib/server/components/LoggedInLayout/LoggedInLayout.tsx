@@ -81,6 +81,7 @@ export async function LoggedInLayout(props: InAppProps) {
         userId={user.id}
         name={user.name}
         email={user.email}
+        organization={user.activeOrganizationId}
       />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <LoggedInClientSideProviders>
