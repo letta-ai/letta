@@ -364,9 +364,7 @@ class LettaAgentV2(BaseAgentV2):
                     return
 
                 step_id = generate_step_id()
-                step_progression, logged_step, step_metrics, agent_step_span = self._step_checkpoint_start(
-                    step_id=step_id, run_id=run_id
-                )
+                step_progression, logged_step, step_metrics, agent_step_span = self._step_checkpoint_start(step_id=step_id, run_id=run_id)
 
                 messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
