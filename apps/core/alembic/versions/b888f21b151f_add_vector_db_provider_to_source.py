@@ -44,6 +44,7 @@ def upgrade() -> None:
         connection = op.get_bind()
         connection.execute(sa.text("COMMIT"))
         connection.execute(sa.text("ALTER TYPE vectordbprovider ADD VALUE IF NOT EXISTS 'PINECONE'"))
+        connection.execute(sa.text("COMMIT"))
 
         vectordbprovider = sa.Enum("NATIVE", "TPUF", "PINECONE", name="vectordbprovider", create_type=False)
 
