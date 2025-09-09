@@ -1052,6 +1052,57 @@ class TestAgentFileExport:
 
         await server.agent_manager.delete_agent_async(agent_id=sleeptime_enabled_agent.id, actor=default_user)
 
+    async def test_tool_exec_environment_variables_scrubbing(self, server, agent_serialization_manager, default_user, weather_tool):
+        """Test that tool_exec_environment_variables values are scrubbed during export."""
+        # create agent with environment variables containing secrets
+        create_agent_request = CreateAgent(
+            name="agent_with_env_vars",
+            system="Agent with environment variables",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            tool_ids=[weather_tool.id],
+            tool_exec_environment_variables={
+                "API_KEY": "super-secret-api-key-12345",
+                "DATABASE_PASSWORD": "ultra-secure-password",
+                "TOKEN": "bearer-token-xyz789",
+            },
+            initial_message_sequence=[
+                MessageCreate(role=MessageRole.user, content="Test environment variables"),
+            ],
+        )
+
+        agent_with_env_vars = await server.agent_manager.create_agent_async(
+            agent_create=create_agent_request,
+            actor=default_user,
+        )
+
+        # export the agent
+        agent_file = await agent_serialization_manager.export([agent_with_env_vars.id], default_user)
+
+        # verify agent was exported
+        assert len(agent_file.agents) == 1
+        exported_agent = agent_file.agents[0]
+
+        # verify environment variables exist but values are scrubbed (empty strings)
+        assert exported_agent.tool_exec_environment_variables is not None
+        assert len(exported_agent.tool_exec_environment_variables) == 3
+        assert "API_KEY" in exported_agent.tool_exec_environment_variables
+        assert "DATABASE_PASSWORD" in exported_agent.tool_exec_environment_variables
+        assert "TOKEN" in exported_agent.tool_exec_environment_variables
+
+        # most importantly: verify all secret values have been wiped
+        assert exported_agent.tool_exec_environment_variables["API_KEY"] == ""
+        assert exported_agent.tool_exec_environment_variables["DATABASE_PASSWORD"] == ""
+        assert exported_agent.tool_exec_environment_variables["TOKEN"] == ""
+
+        # verify no secret values appear anywhere in the exported data
+        assert "super-secret-api-key-12345" not in str(agent_file)
+        assert "ultra-secure-password" not in str(agent_file)
+        assert "bearer-token-xyz789" not in str(agent_file)
+
+        # clean up
+        await server.agent_manager.delete_agent_async(agent_id=agent_with_env_vars.id, actor=default_user)
+
 
 class TestAgentFileImport:
     """Tests for agent file import functionality."""
@@ -1206,6 +1257,67 @@ class TestAgentFileImport:
         assert len(exported_group_ids) == 1
 
         await server.agent_manager.delete_agent_async(agent_id=sleeptime_enabled_agent.id, actor=default_user)
+
+    async def test_import_with_environment_variables(self, server, agent_serialization_manager, default_user, other_user, weather_tool):
+        """Test that environment variables can be provided during import."""
+        # create agent with environment variables
+        create_agent_request = CreateAgent(
+            name="agent_with_env_vars_import_test",
+            system="Agent with environment variables for import testing",
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            tool_ids=[weather_tool.id],
+            tool_exec_environment_variables={
+                "API_KEY": "original-api-key",
+                "DATABASE_URL": "original-database-url",
+                "SECRET_TOKEN": "original-secret-token",
+            },
+            initial_message_sequence=[
+                MessageCreate(role=MessageRole.user, content="Test environment variables import"),
+            ],
+        )
+
+        original_agent = await server.agent_manager.create_agent_async(
+            agent_create=create_agent_request,
+            actor=default_user,
+        )
+
+        # export the agent (values should be scrubbed)
+        agent_file = await agent_serialization_manager.export([original_agent.id], default_user)
+
+        # verify values are scrubbed in export
+        exported_agent = agent_file.agents[0]
+        assert exported_agent.tool_exec_environment_variables["API_KEY"] == ""
+        assert exported_agent.tool_exec_environment_variables["DATABASE_URL"] == ""
+        assert exported_agent.tool_exec_environment_variables["SECRET_TOKEN"] == ""
+
+        # import with new environment variable values
+        new_env_vars = {
+            "API_KEY": "new-api-key-for-import",
+            "DATABASE_URL": "new-database-url-for-import",
+            "SECRET_TOKEN": "new-secret-token-for-import",
+        }
+
+        result = await agent_serialization_manager.import_file(agent_file, other_user, env_vars=new_env_vars)
+
+        assert result.success
+        assert len(result.imported_agent_ids) == 1
+
+        # get the imported agent and verify environment variables were set correctly
+        imported_agent_id = result.imported_agent_ids[0]
+        imported_agent = await server.agent_manager.get_agent_by_id_async(
+            agent_id=imported_agent_id, actor=other_user, include_relationships=["tool_exec_environment_variables"]
+        )
+
+        # verify the imported agent has the new environment variable values
+        env_vars_dict = imported_agent.get_agent_env_vars_as_dict()
+        assert env_vars_dict["API_KEY"] == "new-api-key-for-import"
+        assert env_vars_dict["DATABASE_URL"] == "new-database-url-for-import"
+        assert env_vars_dict["SECRET_TOKEN"] == "new-secret-token-for-import"
+
+        # clean up
+        await server.agent_manager.delete_agent_async(agent_id=original_agent.id, actor=default_user)
+        await server.agent_manager.delete_agent_async(agent_id=imported_agent_id, actor=other_user)
 
 
 class TestAgentFileImportWithProcessing:
