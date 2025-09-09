@@ -59,7 +59,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['hooks/runtime-hook-inflect.py'],
     excludes=[],
     noarchive=False,
     optimize=0,
