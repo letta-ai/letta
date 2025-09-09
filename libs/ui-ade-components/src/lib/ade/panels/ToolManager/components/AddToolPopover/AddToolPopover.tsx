@@ -25,7 +25,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import { SpecificToolIcon } from '../SpecificToolIcon/SpecificToolIcon';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@letta-cloud/ui-styles';
 
 interface AddToolPopoverProps {
@@ -37,6 +37,7 @@ export function AddToolPopover(props: AddToolPopoverProps) {
   const t = useTranslations('ADE/Tools');
   const { tools: attachedTools, id: agentId } = useCurrentAgent();
   const [search, setSearch] = useState('');
+  const queryClient = useQueryClient();
 
   const { data: allTools, isLoading, isError } = useToolsServiceListTools({
     limit: 20,
@@ -65,12 +66,22 @@ export function AddToolPopover(props: AddToolPopoverProps) {
   }, [mcpServers]);
 
   const mcpToolQueries = useQueries({
-    queries: mcpServersArray.map((server) => ({
-      queryKey: UseToolsServiceListMcpToolsByServerKeyFn({ mcpServerName: server.server_name }),
-      queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName: server.server_name }),
-      enabled: Boolean(server.server_name),
-      staleTime: 60 * 1000,
-    })),
+    queries: mcpServersArray.map((server) => {
+      const queryKey = UseToolsServiceListMcpToolsByServerKeyFn({ mcpServerName: server.server_name });
+      const cachedState = queryClient.getQueryState(queryKey);
+      const hasError = cachedState?.error != null;
+
+      return {
+        queryKey,
+        queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName: server.server_name }),
+        enabled: Boolean(server.server_name) && !hasError,
+        retry: 0,
+        staleTime: 60 * 1000, // 1 minute
+        gcTime: 60 * 60 * 1000, // 1 hour
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+      };
+    }),
   });
 
   const discoveredMcpTools = useMemo(() => {
