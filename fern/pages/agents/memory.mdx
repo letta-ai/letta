@@ -1,0 +1,51 @@
+---
+title: Agent Memory
+subtitle: What is agent memory, and how does it work?
+slug: guides/agents/memory
+---
+
+Agent memory is what enables AI agents to maintain persistent state, learn from interactions, and develop long-term relationships with users. Unlike traditional chatbots that treat each conversation as isolated, agents with sophisticated memory systems can build understanding over time.
+
+## The MemGPT Approach to Memory
+
+Letta is built by the creators of [MemGPT](https://arxiv.org/abs/2310.08560), a research paper that introduced the concept of an "LLM Operating System" for memory management. The base agent design in Letta is a MemGPT-style agent, which means it inherits the core principles of:
+
+- **Self-editing memory**: Agents can modify their own memory using tools
+- **Memory hierarchy**: Different types of memory for different purposes
+- **Context window management**: Intelligent loading and unloading of information
+
+## Types of Memory in Letta
+
+Letta agents have access to multiple memory systems:
+
+### Core Memory (In-Context)
+Fast, always-accessible memory that stays in the agent's context window. This includes:
+- **Persona**: The agent's personality and role
+- **Human**: Information about the user
+- **Custom memory blocks**: Additional structured information
+
+### External Memory (Out-of-Context)
+Long-term storage for large amounts of information:
+- Conversation history beyond context limits (e.g. "recall memory")
+- Vector databases for semantic search (e.g. "archival memory")
+- Uploaded documents and files
+
+## Why Agent Memory Matters
+
+Effective memory management enables:
+
+- **Personalization**: Agents remember user preferences and history
+- **Learning**: Agents improve performance through accumulated experience
+- **Context preservation**: Important information persists across conversations
+- **Scalability**: Handle unlimited conversation length and data volume
+
+## Memory Management in Practice
+
+Letta provides multiple ways to work with agent memory:
+
+- **Automatic management**: Agents intelligently decide what to remember
+- **Manual control**: Developers can directly view and modify memory blocks
+- **Shared memory**: Multiple agents can access common memory blocks
+- **External data sources**: Connect agents to files, databases, and APIs
+
+Memory blocks are the fundamental units of Letta's memory system - they can be modified by the agent itself, other agents, or developers through the API.

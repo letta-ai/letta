@@ -1,0 +1,47 @@
+---
+title: Pre-built Tools
+subtitle: Understanding the pre-built tools in the Letta server
+slug: guides/agents/prebuilt-tools
+---
+
+Letta provides a set of pre-built tools that are available to all agents. These tools include memory management tools (for reading and writing to memory blocks), file editing tools, multi-agent tools, and general utility tools like web search and code execution.
+
+## Default Memory Tools
+
+By default, agents in Letta are created with a set of default tools including `send_message` (which generates a message to send to the user), core memory tools (allowing the agent to edit its memory blocks), and external memory tools (to read/write from archival memory, and to access recall memory, aka the conversation history):
+
+| Tool                                       | Description                                          |
+|--------------------------------------------|------------------------------------------------------|
+| `send_message`                             | Sends a message to the human user.                   |
+| `memory_insert`                            | Insert content into a block in core memory.          |
+| `memory_replace`                           | Replace content in a block in core memory.           |
+| `memory_rethink`                           | Reflect on and reorganize core memory contents.      |
+| `memory_finish_edits`                      | Finalize memory editing operations.                  |
+| `core_memory_append` _(Deprecated)_        | Append to the contents of a block in core memory.    |
+| `core_memory_replace` _(Deprecated)_       | Replace the contents of a block in core memory.      |
+| `conversation_search`                      | Search prior conversation history (recall memory)    |
+| `archival_memory_insert`                   | Add a memory to archival memory                      |
+| `archival_memory_search`                   | Search archival memory via embedding search          |
+
+You can disable the default tools by setting `include_base_tools` to `false` during agent creation. Note that disabling the `send_message` tool may cause agent messages (intended for the user) to appear as "reasoning" messages in the API and ADE.
+
+## Multi-Agent Tools
+
+Letta also includes a set of pre-made tools designed for multi-agent interaction.
+See [our guide on multi-agent](/guides/agents/multi-agent) for more information.
+
+## Web Search
+
+The `web_search` tool allows agents to search the web for information.
+
+<Info>
+On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `TAVILY_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
+</Info>
+
+## Code Interpreter
+
+The `run_code` tool allows agents to run code (in a sandbox), for example to do data analysis or calculations. Supports Python, Javascript, Typescript, R, and Java.
+
+<Info>
+On [Letta Cloud](/guides/cloud/overview), this tool works out of the box, but when using this tool on a self-hosted Letta server, you must set a `E2B_API_KEY` environment variable either in during server startup or in your agent's [tool execution environment](/guides/agents/tool-variables).
+</Info>

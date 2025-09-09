@@ -1,0 +1,21 @@
+---
+slug: python-reference/Job
+---
+
+<a id="letta.schemas.job.Job"></a>
+
+## Job
+
+```python
+class Job(JobBase)
+```
+
+Representation of offline jobs, used for tracking status of data loading tasks (involving parsing and embedding documents).
+
+**Arguments**:
+
+- `id` _str_ - The unique identifier of the job.
+- `status` _JobStatus_ - The status of the job.
+- `created_at` _datetime_ - The unix timestamp of when the job was created.
+- `completed_at` _datetime_ - The unix timestamp of when the job was completed.
+- `user_id` _str_ - The unique identifier of the user associated with the.

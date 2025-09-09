@@ -1,0 +1,145 @@
+/* ────────────────────────────────────────────────────────────────
+   assets/leaderboard.css    (namespaced so it never leaks styles)
+   ──────────────────────────────────────────────────────────────── */
+
+/* hide rows that don’t match search */
+#letta-leaderboard tr.hidden { display: none !important; }
+
+/* clickable, sortable headers */
+#letta-leaderboard thead th[data-key] {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+#letta-leaderboard thead th.asc::after,
+#letta-leaderboard thead th.desc::after {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  line-height: 1;
+}
+#letta-leaderboard thead th.asc::after  { content: "▲"; }
+#letta-leaderboard thead th.desc::after { content: "▼"; }
+
+/* bar-chart cells */
+#letta-leaderboard .bar-cell {
+  position: relative;
+  padding: 8px;
+  overflow: hidden;
+}
+#letta-leaderboard .bar-viz {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 36px;
+  z-index: 1;
+  max-width: 100%;
+  border-radius: 0;
+}
+#letta-leaderboard .bar-cell span.value {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0 4px;
+  font-size: 14px;
+  z-index: 2;
+  border-radius: 0;
+}
+#letta-leaderboard .bar-cell span.warn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  line-height: 1;
+  color: #dc3545;
+  cursor: help;
+  z-index: 2;
+}
+
+/* bar colours */
+#letta-leaderboard .avg .bar-viz       { background: rgba(40, 167, 69, 0.35); }  /* green  */
+#letta-leaderboard .cost-ok .bar-viz   { background: rgba(255, 193, 7, 0.35); }  /* amber  */
+#letta-leaderboard .cost-high .bar-viz { background: rgba(220, 53, 69, 0.35); }  /* red    */
+
+/* faint ruler + right border */
+#letta-leaderboard .bar-cell::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(170, 170, 170, 0.5) 0 1px,
+    transparent 1px 25%
+  );
+}
+#letta-leaderboard .bar-cell::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 1px;
+  height: 8px;
+  background: rgba(170, 170, 170, 0.5);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* table layout tweaks */
+#letta-leaderboard tbody tr { height: 50px; }
+#letta-leaderboard .metric  { width: 32%; }
+#letta-leaderboard table    { table-layout: fixed; }
+
+/* search box */
+#letta-leaderboard #lb-search,
+#letta-leaderboard #lb-search:focus {
+  border-radius: 0 !important;
+  outline: none;
+}
+
+/* ───────────────────────────────
+   Dark-mode overrides
+   (everything else inherits)
+   ───────────────────────────────*/
+   :is(.dark) #letta-leaderboard {
+
+    /* 1. Bar-fill colours — a hair brighter & less transparent */
+    .avg       .bar-viz { background: rgba(56, 189, 98 , .55); }   /* green  */
+    .cost-ok   .bar-viz { background: rgba(255, 213, 90 , .55); }  /* amber  */
+    .cost-high .bar-viz { background: rgba(255, 99 ,132 , .55); }  /* red    */
+
+    /* 2. Ruler + right-edge -- subtle light lines instead of grey */
+    .bar-cell::before {
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,.12) 0 1px,
+        transparent 1px 25%
+      );
+    }
+    .bar-cell::after  { background: rgba(255,255,255,.12); }
+
+    /* 3. Value pill – dark background so it doesn’t glow */
+    .bar-cell span.value {
+      background: rgba(0,0,0,.65);
+      color: #fff;
+    }
+
+    /* 4. Header text & sort glyphs – lighten slightly */
+    thead th        { color:#e2e2e2; }
+    thead th::after { color:#e2e2e2; }
+  }
+
+  /* 5. Header row background */
+:is(.dark) #letta-leaderboard thead {
+    background:#1a1a1a !important;   /* pick any dark tone */
+  }

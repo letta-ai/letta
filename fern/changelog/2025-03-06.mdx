@@ -1,0 +1,32 @@
+## Message Modification API
+
+We've added a new API endpoint that allows you to modify existing messages in an agent's conversation history. This feature is particularly useful for editing message history to refine agent behavior without starting a new conversation.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta, UpdateSystemMessage
+client = Letta(
+    token="YOUR_API_KEY",
+)
+client.agents.messages.modify(
+    agent_id="AGENT_ID",
+    message_id="MESSAGE_ID",
+    request=UpdateSystemMessage(
+        content="The agent should prioritize brevity in responses.",
+    ),
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.messages.modify({
+  agent_id: "AGENT_ID",
+  message_id: "MESSAGE_ID",
+  request: {
+    content: "The agent should prioritize brevity in responses."
+  }
+});
+```
+</CodeBlocks>

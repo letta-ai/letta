@@ -1,0 +1,30 @@
+---
+title: Performance tuning
+subtitle: Configure the Letta server to optimize performance
+slug: guides/selfhosting/performance
+---
+
+When scaling Letta to support larger workloads, you may need to configure the default server settings to improve performance. Letta can also be horizontally scaled (e.g. run on multiple pods within a Kubernetes cluster).
+
+## Server configuration
+You can scale up the number of workers for the service by setting `LETTA_UVICORN_WORKERS` to a higher value (default `1`). Letta exposes the following Uvicorn configuration options:
+* `LETTA_UVICORN_WORKERS`: Number of worker processes (default: `1`)
+* `LETTA_UVICORN_RELOAD`: Whether to enable auto-reload (default: `False`)
+* `LETTA_UVICORN_TIMEOUT_KEEP_ALIVE`: Keep-alive timeout in seconds (default: `5`)
+
+For example, to run the server with 5 workers:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e LETTA_UVICORN_WORKERS=5 \
+  letta/letta:latest
+```
+
+## Database configuration
+Letta uses the Postgres DB to manage all state. You can override the default database with your own database by setting `LETTA_PG_URI`. You can also configure the Postgres client on Letta with the following environment variables:
+* `LETTA_PG_POOL_SIZE`: Number of concurrent connections (default: `80`)
+* `LETTA_PG_MAX_OVERFLOW`: Maximum overflow limit (default: `30`)
+* `LETTA_PG_POOL_TIMEOUT`: Seconds to wait for a connection (default: `30`)
+* `LETTA_PG_POOL_RECYCLE`: When to recycle connections (default: `1800`)
+These configuration are *per worker*.
