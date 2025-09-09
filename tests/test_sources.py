@@ -13,6 +13,7 @@ from letta_client.types import AgentState
 
 from letta.constants import DEFAULT_ORG_ID, FILES_TOOLS
 from letta.helpers.pinecone_utils import should_use_pinecone
+from letta.helpers.tpuf_client import TurbopufferClient
 from letta.schemas.enums import FileProcessingStatus, ToolType
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
@@ -95,7 +96,7 @@ def agent_state(disable_pinecone, client: LettaSDKClient):
 # Tests
 
 
-def test_auto_attach_detach_files_tools(disable_pinecone, client: LettaSDKClient):
+def test_auto_attach_detach_files_tools(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test automatic attachment and detachment of file tools when managing agent sources."""
     # Create agent with basic configuration
     agent = client.agents.create(
@@ -168,6 +169,7 @@ def test_auto_attach_detach_files_tools(disable_pinecone, client: LettaSDKClient
 )
 def test_file_upload_creates_source_blocks_correctly(
     disable_pinecone,
+    disable_turbopuffer,
     client: LettaSDKClient,
     agent_state: AgentState,
     file_path: str,
@@ -237,7 +239,9 @@ def test_file_upload_creates_source_blocks_correctly(
         settings.mistral_api_key = original_mistral_key
 
 
-def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_attach_existing_files_creates_source_blocks_correctly(
+    disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState
+):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
@@ -302,7 +306,9 @@ def test_attach_existing_files_creates_source_blocks_correctly(disable_pinecone,
     assert "<directories>" not in raw_system_message_after_detach
 
 
-def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_delete_source_removes_source_blocks_correctly(
+    disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState
+):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
     assert len(client.sources.list()) == 1
@@ -360,7 +366,7 @@ def test_delete_source_removes_source_blocks_correctly(disable_pinecone, client:
     assert not any("test" in b.value for b in blocks)
 
 
-def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_agent_uses_open_close_file_correctly(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
@@ -463,7 +469,7 @@ def test_agent_uses_open_close_file_correctly(disable_pinecone, client: LettaSDK
     print("✓ File successfully opened with different range - content differs as expected")
 
 
-def test_agent_uses_search_files_correctly(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_agent_uses_search_files_correctly(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
@@ -509,7 +515,7 @@ def test_agent_uses_search_files_correctly(disable_pinecone, client: LettaSDKCli
     assert all(tr.status == "success" for tr in tool_returns), f"Tool call failed {tr}"
 
 
-def test_agent_uses_grep_correctly_basic(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_agent_uses_grep_correctly_basic(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
@@ -551,7 +557,7 @@ def test_agent_uses_grep_correctly_basic(disable_pinecone, client: LettaSDKClien
     assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
 
 
-def test_agent_uses_grep_correctly_advanced(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_agent_uses_grep_correctly_advanced(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
@@ -599,7 +605,7 @@ def test_agent_uses_grep_correctly_advanced(disable_pinecone, client: LettaSDKCl
     assert "511:" in tool_return_message.tool_return
 
 
-def test_create_agent_with_source_ids_creates_source_blocks_correctly(disable_pinecone, client: LettaSDKClient):
+def test_create_agent_with_source_ids_creates_source_blocks_correctly(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that creating an agent with source_ids parameter correctly creates source blocks."""
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
@@ -642,7 +648,7 @@ def test_create_agent_with_source_ids_creates_source_blocks_correctly(disable_pi
     assert file_tools == set(FILES_TOOLS)
 
 
-def test_view_ranges_have_metadata(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
+def test_view_ranges_have_metadata(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
     # Create a new source
     source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
 
@@ -705,7 +711,7 @@ def test_view_ranges_have_metadata(disable_pinecone, client: LettaSDKClient, age
     )
 
 
-def test_duplicate_file_renaming(disable_pinecone, client: LettaSDKClient):
+def test_duplicate_file_renaming(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that duplicate files are renamed with count-based suffixes (e.g., file.txt, file (1).txt, file (2).txt)"""
     # Create a new source
     source = client.sources.create(name="test_duplicate_source", embedding="openai/text-embedding-3-small")
@@ -744,7 +750,7 @@ def test_duplicate_file_renaming(disable_pinecone, client: LettaSDKClient):
         print(f"  File {i + 1}: original='{file.original_file_name}' → renamed='{file.file_name}'")
 
 
-def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClient):
+def test_duplicate_file_handling_replace(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that DuplicateFileHandling.REPLACE replaces existing files with same name"""
     # Create a new source
     source = client.sources.create(name="test_replace_source", embedding="openai/text-embedding-3-small")
@@ -826,7 +832,7 @@ def test_duplicate_file_handling_replace(disable_pinecone, client: LettaSDKClien
             os.unlink(temp_file_path)
 
 
-def test_upload_file_with_custom_name(disable_pinecone, client: LettaSDKClient):
+def test_upload_file_with_custom_name(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that uploading a file with a custom name overrides the original filename"""
     # Create agent
     agent_state = client.agents.create(
@@ -907,7 +913,7 @@ def test_upload_file_with_custom_name(disable_pinecone, client: LettaSDKClient):
             os.unlink(temp_file_path)
 
 
-def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient):
+def test_open_files_schema_descriptions(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that open_files tool schema contains correct descriptions from docstring"""
 
     # Get the open_files tool
@@ -990,7 +996,7 @@ def test_open_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     assert length_prop["type"] == "integer"
 
 
-def test_grep_files_schema_descriptions(disable_pinecone, client: LettaSDKClient):
+def test_grep_files_schema_descriptions(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
     """Test that grep_files tool schema contains correct descriptions from docstring"""
 
     # Get the grep_files tool
@@ -1076,10 +1082,174 @@ def test_grep_files_schema_descriptions(disable_pinecone, client: LettaSDKClient
     assert "Navigation hint for next page if more matches exist" in description
 
 
+def test_agent_open_file(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.open_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # Basic test open_file function
+    closed_files = client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
+    assert len(closed_files) == 0
+
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open" name="test_source/test.txt">' in system
+    assert "[Viewing file start (out of 1 lines)]" in system
+
+
+def test_agent_close_file(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_file() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # First open the file
+    client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    # Test close_file function
+    client.agents.files.close(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="closed" name="test_source/test.txt">' in system
+
+
+def test_agent_close_all_open_files(disable_pinecone, disable_turbopuffer, client: LettaSDKClient, agent_state: AgentState):
+    """Test client.agents.close_all_open_files() function"""
+    # Create a new source
+    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+
+    # Attach source to agent
+    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+
+    # Upload multiple files
+    file_paths = ["tests/data/test.txt", "tests/data/test.md"]
+    file_metadatas = []
+    for file_path in file_paths:
+        file_metadata = upload_file_and_wait(client, source.id, file_path)
+        file_metadatas.append(file_metadata)
+        # Open each file
+        client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
+
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open"' in system
+
+    # Test close_all_open_files function
+    result = client.agents.files.close_all(agent_id=agent_state.id)
+
+    # Verify result is a list of strings
+    assert isinstance(result, list), f"Expected list, got {type(result)}"
+    assert all(isinstance(item, str) for item in result), "All items in result should be strings"
+
+    system = get_raw_system_message(client, agent_state.id)
+    assert '<file status="open"' not in system
+
+
+def test_file_processing_timeout(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
+    """Test that files in non-terminal states are moved to error after timeout"""
+    # Create a source
+    source = client.sources.create(name="test_timeout_source", embedding="openai/text-embedding-3-small")
+
+    # Upload a file
+    file_path = "tests/data/test.txt"
+    with open(file_path, "rb") as f:
+        file_metadata = client.sources.files.upload(source_id=source.id, file=f)
+
+    # Get the file ID
+    file_id = file_metadata.id
+
+    # Test the is_terminal_state method directly (this doesn't require server mocking)
+    assert FileProcessingStatus.COMPLETED.is_terminal_state() == True
+    assert FileProcessingStatus.ERROR.is_terminal_state() == True
+    assert FileProcessingStatus.PARSING.is_terminal_state() == False
+    assert FileProcessingStatus.EMBEDDING.is_terminal_state() == False
+    assert FileProcessingStatus.PENDING.is_terminal_state() == False
+
+    # For testing the actual timeout logic, we can check the current file status
+    current_file = client.sources.get_file_metadata(source_id=source.id, file_id=file_id)
+
+    # Convert string status to enum for testing
+    status_enum = FileProcessingStatus(current_file.processing_status)
+
+    # Verify that files in terminal states are not affected by timeout checks
+    if status_enum.is_terminal_state():
+        # This is the expected behavior - files that completed processing shouldn't timeout
+        print(f"File {file_id} is in terminal state: {current_file.processing_status}")
+        assert status_enum in [FileProcessingStatus.COMPLETED, FileProcessingStatus.ERROR]
+    else:
+        # If file is still processing, it should eventually complete or timeout
+        # In a real scenario, we'd wait and check, but for unit tests we just verify the logic exists
+        print(f"File {file_id} is still processing: {current_file.processing_status}")
+        assert status_enum in [FileProcessingStatus.PENDING, FileProcessingStatus.PARSING, FileProcessingStatus.EMBEDDING]
+
+
+@pytest.mark.unit
+def test_file_processing_timeout_logic():
+    """Test the timeout logic directly without server dependencies"""
+    from datetime import timezone
+
+    # Test scenario: file created 35 minutes ago, timeout is 30 minutes
+    old_time = datetime.now(timezone.utc) - timedelta(minutes=35)
+    current_time = datetime.now(timezone.utc)
+    timeout_minutes = 30
+
+    # Calculate timeout threshold
+    timeout_threshold = current_time - timedelta(minutes=timeout_minutes)
+
+    # Verify timeout logic
+    assert old_time < timeout_threshold, "File created 35 minutes ago should be past 30-minute timeout"
+
+    # Test edge case: file created exactly at timeout
+    edge_time = current_time - timedelta(minutes=timeout_minutes)
+    assert not (edge_time < timeout_threshold), "File created exactly at timeout should not trigger timeout"
+
+    # Test recent file
+    recent_time = current_time - timedelta(minutes=10)
+    assert not (recent_time < timeout_threshold), "Recent file should not trigger timeout"
+
+
+def test_letta_free_embedding(disable_pinecone, disable_turbopuffer, client: LettaSDKClient):
+    """Test creating a source with letta/letta-free embedding and uploading a file"""
+    # create a source with letta-free embedding
+    source = client.sources.create(name="test_letta_free_source", embedding="letta/letta-free")
+
+    # verify source was created with correct embedding
+    assert source.name == "test_letta_free_source"
+    print("\n\n\n\ntest")
+    print(source.embedding_config)
+    # assert source.embedding_config.embedding_model == "letta-free"
+
+    # upload test.txt file
+    file_path = "tests/data/test.txt"
+    file_metadata = upload_file_and_wait(client, source.id, file_path)
+
+    # verify file was uploaded successfully
+    assert file_metadata.processing_status == "completed"
+    assert file_metadata.source_id == source.id
+    assert file_metadata.file_name == "test.txt"
+
+    # verify file appears in source files list
+    files = client.sources.files.list(source_id=source.id, limit=1)
+    assert len(files) == 1
+    assert files[0].id == file_metadata.id
+
+    # cleanup
+    client.sources.delete(source_id=source.id)
+
+
 # --- Pinecone Tests ---
-
-
-def test_pinecone_search_files_tool(client: LettaSDKClient):
+def test_pinecone_search_files_tool(disable_turbopuffer, client: LettaSDKClient):
     """Test that search_files tool uses Pinecone when enabled"""
     from letta.helpers.pinecone_utils import should_use_pinecone
 
@@ -1130,7 +1300,7 @@ def test_pinecone_search_files_tool(client: LettaSDKClient):
     )
 
 
-def test_pinecone_list_files_status(client: LettaSDKClient):
+def test_pinecone_list_files_status(disable_turbopuffer, client: LettaSDKClient):
     """Test that list_source_files properly syncs embedding status with Pinecone"""
     if not should_use_pinecone():
         pytest.skip("Pinecone not configured (missing API key or disabled), skipping Pinecone-specific tests")
@@ -1165,7 +1335,7 @@ def test_pinecone_list_files_status(client: LettaSDKClient):
     client.sources.delete(source_id=source.id)
 
 
-def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
+def test_pinecone_lifecycle_file_and_source_deletion(disable_turbopuffer, client: LettaSDKClient):
     """Test that file and source deletion removes records from Pinecone"""
     from letta.helpers.pinecone_utils import list_pinecone_index_for_files, should_use_pinecone
 
@@ -1236,167 +1406,196 @@ def test_pinecone_lifecycle_file_and_source_deletion(client: LettaSDKClient):
     )
 
 
-def test_agent_open_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
-    """Test client.agents.open_file() function"""
-    # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
-
-    # Attach source to agent
-    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
-
-    # Upload a file
-    file_path = "tests/data/test.txt"
-    file_metadata = upload_file_and_wait(client, source.id, file_path)
-
-    # Basic test open_file function
-    closed_files = client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
-    assert len(closed_files) == 0
-
-    system = get_raw_system_message(client, agent_state.id)
-    assert '<file status="open" name="test_source/test.txt">' in system
-    assert "[Viewing file start (out of 1 lines)]" in system
+# --- End Pinecone Tests ---
 
 
-def test_agent_close_file(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
-    """Test client.agents.close_file() function"""
-    # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+# --- Turbopuffer Tests ---
+def test_turbopuffer_search_files_tool(disable_pinecone, client: LettaSDKClient):
+    """Test that search_files tool uses Turbopuffer when enabled"""
+    agent = client.agents.create(
+        name="test_turbopuffer_agent",
+        memory_blocks=[
+            CreateBlock(label="human", value="username: testuser"),
+        ],
+        model="openai/gpt-4o-mini",
+        embedding="openai/text-embedding-3-small",
+    )
 
-    # Attach source to agent
-    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+    source = client.sources.create(name="test_turbopuffer_source", embedding="openai/text-embedding-3-small")
+    client.agents.sources.attach(source_id=source.id, agent_id=agent.id)
 
-    # Upload a file
-    file_path = "tests/data/test.txt"
-    file_metadata = upload_file_and_wait(client, source.id, file_path)
+    file_path = "tests/data/long_test.txt"
+    upload_file_and_wait(client, source.id, file_path)
 
-    # First open the file
-    client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
+    search_response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=[MessageCreate(role="user", content="Use the semantic_search_files tool to search for 'electoral history' in the files.")],
+    )
 
-    # Test close_file function
-    client.agents.files.close(agent_id=agent_state.id, file_id=file_metadata.id)
+    tool_calls = [msg for msg in search_response.messages if msg.message_type == "tool_call_message"]
+    assert len(tool_calls) > 0, "No tool calls found"
+    assert any(tc.tool_call.name == "semantic_search_files" for tc in tool_calls), "semantic_search_files not called"
 
-    system = get_raw_system_message(client, agent_state.id)
-    assert '<file status="closed" name="test_source/test.txt">' in system
+    tool_returns = [msg for msg in search_response.messages if msg.message_type == "tool_return_message"]
+    assert len(tool_returns) > 0, "No tool returns found"
+    assert all(tr.status == "success" for tr in tool_returns), "Tool call failed"
+
+    search_results = tool_returns[0].tool_return
+    print(f"Turbopuffer search results: {search_results}")
+    assert "electoral" in search_results.lower() or "history" in search_results.lower(), (
+        f"Search results should contain relevant content: {search_results}"
+    )
+
+    client.agents.delete(agent_id=agent.id)
+    client.sources.delete(source_id=source.id)
 
 
-def test_agent_close_all_open_files(disable_pinecone, client: LettaSDKClient, agent_state: AgentState):
-    """Test client.agents.close_all_open_files() function"""
-    # Create a new source
-    source = client.sources.create(name="test_source", embedding="openai/text-embedding-3-small")
+def test_turbopuffer_file_processing_status(disable_pinecone, client: LettaSDKClient):
+    """Test that file processing completes successfully with Turbopuffer"""
+    print("Testing Turbopuffer file processing status")
 
-    # Attach source to agent
-    client.agents.sources.attach(source_id=source.id, agent_id=agent_state.id)
+    source = client.sources.create(name="test_tpuf_file_status", embedding="openai/text-embedding-3-small")
 
-    # Upload multiple files
-    file_paths = ["tests/data/test.txt", "tests/data/test.md"]
-    file_metadatas = []
+    file_paths = ["tests/data/long_test.txt", "tests/data/test.md"]
+    uploaded_files = []
     for file_path in file_paths:
         file_metadata = upload_file_and_wait(client, source.id, file_path)
-        file_metadatas.append(file_metadata)
-        # Open each file
-        client.agents.files.open(agent_id=agent_state.id, file_id=file_metadata.id)
+        uploaded_files.append(file_metadata)
+        assert file_metadata.processing_status == "completed", f"File {file_path} should be completed"
 
-    system = get_raw_system_message(client, agent_state.id)
-    assert '<file status="open"' in system
+    files_list = client.sources.files.list(source_id=source.id, limit=100)
 
-    # Test close_all_open_files function
-    result = client.agents.files.close_all(agent_id=agent_state.id)
+    assert len(files_list) == len(uploaded_files), f"Expected {len(uploaded_files)} files, got {len(files_list)}"
 
-    # Verify result is a list of strings
-    assert isinstance(result, list), f"Expected list, got {type(result)}"
-    assert all(isinstance(item, str) for item in result), "All items in result should be strings"
+    for file_metadata in files_list:
+        assert file_metadata.processing_status == "completed", f"File {file_metadata.file_name} should show completed status"
 
-    system = get_raw_system_message(client, agent_state.id)
-    assert '<file status="open"' not in system
+        if file_metadata.total_chunks and file_metadata.total_chunks > 0:
+            assert file_metadata.chunks_embedded == file_metadata.total_chunks, (
+                f"File {file_metadata.file_name} should have all chunks embedded: {file_metadata.chunks_embedded}/{file_metadata.total_chunks}"
+            )
 
-
-def test_file_processing_timeout(disable_pinecone, client: LettaSDKClient):
-    """Test that files in non-terminal states are moved to error after timeout"""
-    # Create a source
-    source = client.sources.create(name="test_timeout_source", embedding="openai/text-embedding-3-small")
-
-    # Upload a file
-    file_path = "tests/data/test.txt"
-    with open(file_path, "rb") as f:
-        file_metadata = client.sources.files.upload(source_id=source.id, file=f)
-
-    # Get the file ID
-    file_id = file_metadata.id
-
-    # Test the is_terminal_state method directly (this doesn't require server mocking)
-    assert FileProcessingStatus.COMPLETED.is_terminal_state() == True
-    assert FileProcessingStatus.ERROR.is_terminal_state() == True
-    assert FileProcessingStatus.PARSING.is_terminal_state() == False
-    assert FileProcessingStatus.EMBEDDING.is_terminal_state() == False
-    assert FileProcessingStatus.PENDING.is_terminal_state() == False
-
-    # For testing the actual timeout logic, we can check the current file status
-    current_file = client.sources.get_file_metadata(source_id=source.id, file_id=file_id)
-
-    # Convert string status to enum for testing
-    status_enum = FileProcessingStatus(current_file.processing_status)
-
-    # Verify that files in terminal states are not affected by timeout checks
-    if status_enum.is_terminal_state():
-        # This is the expected behavior - files that completed processing shouldn't timeout
-        print(f"File {file_id} is in terminal state: {current_file.processing_status}")
-        assert status_enum in [FileProcessingStatus.COMPLETED, FileProcessingStatus.ERROR]
-    else:
-        # If file is still processing, it should eventually complete or timeout
-        # In a real scenario, we'd wait and check, but for unit tests we just verify the logic exists
-        print(f"File {file_id} is still processing: {current_file.processing_status}")
-        assert status_enum in [FileProcessingStatus.PENDING, FileProcessingStatus.PARSING, FileProcessingStatus.EMBEDDING]
-
-
-@pytest.mark.unit
-def test_file_processing_timeout_logic():
-    """Test the timeout logic directly without server dependencies"""
-    from datetime import timezone
-
-    # Test scenario: file created 35 minutes ago, timeout is 30 minutes
-    old_time = datetime.now(timezone.utc) - timedelta(minutes=35)
-    current_time = datetime.now(timezone.utc)
-    timeout_minutes = 30
-
-    # Calculate timeout threshold
-    timeout_threshold = current_time - timedelta(minutes=timeout_minutes)
-
-    # Verify timeout logic
-    assert old_time < timeout_threshold, "File created 35 minutes ago should be past 30-minute timeout"
-
-    # Test edge case: file created exactly at timeout
-    edge_time = current_time - timedelta(minutes=timeout_minutes)
-    assert not (edge_time < timeout_threshold), "File created exactly at timeout should not trigger timeout"
-
-    # Test recent file
-    recent_time = current_time - timedelta(minutes=10)
-    assert not (recent_time < timeout_threshold), "Recent file should not trigger timeout"
-
-
-def test_letta_free_embedding(disable_pinecone, client: LettaSDKClient):
-    """Test creating a source with letta/letta-free embedding and uploading a file"""
-    # create a source with letta-free embedding
-    source = client.sources.create(name="test_letta_free_source", embedding="letta/letta-free")
-
-    # verify source was created with correct embedding
-    assert source.name == "test_letta_free_source"
-    print("\n\n\n\ntest")
-    print(source.embedding_config)
-    # assert source.embedding_config.embedding_model == "letta-free"
-
-    # upload test.txt file
-    file_path = "tests/data/test.txt"
-    file_metadata = upload_file_and_wait(client, source.id, file_path)
-
-    # verify file was uploaded successfully
-    assert file_metadata.processing_status == "completed"
-    assert file_metadata.source_id == source.id
-    assert file_metadata.file_name == "test.txt"
-
-    # verify file appears in source files list
-    files = client.sources.files.list(source_id=source.id, limit=1)
-    assert len(files) == 1
-    assert files[0].id == file_metadata.id
-
-    # cleanup
     client.sources.delete(source_id=source.id)
+
+
+def test_turbopuffer_lifecycle_file_and_source_deletion(disable_pinecone, client: LettaSDKClient):
+    """Test that file and source deletion removes records from Turbopuffer"""
+    source = client.sources.create(name="test_tpuf_lifecycle", embedding="openai/text-embedding-3-small")
+
+    file_paths = ["tests/data/test.txt", "tests/data/test.md"]
+    uploaded_files = []
+    for file_path in file_paths:
+        file_metadata = upload_file_and_wait(client, source.id, file_path)
+        uploaded_files.append(file_metadata)
+
+    user = User(name="temp", organization_id=DEFAULT_ORG_ID)
+    tpuf_client = TurbopufferClient()
+
+    # test file-level deletion
+    if len(uploaded_files) > 1:
+        file_to_delete = uploaded_files[0]
+
+        passages_before = asyncio.run(
+            tpuf_client.query_file_passages(
+                source_ids=[source.id], organization_id=user.organization_id, actor=user, file_id=file_to_delete.id, top_k=100
+            )
+        )
+        print(f"Found {len(passages_before)} passages for file before deletion")
+        assert len(passages_before) > 0, "Should have passages before deletion"
+
+        client.sources.files.delete(source_id=source.id, file_id=file_to_delete.id)
+
+        time.sleep(2)
+
+        passages_after = asyncio.run(
+            tpuf_client.query_file_passages(
+                source_ids=[source.id], organization_id=user.organization_id, actor=user, file_id=file_to_delete.id, top_k=100
+            )
+        )
+        print(f"Found {len(passages_after)} passages for file after deletion")
+        assert len(passages_after) == 0, f"File passages should be removed from Turbopuffer after deletion, but found {len(passages_after)}"
+
+    # test source-level deletion
+    remaining_passages_before = []
+    for file_metadata in uploaded_files[1:]:
+        passages = asyncio.run(
+            tpuf_client.query_file_passages(
+                source_ids=[source.id], organization_id=user.organization_id, actor=user, file_id=file_metadata.id, top_k=100
+            )
+        )
+        remaining_passages_before.extend(passages)
+
+    print(f"Found {len(remaining_passages_before)} passages for remaining files before source deletion")
+    assert len(remaining_passages_before) > 0, "Should have passages for remaining files"
+
+    client.sources.delete(source_id=source.id)
+
+    time.sleep(3)
+
+    remaining_passages_after = []
+    for file_metadata in uploaded_files[1:]:
+        try:
+            passages = asyncio.run(
+                tpuf_client.query_file_passages(
+                    source_ids=[source.id], organization_id=user.organization_id, actor=user, file_id=file_metadata.id, top_k=100
+                )
+            )
+            remaining_passages_after.extend(passages)
+        except Exception as e:
+            print(f"Expected error querying deleted source: {e}")
+
+    print(f"Found {len(remaining_passages_after)} passages for files after source deletion")
+    assert len(remaining_passages_after) == 0, (
+        f"All source passages should be removed from Turbopuffer after source deletion, but found {len(remaining_passages_after)}"
+    )
+
+
+def test_turbopuffer_multiple_sources(disable_pinecone, client: LettaSDKClient):
+    """Test that Turbopuffer correctly isolates passages by source in org-scoped namespace"""
+    source1 = client.sources.create(name="test_tpuf_source1", embedding="openai/text-embedding-3-small")
+    source2 = client.sources.create(name="test_tpuf_source2", embedding="openai/text-embedding-3-small")
+
+    file1_metadata = upload_file_and_wait(client, source1.id, "tests/data/test.txt")
+    file2_metadata = upload_file_and_wait(client, source2.id, "tests/data/test.md")
+
+    user = User(name="temp", organization_id=DEFAULT_ORG_ID)
+    tpuf_client = TurbopufferClient()
+
+    source1_passages = asyncio.run(
+        tpuf_client.query_file_passages(source_ids=[source1.id], organization_id=user.organization_id, actor=user, top_k=100)
+    )
+
+    source2_passages = asyncio.run(
+        tpuf_client.query_file_passages(source_ids=[source2.id], organization_id=user.organization_id, actor=user, top_k=100)
+    )
+
+    print(f"Source1 has {len(source1_passages)} passages")
+    print(f"Source2 has {len(source2_passages)} passages")
+
+    assert len(source1_passages) > 0, "Source1 should have passages"
+    assert len(source2_passages) > 0, "Source2 should have passages"
+
+    for passage, _, _ in source1_passages:
+        assert passage.source_id == source1.id, f"Passage should belong to source1, but has source_id={passage.source_id}"
+        assert passage.file_id == file1_metadata.id, f"Passage should belong to file1, but has file_id={passage.file_id}"
+
+    for passage, _, _ in source2_passages:
+        assert passage.source_id == source2.id, f"Passage should belong to source2, but has source_id={passage.source_id}"
+        assert passage.file_id == file2_metadata.id, f"Passage should belong to file2, but has file_id={passage.file_id}"
+
+    # delete source1 and verify source2 is unaffected
+    client.sources.delete(source_id=source1.id)
+    time.sleep(2)
+
+    source2_passages_after = asyncio.run(
+        tpuf_client.query_file_passages(source_ids=[source2.id], organization_id=user.organization_id, actor=user, top_k=100)
+    )
+
+    assert len(source2_passages_after) == len(source2_passages), (
+        f"Source2 should still have all passages after source1 deletion: {len(source2_passages_after)} vs {len(source2_passages)}"
+    )
+
+    client.sources.delete(source_id=source2.id)
+
+
+# --- End Turbopuffer Tests ---

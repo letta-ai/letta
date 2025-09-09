@@ -12,6 +12,7 @@ from letta.errors import (
     AgentNotFoundForExportError,
 )
 from letta.helpers.pinecone_utils import should_use_pinecone
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.schemas.agent import AgentState, CreateAgent
 from letta.schemas.agent_file import (
@@ -29,7 +30,7 @@ from letta.schemas.agent_file import (
 )
 from letta.schemas.block import Block
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import FileProcessingStatus
+from letta.schemas.enums import FileProcessingStatus, VectorDBProvider
 from letta.schemas.file import FileMetadata
 from letta.schemas.group import Group, GroupCreate
 from letta.schemas.mcp import MCPServer
@@ -90,7 +91,6 @@ class AgentSerializationManager:
         self.file_agent_manager = file_agent_manager
         self.message_manager = message_manager
         self.file_parser = MistralFileParser() if settings.mistral_api_key else MarkitdownFileParser()
-        self.using_pinecone = should_use_pinecone()
 
         # ID mapping state for export
         self._db_to_file_ids: Dict[str, str] = {}
@@ -588,7 +588,12 @@ class AgentSerializationManager:
             if schema.files and any(f.content for f in schema.files):
                 # Use override embedding config if provided, otherwise use agent's config
                 embedder_config = override_embedding_config if override_embedding_config else schema.agents[0].embedding_config
-                if should_use_pinecone():
+                # determine which embedder to use - turbopuffer takes precedence
+                if should_use_tpuf():
+                    from letta.services.file_processor.embedder.turbopuffer_embedder import TurbopufferEmbedder
+
+                    embedder = TurbopufferEmbedder(embedding_config=embedder_config)
+                elif should_use_pinecone():
                     embedder = PineconeEmbedder(embedding_config=embedder_config)
                 else:
                     embedder = OpenAIEmbedder(embedding_config=embedder_config)
@@ -596,7 +601,6 @@ class AgentSerializationManager:
                     file_parser=self.file_parser,
                     embedder=embedder,
                     actor=actor,
-                    using_pinecone=self.using_pinecone,
                 )
 
                 for file_schema in schema.files:
