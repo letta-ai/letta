@@ -10053,9 +10053,7 @@
               "application/json": {
                 "schema": {}
               },
-              "text/event-stream": {
-                "description": "Server-Sent Events stream"
-              }
+              "text/event-stream": {}
             }
           },
           "422": {

@@ -8,14 +8,14 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "apps",
+        "cwd": "apps/core/fern",
         "command": "fern docs dev"
       }
     },
     "generate-openapi": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "apps/fern",
+        "cwd": "apps/core/fern",
         "command": "ts-node ./scripts/prepare-openapi.ts"
       }
     }
