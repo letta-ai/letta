@@ -406,11 +406,14 @@ class LettaAgentV2(BaseAgentV2):
                                 if include_return_message_types is None or chunk.message_type in include_return_message_types:
                                     first_chunk = True
                                     yield chunk
+                        # If you've reached this point without an error, break out of retry loop
+                        break
                     except ValueError as e:
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
                         raise e
                     except Exception as e:
                         if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
+                            # Retry case
                             messages = await self._rebuild_context_window(
                                 in_context_messages=messages,
                                 new_letta_messages=self.response_messages,
