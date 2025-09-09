@@ -369,8 +369,10 @@ jobs:
 
           # Feature flags (shared across all test types)
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
-          LETTA_GEMINI_MAX_RETRIES: 10
+
+          # Gemini flags
+          GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
+          GEMINI_MAX_RETRIES: 10
 
           # Pinecone flags
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
