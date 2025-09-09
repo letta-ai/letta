@@ -75,7 +75,6 @@ class LettaAgentV2(BaseAgentV2):
         actor: User,
     ):
         super().__init__(agent_state, actor)
-        self.agent_id = agent_state.id  # Store agent_id for compatibility
         self.logger = get_logger(agent_state.id)
         self.tool_rules_solver = ToolRulesSolver(tool_rules=agent_state.tool_rules)
         self.llm_client = LLMClient.create(
@@ -1193,7 +1192,7 @@ class LettaAgentV2(BaseAgentV2):
             return
         try:
             await self.agent_manager.update_agent_async(
-                agent_id=self.agent_id,
+                agent_id=self.agent_state.id,
                 agent_update=UpdateAgent(last_run_completion=completion_time, last_run_duration_ms=duration_ms),
                 actor=self.actor,
             )
