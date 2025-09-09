@@ -54,7 +54,7 @@ export async function processStep(
       })
       .returning({
         id: organizationCreditTransactions.id,
-      });
+      }).onConflictDoNothing()
 
     return {
       transactionId: txn.id,

@@ -5,7 +5,7 @@ import {
   organizationLowBalanceNotificationLock,
   organizations,
 } from '@letta-cloud/service-database';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { dollarsToCredits } from '@letta-cloud/utils-shared';
 import * as crypto from 'node:crypto';
 import { getDefaultContactEmails, sendEmail } from '@letta-cloud/service-email';
@@ -132,45 +132,83 @@ export async function removeCreditsFromOrganization(
 
   const { organizationId } = org;
 
-  const [txn] = await db
-    .insert(organizationCreditTransactions)
-    .values({
-      amount: amount.toString(),
-      organizationId,
-      stepId,
-      source,
-      modelId,
-      modelTier,
-      note,
-      transactionType: 'subtraction',
-    })
-    .returning({
-      id: organizationCreditTransactions.id,
-    });
+  try {
+    const [txn] = await db
+      .insert(organizationCreditTransactions)
+      .values({
+        amount: amount.toString(),
+        organizationId,
+        stepId,
+        source,
+        modelId,
+        modelTier,
+        note,
+        transactionType: 'subtraction',
+      })
+      .returning({
+        id: organizationCreditTransactions.id,
+      });
 
-  await decrementRedisOrganizationCredits(organizationId, amount);
+    await decrementRedisOrganizationCredits(organizationId, amount);
 
-  const [res] = await db
-    .update(organizationCredits)
-    .set({
-      credits: sql`${organizationCredits.credits} - ${amount}`,
-    })
-    .where(eq(organizationCredits.organizationId, organizationId))
-    .returning({
-      credits: organizationCredits.credits,
-    });
+    const [res] = await db
+      .update(organizationCredits)
+      .set({
+        credits: sql`${organizationCredits.credits} - ${amount}`,
+      })
+      .where(eq(organizationCredits.organizationId, organizationId))
+      .returning({
+        credits: organizationCredits.credits,
+      });
 
-  if (modelTier === 'per-inference') {
-    void checkLowBalance({
-      organizationId,
-    }).catch((e) => {
-      console.error(e);
-      Sentry.captureException(e);
-    });
+    if (modelTier === 'per-inference') {
+      void checkLowBalance({
+        organizationId,
+      }).catch((e) => {
+        console.error(e);
+        Sentry.captureException(e);
+      });
+    }
+
+    return {
+      newCredits: res.credits,
+      transactionId: txn.id,
+    };
+  } catch (e) {
+    // check for constraint violation
+    if (e instanceof Error && e.message.includes('duplicate key value')) {
+      // return current credits and trasaction id  from step id
+      const existingTxn =
+        await db.query.organizationCreditTransactions.findFirst({
+          where: and(
+            eq(organizationCreditTransactions.organizationId, organizationId),
+            eq(organizationCreditTransactions.stepId, stepId || ''),
+          ),
+          columns: {
+            id: true,
+          },
+        });
+
+      if (!existingTxn) {
+        throw new Error('Could not find existing transaction');
+      }
+
+      const orgCredits = await db.query.organizationCredits.findFirst({
+        where: eq(organizationCredits.organizationId, organizationId),
+        columns: {
+          credits: true,
+        },
+      });
+
+      if (!orgCredits) {
+        throw new Error('Could not find organization credits');
+      }
+
+      return {
+        newCredits: orgCredits.credits,
+        transactionId: existingTxn.id,
+      };
+    }
+    throw e;
   }
-
-  return {
-    newCredits: res.credits,
-    transactionId: txn.id,
-  };
 }
