@@ -213,7 +213,7 @@ class LettaAgentV2(BaseAgentV2):
         self,
         input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
-        stream_tokens: bool = True,
+        stream_tokens: bool = False,
         run_id: str | None = None,
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
