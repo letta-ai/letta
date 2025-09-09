@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 from pydantic import Field
@@ -119,33 +119,18 @@ async def list_run_messages(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
-    before: Optional[str] = Query(None, description="Cursor for pagination"),
-    after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
-    order: str = Query(
-        "asc", description="Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
     ),
-    role: Optional[MessageRole] = Query(None, description="Filter by role"),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
 ):
-    """
-    Get messages associated with a run with filtering options.
-
-    Args:
-        run_id: ID of the run
-        before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
-        after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
-        limit: Maximum number of messages to return
-        order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
-        role: Filter by role (user/assistant/system/tool)
-        return_message_object: Whether to return Message objects or LettaMessage objects
-        user_id: ID of the user making the request
-
-    Returns:
-        A list of messages associated with the run. Default is List[LettaMessage].
-    """
-    if order not in ["asc", "desc"]:
-        raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
-
+    """Get response messages associated with a run."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     try:
@@ -156,7 +141,6 @@ async def list_run_messages(
             before=before,
             after=after,
             ascending=(order == "asc"),
-            role=role,
         )
         return messages
     except NoResultFound as e:
