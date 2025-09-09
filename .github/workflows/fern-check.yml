@@ -1,0 +1,20 @@
+name: 🌿 Fern Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  run:
+    runs-on: [self-hosted, small]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check API is valid
+        working-directory: fern
+        run: fern check
