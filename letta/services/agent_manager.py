@@ -720,7 +720,7 @@ class AgentManager:
         # Only create messages if we initialized with messages
         if not _init_with_no_messages:
             await self.message_manager.create_many_messages_async(
-                pydantic_msgs=init_messages, actor=actor, embedding_config=result.embedding_config
+                pydantic_msgs=init_messages, actor=actor, project_id=result.project_id, template_id=result.template_id
             )
         return result
 
@@ -1834,6 +1834,7 @@ class AgentManager:
                     message_id=curr_system_message.id,
                     message_update=MessageUpdate(**temp_message.model_dump()),
                     actor=actor,
+                    project_id=agent_state.project_id,
                 )
             else:
                 curr_system_message = temp_message
@@ -1887,7 +1888,9 @@ class AgentManager:
         self, messages: List[PydanticMessage], agent_id: str, actor: PydanticUser
     ) -> PydanticAgentState:
         agent = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
-        messages = await self.message_manager.create_many_messages_async(messages, actor=actor, embedding_config=agent.embedding_config)
+        messages = await self.message_manager.create_many_messages_async(
+            messages, actor=actor, project_id=agent.project_id, template_id=agent.template_id
+        )
         message_ids = agent.message_ids or []
         message_ids += [m.id for m in messages]
         return await self.set_in_context_messages_async(agent_id=agent_id, message_ids=message_ids, actor=actor)
@@ -2655,7 +2658,7 @@ class AgentManager:
         embedding_config: Optional[EmbeddingConfig] = None,
         tags: Optional[List[str]] = None,
         tag_match_mode: Optional[TagMatchMode] = None,
-    ) -> List[PydanticPassage]:
+    ) -> List[Tuple[PydanticPassage, float, dict]]:
         """Lists all passages attached to an agent."""
         # Check if we should use Turbopuffer for vector search
         if embed_query and agent_id and query_text and embedding_config:
@@ -2688,7 +2691,6 @@ class AgentManager:
                     # use hybrid search to combine vector and full-text search
                     passages_with_scores = await tpuf_client.query_passages(
                         archive_id=archive_ids[0],
-                        query_embedding=query_embedding,
                         query_text=query_text,  # pass text for potential hybrid search
                         search_mode="hybrid",  # use hybrid mode for better results
                         top_k=limit,
@@ -2696,10 +2698,11 @@ class AgentManager:
                         tag_match_mode=tag_match_mode or TagMatchMode.ANY,
                         start_date=start_date,
                         end_date=end_date,
+                        actor=actor,
                     )
 
-                    # Return just the passages (without scores)
-                    return [passage for passage, _ in passages_with_scores]
+                    # Return full tuples with metadata
+                    return passages_with_scores
             else:
                 return []
 
@@ -2750,9 +2753,11 @@ class AgentManager:
                             if query_tags.intersection(passage_tags):
                                 filtered_passages.append(passage)
 
-                return filtered_passages
+                # Return as tuples with empty metadata for SQL path
+                return [(p, 0.0, {}) for p in filtered_passages]
 
-            return pydantic_passages
+            # Return as tuples with empty metadata for SQL path
+            return [(p, 0.0, {}) for p in pydantic_passages]
 
     @enforce_types
     @trace_method
@@ -2766,7 +2771,7 @@ class AgentManager:
         top_k: Optional[int] = None,
         start_datetime: Optional[str] = None,
         end_datetime: Optional[str] = None,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> List[Dict[str, Any]]:
         """
         Search archival memory using semantic (embedding-based) search with optional temporal filtering.
 
@@ -2783,11 +2788,11 @@ class AgentManager:
             end_datetime: Filter results before this datetime (ISO 8601 format)
 
         Returns:
-            Tuple of (formatted_results, count)
+            List of formatted results with relevance metadata
         """
         # Handle empty or whitespace-only queries
         if not query or not query.strip():
-            return [], 0
+            return []
 
         # Get the agent to access timezone and embedding config
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -2839,7 +2844,7 @@ class AgentManager:
 
         # Get results using existing passage query method
         limit = top_k if top_k is not None else RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE
-        all_results = await self.query_agent_passages_async(
+        passages_with_metadata = await self.query_agent_passages_async(
             actor=actor,
             agent_id=agent_id,
             query_text=query,
@@ -2852,11 +2857,11 @@ class AgentManager:
             end_date=end_date,
         )
 
-        # Format results to include tags with friendly timestamps
+        # Format results to include tags with friendly timestamps and relevance metadata
         formatted_results = []
-        for result in all_results:
+        for passage, score, metadata in passages_with_metadata:
             # Format timestamp in agent's timezone if available
-            timestamp = result.created_at
+            timestamp = passage.created_at
             if timestamp and agent_state.timezone:
                 try:
                     # Convert to agent's timezone
@@ -2871,9 +2876,26 @@ class AgentManager:
                 # Use ISO format if no timezone is set
                 formatted_timestamp = str(timestamp) if timestamp else "Unknown"
 
-            formatted_results.append({"timestamp": formatted_timestamp, "content": result.text, "tags": result.tags or []})
+            result_dict = {"timestamp": formatted_timestamp, "content": passage.text, "tags": passage.tags or []}
 
-        return formatted_results, len(formatted_results)
+            # Add relevance metadata if available
+            if metadata:
+                relevance_info = {
+                    k: v
+                    for k, v in {
+                        "rrf_score": metadata.get("combined_score"),
+                        "vector_rank": metadata.get("vector_rank"),
+                        "fts_rank": metadata.get("fts_rank"),
+                    }.items()
+                    if v is not None
+                }
+
+                if relevance_info:  # Only add if we have metadata
+                    result_dict["relevance"] = relevance_info
+
+            formatted_results.append(result_dict)
+
+        return formatted_results
 
     @enforce_types
     @trace_method
@@ -3698,45 +3720,3 @@ class AgentManager:
             num_archival_memories=num_archival_memories,
             num_messages=num_messages,
         )
-
-    async def get_or_set_vector_db_namespace_async(
-        self,
-        agent_id: str,
-        organization_id: str,
-    ) -> str:
-        """Get the vector database namespace for an agent, creating it if it doesn't exist.
-
-        Args:
-            agent_id: Agent ID to check/store namespace
-            organization_id: Organization ID for namespace generation
-
-        Returns:
-            The org-scoped namespace name
-        """
-        from sqlalchemy import update
-
-        from letta.settings import settings
-
-        async with db_registry.async_session() as session:
-            # check if namespace already exists
-            result = await session.execute(select(AgentModel._vector_db_namespace).where(AgentModel.id == agent_id))
-            row = result.fetchone()
-
-            if row and row[0]:
-                return row[0]
-
-            # TODO: In the future, we might use agent_id for sharding the namespace
-            # For now, all messages in an org share the same namespace
-
-            # generate org-scoped namespace name
-            environment = settings.environment
-            if environment:
-                namespace_name = f"messages_{organization_id}_{environment.lower()}"
-            else:
-                namespace_name = f"messages_{organization_id}"
-
-            # update the agent with the namespace (keeps agent-level tracking for future sharding)
-            await session.execute(update(AgentModel).where(AgentModel.id == agent_id).values(_vector_db_namespace=namespace_name))
-            await session.commit()
-
-            return namespace_name

@@ -51,6 +51,17 @@ def get_secret_code_tool(input_text: str) -> str:
     return str(abs(hash(input_text)))
 
 
+def accumulate_chunks(stream):
+    messages = []
+    prev_message_type = None
+    for chunk in stream:
+        current_message_type = chunk.message_type
+        if prev_message_type != current_message_type:
+            messages.append(chunk)
+        prev_message_type = current_message_type
+    return messages
+
+
 # ------------------------------
 # Fixtures
 # ------------------------------
@@ -185,15 +196,21 @@ def test_send_message_with_requires_approval_tool(
     client: Letta,
     agent: AgentState,
 ) -> None:
-    response = client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_TEST_APPROVAL,
+        stream_tokens=True,
     )
 
-    assert response.messages is not None
-    assert len(response.messages) == 2
-    assert response.messages[0].message_type == "reasoning_message"
-    assert response.messages[1].message_type == "approval_request_message"
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "approval_request_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[2].stop_reason == "requires_approval"
+    assert messages[3].message_type == "usage_statistics"
 
 
 def test_send_message_after_turning_off_requires_approval(
@@ -201,13 +218,11 @@ def test_send_message_after_turning_off_requires_approval(
     agent: AgentState,
     approval_tool_fixture: Tool,
 ) -> None:
-    response = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=USER_MESSAGE_TEST_APPROVAL,
-    )
-    approval_request_id = response.messages[0].id
+    response = client.agents.messages.create_stream(agent_id=agent.id, messages=USER_MESSAGE_TEST_APPROVAL, stream_tokens=True)
+    messages = accumulate_chunks(response)
+    approval_request_id = messages[0].id
 
-    client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=[
             ApprovalCreate(
@@ -215,7 +230,9 @@ def test_send_message_after_turning_off_requires_approval(
                 approval_request_id=approval_request_id,
             ),
         ],
+        stream_tokens=True,
     )
+    messages = accumulate_chunks(response)
 
     client.agents.tools.modify_approval(
         agent_id=agent.id,
@@ -223,19 +240,18 @@ def test_send_message_after_turning_off_requires_approval(
         requires_approval=False,
     )
 
-    response = client.agents.messages.create(
-        agent_id=agent.id,
-        messages=USER_MESSAGE_TEST_APPROVAL,
-    )
+    response = client.agents.messages.create_stream(agent_id=agent.id, messages=USER_MESSAGE_TEST_APPROVAL, stream_tokens=True)
 
-    assert response.messages is not None
-    assert len(response.messages) == 3 or len(response.messages) == 5
-    assert response.messages[0].message_type == "reasoning_message"
-    assert response.messages[1].message_type == "tool_call_message"
-    assert response.messages[2].message_type == "tool_return_message"
-    if len(response.messages) == 5:
-        assert response.messages[3].message_type == "reasoning_message"
-        assert response.messages[4].message_type == "assistant_message"
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 5 or len(messages) == 7
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "tool_call_message"
+    assert messages[2].message_type == "tool_return_message"
+    if len(messages) > 5:
+        assert messages[3].message_type == "reasoning_message"
+        assert messages[4].message_type == "assistant_message"
 
 
 # ------------------------------

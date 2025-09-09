@@ -68,6 +68,11 @@ async def list_blocks(
             "If provided, returns blocks that have exactly this number of connected agents."
         ),
     ),
+    show_hidden_blocks: bool | None = Query(
+        False,
+        include_in_schema=False,
+        description="If set to True, include blocks marked as hidden in the results.",
+    ),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -89,6 +94,7 @@ async def list_blocks(
         connected_to_agents_count_eq=connected_to_agents_count_eq,
         limit=limit,
         after=after,
+        show_hidden_blocks=show_hidden_blocks,
     )
 
 

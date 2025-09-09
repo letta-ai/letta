@@ -1,0 +1,29 @@
+## Added List Run Steps API
+
+We've introduced a new API endpoint that allows you to list all steps associated with a specific run. This feature makes it easier to track and analyze the sequence of steps performed during a run.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+steps = client.runs.list_run_steps(
+    run_id="RUN_ID",
+)
+for step in steps:
+    print(f"Step ID: {step.id}, Tokens: {step.total_tokens}")
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const steps = await client.runs.listRunSteps({
+  run_id: "RUN_ID",
+});
+steps.forEach(step => {
+  console.log(`Step ID: ${step.id}, Tokens: ${step.total_tokens}`);
+});
+```
+</CodeBlocks>

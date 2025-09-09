@@ -1,0 +1,68 @@
+---
+title: ReAct Agents
+subtitle: Agents that reason and call tools in a loop
+slug: guides/agents/architectures/react
+---
+
+ReAct agents are based on the [ReAct research paper](https://arxiv.org/abs/2210.03629) and follow a "Reason then Act" pattern. In Letta, agents using the ReAct architecture can reason and call tools in a loop (using the same heartbeat mechanism from MemGPT), but lack the **long-term memory capabilities** of MemGPT agents.
+
+## Architecture
+
+ReAct agents maintain conversation context through summarization but cannot edit their own memory or access historical messages beyond the context window.
+
+**Key differences from MemGPT agents:**
+* No read-write memory blocks or memory editing tools
+* No access to evicted conversation history
+* Simple conversation summarization instead of recursive memory management
+* Tool calling without persistent state beyond the current session
+
+**When to use ReAct agents:**
+* Tool-calling tasks that don't require long-term memory
+* Stateless interactions where conversation summarization is sufficient
+
+## Creating ReAct Agents
+
+To create a ReAct agent, simply use the `react_agent` agent type when creating your agent.
+There is no need to pass any memory blocks to the agent, since ReAct agents do not have any long-term memory.
+
+<CodeGroup>
+```python title="python"
+from letta_client import Letta
+
+client = Letta(token="LETTA_API_KEY")
+
+# create the ReAct agent
+agent = client.agents.create(
+    agent_type="react_agent",
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    tools=["web_search", "run_code"]
+)
+```
+
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client'
+
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// create the ReAct agent
+const agent = await client.agents.create({
+    agentType: "react_agent",
+    model: "openai/gpt-4.1",
+    embedding: "openai/text-embedding-3-small",
+    tools: ["web_search", "run_code"]
+});
+```
+
+```bash title="curl"
+curl -X POST https://api.letta.com/v1/agents \
+     -H "Authorization: Bearer $LETTA_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "agent_type": "react_agent",
+  "model": "openai/gpt-4.1",
+  "embedding": "openai/text-embedding-3-small",
+  "tools": ["web_search", "run_code"]
+}'
+```
+</CodeGroup>

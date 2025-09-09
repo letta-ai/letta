@@ -35,8 +35,8 @@ def conversation_search(
         query (str): String to search for using both text matching and semantic similarity.
         roles (Optional[List[Literal["assistant", "user", "tool"]]]): Optional list of message roles to filter by.
         limit (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-        start_date (Optional[str]): Filter results to messages created after this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
-        end_date (Optional[str]): Filter results to messages created before this date. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+        start_date (Optional[str]): Filter results to messages created on or after this date (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes messages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
+        end_date (Optional[str]): Filter results to messages created on or before this date (INCLUSIVE). When using date-only format (e.g., "2024-01-20"), includes all messages from that entire day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20" (includes all of Jan 20), "2024-01-20T17:00" (up to 5 PM on Jan 20).
 
     Examples:
         # Search all messages
@@ -45,8 +45,17 @@ def conversation_search(
         # Search only assistant messages
         conversation_search(query="error handling", roles=["assistant"])
 
-        # Search with date range
+        # Search with date range (inclusive of both dates)
         conversation_search(query="meetings", start_date="2024-01-15", end_date="2024-01-20")
+        # This includes all messages from Jan 15 00:00:00 through Jan 20 23:59:59
+
+        # Search messages from a specific day (inclusive)
+        conversation_search(query="bug reports", start_date="2024-09-04", end_date="2024-09-04")
+        # This includes ALL messages from September 4, 2024
+
+        # Search with specific time boundaries
+        conversation_search(query="deployment", start_date="2024-01-15T09:00", end_date="2024-01-15T17:30")
+        # This includes messages from 9 AM to 5:30 PM on Jan 15
 
         # Search with limit
         conversation_search(query="debugging", limit=10)
@@ -115,18 +124,24 @@ async def archival_memory_search(
         tags (Optional[list[str]]): Optional list of tags to filter search results. Only passages with these tags will be returned.
         tag_match_mode (Literal["any", "all"]): How to match tags - "any" to match passages with any of the tags, "all" to match only passages with all tags. Defaults to "any".
         top_k (Optional[int]): Maximum number of results to return. Uses system default if not specified.
-        start_datetime (Optional[str]): Filter results to passages created after this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15", "2024-01-15T14:30".
-        end_datetime (Optional[str]): Filter results to passages created before this datetime. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20", "2024-01-20T17:00".
+        start_datetime (Optional[str]): Filter results to passages created on or after this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-15"), includes passages starting from 00:00:00 of that day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-15" (from start of Jan 15), "2024-01-15T14:30" (from 2:30 PM on Jan 15).
+        end_datetime (Optional[str]): Filter results to passages created on or before this datetime (INCLUSIVE). When using date-only format (e.g., "2024-01-20"), includes all passages from that entire day. ISO 8601 format: "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM". Examples: "2024-01-20" (includes all of Jan 20), "2024-01-20T17:00" (up to 5 PM on Jan 20).
 
     Examples:
         # Search all passages
         archival_memory_search(query="project updates")
 
-        # Search with date range (full days)
+        # Search with date range (inclusive of both dates)
         archival_memory_search(query="meetings", start_datetime="2024-01-15", end_datetime="2024-01-20")
+        # This includes all passages from Jan 15 00:00:00 through Jan 20 23:59:59
+
+        # Search passages from a specific day (inclusive)
+        archival_memory_search(query="bug reports", start_datetime="2024-09-04", end_datetime="2024-09-04")
+        # This includes ALL passages from September 4, 2024
 
         # Search with specific time range
         archival_memory_search(query="error logs", start_datetime="2024-01-15T09:30", end_datetime="2024-01-15T17:30")
+        # This includes passages from 9:30 AM to 5:30 PM on Jan 15
 
         # Search from a specific point in time onwards
         archival_memory_search(query="customer feedback", start_datetime="2024-01-15T14:00")
@@ -208,6 +223,25 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
         old_str (str): The text to replace (must match exactly, including whitespace and indentation).
         new_str (str): The new text to insert in place of the old text. Do not include line number prefixes.
 
+    Examples:
+        # Update a block containing information about the user
+        memory_replace(label="human", old_str="Their name is Alice", new_str="Their name is Bob")
+
+        # Update a block containing a todo list
+        memory_replace(label="todos", old_str="- [ ] Step 5: Search the web", new_str="- [x] Step 5: Search the web")
+
+        # Pass an empty string to
+        memory_replace(label="human", old_str="Their name is Alice", new_str="")
+
+        # Bad example - do NOT add (view-only) line numbers to the args
+        memory_replace(label="human", old_str="Line 1: Their name is Alice", new_str="Line 1: Their name is Bob")
+
+        # Bad example - do NOT include the number number warning either
+        memory_replace(label="human", old_str="# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\\nLine 1: Their name is Alice", new_str="Line 1: Their name is Bob")
+
+        # Good example - no line numbers or line number warning (they are view-only), just the text
+        memory_replace(label="human", old_str="Their name is Alice", new_str="Their name is Bob")
+
     Returns:
         str: The success message
     """
@@ -248,11 +282,11 @@ def memory_replace(agent_state: "AgentState", label: str, old_str: str, new_str:
     agent_state.memory.update_block_value(label=label, value=new_value)
 
     # Create a snippet of the edited section
-    SNIPPET_LINES = 3
-    replacement_line = current_value.split(old_str)[0].count("\n")
-    start_line = max(0, replacement_line - SNIPPET_LINES)
-    end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
-    snippet = "\n".join(new_value.split("\n")[start_line : end_line + 1])
+    # SNIPPET_LINES = 3
+    # replacement_line = current_value.split(old_str)[0].count("\n")
+    # start_line = max(0, replacement_line - SNIPPET_LINES)
+    # end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
+    # snippet = "\n".join(new_value.split("\n")[start_line : end_line + 1])
 
     # Prepare the success message
     success_msg = f"The core memory block with label `{label}` has been edited. "
@@ -274,6 +308,13 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
         label (str): Section of the memory to be edited, identified by its label.
         new_str (str): The text to insert. Do not include line number prefixes.
         insert_line (int): The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file).
+
+    Examples:
+        # Update a block containing information about the user (append to the end of the block)
+        memory_insert(label="customer", new_str="The customer's ticket number is 12345")
+
+        # Update a block containing information about the user (insert at the beginning of the block)
+        memory_insert(label="customer", new_str="The customer's ticket number is 12345", insert_line=0)
 
     Returns:
         Optional[str]: None is always returned as this function does not produce a response.
@@ -313,7 +354,7 @@ def memory_insert(agent_state: "AgentState", label: str, new_str: str, insert_li
 
     # Collate into the new value to update
     new_value = "\n".join(new_value_lines)
-    snippet = "\n".join(snippet_lines)
+    # snippet = "\n".join(snippet_lines)
 
     # Write into the block
     agent_state.memory.update_block_value(label=label, value=new_value)

@@ -1,0 +1,60 @@
+## Agent Serialization: Download and Upload APIs
+
+We've added new APIs that allow you to download an agent's serialized JSON representation and upload it to recreate the agent in the system. These features enable easy agent backup, transfer between environments, and version control of agent configurations.
+
+### Import Agent Serialized
+
+Import a serialized agent file and recreate the agent in the system.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agent = client.agents.import_agent_serialized(
+    file=open("/path/to/agent/file.af", "rb"),
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+import * as fs from 'fs';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agent = await client.agents.importAgentSerialized({
+  file: fs.createReadStream("/path/to/your/file"),
+});
+```
+</CodeBlocks>
+
+### Export Agent Serialized
+Export the serialized JSON representation of an agent, formatted with indentation.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agent_json = client.agents.export_agent_serialized(
+    agent_id="AGENT_ID",
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agentJson = await client.agents.exportAgentSerialized({
+  agent_id: "AGENT_ID",
+});
+```
+</CodeBlocks>
+
+## Use Cases
+
+- Environment Migration: Transfer agents between local, desktop, and cloud environments
+- Version Control: Save agent configurations before making significant changes
+- Templating: Create template agents that can be quickly deployed for different use cases
+- Sharing: Share agent configurations with team members or across organizations

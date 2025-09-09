@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import JSON, Index, UniqueConstraint
+from sqlalchemy import JSON, Enum, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.orm.custom_columns import EmbeddingConfigColumn
 from letta.orm.mixins import OrganizationMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.source import Source as PydanticSource
 
 if TYPE_CHECKING:
@@ -30,3 +31,9 @@ class Source(SqlalchemyBase, OrganizationMixin):
     instructions: Mapped[str] = mapped_column(nullable=True, doc="instructions for how to use the source")
     embedding_config: Mapped[EmbeddingConfig] = mapped_column(EmbeddingConfigColumn, doc="Configuration settings for embedding.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="metadata for the source.")
+    vector_db_provider: Mapped[VectorDBProvider] = mapped_column(
+        Enum(VectorDBProvider),
+        nullable=False,
+        default=VectorDBProvider.NATIVE,
+        doc="The vector database provider used for this source's passages",
+    )

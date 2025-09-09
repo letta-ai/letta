@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import wraps
 from logging import Logger
-from typing import Any, Coroutine, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints
+from typing import Any, Callable, Coroutine, Optional, Union, _GenericAlias, get_args, get_origin, get_type_hints
 from urllib.parse import urljoin, urlparse
 
 import demjson3 as demjson
@@ -1271,3 +1271,36 @@ def truncate_file_visible_content(visible_content: str, is_open: bool, per_file_
         visible_content += truncated_warning
 
     return visible_content
+
+
+def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optional[Callable[[Exception], None]] = None) -> asyncio.Task:
+    """
+    Execute an async coroutine in the background without waiting for completion.
+
+    Args:
+        coro: The coroutine to execute
+        task_name: Optional name for logging purposes
+        error_callback: Optional callback to execute if the task fails
+
+    Returns:
+        The created asyncio Task object
+    """
+    import traceback
+
+    task = asyncio.create_task(coro)
+
+    def callback(t):
+        try:
+            t.result()  # this re-raises exceptions from the task
+        except Exception as e:
+            task_desc = f"Background task {task_name}" if task_name else "Background task"
+            logger.error(f"{task_desc} failed: {str(e)}\n{traceback.format_exc()}")
+
+            if error_callback:
+                try:
+                    error_callback(e)
+                except Exception as callback_error:
+                    logger.error(f"Error callback failed: {callback_error}")
+
+    task.add_done_callback(callback)
+    return task

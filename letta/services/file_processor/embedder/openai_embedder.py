@@ -19,6 +19,10 @@ class OpenAIEmbedder(BaseEmbedder):
     """OpenAI-based embedding generation"""
 
     def __init__(self, embedding_config: Optional[EmbeddingConfig] = None):
+        super().__init__()
+        # OpenAI embedder uses the native vector db (PostgreSQL)
+        # self.vector_db_type already set to VectorDBProvider.NATIVE by parent
+
         self.default_embedding_config = (
             EmbeddingConfig.default_config(model_name="text-embedding-3-small", provider="openai")
             if model_settings.openai_api_key

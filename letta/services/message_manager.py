@@ -11,17 +11,16 @@ from letta.orm.agent import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.message import Message as MessageModel
 from letta.otel.tracing import trace_method
-from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import LettaMessageUpdateUnion
 from letta.schemas.letta_message_content import ImageSourceType, LettaImage, MessageContentType, TextContent
-from letta.schemas.message import Message as PydanticMessage, MessageUpdate
+from letta.schemas.message import Message as PydanticMessage, MessageSearchResult, MessageUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.file_manager import FileManager
 from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.settings import DatabaseChoice, settings
-from letta.utils import enforce_types
+from letta.utils import enforce_types, fire_and_forget
 
 logger = get_logger(__name__)
 
@@ -101,7 +100,7 @@ class MessageManager:
                         args = json.loads(tool_call.function.arguments)
                         actual_message = args.get(DEFAULT_MESSAGE_TOOL_KWARG, "")
 
-                        return json.dumps({"thinking": content_str, "message": actual_message})
+                        return json.dumps({"thinking": content_str, "content": actual_message})
                     except (json.JSONDecodeError, KeyError):
                         # fallback if parsing fails
                         pass
@@ -314,8 +313,9 @@ class MessageManager:
         self,
         pydantic_msgs: List[PydanticMessage],
         actor: PydanticUser,
-        embedding_config: Optional[EmbeddingConfig] = None,
         strict_mode: bool = False,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -323,7 +323,9 @@ class MessageManager:
         Args:
             pydantic_msgs: List of Pydantic message models to create
             actor: User performing the action
-            embedding_config: Optional embedding configuration to enable message embedding in Turbopuffer
+            strict_mode: If True, wait for embedding to complete; if False, run in background
+            project_id: Optional project ID for the messages (for Turbopuffer indexing)
+            template_id: Optional template ID for the messages (for Turbopuffer indexing)
 
         Returns:
             List of created Pydantic message models
@@ -362,59 +364,80 @@ class MessageManager:
             result = [msg.to_pydantic() for msg in created_messages]
             await session.commit()
 
-            # embed messages in turbopuffer if enabled and embedding_config provided
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+            # embed messages in turbopuffer if enabled
+            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and embedding_config and result:
-                try:
-                    # extract agent_id from the first message (all should have same agent_id)
-                    agent_id = result[0].agent_id
-                    if agent_id:
-                        # extract text content from each message
-                        message_texts = []
-                        message_ids = []
-                        roles = []
-                        created_ats = []
-                        # combine assistant+tool messages before embedding
-                        combined_messages = self._combine_assistant_tool_messages(result)
-
-                        for msg in combined_messages:
-                            text = self._extract_message_text(msg).strip()
-                            if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
-                                message_texts.append(text)
-                                message_ids.append(msg.id)
-                                roles.append(msg.role)
-                                created_ats.append(msg.created_at)
-
-                        if message_texts:
-                            # generate embeddings using provided config
-                            from letta.llm_api.llm_client import LLMClient
-
-                            embedding_client = LLMClient.create(
-                                provider_type=embedding_config.embedding_endpoint_type,
-                                actor=actor,
-                            )
-                            embeddings = await embedding_client.request_embeddings(message_texts, embedding_config)
-
-                            # insert to turbopuffer
-                            tpuf_client = TurbopufferClient()
-                            await tpuf_client.insert_messages(
-                                agent_id=agent_id,
-                                message_texts=message_texts,
-                                embeddings=embeddings,
-                                message_ids=message_ids,
-                                organization_id=actor.organization_id,
-                                roles=roles,
-                                created_ats=created_ats,
-                            )
-                            logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
-                except Exception as e:
-                    logger.error(f"Failed to embed messages in Turbopuffer: {e}")
-
+            if should_use_tpuf_for_messages() and result:
+                # extract agent_id from the first message (all should have same agent_id)
+                agent_id = result[0].agent_id
+                if agent_id:
                     if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+                        # wait for embedding to complete
+                        await self._embed_messages_background(result, actor, agent_id, project_id, template_id)
+                    else:
+                        # fire and forget - run embedding in background
+                        fire_and_forget(
+                            self._embed_messages_background(result, actor, agent_id, project_id, template_id),
+                            task_name=f"embed_messages_for_agent_{agent_id}",
+                        )
 
             return result
+
+    async def _embed_messages_background(
+        self,
+        messages: List[PydanticMessage],
+        actor: PydanticUser,
+        agent_id: str,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+    ) -> None:
+        """Background task to embed and store messages in Turbopuffer.
+
+        Args:
+            messages: List of messages to embed
+            actor: User performing the action
+            agent_id: Agent ID for the messages
+            project_id: Optional project ID for the messages
+            template_id: Optional template ID for the messages
+        """
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+
+            # extract text content from each message
+            message_texts = []
+            message_ids = []
+            roles = []
+            created_ats = []
+
+            # combine assistant+tool messages before embedding
+            combined_messages = self._combine_assistant_tool_messages(messages)
+
+            for msg in combined_messages:
+                text = self._extract_message_text(msg).strip()
+                if text:  # only embed messages with text content (role filtering is handled in _extract_message_text)
+                    message_texts.append(text)
+                    message_ids.append(msg.id)
+                    roles.append(msg.role)
+                    created_ats.append(msg.created_at)
+
+            if message_texts:
+                # insert to turbopuffer - TurbopufferClient will generate embeddings internally
+                tpuf_client = TurbopufferClient()
+                await tpuf_client.insert_messages(
+                    agent_id=agent_id,
+                    message_texts=message_texts,
+                    message_ids=message_ids,
+                    organization_id=actor.organization_id,
+                    actor=actor,
+                    roles=roles,
+                    created_ats=created_ats,
+                    project_id=project_id,
+                    template_id=template_id,
+                )
+                logger.info(f"Successfully embedded {len(message_texts)} messages for agent {agent_id}")
+        except Exception as e:
+            logger.error(f"Failed to embed messages in Turbopuffer for agent {agent_id}: {e}")
+            # don't re-raise the exception in background mode - just log it
 
     @enforce_types
     @trace_method
@@ -519,12 +542,21 @@ class MessageManager:
         message_id: str,
         message_update: MessageUpdate,
         actor: PydanticUser,
-        embedding_config: Optional[EmbeddingConfig] = None,
         strict_mode: bool = False,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> PydanticMessage:
         """
         Updates an existing record in the database with values from the provided record object.
         Async version of the function above.
+
+        Args:
+            message_id: ID of the message to update
+            message_update: Update data for the message
+            actor: User performing the action
+            strict_mode: If True, wait for embedding update to complete; if False, run in background
+            project_id: Optional project ID for the message (for Turbopuffer indexing)
+            template_id: Optional template ID for the message (for Turbopuffer indexing)
         """
         async with db_registry.async_session() as session:
             # Fetch existing message from database
@@ -540,48 +572,62 @@ class MessageManager:
             await session.commit()
 
             # update message in turbopuffer if enabled (delete and re-insert)
-            from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+            from letta.helpers.tpuf_client import should_use_tpuf_for_messages
 
-            if should_use_tpuf_for_messages() and embedding_config and pydantic_message.agent_id:
-                try:
-                    # extract text content from updated message
-                    text = self._extract_message_text(pydantic_message)
+            if should_use_tpuf_for_messages() and pydantic_message.agent_id:
+                # extract text content from updated message
+                text = self._extract_message_text(pydantic_message)
 
-                    # only update in turbopuffer if there's text content (role filtering is handled in _extract_message_text)
-                    if text:
-                        tpuf_client = TurbopufferClient()
-
-                        # delete old message from turbopuffer
-                        await tpuf_client.delete_messages(
-                            agent_id=pydantic_message.agent_id, organization_id=actor.organization_id, message_ids=[message_id]
-                        )
-
-                        # generate new embedding
-                        from letta.llm_api.llm_client import LLMClient
-
-                        embedding_client = LLMClient.create(
-                            provider_type=embedding_config.embedding_endpoint_type,
-                            actor=actor,
-                        )
-                        embeddings = await embedding_client.request_embeddings([text], embedding_config)
-
-                        # re-insert with updated content
-                        await tpuf_client.insert_messages(
-                            agent_id=pydantic_message.agent_id,
-                            message_texts=[text],
-                            embeddings=embeddings,
-                            message_ids=[message_id],
-                            organization_id=actor.organization_id,
-                            roles=[pydantic_message.role],
-                            created_ats=[pydantic_message.created_at],
-                        )
-                        logger.info(f"Successfully updated message {message_id} in Turbopuffer")
-                except Exception as e:
-                    logger.error(f"Failed to update message in Turbopuffer: {e}")
+                # only update in turbopuffer if there's text content
+                if text:
                     if strict_mode:
-                        raise  # Re-raise the exception in strict mode
+                        # wait for embedding update to complete
+                        await self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id)
+                    else:
+                        # fire and forget - run embedding update in background
+                        fire_and_forget(
+                            self._update_message_embedding_background(pydantic_message, text, actor, project_id, template_id),
+                            task_name=f"update_message_embedding_{message_id}",
+                        )
 
             return pydantic_message
+
+    async def _update_message_embedding_background(
+        self, message: PydanticMessage, text: str, actor: PydanticUser, project_id: Optional[str] = None, template_id: Optional[str] = None
+    ) -> None:
+        """Background task to update a message's embedding in Turbopuffer.
+
+        Args:
+            message: The updated message
+            text: Extracted text content from the message
+            actor: User performing the action
+            project_id: Optional project ID for the message
+            template_id: Optional template ID for the message
+        """
+        try:
+            from letta.helpers.tpuf_client import TurbopufferClient
+
+            tpuf_client = TurbopufferClient()
+
+            # delete old message from turbopuffer
+            await tpuf_client.delete_messages(agent_id=message.agent_id, organization_id=actor.organization_id, message_ids=[message.id])
+
+            # re-insert with updated content - TurbopufferClient will generate embeddings internally
+            await tpuf_client.insert_messages(
+                agent_id=message.agent_id,
+                message_texts=[text],
+                message_ids=[message.id],
+                organization_id=actor.organization_id,
+                actor=actor,
+                roles=[message.role],
+                created_ats=[message.created_at],
+                project_id=project_id,
+                template_id=template_id,
+            )
+            logger.info(f"Successfully updated message {message.id} in Turbopuffer")
+        except Exception as e:
+            logger.error(f"Failed to update message {message.id} in Turbopuffer: {e}")
+            # don't re-raise the exception in background mode - just log it
 
     def _update_message_by_id_impl(
         self, message_id: str, message_update: MessageUpdate, actor: PydanticUser, message: MessageModel
@@ -1058,13 +1104,13 @@ class MessageManager:
         agent_id: str,
         actor: PydanticUser,
         query_text: Optional[str] = None,
-        query_embedding: Optional[List[float]] = None,
         search_mode: str = "hybrid",
         roles: Optional[List[MessageRole]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
         limit: int = 50,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        embedding_config: Optional[EmbeddingConfig] = None,
     ) -> List[Tuple[PydanticMessage, dict]]:
         """
         Search messages using Turbopuffer if enabled, otherwise fall back to SQL search.
@@ -1072,14 +1118,14 @@ class MessageManager:
         Args:
             agent_id: ID of the agent whose messages to search
             actor: User performing the search
-            query_text: Text query for full-text search
-            query_embedding: Optional pre-computed embedding for vector search
+            query_text: Text query (used for embedding in vector/hybrid modes, and FTS in fts/hybrid modes)
             search_mode: "vector", "fts", "hybrid", or "timestamp" (default: "hybrid")
             roles: Optional list of message roles to filter by
+            project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
             limit: Maximum number of results to return
             start_date: Optional filter for messages created after this date
-            end_date: Optional filter for messages created before this date
-            embedding_config: Optional embedding configuration for generating query embedding
+            end_date: Optional filter for messages created on or before this date (inclusive)
 
         Returns:
             List of tuples (message, metadata) where metadata contains relevance scores
@@ -1089,40 +1135,18 @@ class MessageManager:
         # check if we should use turbopuffer
         if should_use_tpuf_for_messages():
             try:
-                # generate embedding if needed and not provided
-                if search_mode in ["vector", "hybrid"] and query_embedding is None and query_text:
-                    if not embedding_config:
-                        # fall back to SQL search if no embedding config
-                        logger.warning("No embedding config provided for vector search, falling back to SQL")
-                        return await self.list_messages_for_agent_async(
-                            agent_id=agent_id,
-                            actor=actor,
-                            query_text=query_text,
-                            roles=roles,
-                            limit=limit,
-                            ascending=False,
-                        )
-
-                    # generate embedding from query text
-                    from letta.llm_api.llm_client import LLMClient
-
-                    embedding_client = LLMClient.create(
-                        provider_type=embedding_config.embedding_endpoint_type,
-                        actor=actor,
-                    )
-                    embeddings = await embedding_client.request_embeddings([query_text], embedding_config)
-                    query_embedding = embeddings[0]
-
-                # use turbopuffer for search
+                # use turbopuffer for search - TurbopufferClient will generate embeddings internally
                 tpuf_client = TurbopufferClient()
-                results = await tpuf_client.query_messages(
+                results = await tpuf_client.query_messages_by_agent_id(
                     agent_id=agent_id,
                     organization_id=actor.organization_id,
-                    query_embedding=query_embedding,
+                    actor=actor,
                     query_text=query_text,
                     search_mode=search_mode,
                     top_k=limit,
                     roles=roles,
+                    project_id=project_id,
+                    template_id=template_id,
                     start_date=start_date,
                     end_date=end_date,
                 )
@@ -1194,3 +1218,83 @@ class MessageManager:
                 }
                 message_tuples.append((message, metadata))
             return message_tuples
+
+    async def search_messages_org_async(
+        self,
+        actor: PydanticUser,
+        query_text: Optional[str] = None,
+        search_mode: str = "hybrid",
+        roles: Optional[List[MessageRole]] = None,
+        project_id: Optional[str] = None,
+        template_id: Optional[str] = None,
+        limit: int = 50,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[MessageSearchResult]:
+        """
+        Search messages across entire organization using Turbopuffer.
+
+        Args:
+            actor: User performing the search (must have org access)
+            query_text: Text query for full-text search
+            search_mode: "vector", "fts", or "hybrid" (default: "hybrid")
+            roles: Optional list of message roles to filter by
+            project_id: Optional project ID to filter messages by
+            template_id: Optional template ID to filter messages by
+            limit: Maximum number of results to return
+            start_date: Optional filter for messages created after this date
+            end_date: Optional filter for messages created on or before this date (inclusive)
+
+        Returns:
+            List of MessageSearchResult objects with scoring details
+
+        Raises:
+            ValueError: If message embedding or Turbopuffer is not enabled
+        """
+        from letta.helpers.tpuf_client import TurbopufferClient, should_use_tpuf_for_messages
+
+        # check if turbopuffer is enabled
+        # TODO: extend to non-Turbopuffer in the future.
+        if not should_use_tpuf_for_messages():
+            raise ValueError("Message search requires message embedding, OpenAI, and Turbopuffer to be enabled.")
+
+        # use turbopuffer for search - TurbopufferClient will generate embeddings internally
+        tpuf_client = TurbopufferClient()
+        results = await tpuf_client.query_messages_by_org_id(
+            organization_id=actor.organization_id,
+            actor=actor,
+            query_text=query_text,
+            search_mode=search_mode,
+            top_k=limit,
+            roles=roles,
+            project_id=project_id,
+            template_id=template_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # convert results to MessageSearchResult objects
+        if not results:
+            return []
+
+        # create message mapping
+        message_ids = []
+        embedded_text = {}
+        for msg_dict, _, _ in results:
+            message_ids.append(msg_dict["id"])
+            embedded_text[msg_dict["id"]] = msg_dict["text"]
+        messages = await self.get_messages_by_ids_async(message_ids=message_ids, actor=actor)
+        message_mapping = {message.id: message for message in messages}
+
+        # create search results using list comprehension
+        return [
+            MessageSearchResult(
+                embedded_text=embedded_text[msg_id],
+                message=message_mapping[msg_id],
+                fts_rank=metadata.get("fts_rank"),
+                vector_rank=metadata.get("vector_rank"),
+                rrf_score=rrf_score,
+            )
+            for msg_dict, rrf_score, metadata in results
+            if (msg_id := msg_dict.get("id")) in message_mapping
+        ]

@@ -60,7 +60,7 @@ class LettaStreamingRequest(LettaRequest):
         description="Flag to determine if individual tokens should be streamed, rather than streaming per step.",
     )
     include_pings: bool = Field(
-        default=False,
+        default=True,
         description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
     )
     background: bool = Field(
@@ -94,7 +94,7 @@ class RetrieveStreamRequest(BaseModel):
         0, description="Sequence id to use as a cursor for pagination. Response will start streaming after this chunk sequence id"
     )
     include_pings: Optional[bool] = Field(
-        default=False,
+        default=True,
         description="Whether to include periodic keepalive ping messages in the stream to prevent connection timeouts.",
     )
     poll_interval: Optional[float] = Field(

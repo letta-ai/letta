@@ -258,7 +258,7 @@ class TestFileProcessorWithPinecone:
                 embedder = PineconeEmbedder()
 
                 # Create file processor with Pinecone enabled
-                file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=mock_actor, using_pinecone=True)
+                file_processor = FileProcessor(file_parser=file_parser, embedder=embedder, actor=mock_actor)
 
                 # Track file manager update calls
                 update_calls = []

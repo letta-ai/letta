@@ -1,0 +1,50 @@
+name: 🌿 Release Python SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version of the Python SDK that you would like to release"
+        required: true
+        type: string
+  workflow_run:
+    workflows: ["🌿 Preview Python SDK"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  release:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Download Fern
+        run: npm install -g fern-api
+
+      - name: Generate Python SDK
+        working-directory: .
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            fern generate --group python-sdk --version ${{ inputs.version }} --log-level debug
+          else
+            fern generate --group python-sdk --log-level debug
+          fi
+
+      - name: Publish Docs
+        working-directory: .
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: fern generate --docs

@@ -1,0 +1,160 @@
+---
+title: Agent File (.af)
+subtitle: Import and export agents in Letta
+slug: guides/agents/agent-file
+---
+
+<Callout type="info">
+  For a complete list of example agents, additional documentation, and to contribute to the Agent File standard, visit the [Agent File repository on GitHub](https://github.com/letta-ai/agent-file).
+</Callout>
+
+Agent File (`.af`) is an open standard file format for serializing stateful agents. It provides a portable way to share agents with persistent memory and behavior across different environments.
+
+You can import and export agents to and from any Letta server (including both self-hosted servers and Letta Cloud) using the `.af` file format.
+
+<Frame>
+  <a href="https://github.com/letta-ai/agent-file" target="_blank">
+    <img src="https://github.com/letta-ai/agent-file/raw/main/assets/agentfile.png" alt="Agent File logo" />
+  </a>
+</Frame>
+
+## What is Agent File?
+
+Agent Files package all components of a stateful agent:
+- System prompts
+- Editable memory (personality and user information)
+- Tool configurations (code and schemas)
+- LLM settings
+
+By standardizing these elements in a single format, Agent File enables seamless transfer between compatible frameworks, while allowing for easy checkpointing and version control of agent state.
+
+## Why Use Agent File?
+
+The AI ecosystem is experiencing rapid growth in agent development, with each framework implementing its own storage mechanisms. Agent File addresses the need for a standard that enables:
+
+- **Portability**: Move agents between systems or deploy them to new environments
+- **Collaboration**: Share your agents with other developers and the community
+- **Preservation**: Archive agent configurations to preserve your work
+- **Versioning**: Track changes to agents over time through a standardized format
+
+## What State Does `.af` Include?
+
+A `.af` file contains all the state required to re-create the exact same agent:
+
+| Component | Description |
+|-----------|-------------|
+| Model configuration | Context window limit, model name, embedding model name |
+| Message history | Complete chat history with `in_context` field indicating if a message is in the current context window |
+| System prompt | Initial instructions that define the agent's behavior |
+| Memory blocks | In-context memory segments for personality, user info, etc. |
+| Tool rules | Definitions of how tools should be sequenced or constrained |
+| Environment variables | Configuration values for tool execution |
+| Tools | Complete tool definitions including source code and JSON schema |
+
+## Using Agent File with Letta
+
+### Importing Agents
+
+You can import `.af` files using the Agent Development Environment (ADE), REST APIs, or developer SDKs.
+
+#### Using ADE
+
+Upload downloaded `.af` files directly through the ADE interface to easily re-create your agent.
+
+<Frame caption="Importing an Agent File through the ADE interface">
+  <img src="https://github.com/letta-ai/agent-file/raw/main/assets/import_demo.gif" alt="Importing Agent File Demo" />
+</Frame>
+
+<CodeGroup>
+```python title="python" maxLines=50
+# Install SDK with `pip install letta-client`
+from letta_client import Letta
+
+# Create a client to connect to Letta
+client = Letta(token="LETTA_API_KEY")
+
+# Import your .af file from any location
+agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/file.af", "rb"))
+
+print(f"Imported agent: {agent_state.id}")
+```
+
+```typescript title="node.js" maxLines=50
+// Install SDK with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+import { readFileSync } from 'fs';
+import { Blob } from 'buffer';
+
+// Create a client to connect to Letta
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// Import your .af file from any location
+const file = new Blob([readFileSync('/path/to/agent/file.af')])
+const agentState = await client.agents.importAgentSerialized(file, {})
+
+console.log(`Imported agent: ${agentState.id}`);
+```
+
+```curl curl
+curl -X POST "https://app.letta.com/v1/agents/import" \
+     -H "Authorization: Bearer LETTA_API_KEY" \
+     -F "file=@/path/to/agent/file.af"
+```
+</CodeGroup>
+
+### Exporting Agents
+
+You can export your own `.af` files to share by selecting "Export Agent" in the ADE.
+
+<Frame caption="Exporting an Agent File from the ADE interface">
+  <img src="https://github.com/letta-ai/agent-file/raw/main/assets/export_demo.gif" alt="Exporting Agent File Demo" />
+</Frame>
+
+<CodeGroup>
+```python title="python" maxLines=50
+# Install SDK with `pip install letta-client`
+from letta_client import Letta
+
+# Create a client to connect to Letta
+client = Letta(token="LETTA_API_KEY")
+
+# Export your agent into a serialized schema object (which you can write to a file)
+schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
+```
+
+```typescript title="node.js" maxLines=50
+// Install SDK with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// Create a client to connect to Letta
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+
+// Export your agent into a serialized schema object (which you can write to a file)
+const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
+```
+
+```curl curl
+curl -X GET "https://app.letta.com/v1/agents/{AGENT_ID}/export" \
+     -H "Authorization: Bearer LETTA_API_KEY"
+```
+</CodeGroup>
+
+## FAQ
+
+### Does `.af` work with frameworks other than Letta?
+
+Theoretically, other frameworks could also load in `.af` files if they convert the state into their own representations. Some concepts, such as context window "blocks" which can be edited or shared between agents, are not implemented in other frameworks, so may need to be adapted per-framework.
+
+### How does `.af` handle secrets?
+
+Agents have associated secrets for tool execution in Letta. When you export agents with secrets, the secrets are set to `null` for security reasons.
+
+## Contributing to Agent File
+
+The Agent File format is a community-driven standard that welcomes contributions:
+
+- **Share Example Agents**: Contribute your own `.af` files to the community
+- **Join the Discussion**: Connect with other agent developers in our [Discord server](https://discord.gg/letta)
+- **Provide Feedback**: Offer suggestions and feature requests to help refine the format
+
+For more information on Agent File, including example agents and the complete schema specification, visit the [Agent File repository](https://github.com/letta-ai/agent-file).

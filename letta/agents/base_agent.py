@@ -175,7 +175,10 @@ class BaseAgent(ABC):
 
                 # [DB Call] Update Messages
                 new_system_message = await self.message_manager.update_message_by_id_async(
-                    curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=self.actor
+                    curr_system_message.id,
+                    message_update=MessageUpdate(content=new_system_message_str),
+                    actor=self.actor,
+                    project_id=agent_state.project_id,
                 )
                 return [new_system_message] + in_context_messages[1:]
 

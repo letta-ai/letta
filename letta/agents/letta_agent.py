@@ -495,7 +495,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -823,7 +826,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1018,6 +1024,7 @@ class LettaAgent(BaseAgent):
                         interface = AnthropicStreamingInterface(
                             use_assistant_message=use_assistant_message,
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                            requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
                         )
                     elif agent_state.llm_config.model_endpoint_type == ProviderType.openai:
                         interface = OpenAIStreamingInterface(
@@ -1026,6 +1033,7 @@ class LettaAgent(BaseAgent):
                             messages=current_in_context_messages + new_in_context_messages,
                             tools=request_data.get("tools", []),
                             put_inner_thoughts_in_kwarg=agent_state.llm_config.put_inner_thoughts_in_kwargs,
+                            requires_approval_tools=tool_rules_solver.get_requires_approval_tools(valid_tool_names),
                         )
                     else:
                         raise ValueError(f"Streaming not supported for {agent_state.llm_config}")
@@ -1170,12 +1178,13 @@ class LettaAgent(BaseAgent):
                         )
                         step_progression = StepProgression.LOGGED_TRACE
 
-                    # yields tool response as this is handled from Letta and not the response from the LLM provider
-                    tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
-                    if not (use_assistant_message and tool_return.name == "send_message"):
-                        # Apply message type filtering if specified
-                        if include_return_message_types is None or tool_return.message_type in include_return_message_types:
-                            yield f"data: {tool_return.model_dump_json()}\n\n"
+                    if persisted_messages[-1].role != "approval":
+                        # yields tool response as this is handled from Letta and not the response from the LLM provider
+                        tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
+                        if not (use_assistant_message and tool_return.name == "send_message"):
+                            # Apply message type filtering if specified
+                            if include_return_message_types is None or tool_return.message_type in include_return_message_types:
+                                yield f"data: {tool_return.model_dump_json()}\n\n"
 
                     # TODO (cliandy): consolidate and expand with trace
                     MetricRegistry().step_execution_time_ms_histogram.record(get_utc_timestamp_ns() - step_start, get_ctx_attributes())
@@ -1259,7 +1268,10 @@ class LettaAgent(BaseAgent):
                                     message.is_err = True
                                     message.step_id = effective_step_id
                                 await self.message_manager.create_many_messages_async(
-                                    initial_messages, actor=self.actor, embedding_config=agent_state.embedding_config
+                                    initial_messages,
+                                    actor=self.actor,
+                                    project_id=agent_state.project_id,
+                                    template_id=agent_state.template_id,
                                 )
                         elif step_progression <= StepProgression.LOGGED_TRACE:
                             if stop_reason is None:
@@ -1667,7 +1679,7 @@ class LettaAgent(BaseAgent):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+                messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
             )
             return persisted_messages, continue_stepping, stop_reason
 
@@ -1686,7 +1698,6 @@ class LettaAgent(BaseAgent):
             tool_call_id=tool_call_id,
             request_heartbeat=request_heartbeat,
         )
-
         if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
             approval_message = create_approval_request_message_from_llm_response(
                 agent_id=agent_state.id,
@@ -1779,7 +1790,7 @@ class LettaAgent(BaseAgent):
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config
+            messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
 
         if run_id:

@@ -1,0 +1,26 @@
+## New `strip_messages` field in Import Agent API
+
+The `Import Agent` API now supports a new `strip_messages` field to remove messages from the agent's conversation history when importing a serialized agent file.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+client.agents.import_agent_serialized(
+    file=open("/path/to/agent/file.af", "rb"),
+    strip_messages=True,
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+await client.agents.importAgentSerialized({
+  file: fs.createReadStream("/path/to/your/file"),
+  strip_messages: true,
+});
+```
+</CodeBlocks>

@@ -63,6 +63,7 @@ from letta.schemas.enums import (
     StepStatus,
     TagMatchMode,
     ToolType,
+    VectorDBProvider,
 )
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate, SandboxEnvironmentVariableUpdate
 from letta.schemas.file import FileMetadata, FileMetadata as PydanticFileMetadata
@@ -3658,7 +3659,7 @@ async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServe
             tag_match_mode=TagMatchMode.ANY,
         )
 
-        python_texts = [p.text for p in python_results]
+        python_texts = [p.text for p, _, _ in python_results]
         assert len([t for t in python_texts if "Python" in t]) >= 2
 
         # Test querying with multiple tags using ALL mode
@@ -3669,7 +3670,7 @@ async def test_passage_tags_functionality(disable_turbopuffer, server: SyncServe
             tag_match_mode=TagMatchMode.ALL,
         )
 
-        tutorial_texts = [p.text for p in tutorial_python_results]
+        tutorial_texts = [p.text for p, _, _ in tutorial_python_results]
         expected_matches = [t for t in tutorial_texts if "tutorial" in t and "Python" in t]
         assert len(expected_matches) >= 1
 
@@ -3747,7 +3748,7 @@ async def test_comprehensive_tag_functionality(disable_turbopuffer, server: Sync
     )
 
     # Should match passages with "important" OR "api" tags (passages 1, 2, 3, 4)
-    [p.text for p in any_results]
+    [p.text for p, _, _ in any_results]
     assert len(any_results) >= 4
 
     # Test 5: Query passages with ALL tag matching
@@ -3761,7 +3762,7 @@ async def test_comprehensive_tag_functionality(disable_turbopuffer, server: Sync
     )
 
     # Should only match passage4 which has both "python" AND "testing"
-    all_passage_texts = [p.text for p in all_results]
+    all_passage_texts = [p.text for p, _, _ in all_results]
     assert any("Test passage 4" in text for text in all_passage_texts)
 
     # Test 6: Query with non-existent tags
@@ -4029,12 +4030,11 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         created_passages.append(passage)
 
     # Test 1: Basic search by query text
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="Python programming"
     )
 
-    assert count > 0
-    assert len(results) == count
+    assert len(results) > 0
 
     # Check structure of results
     for result in results:
@@ -4044,27 +4044,27 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert isinstance(result["tags"], list)
 
     # Test 2: Search with tag filtering - single tag
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", tags=["python"]
     )
 
-    assert count > 0
+    assert len(results) > 0
     # All results should have "python" tag
     for result in results:
         assert "python" in result["tags"]
 
     # Test 3: Search with tag filtering - multiple tags with "any" mode
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="development", tags=["web", "database"], tag_match_mode="any"
     )
 
-    assert count > 0
+    assert len(results) > 0
     # All results should have at least one of the specified tags
     for result in results:
         assert any(tag in result["tags"] for tag in ["web", "database"])
 
     # Test 4: Search with tag filtering - multiple tags with "all" mode
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="Python", tags=["python", "web"], tag_match_mode="all"
     )
 
@@ -4074,15 +4074,14 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert "web" in result["tags"]
 
     # Test 5: Search with top_k limit
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", top_k=2
     )
 
-    assert count <= 2
     assert len(results) <= 2
 
     # Test 6: Search with datetime filtering
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id, actor=default_user, query="programming", start_datetime="2024-01-16", end_datetime="2024-01-17"
     )
 
@@ -4094,7 +4093,7 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         assert "2024-01-16" in timestamp_str or "2024-01-17" in timestamp_str
 
     # Test 7: Search with ISO datetime format
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
+    results = await server.agent_manager.search_agent_archival_memory_async(
         agent_id=sarah_agent.id,
         actor=default_user,
         query="algorithms",
@@ -4103,7 +4102,7 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
     )
 
     # Should include the machine learning passage created at 14:45
-    assert count >= 0  # Might be 0 if no results, but shouldn't error
+    assert len(results) >= 0  # Might be 0 if no results, but shouldn't error
 
     # Test 8: Search with non-existent agent should raise error
     non_existent_agent_id = "agent-00000000-0000-4000-8000-000000000000"
@@ -4118,22 +4117,188 @@ async def test_search_agent_archival_memory_async(disable_turbopuffer, server: S
         )
 
     # Test 10: Empty query should return empty results
-    results, count = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
+    results = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="")
 
-    assert count == 0  # Empty query should return 0 results
-    assert len(results) == 0
+    assert len(results) == 0  # Empty query should return 0 results
 
     # Test 11: Whitespace-only query should also return empty results
-    results, count = await server.agent_manager.search_agent_archival_memory_async(
-        agent_id=sarah_agent.id, actor=default_user, query="   \n\t  "
-    )
+    results = await server.agent_manager.search_agent_archival_memory_async(agent_id=sarah_agent.id, actor=default_user, query="   \n\t  ")
 
-    assert count == 0  # Whitespace-only query should return 0 results
-    assert len(results) == 0
+    assert len(results) == 0  # Whitespace-only query should return 0 results
 
     # Cleanup - delete the created passages
     for passage in created_passages:
         await server.passage_manager.delete_agent_passage_by_id_async(passage_id=passage.id, actor=default_user)
+
+
+# ======================================================================================================================
+# Archive Manager Tests
+# ======================================================================================================================
+@pytest.mark.asyncio
+async def test_archive_manager_delete_archive_async(server: SyncServer, default_user):
+    """Test the delete_archive_async function."""
+    archive = await server.archive_manager.create_archive_async(
+        name="test_archive_to_delete", description="This archive will be deleted", actor=default_user
+    )
+
+    retrieved_archive = await server.archive_manager.get_archive_by_id_async(archive_id=archive.id, actor=default_user)
+    assert retrieved_archive.id == archive.id
+
+    await server.archive_manager.delete_archive_async(archive_id=archive.id, actor=default_user)
+
+    with pytest.raises(Exception):
+        await server.archive_manager.get_archive_by_id_async(archive_id=archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_agents_for_archive_async(server: SyncServer, default_user, sarah_agent):
+    """Test getting all agents that have access to an archive."""
+    archive = await server.archive_manager.create_archive_async(
+        name="shared_archive", description="Archive shared by multiple agents", actor=default_user
+    )
+
+    agent2 = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_agent_2",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=sarah_agent.id, archive_id=archive.id, is_owner=True, actor=default_user
+    )
+
+    await server.archive_manager.attach_agent_to_archive_async(
+        agent_id=agent2.id, archive_id=archive.id, is_owner=False, actor=default_user
+    )
+
+    agent_ids = await server.archive_manager.get_agents_for_archive_async(archive_id=archive.id, actor=default_user)
+
+    assert len(agent_ids) == 2
+    assert sarah_agent.id in agent_ids
+    assert agent2.id in agent_ids
+
+    # Cleanup
+    await server.agent_manager.delete_agent_async(agent2.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_race_condition_handling(server: SyncServer, default_user, sarah_agent):
+    """Test that the race condition fix in get_or_create_default_archive_for_agent_async works."""
+    from unittest.mock import patch
+
+    from sqlalchemy.exc import IntegrityError
+
+    agent = await server.agent_manager.create_agent_async(
+        agent_create=CreateAgent(
+            name="test_agent_race_condition",
+            memory_blocks=[],
+            llm_config=LLMConfig.default_config("gpt-4o-mini"),
+            embedding_config=EmbeddingConfig.default_config(provider="openai"),
+            include_base_tools=False,
+        ),
+        actor=default_user,
+    )
+
+    created_archives = []
+    original_create = server.archive_manager.create_archive_async
+
+    async def track_create(*args, **kwargs):
+        result = await original_create(*args, **kwargs)
+        created_archives.append(result)
+        return result
+
+    # First, create an archive that will be attached by a "concurrent" request
+    concurrent_archive = await server.archive_manager.create_archive_async(
+        name=f"{agent.name}'s Archive", description="Default archive created automatically", actor=default_user
+    )
+
+    call_count = 0
+    original_attach = server.archive_manager.attach_agent_to_archive_async
+
+    async def failing_attach(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # Simulate another request already attached the agent to an archive
+            await original_attach(agent_id=agent.id, archive_id=concurrent_archive.id, is_owner=True, actor=default_user)
+            # Now raise the IntegrityError as if our attempt failed
+            raise IntegrityError("duplicate key value violates unique constraint", None, None)
+        # This shouldn't be called since we already have an archive
+        raise Exception("Should not reach here")
+
+    with patch.object(server.archive_manager, "create_archive_async", side_effect=track_create):
+        with patch.object(server.archive_manager, "attach_agent_to_archive_async", side_effect=failing_attach):
+            archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+                agent_id=agent.id, agent_name=agent.name, actor=default_user
+            )
+
+    assert archive is not None
+    assert archive.id == concurrent_archive.id  # Should return the existing archive
+    assert archive.name == f"{agent.name}'s Archive"
+
+    # One archive was created in our attempt (but then deleted)
+    assert len(created_archives) == 1
+
+    # Verify only one archive is attached to the agent
+    archive_ids = await server.agent_manager.get_agent_archive_ids_async(agent_id=agent.id, actor=default_user)
+    assert len(archive_ids) == 1
+    assert archive_ids[0] == concurrent_archive.id
+
+    # Cleanup
+    await server.agent_manager.delete_agent_async(agent.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(concurrent_archive.id, actor=default_user)
+
+
+@pytest.mark.asyncio
+async def test_archive_manager_get_agent_from_passage_async(server: SyncServer, default_user, sarah_agent):
+    """Test getting the agent ID that owns a passage through its archive."""
+    archive = await server.archive_manager.get_or_create_default_archive_for_agent_async(
+        agent_id=sarah_agent.id, agent_name=sarah_agent.name, actor=default_user
+    )
+
+    passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="Test passage for agent ownership",
+            archive_id=archive.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    agent_id = await server.archive_manager.get_agent_from_passage_async(passage_id=passage.id, actor=default_user)
+
+    assert agent_id == sarah_agent.id
+
+    orphan_archive = await server.archive_manager.create_archive_async(
+        name="orphan_archive", description="Archive with no agents", actor=default_user
+    )
+
+    orphan_passage = await server.passage_manager.create_agent_passage_async(
+        PydanticPassage(
+            text="Orphan passage",
+            archive_id=orphan_archive.id,
+            organization_id=default_user.organization_id,
+            embedding=[0.1],
+            embedding_config=DEFAULT_EMBEDDING_CONFIG,
+        ),
+        actor=default_user,
+    )
+
+    agent_id = await server.archive_manager.get_agent_from_passage_async(passage_id=orphan_passage.id, actor=default_user)
+    assert agent_id is None
+
+    # Cleanup
+    await server.passage_manager.delete_passage_by_id_async(passage.id, actor=default_user)
+    await server.passage_manager.delete_passage_by_id_async(orphan_passage.id, actor=default_user)
+    await server.archive_manager.delete_archive_async(orphan_archive.id, actor=default_user)
 
 
 # ======================================================================================================================
@@ -7037,6 +7202,57 @@ async def test_create_source(server: SyncServer, default_user):
     assert source.description == source_pydantic.description
     assert source.metadata == source_pydantic.metadata
     assert source.organization_id == default_user.organization_id
+
+
+async def test_source_vector_db_provider_with_tpuf(server: SyncServer, default_user):
+    """Test that vector_db_provider is correctly set based on should_use_tpuf."""
+    from letta.settings import settings
+
+    # save original values
+    original_use_tpuf = settings.use_tpuf
+    original_tpuf_api_key = settings.tpuf_api_key
+
+    try:
+        # test when should_use_tpuf returns True (expect TPUF provider)
+        settings.use_tpuf = True
+        settings.tpuf_api_key = "test_key"
+
+        # need to mock it in source_manager since it's already imported
+        with patch("letta.services.source_manager.should_use_tpuf", return_value=True):
+            source_pydantic = PydanticSource(
+                name="Test Source TPUF",
+                description="Source with TPUF provider",
+                metadata={"type": "test"},
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                vector_db_provider=VectorDBProvider.TPUF,  # explicitly set it
+            )
+            assert source_pydantic.vector_db_provider == VectorDBProvider.TPUF
+
+            # create source and verify it's saved with TPUF provider
+            source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
+            assert source.vector_db_provider == VectorDBProvider.TPUF
+
+        # test when should_use_tpuf returns False (expect NATIVE provider)
+        settings.use_tpuf = False
+        settings.tpuf_api_key = None
+
+        with patch("letta.services.source_manager.should_use_tpuf", return_value=False):
+            source_pydantic = PydanticSource(
+                name="Test Source Native",
+                description="Source with Native provider",
+                metadata={"type": "test"},
+                embedding_config=DEFAULT_EMBEDDING_CONFIG,
+                vector_db_provider=VectorDBProvider.NATIVE,  # explicitly set it
+            )
+            assert source_pydantic.vector_db_provider == VectorDBProvider.NATIVE
+
+            # create source and verify it's saved with NATIVE provider
+            source = await server.source_manager.create_source(source=source_pydantic, actor=default_user)
+            assert source.vector_db_provider == VectorDBProvider.NATIVE
+    finally:
+        # restore original values
+        settings.use_tpuf = original_use_tpuf
+        settings.tpuf_api_key = original_tpuf_api_key
 
 
 async def test_create_sources_with_same_name_raises_error(server: SyncServer, default_user):

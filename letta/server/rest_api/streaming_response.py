@@ -7,10 +7,11 @@ import json
 from collections.abc import AsyncIterator
 
 import anyio
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from starlette.types import Send
 
-from letta.errors import LettaUnexpectedStreamCancellationError
+from letta.errors import LettaUnexpectedStreamCancellationError, PendingApprovalError
 from letta.log import get_logger
 from letta.schemas.enums import JobStatus
 from letta.schemas.letta_ping import LettaPing
@@ -189,6 +190,13 @@ class StreamingResponseWithStatusCode(StreamingResponse):
             except anyio.ClosedResourceError:
                 logger.info("Client disconnected, but shielded task should continue")
                 self._client_connected = False
+            except PendingApprovalError as e:
+                # This is an expected error, don't log as error
+                logger.info(f"Pending approval conflict in stream response: {e}")
+                # Re-raise as HTTPException for proper client handling
+                raise HTTPException(
+                    status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
+                )
             except Exception as e:
                 logger.error(f"Error in protected stream response: {e}")
                 raise

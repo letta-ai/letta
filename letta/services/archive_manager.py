@@ -5,6 +5,7 @@ from sqlalchemy import select
 from letta.helpers.tpuf_client import should_use_tpuf
 from letta.log import get_logger
 from letta.orm import ArchivalPassage, Archive as ArchiveModel, ArchivesAgents
+from letta.otel.tracing import trace_method
 from letta.schemas.archive import Archive as PydanticArchive
 from letta.schemas.enums import VectorDBProvider
 from letta.schemas.user import User as PydanticUser
@@ -19,6 +20,7 @@ class ArchiveManager:
     """Manager class to handle business logic related to Archives."""
 
     @enforce_types
+    @trace_method
     def create_archive(
         self,
         name: str,
@@ -44,6 +46,7 @@ class ArchiveManager:
             raise
 
     @enforce_types
+    @trace_method
     async def create_archive_async(
         self,
         name: str,
@@ -69,6 +72,7 @@ class ArchiveManager:
             raise
 
     @enforce_types
+    @trace_method
     async def get_archive_by_id_async(
         self,
         archive_id: str,
@@ -84,6 +88,7 @@ class ArchiveManager:
             return archive.to_pydantic()
 
     @enforce_types
+    @trace_method
     def attach_agent_to_archive(
         self,
         agent_id: str,
@@ -113,6 +118,7 @@ class ArchiveManager:
             session.commit()
 
     @enforce_types
+    @trace_method
     async def attach_agent_to_archive_async(
         self,
         agent_id: str,
@@ -148,6 +154,7 @@ class ArchiveManager:
             await session.commit()
 
     @enforce_types
+    @trace_method
     async def get_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -179,6 +186,24 @@ class ArchiveManager:
         return None
 
     @enforce_types
+    @trace_method
+    async def delete_archive_async(
+        self,
+        archive_id: str,
+        actor: PydanticUser = None,
+    ) -> None:
+        """Delete an archive permanently."""
+        async with db_registry.async_session() as session:
+            archive_model = await ArchiveModel.read_async(
+                db_session=session,
+                identifier=archive_id,
+                actor=actor,
+            )
+            await archive_model.hard_delete_async(session, actor=actor)
+            logger.info(f"Deleted archive {archive_id}")
+
+    @enforce_types
+    @trace_method
     async def get_or_create_default_archive_for_agent_async(
         self,
         agent_id: str,
@@ -187,6 +212,8 @@ class ArchiveManager:
     ) -> PydanticArchive:
         """Get the agent's default archive, creating one if it doesn't exist."""
         # First check if agent has any archives
+        from sqlalchemy.exc import IntegrityError
+
         from letta.services.agent_manager import AgentManager
 
         agent_manager = AgentManager()
@@ -215,17 +242,38 @@ class ArchiveManager:
             actor=actor,
         )
 
-        # Attach the agent to the archive as owner
-        await self.attach_agent_to_archive_async(
-            agent_id=agent_id,
-            archive_id=archive.id,
-            is_owner=True,
-            actor=actor,
-        )
+        try:
+            # Attach the agent to the archive as owner
+            await self.attach_agent_to_archive_async(
+                agent_id=agent_id,
+                archive_id=archive.id,
+                is_owner=True,
+                actor=actor,
+            )
+            return archive
+        except IntegrityError:
+            # race condition: another concurrent request already created and attached an archive
+            # clean up the orphaned archive we just created
+            logger.info(f"Race condition detected for agent {agent_id}, cleaning up orphaned archive {archive.id}")
+            await self.delete_archive_async(archive_id=archive.id, actor=actor)
 
-        return archive
+            # fetch the existing archive that was created by the concurrent request
+            archive_ids = await agent_manager.get_agent_archive_ids_async(
+                agent_id=agent_id,
+                actor=actor,
+            )
+            if archive_ids:
+                archive = await self.get_archive_by_id_async(
+                    archive_id=archive_ids[0],
+                    actor=actor,
+                )
+                return archive
+            else:
+                # this shouldn't happen, but if it does, re-raise
+                raise
 
     @enforce_types
+    @trace_method
     def get_or_create_default_archive_for_agent(
         self,
         agent_id: str,
@@ -269,6 +317,7 @@ class ArchiveManager:
         return archive_model.to_pydantic()
 
     @enforce_types
+    @trace_method
     async def get_agents_for_archive_async(
         self,
         archive_id: str,
@@ -280,6 +329,7 @@ class ArchiveManager:
             return [row[0] for row in result.fetchall()]
 
     @enforce_types
+    @trace_method
     async def get_agent_from_passage_async(
         self,
         passage_id: str,
@@ -309,6 +359,7 @@ class ArchiveManager:
             return agent_ids[0]
 
     @enforce_types
+    @trace_method
     async def get_or_set_vector_db_namespace_async(
         self,
         archive_id: str,

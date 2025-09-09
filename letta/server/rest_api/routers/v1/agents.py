@@ -15,7 +15,13 @@ from starlette.responses import Response, StreamingResponse
 from letta.agents.letta_agent import LettaAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
-from letta.errors import AgentExportIdMappingError, AgentExportProcessingError, AgentFileImportError, AgentNotFoundForExportError
+from letta.errors import (
+    AgentExportIdMappingError,
+    AgentExportProcessingError,
+    AgentFileImportError,
+    AgentNotFoundForExportError,
+    PendingApprovalError,
+)
 from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
@@ -39,7 +45,7 @@ from letta.schemas.memory import (
     CreateArchivalMemory,
     Memory,
 )
-from letta.schemas.message import MessageCreate
+from letta.schemas.message import MessageCreate, MessageSearchRequest, MessageSearchResult
 from letta.schemas.passage import Passage
 from letta.schemas.run import Run
 from letta.schemas.source import Source
@@ -1013,7 +1019,7 @@ async def search_archival_memory(
         end_datetime = end_datetime.isoformat() if end_datetime else None
 
         # Use the shared agent manager method
-        formatted_results, count = await server.agent_manager.search_agent_archival_memory_async(
+        formatted_results = await server.agent_manager.search_agent_archival_memory_async(
             agent_id=agent_id,
             actor=actor,
             query=query,
@@ -1027,7 +1033,7 @@ async def search_archival_memory(
         # Convert to proper response schema
         search_results = [ArchivalMemorySearchResult(**result) for result in formatted_results]
 
-        return ArchivalMemorySearchResponse(results=search_results, count=count)
+        return ArchivalMemorySearchResponse(results=search_results, count=len(formatted_results))
 
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=f"Agent with id={agent_id} not found for user_id={actor.id}.")
@@ -1239,6 +1245,12 @@ async def send_message(
             )
         job_status = result.stop_reason.stop_reason.run_status
         return result
+    except PendingApprovalError as e:
+        job_update_metadata = {"error": str(e)}
+        job_status = JobStatus.failed
+        raise HTTPException(
+            status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
+        )
     except Exception as e:
         job_update_metadata = {"error": str(e)}
         job_status = JobStatus.failed
@@ -1437,6 +1449,13 @@ async def send_message_streaming(
         if settings.track_agent_run:
             job_status = JobStatus.running
         return result
+    except PendingApprovalError as e:
+        if settings.track_agent_run:
+            job_update_metadata = {"error": str(e)}
+            job_status = JobStatus.failed
+        raise HTTPException(
+            status_code=409, detail={"code": "PENDING_APPROVAL", "message": str(e), "pending_request_id": e.pending_request_id}
+        )
     except Exception as e:
         if settings.track_agent_run:
             job_update_metadata = {"error": str(e)}
@@ -1496,6 +1515,42 @@ async def cancel_agent_run(
         )
         results[run_id] = "cancelled" if success else "failed"
     return results
+
+
+@router.post("/messages/search", response_model=List[MessageSearchResult], operation_id="search_messages")
+async def search_messages(
+    request: MessageSearchRequest = Body(...),
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),
+):
+    """
+    Search messages across the entire organization with optional project and template filtering. Returns messages with FTS/vector ranks and total RRF score.
+
+    This is a cloud-only feature.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+
+    # get embedding config from the default agent if needed
+    # check if any agents exist in the org
+    agent_count = await server.agent_manager.size_async(actor=actor)
+    if agent_count == 0:
+        raise HTTPException(status_code=400, detail="No agents found in organization to derive embedding configuration from")
+
+    try:
+        results = await server.message_manager.search_messages_org_async(
+            actor=actor,
+            query_text=request.query,
+            search_mode=request.search_mode,
+            roles=request.roles,
+            project_id=request.project_id,
+            template_id=request.template_id,
+            limit=request.limit,
+            start_date=request.start_date,
+            end_date=request.end_date,
+        )
+        return results
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def _process_message_background(
@@ -1590,6 +1645,14 @@ async def _process_message_background(
         )
         await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
 
+    except PendingApprovalError as e:
+        # Update job status to failed with specific error info
+        job_update = JobUpdate(
+            status=JobStatus.failed,
+            completed_at=datetime.now(timezone.utc),
+            metadata={"error": str(e), "error_code": "PENDING_APPROVAL", "pending_request_id": e.pending_request_id},
+        )
+        await server.job_manager.update_job_by_id_async(job_id=run_id, job_update=job_update, actor=actor)
     except Exception as e:
         # Update job status to failed
         job_update = JobUpdate(
@@ -1640,7 +1703,7 @@ async def send_message_async(
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
     # Create asyncio task for background processing
-    asyncio.create_task(
+    task = asyncio.create_task(
         _process_message_background(
             run_id=run.id,
             server=server,
@@ -1654,6 +1717,38 @@ async def send_message_async(
             include_return_message_types=request.include_return_message_types,
         )
     )
+
+    def handle_task_completion(t):
+        try:
+            t.result()
+        except asyncio.CancelledError:
+            logger.error(f"Background task for run {run.id} was cancelled")
+            asyncio.create_task(
+                server.job_manager.update_job_by_id_async(
+                    job_id=run.id,
+                    job_update=JobUpdate(
+                        status=JobStatus.failed,
+                        completed_at=datetime.now(timezone.utc),
+                        metadata={"error": "Task was cancelled"},
+                    ),
+                    actor=actor,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
+            asyncio.create_task(
+                server.job_manager.update_job_by_id_async(
+                    job_id=run.id,
+                    job_update=JobUpdate(
+                        status=JobStatus.failed,
+                        completed_at=datetime.now(timezone.utc),
+                        metadata={"error": str(e)},
+                    ),
+                    actor=actor,
+                )
+            )
+
+    task.add_done_callback(handle_task_completion)
 
     return run
 
