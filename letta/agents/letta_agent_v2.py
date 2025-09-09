@@ -536,6 +536,7 @@ class LettaAgentV2(BaseAgentV2):
                             input_messages_to_persist,
                             actor=self.actor,
                             project_id=self.agent_state.project_id,
+                            template_id=self.agent_state.template_id,
                         )
                 elif step_progression <= StepProgression.LOGGED_TRACE:
                     if self.stop_reason is None:
@@ -835,7 +836,10 @@ class LettaAgentV2(BaseAgentV2):
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
-                messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
+                messages_to_persist,
+                actor=self.actor,
+                project_id=agent_state.project_id,
+                template_id=agent_state.template_id,
             )
             return persisted_messages, continue_stepping, stop_reason
 
@@ -947,7 +951,7 @@ class LettaAgentV2(BaseAgentV2):
             messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
-            messages_to_persist, actor=self.actor, embedding_config=agent_state.embedding_config, project_id=agent_state.project_id
+            messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
         )
 
         if run_id:
