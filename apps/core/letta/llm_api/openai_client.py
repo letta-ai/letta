@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import List, Optional
 
@@ -319,13 +320,53 @@ class OpenAIClient(LLMClientBase):
 
     @trace_method
     async def request_embeddings(self, inputs: List[str], embedding_config: EmbeddingConfig) -> List[List[float]]:
-        """Request embeddings given texts and embedding config"""
+        """Request embeddings given texts and embedding config with chunking and retry logic"""
+        if not inputs:
+            return []
+
         kwargs = self._prepare_client_kwargs_embedding(embedding_config)
         client = AsyncOpenAI(**kwargs)
-        response = await client.embeddings.create(model=embedding_config.embedding_model, input=inputs)
 
-        # TODO: add total usage
-        return [r.embedding for r in response.data]
+        # track results by original index to maintain order
+        results = [None] * len(inputs)
+
+        # queue of (start_idx, chunk_inputs) to process
+        chunks_to_process = [(i, inputs[i : i + 2048]) for i in range(0, len(inputs), 2048)]
+
+        min_chunk_size = 256
+
+        while chunks_to_process:
+            tasks = []
+            task_metadata = []
+
+            for start_idx, chunk_inputs in chunks_to_process:
+                task = client.embeddings.create(model=embedding_config.embedding_model, input=chunk_inputs)
+                tasks.append(task)
+                task_metadata.append((start_idx, chunk_inputs))
+
+            task_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            failed_chunks = []
+            for (start_idx, chunk_inputs), result in zip(task_metadata, task_results):
+                if isinstance(result, Exception):
+                    # check if we can retry with smaller chunks
+                    if len(chunk_inputs) > min_chunk_size:
+                        # split chunk in half and queue for retry
+                        mid = len(chunk_inputs) // 2
+                        failed_chunks.append((start_idx, chunk_inputs[:mid]))
+                        failed_chunks.append((start_idx + mid, chunk_inputs[mid:]))
+                    else:
+                        # can't split further, re-raise the error
+                        logger.error(f"Failed to get embeddings for chunk starting at {start_idx} even with minimum size {min_chunk_size}")
+                        raise result
+                else:
+                    embeddings = [r.embedding for r in result.data]
+                    for i, embedding in enumerate(embeddings):
+                        results[start_idx + i] = embedding
+
+            chunks_to_process = failed_chunks
+
+        return results
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
