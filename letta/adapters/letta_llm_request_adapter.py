@@ -25,6 +25,7 @@ class LettaLLMRequestAdapter(LettaLLMAdapter):
         messages: list,
         tools: list,
         use_assistant_message: bool,
+        requires_approval_tools: list[str] = [],
         step_id: str | None = None,
         actor: str | None = None,
     ) -> AsyncGenerator[LettaMessage | None, None]:

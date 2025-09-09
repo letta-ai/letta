@@ -35,6 +35,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         messages: list,
         tools: list,
         use_assistant_message: bool,
+        requires_approval_tools: list[str] = [],
         step_id: str | None = None,
         actor: User | None = None,
     ) -> AsyncGenerator[LettaMessage, None]:
@@ -55,6 +56,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             self.interface = AnthropicStreamingInterface(
                 use_assistant_message=use_assistant_message,
                 put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
+                requires_approval_tools=requires_approval_tools,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             self.interface = OpenAIStreamingInterface(
@@ -63,6 +65,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                 put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
                 messages=messages,
                 tools=tools,
+                requires_approval_tools=requires_approval_tools,
             )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
