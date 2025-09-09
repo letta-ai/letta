@@ -5,7 +5,7 @@ from letta.constants import DEFAULT_MAX_STEPS
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageStreamStatus
-from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage
+from letta.schemas.letta_message import LegacyLettaMessage, LettaMessage, MessageType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import MessageCreate
 from letta.schemas.user import User
@@ -38,6 +38,10 @@ class BaseAgentV2(ABC):
         self,
         input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
+        run_id: str | None = None,
+        use_assistant_message: bool = True,
+        include_return_message_types: list[MessageType] | None = None,
+        request_start_timestamp_ns: int | None = None,
     ) -> LettaResponse:
         """
         Execute the agent loop in blocking mode, returning all messages at once.
@@ -49,7 +53,11 @@ class BaseAgentV2(ABC):
         self,
         input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
-        stream_tokens: bool = True,
+        stream_tokens: bool = False,
+        run_id: str | None = None,
+        use_assistant_message: bool = True,
+        include_return_message_types: list[MessageType] | None = None,
+        request_start_timestamp_ns: int | None = None,
     ) -> AsyncGenerator[LettaMessage | LegacyLettaMessage | MessageStreamStatus, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
