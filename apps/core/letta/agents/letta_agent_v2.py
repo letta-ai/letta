@@ -137,6 +137,7 @@ class LettaAgentV2(BaseAgentV2):
         )
         response = self._step(
             messages=in_context_messages + input_messages_to_persist,
+            llm_adapter=LettaLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
             dry_run=True,
         )
         async for chunk in response:
