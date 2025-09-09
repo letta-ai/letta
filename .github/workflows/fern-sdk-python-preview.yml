@@ -43,7 +43,6 @@ jobs:
 
   preview-python-sdk:
     needs: [changed-files]
-    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     name: preview-python-sdk
     runs-on: [self-hosted, medium]
     outputs:

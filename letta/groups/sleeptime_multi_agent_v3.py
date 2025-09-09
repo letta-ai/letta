@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import DEFAULT_MAX_STEPS
 from letta.groups.helpers import stringify_message
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import JobStatus
 from letta.schemas.group import Group, ManagerType
@@ -33,6 +34,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         # Additional manager classes
         self.group_manager = GroupManager()
 
+    @trace_method
     async def step(
         self,
         input_messages: list[MessageCreate],
@@ -61,6 +63,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         response.usage.run_ids = self.run_ids
         return response
 
+    @trace_method
     async def stream(
         self,
         input_messages: list[MessageCreate],
@@ -90,6 +93,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
 
         await self.run_sleeptime_agents(use_assistant_message=use_assistant_message)
 
+    @trace_method
     async def run_sleeptime_agents(self, use_assistant_message: bool = True):
         # Get response messages
         last_response_messages = self.response_messages
@@ -120,6 +124,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                     print(f"Sleeptime agent processing failed: {e!s}")
                     raise e
 
+    @trace_method
     async def _issue_background_task(
         self,
         sleeptime_agent_id: str,
@@ -149,6 +154,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         )
         return run.id
 
+    @trace_method
     async def _participant_agent_step(
         self,
         foreground_agent_id: str,
