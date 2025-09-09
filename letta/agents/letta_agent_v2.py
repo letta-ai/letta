@@ -348,7 +348,8 @@ class LettaAgentV2(BaseAgentV2):
             None,
         )
         try:
-            valid_tools = await self._get_valid_tools(messages)  # remove messages input
+            self.last_function_response = self._load_last_function_response(messages)
+            valid_tools = await self._get_valid_tools()
             approval_request, approval_response = await self._maybe_get_approval_messages(messages)
             if approval_request and approval_response:
                 tool_call = approval_request.tool_calls[0]
@@ -681,9 +682,8 @@ class LettaAgentV2(BaseAgentV2):
             return in_context_messages
 
     @trace_method
-    async def _get_valid_tools(self, in_context_messages: list[Message]):
+    async def _get_valid_tools(self):
         tools = self.agent_state.tools
-        self.last_function_response = self._load_last_function_response(in_context_messages)
         valid_tool_names = self.tool_rules_solver.get_allowed_tool_names(
             available_tools=set([t.name for t in tools]),
             last_function_response=self.last_function_response,
