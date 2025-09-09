@@ -82,10 +82,14 @@ export function IdentifyUserForPostHog(props: IdentifyUserProps) {
 
   useEffect(() => {
     try {
-      if (
-        !environment.NEXT_PUBLIC_POSTHOG_KEY ||
-        !environment.NEXT_PUBLIC_POSTHOG_HOST
-      ) {
+      const posthogKey =
+        environment.NEXT_PUBLIC_POSTHOG_KEY ||
+        process.env.NEXT_PUBLIC_POSTHOG_KEY;
+      const posthogHost =
+        environment.NEXT_PUBLIC_POSTHOG_HOST ||
+        process.env.NEXT_PUBLIC_POSTHOG_HOST;
+
+      if (!posthogKey || !posthogHost) {
         console.error('Error retrieving PH values');
         return;
       }
