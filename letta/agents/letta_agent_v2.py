@@ -219,7 +219,7 @@ class LettaAgentV2(BaseAgentV2):
         use_assistant_message: bool = True,
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
-    ) -> AsyncGenerator[str]:
+    ) -> AsyncGenerator[str, None]:
         """
         Execute the agent loop in streaming mode, yielding chunks as they become available.
         If stream_tokens is True, individual tokens are streamed as they arrive from the LLM,
@@ -309,7 +309,7 @@ class LettaAgentV2(BaseAgentV2):
         request_start_timestamp_ns: int | None = None,
         remaining_turns: int = -1,
         dry_run: bool = False,
-    ) -> AsyncGenerator[LettaMessage | dict]:
+    ) -> AsyncGenerator[LettaMessage | dict, None]:
         """
         Execute a single agent step (one LLM call and tool execution).
 
