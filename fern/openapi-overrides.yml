@@ -1005,6 +1005,12 @@ paths:
       x-fern-sdk-group-name:
         - batches
       x-fern-sdk-method-name: cancel
+  /v1/messages/batches/{batch_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - batches
+        - messages
+      x-fern-sdk-method-name: list
   /v1/embeddings/total_storage_size:
     get:
       x-fern-ignore: true
