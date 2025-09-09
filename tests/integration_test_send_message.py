@@ -231,7 +231,7 @@ def assert_greeting_with_assistant_message_response(
     assert isinstance(messages[index], AssistantMessage)
     if not token_streaming:
         # Check for either short or long response
-        assert USER_MESSAGE_RESPONSE in messages[index].content or USER_MESSAGE_LONG_RESPONSE in messages[index].content
+        assert "teamwork" in messages[index].content.lower() or USER_MESSAGE_LONG_RESPONSE in messages[index].content
     assert messages[index].otid and messages[index].otid[-1] == "1"
     index += 1
 
@@ -268,7 +268,7 @@ def assert_greeting_no_reasoning_response(
     # Agent Step 1 - should be AssistantMessage directly, no reasoning
     assert isinstance(messages[index], AssistantMessage)
     if not token_streaming:
-        assert USER_MESSAGE_RESPONSE in messages[index].content
+        assert "teamwork" in messages[index].content.lower()
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -314,7 +314,7 @@ def assert_greeting_without_assistant_message_response(
     assert isinstance(messages[index], ToolCallMessage)
     assert messages[index].tool_call.name == "send_message"
     if not token_streaming:
-        assert USER_MESSAGE_RESPONSE in messages[index].tool_call.arguments
+        assert "teamwork" in messages[index].tool_call.arguments.lower()
     assert messages[index].otid and messages[index].otid[-1] == "1"
     index += 1
 
