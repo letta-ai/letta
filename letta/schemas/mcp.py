@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import Field
 
@@ -175,3 +175,11 @@ class MCPOAuthSessionUpdate(BaseMCPOAuth):
     client_secret: Optional[str] = Field(None, description="OAuth client secret")
     redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI")
     status: Optional[OAuthSessionStatus] = Field(None, description="Session status")
+
+
+class MCPServerResyncResult(LettaBase):
+    """Result of resyncing MCP server tools."""
+
+    deleted: List[str] = Field(default_factory=list, description="List of deleted tool names")
+    updated: List[str] = Field(default_factory=list, description="List of updated tool names")
+    added: List[str] = Field(default_factory=list, description="List of added tool names")
