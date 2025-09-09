@@ -368,7 +368,9 @@ class LettaAgentV2(BaseAgentV2):
                     return
 
                 step_id = generate_step_id()
-                step_progression, logged_step, step_metrics, agent_step_span = self._step_checkpoint_start(step_id=step_id, run_id=run_id)
+                step_progression, logged_step, step_metrics, agent_step_span = await self._step_checkpoint_start(
+                    step_id=step_id, run_id=run_id
+                )
 
                 messages = await self._refresh_messages(messages)
                 force_tool_call = valid_tools[0]["name"] if len(valid_tools) == 1 else None
@@ -473,7 +475,7 @@ class LettaAgentV2(BaseAgentV2):
                     if include_return_message_types is None or message.message_type in include_return_message_types:
                         yield message
 
-            step_progression, step_metrics = self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
+            step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             self.logger.error(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
