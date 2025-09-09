@@ -2212,6 +2212,13 @@ export const Tool = z.object({
     .optional(),
 });
 
+export type VectorDBProvider = z.infer<typeof VectorDBProvider>;
+export const VectorDBProvider = z.union([
+  z.literal('native'),
+  z.literal('tpuf'),
+  z.literal('pinecone'),
+]);
+
 export type Source = z.infer<typeof Source>;
 export const Source = z.object({
   name: z.string(),
@@ -2249,6 +2256,7 @@ export const Source = z.object({
       z.undefined(),
     ])
     .optional(),
+  vector_db_provider: z.union([VectorDBProvider, z.undefined()]).optional(),
   created_by_id: z
     .union([
       z.string(),

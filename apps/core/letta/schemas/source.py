@@ -3,7 +3,9 @@ from typing import Optional
 
 from pydantic import Field
 
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.letta_base import LettaBase
 
 
@@ -40,6 +42,10 @@ class Source(BaseSource):
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="Metadata associated with the source.")
 
     # metadata fields
+    vector_db_provider: VectorDBProvider = Field(
+        default=VectorDBProvider.NATIVE,
+        description="The vector database provider used for this source's passages",
+    )
     created_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     last_updated_by_id: Optional[str] = Field(None, description="The id of the user that made this Tool.")
     created_at: Optional[datetime] = Field(None, description="The timestamp when the source was created.")

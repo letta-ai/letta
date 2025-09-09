@@ -4913,6 +4913,10 @@ export type Source = {
    */
   organization_id?: string | null;
   /**
+   * The vector database provider used for this source's passages
+   */
+  vector_db_provider?: VectorDBProvider;
+  /**
    * The id of the user that made this Tool.
    */
   created_by_id?: string | null;
@@ -6127,6 +6131,11 @@ export type ValidationError = {
   msg: string;
   type: string;
 };
+
+/**
+ * Supported vector database providers for archival memory
+ */
+export type VectorDBProvider = 'native' | 'tpuf' | 'pinecone';
 
 export type VoiceSleeptimeManager = {
   manager_type?: 'voice_sleeptime';

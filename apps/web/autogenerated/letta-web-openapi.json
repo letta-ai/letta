@@ -3982,6 +3982,15 @@
                                   ],
                                   "nullable": true
                                 },
+                                "vector_db_provider": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": ["native", "tpuf", "pinecone"]
+                                    },
+                                    {}
+                                  ]
+                                },
                                 "created_by_id": {
                                   "oneOf": [
                                     {
@@ -9777,6 +9786,15 @@
                                     {}
                                   ],
                                   "nullable": true
+                                },
+                                "vector_db_provider": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": ["native", "tpuf", "pinecone"]
+                                    },
+                                    {}
+                                  ]
                                 },
                                 "created_by_id": {
                                   "oneOf": [

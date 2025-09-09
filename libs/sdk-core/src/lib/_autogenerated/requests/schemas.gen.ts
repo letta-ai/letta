@@ -13141,6 +13141,12 @@ export const $Source = {
       title: 'Organization Id',
       description: 'The ID of the organization that created the source.',
     },
+    vector_db_provider: {
+      $ref: '#/components/schemas/VectorDBProvider',
+      description:
+        "The vector database provider used for this source's passages",
+      default: 'native',
+    },
     created_by_id: {
       anyOf: [
         {
@@ -16587,6 +16593,13 @@ export const $ValidationError = {
   type: 'object',
   required: ['loc', 'msg', 'type'],
   title: 'ValidationError',
+} as const;
+
+export const $VectorDBProvider = {
+  type: 'string',
+  enum: ['native', 'tpuf', 'pinecone'],
+  title: 'VectorDBProvider',
+  description: 'Supported vector database providers for archival memory',
 } as const;
 
 export const $VoiceSleeptimeManager = {

@@ -24873,6 +24873,11 @@
             "$ref": "#/components/schemas/EmbeddingConfig",
             "description": "The embedding configuration used by the source."
           },
+          "vector_db_provider": {
+            "$ref": "#/components/schemas/VectorDBProvider",
+            "description": "The vector database provider used for this source's passages",
+            "default": "native"
+          },
           "created_by_id": {
             "anyOf": [
               {
@@ -28105,6 +28110,12 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "VectorDBProvider": {
+        "type": "string",
+        "enum": ["native", "tpuf", "pinecone"],
+        "title": "VectorDBProvider",
+        "description": "Supported vector database providers for archival memory"
       },
       "VoiceSleeptimeManager": {
         "properties": {

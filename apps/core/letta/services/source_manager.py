@@ -3,12 +3,14 @@ from typing import List, Optional, Union
 
 from sqlalchemy import and_, exists, select
 
+from letta.helpers.tpuf_client import should_use_tpuf
 from letta.orm import Agent as AgentModel
 from letta.orm.errors import NoResultFound
 from letta.orm.source import Source as SourceModel
 from letta.orm.sources_agents import SourcesAgents
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState as PydanticAgentState
+from letta.schemas.enums import VectorDBProvider
 from letta.schemas.source import Source as PydanticSource, SourceUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -50,9 +52,12 @@ class SourceManager:
         if db_source:
             return db_source
         else:
+            vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+
             async with db_registry.async_session() as session:
                 # Provide default embedding config if not given
                 source.organization_id = actor.organization_id
+                source.vector_db_provider = vector_db_provider
                 source = SourceModel(**source.model_dump(to_orm=True, exclude_none=True))
                 await source.create_async(session, actor=actor)
                 return source.to_pydantic()
@@ -91,6 +96,10 @@ class SourceManager:
         Returns:
             List of created/updated sources
         """
+        vector_db_provider = VectorDBProvider.TPUF if should_use_tpuf() else VectorDBProvider.NATIVE
+        for pydantic_source in pydantic_sources:
+            pydantic_source.vector_db_provider = vector_db_provider
+
         if not pydantic_sources:
             return []
 
@@ -164,7 +173,7 @@ class SourceManager:
                 # update existing source
                 from letta.schemas.source import SourceUpdate
 
-                update_data = source.model_dump(exclude={"id"}, exclude_none=True)
+                update_data = source.model_dump(exclude={"id", "vector_db_provider"}, exclude_none=True)
                 updated_source = await self.update_source(existing_source.id, SourceUpdate(**update_data), actor)
                 sources.append(updated_source)
             else:
