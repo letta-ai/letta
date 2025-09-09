@@ -208,6 +208,10 @@ class AgentSerializationManager:
         )
         agent_schema.id = agent_file_id
 
+        # wipe the values of tool_exec_environment_variables (they contain secrets)
+        if agent_schema.tool_exec_environment_variables:
+            agent_schema.tool_exec_environment_variables = {key: "" for key in agent_schema.tool_exec_environment_variables}
+
         if agent_schema.messages:
             for message in agent_schema.messages:
                 message_file_id = self._map_db_to_file_id(message.id, MessageSchema.__id_prefix__)
@@ -650,9 +654,10 @@ class AgentSerializationManager:
                 if agent_data.get("source_ids"):
                     agent_data["source_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["source_ids"]]
 
-                if env_vars:
-                    for var in agent_data["tool_exec_environment_variables"]:
-                        var["value"] = env_vars.get(var["key"], "")
+                if env_vars and agent_data.get("tool_exec_environment_variables"):
+                    # update environment variable values from the provided env_vars dict
+                    for key in agent_data["tool_exec_environment_variables"]:
+                        agent_data["tool_exec_environment_variables"][key] = env_vars.get(key, "")
 
                 # Override project_id if provided
                 if project_id:
