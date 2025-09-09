@@ -511,11 +511,12 @@ class LettaAgentV2(BaseAgentV2):
             self.logger.debug("Running cleanup for agent loop run: %s", run_id)
             self.logger.info("Running final update. Step Progression: %s", step_progression)
             try:
-                if step_progression == StepProgression.FINISHED and not self.should_continue:
-                    if self.stop_reason is None:
-                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-                    if logged_step and step_id:
-                        await self.step_manager.update_step_stop_reason(self.actor, step_id, self.stop_reason.stop_reason)
+                if step_progression == StepProgression.FINISHED:
+                    if not self.should_continue:
+                        if self.stop_reason is None:
+                            self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+                        if logged_step and step_id:
+                            await self.step_manager.update_step_stop_reason(self.actor, step_id, self.stop_reason.stop_reason)
                     return
                 if step_progression < StepProgression.STEP_LOGGED:
                     # Error occurred before step was fully logged
