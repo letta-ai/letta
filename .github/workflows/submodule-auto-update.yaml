@@ -15,6 +15,7 @@ permissions:
   actions: read
   checks: read
   id-token: write
+  pull-requests: write
 
 jobs:
   update-and-verify:
@@ -76,6 +77,36 @@ jobs:
           git commit -m "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}"
           git push origin $BRANCH_NAME
           echo "TEMP_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        id: create-pr
+        run: |
+          BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
+
+          PR_URL=$(gh pr create \
+            --title "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}" \
+            --body "$(cat <<'EOF'
+          ## Summary
+          - Automated submodule update from ${{ steps.update-submodule.outputs.old_sha }} to ${{ steps.update-submodule.outputs.new_sha }}
+
+          ## Test plan
+          - [ ] End-to-End Tests pass
+          - [ ] Cloud API Stability Tests pass
+          - [ ] Web Lint and Unit Tests pass
+          - [ ] Cloud API Integration Tests pass
+          - [ ] Web Migration API Stability Tests pass
+
+          🤖 This PR was automatically created by the submodule auto-update workflow.
+          EOF
+          )" \
+            --head $BRANCH_NAME \
+            --base main)
+
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "PR created: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wait for and check test results
         if: steps.update-submodule.outputs.should_skip != 'true'
@@ -139,33 +170,23 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Merge update to main branch
+      - name: Merge PR to main
         run: |
           TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
 
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          # Find and merge the PR
+          PR_NUMBER=$(gh pr list --head $TEMP_BRANCH --json number --jq '.[0].number')
+          echo "Found PR #$PR_NUMBER for branch $TEMP_BRANCH"
 
-          # Checkout main and merge the temp branch
-          git checkout main
-          git pull origin main
-          git merge origin/$TEMP_BRANCH --no-ff -m "chore: update letta core submodule to ${{ needs.update-and-verify.outputs.new_sha }}
-
-          Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
-
-          Tests passed:
+          # Merge the PR
+          gh pr merge $PR_NUMBER --squash --delete-branch --body "All tests passed successfully:
           ✅ End-to-End Tests
           ✅ Cloud API Stability Tests
           ✅ Web Lint and Unit Tests
+          ✅ Cloud API Integration Tests
+          ✅ Web Migration API Stability Tests
 
-
-      - name: Push to main
-        run: git push origin main
-
-      - name: Clean up temporary branch
-        run: |
-          TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
-          git push origin --delete $TEMP_BRANCH
+          Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -180,14 +201,27 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: true
 
-      - name: Clean up temporary branch and notify
+      - name: Close PR and clean up
         run: |
           TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
-          git push origin --delete $TEMP_BRANCH || true
+
+          # Find and close the PR
+          PR_NUMBER=$(gh pr list --head $TEMP_BRANCH --json number --jq '.[0].number')
+          if [ "$PR_NUMBER" != "null" ] && [ -n "$PR_NUMBER" ]; then
+            echo "Closing PR #$PR_NUMBER for failed tests"
+            gh pr close $PR_NUMBER --comment "🚨 Closing this PR because tests failed or timed out.
+
+            Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
+
+            Please check the test results and update manually if needed."
+
+            # Delete the branch
+            git push origin --delete $TEMP_BRANCH || true
+          else
+            echo "No PR found to close"
+            git push origin --delete $TEMP_BRANCH || true
+          fi
 
           echo "🚨 Submodule update failed - tests did not pass"
-          echo "Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"
-
-          # Optionally create an issue or send notification here
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
