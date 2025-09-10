@@ -92,6 +92,7 @@ jobs:
         if: steps.update-submodule.outputs.should_skip != 'true'
         run: |
           npm install
+          cd apps/core
           uv sync --all-extras
 
       - name: Run stage-api and publish-api
