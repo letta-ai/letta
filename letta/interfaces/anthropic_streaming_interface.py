@@ -106,15 +106,19 @@ class AnthropicStreamingInterface:
         try:
             tool_input = json.loads(self.accumulated_tool_call_args)
         except json.JSONDecodeError as e:
-            logger.warning(
-                f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
-                f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
-            )
-            raise
+            # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
+            try:
+                tool_input = self.json_parser.parse(self.accumulated_tool_call_args)
+            except:
+                logger.warning(
+                    f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
+                    f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
+                )
+                raise e
         if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
             arguments = str(json.dumps(tool_input["function"]["arguments"], indent=2))
         else:
-            arguments = self.accumulated_tool_call_args
+            arguments = str(json.dumps(tool_input, indent=2))
         return ToolCall(id=self.tool_call_id, function=FunctionCall(arguments=arguments, name=self.tool_call_name))
 
     def _check_inner_thoughts_complete(self, combined_args: str) -> bool:
