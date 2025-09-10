@@ -1093,14 +1093,38 @@ def make_key(*args, **kwargs):
     return str((args, tuple(sorted(kwargs.items()))))
 
 
-def safe_create_task(coro, logger: Logger, label: str = "background task"):
+# Global set to keep strong references to background tasks
+_background_tasks: set = set()
+
+
+def safe_create_task(coro, label: str = "background task"):
     async def wrapper():
         try:
             await coro
         except Exception as e:
             logger.exception(f"{label} failed with {type(e).__name__}: {e}")
 
-    return asyncio.create_task(wrapper())
+    task = asyncio.create_task(wrapper())
+
+    # Add task to the set to maintain strong reference
+    _background_tasks.add(task)
+
+    # Remove task from set when done to prevent memory leaks
+    task.add_done_callback(_background_tasks.discard)
+
+    return task
+
+
+def get_background_task_count() -> int:
+    """Get the current number of background tasks for debugging/monitoring."""
+    return len(_background_tasks)
+
+
+def cancel_all_background_tasks():
+    """Cancel all background tasks. Use with caution."""
+    for task in _background_tasks.copy():
+        if not task.done():
+            task.cancel()
 
 
 def safe_create_file_processing_task(coro, file_metadata, server, actor, logger: Logger, label: str = "file processing task"):
@@ -1137,7 +1161,15 @@ def safe_create_file_processing_task(coro, file_metadata, server, actor, logger:
             except Exception as update_error:
                 logger.error(f"Failed to update file status to ERROR for {file_metadata.id}: {update_error}")
 
-    return asyncio.create_task(wrapper())
+    task = asyncio.create_task(wrapper())
+
+    # Add task to the set to maintain strong reference
+    _background_tasks.add(task)
+
+    # Remove task from set when done to prevent memory leaks
+    task.add_done_callback(_background_tasks.discard)
+
+    return task
 
 
 class CancellationSignal:
@@ -1288,6 +1320,12 @@ def fire_and_forget(coro, task_name: Optional[str] = None, error_callback: Optio
     import traceback
 
     task = asyncio.create_task(coro)
+
+    # Add task to the set to maintain strong reference
+    _background_tasks.add(task)
+
+    # Remove task from set when done to prevent memory leaks
+    task.add_done_callback(_background_tasks.discard)
 
     def callback(t):
         try:

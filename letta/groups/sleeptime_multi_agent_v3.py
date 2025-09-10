@@ -17,6 +17,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.run import Run
 from letta.schemas.user import User
 from letta.services.group_manager import GroupManager
+from letta.utils import safe_create_task
 
 
 class SleeptimeMultiAgentV3(LettaAgentV2):
@@ -142,7 +143,7 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
         )
         run = await self.job_manager.create_job_async(pydantic_job=run, actor=self.actor)
 
-        asyncio.create_task(
+        safe_create_task(
             self._participant_agent_step(
                 foreground_agent_id=self.agent_state.id,
                 sleeptime_agent_id=sleeptime_agent_id,
@@ -150,7 +151,8 @@ class SleeptimeMultiAgentV3(LettaAgentV2):
                 last_processed_message_id=last_processed_message_id,
                 run_id=run.id,
                 use_assistant_message=use_assistant_message,
-            )
+            ),
+            label=f"participant_agent_step_{sleeptime_agent_id}",
         )
         return run.id
 

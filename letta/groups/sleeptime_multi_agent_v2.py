@@ -24,6 +24,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.passage_manager import PassageManager
 from letta.services.step_manager import NoopStepManager, StepManager
 from letta.services.telemetry_manager import NoopTelemetryManager, TelemetryManager
+from letta.utils import safe_create_task
 
 
 class SleeptimeMultiAgentV2(BaseAgent):
@@ -236,7 +237,7 @@ class SleeptimeMultiAgentV2(BaseAgent):
         )
         run = await self.job_manager.create_job_async(pydantic_job=run, actor=self.actor)
 
-        asyncio.create_task(
+        safe_create_task(
             self._participant_agent_step(
                 foreground_agent_id=self.agent_id,
                 sleeptime_agent_id=sleeptime_agent_id,
@@ -244,7 +245,8 @@ class SleeptimeMultiAgentV2(BaseAgent):
                 last_processed_message_id=last_processed_message_id,
                 run_id=run.id,
                 use_assistant_message=True,
-            )
+            ),
+            label=f"participant_agent_step_{sleeptime_agent_id}",
         )
         return run.id
 

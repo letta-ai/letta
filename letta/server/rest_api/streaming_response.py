@@ -19,6 +19,7 @@ from letta.schemas.user import User
 from letta.server.rest_api.utils import capture_sentry_exception
 from letta.services.job_manager import JobManager
 from letta.settings import settings
+from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
@@ -64,7 +65,7 @@ async def add_keepalive_to_stream(
             await queue.put(("end", None))
 
     # Start the stream reader task
-    reader_task = asyncio.create_task(stream_reader())
+    reader_task = safe_create_task(stream_reader(), label="stream_reader")
 
     try:
         while True:

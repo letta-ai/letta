@@ -19,6 +19,7 @@ from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.utils import get_letta_server
 from letta.settings import settings
+from letta.utils import safe_create_task
 
 
 # TODO needed?
@@ -447,7 +448,7 @@ async def _send_message_to_agents_matching_tags_async(
             timeout=settings.multi_agent_send_message_timeout,
         )
 
-    tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in matching_agents]
+    tasks = [safe_create_task(_send_single(agent_state), label=f"send_to_agent_{agent_state.id}") for agent_state in matching_agents]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     final = []
     for r in results:
@@ -488,7 +489,7 @@ async def _send_message_to_all_agents_in_group_async(sender_agent: "Agent", mess
                 timeout=settings.multi_agent_send_message_timeout,
             )
 
-    tasks = [asyncio.create_task(_send_single(agent_state)) for agent_state in worker_agents]
+    tasks = [safe_create_task(_send_single(agent_state), label=f"send_to_worker_{agent_state.id}") for agent_state in worker_agents]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     final = []
     for r in results:

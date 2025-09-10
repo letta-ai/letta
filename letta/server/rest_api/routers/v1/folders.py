@@ -327,7 +327,7 @@ async def upload_file_to_folder(
         logger=logger,
         label="file_processor.process",
     )
-    safe_create_task(sleeptime_document_ingest_async(server, folder_id, actor), logger=logger, label="sleeptime_document_ingest_async")
+    safe_create_task(sleeptime_document_ingest_async(server, folder_id, actor), label="sleeptime_document_ingest_async")
 
     return file_metadata
 
@@ -467,7 +467,7 @@ async def delete_file_from_folder(
         logger.info(f"Deleting file {file_id} from pinecone index")
         await delete_file_records_from_pinecone_index(file_id=file_id, actor=actor)
 
-    asyncio.create_task(sleeptime_document_ingest_async(server, folder_id, actor, clear_history=True))
+    safe_create_task(sleeptime_document_ingest_async(server, folder_id, actor, clear_history=True), label="document_ingest_after_delete")
     if deleted_file is None:
         raise HTTPException(status_code=404, detail=f"File with id={file_id} not found.")
 

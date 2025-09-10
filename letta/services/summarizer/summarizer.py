@@ -20,6 +20,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.system import package_summarize_message_no_counts
 from letta.templates.template_helper import render_template
+from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
@@ -100,7 +101,7 @@ class Summarizer:
             return in_context_messages, False
 
     def fire_and_forget(self, coro):
-        task = asyncio.create_task(coro)
+        task = safe_create_task(coro, label="summarizer_background_task")
 
         def callback(t):
             try:

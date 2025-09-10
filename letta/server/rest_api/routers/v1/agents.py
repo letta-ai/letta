@@ -1343,12 +1343,13 @@ async def send_message_streaming(
                         ),
                     )
 
-                asyncio.create_task(
+                safe_create_task(
                     create_background_stream_processor(
                         stream_generator=raw_stream,
                         redis_client=redis_client,
                         run_id=run.id,
-                    )
+                    ),
+                    label=f"background_stream_processor_{run.id}",
                 )
 
                 raw_stream = redis_sse_stream_generator(
@@ -1609,7 +1610,7 @@ async def send_message_async(
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
     # Create asyncio task for background processing
-    task = asyncio.create_task(
+    task = safe_create_task(
         _process_message_background(
             run_id=run.id,
             server=server,
@@ -1621,7 +1622,8 @@ async def send_message_async(
             assistant_message_tool_kwarg=request.assistant_message_tool_kwarg,
             max_steps=request.max_steps,
             include_return_message_types=request.include_return_message_types,
-        )
+        ),
+        label=f"process_message_background_{run.id}",
     )
 
     def handle_task_completion(t):
@@ -1629,7 +1631,7 @@ async def send_message_async(
             t.result()
         except asyncio.CancelledError:
             logger.error(f"Background task for run {run.id} was cancelled")
-            asyncio.create_task(
+            safe_create_task(
                 server.job_manager.update_job_by_id_async(
                     job_id=run.id,
                     job_update=JobUpdate(
@@ -1638,11 +1640,12 @@ async def send_message_async(
                         metadata={"error": "Task was cancelled"},
                     ),
                     actor=actor,
-                )
+                ),
+                label=f"update_cancelled_job_{run.id}",
             )
         except Exception as e:
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
-            asyncio.create_task(
+            safe_create_task(
                 server.job_manager.update_job_by_id_async(
                     job_id=run.id,
                     job_update=JobUpdate(
@@ -1651,7 +1654,8 @@ async def send_message_async(
                         metadata={"error": str(e)},
                     ),
                     actor=actor,
-                )
+                ),
+                label=f"update_failed_job_{run.id}",
             )
 
     task.add_done_callback(handle_task_completion)
