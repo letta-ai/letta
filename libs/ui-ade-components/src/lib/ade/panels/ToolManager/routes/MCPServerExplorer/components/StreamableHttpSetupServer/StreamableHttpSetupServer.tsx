@@ -137,8 +137,9 @@ export function StreamableHttpSetupServer(
     [serverName, mutate],
   );
 
-  // Determine if API token input should be shown based on current URL
+  // Determine if API token input should be shown based on current URL and hideApiKeyField flag
   const isApiTokenInputVisible =
+    !props.server.setup.hideApiKeyField &&
     watchedServerUrl === props.server.setup.baseUrl;
 
   return (
@@ -161,7 +162,7 @@ export function StreamableHttpSetupServer(
               <Badge
                 variant="info"
                 content={
-                  isApiTokenInputVisible
+                  isApiTokenInputVisible || props.server.setup.requiresApiKey
                     ? t('ApiKeyRequiredMCPServer.apiKeyLabel')
                     : t('StreamableHttpSetupServer.customUrlLabel')
                 }
@@ -177,7 +178,10 @@ export function StreamableHttpSetupServer(
           render={({ field }) => (
             <Input
               fullWidth
-              placeholder={t('StreamableHttpSetupServer.serverUrlPlaceholder')}
+              placeholder={
+                props.server.setup.placeholder ||
+                t('StreamableHttpSetupServer.serverUrlPlaceholder')
+              }
               label={t('StreamableHttpSetupServer.serverUrlLabel')}
               {...field}
             />

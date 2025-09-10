@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ActionCard,
   Alert,
-  Badge,
   Dialog,
   FormProvider,
   VStack,
@@ -101,14 +100,6 @@ export function FreeMCPServerDialog(props: FreeMCPServerDialogProps) {
             icon={props.server.logo}
             title={props.server.name}
             description={props.server.description}
-            actions={
-              <Badge
-                variant="success"
-                content={t('OpenAccessMCPServer.openLabel')}
-                size="small"
-                border
-              />
-            }
           />
         }
       >

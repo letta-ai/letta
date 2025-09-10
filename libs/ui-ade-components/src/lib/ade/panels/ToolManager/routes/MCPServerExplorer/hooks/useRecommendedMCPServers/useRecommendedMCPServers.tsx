@@ -26,6 +26,8 @@ interface CustomUrlSetupType {
   baseUrl: string;
   requiresApiKey: boolean;
   requiresServerUrl?: boolean;
+  hideApiKeyField?: boolean;
+  placeholder?: string;
   instructions: React.ReactNode;
 }
 
@@ -187,8 +189,10 @@ export function useRecommendedMCPServers(): RecommendedServer[] {
         baseUrl: 'https://mcp.exa.ai',
         setup: {
           type: 'custom-url',
-          baseUrl: 'https://mcp.exa.ai/mcp',
+          baseUrl: 'https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key',
           requiresApiKey: true,
+          hideApiKeyField: true,
+          placeholder: 'https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key',
           instructions: t.rich('exa.instructions', {
             link: (chunks) => (
               <Link

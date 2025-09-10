@@ -1873,7 +1873,7 @@
       "customUrlLabel": "Custom URL",
       "errorMessage": "There was an error connecting to the server, please check your URL and API key and try again or contact support.",
       "instructionsTitle": "Setup Instructions",
-      "serverUrlPlaceholder": "https://mcp.zapier.com/api/mcp/mcp",
+      "serverUrlPlaceholder": "https://mcp.app.com/mcp",
       "serverUrlLabel": "Server URL",
       "apiKeyPlaceholder": "Enter your API key",
       "apiKeyLabel": "API Key"
@@ -1899,14 +1899,14 @@
       "errorMessage": "There was an error adding the server. Please try again or contact support."
     },
     "ApiKeyRequiredMCPServer": {
-      "apiKeyLabel": "API Key Required",
+      "apiKeyLabel": "API Key",
       "addedLabel": "API Key Added"
     },
     "PatKeyRequiredMCPServer": {
-      "patKeyLabel": "Personal Access Token Required"
+      "patKeyLabel": "Personal Access Token"
     },
     "ServerUrlRequiredMCPServer": {
-      "serverUrlLabel": "Server URL Required"
+      "serverUrlLabel": "Custom URL"
     },
     "types": {
       "custom": {
