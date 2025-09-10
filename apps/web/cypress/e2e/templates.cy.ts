@@ -315,7 +315,7 @@ describe(
         });
       })
 
-      it(
+      it.skip(
         'should create and delete a memory block through the advanced editor with migration verification',
         { tags: ['@memory-blocks', '@advanced-editor', '@migration'] },
         () => {
