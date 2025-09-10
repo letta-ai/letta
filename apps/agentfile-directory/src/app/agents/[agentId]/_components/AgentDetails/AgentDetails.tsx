@@ -145,7 +145,7 @@ function ToolVariables(props: ToolVariablesProps) {
     return (
       agent.toolVariables?.map((key) => ({
         key: key.name,
-        value: key.value,
+        value: '',
       })) || []
     );
   }, [agent.toolVariables]);
@@ -157,12 +157,7 @@ function ToolVariables(props: ToolVariablesProps) {
         <RawKeyValueEditor
           hideLabel
           label={t('variables')}
-          value={
-            agent.toolVariables?.map((key) => ({
-              key: key.name,
-              value: key.value,
-            })) || []
-          }
+          value={parsedVariables}
           disabled
         />
       ) : (

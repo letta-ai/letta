@@ -143,7 +143,6 @@ const GetAgentFileDetailsSchema = z.object({
   toolVariables: z
     .object({
       name: z.string(),
-      value: z.string(),
     })
     .array()
     .optional(),
