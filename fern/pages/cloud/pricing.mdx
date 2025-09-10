@@ -43,13 +43,19 @@ Upgrade your plan and view your usage on [your account page](https://app.letta.c
   <Card
     title="Enterprise ([contact us](https://forms.letta.com/request-demo))"
   >
-    - Up to <Icon icon="fa-light fa-infinity"/> agents & storage
+    - Unlimited agents & storage
     - Custom model deployments
     - SAML/OIDC SSO authentication
     - Role-based access control
     - BYOC deployment options
+    - BYOK for models (Azure, OpenAI, Anthropic, Google, AWS Bedrock)
   </Card>
 </CardGroup>
+Once the request quota is reached, additional requests will be charged by usage-based pricing depending on the model type and context size (>100k tokens is "max mode").
+* **Standard models** (gpt-4o-mini, gemini-flash, etc.): `$0.001` per request (`$0.005` with max mode)
+* **Premium models** (gpt-4.1, claude-sonnet, etc.): `$0.02` per request (`$0.10` with max mode)
+
+To see a full list of models and their pricing, visit the [models page](https://app.letta.com/settings/organization/models).
 
 ## Understanding Agents vs Templates
 
