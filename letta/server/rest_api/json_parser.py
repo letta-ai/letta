@@ -63,6 +63,8 @@ class OptimisticJSONParser(JSONParser):
             '"': self._parse_string,
             "t": self._parse_true,
             "f": self._parse_false,
+            "T": self._parse_true,
+            "F": self._parse_false,
             "n": self._parse_null,
         }
         # Register number parser for digits and signs
