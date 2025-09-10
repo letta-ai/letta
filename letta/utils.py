@@ -1115,18 +1115,6 @@ def safe_create_task(coro, label: str = "background task"):
     return task
 
 
-def get_background_task_count() -> int:
-    """Get the current number of background tasks for debugging/monitoring."""
-    return len(_background_tasks)
-
-
-def cancel_all_background_tasks():
-    """Cancel all background tasks. Use with caution."""
-    for task in _background_tasks.copy():
-        if not task.done():
-            task.cancel()
-
-
 def safe_create_file_processing_task(coro, file_metadata, server, actor, logger: Logger, label: str = "file processing task"):
     """
     Create a task for file processing that updates file status on failure.
