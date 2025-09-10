@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, Query
 from fastapi.exceptions import HTTPException
@@ -127,25 +127,21 @@ async def list_batch_runs(
 )
 async def list_batch_messages(
     batch_id: str,
-    limit: int = Query(100, description="Maximum number of messages to return"),
-    cursor: Optional[str] = Query(
-        None, description="Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending."
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     agent_id: Optional[str] = Query(None, description="Filter messages by agent ID"),
-    sort_descending: bool = Query(True, description="Sort messages by creation time (true=newest first)"),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
-    """
-    Get messages for a specific batch job.
-
-    Returns messages associated with the batch in chronological order.
-
-    Pagination:
-    - For the first page, omit the cursor parameter
-    - For subsequent pages, use the ID of the last message from the previous response as the cursor
-    - Results will include messages before/after the cursor based on sort_descending
-    """
+    """Get response messages for a specific batch job."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     # First, verify the batch job exists and the user has access to it
@@ -156,9 +152,8 @@ async def list_batch_messages(
         raise HTTPException(status_code=404, detail="Batch not found")
 
     # Get messages directly using our efficient method
-    # We'll need to update the underlying implementation to use message_id as cursor
     messages = await server.batch_manager.get_messages_for_letta_batch_async(
-        letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, sort_descending=sort_descending, cursor=cursor
+        letta_batch_job_id=batch_id, limit=limit, actor=actor, agent_id=agent_id, ascending=(order == "asc"), before=before, after=after
     )
 
     return LettaBatchMessages(messages=messages)
