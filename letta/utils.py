@@ -39,6 +39,7 @@ from letta.constants import (
 )
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.log import get_logger
+from letta.otel.tracing import log_attributes, trace_method
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
 
 logger = get_logger(__name__)
@@ -1097,6 +1098,12 @@ def make_key(*args, **kwargs):
 _background_tasks: set = set()
 
 
+def get_background_task_count() -> int:
+    """Get the current number of background tasks for debugging/monitoring."""
+    return len(_background_tasks)
+
+
+@trace_method
 def safe_create_task(coro, label: str = "background task"):
     async def wrapper():
         try:
@@ -1108,6 +1115,9 @@ def safe_create_task(coro, label: str = "background task"):
 
     # Add task to the set to maintain strong reference
     _background_tasks.add(task)
+
+    # Log task count to trace
+    log_attributes({"total_background_task_count": get_background_task_count()})
 
     # Remove task from set when done to prevent memory leaks
     task.add_done_callback(_background_tasks.discard)
