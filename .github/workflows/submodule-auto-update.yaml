@@ -26,10 +26,17 @@ jobs:
       new_sha: ${{ steps.update-submodule.outputs.new_sha }}
       tests_passed: ${{ steps.check-tests.outputs.all_passed }}
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.NOTIFIER_APP_ID }}
+          private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           submodules: true
           fetch-depth: 0
 
@@ -106,7 +113,7 @@ jobs:
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
           echo "PR created: $PR_URL"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Wait for and check test results
         if: steps.update-submodule.outputs.should_skip != 'true'
@@ -156,17 +163,24 @@ jobs:
           echo "Tests did not complete within timeout"
           echo "all_passed=false" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
   merge-to-main:
     needs: update-and-verify
     if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.NOTIFIER_APP_ID }}
+          private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           submodules: true
           fetch-depth: 0
 
@@ -188,17 +202,24 @@ jobs:
 
           Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
   cleanup-on-failure:
     needs: update-and-verify
     if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed != 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.NOTIFIER_APP_ID }}
+          private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           submodules: true
 
       - name: Close PR and clean up
@@ -210,9 +231,7 @@ jobs:
           if [ "$PR_NUMBER" != "null" ] && [ -n "$PR_NUMBER" ]; then
             echo "Closing PR #$PR_NUMBER for failed tests"
             gh pr close $PR_NUMBER --comment "🚨 Closing this PR because tests failed or timed out.
-
             Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
-
             Please check the test results and update manually if needed."
 
             # Delete the branch
@@ -224,4 +243,4 @@ jobs:
 
           echo "🚨 Submodule update failed - tests did not pass"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
