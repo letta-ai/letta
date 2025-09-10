@@ -32,7 +32,6 @@ import {
   Body_export_agent_serialized,
   IdentityType,
   ManagerType,
-  MessageRole,
   ProviderCategory,
   ProviderType,
   SandboxType,
@@ -1797,22 +1796,20 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     before,
     limit,
     order,
-    role,
     runId,
     userId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
-    order?: string;
-    role?: MessageRole;
+    order?: 'asc' | 'desc';
     runId: string;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunMessagesKey,
-  ...(queryKey ?? [{ after, before, limit, order, role, runId, userId }]),
+  ...(queryKey ?? [{ after, before, limit, order, runId, userId }]),
 ];
 export type RunsServiceRetrieveRunUsageDefaultResponse = Awaited<
   ReturnType<typeof RunsService.retrieveRunUsage>
@@ -2124,26 +2121,26 @@ export const useMessagesServiceListBatchMessagesKey =
   'MessagesServiceListBatchMessages';
 export const UseMessagesServiceListBatchMessagesKeyFn = (
   {
+    after,
     agentId,
     batchId,
-    cursor,
+    before,
     limit,
-    sortDescending,
+    order,
     userId,
   }: {
+    after?: string;
     agentId?: string;
     batchId: string;
-    cursor?: string;
+    before?: string;
     limit?: number;
-    sortDescending?: boolean;
+    order?: 'asc' | 'desc';
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useMessagesServiceListBatchMessagesKey,
-  ...(queryKey ?? [
-    { agentId, batchId, cursor, limit, sortDescending, userId },
-  ]),
+  ...(queryKey ?? [{ after, agentId, batchId, before, limit, order, userId }]),
 ];
 export type EmbeddingsServiceGetTotalStorageSizeDefaultResponse = Awaited<
   ReturnType<typeof EmbeddingsService.getTotalStorageSize>
@@ -2214,6 +2211,9 @@ export type ToolsServiceRunToolFromSourceMutationResult = Awaited<
 >;
 export type ToolsServiceAddComposioToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.addComposioTool>
+>;
+export type ToolsServiceResyncMcpServerToolsMutationResult = Awaited<
+  ReturnType<typeof ToolsService.resyncMcpServerTools>
 >;
 export type ToolsServiceAddMcpToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.addMcpTool>
@@ -2353,8 +2353,8 @@ export type AdminServiceCreateUserMutationResult = Awaited<
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
 >;
-export type MessagesServiceCreateMessagesBatchMutationResult = Awaited<
-  ReturnType<typeof MessagesService.createMessagesBatch>
+export type MessagesServiceCreateBatchRunMutationResult = Awaited<
+  ReturnType<typeof MessagesService.createBatchRun>
 >;
 export type VoiceServiceCreateVoiceChatCompletionsMutationResult = Awaited<
   ReturnType<typeof VoiceService.createVoiceChatCompletions>

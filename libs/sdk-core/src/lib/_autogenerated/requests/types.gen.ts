@@ -6843,6 +6843,14 @@ export type ListMcpToolsByServerData = {
 
 export type ListMcpToolsByServerResponse = Array<MCPTool>;
 
+export type ResyncMcpServerToolsData = {
+  agentId?: string | null;
+  mcpServerName: string;
+  userId?: string | null;
+};
+
+export type ResyncMcpServerToolsResponse = unknown;
+
 export type AddMcpToolData = {
   mcpServerName: string;
   mcpToolName: string;
@@ -8396,11 +8404,11 @@ export type DeleteRunResponse = Run;
 
 export type ListRunMessagesData = {
   /**
-   * Cursor for pagination
+   * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    */
   after?: string | null;
   /**
-   * Cursor for pagination
+   * Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
    */
   before?: string | null;
   /**
@@ -8408,13 +8416,9 @@ export type ListRunMessagesData = {
    */
   limit?: number | null;
   /**
-   * Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
+   * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    */
-  order?: string;
-  /**
-   * Filter by role
-   */
-  role?: MessageRole | null;
+  order?: 'asc' | 'desc';
   runId: string;
   userId?: string | null;
 };
@@ -8627,12 +8631,12 @@ export type RetrieveProviderTraceData = {
 
 export type RetrieveProviderTraceResponse = ProviderTrace | null;
 
-export type CreateMessagesBatchData = {
+export type CreateBatchRunData = {
   requestBody: CreateBatch;
   userId?: string | null;
 };
 
-export type CreateMessagesBatchResponse = BatchJob;
+export type CreateBatchRunResponse = BatchJob;
 
 export type ListBatchRunsData = {
   userId?: string | null;
@@ -8649,22 +8653,26 @@ export type RetrieveBatchRunResponse = BatchJob;
 
 export type ListBatchMessagesData = {
   /**
+   * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+   */
+  after?: string | null;
+  /**
    * Filter messages by agent ID
    */
   agentId?: string | null;
   batchId: string;
   /**
-   * Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.
+   * Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
    */
-  cursor?: string | null;
+  before?: string | null;
   /**
    * Maximum number of messages to return
    */
-  limit?: number;
+  limit?: number | null;
   /**
-   * Sort messages by creation time (true=newest first)
+   * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    */
-  sortDescending?: boolean;
+  order?: 'asc' | 'desc';
   userId?: string | null;
 };
 
@@ -8916,6 +8924,21 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Array<MCPTool>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/tools/mcp/servers/{mcp_server_name}/resync': {
+    post: {
+      req: ResyncMcpServerToolsData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: unknown;
         /**
          * Validation Error
          */
@@ -11253,7 +11276,7 @@ export type $OpenApiTs = {
   };
   '/v1/messages/batches': {
     post: {
-      req: CreateMessagesBatchData;
+      req: CreateBatchRunData;
       res: {
         /**
          * Successful Response

@@ -34,6 +34,8 @@ import type {
   AddMcpServerResponse,
   ListMcpToolsByServerData,
   ListMcpToolsByServerResponse,
+  ResyncMcpServerToolsData,
+  ResyncMcpServerToolsResponse,
   AddMcpToolData,
   AddMcpToolResponse,
   UpdateMcpServerData,
@@ -351,8 +353,8 @@ import type {
   UpdateOrganizationResponse,
   RetrieveProviderTraceData,
   RetrieveProviderTraceResponse,
-  CreateMessagesBatchData,
-  CreateMessagesBatchResponse,
+  CreateBatchRunData,
+  CreateBatchRunResponse,
   ListBatchRunsData,
   ListBatchRunsResponse,
   RetrieveBatchRunData,
@@ -769,6 +771,42 @@ export class ToolsService {
       url: '/v1/tools/mcp/servers/{mcp_server_name}/tools',
       path: {
         mcp_server_name: data.mcpServerName,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Resync Mcp Server Tools
+   * Resync tools for an MCP server by:
+   * 1. Fetching current tools from the MCP server
+   * 2. Deleting tools that no longer exist on the server
+   * 3. Updating schemas for existing tools
+   * 4. Adding new tools from the server
+   *
+   * Returns a summary of changes made.
+   * @param data The data for the request.
+   * @param data.mcpServerName
+   * @param data.agentId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static resyncMcpServerTools(
+    data: ResyncMcpServerToolsData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ResyncMcpServerToolsResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/tools/mcp/servers/{mcp_server_name}/resync',
+      path: {
+        mcp_server_name: data.mcpServerName,
+      },
+      query: {
+        agent_id: data.agentId,
       },
       errors: {
         422: 'Validation Error',
@@ -4880,27 +4918,13 @@ export class RunsService {
 
   /**
    * List Run Messages
-   * Get messages associated with a run with filtering options.
-   *
-   * Args:
-   * run_id: ID of the run
-   * before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
-   * after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.
-   * limit: Maximum number of messages to return
-   * order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
-   * role: Filter by role (user/assistant/system/tool)
-   * return_message_object: Whether to return Message objects or LettaMessage objects
-   * user_id: ID of the user making the request
-   *
-   * Returns:
-   * A list of messages associated with the run. Default is List[LettaMessage].
+   * Get response messages associated with a run.
    * @param data The data for the request.
    * @param data.runId
-   * @param data.before Cursor for pagination
-   * @param data.after Cursor for pagination
+   * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    * @param data.limit Maximum number of messages to return
-   * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
-   * @param data.role Filter by role
+   * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.userId
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
@@ -4920,7 +4944,6 @@ export class RunsService {
         after: data.after,
         limit: data.limit,
         order: data.order,
-        role: data.role,
       },
       errors: {
         422: 'Validation Error',
@@ -5488,7 +5511,7 @@ export class TelemetryService {
 
 export class MessagesService {
   /**
-   * Create Messages Batch
+   * Create Batch Run
    * Submit a batch of agent messages for asynchronous processing.
    * Creates a job that will fan out messages to all listed agents and process them in parallel.
    * @param data The data for the request.
@@ -5497,10 +5520,10 @@ export class MessagesService {
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
-  public static createMessagesBatch(
-    data: CreateMessagesBatchData,
+  public static createBatchRun(
+    data: CreateBatchRunData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateMessagesBatchResponse> {
+  ): CancelablePromise<CreateBatchRunResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/messages/batches',
@@ -5563,20 +5586,14 @@ export class MessagesService {
 
   /**
    * List Batch Messages
-   * Get messages for a specific batch job.
-   *
-   * Returns messages associated with the batch in chronological order.
-   *
-   * Pagination:
-   * - For the first page, omit the cursor parameter
-   * - For subsequent pages, use the ID of the last message from the previous response as the cursor
-   * - Results will include messages before/after the cursor based on sort_descending
+   * Get response messages for a specific batch job.
    * @param data The data for the request.
    * @param data.batchId
+   * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    * @param data.limit Maximum number of messages to return
-   * @param data.cursor Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.
+   * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.agentId Filter messages by agent ID
-   * @param data.sortDescending Sort messages by creation time (true=newest first)
    * @param data.userId
    * @returns LettaBatchMessages Successful Response
    * @throws ApiError
@@ -5592,10 +5609,11 @@ export class MessagesService {
         batch_id: data.batchId,
       },
       query: {
+        before: data.before,
+        after: data.after,
         limit: data.limit,
-        cursor: data.cursor,
+        order: data.order,
         agent_id: data.agentId,
-        sort_descending: data.sortDescending,
       },
       errors: {
         422: 'Validation Error',

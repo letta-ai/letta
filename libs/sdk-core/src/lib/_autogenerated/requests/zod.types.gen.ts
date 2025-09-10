@@ -9440,6 +9440,29 @@ export const get_List_mcp_tools_by_server = {
   response: z.array(MCPTool),
 };
 
+export type post_Resync_mcp_server_tools = typeof post_Resync_mcp_server_tools;
+export const post_Resync_mcp_server_tools = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/tools/mcp/servers/{mcp_server_name}/resync'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      agent_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    path: z.object({
+      mcp_server_name: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.unknown(),
+};
+
 export type post_Add_mcp_tool = typeof post_Add_mcp_tool;
 export const post_Add_mcp_tool = {
   method: z.literal('POST'),
@@ -12611,14 +12634,7 @@ export const get_List_run_messages = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
-      order: z.string().optional(),
-      role: z
-        .union([
-          MessageRole,
-          z.null(),
-          z.array(z.union([MessageRole, z.null()])),
-        ])
-        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
     }),
     path: z.object({
       run_id: z.string(),
@@ -12906,8 +12922,8 @@ export const get_Retrieve_provider_trace = {
   ]),
 };
 
-export type post_Create_messages_batch = typeof post_Create_messages_batch;
-export const post_Create_messages_batch = {
+export type post_Create_batch_run = typeof post_Create_batch_run;
+export const post_Create_batch_run = {
   method: z.literal('POST'),
   path: z.literal('/v1/messages/batches'),
   requestFormat: z.literal('json'),
@@ -12962,14 +12978,19 @@ export const get_List_batch_messages = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
-      limit: z.number().optional(),
-      cursor: z
+      before: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
       agent_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      sort_descending: z.boolean().optional(),
     }),
     path: z.object({
       batch_id: z.string(),
@@ -13323,6 +13344,8 @@ export const EndpointByMethod = {
     '/v1/tools/add-base-tools': post_Add_base_tools,
     '/v1/tools/run': post_Run_tool_from_source,
     '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}/resync':
+      post_Resync_mcp_server_tools,
     '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
       post_Add_mcp_tool,
     '/v1/tools/mcp/servers/test': post_Test_mcp_server,
@@ -13368,7 +13391,7 @@ export const EndpointByMethod = {
     '/v1/providers/': post_Create_provider,
     '/v1/providers/check': post_Check_provider,
     '/v1/runs/{run_id}/stream': post_Retrieve_stream,
-    '/v1/messages/batches': post_Create_messages_batch,
+    '/v1/messages/batches': post_Create_batch_run,
     '/v1/voice-beta/{agent_id}/chat/completions':
       post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,
