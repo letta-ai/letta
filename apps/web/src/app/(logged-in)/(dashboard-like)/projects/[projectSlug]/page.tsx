@@ -368,6 +368,7 @@ interface AgentGridProps {
 
 function AgentGrid({ data, canCreateAgents, slug }: AgentGridProps) {
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
+  const { data: useGridView } = useFeatureFlag('AGENTS_GRID_VIEW');
   const [selectedAgent, setSelectedAgent] = useState<AgentState>();
 
   const agentsList = useMemo(() => data || [], [data]);
@@ -446,9 +447,17 @@ function AgentGrid({ data, canCreateAgents, slug }: AgentGridProps) {
         </HStack>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 w-full">
-            <LoadingState />
-          </div>
+          useGridView ? (
+            <div className="grid grid-cols-1 gap-4 w-full">
+              <LoadingState />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 w-full">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-8 w-full" />
+              ))}
+            </div>
+          )
         ) : hasNoItems ? (
           <EmptyState />
         ) : (
@@ -550,7 +559,7 @@ function RecentAgentsSection() {
 
   const { data: agents } = useAgentsServiceListAgents(
     {
-      limit: 4,
+      limit: 3,
       projectId: currentProjectId,
     },
     undefined,
@@ -941,6 +950,7 @@ function RecentTemplatesSection() {
 function ProjectPage() {
   const t = useTranslations('projects/(projectSlug)/page');
   const { name } = useCurrentProject();
+  const { data: useGridView } = useFeatureFlag('TEMPLATES_GRID_VIEW');
 
   const welcomeText = useWelcomeText();
 
@@ -952,22 +962,31 @@ function ProjectPage() {
     >
       <DashboardPageSection>
         <VStack gap="large" fullWidth>
-          <HiddenOnMobile>
-            <HStack gap="xlarge" fullWidth align="start">
-              <div style={{ width: '67%' }}>
-                <RecentTemplatesSection />
-              </div>
-              <div style={{ width: '33%' }}>
-                <RecentAgentsSection />
-              </div>
-            </HStack>
-          </HiddenOnMobile>
-          <VisibleOnMobile>
-            <VStack gap="large" fullWidth>
+          {useGridView ? (
+            <>
+              <HiddenOnMobile>
+                <HStack gap="xlarge" fullWidth align="start">
+                  <div style={{ width: '67%' }}>
+                    <RecentTemplatesSection />
+                  </div>
+                  <div style={{ width: '33%' }}>
+                    <RecentAgentsSection />
+                  </div>
+                </HStack>
+              </HiddenOnMobile>
+              <VisibleOnMobile>
+                <VStack gap="large" fullWidth>
+                  <RecentTemplatesSection />
+                  <RecentAgentsSection />
+                </VStack>
+              </VisibleOnMobile>
+            </>
+          ) : (
+            <HStack gap="large" fullWidth>
               <RecentTemplatesSection />
               <RecentAgentsSection />
-            </VStack>
-          </VisibleOnMobile>
+            </HStack>
+          )}
           <HStack border padding="medium">
             <Tutorials />
           </HStack>
