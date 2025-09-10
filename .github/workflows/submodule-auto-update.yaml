@@ -16,10 +16,6 @@ permissions:
   checks: read
   id-token: write
 
-concurrency:
-  group: submodule-update
-  cancel-in-progress: false
-
 jobs:
   update-and-verify:
     runs-on: ubuntu-latest
