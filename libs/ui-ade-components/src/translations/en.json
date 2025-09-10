@@ -1756,7 +1756,8 @@
         "invalidSchema": {
           "label": "Invalid Schema",
           "tooltip": "Tool JSON schema is invalid and incompatible with tool calling"
-        }
+        },
+        "desyncWarning": "Resync tools"
       }
     },
     "RemoveMCPServerDialog": {
@@ -1766,6 +1767,13 @@
       "description": "Are you sure you want to remove this server? This will remove any tools attached to an agent that use this server."
     },
     "refetch": "Refetch tools",
+    "resyncTools": "Resync tools",
+    "resyncSuccess": "Tools resynced successfully",
+    "resyncAdded": "added",
+    "resyncUpdated": "updated",
+    "resyncDeleted": "deleted",
+    "resyncNoChanges": "No changes detected",
+    "resyncError": "Failed to resync tools",
     "actions": "Actions",
     "edit": "Edit server",
     "remove": "Delete server",

@@ -3,8 +3,12 @@ import {
   useToolsServiceDeleteMcpServer,
   UseToolsServiceListMcpServersKeyFn,
   useToolsServiceListMcpToolsByServer,
+  UseToolsServiceListToolsKeyFn,
+  useToolsServiceResyncMcpServerTools,
+  useToolsServiceListTools,
   type MCPTool,
 } from '@letta-cloud/sdk-core';
+import { toast } from '@letta-cloud/ui-component-library';
 import type { MCPServerItemType } from '@letta-cloud/sdk-core';
 import { getIsStreamableOrHttpServer } from '../types';
 import {
@@ -124,10 +128,12 @@ interface ServerToolsListProps {
   ref?: React.RefObject<ServerToolsRef>;
   selectedTool: MCPTool | null;
   onToolSelect: (tool: MCPTool) => void;
+  onResync: () => void;
+  isResyncing: boolean;
 }
 
 function ServerToolsList(props: ServerToolsListProps) {
-  const { serverName, ref, selectedTool, onToolSelect } = props;
+  const { serverName, ref, selectedTool, onToolSelect, onResync, isResyncing } = props;
   const t = useTranslations('ToolManager/SingleMCPServer');
   const { tools } = useCurrentAgent();
 
@@ -147,12 +153,84 @@ function ServerToolsList(props: ServerToolsListProps) {
       {
         retry: 0,
         enabled: !hasError,
-        staleTime: 60 * 60 * 1000,
-        gcTime: 24 * 60 * 60 * 1000,
+        staleTime: 60 * 1000,
+        gcTime: 60 * 60 * 1000,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
       }
     );
+
+  // Fetch all persisted tools to check for desync
+  const { data: allPersistedTools } = useToolsServiceListTools({
+    limit: 1000, // High limit to get all tools
+  });
+
+  // Check if tools are out of sync
+  const isOutOfSync = useMemo(() => {
+    if (!data || !allPersistedTools) return false;
+    // Filter persisted tools for this MCP server
+    const persistedMcpTools = allPersistedTools.filter(
+      (tool) =>
+        tool.tool_type === 'external_mcp' &&
+        (tool.metadata_ as any)?.mcp?.server_name === serverName
+    );
+
+    // If no persisted tools yet, that's fine - not out of sync
+    if (persistedMcpTools.length === 0) return false;
+
+    // Create map of live tools for quick lookup
+    const liveToolsMap = new Map(data.map(tool => [tool.name, tool]));
+
+    // Check each persisted tool to see if it's stale or deleted
+    for (const persistedTool of persistedMcpTools) {
+      const liveTool = persistedTool.name ? liveToolsMap.get(persistedTool.name) : null;
+
+      // Tool no longer exists in live tools - it was deleted
+      if (!liveTool) return true;
+
+      // Compare argument schemas to check if schema is stale
+      const liveParams = (liveTool.inputSchema?.properties || {}) as Record<string, any>;
+      const persistedParams = ((persistedTool as any).json_schema?.parameters?.properties || {}) as Record<string, any>;
+
+      // Check if same number of parameters
+      const liveParamKeys = Object.keys(liveParams);
+      const persistedParamKeys = Object.keys(persistedParams).filter(key => key !== 'request_heartbeat');
+
+      if (liveParamKeys.length !== persistedParamKeys.length) return true;
+
+
+      // Check if parameter names and types match
+      for (const paramName of persistedParamKeys) {
+        if (!liveParams[paramName]) return true;
+
+        // Simple type comparison
+        // Extract all possible types from live parameter
+        const getTypes = (param: any): string[] => {
+          if (param?.type) {
+            return [param.type];
+          }
+          const params: any= [];
+          if (param?.anyOf) {
+            for (const option of param.anyOf) {
+              params.push(option.type);
+            }
+            return [params];
+          }
+          return [];
+        };
+
+        const liveTypes = getTypes(liveParams[paramName]).flat();
+        const persistedTypes = getTypes(persistedParams[paramName]).flat();
+        // Compare type arrays - they should have the same types
+        const typesMatch = liveTypes.length === persistedTypes.length &&
+                          liveTypes.every(type => persistedTypes.includes(type));
+
+        if (!typesMatch) return true;
+      }
+    }
+
+    return false;
+  }, [data, allPersistedTools, serverName]);
 
   useImperativeHandle(ref, () => ({
     reload: () => {
@@ -214,6 +292,19 @@ function ServerToolsList(props: ServerToolsListProps) {
             overflowY="auto"
             gap={false}
           >
+            {isOutOfSync && (
+              <HStack paddingBottom="small" justify="center" fullWidth>
+                <Button
+                  color="brand"
+                  size="small"
+                  onClick={onResync}
+                  busy={isResyncing}
+                  preIcon={<RefreshIcon />}
+                  label={t('ServerToolsList.schemaHealth.desyncWarning')}
+                  fullWidth
+                />
+              </HStack>
+            )}
             {data.map((tool) => {
               let healthBadge: {
                 variant: 'destructive' | 'success' | 'warning';
@@ -344,8 +435,66 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
 
   const t = useTranslations('ToolManager/SingleMCPServer');
   const tAuth = useTranslations('ToolsEditor/MCPServers');
+  const queryClient = useQueryClient();
 
   const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
+
+  // Resync tools mutation
+  const { mutate: resyncTools, isPending: isResyncing } = useToolsServiceResyncMcpServerTools({
+    onSuccess: (response) => {
+      // Invalidate the tools list queries to refetch the updated tools
+      queryClient.invalidateQueries({
+        queryKey: UseToolsServiceListMcpToolsByServerKeyFn({
+          mcpServerName: server.server_name,
+        }),
+      });
+
+      // Also invalidate the general tools list to update isOutOfSync state
+      queryClient.invalidateQueries({
+        queryKey: UseToolsServiceListToolsKeyFn({
+          limit: 1000,
+        }),
+      });
+
+      // Display resync results
+      // TODO: Surface response type from the API
+      const data = response as {
+        deleted: string[];
+        updated: string[];
+        added: string[];
+      } | null;
+
+      if (data) {
+        const hasChanges = data.added.length > 0 || data.updated.length > 0 || data.deleted.length > 0;
+
+        if (hasChanges) {
+          let message = t('resyncSuccess');
+          const parts: string[] = [];
+
+          if (data.added.length > 0) {
+            parts.push(`${data.added.length} ${data.added.length > 1 ? 'tools' : 'tool'} ${t('resyncAdded')}`);
+          }
+          if (data.updated.length > 0) {
+            parts.push(`${data.updated.length} ${data.updated.length > 1 ? 'tools' : 'tool'} ${t('resyncUpdated')}`);
+          }
+          if (data.deleted.length > 0) {
+            parts.push(`${data.deleted.length} ${data.deleted.length > 1 ? 'tools' : 'tool'} ${t('resyncDeleted')}`);
+          }
+
+          if (parts.length > 0) {
+            message += ': ' + parts.join(', ');
+          }
+
+          toast.success(message, {duration: 5000});
+        } else {
+          toast.success(t('resyncNoChanges'), {duration: 5000});
+        }
+      }
+    },
+    onError: () => {
+      toast.error(t('resyncError'), {duration: 10000});
+    },
+  });
 
   // Determine auth type for display
   const authType = useMemo(() => {
@@ -404,9 +553,10 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
               <DropdownMenuItem
                 preIcon={<RefreshIcon />}
                 onClick={() => {
-                  ref.current?.reload();
+                  resyncTools({ mcpServerName: server.server_name });
                 }}
-                label={t('refetch')}
+                disabled={isResyncing}
+                label={t('resyncTools')}
               />
               <UpdateMCPServerDialog
                 server={server}
@@ -482,6 +632,8 @@ export function SingleMCPServer(props: SingleMCPServerProps) {
           serverName={server.server_name}
           selectedTool={selectedTool}
           onToolSelect={setSelectedTool}
+          onResync={() => resyncTools({ mcpServerName: server.server_name })}
+          isResyncing={isResyncing}
         />
       </VStack>
     </VStack>
