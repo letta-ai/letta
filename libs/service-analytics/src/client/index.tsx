@@ -5,7 +5,6 @@ import type { AnalyticsEvent } from '../events';
 import type { AnalyticsEventProperties } from '../events';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import { usePostHog } from 'posthog-js/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
@@ -78,33 +77,37 @@ interface IdentifyUserProps {
 // NOTE: This is not supported on letta-desktop
 export function IdentifyUserForPostHog(props: IdentifyUserProps) {
   const { userId, name, email, organization } = props;
-  const posthogClient = usePostHog();
+
+  const posthogKey =
+    environment.NEXT_PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  const posthogHost =
+    environment.NEXT_PUBLIC_POSTHOG_HOST ||
+    process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
   useEffect(() => {
     try {
-      const posthogKey =
-        environment.NEXT_PUBLIC_POSTHOG_KEY ||
-        process.env.NEXT_PUBLIC_POSTHOG_KEY;
-      const posthogHost =
-        environment.NEXT_PUBLIC_POSTHOG_HOST ||
-        process.env.NEXT_PUBLIC_POSTHOG_HOST;
-
       if (!posthogKey || !posthogHost) {
         console.error('Error retrieving PH values');
         return;
       }
-
-      window.identity = { userId };
-
-      posthogClient.identify(userId, {
-        name: name,
-        email: email,
-        organization: organization,
-      }); // posthog distinct id is the user id
+      posthog.init(posthogKey, {
+        api_host: posthogHost,
+        capture_pageview: true,
+        capture_pageleave: true,
+        loaded: (posthog) => {
+          window.identity = { userId };
+          // posthog distinct id is the user id
+          posthog.identify(userId, {
+            name: name,
+            email: email,
+            organization: organization,
+          });
+        },
+      });
     } catch (error) {
       console.error('Error identifying user on PostHog', error);
     }
-  }, [userId, email, name, posthogClient, organization]);
+  }, [userId, email, name, organization, posthogKey, posthogHost]);
 
   return null;
 }
@@ -118,6 +121,7 @@ export function trackClientSideEvent<Event extends AnalyticsEvent>(
       platform_type: getPlatformType(),
       ...properties,
     });
+    console.log(properties);
   } catch (error) {
     console.error('Error tracking PostHog event', error);
   }
