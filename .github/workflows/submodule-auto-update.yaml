@@ -164,10 +164,20 @@ jobs:
         run: |
           echo "Waiting for tests to complete on PR..."
 
+          # Define the required test contexts to monitor (exact workflow names)
+          REQUIRED_TESTS=(
+            "🦸️ End-to-End Tests"
+            "☁️ Cloud API Stability Test"
+            "🕸️🧪 [Web] Lint and Test"
+            "Run cloud-api integration tests"
+            "🦸️ Migration API Stability"
+          )
+
           # Find the PR number
           BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
           PR_NUMBER=$(gh pr list --head $BRANCH_NAME --json number --jq '.[0].number')
           echo "Monitoring PR #$PR_NUMBER"
+          echo "Required tests: ${REQUIRED_TESTS[@]}"
 
           # Wait up to 45 minutes for tests to complete
           MAX_WAIT=2700  # 45 minutes
@@ -187,37 +197,64 @@ jobs:
               continue
             fi
 
-            # Check if any required checks failed
-            FAILED_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == "FAILURE") | .context')
-            if [ -n "$FAILED_CHECKS" ]; then
-              echo "Tests failed! Failed checks:"
-              echo "$FAILED_CHECKS"
+            # Check each required test individually
+            ALL_PASSED=true
+            ALL_COMPLETED=true
+            FAILED_REQUIRED=()
+            PENDING_REQUIRED=()
+            SUCCESS_REQUIRED=()
+
+            for test in "${REQUIRED_TESTS[@]}"; do
+              # Check if this required test exists in the status checks
+              TEST_STATUS=$(echo "$PR_STATUS" | jq -r --arg test "$test" '.[] | select(.context | test($test)) | .conclusion')
+
+              if [ -z "$TEST_STATUS" ]; then
+                echo "Required test '$test' not found in status checks, waiting..."
+                PENDING_REQUIRED+=("$test (not started)")
+                ALL_COMPLETED=false
+              elif [ "$TEST_STATUS" = "FAILURE" ]; then
+                echo "Required test '$test' failed!"
+                FAILED_REQUIRED+=("$test")
+                ALL_PASSED=false
+              elif [ "$TEST_STATUS" = "SUCCESS" ]; then
+                echo "Required test '$test' passed ✓"
+                SUCCESS_REQUIRED+=("$test")
+              elif [ "$TEST_STATUS" = "null" ] || [ "$TEST_STATUS" = "PENDING" ] || [ "$TEST_STATUS" = "IN_PROGRESS" ]; then
+                echo "Required test '$test' is still running..."
+                PENDING_REQUIRED+=("$test")
+                ALL_COMPLETED=false
+              fi
+            done
+
+            # If any required tests failed, exit immediately
+            if [ ${#FAILED_REQUIRED[@]} -gt 0 ]; then
+              echo "Required tests failed:"
+              printf '%s\n' "${FAILED_REQUIRED[@]}"
               echo "all_passed=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
-            # Check if all checks passed
-            PENDING_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == null or .conclusion == "PENDING" or .conclusion == "IN_PROGRESS") | .context')
-            if [ -z "$PENDING_CHECKS" ]; then
-              SUCCESS_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == "SUCCESS") | .context')
-              if [ -n "$SUCCESS_CHECKS" ]; then
-                echo "All tests passed!"
-                echo "Successful checks:"
-                echo "$SUCCESS_CHECKS"
-                echo "all_passed=true" >> $GITHUB_OUTPUT
-                exit 0
-              fi
+            # If all required tests completed successfully, exit
+            if [ "$ALL_COMPLETED" = true ] && [ "$ALL_PASSED" = true ]; then
+              echo "All required tests passed!"
+              echo "Successful required tests:"
+              printf '%s\n' "${SUCCESS_REQUIRED[@]}"
+              echo "all_passed=true" >> $GITHUB_OUTPUT
+              exit 0
             fi
 
-            echo "Tests still running. Pending checks:"
-            echo "$PENDING_CHECKS"
+            # Show pending required tests (ignore non-required ones like Vercel)
+            if [ ${#PENDING_REQUIRED[@]} -gt 0 ]; then
+              echo "Required tests still running:"
+              printf '%s\n' "${PENDING_REQUIRED[@]}"
+            fi
 
             # If tests are still running, wait
             sleep $SLEEP_INTERVAL
             WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
           done
 
-          echo "Tests did not complete within timeout"
+          echo "Required tests did not complete within timeout"
           echo "all_passed=false" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
