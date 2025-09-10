@@ -1,9 +1,14 @@
-import type { LettaMessageUnion, ToolReturnMessage } from '@letta-cloud/sdk-core';
+import type {
+  LettaMessageUnion,
+  ToolReturnMessage,
+} from '@letta-cloud/sdk-core';
 import { InteractiveToolCallMessage } from './InteractiveToolCallMessage/InteractiveToolCallMessage';
 import { InteractiveUserMessage } from './InteractiveUserMessage/InteractiveUserMessage';
 import { InteractiveReasoningMessage } from './InteractiveReasoningMessage/InteractiveReasoningMessage';
 import { InteractiveAgentMessage } from './InteractiveAgentMessage/InteractiveAgentMessage';
 import { InteractiveHiddenReasoningMessage } from './InteractiveHiddenReasoningMessage/InteractiveHiddenReasoningMessage';
+import { RequiresApprovalMessage } from './RequiresApprovalMessage/RequiresApprovalMessage';
+import { ToolApprovedMessage } from './ToolApprovedMessage/ToolApprovedMessage';
 
 interface InteractiveMessageProps {
   message: LettaMessageUnion;
@@ -19,7 +24,6 @@ export function InteractiveMessage(props: InteractiveMessageProps) {
         return <InteractiveAgentMessage message={message} />;
       }
 
-
       return (
         <InteractiveToolCallMessage
           message={message}
@@ -27,6 +31,17 @@ export function InteractiveMessage(props: InteractiveMessageProps) {
         />
       );
     }
+    case 'approval_response_message': {
+      return <ToolApprovedMessage message={message} />;
+    }
+
+    case 'approval_request_message':
+      return (
+        <RequiresApprovalMessage
+          message={message}
+          toolReturnMessage={toolReturnMessage}
+        />
+      );
     case 'reasoning_message':
       return <InteractiveReasoningMessage message={message} />;
     case 'hidden_reasoning_message':

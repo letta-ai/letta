@@ -8,24 +8,14 @@ import {
   Typography,
 } from '@letta-cloud/ui-component-library';
 import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
-import {
-  type ListMessagesResponse,
-  UseAgentsServiceListMessagesKeyFn,
-} from '@letta-cloud/sdk-core';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import type { InfiniteData } from '@tanstack/query-core';
 import { useTranslations } from '@letta-cloud/translations';
-import { useGetMessagesWorker } from './useGetMessagesWorker/useGetMessagesWorker';
-import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
-import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import { cn } from '@letta-cloud/ui-styles';
 import './Messages.scss';
 import type { MessagesDisplayMode } from './types';
 import { MessageGroups } from './MessageGroups/MessageGroups';
 import { MessagesProvider } from './hooks/useMessagesContext/useMessagesContext';
 import { useManageMessageScroller } from './hooks/useManageMessageScroller/useManageMessageScroller';
-
-const MESSAGE_LIMIT = 10;
+import { removeDuplicateMessages, useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
 
 interface MessagesProps {
   isSendingMessage: boolean;
@@ -42,20 +32,7 @@ interface LastMessageReceived {
   date: number;
 }
 
-// remove duplicate messages based on id+message_type
-function removeDuplicateMessages(
-  messages: ListMessagesResponse,
-): ListMessagesResponse {
-  const messageExistingMap = new Set<string>();
-  return messages.filter((message) => {
-    const uid = `${message.id}-${message.message_type}`;
-    if (messageExistingMap.has(uid)) {
-      return false;
-    }
-    messageExistingMap.add(uid);
-    return true;
-  });
-}
+
 
 export function Messages(props: MessagesProps) {
   const {
@@ -69,9 +46,6 @@ export function Messages(props: MessagesProps) {
   const t = useTranslations('components/Messages');
   const [lastMessageReceived, setLastMessageReceived] =
     useState<LastMessageReceived | null>(null);
-
-  const developmentServerConfig = useCurrentDevelopmentServerConfig();
-  const { getMessages } = useGetMessagesWorker();
 
   const refetchInterval = useMemo(() => {
     if (isSendingMessage) {
@@ -87,71 +61,11 @@ export function Messages(props: MessagesProps) {
     return 5000;
   }, [isSendingMessage, lastMessageReceived]);
 
-  const queryClient = useQueryClient();
-  const { data: includeErr = false } = useFeatureFlag('SHOW_ERRORED_MESSAGES');
-
   const { data, hasNextPage, fetchNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery<
-      LettaMessageUnion[],
-      Error,
-      InfiniteData<ListMessagesResponse>,
-      unknown[],
-      { before?: string }
-    >({
+    useAgentMessages({
+      agentId,
       refetchInterval,
-      queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-      queryFn: async (query) => {
-        const res = (await getMessages({
-          url: developmentServerConfig?.url,
-          headers: {
-            'X-SOURCE-CLIENT': window.location.pathname,
-            ...(developmentServerConfig?.password
-              ? {
-                  Authorization: `Bearer ${developmentServerConfig.password}`,
-                  'X-BARE-PASSWORD': `password ${developmentServerConfig.password}`,
-                }
-              : {}),
-          },
-          agentId,
-          limit: MESSAGE_LIMIT,
-          includeErr: includeErr,
-          ...(query.pageParam.before ? { cursor: query.pageParam.before } : {}),
-        })) as unknown as ListMessagesResponse;
-
-        if (query.pageParam.before) {
-          return res;
-        }
-
-        const data = queryClient.getQueriesData<
-          InfiniteData<ListMessagesResponse>
-        >({
-          queryKey: UseAgentsServiceListMessagesKeyFn({ agentId }),
-        });
-
-        const firstPage = data[0]?.[1]?.pages[0] || [];
-
-        return removeDuplicateMessages([
-          ...(firstPage as LettaMessageUnion[]),
-          ...(Array.isArray(res) ? res : []),
-        ]) as ListMessagesResponse;
-      },
-      getNextPageParam: (lastPage) => {
-        if (!Array.isArray(lastPage)) {
-          return undefined;
-        }
-
-        if (lastPage.length < MESSAGE_LIMIT) {
-          return undefined;
-        }
-
-        return {
-          before: lastPage.toSorted(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-          )[0].id,
-        };
-      },
-      enabled: !isSendingMessage && !!agentId,
-      initialPageParam: { before: '' },
+      isEnabled: !isSendingMessage
     });
 
   useEffect(() => {
@@ -185,9 +99,18 @@ export function Messages(props: MessagesProps) {
   const shouldRenderMessage = useCallback(
     function shouldRenderMessage(message: LettaMessageUnion) {
       switch (mode) {
+        case 'simple': {
+          if (message.message_type === 'reasoning_message') {
+            return false;
+          }
+        }
         case 'interactive': {
           if (!message.message_type) {
             return false;
+          }
+
+          if (message.message_type === 'tool_call_message') {
+            return !!message.tool_call.name
           }
 
           if (['system_message'].includes(message.message_type)) {
@@ -218,16 +141,6 @@ export function Messages(props: MessagesProps) {
         }
         case 'debug':
           return true;
-        case 'simple': {
-          if (
-            message.message_type === 'tool_call_message' &&
-            message.tool_call.name === 'send_message'
-          ) {
-            return true;
-          }
-
-          return message.message_type === 'user_message';
-        }
       }
     },
     [mode],

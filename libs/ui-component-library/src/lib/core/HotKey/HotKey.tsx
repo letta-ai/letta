@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Typography } from '../Typography/Typography';
 import { useMemo } from 'react';
+import { HStack } from '../../framing/HStack/HStack';
 
 interface HotKeyProps {
   command: string;
@@ -20,8 +21,10 @@ export function HotKey(props: HotKeyProps) {
   }, [command]);
 
   return (
-    <Typography uppercase color="muted" variant="body3">
-      {transformedCommand}
-    </Typography>
+    <HStack className="rounded-sm px-1" color="background-grey">
+      <Typography uppercase color="muted" variant="body4">
+        {transformedCommand}
+      </Typography>
+    </HStack>
   );
 }

@@ -85,6 +85,7 @@ interface DropdownMenuItemProps
   doNotCloseOnSelect?: boolean;
   href?: string;
   target?: string;
+  endBadge?: React.ReactNode;
   badge?: React.ReactNode;
   preIcon?: React.ReactNode;
 }
@@ -172,6 +173,7 @@ const DropdownMenuItem = React.forwardRef<
       label,
       doNotCloseOnSelect,
       badge,
+      endBadge,
       preIcon,
       ...props
     },
@@ -186,17 +188,20 @@ const DropdownMenuItem = React.forwardRef<
           }
         }}
         className={cn(
-          'relative flex gap-2  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-content data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+          'relative flex gap-2 w-full  cursor-pointer select-none items-center px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-content data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
           inset && 'pl-8',
           className,
         )}
         {...props}
       >
         <MaybeLink href={href}>
-          <HStack align="center">
-            {preIcon && <Slot className="w-3">{preIcon}</Slot>}
-            <Typography variant="body2">{label}</Typography>
-            {badge}
+          <HStack fullWidth align="center">
+            <HStack fullWidth align="center">
+              {preIcon && <Slot className="w-3">{preIcon}</Slot>}
+              <Typography variant="body2">{label}</Typography>
+              {badge}
+            </HStack>
+            {endBadge}
           </HStack>
         </MaybeLink>
       </DropdownMenuPrimitive.Item>

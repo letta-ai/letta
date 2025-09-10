@@ -1,6 +1,7 @@
 import { useCurrentDevelopmentServerConfig } from '../useCurrentDevelopmentServerConfig/useCurrentDevelopmentServerConfig';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useMemo } from 'react';
+import { environment } from '@letta-cloud/config-environment-variables';
 
 interface APIHostConfig {
   url: string;
@@ -51,8 +52,10 @@ export function useCurrentAPIHostConfig(
     };
   }
 
+
+
   return {
-    url: 'https://api.letta.com',
+    url: environment.NEXT_PUBLIC_CURRENT_HOST,
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },

@@ -23,13 +23,16 @@ import {
   DotsHorizontalIcon,
   Link,
   DockRightIcon,
-  DockLeftIcon, EditIcon
+  DockLeftIcon,
+  EditIcon,
+  CodeIcon,
 } from '@letta-cloud/ui-component-library';
 import { ProjectSelector } from '$web/client/components';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from '@letta-cloud/translations';
 import {
   adeKeyMap,
+  chatroomRenderModeAtom,
   DeleteAgentDialog,
   DeleteTemplateDialog,
   ExportAgentButton,
@@ -51,6 +54,7 @@ import { ExternalVersionManagementDialog } from '$web/client/components/ADEPage/
 import { useADELayoutConfig } from '@letta-cloud/ui-ade-components';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useCurrentTemplateName } from '$web/client/hooks/useCurrentTemplateName/useCurrentTemplateName';
+import { useAtom } from 'jotai/index';
 
 interface DesktopADEHeaderProps {
   name: string;
@@ -198,6 +202,7 @@ function AgentSettingsDropdown(props: AgentSettingsDropdownProps) {
           />
         }
       >
+        <MessageDebuggerButton />
         <NetworkInspectorButton />
         <DropdownMenuSeparator />
         {isTemplate && (
@@ -332,12 +337,31 @@ function NetworkInspectorButton() {
     <DropdownMenuItem
       preIcon={<TroubleshootIcon />}
       label={t('AgentSettingsDropdown.networkInspector')}
-      badge={<HotKey command={adeKeyMap.OPEN_NETWORK_INSPECTOR.command} />}
+      endBadge={<HotKey command={adeKeyMap.OPEN_NETWORK_INSPECTOR.command} />}
       onClick={() => {
         setNetworkInspectorOpen((prev) => ({
           ...prev,
           isOpen: !prev.isOpen,
         }));
+      }}
+    />
+  );
+}
+
+function MessageDebuggerButton() {
+  const t = useTranslations(
+    'projects/(projectSlug)/agents/(agentId)/AgentPage',
+  );
+
+  const [_, setRenderMode] = useAtom(chatroomRenderModeAtom);
+
+  return (
+    <DropdownMenuItem
+      preIcon={<CodeIcon />}
+      label={t('AgentSettingsDropdown.messageDebugMode')}
+      endBadge={<HotKey command={adeKeyMap.ENABLE_DEBUG_MODE.command} />}
+      onClick={() => {
+        setRenderMode('debug');
       }}
     />
   );

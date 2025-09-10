@@ -113,9 +113,11 @@ function ABTests() {
             onSendMessage={(role, content) => {
               templates.forEach((template) => {
                 sendMessage({
-                  type: 'new',
-                  role,
-                  content,
+                  message: {
+                    type: 'default',
+                    role,
+                    content,
+                  },
                   agentId: template.coreAgentId,
                 });
               });

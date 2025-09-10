@@ -24,7 +24,6 @@ import { useCurrentAgent, useCurrentAgentMetaData } from '../../../../hooks';
 import { useTranslations } from '@letta-cloud/translations';
 import { FlushSimulationSessionDialog } from '../FlushAgentSimulationDialog/FlushAgentSimulationDialog';
 import { useQuickADETour } from '../../../../hooks/useQuickADETour/useQuickADETour';
-import { ControlChatroomRenderMode } from '../ChatroomContext/ChatroomContext';
 import {
   AgentResetMessagesDialog,
   AgentSimulatorOptionsMenu,
@@ -208,10 +207,6 @@ export function AgentSimulatorHeader() {
         className="pointer-events-auto border h-biHeight-sm border-background-grey3-border"
       >
         <AgentVariablesContainer />
-
-        <HStack className="border-x border-background-grey3-border">
-          <ControlChatroomRenderMode />
-        </HStack>
         <AgentSimulatorOptionsMenu />
       </HStack>
     </HStack>

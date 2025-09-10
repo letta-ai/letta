@@ -110,8 +110,9 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
     [name],
   );
 
+
   return (
-    <MessageGroupContextProvider mode={mode}>
+    <MessageGroupContextProvider key={mode} mode={mode}>
       <VStack
         paddingY="medium"
         paddingLeft="medium"
@@ -139,16 +140,16 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
           gap="medium"
           data-testid={`${name.toLowerCase()}-message-content`}
         >
-          {sortedMessages.map((message, index) => {
+          {sortedMessages.map((message, index, { length }) => {
             const toolReturnMessage =
-              message.message_type === 'tool_call_message' &&
+              message.message_type === 'tool_call_message' || message.message_type === 'approval_request_message' &&
               'tool_call_id' in message.tool_call
                 ? toolReturnMessages[message.tool_call.tool_call_id || '']
                 : undefined;
 
             const messageToSet = message;
 
-            if (message.message_type === 'tool_call_message') {
+            if (message.message_type === 'tool_call_message' || message.message_type === 'approval_request_message') {
               // set the stepId of the tool_call_message to the tool_return_message's stepId if it exists
               if (toolReturnMessage && toolReturnMessage.step_id) {
                 messageToSet.step_id = toolReturnMessage.step_id;
@@ -157,6 +158,7 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
 
             return (
               <Message
+                isLastMessage={index === length - 1}
                 key={`${message.id}_${index}`}
                 message={messageToSet}
                 toolReturnMessage={toolReturnMessage}
@@ -172,7 +174,7 @@ function MessageGroup({ group, dataAnchor, mode }: MessageGroupType) {
 interface MessageGroupsProps {
   messages: ListMessagesResponse;
   hasNextPage?: boolean;
-  mode: MessagesDisplayMode
+  mode: MessagesDisplayMode;
 }
 
 export function MessageGroups(props: MessageGroupsProps) {
@@ -183,6 +185,8 @@ export function MessageGroups(props: MessageGroupsProps) {
   const messageGroups = useGroupedMessages({
     messages,
   });
+
+
 
   return (
     <>

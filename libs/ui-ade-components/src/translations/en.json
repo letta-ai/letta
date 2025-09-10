@@ -1237,6 +1237,10 @@
     "noContent": "This message returned with no content",
     "failedToParse": "This message could not be parsed, please check the debug to see the raw message"
   },
+  "components/Messages/ToolApprovedMessage": {
+    "approved": "User approved running the tool",
+    "rejected": "User rejected running the tool"
+  },
   "components/Messages": {
     "ToggleDebugMode": {
       "goToDebug": "Debug message",
@@ -1422,6 +1426,15 @@
     }
   },
   "ADE/AgentSimulator": {
+    "HTILConfirmationInput": {
+      "badge": "Tool Confirmation",
+      "description": "Are you sure you want to run {toolName}?",
+      "approve": "Allow tool",
+      "deny": "Deny tool",
+      "copyCommand": "Copy request to clipboard",
+      "copyApprove": "Copy approve command",
+      "copyDeny": "Copy deny command"
+    },
     "AgentSimulatedStatus": {
       "trigger": "Reset options",
       "flushAgent": "Reload agent state"
@@ -1514,6 +1527,14 @@
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {
+        "debugMode": {
+          "enable": "Enable debug mode",
+          "disable": "Disable debug mode"
+        },
+        "reasoning": {
+          "hide": "Hide reasoning",
+          "show": "Show reasoning"
+        },
         "flushSimulation": "Flush simulation",
         "printDebug": {
           "title": "Print simulated agent details",
@@ -2240,6 +2261,18 @@
       "description": "Potential tool overload",
       "tooltip": "You have {count} tools attached. Agent performance typically degrades with more than {threshold} tools. Having too many tools can make it harder for the agent to select the right tool and may increase response times. Consider removing unused tools, combining tools, or using multiple agents."
     },
+    "EnableHITLForToolDialog": {
+      "success": "Enabled human in the loop for {toolName}",
+      "title": "Enable human in the Loop",
+      "description": "If confirmed, your agent will ask your user for confirmation before running {toolName}",
+      "error": "Failed to enable human in the loop for {toolName}"
+    },
+    "DisableHITLForToolDialog": {
+      "success": "Disabled human in the loop for {toolName}",
+      "title": "Disable Human in the Loop",
+      "description": "If confirmed, your agent will no longer ask your user for confirmation before running {toolName}",
+      "error": "Failed to disable human in the loop for {toolName}"
+    },
     "ToolsOnboarding": {
       "title": "Connecting Tools & MCP",
       "description": "You can extend your agent's capabilities by connecting them to MCP servers of custom tools which you define.",
@@ -2439,10 +2472,19 @@
       }
     },
     "ToolsList": {
+      "IsHTILEnabledIcon": {
+        "tooltip": "Tool requires human approval before running"
+      },
+      "ToolOptions": {
+        "options": "Options",
+        "edit": "Edit tool",
+        "detachTool": "Detach tool",
+        "view": "View tool",
+        "enableHTIL": "Require human approval",
+        "disableHTIL": "Remove human approval"
+      },
       "lettaTools": "Core ({count})",
       "customTools": "Custom ({count})",
-      "editTool": "Edit tool",
-      "viewDetails": "View details",
       "attachCoreTool": "Attach core tool",
       "attachCustomTool": "Attach custom tool",
       "rules": "Tool rules ({ruleCount})",

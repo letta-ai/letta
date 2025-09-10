@@ -29,11 +29,11 @@ export function useGroupedMessages(props: GroupedMessagesProps) {
           return true;
         }
 
-        if (messageExistingMap.has(message.otid)) {
+        if (messageExistingMap.has(`${message.otid}_${message.message_type}`)) {
           return false;
         }
 
-        messageExistingMap.add(message.otid);
+        messageExistingMap.add(`${message.otid}_${message.message_type}`);
         return true;
       })
       .filter((message) => !!message)
@@ -51,6 +51,7 @@ export function useGroupedMessages(props: GroupedMessagesProps) {
         return dateA - dateB;
       });
   }, [messages]);
+
 
   // Memoize grouped messages with deep comparison
   return useMemo(() => {

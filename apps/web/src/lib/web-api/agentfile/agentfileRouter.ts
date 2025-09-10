@@ -76,8 +76,7 @@ export async function getAgentfile(
   await db
     .update(agentfileStats)
     .set({
-      totalDownloads: sql`${agentfileStats.totalDownloads}
-      + 1`,
+      totalDownloads: sql`${agentfileStats.totalDownloads}+ 1`,
     })
     .where(eq(agentfileStats.agentId, agentId));
 

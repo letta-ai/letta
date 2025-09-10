@@ -167,6 +167,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  HUMAN_IN_THE_LOOP: {
+    description: 'Enable human in the loop for agent runs',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
   TEMPLATES_GRID_VIEW: {
     description: 'Enable templates grid view',
     expiryDate: '2025-12-31',

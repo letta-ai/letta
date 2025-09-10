@@ -2853,7 +2853,8 @@
       "deleteTemplate": "Delete Template",
       "download": "Download AgentFile (.af)",
       "externalVersionManagement": "External Version Management",
-      "networkInspector": "Network Inspector"
+      "networkInspector": "Network Inspector",
+      "messageDebugMode": "Message debug mode"
     },
     "DeployAgentDialog": {
       "trigger": "Create an agent from template",

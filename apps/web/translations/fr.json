@@ -784,6 +784,11 @@
     }
   },
   "ADE/AgentSimulator": {
+    "HTILConfirmationInput": {
+      "description": "Are you sure you want to run {toolName}?",
+      "approve": "Allow tool",
+      "deny": "Deny tool"
+    },
     "role": {
       "user": "Utilisateur",
       "system": "Système"

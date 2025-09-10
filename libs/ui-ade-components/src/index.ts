@@ -53,3 +53,5 @@ export * from './lib/ade/panels/TemplateSettingsPanel/TemplateSettingsPanel';
 export * from './lib/ade/panels/TemplateDefaultsPanel/TemplateDefaultsPanel';
 export * from './lib/shared/UpdateTemplateNameDialog/UpdateTemplateNameDialog';
 export * from './lib/ade/inputs/TemplateName/TemplateName';
+export * from './lib/ade/panels/AgentSimulator/atoms'
+export * from './lib/hooks/useSendMessage/useSendMessage'

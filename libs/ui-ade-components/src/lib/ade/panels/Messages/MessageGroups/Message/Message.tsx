@@ -14,6 +14,7 @@ import { useMessageGroupContext } from '../../hooks/useMessageGroupContext/useMe
 
 interface MessageProps {
   message: LettaMessageUnion;
+  isLastMessage?: boolean;
   toolReturnMessage?: ToolReturnMessage;
 }
 
@@ -81,20 +82,32 @@ function MessageContent(props: MessageContentProps) {
 }
 
 export function Message(props: MessageProps) {
-  const { message, toolReturnMessage } = props;
+  const { message, toolReturnMessage, isLastMessage } = props;
   const { disableInteractivity } = useMessagesContext();
   const { displayMode, baseMode } = useMessageGroupContext();
 
   const isNotSimple = useMemo(() => baseMode !== 'simple', [baseMode]);
 
   const canShowDetails = useMemo(() => {
+    if (isLastMessage) {
+      return true;
+    }
+
     // if type is tool_call_message we can show details
     if (message.message_type === 'tool_call_message') {
       return true;
     }
 
+    if (message.message_type === 'user_message') {
+      return  true;
+    }
+
+    if (message.message_type === 'approval_request_message') {
+      return true;
+    }
+
     return false;
-  }, [message]);
+  }, [message, isLastMessage]);
 
   const [showDetails, setShowDetails] = useState(false);
 
