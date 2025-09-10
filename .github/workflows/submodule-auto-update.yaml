@@ -114,14 +114,13 @@ jobs:
 
           # Add submodule changes
           git add apps/core
-          git commit -m "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}"
+          git commit -m "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}" --no-verify
 
           # Check for API changes and commit them too
           if [[ -n $(git status --porcelain) ]]; then
             echo "API changes detected, adding to the same PR..."
             git add -A
-            git commit -m "chore: update API artifacts following submodule update\n\n
-            🤖 Automatically generated API updates"
+            git commit -m "chore: update API artifacts following submodule update" --no-verify
           else
             echo "No API changes detected"
           fi

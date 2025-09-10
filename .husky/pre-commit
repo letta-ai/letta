@@ -1,3 +1,4 @@
+#!/bin/bash
 # Check if there are any changes in the specified directories
 CHANGED_FILES=$(git diff --cached --name-only)
 MONITORED_PATHS=("apps/core" "apps/fern" "apps/cloud-api" "apps/web" "libs")
