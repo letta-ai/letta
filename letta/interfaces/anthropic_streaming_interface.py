@@ -40,7 +40,7 @@ from letta.schemas.letta_message_content import ReasoningContent, RedactedReason
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
-from letta.server.rest_api.json_parser import JSONParser, PydanticJSONParser
+from letta.server.rest_api.json_parser import JSONParser, OptimisticJSONParser, PydanticJSONParser
 
 logger = get_logger(__name__)
 
@@ -106,11 +106,17 @@ class AnthropicStreamingInterface:
         try:
             tool_input = json.loads(self.accumulated_tool_call_args)
         except json.JSONDecodeError as e:
-            logger.warning(
-                f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
-                f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
-            )
-            raise
+            # Attempt to use OptimisticJSONParser to handle incomplete/malformed JSON
+            try:
+                parser = OptimisticJSONParser()
+                tool_input = parser.parse(self.accumulated_tool_call_args)
+            except:
+                logger.warning(
+                    f"Failed to decode tool call arguments for tool_call_id={self.tool_call_id}, "
+                    f"name={self.tool_call_name}. Raw input: {self.accumulated_tool_call_args!r}. Error: {e}"
+                )
+                raise e
+
         if "id" in tool_input and tool_input["id"].startswith("toolu_") and "function" in tool_input:
             arguments = str(json.dumps(tool_input["function"]["arguments"], indent=2))
         else:
@@ -345,10 +351,6 @@ class AnthropicStreamingInterface:
 
                 self.accumulated_tool_call_args += delta.partial_json
                 current_parsed = self.json_parser.parse(self.accumulated_tool_call_args)
-
-                # Store the corrected JSON back (fixes Python booleans, missing braces, etc)
-                if current_parsed:
-                    self.accumulated_tool_call_args = json.dumps(current_parsed)
 
                 # Start detecting a difference in inner thoughts
                 previous_inner_thoughts = self.previous_parse.get(INNER_THOUGHTS_KWARG, "")
