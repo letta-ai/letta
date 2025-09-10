@@ -681,8 +681,10 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           if (isBackgroundModeEnabled) {
             if (
               body?.details?.detail ===
-              '400: Run was not created in background mode, so it cannot be retrieved.'
+                '400: Run was not created in background mode, so it cannot be retrieved.' &&
+              currentRunId
             ) {
+              removeRunIdFromBackgroundMode(currentRunId);
               return;
             }
           }
