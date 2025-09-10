@@ -98,10 +98,40 @@ class OptimisticJSONParser(JSONParser):
         """Determine which parser to use based on the first character."""
         if not input_str:
             raise decode_error
+
         parser = self.parsers.get(input_str[0])
         if parser is None:
             raise decode_error
-        return parser(input_str, decode_error)
+
+        try:
+            return parser(input_str, decode_error)
+        except Exception:
+            # Last resort: try completing incomplete JSON
+            fixed_input = self._attempt_json_completion(input_str)
+            if fixed_input != input_str:
+                try:
+                    return json.loads(fixed_input), ""
+                except json.JSONDecodeError:
+                    pass
+            raise decode_error
+
+    def _attempt_json_completion(self, input_str):
+        """Attempt to complete incomplete JSON by adding missing closing braces/brackets."""
+        stripped = input_str.rstrip()
+        if not stripped:
+            return input_str
+
+        # Count unmatched braces and brackets
+        open_braces = stripped.count("{") - stripped.count("}")
+        open_brackets = stripped.count("[") - stripped.count("]")
+
+        # Fix Python boolean values to JSON format
+        completion = stripped.replace(" True", " true").replace(" False", " false")
+
+        # Add missing closing characters
+        completion += "}" * open_braces
+        completion += "]" * open_brackets
+        return completion
 
     def _parse_space(self, input_str, decode_error):
         """Strip leading whitespace and parse again."""
