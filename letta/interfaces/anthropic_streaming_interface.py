@@ -346,6 +346,10 @@ class AnthropicStreamingInterface:
                 self.accumulated_tool_call_args += delta.partial_json
                 current_parsed = self.json_parser.parse(self.accumulated_tool_call_args)
 
+                # Store the corrected JSON back (fixes Python booleans, missing braces, etc)
+                if current_parsed:
+                    self.accumulated_tool_call_args = json.dumps(current_parsed)
+
                 # Start detecting a difference in inner thoughts
                 previous_inner_thoughts = self.previous_parse.get(INNER_THOUGHTS_KWARG, "")
                 current_inner_thoughts = current_parsed.get(INNER_THOUGHTS_KWARG, "")
