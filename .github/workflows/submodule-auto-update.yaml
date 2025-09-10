@@ -119,7 +119,12 @@ jobs:
         if: steps.update-submodule.outputs.should_skip != 'true'
         id: check-tests
         run: |
-          echo "Waiting for tests to complete on branch $TEMP_BRANCH..."
+          echo "Waiting for tests to complete on PR..."
+
+          # Find the PR number
+          BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
+          PR_NUMBER=$(gh pr list --head $BRANCH_NAME --json number --jq '.[0].number')
+          echo "Monitoring PR #$PR_NUMBER"
 
           # Wait up to 45 minutes for tests to complete
           MAX_WAIT=2700  # 45 minutes
@@ -127,33 +132,42 @@ jobs:
           SLEEP_INTERVAL=60  # Check every minute
 
           while [ $WAIT_TIME -lt $MAX_WAIT ]; do
-            echo "Checking test status... (waited ${WAIT_TIME}s)"
+            echo "Checking PR status... (waited ${WAIT_TIME}s)"
 
-            # Get all check runs for the latest commit on our temp branch
-            COMMIT_SHA=$(git rev-parse $TEMP_BRANCH)
+            # Get PR status checks
+            PR_STATUS=$(gh pr view $PR_NUMBER --json statusCheckRollup --jq '.statusCheckRollup')
 
-            # Check status of key workflows
-            WEB_LINT_AND_TEST_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web] Lint and Test")) | .conclusion' | head -1)
-            WEB_E2E_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("End-to-End Tests")) | .conclusion' | head -1)
-            WEB_MIGRATION_API_STABILITY_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Web Migration API Stability")) | .conclusion' | head -1)
-            CLOUD_API_STABILITY_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Stability")) | .conclusion' | head -1)
-            CLOUD_API_INTEGRATION_TESTS_STATUS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/check-runs --jq '.check_runs[] | select(.name | contains("Cloud API Integration Tests")) | .conclusion' | head -1)
+            if [ "$PR_STATUS" = "null" ] || [ "$PR_STATUS" = "[]" ]; then
+              echo "No status checks found yet, waiting..."
+              sleep $SLEEP_INTERVAL
+              WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
+              continue
+            fi
 
-            echo "Test status - E2E: $WEB_E2E_STATUS, Cloud API Stability: $CLOUD_API_STABILITY_STATUS, Cloud API Integration Tests: $CLOUD_API_INTEGRATION_TESTS_STATUS, Web Lint and Test: $WEB_LINT_AND_TEST_STATUS"
-
-            # Check if any tests failed
-            if [[ "$WEB_E2E_STATUS" == "failure" ]] || [[ "$CLOUD_API_STABILITY_STATUS" == "failure" ]] || [[ "$CLOUD_API_INTEGRATION_TESTS_STATUS" == "failure" ]] || [[ "$WEB_LINT_AND_TEST_STATUS" == "failure" ]] || [[ "$WEB_MIGRATION_API_STABILITY_STATUS" == "failure" ]]; then
-              echo "Tests failed! Stopping."
+            # Check if any required checks failed
+            FAILED_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == "FAILURE") | .context')
+            if [ -n "$FAILED_CHECKS" ]; then
+              echo "Tests failed! Failed checks:"
+              echo "$FAILED_CHECKS"
               echo "all_passed=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
-            # Check if all required tests passed
-            if [[ "$WEB_E2E_STATUS" == "success" ]] && [[ "$CLOUD_API_STABILITY_STATUS" == "success" ]] && [[ "$CLOUD_API_INTEGRATION_TESTS_STATUS" == "success" ]] && [[ "$WEB_LINT_AND_TEST_STATUS" == "success" ]] && [[ "$WEB_MIGRATION_API_STABILITY_STATUS" == "success" ]]; then
-              echo "All tests passed!"
-              echo "all_passed=true" >> $GITHUB_OUTPUT
-              exit 0
+            # Check if all checks passed
+            PENDING_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == null or .conclusion == "PENDING" or .conclusion == "IN_PROGRESS") | .context')
+            if [ -z "$PENDING_CHECKS" ]; then
+              SUCCESS_CHECKS=$(echo "$PR_STATUS" | jq -r '.[] | select(.conclusion == "SUCCESS") | .context')
+              if [ -n "$SUCCESS_CHECKS" ]; then
+                echo "All tests passed!"
+                echo "Successful checks:"
+                echo "$SUCCESS_CHECKS"
+                echo "all_passed=true" >> $GITHUB_OUTPUT
+                exit 0
+              fi
             fi
+
+            echo "Tests still running. Pending checks:"
+            echo "$PENDING_CHECKS"
 
             # If tests are still running, wait
             sleep $SLEEP_INTERVAL
@@ -231,7 +245,9 @@ jobs:
           if [ "$PR_NUMBER" != "null" ] && [ -n "$PR_NUMBER" ]; then
             echo "Closing PR #$PR_NUMBER for failed tests"
             gh pr close $PR_NUMBER --comment "🚨 Closing this PR because tests failed or timed out.
+
             Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
+
             Please check the test results and update manually if needed."
 
             # Delete the branch
