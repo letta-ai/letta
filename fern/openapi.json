@@ -1005,6 +1005,61 @@
         }
       }
     },
+    "/v1/tools/mcp/servers/{mcp_server_name}/resync": {
+      "post": {
+        "tags": ["tools"],
+        "summary": "Resync Mcp Server Tools",
+        "description": "Resync tools for an MCP server by:\n1. Fetching current tools from the MCP server\n2. Deleting tools that no longer exist on the server\n3. Updating schemas for existing tools\n4. Adding new tools from the server\n\nReturns a summary of changes made.",
+        "operationId": "resync_mcp_server_tools",
+        "parameters": [
+          {
+            "name": "mcp_server_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mcp Server Name"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}": {
       "post": {
         "tags": ["tools"],
