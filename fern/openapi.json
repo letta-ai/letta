@@ -8863,7 +8863,7 @@
       "get": {
         "tags": ["runs"],
         "summary": "List Run Messages",
-        "description": "Get messages associated with a run with filtering options.\n\nArgs:\n    run_id: ID of the run\n    before: A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_foo, your subsequent call can include before=obj_foo in order to fetch the previous page of the list.\n    after: A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.\n    limit: Maximum number of messages to return\n    order: Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.\n    role: Filter by role (user/assistant/system/tool)\n    return_message_object: Whether to return Message objects or LettaMessage objects\n    user_id: ID of the user making the request\n\nReturns:\n    A list of messages associated with the run. Default is List[LettaMessage].",
+        "description": "Get response messages associated with a run.",
         "operationId": "list_run_messages",
         "parameters": [
           {
@@ -8888,10 +8888,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Cursor for pagination"
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
           },
           {
             "name": "after",
@@ -8906,10 +8906,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
               "title": "After"
             },
-            "description": "Cursor for pagination"
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -8935,30 +8935,13 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": ["asc", "desc"],
               "type": "string",
-              "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
               "default": "asc",
               "title": "Order"
             },
-            "description": "Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order."
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/MessageRole"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by role",
-              "title": "Role"
-            },
-            "description": "Filter by role"
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
           }
         ],
         "responses": {
@@ -9804,9 +9787,9 @@
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
-        "summary": "Create Messages Batch",
+        "summary": "Create Batch Run",
         "description": "Submit a batch of agent messages for asynchronous processing.\nCreates a job that will fan out messages to all listed agents and process them in parallel.",
-        "operationId": "create_messages_batch",
+        "operationId": "create_batch_run",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9921,7 +9904,7 @@
       "get": {
         "tags": ["messages"],
         "summary": "List Batch Messages",
-        "description": "Get messages for a specific batch job.\n\nReturns messages associated with the batch in chronological order.\n\nPagination:\n- For the first page, omit the cursor parameter\n- For subsequent pages, use the ID of the last message from the previous response as the cursor\n- Results will include messages before/after the cursor based on sort_descending",
+        "description": "Get response messages for a specific batch job.",
         "operationId": "list_batch_messages",
         "parameters": [
           {
@@ -9934,19 +9917,7 @@
             }
           },
           {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "description": "Maximum number of messages to return",
-              "default": 100,
-              "title": "Limit"
-            },
-            "description": "Maximum number of messages to return"
-          },
-          {
-            "name": "cursor",
+            "name": "before",
             "in": "query",
             "required": false,
             "schema": {
@@ -9958,10 +9929,60 @@
                   "type": "null"
                 }
               ],
-              "description": "Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending.",
-              "title": "Cursor"
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
+              "title": "Before"
             },
-            "description": "Message ID to use as pagination cursor (get messages before/after this ID) depending on sort_descending."
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
           },
           {
             "name": "agent_id",
@@ -9980,18 +10001,6 @@
               "title": "Agent Id"
             },
             "description": "Filter messages by agent ID"
-          },
-          {
-            "name": "sort_descending",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "Sort messages by creation time (true=newest first)",
-              "default": true,
-              "title": "Sort Descending"
-            },
-            "description": "Sort messages by creation time (true=newest first)"
           }
         ],
         "responses": {
