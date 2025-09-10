@@ -72,7 +72,31 @@ jobs:
           echo "new_sha=$TARGET_SHA" >> $GITHUB_OUTPUT
           echo "should_skip=false" >> $GITHUB_OUTPUT
 
-      - name: Commit submodule update to temporary branch
+      - name: Install just
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin
+
+      - name: Setup Node.js
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        run: |
+          npm install
+
+      - name: Run stage-api and publish-api
+        if: steps.update-submodule.outputs.should_skip != 'true'
+        run: |
+          echo "Running stage-api..."
+          just stage-api
+          echo "Running publish-api..."
+          just publish-api
+
+      - name: Commit submodule update and API changes to temporary branch
         if: steps.update-submodule.outputs.should_skip != 'true'
         run: |
           # Create a temporary branch for testing
@@ -80,8 +104,21 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git checkout -b $BRANCH_NAME
+
+          # Add submodule changes
           git add apps/core
           git commit -m "chore: update letta core submodule to ${{ steps.update-submodule.outputs.new_sha }}"
+
+          # Check for API changes and commit them too
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "API changes detected, adding to the same PR..."
+            git add -A
+            git commit -m "chore: update API artifacts following submodule update\n\n
+            🤖 Automatically generated API updates"
+          else
+            echo "No API changes detected"
+          fi
+
           git push origin $BRANCH_NAME
           echo "TEMP_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
 
