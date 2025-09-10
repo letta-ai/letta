@@ -26,6 +26,11 @@ jobs:
       new_sha: ${{ steps.update-submodule.outputs.new_sha }}
       tests_passed: ${{ steps.check-tests.outputs.all_passed }}
     steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          activate-environment: true
+
       - name: Generate GitHub App Token
         id: app-token
         uses: actions/create-github-app-token@v1
