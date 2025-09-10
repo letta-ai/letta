@@ -415,14 +415,19 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         // if the run wasn't created in background mode, skip the error
         // if the run can't be found, skip
         if (isBackgroundModeEnabled) {
-          if (currentRunId && body?.details?.detail) {
+          const agentRuns = getAgentRuns();
+          const runId = agentRuns?.runId;
+
+          if (runId && body?.details?.detail) {
             const errorMessagesByBackgroundMode = new Set([
               '400: Run was not created in background mode, so it cannot be retrieved.',
               '404: Run not found',
             ]);
 
             if (errorMessagesByBackgroundMode.has(body.details.detail)) {
-              removeRunIdFromBackgroundMode(currentRunId);
+              setIsPending(false);
+
+              removeRunIdFromBackgroundMode(runId);
               return;
             }
           }
@@ -530,6 +535,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
       setIsPending,
       updateNetworkRequest,
       options,
+      getAgentRuns,
     ],
   );
 
@@ -571,8 +577,6 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
           // no-op, errors are handled in the main sendMessage flow
         },
       });
-
-      setIsPending(true);
     },
     [baseUrl, password, getAgentRuns, handleStreamResponse, setIsPending],
   );
