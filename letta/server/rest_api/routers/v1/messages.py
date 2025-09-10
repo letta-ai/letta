@@ -25,9 +25,9 @@ logger = get_logger(__name__)
 @router.post(
     "/batches",
     response_model=BatchJob,
-    operation_id="create_messages_batch",
+    operation_id="create_batch_run",
 )
-async def create_messages_batch(
+async def create_batch_run(
     request: Request,
     payload: CreateBatch = Body(..., description="Messages and config for all agents"),
     server: SyncServer = Depends(get_letta_server),
