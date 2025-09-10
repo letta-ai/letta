@@ -13,6 +13,7 @@ from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.settings import settings
+from letta.utils import safe_create_task
 
 
 class LettaLLMStreamAdapter(LettaLLMAdapter):
@@ -141,7 +142,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
         if step_id is None or actor is None or not settings.track_provider_trace:
             return
 
-        asyncio.create_task(
+        safe_create_task(
             self.telemetry_manager.create_provider_trace_async(
                 actor=actor,
                 provider_trace_create=ProviderTraceCreate(
@@ -165,5 +166,6 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                     step_id=step_id,  # Use original step_id for telemetry
                     organization_id=actor.organization_id,
                 ),
-            )
+            ),
+            label="create_provider_trace",
         )

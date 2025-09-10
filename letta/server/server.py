@@ -109,7 +109,7 @@ from letta.services.tool_manager import ToolManager
 from letta.services.user_manager import UserManager
 from letta.settings import DatabaseChoice, model_settings, settings, tool_settings
 from letta.streaming_interface import AgentChunkStreamingInterface
-from letta.utils import get_friendly_error_msg, get_persona_text, make_key
+from letta.utils import get_friendly_error_msg, get_persona_text, make_key, safe_create_task
 
 config = LettaConfig.load()
 logger = get_logger(__name__)
@@ -2248,7 +2248,7 @@ class SyncServer(Server):
 
             # Offload the synchronous message_func to a separate thread
             streaming_interface.stream_start()
-            task = asyncio.create_task(
+            task = safe_create_task(
                 asyncio.to_thread(
                     self.send_messages,
                     actor=actor,
@@ -2256,7 +2256,8 @@ class SyncServer(Server):
                     input_messages=input_messages,
                     interface=streaming_interface,
                     metadata=metadata,
-                )
+                ),
+                label="send_messages_thread",
             )
 
             if stream_steps:
@@ -2363,13 +2364,14 @@ class SyncServer(Server):
             streaming_interface.metadata = metadata
 
         streaming_interface.stream_start()
-        task = asyncio.create_task(
+        task = safe_create_task(
             asyncio.to_thread(
                 letta_multi_agent.step,
                 input_messages=input_messages,
                 chaining=self.chaining,
                 max_chaining_steps=self.max_chaining_steps,
-            )
+            ),
+            label="multi_agent_step_thread",
         )
 
         if stream_steps:
