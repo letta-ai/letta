@@ -12,7 +12,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
+from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent import LettaAgent
+from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
@@ -1144,7 +1146,9 @@ async def send_message(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent = await server.agent_manager.get_agent_by_id_async(
+        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+    )
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",
@@ -1190,42 +1194,11 @@ async def send_message(
 
     try:
         if agent_eligible and model_compatible:
-            if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-                agent_loop = SleeptimeMultiAgentV2(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    passage_manager=server.passage_manager,
-                    group_manager=server.group_manager,
-                    job_manager=server.job_manager,
-                    actor=actor,
-                    group=agent.multi_agent_group,
-                    current_run_id=run.id if run else None,
-                )
-            else:
-                agent_loop = LettaAgent(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    job_manager=server.job_manager,
-                    passage_manager=server.passage_manager,
-                    actor=actor,
-                    step_manager=server.step_manager,
-                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    current_run_id=run.id if run else None,
-                    # summarizer settings to be added here
-                    summarizer_mode=(
-                        SummarizationMode.STATIC_MESSAGE_BUFFER
-                        if agent.agent_type == AgentType.voice_convo_agent
-                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
-                    ),
-                )
-
+            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
             result = await agent_loop.step(
                 request.messages,
                 max_steps=request.max_steps,
+                run_id=run.id if run else None,
                 use_assistant_message=request.use_assistant_message,
                 request_start_timestamp_ns=request_start_timestamp_ns,
                 include_return_message_types=request.include_return_message_types,
@@ -1299,7 +1272,9 @@ async def send_message_streaming(
 
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     # TODO: This is redundant, remove soon
-    agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+    agent = await server.agent_manager.get_agent_by_id_async(
+        agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+    )
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
         "anthropic",
@@ -1344,57 +1319,16 @@ async def send_message_streaming(
 
     try:
         if agent_eligible and model_compatible:
-            if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-                agent_loop = SleeptimeMultiAgentV2(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    passage_manager=server.passage_manager,
-                    group_manager=server.group_manager,
-                    job_manager=server.job_manager,
-                    actor=actor,
-                    step_manager=server.step_manager,
-                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    group=agent.multi_agent_group,
-                    current_run_id=run.id if run else None,
-                )
-            else:
-                agent_loop = LettaAgent(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    job_manager=server.job_manager,
-                    passage_manager=server.passage_manager,
-                    actor=actor,
-                    step_manager=server.step_manager,
-                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    current_run_id=run.id if run else None,
-                    # summarizer settings to be added here
-                    summarizer_mode=(
-                        SummarizationMode.STATIC_MESSAGE_BUFFER
-                        if agent.agent_type == AgentType.voice_convo_agent
-                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
-                    ),
-                )
-
-            if request.stream_tokens and model_compatible_token_streaming:
-                raw_stream = agent_loop.step_stream(
-                    input_messages=request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
-            else:
-                raw_stream = agent_loop.step_stream_no_tokens(
-                    request.messages,
-                    max_steps=request.max_steps,
-                    use_assistant_message=request.use_assistant_message,
-                    request_start_timestamp_ns=request_start_timestamp_ns,
-                    include_return_message_types=request.include_return_message_types,
-                )
+            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+            raw_stream = agent_loop.stream(
+                input_messages=request.messages,
+                max_steps=request.max_steps,
+                stream_tokens=request.stream_tokens and model_compatible_token_streaming,
+                run_id=run.id if run else None,
+                use_assistant_message=request.use_assistant_message,
+                request_start_timestamp_ns=request_start_timestamp_ns,
+                include_return_message_types=request.include_return_message_types,
+            )
 
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
@@ -1568,7 +1502,9 @@ async def _process_message_background(
     """Background task to process the message and update job status."""
     request_start_timestamp_ns = get_utc_timestamp_ns()
     try:
-        agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
+        agent = await server.agent_manager.get_agent_by_id_async(
+            agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
+        )
         agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
         model_compatible = agent.llm_config.model_endpoint_type in [
             "anthropic",
@@ -1584,37 +1520,7 @@ async def _process_message_background(
             "deepseek",
         ]
         if agent_eligible and model_compatible:
-            if agent.enable_sleeptime and agent.agent_type != AgentType.voice_convo_agent:
-                agent_loop = SleeptimeMultiAgentV2(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    passage_manager=server.passage_manager,
-                    group_manager=server.group_manager,
-                    job_manager=server.job_manager,
-                    actor=actor,
-                    group=agent.multi_agent_group,
-                )
-            else:
-                agent_loop = LettaAgent(
-                    agent_id=agent_id,
-                    message_manager=server.message_manager,
-                    agent_manager=server.agent_manager,
-                    block_manager=server.block_manager,
-                    job_manager=server.job_manager,
-                    passage_manager=server.passage_manager,
-                    actor=actor,
-                    step_manager=server.step_manager,
-                    telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                    # summarizer settings to be added here
-                    summarizer_mode=(
-                        SummarizationMode.STATIC_MESSAGE_BUFFER
-                        if agent.agent_type == AgentType.voice_convo_agent
-                        else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
-                    ),
-                )
-
+            agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
             result = await agent_loop.step(
                 messages,
                 max_steps=max_steps,
@@ -1816,38 +1722,10 @@ async def preview_raw_payload(
     ]
 
     if agent_eligible and model_compatible:
-        if agent.enable_sleeptime:
-            # TODO: @caren need to support this for sleeptime
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payload inspection is not supported for agents with sleeptime enabled.",
-            )
-        else:
-            agent_loop = LettaAgent(
-                agent_id=agent_id,
-                message_manager=server.message_manager,
-                agent_manager=server.agent_manager,
-                block_manager=server.block_manager,
-                job_manager=server.job_manager,
-                passage_manager=server.passage_manager,
-                actor=actor,
-                step_manager=server.step_manager,
-                telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-                summarizer_mode=(
-                    SummarizationMode.STATIC_MESSAGE_BUFFER
-                    if agent.agent_type == AgentType.voice_convo_agent
-                    else SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER
-                ),
-            )
-
-        # TODO: Support step_streaming
-        return await agent_loop.step(
+        agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
+        return await agent_loop.build_request(
             input_messages=request.messages,
-            use_assistant_message=request.use_assistant_message,
-            include_return_message_types=request.include_return_message_types,
-            dry_run=True,
         )
-
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1888,19 +1766,14 @@ async def summarize_agent_conversation(
     ]
 
     if agent_eligible and model_compatible:
-        agent = LettaAgent(
-            agent_id=agent_id,
-            message_manager=server.message_manager,
-            agent_manager=server.agent_manager,
-            block_manager=server.block_manager,
-            job_manager=server.job_manager,
-            passage_manager=server.passage_manager,
-            actor=actor,
-            step_manager=server.step_manager,
-            telemetry_manager=server.telemetry_manager if settings.llm_api_logging else NoopTelemetryManager(),
-            message_buffer_min=max_message_length,
+        agent_loop = LettaAgentV2(agent_state=agent, actor=actor)
+        in_context_messages = await server.message_manager.get_messages_by_ids_async(message_ids=agent.message_ids, actor=actor)
+        await agent_loop.summarize_conversation_history(
+            in_context_messages=in_context_messages,
+            new_letta_messages=[],
+            total_tokens=None,
+            force=True,
         )
-        await agent.summarize_conversation_history()
         # Summarization completed, return 204 No Content
     else:
         raise HTTPException(
