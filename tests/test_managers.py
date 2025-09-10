@@ -10931,6 +10931,117 @@ async def test_mcp_server_delete_removes_all_sessions_for_url_and_user(server, d
     assert await server.mcp_manager.get_oauth_session_by_id(orphaned.id, actor=default_user) is None
 
 
+@pytest.mark.asyncio
+async def test_mcp_server_resync_tools(server, default_user, default_organization):
+    """Test that resyncing MCP server tools correctly handles added, deleted, and updated tools."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from letta.functions.mcp_client.types import MCPTool, MCPToolHealth
+    from letta.schemas.mcp import MCPServer as PydanticMCPServer, MCPServerType
+    from letta.schemas.tool import ToolCreate
+
+    # Create MCP server
+    mcp_server = await server.mcp_manager.create_mcp_server(
+        PydanticMCPServer(
+            server_name=f"test_resync_{uuid.uuid4().hex[:8]}",
+            server_type=MCPServerType.SSE,
+            server_url="https://test-resync.example.com/mcp",
+            organization_id=default_organization.id,
+        ),
+        actor=default_user,
+    )
+    mcp_server_id = mcp_server.id
+
+    try:
+        # Create initial persisted tools (simulating previously added tools)
+        # Use sync method like in the existing mcp_tool fixture
+        tool1_create = ToolCreate.from_mcp(
+            mcp_server_name=mcp_server.server_name,
+            mcp_tool=MCPTool(
+                name="tool1",
+                description="Tool 1",
+                inputSchema={"type": "object", "properties": {"param1": {"type": "string"}}},
+            ),
+        )
+        tool1 = server.tool_manager.create_or_update_mcp_tool(
+            tool_create=tool1_create,
+            mcp_server_name=mcp_server.server_name,
+            mcp_server_id=mcp_server_id,
+            actor=default_user,
+        )
+
+        tool2_create = ToolCreate.from_mcp(
+            mcp_server_name=mcp_server.server_name,
+            mcp_tool=MCPTool(
+                name="tool2",
+                description="Tool 2 to be deleted",
+                inputSchema={"type": "object", "properties": {"param2": {"type": "number"}}},
+            ),
+        )
+        tool2 = server.tool_manager.create_or_update_mcp_tool(
+            tool_create=tool2_create,
+            mcp_server_name=mcp_server.server_name,
+            mcp_server_id=mcp_server_id,
+            actor=default_user,
+        )
+
+        # Mock the list_mcp_server_tools to return updated tools from server
+        # tool1 is updated, tool2 is deleted, tool3 is added
+        updated_tools = [
+            MCPTool(
+                name="tool1",
+                description="Tool 1 Updated",
+                inputSchema={"type": "object", "properties": {"param1": {"type": "string"}, "param1b": {"type": "boolean"}}},
+                health=MCPToolHealth(status="VALID", reasons=[]),
+            ),
+            MCPTool(
+                name="tool3",
+                description="Tool 3 New",
+                inputSchema={"type": "object", "properties": {"param3": {"type": "array"}}},
+                health=MCPToolHealth(status="VALID", reasons=[]),
+            ),
+        ]
+
+        with patch.object(server.mcp_manager, "list_mcp_server_tools", new_callable=AsyncMock) as mock_list_tools:
+            mock_list_tools.return_value = updated_tools
+
+            # Run resync
+            result = await server.mcp_manager.resync_mcp_server_tools(
+                mcp_server_name=mcp_server.server_name,
+                actor=default_user,
+            )
+
+        # Verify the resync result
+        assert len(result.deleted) == 1
+        assert "tool2" in result.deleted
+
+        assert len(result.updated) == 1
+        assert "tool1" in result.updated
+
+        assert len(result.added) == 1
+        assert "tool3" in result.added
+
+        # Verify tool2 was actually deleted
+        try:
+            deleted_tool = server.tool_manager.get_tool_by_id(tool_id=tool2.id, actor=default_user)
+            assert False, "Tool2 should have been deleted"
+        except Exception:
+            pass  # Expected - tool should be deleted
+
+        # Verify tool1 was updated with new schema
+        updated_tool1 = server.tool_manager.get_tool_by_id(tool_id=tool1.id, actor=default_user)
+        assert "param1b" in updated_tool1.json_schema["parameters"]["properties"]
+
+        # Verify tool3 was added
+        tools = await server.tool_manager.list_tools_async(actor=default_user, names=["tool3"])
+        assert len(tools) == 1
+        assert tools[0].name == "tool3"
+
+    finally:
+        # Clean up
+        await server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=default_user)
+
+
 # ======================================================================================================================
 # FileAgent Tests
 # ======================================================================================================================

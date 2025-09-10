@@ -60,6 +60,9 @@ paths:
   /v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}:
     post:
       summary: "Add MCP Tool"
+  /v1/tools/mcp/servers/{mcp_server_name}/resync:
+    post:
+      x-fern-ignore: true
   /v1/tools/mcp/servers/{mcp_server_name}:
     patch:
       summary: "Update MCP Server"
