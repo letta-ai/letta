@@ -82,11 +82,6 @@ export const featureFlags = {
     expiryDate: '9999-99-99',
     flagValue: z.boolean(),
   },
-  TEMPLATES_GRID_VIEW: {
-    description: 'New grid view for recent templates section',
-    expiryDate: '2025-12-01',
-    flagValue: z.boolean(),
-  },
   QUICK_ONBOARDING: {
     description: 'Quick onboarding for new users',
     expiryDate: '2025-08-01',
@@ -169,6 +164,16 @@ export const featureFlags = {
   },
   SLEEPTIME_TEMPLATES: {
     description: 'Enable sleeptime templates',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
+  TEMPLATES_GRID_VIEW: {
+    description: 'Enable templates grid view',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
+  AGENTS_GRID_VIEW: {
+    description: 'Enable agents grid view',
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },

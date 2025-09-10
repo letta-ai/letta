@@ -1304,18 +1304,20 @@
       "description": "使用这些预制模板开始"
     }
   },
-  "projects/(projectSlug)/page": {
-    "RecentAgentsSection": {
-      "title": "最近的智能体",
-      "viewAgent": "查看",
-      "emptyState": {
-        "title": "未部署智能体",
-        "description": "您尚未在此项目中部署任何智能体，从模板创建一个"
-      },
-      "noAgents": "尚无智能体",
-      "createdAt": "更新于{date}",
-      "viewAllAgents": "查看全部"
+  "projects/(projectSlug)/page/RecentAgentsSection": {
+    "title": "最近的智能体",
+    "viewAgent": "查看",
+    "createAgent": "新建智能体",
+    "emptyState": {
+      "title": "未部署智能体",
+      "description": "您尚未在此项目中部署任何智能体，从模板创建一个"
     },
+    "noAgents": "尚无智能体",
+    "createdAt": "更新于{date}",
+    "viewAllAgents": "查看全部",
+    "starterKitTemplate": "入门套件模板"
+  },
+  "projects/(projectSlug)/page": {
     "RecentTemplatesSection": {
       "title": "最近的模板",
       "noDescription": "未提供描述",

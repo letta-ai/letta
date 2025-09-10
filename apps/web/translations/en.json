@@ -1570,19 +1570,21 @@
       "description": "Get started with these pre-made templates"
     }
   },
-  "projects/(projectSlug)/page": {
-    "RecentAgentsSection": {
-      "title": "Recent agents",
-      "viewAgent": "View",
-      "createAgent": "New agent",
-      "emptyState": {
-        "title": "No agents deployed",
-        "description": "You have not deployed any agents in this project yet, create one from a template"
-      },
-      "noAgents": "No agents yet",
-      "createdAt": "Updated at {date}",
-      "viewAllAgents": "View all"
+  "projects/(projectSlug)/page/RecentAgentsSection": {
+    "title": "Recent agents",
+    "viewAgent": "View",
+    "createAgent": "New agent",
+    "emptyState": {
+      "title": "No agents deployed",
+      "description": "You have not deployed any agents in this project yet, create one from a template"
     },
+    "noAgents": "No agents yet",
+    "createdAt": "Updated at {date}",
+    "viewAllAgents": "View all",
+    "starterKitTemplate": "Starter kit",
+    "goToTemplate": "Go to {templateName}"
+  },
+  "projects/(projectSlug)/page": {
     "RecentTemplatesSection": {
       "title": "Recent templates",
       "noDescription": "No description has been provided for this template",
