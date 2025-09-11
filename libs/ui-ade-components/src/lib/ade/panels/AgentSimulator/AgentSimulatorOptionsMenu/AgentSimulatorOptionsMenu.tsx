@@ -8,11 +8,12 @@ import {
   DropdownMenu,
   DropdownMenuItem,
   FormField,
-  FormProvider, HotKey,
+  FormProvider,
+  HotKey,
   HStack,
   toast,
   Typography,
-  useForm
+  useForm,
 } from '@letta-cloud/ui-component-library';
 import { ShareAgentDialog } from '../ShareAgentDialog/ShareAgentDialog';
 import React, { useCallback, useState } from 'react';
@@ -25,8 +26,17 @@ import {
   useAgentsServiceResetMessages,
 } from '@letta-cloud/sdk-core';
 import { useAtom } from 'jotai/index';
-import { adeKeyMap, chatroomRenderModeAtom } from '@letta-cloud/ui-ade-components';
+import {
+  adeKeyMap,
+  chatroomRenderModeAtom,
+} from '@letta-cloud/ui-ade-components';
 import { useHotkeys } from '@mantine/hooks';
+
+const RENDER_MODE = {
+  SIMPLE: 'simple' as const,
+  INTERACTIVE: 'interactive' as const,
+  DEBUG: 'debug' as const,
+};
 
 const AgentResetMessagesSchema = z.object({
   addDefaultInitialMessages: z.boolean(),
@@ -116,69 +126,84 @@ export function AgentSimulatorOptionsMenu() {
   const t = useTranslations('ADE/AgentSimulator.AgentSimulatorOptionsMenu');
   const { isLocal, isTemplate } = useADEState();
 
-  const [renderMode, setRenderMode] = useAtom(chatroomRenderModeAtom)
+  const [renderMode, setRenderMode] = useAtom(chatroomRenderModeAtom);
 
   useHotkeys([
     [
       adeKeyMap.ENABLE_DEBUG_MODE.command,
       () => {
-        setRenderMode(mode => {
-          if (mode === 'debug') {
-            return 'interactive';
+        setRenderMode((mode) => {
+          if (mode === RENDER_MODE.DEBUG) {
+            return RENDER_MODE.INTERACTIVE;
           }
 
-          return 'debug';
+          return RENDER_MODE.DEBUG;
         });
       },
     ],
     [
       adeKeyMap.HIDE_REASONING.command,
       () => {
-        setRenderMode(mode => {
-          if (mode === 'simple') {
-            return 'interactive';
+        setRenderMode((mode) => {
+          if (mode === RENDER_MODE.SIMPLE) {
+            return RENDER_MODE.INTERACTIVE;
           }
 
-          return 'simple';
+          return RENDER_MODE.SIMPLE;
         });
       },
     ],
   ]);
 
-
   return (
-      <DropdownMenu
-        triggerAsChild
-        align="end"
-        trigger={
-          <Button
-            size="xsmall"
-            color="tertiary"
-            preIcon={<DotsHorizontalIcon />}
-            hideLabel
-            label={t('trigger')}
-          />
+    <DropdownMenu
+      triggerAsChild
+      align="end"
+      trigger={
+        <Button
+          size="xsmall"
+          color="tertiary"
+          preIcon={<DotsHorizontalIcon />}
+          hideLabel
+          label={t('trigger')}
+        />
+      }
+    >
+      <AgentResetMessagesDialog />
+      <DropdownMenuItem
+        label={
+          renderMode === RENDER_MODE.DEBUG
+            ? t('options.debugMode.disable')
+            : t('options.debugMode.enable')
         }
-      >
-        <AgentResetMessagesDialog />
+        endBadge={<HotKey command={adeKeyMap.ENABLE_DEBUG_MODE.command} />}
+        onClick={() => {
+          setRenderMode(
+            renderMode === RENDER_MODE.DEBUG
+              ? RENDER_MODE.INTERACTIVE
+              : RENDER_MODE.DEBUG,
+          );
+        }}
+      />
+      {renderMode !== RENDER_MODE.DEBUG && (
         <DropdownMenuItem
-          label={renderMode === 'debug' ? t('options.debugMode.disable') : t('options.debugMode.enable')}
-          endBadge={<HotKey command={adeKeyMap.ENABLE_DEBUG_MODE.command} />}
+          label={
+            renderMode === RENDER_MODE.SIMPLE
+              ? t('options.reasoning.show')
+              : t('options.reasoning.hide')
+          }
+          endBadge={<HotKey command={adeKeyMap.HIDE_REASONING.command} />}
           onClick={() => {
-            setRenderMode('debug');
+            setRenderMode(
+              renderMode === RENDER_MODE.SIMPLE
+                ? RENDER_MODE.INTERACTIVE
+                : RENDER_MODE.SIMPLE,
+            );
           }}
         />
-        {renderMode !== 'debug' && (
-          <DropdownMenuItem
-            label={renderMode === 'simple' ? t('options.reasoning.show') : t('options.reasoning.hide')}
-            endBadge={<HotKey command={adeKeyMap.HIDE_REASONING.command} />}
-            onClick={() => {
-              setRenderMode('simple');
-            }}
-          />
-        )}
+      )}
 
-        {!isLocal && !isTemplate && <ShareAgentDialog />}
-      </DropdownMenu>
+      {!isLocal && !isTemplate && <ShareAgentDialog />}
+    </DropdownMenu>
   );
 }
