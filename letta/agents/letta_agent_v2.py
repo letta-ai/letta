@@ -311,12 +311,19 @@ class LettaAgentV2(BaseAgentV2):
             raise
 
         if run_id:
-            result = LettaResponse(messages=self.response_messages, stop_reason=self.stop_reason, usage=self.usage)
+            letta_messages = Message.to_letta_messages_from_list(
+                self.response_messages,
+                use_assistant_message=use_assistant_message,
+                reverse=False,
+            )
+            result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
             if self.job_update_metadata is None:
                 self.job_update_metadata = {}
             self.job_update_metadata["result"] = result.model_dump(mode="json")
 
-        await self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns)
+        await self._request_checkpoint_finish(
+            request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
+        )
         for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
             yield f"data: {finish_chunk}\n\n"
 
