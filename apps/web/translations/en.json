@@ -36,7 +36,8 @@
     },
     "agentUsage": {
       "label": "Active agents",
-      "tooltip": "This is the running count of agents that you have chatted with in the last billing period. This does not include agents that have not been communicated with anyone in the last billing period."
+      "tooltipLabel": "How can I delete active agents?",
+      "tooltip": "Active agents counts are reset every billing period. An active agent is an agent that has been chatted with in the last billing period, deleting an agent will not reduce this count. This does not include agents that have not been communicated with anyone in the last billing period."
     },
     "resetDate": "Your limits will reset on {date}"
   },

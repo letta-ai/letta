@@ -15,6 +15,7 @@ interface QuotaBlockProps {
   testId?: string;
   tooltip?: string;
   footer?: React.ReactNode;
+  badge?: React.ReactNode
 }
 
 function QuotaContentRender(props: QuotaBlockProps) {
@@ -33,6 +34,7 @@ export function QuotaBlock(props: QuotaBlockProps) {
     footer,
     label,
     testId,
+    badge,
     tooltip,
     type = 'progress',
   } = props;
@@ -43,6 +45,7 @@ export function QuotaBlock(props: QuotaBlockProps) {
     <VStack color="background-grey" padding>
       <HStack gap="small" align="center">
         <Typography bold>{label}</Typography>
+        {badge}
         {tooltip && <InfoTooltip text={tooltip} />}
       </HStack>
       <HStack align="center">

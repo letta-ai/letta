@@ -12,7 +12,7 @@ import {
   Typography,
   VStack,
   Spinner,
-  LoadingEmptyStatusComponent,
+  LoadingEmptyStatusComponent, InfoIcon, Tooltip
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
@@ -200,7 +200,16 @@ export function CustomerQuotaView() {
         <HR />
         <QuotaBlock
           testId="agent-usage"
-          tooltip={t('agentUsage.tooltip')}
+          badge={(
+            <Tooltip asChild content={t('agentUsage.tooltip')}>
+              <Button
+                color="tertiary"
+                size="3xsmall"
+                postIcon={<InfoIcon />}
+                label={t('agentUsage.tooltipLabel')}
+              />
+            </Tooltip>
+          )}
           max={limits.agents}
           value={quotaData.body.agents}
           label={t('agentUsage.label')}
