@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.base import Base
@@ -13,7 +13,10 @@ class ArchivesAgents(Base):
 
     # TODO: Remove this unique constraint when we support multiple archives per agent
     # For now, each agent can only have one archive
-    __table_args__ = (UniqueConstraint("agent_id", name="unique_agent_archive"),)
+    __table_args__ = (
+        UniqueConstraint("agent_id", name="unique_agent_archive"),
+        Index("ix_archives_agents_agent_id", "agent_id"),
+    )
 
     agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), primary_key=True)
     archive_id: Mapped[str] = mapped_column(String, ForeignKey("archives.id", ondelete="CASCADE"), primary_key=True)
