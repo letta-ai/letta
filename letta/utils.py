@@ -1125,6 +1125,39 @@ def safe_create_task(coro, label: str = "background task"):
     return task
 
 
+def safe_create_shielded_task(coro, label: str = "shielded background task"):
+    """
+    Create a shielded background task that cannot be cancelled externally.
+
+    This is useful for critical operations that must complete even if the
+    parent operation is cancelled. The task is internally shielded but the
+    returned task can still have callbacks added to it.
+    """
+
+    async def shielded_wrapper():
+        try:
+            # Shield the original coroutine to prevent cancellation
+            result = await asyncio.shield(coro)
+            return result
+        except Exception as e:
+            logger.exception(f"{label} failed with {type(e).__name__}: {e}")
+            raise
+
+    # Create the task with the shielded wrapper
+    task = asyncio.create_task(shielded_wrapper())
+
+    # Add task to the set to maintain strong reference
+    _background_tasks.add(task)
+
+    # Log task count to trace
+    log_attributes({"total_background_task_count": get_background_task_count()})
+
+    # Remove task from set when done to prevent memory leaks
+    task.add_done_callback(_background_tasks.discard)
+
+    return task
+
+
 def safe_create_file_processing_task(coro, file_metadata, server, actor, logger: Logger, label: str = "file processing task"):
     """
     Create a task for file processing that updates file status on failure.
