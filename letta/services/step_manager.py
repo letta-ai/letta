@@ -121,8 +121,6 @@ class StepManager:
         if stop_reason:
             step_data["stop_reason"] = stop_reason.stop_reason
         with db_registry.session() as session:
-            if job_id:
-                self._verify_job_access(session, job_id, actor, access=["write"])
             new_step = StepModel(**step_data)
             new_step.create(session)
             return new_step.to_pydantic()
@@ -438,63 +436,6 @@ class StepManager:
             metrics = StepMetricsModel(**metrics_data)
             await metrics.create_async(session)
             return metrics.to_pydantic()
-
-    def _verify_job_access(
-        self,
-        session: Session,
-        job_id: str,
-        actor: PydanticUser,
-        access: List[Literal["read", "write", "delete"]] = ["read"],
-    ) -> JobModel:
-        """
-        Verify that a job exists and the user has the required access.
-
-        Args:
-            session: The database session
-            job_id: The ID of the job to verify
-            actor: The user making the request
-
-        Returns:
-            The job if it exists and the user has access
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        job = session.execute(job_query).scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
-
-    @staticmethod
-    async def _verify_job_access_async(
-        session: AsyncSession,
-        job_id: str,
-        actor: PydanticUser,
-        access: List[Literal["read", "write", "delete"]] = ["read"],
-    ) -> JobModel:
-        """
-        Verify that a job exists and the user has the required access asynchronously.
-
-        Args:
-            session: The async database session
-            job_id: The ID of the job to verify
-            actor: The user making the request
-
-        Returns:
-            The job if it exists and the user has access
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        result = await session.execute(job_query)
-        job = result.scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
 
 
 # noinspection PyTypeChecker
