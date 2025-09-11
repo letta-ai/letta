@@ -24,7 +24,7 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
-from letta.streaming_utils import JSONInnerThoughtsExtractor
+from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
 from letta.utils import count_tokens
 
 logger = get_logger(__name__)
@@ -53,6 +53,8 @@ class OpenAIStreamingInterface:
 
         self.optimistic_json_parser: OptimisticJSONParser = OptimisticJSONParser()
         self.function_args_reader = JSONInnerThoughtsExtractor(wait_for_first_key=put_inner_thoughts_in_kwarg)
+        # Reader that extracts only the assistant message value from send_message args
+        self.assistant_message_json_reader = FunctionArgumentsStreamHandler(json_key=self.assistant_message_tool_kwarg)
         self.function_name_buffer = None
         self.function_args_buffer = None
         self.function_id_buffer = None
@@ -274,6 +276,8 @@ class OpenAIStreamingInterface:
                                 # Store the ID of the tool call so allow skipping the corresponding response
                                 if self.function_id_buffer:
                                     self.prev_assistant_message_id = self.function_id_buffer
+                                # Reset message reader at the start of a new send_message stream
+                                self.assistant_message_json_reader.reset()
 
                             else:
                                 if prev_message_type and prev_message_type != "tool_call_message":
@@ -328,39 +332,15 @@ class OpenAIStreamingInterface:
                                 self.last_flushed_function_name is not None
                                 and self.last_flushed_function_name == self.assistant_message_tool_name
                             ):
-                                # do an additional parse on the updates_main_json
-                                if self.function_args_buffer:
-                                    updates_main_json = self.function_args_buffer + updates_main_json
-                                    self.function_args_buffer = None
-
-                                    # Pretty gross hardcoding that assumes that if we're toggling into the keywords, we have the full prefix
-                                    match_str = '{"' + self.assistant_message_tool_kwarg + '":"'
-                                    if updates_main_json == match_str:
-                                        updates_main_json = None
-
-                                else:
-                                    # Some hardcoding to strip off the trailing "}"
-                                    if updates_main_json in ["}", '"}']:
-                                        updates_main_json = None
-                                    if updates_main_json and len(updates_main_json) > 0 and updates_main_json[-1:] == '"':
-                                        updates_main_json = updates_main_json[:-1]
-
-                                if not updates_main_json:
-                                    # early exit to turn into content mode
-                                    pass
-
-                                # There may be a buffer from a previous chunk, for example
-                                # if the previous chunk had arguments but we needed to flush name
-                                if self.function_args_buffer:
-                                    # In this case, we should release the buffer + new data at once
-                                    combined_chunk = self.function_args_buffer + updates_main_json
-
+                                # Minimal, robust extraction: only emit the value of "message"
+                                extracted = self.assistant_message_json_reader.process_json_chunk(tool_call.function.arguments)
+                                if extracted:
                                     if prev_message_type and prev_message_type != "assistant_message":
                                         message_index += 1
                                     assistant_message = AssistantMessage(
                                         id=self.letta_message_id,
                                         date=datetime.now(timezone.utc),
-                                        content=combined_chunk,
+                                        content=extracted,
                                         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                                     )
                                     prev_message_type = assistant_message.message_type
@@ -368,51 +348,6 @@ class OpenAIStreamingInterface:
                                     # Store the ID of the tool call so allow skipping the corresponding response
                                     if self.function_id_buffer:
                                         self.prev_assistant_message_id = self.function_id_buffer
-                                    # clear buffer
-                                    self.function_args_buffer = None
-                                    self.function_id_buffer = None
-
-                                else:
-                                    # If there's no buffer to clear, just output a new chunk with new data
-                                    # TODO: THIS IS HORRIBLE
-                                    # TODO: WE USE THE OLD JSON PARSER EARLIER (WHICH DOES NOTHING) AND NOW THE NEW JSON PARSER
-                                    # TODO: THIS IS TOTALLY WRONG AND BAD, BUT SAVING FOR A LARGER REWRITE IN THE NEAR FUTURE
-                                    parsed_args = self.optimistic_json_parser.parse(self.current_function_arguments)
-
-                                    if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
-                                        self.assistant_message_tool_kwarg
-                                    ) != self.current_json_parse_result.get(self.assistant_message_tool_kwarg):
-                                        new_content = parsed_args.get(self.assistant_message_tool_kwarg)
-                                        prev_content = self.current_json_parse_result.get(self.assistant_message_tool_kwarg, "")
-                                        # TODO: Assumes consistent state and that prev_content is subset of new_content
-                                        diff = new_content.replace(prev_content, "", 1)
-
-                                        # quick patch to mitigate double message streaming error
-                                        # TODO: root cause this issue and remove patch
-                                        if diff != "" and "\\n" not in new_content:
-                                            converted_new_content = new_content.replace("\n", "\\n")
-                                            converted_content_diff = converted_new_content.replace(prev_content, "", 1)
-                                            if converted_content_diff == "":
-                                                diff = converted_content_diff
-
-                                        self.current_json_parse_result = parsed_args
-                                        if prev_message_type and prev_message_type != "assistant_message":
-                                            message_index += 1
-                                        assistant_message = AssistantMessage(
-                                            id=self.letta_message_id,
-                                            date=datetime.now(timezone.utc),
-                                            content=diff,
-                                            # name=name,
-                                            otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                                        )
-                                        prev_message_type = assistant_message.message_type
-                                        yield assistant_message
-
-                                    # Store the ID of the tool call so allow skipping the corresponding response
-                                    if self.function_id_buffer:
-                                        self.prev_assistant_message_id = self.function_id_buffer
-                                    # clear buffers
-                                    self.function_id_buffer = None
                             else:
                                 # There may be a buffer from a previous chunk, for example
                                 # if the previous chunk had arguments but we needed to flush name
