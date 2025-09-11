@@ -136,6 +136,7 @@ jobs:
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+          LETTA_SQLALCHEMY_TRACING: ${{ vars.LETTA_SQLALCHEMY_TRACING }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 

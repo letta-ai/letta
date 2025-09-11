@@ -125,6 +125,7 @@ jobs:
           LETTA_PG_HOST: 10.119.0.3
           LETTA_PG_PORT: ${{ vars.LETTA_PG_PORT }}
           LETTA_DISABLE_SQLALCHEMY_POOLING: true
+          LETTA_SQLALCHEMY_TRACING: ${{ vars.LETTA_SQLALCHEMY_TRACING }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}

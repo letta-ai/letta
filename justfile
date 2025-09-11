@@ -233,6 +233,7 @@ describe-web:
         --set secrets.LETTA_TRACK_LAST_AGENT_RUN=true \
         --set secrets.LETTA_TRACK_ERRORED_MESSAGES=true \
         --set secrets.LETTA_TELEMETRY_PROFILER=true \
+        --set secrets.LETTA_SQLALCHEMY_TRACING=${LETTA_SQLALCHEMY_TRACING} \
         --set secrets.EXA_API_KEY=${EXA_API_KEY} \
         --set secrets.LETTA_PINECONE_API_KEY=${LETTA_PINECONE_API_KEY} \
         --set secrets.LETTA_ENABLE_PINECONE=${LETTA_ENABLE_PINECONE} \
