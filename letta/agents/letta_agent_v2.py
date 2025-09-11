@@ -303,7 +303,7 @@ class LettaAgentV2(BaseAgentV2):
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
             raise
 
-        self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns)
+        await self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns)
         for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
             yield f"data: {finish_chunk}\n\n"
 
