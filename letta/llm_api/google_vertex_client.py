@@ -67,6 +67,7 @@ class GoogleVertexClient(LLMClientBase):
         # https://github.com/googleapis/python-aiplatform/issues/4472
         retry_count = 1
         should_retry = True
+        response_data = None
         while should_retry and retry_count <= self.MAX_RETRIES:
             try:
                 response = await client.aio.models.generate_content(
@@ -79,6 +80,8 @@ class GoogleVertexClient(LLMClientBase):
                 if e.code == 503 or e.code == 500:
                     logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
                     retry_count += 1
+                    if retry_count > self.MAX_RETRIES:
+                        raise e
                     continue
                 raise e
             except Exception as e:
@@ -114,6 +117,8 @@ class GoogleVertexClient(LLMClientBase):
             should_retry = is_malformed_function_call
             retry_count += 1
 
+        if response_data is None:
+            raise RuntimeError("Failed to get response data after all retries")
         return response_data
 
     @staticmethod
