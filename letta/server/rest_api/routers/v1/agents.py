@@ -60,7 +60,7 @@ from letta.server.server import SyncServer
 from letta.services.summarizer.enums import SummarizationMode
 from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
-from letta.utils import safe_create_task, truncate_file_visible_content
+from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 
 # These can be forward refs, but because Fastapi needs them at runtime the must be imported normally
 
@@ -1609,8 +1609,8 @@ async def send_message_async(
     )
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
-    # Create asyncio task for background processing
-    task = safe_create_task(
+    # Create asyncio task for background processing (shielded to prevent cancellation)
+    task = safe_create_shielded_task(
         _process_message_background(
             run_id=run.id,
             server=server,
@@ -1630,19 +1630,9 @@ async def send_message_async(
         try:
             t.result()
         except asyncio.CancelledError:
-            logger.error(f"Background task for run {run.id} was cancelled")
-            safe_create_task(
-                server.job_manager.update_job_by_id_async(
-                    job_id=run.id,
-                    job_update=JobUpdate(
-                        status=JobStatus.failed,
-                        completed_at=datetime.now(timezone.utc),
-                        metadata={"error": "Task was cancelled"},
-                    ),
-                    actor=actor,
-                ),
-                label=f"update_cancelled_job_{run.id}",
-            )
+            # Note: With shielded tasks, cancellation attempts don't actually stop the task
+            logger.info(f"Cancellation attempted on shielded background task for run {run.id}, but task continues running")
+            # Don't mark as failed since the shielded task is still running
         except Exception as e:
             logger.error(f"Unhandled exception in background task for run {run.id}: {e}")
             safe_create_task(
