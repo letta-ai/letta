@@ -28,6 +28,7 @@ class Run(RunBase):
 
     id: str = RunBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the run.")
+    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the run.")
     request_config: Optional[LettaRequestConfig] = Field(None, description="The request configuration for the run.")
 
     @classmethod

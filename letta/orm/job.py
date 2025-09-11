@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import JSON, BigInteger, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from letta.orm.mixins import UserMixin
+from letta.orm.mixins import OrganizationMixin, UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from letta.orm.user import User
 
 
-class Job(SqlalchemyBase, UserMixin):
+class Job(SqlalchemyBase, OrganizationMixin, UserMixin):
     """Jobs run in the background and are owned by a user.
     Typical jobs involve loading and processing sources etc.
     """
