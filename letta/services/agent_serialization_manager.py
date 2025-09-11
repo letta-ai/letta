@@ -53,7 +53,7 @@ from letta.services.message_manager import MessageManager
 from letta.services.source_manager import SourceManager
 from letta.services.tool_manager import ToolManager
 from letta.settings import settings
-from letta.utils import get_latest_alembic_revision
+from letta.utils import get_latest_alembic_revision, safe_create_task
 
 logger = get_logger(__name__)
 
@@ -622,10 +622,11 @@ class AgentSerializationManager:
 
                         # Create background task for file processing
                         # TODO: This can be moved to celery or RQ or something
-                        task = asyncio.create_task(
+                        task = safe_create_task(
                             self._process_file_async(
                                 file_metadata=file_metadata, source_id=source_db_id, file_processor=file_processor, actor=actor
-                            )
+                            ),
+                            label=f"process_file_{file_metadata.file_name}",
                         )
                         background_tasks.append(task)
                         logger.info(f"Started background processing for file {file_metadata.file_name} (ID: {file_db_id})")

@@ -16,6 +16,7 @@ from letta.log import get_logger
 from letta.schemas.tool import ToolUpdate
 from letta.services.tool_manager import ToolManager
 from letta.services.tool_sandbox.modal_constants import CACHE_TTL_SECONDS, DEFAULT_CONFIG_KEY, MODAL_DEPLOYMENTS_KEY
+from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
@@ -197,7 +198,7 @@ class ModalVersionManager:
         if deployment_key in self._deployments_in_progress:
             self._deployments_in_progress[deployment_key].set()
             # Clean up after a short delay to allow waiters to wake up
-            asyncio.create_task(self._cleanup_deployment_marker(deployment_key))
+            safe_create_task(self._cleanup_deployment_marker(deployment_key), label=f"cleanup_deployment_{deployment_key}")
 
     async def _cleanup_deployment_marker(self, deployment_key: str):
         """Clean up deployment marker after a delay."""

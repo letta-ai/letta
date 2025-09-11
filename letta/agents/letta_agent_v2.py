@@ -58,7 +58,7 @@ from letta.services.tool_executor.tool_execution_manager import ToolExecutionMan
 from letta.settings import model_settings, settings, summarizer_settings
 from letta.system import package_function_response
 from letta.types import JsonDict
-from letta.utils import log_telemetry, united_diff, validate_function_response
+from letta.utils import log_telemetry, safe_create_task, united_diff, validate_function_response
 
 
 class LettaAgentV2(BaseAgentV2):
@@ -1151,7 +1151,7 @@ class LettaAgentV2(BaseAgentV2):
         step_metrics: StepMetrics,
         run_id: str | None = None,
     ):
-        task = asyncio.create_task(
+        task = safe_create_task(
             self.step_manager.record_step_metrics_async(
                 actor=self.actor,
                 step_id=step_id,
@@ -1163,7 +1163,8 @@ class LettaAgentV2(BaseAgentV2):
                 project_id=self.agent_state.project_id,
                 template_id=self.agent_state.template_id,
                 base_template_id=self.agent_state.base_template_id,
-            )
+            ),
+            label="record_step_metrics",
         )
         return task
 

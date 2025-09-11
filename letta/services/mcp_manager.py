@@ -43,7 +43,7 @@ from letta.services.mcp.stdio_client import AsyncStdioMCPClient
 from letta.services.mcp.streamable_http_client import AsyncStreamableHTTPMCPClient
 from letta.services.tool_manager import ToolManager
 from letta.settings import tool_settings
-from letta.utils import enforce_types, printd
+from letta.utils import enforce_types, printd, safe_create_task
 
 logger = get_logger(__name__)
 
@@ -869,7 +869,7 @@ class MCPManager:
 
             # Run connect_to_server in background to avoid blocking
             # This will trigger the OAuth flow and the redirect_handler will save the authorization URL to database
-            connect_task = asyncio.create_task(temp_client.connect_to_server())
+            connect_task = safe_create_task(temp_client.connect_to_server(), label="mcp_oauth_connect")
 
             # Give the OAuth flow time to trigger and save the URL
             await asyncio.sleep(1.0)
