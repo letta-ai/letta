@@ -166,11 +166,11 @@ jobs:
 
           # Define the required test contexts to monitor (partial matching patterns)
           REQUIRED_TESTS=(
-            "End-to-End Tests"
-            "Cloud API Stability"
-            "Web.*Lint and Test"
-            "cloud-api integration tests"
-            "Migration API Stability"
+            "cypress-run"
+            "cloud-api-test"
+            "main"
+            "cloud-api-integration-tests"
+            "migration-api-stability"
           )
 
           # Find the PR number
