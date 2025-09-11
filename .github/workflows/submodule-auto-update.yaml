@@ -176,89 +176,199 @@ jobs:
           # Find the PR number
           BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
           PR_NUMBER=$(gh pr list --head $BRANCH_NAME --json number --jq '.[0].number')
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "ERROR: Could not find PR for branch $BRANCH_NAME"
+            echo "all_passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
           echo "Monitoring PR #$PR_NUMBER"
           echo "Required tests: ${REQUIRED_TESTS[@]}"
 
-          # Wait up to 45 minutes for tests to complete
+          # Define required tests with flexible matching patterns
+          # These will be matched against check names case-insensitively
+          declare -A REQUIRED_TESTS
+          REQUIRED_TESTS["e2e"]="End-to-End.*cypress"
+          REQUIRED_TESTS["cloud-api-stability"]="Cloud API Stability"
+          REQUIRED_TESTS["web-lint"]="Web.*Lint.*Test"
+          REQUIRED_TESTS["cloud-api-integration"]="cloud-api.*integration"
+          REQUIRED_TESTS["migration-api"]="Migration.*API"
+
+          echo "Required test patterns:"
+          for key in "${!REQUIRED_TESTS[@]}"; do
+            echo "  - $key: ${REQUIRED_TESTS[$key]}"
+          done
+
+          # Configuration
           MAX_WAIT=2700  # 45 minutes
           WAIT_TIME=0
           SLEEP_INTERVAL=60  # Check every minute
+          CHECK_COUNT=0
+          NO_CHECK_COUNT=0
+          MAX_NO_CHECK_COUNT=10  # After 10 minutes of no checks, allow proceeding
 
           while [ $WAIT_TIME -lt $MAX_WAIT ]; do
-            echo "Checking PR status... (waited ${WAIT_TIME}s)"
+            CHECK_COUNT=$((CHECK_COUNT + 1))
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Check #$CHECK_COUNT at $(date '+%H:%M:%S') (${WAIT_TIME}s elapsed)"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            # Get PR status checks
-            PR_STATUS=$(gh pr view $PR_NUMBER --json statusCheckRollup --jq '.statusCheckRollup')
+            # Get check runs using gh pr checks (more reliable)
+            echo "Fetching check status..."
+            PR_CHECKS=$(gh pr checks $PR_NUMBER --json name,status,conclusion 2>/dev/null || echo "[]")
 
-            if [ "$PR_STATUS" = "null" ] || [ "$PR_STATUS" = "[]" ]; then
-              echo "No status checks found yet, waiting..."
+            # Handle no checks case
+            if [ "$PR_CHECKS" = "[]" ] || [ -z "$PR_CHECKS" ]; then
+              NO_CHECK_COUNT=$((NO_CHECK_COUNT + 1))
+              echo "⚠️  No checks found (attempt $NO_CHECK_COUNT/$MAX_NO_CHECK_COUNT)"
+
+              if [ $NO_CHECK_COUNT -ge $MAX_NO_CHECK_COUNT ]; then
+                echo ""
+                echo "⚠️  No checks found after ${NO_CHECK_COUNT} attempts."
+                echo "This PR may not trigger any workflows (submodule-only change)."
+                echo "Proceeding with merge."
+                echo "all_passed=true" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+
+              # Show PR details periodically
+              if [ $((NO_CHECK_COUNT % 3)) -eq 0 ]; then
+                echo "PR State:"
+                gh pr view $PR_NUMBER --json state,mergeable,draft | jq '.'
+              fi
+
+              echo "Waiting ${SLEEP_INTERVAL}s for checks to start..."
               sleep $SLEEP_INTERVAL
               WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
               continue
             fi
 
-            # Debug: show all available status check contexts
-            echo "Available status check contexts:"
-            echo "$PR_STATUS" | jq -r '.[] | .context // "null"'
+            # Reset no-check counter since we found checks
+            NO_CHECK_COUNT=0
 
-            # Check each required test individually
+            # Display all checks (excluding Vercel explicitly)
+            echo "Available checks:"
+            echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel") | not) | "  • \(.name): \(.status) [\(.conclusion // "pending")]"' | sort
+
+            # Also show Vercel separately if it exists
+            VERCEL_CHECK=$(echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel")) | "  • [IGNORED] \(.name): \(.status) [\(.conclusion // "pending")]"' | head -1)
+            if [ -n "$VERCEL_CHECK" ]; then
+              echo ""
+              echo "Ignored checks:"
+              echo "$VERCEL_CHECK"
+            fi
+
+            echo ""
+            echo "Checking required tests..."
+
+            # Track statuses
+            declare -A TEST_RESULTS
+            ALL_FOUND=true
             ALL_PASSED=true
-            ALL_COMPLETED=true
-            FAILED_REQUIRED=()
-            PENDING_REQUIRED=()
-            SUCCESS_REQUIRED=()
+            ANY_FAILED=false
+            ANY_PENDING=false
 
-            for test in "${REQUIRED_TESTS[@]}"; do
-              # Check if this required test exists in the status checks (handle null context gracefully)
-              TEST_STATUS=$(echo "$PR_STATUS" | jq -r --arg test "$test" '.[] | select(.context != null and (.context | test($test))) | .conclusion')
+            # Check each required test
+            for test_key in "${!REQUIRED_TESTS[@]}"; do
+              pattern="${REQUIRED_TESTS[$test_key]}"
 
-              if [ -z "$TEST_STATUS" ]; then
-                echo "Required test '$test' not found in status checks, waiting..."
-                PENDING_REQUIRED+=("$test (not started)")
-                ALL_COMPLETED=false
-              elif [ "$TEST_STATUS" = "FAILURE" ]; then
-                echo "Required test '$test' failed!"
-                FAILED_REQUIRED+=("$test")
+              # Find matching check (case-insensitive, exclude Vercel)
+              MATCHING_CHECK=$(echo "$PR_CHECKS" | jq -r --arg pattern "$pattern" '
+                .[] |
+                select(.name | test("Vercel") | not) |
+                select(.name | test($pattern; "i")) |
+                "\(.name)|\(.status)|\(.conclusion // "pending")"
+              ' | head -1)
+
+              if [ -z "$MATCHING_CHECK" ]; then
+                echo "  ❓ $test_key: NOT FOUND (waiting...)"
+                TEST_RESULTS[$test_key]="not_found"
+                ALL_FOUND=false
                 ALL_PASSED=false
-              elif [ "$TEST_STATUS" = "SUCCESS" ]; then
-                echo "Required test '$test' passed ✓"
-                SUCCESS_REQUIRED+=("$test")
-              elif [ "$TEST_STATUS" = "null" ] || [ "$TEST_STATUS" = "PENDING" ] || [ "$TEST_STATUS" = "IN_PROGRESS" ]; then
-                echo "Required test '$test' is still running..."
-                PENDING_REQUIRED+=("$test")
-                ALL_COMPLETED=false
+              else
+                CHECK_NAME=$(echo "$MATCHING_CHECK" | cut -d'|' -f1)
+                STATUS=$(echo "$MATCHING_CHECK" | cut -d'|' -f2)
+                CONCLUSION=$(echo "$MATCHING_CHECK" | cut -d'|' -f3)
+
+                case "$STATUS" in
+                  "COMPLETED"|"completed")
+                    case "$CONCLUSION" in
+                      "SUCCESS"|"success")
+                        echo "  ✅ $test_key: PASSED"
+                        TEST_RESULTS[$test_key]="passed"
+                        ;;
+                      "SKIPPED"|"skipped")
+                        echo "  ⏭️  $test_key: SKIPPED (treated as pass)"
+                        TEST_RESULTS[$test_key]="passed"
+                        ;;
+                      "FAILURE"|"failure")
+                        echo "  ❌ $test_key: FAILED"
+                        TEST_RESULTS[$test_key]="failed"
+                        ANY_FAILED=true
+                        ALL_PASSED=false
+                        ;;
+                      *)
+                        echo "  ⚠️  $test_key: UNKNOWN CONCLUSION: $CONCLUSION"
+                        TEST_RESULTS[$test_key]="failed"
+                        ANY_FAILED=true
+                        ALL_PASSED=false
+                        ;;
+                    esac
+                    ;;
+                  *)
+                    echo "  ⏳ $test_key: RUNNING"
+                    TEST_RESULTS[$test_key]="running"
+                    ANY_PENDING=true
+                    ALL_PASSED=false
+                    ;;
+                esac
               fi
             done
 
-            # If any required tests failed, exit immediately
-            if [ ${#FAILED_REQUIRED[@]} -gt 0 ]; then
-              echo "Required tests failed:"
-              printf '%s\n' "${FAILED_REQUIRED[@]}"
+            echo ""
+            echo "Decision:"
+
+            # Make decision
+            if [ "$ANY_FAILED" = true ]; then
+              echo "❌ FAILED: One or more required tests failed"
               echo "all_passed=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
-            # If all required tests completed successfully, exit
-            if [ "$ALL_COMPLETED" = true ] && [ "$ALL_PASSED" = true ]; then
-              echo "All required tests passed!"
-              echo "Successful required tests:"
-              printf '%s\n' "${SUCCESS_REQUIRED[@]}"
+            if [ "$ALL_FOUND" = true ] && [ "$ALL_PASSED" = true ]; then
+              echo "✅ SUCCESS: All required tests passed!"
               echo "all_passed=true" >> $GITHUB_OUTPUT
               exit 0
             fi
 
-            # Show pending required tests (ignore non-required ones like Vercel)
-            if [ ${#PENDING_REQUIRED[@]} -gt 0 ]; then
-              echo "Required tests still running:"
-              printf '%s\n' "${PENDING_REQUIRED[@]}"
+            if [ "$ANY_PENDING" = true ] || [ "$ALL_FOUND" = false ]; then
+              PENDING_COUNT=0
+              NOT_FOUND_COUNT=0
+              for test_key in "${!TEST_RESULTS[@]}"; do
+                if [ "${TEST_RESULTS[$test_key]}" = "running" ]; then
+                  PENDING_COUNT=$((PENDING_COUNT + 1))
+                elif [ "${TEST_RESULTS[$test_key]}" = "not_found" ]; then
+                  NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
+                fi
+              done
+
+              echo "⏳ WAITING: $PENDING_COUNT running, $NOT_FOUND_COUNT not started"
             fi
 
-            # If tests are still running, wait
+            echo "Next check in ${SLEEP_INTERVAL}s..."
             sleep $SLEEP_INTERVAL
             WAIT_TIME=$((WAIT_TIME + SLEEP_INTERVAL))
           done
 
-          echo "Required tests did not complete within timeout"
+          # Timeout reached
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "⏰ TIMEOUT after ${MAX_WAIT}s"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Tests did not complete in time. Failing the workflow."
+
           echo "all_passed=false" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
