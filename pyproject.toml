@@ -93,7 +93,7 @@ experimental = ["uvloop>=0.21.0", "granian[uvloop,reload]>=2.3.2", "google-cloud
 server = [
     "websockets",
     "fastapi>=0.115.6",
-    "uvicorn>=0.24.0.post1",
+    "uvicorn==0.29.0",
 ]
 
 # ====== LLM Providers ======
@@ -131,7 +131,7 @@ external-tools = [
 desktop = [
     "websockets",
     "fastapi>=0.115.6",
-    "uvicorn>=0.24.0.post1",
+    "uvicorn==0.29.0",
     "docker>=7.1.0",
     "langchain>=0.3.7",
     "wikipedia>=1.4.0",
