@@ -15,7 +15,10 @@ import type { MessagesDisplayMode } from './types';
 import { MessageGroups } from './MessageGroups/MessageGroups';
 import { MessagesProvider } from './hooks/useMessagesContext/useMessagesContext';
 import { useManageMessageScroller } from './hooks/useManageMessageScroller/useManageMessageScroller';
-import { removeDuplicateMessages, useAgentMessages } from '../../../hooks/useAgentMessages/useAgentMessages';
+import {
+  removeDuplicateMessages,
+  useAgentMessages,
+} from '../../../hooks/useAgentMessages/useAgentMessages';
 
 interface MessagesProps {
   isSendingMessage: boolean;
@@ -31,8 +34,6 @@ interface LastMessageReceived {
   id: string;
   date: number;
 }
-
-
 
 export function Messages(props: MessagesProps) {
   const {
@@ -65,7 +66,7 @@ export function Messages(props: MessagesProps) {
     useAgentMessages({
       agentId,
       refetchInterval,
-      isEnabled: !isSendingMessage
+      isEnabled: !isSendingMessage,
     });
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export function Messages(props: MessagesProps) {
           }
 
           if (message.message_type === 'tool_call_message') {
-            return !!message.tool_call.name
+            return !!message.tool_call.name;
           }
 
           if (['system_message'].includes(message.message_type)) {
@@ -188,7 +189,7 @@ export function Messages(props: MessagesProps) {
         >
           {injectSpaceForHeader && (
             <div
-              className="w-full items-center justify-end flex"
+              className="w-full justify-center flex"
               style={{ minHeight: 28 }}
             >
               <HStack
@@ -237,8 +238,6 @@ export function Messages(props: MessagesProps) {
                   </Typography>
                 </HStack>
               )}
-
-              <div style={{ width: 209 }} />
             </div>
           )}
           <MessageGroups
