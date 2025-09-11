@@ -99,6 +99,15 @@ class JSONInnerThoughtsExtractor:
                         else:
                             updates_main_json += c
                             self.main_buffer += c
+            # NOTE (fix): Streaming JSON can arrive token-by-token from the LLM.
+            # In the old implementation we pre-inserted an opening quote after every
+            # key's colon (i.e. we emitted '"key":"' immediately). That implicitly
+            # assumed all values are strings. When a non-string value (e.g. true/false,
+            # numbers, null, or a nested object/array) streamed in next, the stream
+            # ended up with an unmatched '"' and appeared as a "missing end-quote" to
+            # clients. We now only emit an opening quote when we actually enter a
+            # string value (see below). This keeps values like booleans unquoted and
+            # avoids generating dangling quotes mid-stream.
             elif c == '"':
                 if not self.escaped:
                     self.in_string = not self.in_string
@@ -112,6 +121,14 @@ class JSONInnerThoughtsExtractor:
                                 self.main_buffer += self.main_json_held_buffer
                                 self.main_json_held_buffer = ""
                                 self.hold_main_json = False
+                        elif self.state == "value":
+                            # Opening quote for a string value (non-inner-thoughts only)
+                            if not self.is_inner_thoughts_value:
+                                if self.hold_main_json:
+                                    self.main_json_held_buffer += '"'
+                                else:
+                                    updates_main_json += '"'
+                                    self.main_buffer += '"'
                     else:
                         if self.state == "key":
                             self.state = "colon"
@@ -156,18 +173,26 @@ class JSONInnerThoughtsExtractor:
                             updates_main_json += c
                             self.main_buffer += c
             else:
+                # NOTE (fix): Do NOT pre-insert an opening quote after ':' any more.
+                # The value may not be a string; we only emit quotes when we actually
+                # see a string begin (handled in the '"' branch above). This prevents
+                # forced-quoting of non-string values and eliminates the common
+                # streaming artifact of "... 'request_heartbeat':'true}" missing the
+                # final quote.
                 if c == ":" and self.state == "colon":
+                    # Transition to reading a value; don't pre-insert quotes
                     self.state = "value"
                     self.is_inner_thoughts_value = self.current_key == self.inner_thoughts_key
                     if self.is_inner_thoughts_value:
-                        pass  # Do not include 'inner_thoughts' key in main_json
+                        # Do not include 'inner_thoughts' key in main_json
+                        pass
                     else:
                         key_colon = f'"{self.current_key}":'
                         if self.hold_main_json:
-                            self.main_json_held_buffer += key_colon + '"'
+                            self.main_json_held_buffer += key_colon
                         else:
-                            updates_main_json += key_colon + '"'
-                            self.main_buffer += key_colon + '"'
+                            updates_main_json += key_colon
+                            self.main_buffer += key_colon
                 elif c == "," and self.state == "comma_or_end":
                     if self.is_inner_thoughts_value:
                         # Inner thoughts value ended

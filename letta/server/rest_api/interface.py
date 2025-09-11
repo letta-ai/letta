@@ -295,6 +295,25 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         self.optimistic_json_parser = OptimisticJSONParser()
         self.current_json_parse_result = {}
 
+        # NOTE (fix): OpenAI deltas may split a key and its value across chunks
+        # (e.g. '"request_heartbeat"' in one chunk, ': true' in the next). The
+        # old behavior passed through each fragment verbatim, which could emit
+        # a bare key (or a key+opening quote) without its value, producing
+        # invalid JSON slices and the "missing end-quote" symptom downstream.
+        #
+        # To make streamed arguments robust, we add a JSON-aware incremental
+        # reader that only releases safe updates for the "main" JSON portion of
+        # the tool_call arguments. This prevents partial-key emissions while
+        # preserving incremental streaming for consumers.
+        #
+        # We still stream 'name' fragments as-is (safe), but 'arguments' are
+        # parsed incrementally and emitted only when a boundary is safe.
+        self._raw_args_reader = JSONInnerThoughtsExtractor(
+            inner_thoughts_key=inner_thoughts_kwarg,
+            wait_for_first_key=False,
+        )
+        self._raw_args_tool_call_id = None
+
         # Store metadata passed from server
         self.metadata = {}
 
@@ -654,11 +673,24 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     tool_call_delta = {}
                     if tool_call.id:
                         tool_call_delta["id"] = tool_call.id
+                        # Reset raw args reader per tool_call id
+                        if self._raw_args_tool_call_id != tool_call.id:
+                            self._raw_args_tool_call_id = tool_call.id
+                            self._raw_args_reader = JSONInnerThoughtsExtractor(
+                                inner_thoughts_key=self.inner_thoughts_kwarg,
+                                wait_for_first_key=False,
+                            )
                     if tool_call.function:
-                        if tool_call.function.arguments:
-                            tool_call_delta["arguments"] = tool_call.function.arguments
+                        # Stream name fragments as-is (names are short and harmless to emit)
                         if tool_call.function.name:
                             tool_call_delta["name"] = tool_call.function.name
+                        # For arguments, incrementally parse to avoid emitting partial keys
+                        if tool_call.function.arguments:
+                            self.current_function_arguments += tool_call.function.arguments
+                            updates_main_json, _ = self._raw_args_reader.process_fragment(tool_call.function.arguments)
+                            # Only emit argument updates when a safe boundary is reached
+                            if updates_main_json:
+                                tool_call_delta["arguments"] = updates_main_json
 
                     # We might end up with a no-op, in which case we should omit
                     if (
