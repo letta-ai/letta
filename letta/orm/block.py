@@ -24,6 +24,7 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
     __table_args__ = (
         UniqueConstraint("id", "label", name="unique_block_id_label"),
         Index("created_at_label_idx", "created_at", "label"),
+        Index("ix_block_label", "label"),
     )
 
     template_name: Mapped[Optional[str]] = mapped_column(

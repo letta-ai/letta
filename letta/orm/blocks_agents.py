@@ -20,6 +20,7 @@ class BlocksAgents(Base):
         UniqueConstraint("agent_id", "block_id", name="unique_agent_block"),
         Index("ix_blocks_agents_block_label_agent_id", "block_label", "agent_id"),
         Index("ix_blocks_block_label", "block_label"),
+        Index("ix_blocks_agents_agent_id", "agent_id"),
     )
 
     # unique agent + block label
