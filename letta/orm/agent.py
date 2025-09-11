@@ -34,7 +34,10 @@ if TYPE_CHECKING:
 class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin, AsyncAttrs):
     __tablename__ = "agents"
     __pydantic_model__ = PydanticAgentState
-    __table_args__ = (Index("ix_agents_created_at", "created_at", "id"),)
+    __table_args__ = (
+        Index("ix_agents_created_at", "created_at", "id"),
+        Index("ix_agents_organization_id", "organization_id"),
+    )
 
     # agent generates its own id
     # TODO: We want to migrate all the ORM models to do this, so we will need to move this to the SqlalchemyBase
