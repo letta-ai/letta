@@ -12,7 +12,7 @@ from composio.exceptions import (
     EnumStringNotFound,
 )
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
-from httpx import HTTPStatusError
+from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
@@ -151,7 +151,6 @@ async def count_tools(
             exclude_letta_tools=exclude_letta_tools,
         )
     except Exception as e:
-        print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -265,8 +264,6 @@ async def list_tools(
             return_only_letta_tools=return_only_letta_tools,
         )
     except Exception as e:
-        # Log or print the full exception here for debugging
-        print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -284,21 +281,13 @@ async def create_tool(
         tool = Tool(**request.model_dump(exclude_unset=True))
         return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
-        # Log or print the full exception here for debugging
-        print(f"Error occurred: {e}")
         clean_error_message = "Tool with this name already exists."
         raise HTTPException(status_code=409, detail=clean_error_message)
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
-        print(f"Error occurred during tool creation: {e}")
-        # print the full stack trace
-        import traceback
-
-        print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
-        print(f"Unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
@@ -319,15 +308,12 @@ async def upsert_tool(
         return tool
     except UniqueConstraintViolationError as e:
         # Log the error and raise a conflict exception
-        print(f"Unique constraint violation occurred: {e}")
         raise HTTPException(status_code=409, detail=str(e))
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
-        print(f"Error occurred during tool upsert: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
-        print(f"Unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
@@ -344,7 +330,6 @@ async def modify_tool(
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
-        print("FINAL TOOL", tool)
         return tool
     except LettaToolNameConflictError as e:
         # HTTP 409 == Conflict
@@ -394,16 +379,10 @@ async def run_tool_from_source(
         )
     except LettaToolCreateError as e:
         # HTTP 400 == Bad Request
-        print(f"Error occurred during tool creation: {e}")
-        # print the full stack trace
-        import traceback
-
-        print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(e))
 
     except Exception as e:
         # Catch other unexpected errors and raise an internal server error
-        print(f"Unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
@@ -559,32 +538,38 @@ async def list_mcp_tools_by_server(
     """
     Get a list of all tools for a specific MCP server
     """
-    if tool_settings.mcp_read_from_config:
-        try:
-            return await server.get_tools_from_mcp_server(mcp_server_name=mcp_server_name)
-        except ValueError as e:
-            # ValueError means that the MCP server name doesn't exist
-            raise HTTPException(
-                status_code=400,  # Bad Request
-                detail={
-                    "code": "MCPServerNotFoundError",
-                    "message": str(e),
-                    "mcp_server_name": mcp_server_name,
-                },
-            )
-        except MCPTimeoutError as e:
-            raise HTTPException(
-                status_code=408,  # Timeout
-                detail={
-                    "code": "MCPTimeoutError",
-                    "message": str(e),
-                    "mcp_server_name": mcp_server_name,
-                },
-            )
-    else:
+    try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         mcp_tools = await server.mcp_manager.list_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor)
         return mcp_tools
+    except Exception as e:
+        if isinstance(e, ConnectError) or isinstance(e, ConnectionError):
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "MCPListToolsError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        if isinstance(e, HTTPStatusError):
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "code": "MCPListToolsError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "code": "MCPListToolsError",
+                    "message": str(e),
+                    "mcp_server_name": mcp_server_name,
+                },
+            )
 
 
 @router.post("/mcp/servers/{mcp_server_name}/resync", operation_id="resync_mcp_server_tools")
@@ -769,7 +754,6 @@ async def add_mcp_server_to_config(
             },
         )
     except Exception as e:
-        print(f"Unexpected error occurred while adding MCP server: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
@@ -801,7 +785,6 @@ async def update_mcp_server(
         # Re-raise HTTP exceptions (like 404)
         raise
     except Exception as e:
-        print(f"Unexpected error occurred while updating MCP server: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 
