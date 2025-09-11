@@ -99,6 +99,15 @@ class JSONInnerThoughtsExtractor:
                         else:
                             updates_main_json += c
                             self.main_buffer += c
+            # NOTE (fix): Streaming JSON can arrive token-by-token from the LLM.
+            # In the old implementation we pre-inserted an opening quote after every
+            # key's colon (i.e. we emitted '"key":"' immediately). That implicitly
+            # assumed all values are strings. When a non-string value (e.g. true/false,
+            # numbers, null, or a nested object/array) streamed in next, the stream
+            # ended up with an unmatched '"' and appeared as a "missing end-quote" to
+            # clients. We now only emit an opening quote when we actually enter a
+            # string value (see below). This keeps values like booleans unquoted and
+            # avoids generating dangling quotes mid-stream.
             elif c == '"':
                 if not self.escaped:
                     self.in_string = not self.in_string
@@ -164,6 +173,12 @@ class JSONInnerThoughtsExtractor:
                             updates_main_json += c
                             self.main_buffer += c
             else:
+                # NOTE (fix): Do NOT pre-insert an opening quote after ':' any more.
+                # The value may not be a string; we only emit quotes when we actually
+                # see a string begin (handled in the '"' branch above). This prevents
+                # forced-quoting of non-string values and eliminates the common
+                # streaming artifact of "... 'request_heartbeat':'true}" missing the
+                # final quote.
                 if c == ":" and self.state == "colon":
                     # Transition to reading a value; don't pre-insert quotes
                     self.state = "value"
