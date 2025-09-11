@@ -41,9 +41,9 @@ class JobManager:
         with db_registry.session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
-            pydantic_job.organization_id = actor.organization_id
             job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
+            job.organization_id = actor.organization_id
             job.create(session, actor=actor)  # Save job in the database
         return job.to_pydantic()
 
@@ -56,9 +56,9 @@ class JobManager:
         async with db_registry.async_session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
-            pydantic_job.organization_id = actor.organization_id
             job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
+            job.organization_id = actor.organization_id
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
             result = job.to_pydantic()
             await session.commit()
