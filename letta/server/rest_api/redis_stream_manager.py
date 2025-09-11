@@ -8,6 +8,7 @@ from typing import AsyncIterator, Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
+from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
 
@@ -62,7 +63,7 @@ class RedisSSEStreamWriter:
         """Start the background flush task."""
         if not self._running:
             self._running = True
-            self._flush_task = asyncio.create_task(self._periodic_flush())
+            self._flush_task = safe_create_task(self._periodic_flush(), label="redis_periodic_flush")
 
     async def stop(self):
         """Stop the background flush task and flush remaining data."""

@@ -14,6 +14,7 @@ from letta.server.rest_api.chat_completions_interface import ChatCompletionsStre
 
 # TODO this belongs in a controller!
 from letta.server.rest_api.utils import get_letta_server, get_user_message_from_chat_completions_request, sse_async_generator
+from letta.utils import safe_create_task
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -98,7 +99,7 @@ async def send_message_to_agent_chat_completions(
 
         # Offload the synchronous message_func to a separate thread
         streaming_interface.stream_start()
-        asyncio.create_task(
+        safe_create_task(
             asyncio.to_thread(
                 server.send_messages,
                 actor=actor,
@@ -106,7 +107,8 @@ async def send_message_to_agent_chat_completions(
                 input_messages=messages,
                 interface=streaming_interface,
                 put_inner_thoughts_first=False,
-            )
+            ),
+            label="openai_send_messages",
         )
 
         # return a stream

@@ -488,6 +488,15 @@ paths:
         - agents
         - messages
       x-fern-sdk-method-name: create
+      requestBody:
+        content:
+          application/json:
+            example:
+              messages:
+                - role: user
+                  content:
+                    - type: text
+                      text: "The sky above the port was the color of television, tuned to a dead channel."
   /v1/agents/{agent_id}/messages/{message_id}:
     patch:
       x-fern-sdk-group-name:
@@ -508,6 +517,15 @@ paths:
         - agents
         - messages
       x-fern-sdk-method-name: create_stream
+      requestBody:
+        content:
+          application/json:
+            example:
+              messages:
+                - role: user
+                  content:
+                    - type: text
+                      text: "The sky above the port was the color of television, tuned to a dead channel."
       responses:
         '200':
           content:
@@ -961,6 +979,15 @@ paths:
         - groups
         - messages
       x-fern-sdk-method-name: create
+      requestBody:
+        content:
+          application/json:
+            example:
+              messages:
+                - role: user
+                  content:
+                    - type: text
+                      text: "The sky above the port was the color of television, tuned to a dead channel."
   /v1/groups/{group_id}/messages/{message_id}:
     patch:
       x-fern-sdk-group-name:
@@ -975,6 +1002,15 @@ paths:
         - groups
         - messages
       x-fern-sdk-method-name: create_stream
+      requestBody:
+        content:
+          application/json:
+            example:
+              messages:
+                - role: user
+                  content:
+                    - type: text
+                      text: "The sky above the port was the color of television, tuned to a dead channel."
       responses:
         '200':
           content:
