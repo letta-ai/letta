@@ -213,7 +213,7 @@ class LettaAgentV2(BaseAgentV2):
 
         if self.stop_reason is None:
             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
-        self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns)
+        self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id)
         return LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
 
     @trace_method
@@ -736,11 +736,8 @@ class LettaAgentV2(BaseAgentV2):
         return None
 
     @trace_method
-    def _request_checkpoint_finish(self, request_span: Span | None, request_start_timestamp_ns: int | None) -> None:
-        if request_span is not None:
-            duration_ns = get_utc_timestamp_ns() - request_start_timestamp_ns
-            request_span.add_event(name="letta_request_ms", attributes={"duration_ms": ns_to_ms(duration_ns)})
-            request_span.end()
+    def _request_checkpoint_finish(self, request_span: Span | None, request_start_timestamp_ns: int | None, run_id: str | None) -> None:
+        self._log_request(request_start_timestamp_ns, request_span, self.job_update_metadata, is_error=False, run_id=run_id)
         return None
 
     @trace_method
