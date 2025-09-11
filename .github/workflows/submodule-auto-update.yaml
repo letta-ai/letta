@@ -164,15 +164,6 @@ jobs:
         run: |
           echo "Waiting for tests to complete on PR..."
 
-          # Define the required test contexts to monitor (partial matching patterns)
-          REQUIRED_TESTS=(
-            "cypress-run"
-            "cloud-api-test"
-            "main"
-            "cloud-api-integration-tests"
-            "migration-api-stability"
-          )
-
           # Find the PR number
           BRANCH_NAME="auto-update-submodule-${{ steps.update-submodule.outputs.new_sha }}"
           PR_NUMBER=$(gh pr list --head $BRANCH_NAME --json number --jq '.[0].number')
@@ -184,21 +175,6 @@ jobs:
           fi
 
           echo "Monitoring PR #$PR_NUMBER"
-          echo "Required tests: ${REQUIRED_TESTS[@]}"
-
-          # Define required tests with flexible matching patterns
-          # These will be matched against check names case-insensitively
-          declare -A REQUIRED_TESTS
-          REQUIRED_TESTS["e2e"]="End-to-End.*cypress"
-          REQUIRED_TESTS["cloud-api-stability"]="Cloud API Stability"
-          REQUIRED_TESTS["web-lint"]="Web.*Lint.*Test"
-          REQUIRED_TESTS["cloud-api-integration"]="cloud-api.*integration"
-          REQUIRED_TESTS["migration-api"]="Migration.*API"
-
-          echo "Required test patterns:"
-          for key in "${!REQUIRED_TESTS[@]}"; do
-            echo "  - $key: ${REQUIRED_TESTS[$key]}"
-          done
 
           # Define required tests with flexible matching patterns
           # These will be matched against check names case-insensitively
