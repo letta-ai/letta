@@ -196,7 +196,7 @@ jobs:
           SLEEP_INTERVAL=60  # Check every minute
           CHECK_COUNT=0
           NO_CHECK_COUNT=0
-          MAX_NO_CHECK_COUNT=10  # After 10 minutes of no checks, allow proceeding
+          MAX_NO_CHECK_COUNT=25  # After 25 minutes of no checks, allow proceeding
 
           while [ $WAIT_TIME -lt $MAX_WAIT ]; do
             CHECK_COUNT=$((CHECK_COUNT + 1))
@@ -216,17 +216,21 @@ jobs:
 
               if [ $NO_CHECK_COUNT -ge $MAX_NO_CHECK_COUNT ]; then
                 echo ""
-                echo "⚠️  No checks found after ${NO_CHECK_COUNT} attempts."
-                echo "This PR may not trigger any workflows (submodule-only change)."
-                echo "Proceeding with merge."
-                echo "all_passed=true" >> $GITHUB_OUTPUT
+                echo "❌ ERROR: No checks found after ${NO_CHECK_COUNT} minutes (${NO_CHECK_COUNT} attempts)."
+                echo "Expected checks are not running. This could indicate:"
+                echo "  - Path filters excluding the changed files"
+                echo "  - Workflow configuration issues"
+                echo "  - PR creation problems"
+                echo ""
+                echo "Manual intervention required. Please check the PR manually."
+                echo "all_passed=false" >> $GITHUB_OUTPUT
                 exit 0
               fi
 
               # Show PR details periodically
               if [ $((NO_CHECK_COUNT % 3)) -eq 0 ]; then
                 echo "PR State:"
-                gh pr view $PR_NUMBER --json state,mergeable,draft | jq '.'
+                gh pr view $PR_NUMBER --json state,mergeable,isDraft | jq '.'
               fi
 
               echo "Waiting ${SLEEP_INTERVAL}s for checks to start..."
