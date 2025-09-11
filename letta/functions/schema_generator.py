@@ -403,7 +403,7 @@ def pydantic_model_to_json_schema(model: Type[BaseModel]) -> dict:
             return pydantic_model_schema_dict
 
         # Handle primitive types
-        return clean_property(schema_part)
+        return clean_property(prop=schema_part, full_schema=full_schema)
 
     return clean_schema(schema_part=schema, full_schema=schema)
 
