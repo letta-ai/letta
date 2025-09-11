@@ -272,7 +272,7 @@ class GoogleVertexClient(LLMClientBase):
             tool_names = []
 
         contents = self.add_dummy_model_messages(
-            [m.to_google_ai_dict() for m in messages],
+            PydanticMessage.to_google_dicts_from_list(messages),
         )
 
         request_data = {
