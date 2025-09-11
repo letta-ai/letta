@@ -1348,6 +1348,8 @@ async def send_message_streaming(
                         stream_generator=raw_stream,
                         redis_client=redis_client,
                         run_id=run.id,
+                        job_manager=server.job_manager,
+                        actor=actor,
                     ),
                     label=f"background_stream_processor_{run.id}",
                 )
