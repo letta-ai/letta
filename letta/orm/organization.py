@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from letta.orm.block import Block
     from letta.orm.group import Group
     from letta.orm.identity import Identity
+    from letta.orm.job import Job
     from letta.orm.llm_batch_items import LLMBatchItem
     from letta.orm.llm_batch_job import LLMBatchJob
     from letta.orm.message import Message
@@ -66,3 +67,4 @@ class Organization(SqlalchemyBase):
     llm_batch_items: Mapped[List["LLMBatchItem"]] = relationship(
         "LLMBatchItem", back_populates="organization", cascade="all, delete-orphan"
     )
+    jobs: Mapped[List["Job"]] = relationship("Job", back_populates="organization", cascade="all, delete-orphan")
