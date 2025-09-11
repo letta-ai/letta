@@ -12,7 +12,7 @@ from composio.exceptions import (
     EnumStringNotFound,
 )
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
-from httpx import HTTPStatusError, ConnectError
+from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
@@ -543,7 +543,7 @@ async def list_mcp_tools_by_server(
         mcp_tools = await server.mcp_manager.list_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor)
         return mcp_tools
     except Exception as e:
-        if (isinstance(e, ConnectError) or isinstance(e, ConnectionError)):
+        if isinstance(e, ConnectError) or isinstance(e, ConnectionError):
             raise HTTPException(
                 status_code=404,
                 detail={
@@ -552,7 +552,7 @@ async def list_mcp_tools_by_server(
                     "mcp_server_name": mcp_server_name,
                 },
             )
-        if (isinstance(e, HTTPStatusError)):
+        if isinstance(e, HTTPStatusError):
             raise HTTPException(
                 status_code=401,
                 detail={
