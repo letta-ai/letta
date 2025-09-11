@@ -22,7 +22,7 @@ const ListProjectsQuery = z.object({
   limit: z
     .string()
     .transform(Number)
-    .refine((val) => val > 0 && val < 20, {
+    .refine((val) => val > 0 && val <= 20, {
       message: 'Limit must be between 1 and 20',
     })
     .optional(),
