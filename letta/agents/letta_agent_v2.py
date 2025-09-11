@@ -850,7 +850,7 @@ class LettaAgentV2(BaseAgentV2):
             tool_call_messages = create_letta_messages_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                function_name="",
+                function_name=tool_call.function.name,
                 function_arguments={},
                 tool_execution_result=ToolExecutionResult(status="error"),
                 tool_call_id=tool_call_id,
