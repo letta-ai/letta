@@ -200,6 +200,20 @@ jobs:
             echo "  - $key: ${REQUIRED_TESTS[$key]}"
           done
 
+          # Define required tests with flexible matching patterns
+          # These will be matched against check names case-insensitively
+          declare -A TEST_PATTERNS
+          TEST_PATTERNS["e2e"]="End-to-End.*cypress"
+          TEST_PATTERNS["cloud-api-stability"]="Cloud API Stability"
+          TEST_PATTERNS["web-lint"]="Web.*Lint.*Test"
+          TEST_PATTERNS["cloud-api-integration"]="cloud-api.*integration"
+          TEST_PATTERNS["migration-api"]="Migration.*API"
+
+          echo "Required test patterns:"
+          for key in "${!TEST_PATTERNS[@]}"; do
+            echo "  - $key: ${TEST_PATTERNS[$key]}"
+          done
+
           # Configuration
           MAX_WAIT=2700  # 45 minutes
           WAIT_TIME=0
@@ -271,8 +285,8 @@ jobs:
             ANY_PENDING=false
 
             # Check each required test
-            for test_key in "${!REQUIRED_TESTS[@]}"; do
-              pattern="${REQUIRED_TESTS[$test_key]}"
+            for test_key in "${!TEST_PATTERNS[@]}"; do
+              pattern="${TEST_PATTERNS[$test_key]}"
 
               # Find matching check (case-insensitive, exclude Vercel)
               MATCHING_CHECK=$(echo "$PR_CHECKS" | jq -r --arg pattern "$pattern" '
