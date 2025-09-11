@@ -8,6 +8,9 @@ from typing import AsyncIterator, Dict, List, Optional
 
 from letta.data_sources.redis_client import AsyncRedisClient
 from letta.log import get_logger
+from letta.schemas.enums import JobStatus
+from letta.schemas.user import User
+from letta.services.job_manager import JobManager
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
@@ -133,9 +136,9 @@ class RedisSSEStreamWriter:
 
             async with client.pipeline(transaction=False) as pipe:
                 for chunk in chunks:
-                    pipe.xadd(stream_key, chunk, maxlen=self.max_stream_length, approximate=True)
+                    await pipe.xadd(stream_key, chunk, maxlen=self.max_stream_length, approximate=True)
 
-                pipe.expire(stream_key, self.stream_ttl)
+                await pipe.expire(stream_key, self.stream_ttl)
 
                 await pipe.execute()
 
@@ -191,6 +194,8 @@ async def create_background_stream_processor(
     redis_client: AsyncRedisClient,
     run_id: str,
     writer: Optional[RedisSSEStreamWriter] = None,
+    job_manager: Optional[JobManager] = None,
+    actor: Optional[User] = None,
 ) -> None:
     """
     Process a stream in the background and store chunks to Redis.
@@ -203,6 +208,8 @@ async def create_background_stream_processor(
         redis_client: Redis client instance
         run_id: The run ID to store chunks under
         writer: Optional pre-configured writer (creates new if not provided)
+        job_manager: Optional job manager for updating job status
+        actor: Optional actor for job status updates
     """
     if writer is None:
         writer = RedisSSEStreamWriter(redis_client)
@@ -227,6 +234,12 @@ async def create_background_stream_processor(
         logger.error(f"Error processing stream for run {run_id}: {e}")
         # Write error chunk
         # error_chunk = {"error": {"message": str(e)}}
+        # Mark run_id terminal state
+        if job_manager and actor:
+            await job_manager.safe_update_job_status_async(
+                job_id=run_id, new_status=JobStatus.failed, actor=actor, metadata={"error": str(e)}
+            )
+
         error_chunk = {"error": str(e), "code": "INTERNAL_SERVER_ERROR"}
         await writer.write_chunk(run_id=run_id, data=f"event: error\ndata: {json.dumps(error_chunk)}\n\n", is_complete=True)
     finally:
