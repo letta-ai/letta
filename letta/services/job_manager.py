@@ -152,8 +152,9 @@ class JobManager:
                     logger.error(f"Invalid job status transition from {current_status} to {job_update.status} for job {job_id}")
                     raise ValueError(f"Invalid job status transition from {current_status} to {job_update.status}")
 
-            # Check if we'll need to dispatch callback
-            if job_update.status in {JobStatus.completed, JobStatus.failed} and job.callback_url:
+            # Check if we'll need to dispatch callback (only if not already completed)
+            not_completed_before = not bool(job.completed_at)
+            if job_update.status in {JobStatus.completed, JobStatus.failed} and not_completed_before and job.callback_url:
                 needs_callback = True
                 callback_url = job.callback_url
 
