@@ -32,7 +32,10 @@ import {
   VStack,
 } from '@letta-cloud/ui-component-library';
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
-import { useCurrentAgent, useSyncUpdateCurrentAgent } from '../../../../../hooks';
+import {
+  useCurrentAgent,
+  useSyncUpdateCurrentAgent,
+} from '../../../../../hooks';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 interface ArgumentEditorProps {
@@ -46,18 +49,41 @@ interface ArgumentEditorProps {
 function ArgumentEditor(props: ArgumentEditorProps) {
   const { defaultArguments, stagedArguments, setStagedArguments } = props;
 
+  // Compute merged definitions: defaultArguments + stagedArguments, stagedArguments take precedence
   const definitions = useMemo(() => {
-    // definitions is defaultArguments + stagedArguments, no duplicates, stagedArguments take precedence
     const argMap = new Map<string, ResizableKeyValueEditorDefinition>();
+
     defaultArguments.forEach((arg) => {
       argMap.set(arg.key, arg);
     });
+
     stagedArguments.forEach((arg) => {
       argMap.set(arg.key, arg);
     });
 
     return Array.from(argMap.values());
   }, [defaultArguments, stagedArguments]);
+
+  // Ensure all edits are captured in staged arguments
+  const handleSetDefinitions = useCallback(
+    (
+      newDefinitions:
+        | ResizableKeyValueEditorDefinition[]
+        | ((
+            prev: ResizableKeyValueEditorDefinition[],
+          ) => ResizableKeyValueEditorDefinition[]),
+    ) => {
+      if (typeof newDefinitions === 'function') {
+        setStagedArguments(() => {
+          const currentDefinitions = definitions;
+          return newDefinitions(currentDefinitions);
+        });
+      } else {
+        setStagedArguments(newDefinitions);
+      }
+    },
+    [definitions, setStagedArguments],
+  );
 
   return (
     <VStack>
@@ -66,7 +92,7 @@ function ArgumentEditor(props: ArgumentEditorProps) {
         disableKeyInput
         disableNewDefinition
         disableDeleteDefinition
-        setDefinitions={setStagedArguments}
+        setDefinitions={handleSetDefinitions}
       />
     </VStack>
   );
@@ -266,7 +292,7 @@ function EnvironmentEditor(props: EnvironmentEditorProps) {
 }
 
 interface ToolInputProps {
-  defaultArguments: ResizableKeyValueEditorDefinition[]
+  defaultArguments: ResizableKeyValueEditorDefinition[];
   onRunTool: (
     args: ToolRunFromSource['args'],
     env: ToolRunFromSource['env_vars'],
@@ -279,9 +305,7 @@ type ToolInputType = 'args' | 'environment';
 function ToolInput(props: ToolInputProps) {
   const { isToolRunning, onRunTool, defaultArguments } = props;
 
-
   const { tool_exec_environment_variables } = useCurrentAgent();
-
 
   const defaultEnvironment = useMemo(() => {
     return (tool_exec_environment_variables || []).map((variable) => {
@@ -292,15 +316,14 @@ function ToolInput(props: ToolInputProps) {
     });
   }, [tool_exec_environment_variables]);
 
-
-
   const [stagedEnvironment, setStagedEnvironment] =
     useState<ResizableKeyValueEditorDefinition[]>(defaultEnvironment);
 
-  const [stagedArguments, setStagedToolArguments] = useState<ResizableKeyValueEditorDefinition[]>([]);
+  const [stagedArguments, setStagedToolArguments] = useState<
+    ResizableKeyValueEditorDefinition[]
+  >([]);
 
   const [toolInput, setToolInput] = useState<ToolInputType>('args');
-
 
   const handleRunTool = useCallback(() => {
     const args: ToolRunFromSource['args'] = {};
