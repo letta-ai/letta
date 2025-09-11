@@ -22,6 +22,8 @@ from letta.errors import (
     LLMUnprocessableEntityError,
 )
 from letta.llm_api.helpers import add_inner_thoughts_to_functions, convert_to_structured_output, unpack_all_inner_thoughts_from_kwargs
+from letta.helpers.datetime_helpers import get_utc_time_int
+
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
@@ -38,11 +40,17 @@ from letta.schemas.openai.chat_completion_request import (
     ToolFunctionChoice,
     cast_message_to_subtype,
 )
-from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.openai.chat_completion_response import ( ChatCompletionResponse,
+    Choice,
+    FunctionCall,
+    Message as ChoiceMessage,
+    ToolCall,
+    UsageStatistics
+)
 from letta.settings import model_settings
+import json
 
 logger = get_logger(__name__)
-
 
 def is_openai_reasoning_model(model: str) -> bool:
     """Utility function to check if the model is a 'reasoner'"""
@@ -263,8 +271,16 @@ class OpenAIClient(LLMClientBase):
         Performs underlying synchronous request to OpenAI API and returns raw response dict.
         """
         client = OpenAI(**self._prepare_client_kwargs(llm_config))
-        response: ChatCompletion = client.chat.completions.create(**request_data)
-        return response.model_dump()
+
+        responses_request_data = convert_chat_to_response(request_data)
+        
+        # Write request data to local JSON files for debugging
+        with open("chat_request_data.json", "w") as f:
+            json.dump(request_data, f, indent=4)
+        with open("responses_request_data.json", "w") as f:
+            json.dump(responses_request_data, f, indent=4)
+        query_response =  client.responses.create(**responses_request_data)
+        return query_response.model_dump()
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -273,8 +289,22 @@ class OpenAIClient(LLMClientBase):
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-        response: ChatCompletion = await client.chat.completions.create(**request_data)
-        return response.model_dump()
+
+        responses_request_data = convert_chat_to_response(request_data)
+        
+        print("DEBUG: request_async method called!")
+        print(f"DEBUG: About to write to async_chat_request_data.json with {len(str(request_data))} chars")
+        print(f"DEBUG: About to write to async_responses_request_data.json with {len(str(responses_request_data))} chars")
+        
+        # Write request data to local JSON files for debugging
+        with open("async_chat_request_data.json", "w") as f:
+            json.dump(request_data, f, indent=4)
+            print("DEBUG: Successfully wrote async_chat_request_data.json")
+        with open("async_responses_request_data.json", "w") as f:
+            json.dump(responses_request_data, f, indent=4)
+            print("DEBUG: Successfully wrote async_responses_request_data.json")
+        query_response = await client.responses.create(**responses_request_data)
+        return query_response.model_dump()
 
     def is_reasoning_model(self, llm_config: LLMConfig) -> bool:
         return is_openai_reasoning_model(llm_config.model)
@@ -290,9 +320,14 @@ class OpenAIClient(LLMClientBase):
         Converts raw OpenAI response dict into the ChatCompletionResponse Pydantic model.
         Handles potential extraction of inner thoughts if they were added via kwargs.
         """
-        # OpenAI's response structure directly maps to ChatCompletionResponse
-        # We just need to instantiate the Pydantic model for validation and type safety.
-        chat_completion_response = ChatCompletionResponse(**response_data)
+        # Check if this is a Responses API response (has "output" field)
+        if "output" in response_data:
+            # This is a Responses API response, convert it to Chat Completion format
+            chat_completion_response = convert_responses_api_to_chat_completion(response_data, llm_config)
+        else:
+            # OpenAI's response structure directly maps to ChatCompletionResponse
+            # We just need to instantiate the Pydantic model for validation and type safety.
+            chat_completion_response = ChatCompletionResponse(**response_data)
         chat_completion_response = self._fix_truncated_json_response(chat_completion_response)
         # Unpack inner thoughts if they were embedded in function arguments
         if llm_config.put_inner_thoughts_in_kwargs:
@@ -524,3 +559,403 @@ def fill_image_content_in_messages(openai_message_list: List[dict], pydantic_mes
         new_message_list.append({"role": "user", "content": message_content})
 
     return new_message_list
+
+
+# convert chat completions into responses format
+# doesnt support tool outputs or images or a few other things yet
+def convert_chat_to_response(chat: dict):
+    """
+    Converts a chat completion request to a response style request.
+    only support text for now
+    """
+
+    # need to do a better job of passing through here hmm
+    # goal is to only modify the data that needs to be modifies and then pass through all other params like temp or topP etc
+    # 1 idea is copy with a responses object def then prune with pydantic or "union" 
+
+    # best thing to do here is prob union types from Responses and Chat and then update to allow pass through
+    response_request_data = {
+        "model": chat["model"],
+        "input": "",
+        "store": False,
+        "parallel_tool_calls": False,
+    }
+
+    #need to remove system prompt from messages and pass as instructions?  
+    #this is sus, dont really understand how instructions works
+    system_message = list(filter(lambda msg: msg["role"] == "system", chat["messages"]))
+
+    if len(system_message) > 0:
+        response_request_data["instructions"] = system_message[0]["content"]
+
+    if chat.get("max_completion_tokens"):
+        response_request_data["max_output_tokens"] = chat["max_completion_tokens"]
+
+    if chat.get("reasoning_effort"):
+        response_request_data["reasoning"] = {"effort": chat["reasoning_effort"] } #summary is not supported yet
+
+    if chat.get("tools"):
+        # Convert tools format from nested to flattened
+        converted_tools = []
+        for tool in chat["tools"]:
+            converted_tool = {
+                "type": tool["type"],
+                "name": tool["function"]["name"],
+                "description": tool["function"]["description"],
+                "parameters": tool["function"]["parameters"]
+            }
+            # Add optional fields if they exist
+            '''
+            In Chat Completions, functions are non-strict by default, whereas in the Responses API, functions are strict by default.
+            '''
+            if "strict" in tool["function"]:
+                converted_tool["strict"] = tool["function"]["strict"]
+            else:
+                converted_tool["strict"] = False # this line can be removed based on if you want to do a 1:1 conversion or adhere to responses structure 
+            converted_tools.append(converted_tool)
+    
+        response_request_data["tools"] = converted_tools
+
+    if chat.get("tool_choice"): #should be the same
+        response_request_data["tool_choice"] = chat["tool_choice"]
+
+    if chat.get("verbosity"):
+        response_request_data.setdefault("text", {})["verbosity"] = chat["verbosity"]
+    #need to consider json schema vs generic json output
+    if chat.get("response_format"):
+        response_request_data["text"]["format"] = {
+            "type": chat.get("response_format").get("type")
+            **chat.get("response_format").get("json_schema")
+        }
+
+    if len(chat["messages"]) == 1:
+        response_request_data["input"] = chat["messages"][0]["content"]
+    else:
+        response_request_data["input"] = []
+        for message in chat["messages"]:
+            # Handle regular messages with roles supported by Responses API
+            if message["role"] in ["user", "developer", "system"]:
+                response_request_data["input"].append({
+                    "role": message["role"],
+                    "content": message["content"]
+                })
+            
+            # Handle assistant messages (may have tool_calls)
+            elif message["role"] == "assistant":
+                # Check if assistant message has tool_calls
+                if "tool_calls" in message and message["tool_calls"] is not None and len(message["tool_calls"]) > 0:
+                    # Add assistant message first (if it has content)
+                    if message.get("content"):
+                        response_request_data["input"].append({
+                            "role": "assistant",
+                            "content": message["content"]
+                        })
+                    
+                    # Convert each tool call to ResponsesToolCall format
+                    for tool_call in message["tool_calls"]:
+                        response_request_data["input"].append({
+                            "id": "fc_" + tool_call.get("id", ""),
+                            "call_id": "fc_" + tool_call.get("id", ""), #quick hack to add fc_
+                            "type": "function_call",
+                            "name": tool_call["function"]["name"],
+                            "arguments": tool_call["function"]["arguments"],
+                            "status": "completed"  # Assuming completed calls
+                        })
+                else:
+                    # Regular assistant message without tool calls
+                    response_request_data["input"].append({
+                        "role": "assistant",
+                        "content": message["content"]
+                    })
+            
+            # Handle tool/function messages (convert to ResponsesToolMessage)
+            elif message["role"] == "tool":
+                response_request_data["input"].append({
+                    "output": message["content"],
+                    "type": "function_call_output",
+                    "call_id": "fc_" + message.get("tool_call_id", "") #quick hack to add fc_
+                })    
+    return response_request_data
+
+
+#convert from responses response to chat completion response
+def convert_responses_api_to_chat_completion(
+        response_data: dict,
+        llm_config: LLMConfig,
+    ) -> ChatCompletionResponse: 
+
+
+    assert len(response_data.get("output")) > 0
+    print(json.dumps(response_data, indent=4))
+
+    prompt_tokens = response_data["usage"]["input_tokens"]
+    completion_tokens = response_data["usage"]["output_tokens"]
+
+    content = None
+    reasoning_content = None
+    redacted_reasoning_content = None
+    tool_calls = []
+
+
+    for output_message in response_data.get("output"):
+        if output_message.get("type") == "reasoning":
+            if "encrypted_content" in output_message:
+                redacted_reasoning_content = output_message["encrypted_content"]
+            elif "content" in output_message:
+                reasoning_content = output_message["content"]
+        if output_message.get("type") == "function_call":
+            tool_calls.append(
+                ToolCall(
+                    id=output_message.get("call_id"),
+                    type="function",
+                    function=FunctionCall(
+                        name=output_message.get("name"),
+                        arguments=output_message.get("arguments"),
+                    ),
+                )
+            )
+        if output_message.get("type") == "message":
+            content = output_message.get("content")[0].get("text")
+        
+    
+    choice = Choice(
+            index=0,
+            finish_reason="stop", #this is wrong and not really compatible with responses 
+            message=ChoiceMessage(
+                role="assistant",
+                content=content,
+                reasoning_content=reasoning_content,
+                redacted_reasoning_content=redacted_reasoning_content,
+                tool_calls=tool_calls,
+            ),
+        )
+
+    chat_completion_response = ChatCompletionResponse(
+            id=response_data["id"],
+            choices=[choice],
+            created=get_utc_time_int(),
+            model=response_data["model"],
+            usage=UsageStatistics(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+            ),
+        )
+    # if llm_config.put_inner_thoughts_in_kwargs:
+    #     chat_completion_response = unpack_all_inner_thoughts_from_kwargs(
+    #         response=chat_completion_response, inner_thoughts_key=INNER_THOUGHTS_KWARG
+    #     )
+    
+    return chat_completion_response
+
+
+
+# Testing
+
+if __name__ == "__main__":
+    from letta.schemas.letta_message_content import TextContent
+    import json
+    
+    # Initialize the OpenAI client
+    client = OpenAIClient()
+    
+    def test_single_user_message(verbosity=None, reasoning_effort=None):
+        """Test single user message with optional verbosity and reasoning effort"""
+        print(f"\n=== Testing Single User Message (verbosity={verbosity}, reasoning_effort={reasoning_effort}) ===")
+        
+        # Create LLM config with optional parameters
+        config_params = {
+            "model": "gpt-5",
+            "model_endpoint_type": "openai", 
+            "model_endpoint": "https://api.openai.com/v1"
+        }
+        if verbosity:
+            config_params["verbosity"] = verbosity
+        if reasoning_effort:
+            config_params["reasoning_effort"] = reasoning_effort
+            
+        llm_config = LLMConfig(**config_params)
+        
+        # Single user message
+        messages = [
+            PydanticMessage(role="system", content=[TextContent(text="Return ur answer in french always")]),
+            PydanticMessage(role="user", content=[TextContent(text="What is the capital of France?")])
+        ]
+        
+        try:
+            request_data = client.build_request_data(messages, llm_config)
+            response = client.request(request_data, llm_config)
+            print("Request Data:", json.dumps(request_data, indent=2))
+            # print("Response:", json.dumps(response, indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_conversation_history(verbosity=None):
+        """Test text-only conversation history"""
+        print(f"\n=== Testing Conversation History (verbosity={verbosity}) ===")
+        
+        config_params = {
+            "model": "gpt-5",
+            "model_endpoint_type": "openai",
+            "model_endpoint": "https://api.openai.com/v1"
+        }
+        if verbosity:
+            config_params["verbosity"] = verbosity
+            
+        llm_config = LLMConfig(**config_params)
+        
+        # Multi-turn conversation
+        messages = [
+            PydanticMessage(role="user", content=[TextContent(text="Hello, I need help with math")]),
+            PydanticMessage(role="assistant", content=[TextContent(text="I'd be happy to help you with math! What specific topic are you working on?")]),
+            PydanticMessage(role="user", content=[TextContent(text="I'm struggling with calculus derivatives")]),
+            PydanticMessage(role="assistant", content=[TextContent(text="Derivatives can be tricky! Let's start with the basics. What's your current understanding of limits?")]),
+            PydanticMessage(role="user", content=[TextContent(text="I understand limits but I'm confused about the chain rule")])
+        ]
+        
+        try:
+            request_data = client.build_request_data(messages, llm_config)
+            response = client.request(request_data, llm_config)
+            print("Request Data:", json.dumps(request_data, indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_with_tools(verbosity=None, reasoning_effort=None):
+        """Test single user message with sample tools"""
+        print(f"\n=== Testing with Tools (verbosity={verbosity}, reasoning_effort={reasoning_effort}) ===")
+        
+        config_params = {
+            "model": "gpt-5",
+            "model_endpoint_type": "openai",
+            "model_endpoint": "https://api.openai.com/v1"
+        }
+
+        if verbosity:
+            config_params["verbosity"] = verbosity
+        if reasoning_effort:
+            config_params["reasoning_effort"] = reasoning_effort
+            
+        llm_config = LLMConfig(**config_params)
+        
+        # Sample tools
+        tools = [
+            {
+                "name": "get_weather",
+                "description": "Get the current weather for a location",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The city and state, e.g. San Francisco, CA"
+                        }
+                    },
+                    "required": ["location"]
+                }
+            },
+            {
+                "name": "calculate",
+                "description": "Perform mathematical calculations",
+                "parameters": {
+                    "type": "object", 
+                    "properties": {
+                        "expression": {
+                            "type": "string",
+                            "description": "Mathematical expression to evaluate"
+                        }
+                    },
+                    "required": ["expression"]
+                }
+            }
+        ]
+        
+        messages = [
+            PydanticMessage(role="user", content=[TextContent(text="What's the weather like in New York and calculate 15 * 23 for me do it at once?")])
+        ]
+        
+        try:
+            request_data = client.build_request_data(messages, llm_config, tools=tools)
+            response = client.request(request_data, llm_config)
+            print("Request Data:", json.dumps(request_data, indent=2))
+            print ("CONVERTING BACK: ", json.dumps(convert_responses_api_to_chat_completion(response, llm_config).model_dump(),indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def test_reasoning_effort_levels():
+        """Test different reasoning effort levels"""
+        print(f"\n=== Testing Reasoning Effort Levels ===")
+        
+        reasoning_levels = ["minimal", "low", "medium", "high"]
+        
+        for effort in reasoning_levels:
+            print(f"\n--- Testing reasoning_effort={effort} ---")
+            test_single_user_message(reasoning_effort=effort)
+    
+    def test_verbosity_levels():
+        """Test different verbosity levels"""
+        print(f"\n=== Testing Verbosity Levels ===")
+        
+        verbosity_levels = ["low", "medium", "high"]
+        
+        for verbosity in verbosity_levels:
+            print(f"\n--- Testing verbosity={verbosity} ---")
+            test_single_user_message(verbosity=verbosity)
+    
+    def test_parameter_combinations():
+        """Test combinations of different parameters"""
+        print(f"\n=== Testing Parameter Combinations ===")
+        
+        # Test verbosity + reasoning + tools
+        print(f"\n--- Testing verbosity=high + reasoning_effort=medium + tools ---")
+        test_with_tools(verbosity="high", reasoning_effort="medium")
+        
+        # Test conversation history + verbosity
+        print(f"\n--- Testing conversation history + verbosity=low ---")
+        test_conversation_history(verbosity="low")
+    
+    def test_gpt5_specific():
+        """Test GPT-5 specific features"""
+        print(f"\n=== Testing GPT-5 Specific Features ===")
+        
+        # Test GPT-5 with verbosity and reasoning
+        config_params = {
+            "model": "gpt-5",
+            "model_endpoint_type": "openai",
+            "model_endpoint": "https://api.openai.com/v1",
+            "verbosity": "high",
+            "reasoning_effort": "high"
+        }
+        
+        llm_config = LLMConfig(**config_params)
+        
+        messages = [
+            PydanticMessage(role="user", content=[TextContent(text="Explain quantum computing in simple terms")])
+        ]
+        
+        try:
+            request_data = client.build_request_data(messages, llm_config)
+            response = client.request(request_data, llm_config)
+            print("Request Data:", json.dumps(request_data, indent=2))
+            print("Response:", json.dumps(response, indent=2))
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    # Run all tests
+    print("Starting OpenAI Responses API Tests...")
+    
+    # Basic tests
+    # test_single_user_message()
+    test_conversation_history()
+    # test_with_tools()
+    
+    # # Parameter-specific tests
+    # test_reasoning_effort_levels()
+    # test_verbosity_levels()
+    # test_parameter_combinations()
+    
+    # # Model-specific tests
+    # test_gpt5_specific()
+    
+    print("\n=== All tests completed ===")
