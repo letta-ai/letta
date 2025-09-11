@@ -62,11 +62,18 @@ class TurbopufferClient:
         """
         from letta.llm_api.llm_client import LLMClient
 
+        # filter out empty strings after stripping
+        filtered_texts = [text for text in texts if text.strip()]
+
+        # skip embedding if no valid texts
+        if not filtered_texts:
+            return []
+
         embedding_client = LLMClient.create(
             provider_type=self.default_embedding_config.embedding_endpoint_type,
             actor=actor,
         )
-        embeddings = await embedding_client.request_embeddings(texts, self.default_embedding_config)
+        embeddings = await embedding_client.request_embeddings(filtered_texts, self.default_embedding_config)
         return embeddings
 
     @trace_method
@@ -119,8 +126,16 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
+        # filter out empty text chunks
+        filtered_chunks = [(i, text) for i, text in enumerate(text_chunks) if text.strip()]
+
+        if not filtered_chunks:
+            logger.warning("All text chunks were empty, skipping insertion")
+            return []
+
         # generate embeddings using the default config
-        embeddings = await self._generate_embeddings(text_chunks, actor)
+        filtered_texts = [text for _, text in filtered_chunks]
+        embeddings = await self._generate_embeddings(filtered_texts, actor)
 
         namespace_name = await self._get_archive_namespace_name(archive_id)
 
@@ -152,8 +167,8 @@ class TurbopufferClient:
         tags_arrays = []  # Store tags as arrays
         passages = []
 
-        for idx, (text, embedding) in enumerate(zip(text_chunks, embeddings)):
-            passage_id = passage_ids[idx]
+        for (original_idx, text), embedding in zip(filtered_chunks, embeddings):
+            passage_id = passage_ids[original_idx]
 
             # append to columns
             ids.append(passage_id)
@@ -240,8 +255,16 @@ class TurbopufferClient:
         """
         from turbopuffer import AsyncTurbopuffer
 
+        # filter out empty message texts
+        filtered_messages = [(i, text) for i, text in enumerate(message_texts) if text.strip()]
+
+        if not filtered_messages:
+            logger.warning("All message texts were empty, skipping insertion")
+            return True
+
         # generate embeddings using the default config
-        embeddings = await self._generate_embeddings(message_texts, actor)
+        filtered_texts = [text for _, text in filtered_messages]
+        embeddings = await self._generate_embeddings(filtered_texts, actor)
 
         namespace_name = await self._get_message_namespace_name(organization_id)
 
@@ -266,8 +289,10 @@ class TurbopufferClient:
         project_ids = []
         template_ids = []
 
-        for idx, (text, embedding, role, created_at) in enumerate(zip(message_texts, embeddings, roles, created_ats)):
-            message_id = message_ids[idx]
+        for (original_idx, text), embedding in zip(filtered_messages, embeddings):
+            message_id = message_ids[original_idx]
+            role = roles[original_idx]
+            created_at = created_ats[original_idx]
 
             # ensure the provided timestamp is timezone-aware and in UTC
             if created_at.tzinfo is None:
@@ -1162,8 +1187,15 @@ class TurbopufferClient:
         if not text_chunks:
             return []
 
+        # filter out empty text chunks
+        filtered_chunks = [text for text in text_chunks if text.strip()]
+
+        if not filtered_chunks:
+            logger.warning("All text chunks were empty, skipping file passage insertion")
+            return []
+
         # generate embeddings using the default config
-        embeddings = await self._generate_embeddings(text_chunks, actor)
+        embeddings = await self._generate_embeddings(filtered_chunks, actor)
 
         namespace_name = await self._get_file_passages_namespace_name(organization_id)
 
@@ -1189,7 +1221,7 @@ class TurbopufferClient:
         created_ats = []
         passages = []
 
-        for idx, (text, embedding) in enumerate(zip(text_chunks, embeddings)):
+        for text, embedding in zip(filtered_chunks, embeddings):
             passage = PydanticPassage(
                 text=text,
                 file_id=file_id,
