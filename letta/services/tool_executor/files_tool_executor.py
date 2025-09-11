@@ -645,7 +645,7 @@ class LettaFileToolExecutor(ToolExecutor):
             raise e
 
         if not files_with_matches:
-            return f"No semantic matches found in Turbopuffer for query: '{query}'"
+            return f"No semantic matches found for query: '{query}'"
 
         # Format results
         passage_num = 0
@@ -678,7 +678,7 @@ class LettaFileToolExecutor(ToolExecutor):
 
         # create summary header
         file_count = len(files_with_matches)
-        summary = f"Found {total_hits} Turbopuffer matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
+        summary = f"Found {total_hits} matches in {file_count} file{'s' if file_count != 1 else ''} for query: '{query}'"
 
         # combine all results
         formatted_results = [summary, "=" * len(summary)] + results
