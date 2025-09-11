@@ -79,11 +79,17 @@ class MCPManager:
         except Exception as e:
             # MCP tool listing errors are often due to connection/configuration issues, not system errors
             # Log at info level to avoid triggering Sentry alerts for expected failures
-            logger.info(f"Error listing tools for MCP server {mcp_server_name}: {e}")
-            return []
+            logger.warning(f"Error listing tools for MCP server {mcp_server_name}: {e}")
+            raise e
         finally:
             if mcp_client:
-                await mcp_client.cleanup()
+                try:
+                    await mcp_client.cleanup()
+                except* Exception as eg:
+                    for e in eg.exceptions:
+                        logger.warning(f"Error listing tools for MCP server {mcp_server_name}: {e}")
+                        raise e
+
 
     @enforce_types
     async def execute_mcp_server_tool(
