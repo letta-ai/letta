@@ -198,14 +198,15 @@ class OpenAIClient(LLMClientBase):
         # TODO(matt) move into LLMConfig
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
-        if self.requires_auto_tool_choice(llm_config):
-            tool_choice = "auto"
-        elif tools:
-            # only set if tools is non-Null
-            tool_choice = "required"
+        if tools:  # only set tool_choice if tools exist
+            if self.requires_auto_tool_choice(llm_config):
+                tool_choice = "auto"
+            else:
+                # only set if tools is non-Null
+                tool_choice = "required"
 
-        if force_tool_call is not None:
-            tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+            if force_tool_call is not None:
+                tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
 
         data = ChatCompletionRequest(
             model=model,
