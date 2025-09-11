@@ -56,7 +56,8 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             f"{message}"
         )
 
-        return str(await self._process_agent(agent_id=other_agent_id, message=augmented_message))
+        other_agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=other_agent_id, actor=self.actor)
+        return str(await self._process_agent(agent_state=other_agent_state, message=augmented_message))
 
     async def send_message_to_agents_matching_tags_async(
         self, agent_state: AgentState, message: str, match_all: List[str], match_some: List[str]
@@ -77,24 +78,19 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
 
         tasks = [
             safe_create_task(
-                self._process_agent(agent_id=agent_state.id, message=augmented_message), label=f"process_agent_{agent_state.id}"
+                self._process_agent(agent_state=agent_state, message=augmented_message), label=f"process_agent_{agent_state.id}"
             )
             for agent_state in matching_agents
         ]
         results = await asyncio.gather(*tasks)
         return str(results)
 
-    async def _process_agent(self, agent_id: str, message: str) -> Dict[str, Any]:
-        from letta.agents.letta_agent import LettaAgent
+    async def _process_agent(self, agent_state: AgentState, message: str) -> Dict[str, Any]:
+        from letta.agents.letta_agent_v2 import LettaAgentV2
 
         try:
-            letta_agent = LettaAgent(
-                agent_id=agent_id,
-                message_manager=self.message_manager,
-                agent_manager=self.agent_manager,
-                block_manager=self.block_manager,
-                job_manager=self.job_manager,
-                passage_manager=self.passage_manager,
+            letta_agent = LettaAgentV2(
+                agent_state=agent_state,
                 actor=self.actor,
             )
 
@@ -104,13 +100,13 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             send_message_content = [message.content for message in messages if isinstance(message, AssistantMessage)]
 
             return {
-                "agent_id": agent_id,
+                "agent_id": agent_state.id,
                 "response": send_message_content if send_message_content else ["<no response>"],
             }
 
         except Exception as e:
             return {
-                "agent_id": agent_id,
+                "agent_id": agent_state.id,
                 "error": str(e),
                 "type": type(e).__name__,
             }
@@ -127,7 +123,10 @@ class LettaMultiAgentToolExecutor(ToolExecutor):
             f"{message}"
         )
 
-        task = safe_create_task(self._process_agent(agent_id=other_agent_id, message=prefixed), label=f"send_message_to_{other_agent_id}")
+        other_agent_state = await self.agent_manager.get_agent_by_id_async(agent_id=other_agent_id, actor=self.actor)
+        task = safe_create_task(
+            self._process_agent(agent_state=other_agent_state, message=prefixed), label=f"send_message_to_{other_agent_id}"
+        )
 
         task.add_done_callback(lambda t: (logger.error(f"Async send_message task failed: {t.exception()}") if t.exception() else None))
 
