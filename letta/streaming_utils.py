@@ -112,6 +112,14 @@ class JSONInnerThoughtsExtractor:
                                 self.main_buffer += self.main_json_held_buffer
                                 self.main_json_held_buffer = ""
                                 self.hold_main_json = False
+                        elif self.state == "value":
+                            # Opening quote for a string value (non-inner-thoughts only)
+                            if not self.is_inner_thoughts_value:
+                                if self.hold_main_json:
+                                    self.main_json_held_buffer += '"'
+                                else:
+                                    updates_main_json += '"'
+                                    self.main_buffer += '"'
                     else:
                         if self.state == "key":
                             self.state = "colon"
@@ -157,17 +165,19 @@ class JSONInnerThoughtsExtractor:
                             self.main_buffer += c
             else:
                 if c == ":" and self.state == "colon":
+                    # Transition to reading a value; don't pre-insert quotes
                     self.state = "value"
                     self.is_inner_thoughts_value = self.current_key == self.inner_thoughts_key
                     if self.is_inner_thoughts_value:
-                        pass  # Do not include 'inner_thoughts' key in main_json
+                        # Do not include 'inner_thoughts' key in main_json
+                        pass
                     else:
                         key_colon = f'"{self.current_key}":'
                         if self.hold_main_json:
-                            self.main_json_held_buffer += key_colon + '"'
+                            self.main_json_held_buffer += key_colon
                         else:
-                            updates_main_json += key_colon + '"'
-                            self.main_buffer += key_colon + '"'
+                            updates_main_json += key_colon
+                            self.main_buffer += key_colon
                 elif c == "," and self.state == "comma_or_end":
                     if self.is_inner_thoughts_value:
                         # Inner thoughts value ended

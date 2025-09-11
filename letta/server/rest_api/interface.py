@@ -295,6 +295,15 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
         self.optimistic_json_parser = OptimisticJSONParser()
         self.current_json_parse_result = {}
 
+        # Generic JSON reader for raw argument streaming when inner thoughts
+        # are not embedded in kwargs. Using this avoids emitting partial keys
+        # (e.g., a trailing '"request_heartbeat"' without a value).
+        self._raw_args_reader = JSONInnerThoughtsExtractor(
+            inner_thoughts_key=inner_thoughts_kwarg,
+            wait_for_first_key=False,
+        )
+        self._raw_args_tool_call_id = None
+
         # Store metadata passed from server
         self.metadata = {}
 
@@ -654,11 +663,25 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                     tool_call_delta = {}
                     if tool_call.id:
                         tool_call_delta["id"] = tool_call.id
+                        # Reset raw args reader per tool_call id
+                        if self._raw_args_tool_call_id != tool_call.id:
+                            self._raw_args_tool_call_id = tool_call.id
+                            self._raw_args_reader = JSONInnerThoughtsExtractor(
+                                inner_thoughts_key=self.inner_thoughts_kwarg,
+                                wait_for_first_key=False,
+                            )
                     if tool_call.function:
-                        if tool_call.function.arguments:
-                            tool_call_delta["arguments"] = tool_call.function.arguments
+                        # Stream name fragments as-is
                         if tool_call.function.name:
                             tool_call_delta["name"] = tool_call.function.name
+                        # For arguments, incrementally parse to avoid partial keys
+                        if tool_call.function.arguments:
+                            self.current_function_arguments += tool_call.function.arguments
+                            updates_main_json, _ = self._raw_args_reader.process_fragment(
+                                tool_call.function.arguments
+                            )
+                            if updates_main_json:
+                                tool_call_delta["arguments"] = updates_main_json
 
                     # We might end up with a no-op, in which case we should omit
                     if (
