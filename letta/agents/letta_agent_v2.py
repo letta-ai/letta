@@ -213,10 +213,17 @@ class LettaAgentV2(BaseAgentV2):
 
         if self.stop_reason is None:
             self.stop_reason = LettaStopReason(stop_reason=StopReasonType.end_turn.value)
+
+        result = LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+        if run_id:
+            if self.job_update_metadata is None:
+                self.job_update_metadata = {}
+            self.job_update_metadata["result"] = result.model_dump(mode="json")
+
         await self._request_checkpoint_finish(
             request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns, run_id=run_id
         )
-        return LettaResponse(messages=response_letta_messages, stop_reason=self.stop_reason, usage=self.usage)
+        return result
 
     @trace_method
     async def stream(
@@ -302,6 +309,12 @@ class LettaAgentV2(BaseAgentV2):
             if self.stop_reason:
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
             raise
+
+        if run_id:
+            result = LettaResponse(messages=self.response_messages, stop_reason=self.stop_reason, usage=self.usage)
+            if self.job_update_metadata is None:
+                self.job_update_metadata = {}
+            self.job_update_metadata["result"] = result.model_dump(mode="json")
 
         await self._request_checkpoint_finish(request_span=request_span, request_start_timestamp_ns=request_start_timestamp_ns)
         for finish_chunk in self.get_finish_chunks_for_stream(self.usage, self.stop_reason):
