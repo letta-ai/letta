@@ -23,7 +23,7 @@ from letta.services.helpers.tool_execution_helper import (
 from letta.services.helpers.tool_parser_helper import parse_stdout_best_effort
 from letta.services.tool_sandbox.base import AsyncToolSandboxBase
 from letta.settings import tool_settings
-from letta.utils import get_friendly_error_msg, parse_stderr_error_msg
+from letta.utils import get_friendly_error_msg, parse_stderr_error_msg, safe_create_task
 
 logger = get_logger(__name__)
 
@@ -89,7 +89,7 @@ class AsyncToolSandboxLocal(AsyncToolSandboxBase):
         venv_preparation_task = None
         if use_venv:
             venv_path = str(os.path.join(sandbox_dir, local_configs.venv_name))
-            venv_preparation_task = asyncio.create_task(self._prepare_venv(local_configs, venv_path, env))
+            venv_preparation_task = safe_create_task(self._prepare_venv(local_configs, venv_path, env), label="prepare_venv")
 
         # Generate and write execution script (always with markers, since we rely on stdout)
         code = await self.generate_execution_script(agent_state=agent_state, wrap_print_with_markers=True)
