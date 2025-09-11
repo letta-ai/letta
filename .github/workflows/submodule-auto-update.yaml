@@ -388,12 +388,8 @@ jobs:
           PR_NUMBER=$(gh pr list --head $TEMP_BRANCH --json number --jq '.[0].number')
           echo "Found PR #$PR_NUMBER for branch $TEMP_BRANCH"
 
-          # Auto-approve the PR (GitHub App can approve its own PRs)
-          echo "Auto-approving PR #$PR_NUMBER..."
-          gh pr review $PR_NUMBER --approve --body "Auto-approved: All required tests passed ✅"
-
-          # Merge the PR (try admin merge if regular merge fails)
-          echo "Merging PR #$PR_NUMBER..."
+          # Use admin merge to bypass approval requirement
+          echo "Merging PR #$PR_NUMBER with admin privileges..."
           gh pr merge $PR_NUMBER --squash --delete-branch --admin --body "All tests passed successfully:
           ✅ End-to-End Tests
           ✅ Cloud API Stability Tests
