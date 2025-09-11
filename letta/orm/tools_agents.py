@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.orm import Base
@@ -8,7 +8,10 @@ class ToolsAgents(Base):
     """Agents can have one or many tools associated with them."""
 
     __tablename__ = "tools_agents"
-    __table_args__ = (UniqueConstraint("agent_id", "tool_id", name="unique_agent_tool"),)
+    __table_args__ = (
+        UniqueConstraint("agent_id", "tool_id", name="unique_agent_tool"),
+        Index("ix_tools_agents_tool_id", "tool_id"),
+    )
 
     # Each agent must have unique tool names
     agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), primary_key=True)
