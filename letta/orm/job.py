@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import JSON, BigInteger, Index, String
+from sqlalchemy import JSON, BigInteger, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import UserMixin
@@ -12,6 +12,7 @@ from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage
     from letta.orm.message import Message
+    from letta.orm.organization import Organization
     from letta.orm.step import Step
     from letta.orm.user import User
 
@@ -36,6 +37,7 @@ class Job(SqlalchemyBase, UserMixin):
     request_config: Mapped[Optional[LettaRequestConfig]] = mapped_column(
         JSON, nullable=True, doc="The request configuration for the job, stored as JSON."
     )
+    organization_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("organizations.id"))
 
     # callback related columns
     callback_url: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="When set, POST to this URL after job completion.")
@@ -53,6 +55,8 @@ class Job(SqlalchemyBase, UserMixin):
     user: Mapped["User"] = relationship("User", back_populates="jobs")
     job_messages: Mapped[List["JobMessage"]] = relationship("JobMessage", back_populates="job", cascade="all, delete-orphan")
     steps: Mapped[List["Step"]] = relationship("Step", back_populates="job", cascade="save-update")
+    # organization relationship (nullable for backward compatibility)
+    organization: Mapped[Optional["Organization"]] = relationship("Organization", back_populates="jobs")
 
     @property
     def messages(self) -> List["Message"]:
