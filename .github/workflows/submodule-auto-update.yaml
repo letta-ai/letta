@@ -164,13 +164,13 @@ jobs:
         run: |
           echo "Waiting for tests to complete on PR..."
 
-          # Define the required test contexts to monitor (exact workflow names)
+          # Define the required test contexts to monitor (partial matching patterns)
           REQUIRED_TESTS=(
-            "🦸️ End-to-End Tests"
-            "☁️ Cloud API Stability Test"
-            "🕸️🧪 [Web] Lint and Test"
-            "Run cloud-api integration tests"
-            "🦸️ Migration API Stability"
+            "End-to-End Tests"
+            "Cloud API Stability"
+            "Web.*Lint and Test"
+            "cloud-api integration tests"
+            "Migration API Stability"
           )
 
           # Find the PR number
@@ -197,6 +197,10 @@ jobs:
               continue
             fi
 
+            # Debug: show all available status check contexts
+            echo "Available status check contexts:"
+            echo "$PR_STATUS" | jq -r '.[] | .context // "null"'
+
             # Check each required test individually
             ALL_PASSED=true
             ALL_COMPLETED=true
@@ -205,8 +209,8 @@ jobs:
             SUCCESS_REQUIRED=()
 
             for test in "${REQUIRED_TESTS[@]}"; do
-              # Check if this required test exists in the status checks
-              TEST_STATUS=$(echo "$PR_STATUS" | jq -r --arg test "$test" '.[] | select(.context | test($test)) | .conclusion')
+              # Check if this required test exists in the status checks (handle null context gracefully)
+              TEST_STATUS=$(echo "$PR_STATUS" | jq -r --arg test "$test" '.[] | select(.context != null and (.context | test($test))) | .conclusion')
 
               if [ -z "$TEST_STATUS" ]; then
                 echo "Required test '$test' not found in status checks, waiting..."
