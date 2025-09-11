@@ -176,14 +176,13 @@ jobs:
 
           echo "Monitoring PR #$PR_NUMBER"
 
-          # Define required tests with flexible matching patterns
-          # These will be matched against check names case-insensitively
+          # Define required test check names (exact names from gh pr checks)
           declare -A TEST_PATTERNS
-          TEST_PATTERNS["e2e"]="End-to-End.*cypress"
-          TEST_PATTERNS["cloud-api-stability"]="Cloud API Stability"
-          TEST_PATTERNS["web-lint"]="Web.*Lint.*Test"
-          TEST_PATTERNS["cloud-api-integration"]="cloud-api.*integration"
-          TEST_PATTERNS["migration-api"]="Migration.*API"
+          TEST_PATTERNS["e2e"]="^cypress-run$"
+          TEST_PATTERNS["cloud-api-stability"]="^cloud-api-test$"
+          TEST_PATTERNS["web-lint"]="^main$"
+          TEST_PATTERNS["cloud-api-integration"]="^cloud-api-integration-tests$"
+          TEST_PATTERNS["migration-api"]="^migration-api-stability$"
 
           echo "Required test patterns:"
           for key in "${!TEST_PATTERNS[@]}"; do
@@ -205,9 +204,9 @@ jobs:
             echo "Check #$CHECK_COUNT at $(date '+%H:%M:%S') (${WAIT_TIME}s elapsed)"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            # Get check runs using gh pr checks (more reliable)
+            # Get check runs using gh pr checks
             echo "Fetching check status..."
-            PR_CHECKS=$(gh pr checks $PR_NUMBER --json name,status,conclusion 2>/dev/null || echo "[]")
+            PR_CHECKS=$(gh pr checks $PR_NUMBER --json name,state 2>/dev/null || echo "[]")
 
             # Handle no checks case
             if [ "$PR_CHECKS" = "[]" ] || [ -z "$PR_CHECKS" ]; then
@@ -244,14 +243,14 @@ jobs:
 
             # Display all checks (excluding Vercel explicitly)
             echo "Available checks:"
-            echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel") | not) | "  • \(.name): \(.status) [\(.conclusion // "pending")]"' | sort
+            echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel") | not) | "  • \(.name): \(.state)"' | sort -u
 
             # Also show Vercel separately if it exists
-            VERCEL_CHECK=$(echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel")) | "  • [IGNORED] \(.name): \(.status) [\(.conclusion // "pending")]"' | head -1)
+            VERCEL_CHECK=$(echo "$PR_CHECKS" | jq -r '.[] | select(.name | test("Vercel")) | "\(.name): \(.state)"' | head -1)
             if [ -n "$VERCEL_CHECK" ]; then
               echo ""
               echo "Ignored checks:"
-              echo "$VERCEL_CHECK"
+              echo "  • [IGNORED] $VERCEL_CHECK"
             fi
 
             echo ""
@@ -268,12 +267,12 @@ jobs:
             for test_key in "${!TEST_PATTERNS[@]}"; do
               pattern="${TEST_PATTERNS[$test_key]}"
 
-              # Find matching check (case-insensitive, exclude Vercel)
+              # Find matching check (exact match, exclude Vercel)
               MATCHING_CHECK=$(echo "$PR_CHECKS" | jq -r --arg pattern "$pattern" '
                 .[] |
                 select(.name | test("Vercel") | not) |
-                select(.name | test($pattern; "i")) |
-                "\(.name)|\(.status)|\(.conclusion // "pending")"
+                select(.name | test($pattern)) |
+                "\(.name)|\(.state)"
               ' | head -1)
 
               if [ -z "$MATCHING_CHECK" ]; then
@@ -283,36 +282,31 @@ jobs:
                 ALL_PASSED=false
               else
                 CHECK_NAME=$(echo "$MATCHING_CHECK" | cut -d'|' -f1)
-                STATUS=$(echo "$MATCHING_CHECK" | cut -d'|' -f2)
-                CONCLUSION=$(echo "$MATCHING_CHECK" | cut -d'|' -f3)
+                STATE=$(echo "$MATCHING_CHECK" | cut -d'|' -f2)
 
-                case "$STATUS" in
-                  "COMPLETED"|"completed")
-                    case "$CONCLUSION" in
-                      "SUCCESS"|"success")
-                        echo "  ✅ $test_key: PASSED"
-                        TEST_RESULTS[$test_key]="passed"
-                        ;;
-                      "SKIPPED"|"skipped")
-                        echo "  ⏭️  $test_key: SKIPPED (treated as pass)"
-                        TEST_RESULTS[$test_key]="passed"
-                        ;;
-                      "FAILURE"|"failure")
-                        echo "  ❌ $test_key: FAILED"
-                        TEST_RESULTS[$test_key]="failed"
-                        ANY_FAILED=true
-                        ALL_PASSED=false
-                        ;;
-                      *)
-                        echo "  ⚠️  $test_key: UNKNOWN CONCLUSION: $CONCLUSION"
-                        TEST_RESULTS[$test_key]="failed"
-                        ANY_FAILED=true
-                        ALL_PASSED=false
-                        ;;
-                    esac
+                case "$STATE" in
+                  "SUCCESS")
+                    echo "  ✅ $test_key: PASSED"
+                    TEST_RESULTS[$test_key]="passed"
+                    ;;
+                  "SKIPPED")
+                    echo "  ⏭️  $test_key: SKIPPED (treated as pass)"
+                    TEST_RESULTS[$test_key]="passed"
+                    ;;
+                  "FAILURE")
+                    echo "  ❌ $test_key: FAILED"
+                    TEST_RESULTS[$test_key]="failed"
+                    ANY_FAILED=true
+                    ALL_PASSED=false
+                    ;;
+                  "IN_PROGRESS"|"PENDING"|"QUEUED")
+                    echo "  ⏳ $test_key: RUNNING"
+                    TEST_RESULTS[$test_key]="running"
+                    ANY_PENDING=true
+                    ALL_PASSED=false
                     ;;
                   *)
-                    echo "  ⏳ $test_key: RUNNING"
+                    echo "  ⚠️  $test_key: UNKNOWN STATE: $STATE"
                     TEST_RESULTS[$test_key]="running"
                     ANY_PENDING=true
                     ALL_PASSED=false
