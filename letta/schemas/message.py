@@ -1027,10 +1027,13 @@ class Message(BaseMessage):
         result = [m for m in result if m is not None]
         return result
 
-    def to_google_ai_dict(self, put_inner_thoughts_in_kwargs: bool = True) -> dict:
+    def to_google_dict(self, put_inner_thoughts_in_kwargs: bool = True) -> dict | None:
         """
         Go from Message class to Google AI REST message object
         """
+        if self.role == "approval" and self.tool_calls is None:
+            return None
+
         # type Content: https://ai.google.dev/api/rest/v1/Content / https://ai.google.dev/api/rest/v1beta/Content
         #     parts[]: Part
         #     role: str ('user' or 'model')
@@ -1076,7 +1079,7 @@ class Message(BaseMessage):
                 "parts": content_parts,
             }
 
-        elif self.role == "assistant":
+        elif self.role == "assistant" or self.role == "approval":
             assert self.tool_calls is not None or text_content is not None
             google_ai_message = {
                 "role": "model",  # NOTE: different
@@ -1163,6 +1166,20 @@ class Message(BaseMessage):
             )
 
         return google_ai_message
+
+    @staticmethod
+    def to_google_dicts_from_list(
+        messages: List[Message],
+        put_inner_thoughts_in_kwargs: bool = True,
+    ):
+        result = [
+            m.to_google_dict(
+                put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+            )
+            for m in messages
+        ]
+        result = [m for m in result if m is not None]
+        return result
 
     @staticmethod
     def generate_otid_from_id(message_id: str, index: int) -> str:
