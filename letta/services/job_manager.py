@@ -1,6 +1,6 @@
 from functools import partial, reduce
 from operator import add
-from typing import List, Literal, Optional, Union
+from typing import List, Optional, Union
 
 from httpx import AsyncClient, post
 from sqlalchemy import select
@@ -39,8 +39,9 @@ class JobManager:
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
         with db_registry.session() as session:
-            # Associate the job with the user
+            # Associate the job with the user and organization
             pydantic_job.user_id = actor.id
+            pydantic_job.organization_id = actor.organization_id
             job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
             job.create(session, actor=actor)  # Save job in the database
@@ -53,8 +54,9 @@ class JobManager:
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
         async with db_registry.async_session() as session:
-            # Associate the job with the user
+            # Associate the job with the user and organization
             pydantic_job.user_id = actor.id
+            pydantic_job.organization_id = actor.organization_id
             job_data = pydantic_job.model_dump(to_orm=True)
             job = JobModel(**job_data)
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
@@ -70,7 +72,7 @@ class JobManager:
         needs_callback = False
         callback_url = None
         with db_registry.session() as session:
-            job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+            job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             not_completed_before = not bool(job.completed_at)
 
             # Check if we'll need to dispatch callback
@@ -80,7 +82,7 @@ class JobManager:
 
         # Update the job first to get the final metadata
         with db_registry.session() as session:
-            job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+            job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             not_completed_before = not bool(job.completed_at)
 
             # Update job attributes with only the fields that were explicitly set
@@ -116,7 +118,7 @@ class JobManager:
 
             # Update callback status in a separate transaction
             with db_registry.session() as session:
-                job = self._verify_job_access(session=session, job_id=job_id, actor=actor, access=["write"])
+                job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
                 job.callback_sent_at = callback_result["callback_sent_at"]
                 job.callback_status_code = callback_result.get("callback_status_code")
                 job.callback_error = callback_result.get("callback_error")
@@ -135,7 +137,7 @@ class JobManager:
         needs_callback = False
         callback_url = None
         async with db_registry.async_session() as session:
-            job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
 
             # Safely update job status with state transition guards: Created -> Pending -> Running --> <Terminal>
             if safe_update:
@@ -191,7 +193,7 @@ class JobManager:
 
             # Update callback status in a separate transaction
             async with db_registry.async_session() as session:
-                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
                 job.callback_sent_at = callback_result["callback_sent_at"]
                 job.callback_status_code = callback_result.get("callback_status_code")
                 job.callback_error = callback_result.get("callback_error")
@@ -233,7 +235,7 @@ class JobManager:
         """Fetch a job by its ID."""
         with db_registry.session() as session:
             # Retrieve job by ID using the Job model's read method
-            job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
+            job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             return job.to_pydantic()
 
     @enforce_types
@@ -242,7 +244,7 @@ class JobManager:
         """Fetch a job by its ID asynchronously."""
         async with db_registry.async_session() as session:
             # Retrieve job by ID using the Job model's read method
-            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.USER)
+            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             return job.to_pydantic()
 
     @enforce_types
@@ -259,7 +261,7 @@ class JobManager:
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
         with db_registry.session() as session:
-            filter_kwargs = {"user_id": actor.id, "job_type": job_type}
+            filter_kwargs = {"organization_id": actor.organization_id, "job_type": job_type}
 
             # Add status filter if provided
             if statuses:
@@ -293,7 +295,7 @@ class JobManager:
 
         async with db_registry.async_session() as session:
             # build base query
-            query = select(JobModel).where(JobModel.user_id == actor.id).where(JobModel.job_type == job_type)
+            query = select(JobModel).where(JobModel.organization_id == actor.organization_id).where(JobModel.job_type == job_type)
 
             # add status filter if provided
             if statuses:
@@ -373,7 +375,7 @@ class JobManager:
     def delete_job_by_id(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         with db_registry.session() as session:
-            job = self._verify_job_access(session=session, job_id=job_id, actor=actor)
+            job = JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             job.hard_delete(db_session=session, actor=actor)
             return job.to_pydantic()
 
@@ -382,7 +384,7 @@ class JobManager:
     async def delete_job_by_id_async(self, job_id: str, actor: PydanticUser) -> PydanticJob:
         """Delete a job by its ID."""
         async with db_registry.async_session() as session:
-            job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor)
+            job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
             await job.hard_delete_async(db_session=session, actor=actor)
             return job.to_pydantic()
 
@@ -500,7 +502,7 @@ class JobManager:
         """
         with db_registry.session() as session:
             # First verify job exists and user has access
-            self._verify_job_access(session, job_id, actor, access=["write"])
+            JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
 
             # Create new JobMessage association
             job_message = JobMessage(job_id=job_id, message_id=message_id)
@@ -527,7 +529,7 @@ class JobManager:
 
         async with db_registry.async_session() as session:
             # First verify job exists and user has access
-            await self._verify_job_access_async(session, job_id, actor, access=["write"])
+            await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
 
             # Create new JobMessage associations
             job_messages = [JobMessage(job_id=job_id, message_id=message_id) for message_id in message_ids]
@@ -552,7 +554,7 @@ class JobManager:
         """
         with db_registry.session() as session:
             # First verify job exists and user has access
-            self._verify_job_access(session, job_id, actor)
+            JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
 
             # Get the latest usage statistics for the job
             latest_stats = session.query(Step).filter(Step.job_id == job_id).order_by(Step.created_at.desc()).all()
@@ -595,7 +597,7 @@ class JobManager:
         """
         with db_registry.session() as session:
             # First verify job exists and user has access
-            self._verify_job_access(session, job_id, actor, access=["write"])
+            JobModel.read(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
 
             # Manually log step with usage data
             # TODO(@caren): log step under the hood and remove this
@@ -722,63 +724,6 @@ class JobManager:
 
         return messages
 
-    def _verify_job_access(
-        self,
-        session: Session,
-        job_id: str,
-        actor: PydanticUser,
-        access: List[Literal["read", "write", "admin"]] = ["read"],
-    ) -> JobModel:
-        """
-        Verify that a job exists and the user has the required access.
-
-        Args:
-            session: The database session
-            job_id: The ID of the job to verify
-            actor: The user making the request
-
-        Returns:
-            The job if it exists and the user has access
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        job = session.execute(job_query).scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
-
-    async def _verify_job_access_async(
-        self,
-        session: Session,
-        job_id: str,
-        actor: PydanticUser,
-        access: List[Literal["read", "write", "delete"]] = ["read"],
-    ) -> JobModel:
-        """
-        Verify that a job exists and the user has the required access.
-
-        Args:
-            session: The database session
-            job_id: The ID of the job to verify
-            actor: The user making the request
-
-        Returns:
-            The job if it exists and the user has access
-
-        Raises:
-            NoResultFound: If the job does not exist or user does not have access
-        """
-        job_query = select(JobModel).where(JobModel.id == job_id)
-        job_query = JobModel.apply_access_predicate(job_query, actor, access, AccessType.USER)
-        result = await session.execute(job_query)
-        job = result.scalar_one_or_none()
-        if not job:
-            raise NoResultFound(f"Job with id {job_id} does not exist or user does not have access")
-        return job
-
     def _get_run_request_config(self, run_id: str) -> LettaRequestConfig:
         """
         Get the request config for a job.
@@ -799,7 +744,7 @@ class JobManager:
         """Record time to first token for a run"""
         try:
             async with db_registry.async_session() as session:
-                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
                 job.ttft_ns = ttft_ns
                 await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
                 await session.commit()
@@ -811,7 +756,7 @@ class JobManager:
         """Record total response duration for a run"""
         try:
             async with db_registry.async_session() as session:
-                job = await self._verify_job_access_async(session=session, job_id=job_id, actor=actor, access=["write"])
+                job = await JobModel.read_async(db_session=session, identifier=job_id, actor=actor, access_type=AccessType.ORGANIZATION)
                 job.total_duration_ns = total_duration_ns
                 await job.update_async(db_session=session, actor=actor, no_commit=True, no_refresh=True)
                 await session.commit()

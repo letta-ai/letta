@@ -43,11 +43,13 @@ class Job(JobBase):
 
     id: str = JobBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")
+    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the job.")
 
 
 class BatchJob(JobBase):
     id: str = JobBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the job.")
+    organization_id: Optional[str] = Field(None, description="The unique identifier of the organization associated with the job.")
     job_type: JobType = JobType.BATCH
 
     @classmethod
