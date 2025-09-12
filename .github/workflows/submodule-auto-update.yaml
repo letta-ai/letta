@@ -365,6 +365,9 @@ jobs:
     needs: update-and-verify
     if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      merge_success: ${{ steps.merge-pr.outputs.success }}
+      pr_number: ${{ steps.find-pr.outputs.pr_number }}
     steps:
       - name: Generate GitHub App Token
         id: app-token
@@ -380,28 +383,59 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Approve and Merge PR to main
+      - name: Find PR
+        id: find-pr
         run: |
           TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
-
-          # Find the PR
           PR_NUMBER=$(gh pr list --head $TEMP_BRANCH --json number --jq '.[0].number')
+
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "❌ ERROR: Could not find PR for branch $TEMP_BRANCH"
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
           echo "Found PR #$PR_NUMBER for branch $TEMP_BRANCH"
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Approve and Merge PR to main
+        id: merge-pr
+        continue-on-error: true
+        run: |
+          PR_NUMBER="${{ steps.find-pr.outputs.pr_number }}"
+
+          # Check if PR is mergeable
+          MERGEABLE=$(gh pr view $PR_NUMBER --json mergeable --jq '.mergeable')
+
+          if [ "$MERGEABLE" = "CONFLICTING" ]; then
+            echo "❌ PR #$PR_NUMBER has merge conflicts"
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
           # Use admin merge to bypass approval requirement
           echo "Merging PR #$PR_NUMBER with admin privileges..."
-          gh pr merge $PR_NUMBER --squash --delete-branch --admin --body "All tests passed successfully:
+          if gh pr merge $PR_NUMBER --squash --delete-branch --admin --body "All tests passed successfully:
           ✅ End-to-End Tests
           ✅ Cloud API Stability Tests
           ✅ Web Lint and Unit Tests
           ✅ Cloud API Integration Tests
           ✅ Web Migration API Stability Tests
 
-          Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"
+          Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"; then
+            echo "✅ Successfully merged PR #$PR_NUMBER"
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to merge PR #$PR_NUMBER"
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-  cleanup-on-failure:
+  cleanup-on-test-failure:
     needs: update-and-verify
     if: needs.update-and-verify.outputs.should_skip != 'true' && needs.update-and-verify.outputs.tests_passed != 'true'
     runs-on: ubuntu-latest
@@ -441,5 +475,87 @@ jobs:
           fi
 
           echo "🚨 Submodule update failed - tests did not pass"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+  cleanup-on-merge-failure:
+    needs: [update-and-verify, merge-to-main]
+    if: |
+      always() &&
+      needs.update-and-verify.outputs.should_skip != 'true' &&
+      needs.update-and-verify.outputs.tests_passed == 'true' &&
+      needs.merge-to-main.outputs.merge_success == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.NOTIFIER_APP_ID }}
+          private-key: ${{ secrets.NOTIFIER_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          submodules: true
+
+      - name: Handle merge failure
+        run: |
+          TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
+          PR_NUMBER="${{ needs.merge-to-main.outputs.pr_number }}"
+
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            echo "Handling merge failure for PR #$PR_NUMBER"
+
+            # Check if PR still exists and is open
+            PR_STATE=$(gh pr view $PR_NUMBER --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
+
+            if [ "$PR_STATE" = "OPEN" ]; then
+              # Add comment about merge failure
+              gh pr comment $PR_NUMBER --body "⚠️ **Merge Failed**
+
+              The automatic merge failed even though all tests passed. This could be due to:
+              - Merge conflicts with the main branch
+              - Protected branch rules
+              - GitHub API issues
+
+              **Required Actions:**
+              1. Check for merge conflicts
+              2. Manually merge if conflicts are resolved
+              3. Or close this PR and retry the update
+
+              Branch: \`$TEMP_BRANCH\`
+              Update: ${{ needs.update-and-verify.outputs.old_sha }} → ${{ needs.update-and-verify.outputs.new_sha }}"
+
+              # Optionally close the PR (uncomment if you want auto-close on merge failure)
+              # echo "Closing PR due to merge failure..."
+              # gh pr close $PR_NUMBER --comment "Closing due to merge failure. Please update manually or retry."
+              # git push origin --delete $TEMP_BRANCH || true
+            else
+              echo "PR #$PR_NUMBER is not open (state: $PR_STATE), skipping cleanup"
+            fi
+          else
+            echo "No PR number available for cleanup"
+            # Try to clean up branch anyway
+            git push origin --delete $TEMP_BRANCH 2>/dev/null || true
+          fi
+
+          # Create an issue to track the failure
+          gh issue create \
+            --title "🔴 Auto-update merge failed for ${{ needs.update-and-verify.outputs.new_sha }}" \
+            --body "The automated submodule update passed all tests but failed to merge.
+
+            **Details:**
+            - PR: #$PR_NUMBER
+            - Branch: \`$TEMP_BRANCH\`
+            - Update: ${{ needs.update-and-verify.outputs.old_sha }} → ${{ needs.update-and-verify.outputs.new_sha }}
+            - Tests: ✅ All passed
+            - Merge: ❌ Failed
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please investigate and merge manually if appropriate." \
+            --label "bug,submodule-update,merge-failure" || echo "Failed to create issue"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
