@@ -90,7 +90,6 @@ class MCPManager:
                         logger.warning(f"Error listing tools for MCP server {mcp_server_name}: {e}")
                         raise e
 
-
     @enforce_types
     async def execute_mcp_server_tool(
         self,
@@ -354,6 +353,62 @@ class MCPManager:
                 await session.rollback()
                 logger.error(f"Failed to create MCP server: {e}")
                 raise
+
+    @enforce_types
+    async def create_mcp_server_with_tools(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
+        """
+        Create a new MCP server and optimistically sync its tools.
+
+        This method:
+        1. Creates the MCP server record
+        2. Attempts to connect and fetch tools
+        3. Persists valid tools in parallel (best-effort)
+        """
+        import asyncio
+
+        # First, create the MCP server
+        created_server = await self.create_mcp_server(pydantic_mcp_server, actor)
+
+        # Optimistically try to sync tools
+        try:
+            logger.info(f"Attempting to auto-sync tools from MCP server: {created_server.server_name}")
+
+            # List all tools from the MCP server
+            mcp_tools = await self.list_mcp_server_tools(mcp_server_name=created_server.server_name, actor=actor)
+
+            # Filter out invalid tools
+            valid_tools = [tool for tool in mcp_tools if not (tool.health and tool.health.status == "INVALID")]
+
+            # Register in parallel
+            if valid_tools:
+                tool_tasks = []
+                for mcp_tool in valid_tools:
+                    tool_create = ToolCreate.from_mcp(mcp_server_name=created_server.server_name, mcp_tool=mcp_tool)
+                    task = self.tool_manager.create_mcp_tool_async(
+                        tool_create=tool_create, mcp_server_name=created_server.server_name, mcp_server_id=created_server.id, actor=actor
+                    )
+                    tool_tasks.append(task)
+
+                results = await asyncio.gather(*tool_tasks, return_exceptions=True)
+
+                successful = sum(1 for r in results if not isinstance(r, Exception))
+                failed = len(results) - successful
+                logger.info(
+                    f"Auto-sync completed for MCP server {created_server.server_name}: "
+                    f"{successful} tools persisted, {failed} failed, "
+                    f"{len(mcp_tools) - len(valid_tools)} invalid tools skipped"
+                )
+            else:
+                logger.info(f"No valid tools found to sync from MCP server {created_server.server_name}")
+
+        except Exception as e:
+            # Log the error but don't fail the server creation
+            logger.warning(
+                f"Failed to auto-sync tools from MCP server {created_server.server_name}: {e}. "
+                f"Server was created successfully but tools were not persisted."
+            )
+
+        return created_server
 
     @enforce_types
     async def update_mcp_server_by_id(self, mcp_server_id: str, mcp_server_update: UpdateMCPServer, actor: PydanticUser) -> MCPServer:
