@@ -235,7 +235,7 @@ class Settings(BaseSettings):
     disable_sqlalchemy_pooling: bool = False
     db_max_concurrent_sessions: Optional[int] = None
 
-    redis_host: Optional[str] = Field(default=None, description="Host for Redis instance")
+    redis_host: Optional[str] = Field(default="localhost", description="Host for Redis instance")
     redis_port: Optional[int] = Field(default=6379, description="Port for Redis instance")
 
     plugin_register: Optional[str] = None
