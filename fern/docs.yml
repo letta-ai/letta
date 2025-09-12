@@ -492,6 +492,10 @@ navigation:
         contents:
           - page: Async Multi-Agent
             path: pages/tutorials/multiagent_async.mdx
+      - section: Agent Templates
+        contents:
+          - page: Building customer-specific relationship agents
+            path: pages/tutorials/customer-specific-agents.mdx
 
   - tab: leaderboard
     layout:
