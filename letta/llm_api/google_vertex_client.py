@@ -93,7 +93,7 @@ class GoogleVertexClient(LLMClientBase):
                 )
             except errors.APIError as e:
                 # Retry on 503 and 500 errors as well, usually ephemeral from Gemini
-                if e.code == 503 or e.code == 500:
+                if e.code == 503 or e.code == 500 or e.code == 504:
                     logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
                     retry_count += 1
                     if retry_count > self.MAX_RETRIES:
