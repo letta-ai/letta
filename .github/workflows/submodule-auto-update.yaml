@@ -456,6 +456,10 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           submodules: true
 
+      - name: Install just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin
+
       - name: Close PR and clean up
         run: |
           TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
@@ -464,6 +468,10 @@ jobs:
           PR_NUMBER=$(gh pr list --head $TEMP_BRANCH --json number --jq '.[0].number')
           if [ "$PR_NUMBER" != "null" ] && [ -n "$PR_NUMBER" ]; then
             echo "Closing PR #$PR_NUMBER for failed tests"
+
+            # Send alert about test failure
+            just alert message="❌ Submodule auto-update tests failed for PR #$PR_NUMBER. Update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }} failed tests. PR will be closed. Check: https://github.com/${{ github.repository }}/pull/$PR_NUMBER" actor="${{ github.actor }}"
+
             gh pr close $PR_NUMBER --comment "🚨 Closing this PR because tests failed or timed out.
 
             Failed to update from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}
@@ -503,10 +511,17 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           submodules: true
 
+      - name: Install just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin
+
       - name: Handle merge failure
         run: |
           TEMP_BRANCH="auto-update-submodule-${{ needs.update-and-verify.outputs.new_sha }}"
           PR_NUMBER="${{ needs.merge-to-main.outputs.pr_number }}"
+
+          # Send alert about merge failure
+          just alert message="🚨 Submodule auto-update merge failed for PR #$PR_NUMBER. Tests passed but merge was blocked. Manual intervention required: https://github.com/${{ github.repository }}/pull/$PR_NUMBER" actor="${{ github.actor }}"
 
           if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
             echo "Handling merge failure for PR #$PR_NUMBER"
