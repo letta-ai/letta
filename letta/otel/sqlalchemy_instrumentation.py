@@ -146,9 +146,14 @@ def _instrument_engine_events(engine: Engine) -> None:
             span.end()
             context._sync_instrumentation_span = None
 
-    def handle_cursor_error(conn, cursor, statement, parameters, context, executemany):
+    def handle_cursor_error(exception_context):
         """Handle cursor execution errors."""
         if not _config["enabled"]:
+            return
+
+        # Extract context from exception_context
+        context = getattr(exception_context, "execution_context", None)
+        if not context:
             return
 
         span = getattr(context, "_sync_instrumentation_span", None)
