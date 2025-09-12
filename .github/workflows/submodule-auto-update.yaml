@@ -146,6 +146,7 @@ jobs:
           - [ ] Web Lint and Unit Tests pass
           - [ ] Cloud API Integration Tests pass
           - [ ] Web Migration API Stability Tests pass
+          - [ ] Docker Integration Tests pass
 
           🤖 This PR was automatically created by the submodule auto-update workflow.
           EOF
@@ -183,6 +184,7 @@ jobs:
           TEST_PATTERNS["web-lint"]="^main$"
           TEST_PATTERNS["cloud-api-integration"]="^cloud-api-integration-tests$"
           TEST_PATTERNS["migration-api"]="^migration-api-stability$"
+          TEST_PATTERNS["docker-integration"]="^docker-integration-test$"
 
           echo "Required test patterns:"
           for key in "${!TEST_PATTERNS[@]}"; do
@@ -423,6 +425,7 @@ jobs:
           ✅ Web Lint and Unit Tests
           ✅ Cloud API Integration Tests
           ✅ Web Migration API Stability Tests
+          ✅ Docker Integration Tests
 
           Updated from ${{ needs.update-and-verify.outputs.old_sha }} to ${{ needs.update-and-verify.outputs.new_sha }}"; then
             echo "✅ Successfully merged PR #$PR_NUMBER"
