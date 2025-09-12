@@ -497,6 +497,17 @@ class LettaAgentV2(BaseAgentV2):
                     if include_return_message_types is None or message.message_type in include_return_message_types:
                         yield message
 
+            # Persist approval responses immediately to prevent agent from getting into a bad state
+            if (
+                len(input_messages_to_persist) == 1
+                and input_messages_to_persist[0].role == "approval"
+                and persisted_messages[0].role == "approval"
+                and persisted_messages[1].role == "tool"
+            ):
+                self.agent_state.message_ids = self.agent_state.message_ids + [m.id for m in persisted_messages[:2]]
+                await self.agent_manager.update_message_ids_async(
+                    agent_id=self.agent_state.id, message_ids=self.agent_state.message_ids, actor=self.actor
+                )
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
             self.logger.error(f"Error during step processing: {e}")

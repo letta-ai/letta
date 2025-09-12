@@ -3,6 +3,7 @@ import threading
 import time
 import uuid
 from typing import List
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 from letta_client import AgentState, ApprovalCreate, Letta, MessageCreate, Tool
 from letta_client.core.api_error import ApiError
 
+from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
 from letta.log import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +21,7 @@ logger = get_logger(__name__)
 # ------------------------------
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
-USER_MESSAGE_CONTENT = "This is an automated test message. Call the get_secret_code_tool to get the code for text 'hello world'."
+USER_MESSAGE_CONTENT = "This is an automated test message. Call the get_secret_code_tool to get the code for text 'hello world'. Make sure to set request_heartbeat to True."
 USER_MESSAGE_TEST_APPROVAL: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -278,12 +280,13 @@ def test_approve_tool_call_request(
                 approval_request_id=approval_request_id,
             ),
         ],
+        stream_tokens=True,
     )
 
     messages = accumulate_chunks(response)
 
     assert messages is not None
-    assert len(messages) == 3 or len(response.messages) == 5
+    assert len(messages) == 3 or len(messages) == 5
     assert messages[0].message_type == "tool_return_message"
     assert messages[0].tool_call_id == tool_call_id
     assert messages[0].status == "success"
@@ -357,6 +360,53 @@ def test_approve_and_follow_up(
         ],
     )
 
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[3].message_type == "usage_statistics"
+
+
+def test_approve_and_follow_up_with_error(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    # Mock the streaming interface to return no tool call on the follow up request heartbeat message
+    with patch.object(AnthropicStreamingInterface, "get_tool_call_object", return_value=None):
+        response = client.agents.messages.create_stream(
+            agent_id=agent.id,
+            messages=[
+                ApprovalCreate(
+                    approve=True,
+                    approval_request_id=approval_request_id,
+                ),
+            ],
+            stream_tokens=True,
+        )
+
+        messages = accumulate_chunks(response)
+
+    assert messages is not None
+    stop_reason_message = [m for m in messages if m.message_type == "stop_reason"][0]
+    assert stop_reason_message
+    assert stop_reason_message.stop_reason == "no_tool_call"
+
+    # Ensure that agent is not bricked
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
@@ -474,6 +524,54 @@ def test_deny_and_follow_up(
         ],
     )
 
+    response = client.agents.messages.create_stream(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_FOLLOW_UP,
+        stream_tokens=True,
+    )
+
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[3].message_type == "usage_statistics"
+
+
+def test_deny_and_follow_up_with_error(
+    client: Letta,
+    agent: AgentState,
+) -> None:
+    response = client.agents.messages.create(
+        agent_id=agent.id,
+        messages=USER_MESSAGE_TEST_APPROVAL,
+    )
+    approval_request_id = response.messages[0].id
+
+    # Mock the streaming interface to return no tool call on the follow up request heartbeat message
+    with patch.object(AnthropicStreamingInterface, "get_tool_call_object", return_value=None):
+        response = client.agents.messages.create_stream(
+            agent_id=agent.id,
+            messages=[
+                ApprovalCreate(
+                    approve=False,
+                    approval_request_id=approval_request_id,
+                    reason=f"You don't need to call the tool, the secret code is {SECRET_CODE}",
+                ),
+            ],
+            stream_tokens=True,
+        )
+
+        messages = accumulate_chunks(response)
+
+    assert messages is not None
+    stop_reason_message = [m for m in messages if m.message_type == "stop_reason"][0]
+    assert stop_reason_message
+    assert stop_reason_message.stop_reason == "no_tool_call"
+
+    # Ensure that agent is not bricked
     response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
