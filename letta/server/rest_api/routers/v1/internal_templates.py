@@ -68,6 +68,8 @@ class DeploymentEntity(BaseModel):
     type: str
     name: Optional[str] = None
     description: Optional[str] = None
+    entity_id: Optional[str] = None
+    project_id: Optional[str] = None
 
 
 class ListDeploymentEntitiesResponse(BaseModel):
@@ -140,6 +142,8 @@ async def list_deployment_entities(
                             type="block",
                             name=getattr(block, "template_name", None) or getattr(block, "label", None),
                             description=block.description,
+                            entity_id=getattr(block, "entity_id", None),
+                            project_id=getattr(block, "project_id", None),
                         )
                     )
 
@@ -155,7 +159,16 @@ async def list_deployment_entities(
                 agents = result.scalars().all()
 
                 for agent in agents:
-                    entities.append(DeploymentEntity(id=agent.id, type="agent", name=agent.name, description=agent.description))
+                    entities.append(
+                        DeploymentEntity(
+                            id=agent.id,
+                            type="agent",
+                            name=agent.name,
+                            description=agent.description,
+                            entity_id=getattr(agent, "entity_id", None),
+                            project_id=getattr(agent, "project_id", None),
+                        )
+                    )
 
         # Query groups if requested
         if "group" in types_to_include:
@@ -175,6 +188,8 @@ async def list_deployment_entities(
                             type="group",
                             name=None,  # Groups don't have a name field
                             description=group.description,
+                            entity_id=getattr(group, "entity_id", None),
+                            project_id=getattr(group, "project_id", None),
                         )
                     )
 
