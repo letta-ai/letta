@@ -54,9 +54,12 @@ class AzureClient(OpenAIClient):
             api_key = model_settings.azure_api_key or os.environ.get("AZURE_API_KEY")
             base_url = model_settings.azure_base_url or os.environ.get("AZURE_BASE_URL")
             api_version = model_settings.azure_api_version or os.environ.get("AZURE_API_VERSION")
+        try:
+            client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
+            response: ChatCompletion = await client.chat.completions.create(**request_data)
+        except Exception as e:
+            raise self.handle_llm_error(e)
 
-        client = AsyncAzureOpenAI(api_key=api_key, azure_endpoint=base_url, api_version=api_version)
-        response: ChatCompletion = await client.chat.completions.create(**request_data)
         return response.model_dump()
 
     @trace_method
