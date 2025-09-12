@@ -19,7 +19,7 @@ from letta.agents.helpers import (
     generate_step_id,
 )
 from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX
-from letta.errors import ContextWindowExceededError
+from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time, get_utc_timestamp_ns, ns_to_ms
 from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
@@ -431,6 +431,9 @@ class LettaAgentV2(BaseAgentV2):
                     except ValueError as e:
                         self.stop_reason = LettaStopReason(stop_reason=StopReasonType.invalid_llm_response.value)
                         raise e
+                    except LLMError as e:
+                        self.stop_reason = LettaStopReason(stop_reason=StopReasonType.llm_api_error.value)
+                        raise e
                     except Exception as e:
                         if isinstance(e, ContextWindowExceededError) and llm_request_attempt < summarizer_settings.max_summarizer_retries:
                             # Retry case
@@ -522,6 +525,7 @@ class LettaAgentV2(BaseAgentV2):
                 StopReasonType.no_tool_call,
                 StopReasonType.invalid_tool_call,
                 StopReasonType.invalid_llm_response,
+                StopReasonType.llm_api_error,
             ):
                 self.logger.error("Error occurred during step processing, with unexpected stop reason: %s", self.stop_reason.stop_reason)
             raise e
