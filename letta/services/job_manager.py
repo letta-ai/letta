@@ -218,8 +218,17 @@ class JobManager:
         """
         try:
             job_update_builder = partial(JobUpdate, status=new_status)
+
+            # If metadata is provided, merge it with existing metadata
             if metadata:
-                job_update_builder = partial(job_update_builder, metadata=metadata)
+                # Get the current job to access existing metadata
+                current_job = await self.get_job_by_id_async(job_id=job_id, actor=actor)
+                merged_metadata = {}
+                if current_job.metadata:
+                    merged_metadata.update(current_job.metadata)
+                merged_metadata.update(metadata)
+                job_update_builder = partial(job_update_builder, metadata=merged_metadata)
+
             if new_status.is_terminal:
                 job_update_builder = partial(job_update_builder, completed_at=get_utc_time())
 
