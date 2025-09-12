@@ -60,7 +60,7 @@ def client() -> LettaSDKClient:
     yield client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def agent(client: LettaSDKClient):
     agent_state = client.agents.create(
         memory_blocks=[
