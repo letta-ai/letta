@@ -738,7 +738,8 @@ async def add_mcp_server_to_config(
                     custom_headers=request.custom_headers,
                 )
 
-            await server.mcp_manager.create_mcp_server(mapped_request, actor=actor)
+            # Create MCP server and optimistically sync tools
+            await server.mcp_manager.create_mcp_server_with_tools(mapped_request, actor=actor)
 
             # TODO: don't do this in the future (just return MCPServer)
             all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
