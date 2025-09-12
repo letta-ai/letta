@@ -306,7 +306,7 @@ class LettaAgentV2(BaseAgentV2):
                 )
 
         except:
-            if self.stop_reason:
+            if self.stop_reason and not first_chunk:
                 yield f"data: {self.stop_reason.model_dump_json()}\n\n"
             raise
 

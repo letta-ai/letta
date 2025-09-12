@@ -17,7 +17,15 @@ from starlette.middleware.cors import CORSMiddleware
 from letta.__init__ import __version__ as letta_version
 from letta.agents.exceptions import IncompatibleAgentType
 from letta.constants import ADMIN_PREFIX, API_PREFIX, OPENAI_API_PREFIX
-from letta.errors import BedrockPermissionError, LettaAgentNotFoundError, LettaUserNotFoundError
+from letta.errors import (
+    BedrockPermissionError,
+    LettaAgentNotFoundError,
+    LettaUserNotFoundError,
+    LLMAuthenticationError,
+    LLMError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
 from letta.helpers.pinecone_utils import get_pinecone_indices, should_use_pinecone, upsert_pinecone_indices
 from letta.jobs.scheduler import start_scheduler_with_leader_election
 from letta.log import get_logger
@@ -272,6 +280,58 @@ def create_application() -> "FastAPI":
                     "type": "bedrock_permission_denied",
                     "message": "Unable to access the required AI model. Please check your Bedrock permissions or contact support.",
                     "detail": {str(exc)},
+                }
+            },
+        )
+
+    @app.exception_handler(LLMTimeoutError)
+    async def llm_timeout_error_handler(request: Request, exc: LLMTimeoutError):
+        return JSONResponse(
+            status_code=504,
+            content={
+                "error": {
+                    "type": "llm_timeout",
+                    "message": "The LLM request timed out. Please try again.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LLMRateLimitError)
+    async def llm_rate_limit_error_handler(request: Request, exc: LLMRateLimitError):
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": {
+                    "type": "llm_rate_limit",
+                    "message": "Rate limit exceeded for LLM model provider. Please wait before making another request.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LLMAuthenticationError)
+    async def llm_auth_error_handler(request: Request, exc: LLMAuthenticationError):
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": {
+                    "type": "llm_authentication",
+                    "message": "Authentication failed with the LLM model provider.",
+                    "detail": str(exc),
+                }
+            },
+        )
+
+    @app.exception_handler(LLMError)
+    async def llm_error_handler(request: Request, exc: LLMError):
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": {
+                    "type": "llm_error",
+                    "message": "An error occurred with the LLM request.",
+                    "detail": str(exc),
                 }
             },
         )
