@@ -536,9 +536,7 @@ async def attach_source(
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=source_id)
-        safe_create_task(
-            server.sleeptime_document_ingest_async(agent_state, source, actor), logger=logger, label="sleeptime_document_ingest_async"
-        )
+        safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
     return agent_state
 
@@ -565,9 +563,7 @@ async def attach_folder_to_agent(
 
     if agent_state.enable_sleeptime:
         source = await server.source_manager.get_source_by_id(source_id=folder_id)
-        safe_create_task(
-            server.sleeptime_document_ingest_async(agent_state, source, actor), logger=logger, label="sleeptime_document_ingest_async"
-        )
+        safe_create_task(server.sleeptime_document_ingest_async(agent_state, source, actor), label="sleeptime_document_ingest_async")
 
     return agent_state
 
