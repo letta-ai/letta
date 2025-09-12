@@ -379,11 +379,10 @@ class GoogleVertexClient(LLMClientBase):
 
                 if content is None or content.role is None or content.parts is None:
                     # This means the response is malformed like MALFORMED_FUNCTION_CALL
-                    # NOTE: must be a ValueError to trigger a retry
                     if candidate.finish_reason == "MALFORMED_FUNCTION_CALL":
-                        raise ValueError(f"Error in response data from LLM: {candidate.finish_reason}")
+                        raise LLMServerError(f"Malformed response from Google Vertex: {candidate.finish_reason}")
                     else:
-                        raise ValueError(f"Error in response data from LLM: {candidate.model_dump()}")
+                        raise LLMServerError(f"Invalid response data from Google Vertex: {candidate.model_dump()}")
 
                 role = content.role
                 assert role == "model", f"Unknown role in response: {role}"
@@ -477,7 +476,7 @@ class GoogleVertexClient(LLMClientBase):
 
                         except json.decoder.JSONDecodeError:
                             if candidate.finish_reason == "MAX_TOKENS":
-                                raise ValueError("Could not parse response data from LLM: exceeded max token limit")
+                                raise LLMServerError("Could not parse response data from LLM: exceeded max token limit")
                             # Inner thoughts are the content by default
                             inner_thoughts = response_message.text
 
@@ -506,7 +505,7 @@ class GoogleVertexClient(LLMClientBase):
                     elif finish_reason == "RECITATION":
                         openai_finish_reason = "content_filter"
                     else:
-                        raise ValueError(f"Unrecognized finish reason in Google AI response: {finish_reason}")
+                        raise LLMServerError(f"Unrecognized finish reason in Google AI response: {finish_reason}")
 
                     choices.append(
                         Choice(
