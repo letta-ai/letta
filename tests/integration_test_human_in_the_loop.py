@@ -270,7 +270,7 @@ def test_approve_tool_call_request(
     approval_request_id = response.messages[0].id
     tool_call_id = response.messages[1].tool_call.tool_call_id
 
-    response = client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=[
             ApprovalCreate(
@@ -280,14 +280,21 @@ def test_approve_tool_call_request(
         ],
     )
 
-    assert response.messages is not None
-    assert len(response.messages) == 1 or len(response.messages) == 3
-    assert response.messages[0].message_type == "tool_return_message"
-    assert response.messages[0].tool_call_id == tool_call_id
-    assert response.messages[0].status == "success"
-    if len(response.messages) == 3:
-        assert response.messages[1].message_type == "reasoning_message"
-        assert response.messages[2].message_type == "assistant_message"
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 3 or len(response.messages) == 5
+    assert messages[0].message_type == "tool_return_message"
+    assert messages[0].tool_call_id == tool_call_id
+    assert messages[0].status == "success"
+    if len(messages) == 3:
+        assert messages[1].message_type == "stop_reason"
+        assert messages[2].message_type == "usage_statistics"
+    else:
+        assert messages[1].message_type == "reasoning_message"
+        assert messages[2].message_type == "assistant_message"
+        assert messages[3].message_type == "stop_reason"
+        assert messages[4].message_type == "usage_statistics"
 
 
 def test_approve_cursor_fetch(
@@ -350,15 +357,19 @@ def test_approve_and_follow_up(
         ],
     )
 
-    response = client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
     )
 
-    assert response.messages is not None
-    assert len(response.messages) == 2
-    assert response.messages[0].message_type == "reasoning_message"
-    assert response.messages[1].message_type == "assistant_message"
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[3].message_type == "usage_statistics"
 
 
 # ------------------------------
@@ -377,7 +388,7 @@ def test_deny_tool_call_request(
     approval_request_id = response.messages[0].id
     tool_call_id = response.messages[1].tool_call.tool_call_id
 
-    response = client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=[
             ApprovalCreate(
@@ -388,14 +399,18 @@ def test_deny_tool_call_request(
         ],
     )
 
-    assert response.messages is not None
-    assert len(response.messages) == 3
-    assert response.messages[0].message_type == "tool_return_message"
-    assert response.messages[0].tool_call_id == tool_call_id
-    assert response.messages[0].status == "error"
-    assert response.messages[1].message_type == "reasoning_message"
-    assert response.messages[2].message_type == "assistant_message"
-    assert SECRET_CODE in response.messages[2].content
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 5
+    assert messages[0].message_type == "tool_return_message"
+    assert messages[0].tool_call_id == tool_call_id
+    assert messages[0].status == "error"
+    assert messages[1].message_type == "reasoning_message"
+    assert messages[2].message_type == "assistant_message"
+    assert SECRET_CODE in messages[2].content
+    assert messages[3].message_type == "stop_reason"
+    assert messages[4].message_type == "usage_statistics"
 
 
 def test_deny_cursor_fetch(
@@ -459,12 +474,16 @@ def test_deny_and_follow_up(
         ],
     )
 
-    response = client.agents.messages.create(
+    response = client.agents.messages.create_stream(
         agent_id=agent.id,
         messages=USER_MESSAGE_FOLLOW_UP,
     )
 
-    assert response.messages is not None
-    assert len(response.messages) == 2
-    assert response.messages[0].message_type == "reasoning_message"
-    assert response.messages[1].message_type == "assistant_message"
+    messages = accumulate_chunks(response)
+
+    assert messages is not None
+    assert len(messages) == 4
+    assert messages[0].message_type == "reasoning_message"
+    assert messages[1].message_type == "assistant_message"
+    assert messages[2].message_type == "stop_reason"
+    assert messages[3].message_type == "usage_statistics"
