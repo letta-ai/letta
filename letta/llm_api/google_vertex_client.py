@@ -14,6 +14,19 @@ from google.genai.types import (
 )
 
 from letta.constants import NON_USER_MSG_PREFIX
+from letta.errors import (
+    ContextWindowExceededError,
+    ErrorCode,
+    LLMAuthenticationError,
+    LLMBadRequestError,
+    LLMConnectionError,
+    LLMNotFoundError,
+    LLMPermissionDeniedError,
+    LLMRateLimitError,
+    LLMServerError,
+    LLMTimeoutError,
+    LLMUnprocessableEntityError,
+)
 from letta.helpers.datetime_helpers import get_utc_time_int
 from letta.helpers.json_helpers import json_dumps, json_loads
 from letta.llm_api.llm_client_base import LLMClientBase
@@ -48,13 +61,16 @@ class GoogleVertexClient(LLMClientBase):
         """
         Performs underlying request to llm and returns raw response.
         """
-        client = self._get_client()
-        response = client.models.generate_content(
-            model=llm_config.model,
-            contents=request_data["contents"],
-            config=request_data["config"],
-        )
-        return response.model_dump()
+        try:
+            client = self._get_client()
+            response = client.models.generate_content(
+                model=llm_config.model,
+                contents=request_data["contents"],
+                config=request_data["config"],
+            )
+            return response.model_dump()
+        except Exception as e:
+            raise self.handle_llm_error(e)
 
     @trace_method
     async def request_async(self, request_data: dict, llm_config: LLMConfig) -> dict:
@@ -81,11 +97,11 @@ class GoogleVertexClient(LLMClientBase):
                     logger.warning(f"Received {e}, retrying {retry_count}/{self.MAX_RETRIES}")
                     retry_count += 1
                     if retry_count > self.MAX_RETRIES:
-                        raise e
+                        raise self.handle_llm_error(e)
                     continue
-                raise e
+                raise self.handle_llm_error(e)
             except Exception as e:
-                raise e
+                raise self.handle_llm_error(e)
             response_data = response.model_dump()
             is_malformed_function_call = self.is_malformed_function_call(response_data)
             if is_malformed_function_call:
@@ -581,5 +597,127 @@ class GoogleVertexClient(LLMClientBase):
 
     @trace_method
     def handle_llm_error(self, e: Exception) -> Exception:
-        # Fallback to base implementation
+        # Handle Google GenAI specific errors
+        if isinstance(e, errors.ClientError):
+            logger.warning(f"[Google Vertex] Client error ({e.code}): {e}")
+
+            # Handle specific error codes
+            if e.code == 400:
+                error_str = str(e).lower()
+                if "context" in error_str and ("exceed" in error_str or "limit" in error_str or "too long" in error_str):
+                    return ContextWindowExceededError(
+                        message=f"Bad request to Google Vertex (context window exceeded): {str(e)}",
+                    )
+                else:
+                    return LLMBadRequestError(
+                        message=f"Bad request to Google Vertex: {str(e)}",
+                        code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    )
+            elif e.code == 401:
+                return LLMAuthenticationError(
+                    message=f"Authentication failed with Google Vertex: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            elif e.code == 403:
+                return LLMPermissionDeniedError(
+                    message=f"Permission denied by Google Vertex: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            elif e.code == 404:
+                return LLMNotFoundError(
+                    message=f"Resource not found in Google Vertex: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            elif e.code == 408:
+                return LLMTimeoutError(
+                    message=f"Request to Google Vertex timed out: {str(e)}",
+                    code=ErrorCode.TIMEOUT,
+                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                )
+            elif e.code == 422:
+                return LLMUnprocessableEntityError(
+                    message=f"Invalid request content for Google Vertex: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            elif e.code == 429:
+                logger.warning("[Google Vertex] Rate limited (429). Consider backoff.")
+                return LLMRateLimitError(
+                    message=f"Rate limited by Google Vertex: {str(e)}",
+                    code=ErrorCode.RATE_LIMIT_EXCEEDED,
+                )
+            else:
+                return LLMServerError(
+                    message=f"Google Vertex client error: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "status_code": e.code,
+                        "response_json": getattr(e, "response_json", None),
+                    },
+                )
+
+        if isinstance(e, errors.ServerError):
+            logger.warning(f"[Google Vertex] Server error ({e.code}): {e}")
+
+            # Handle specific server error codes
+            if e.code == 500:
+                return LLMServerError(
+                    message=f"Google Vertex internal server error: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "status_code": e.code,
+                        "response_json": getattr(e, "response_json", None),
+                    },
+                )
+            elif e.code == 502:
+                return LLMConnectionError(
+                    message=f"Bad gateway from Google Vertex: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                )
+            elif e.code == 503:
+                return LLMServerError(
+                    message=f"Google Vertex service unavailable: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "status_code": e.code,
+                        "response_json": getattr(e, "response_json", None),
+                    },
+                )
+            elif e.code == 504:
+                return LLMTimeoutError(
+                    message=f"Gateway timeout from Google Vertex: {str(e)}",
+                    code=ErrorCode.TIMEOUT,
+                    details={"cause": str(e.__cause__) if e.__cause__ else None},
+                )
+            else:
+                return LLMServerError(
+                    message=f"Google Vertex server error: {str(e)}",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                    details={
+                        "status_code": e.code,
+                        "response_json": getattr(e, "response_json", None),
+                    },
+                )
+
+        if isinstance(e, errors.APIError):
+            logger.warning(f"[Google Vertex] API error ({e.code}): {e}")
+            return LLMServerError(
+                message=f"Google Vertex API error: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={
+                    "status_code": e.code,
+                    "response_json": getattr(e, "response_json", None),
+                },
+            )
+
+        # Handle connection-related errors
+        if "connection" in str(e).lower() or "timeout" in str(e).lower():
+            logger.warning(f"[Google Vertex] Connection/timeout error: {e}")
+            return LLMConnectionError(
+                message=f"Failed to connect to Google Vertex: {str(e)}",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
+                details={"cause": str(e.__cause__) if e.__cause__ else None},
+            )
+
+        # Fallback to base implementation for other errors
         return super().handle_llm_error(e)
