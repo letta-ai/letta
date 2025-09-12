@@ -7,6 +7,7 @@ import uuid
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, Dict, List
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -710,28 +711,6 @@ def agent_state(client: Letta) -> AgentState:
     #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
 
 
-@pytest.fixture(scope="function")
-def agent_state_no_tools(client: Letta) -> AgentState:
-    """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    The agent is named 'supervisor' and is configured with no tools.
-    """
-    send_message_tool = client.tools.list(name="send_message")[0]
-    agent_state_instance = client.agents.create(
-        name="supervisor",
-        include_base_tools=False,
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["supervisor"],
-    )
-    yield agent_state_instance
-
-    # try:
-    #     client.agents.delete(agent_state_instance.id)
-    # except Exception as e:
-    #     logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
-
-
 # ------------------------------
 # Test Cases
 # ------------------------------
@@ -925,23 +904,27 @@ def test_base64_image_input(
 def test_agent_loop_error(
     disable_e2b_api_key: Any,
     client: Letta,
-    agent_state_no_tools: AgentState,
+    agent_state: AgentState,
     llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message with a synchronous client.
     Verifies that no new messages are persisted on error.
     """
-    last_message = client.agents.messages.list(agent_id=agent_state_no_tools.id, limit=1)
-    agent_state_no_tools = client.agents.modify(agent_id=agent_state_no_tools.id, llm_config=llm_config)
-    with pytest.raises(ApiError):
-        client.agents.messages.create(
-            agent_id=agent_state_no_tools.id,
-            messages=USER_MESSAGE_FORCE_REPLY,
-        )
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    with patch("letta.agents.letta_agent_v2.LettaAgentV2.step") as mock_step:
+        mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
+
+        with pytest.raises(ApiError):
+            client.agents.messages.create(
+                agent_id=agent_state.id,
+                messages=USER_MESSAGE_FORCE_REPLY,
+            )
 
     time.sleep(0.5)
-    messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
 
@@ -1045,7 +1028,6 @@ def test_step_streaming_tool_call(
     assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "llm_config",
     TESTED_LLM_CONFIGS,
@@ -1054,25 +1036,27 @@ def test_step_streaming_tool_call(
 def test_step_stream_agent_loop_error(
     disable_e2b_api_key: Any,
     client: Letta,
-    agent_state_no_tools: AgentState,
+    agent_state: AgentState,
     llm_config: LLMConfig,
 ) -> None:
     """
     Tests sending a message with a synchronous client.
     Verifies that no new messages are persisted on error.
     """
-    last_message = client.agents.messages.list(agent_id=agent_state_no_tools.id, limit=1)
-    agent_state_no_tools = client.agents.modify(agent_id=agent_state_no_tools.id, llm_config=llm_config)
-    response = client.agents.messages.create_stream(
-        agent_id=agent_state_no_tools.id,
-        messages=USER_MESSAGE_FORCE_REPLY,
-    )
-    with pytest.raises(Exception) as exc_info:
-        for chunk in response:
-            print(chunk)
-    print("error info:", exc_info)
-    assert type(exc_info.value) in (ApiError, ValueError)
-    messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
+
+    with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
+        mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
+
+        with pytest.raises(ApiError):
+            response = client.agents.messages.create_stream(
+                agent_id=agent_state.id,
+                messages=USER_MESSAGE_FORCE_REPLY,
+            )
+            list(response)  # This should trigger the error
+
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
 
@@ -1210,26 +1194,28 @@ def test_token_streaming_tool_call(
 def test_token_streaming_agent_loop_error(
     disable_e2b_api_key: Any,
     client: Letta,
-    agent_state_no_tools: AgentState,
+    agent_state: AgentState,
     llm_config: LLMConfig,
 ) -> None:
     """
-    Tests sending a message with a synchronous client.
+    Tests sending a streaming message with a synchronous client.
     Verifies that no new messages are persisted on error.
     """
-    last_message = client.agents.messages.list(agent_id=agent_state_no_tools.id, limit=1)
-    agent_state_no_tools = client.agents.modify(agent_id=agent_state_no_tools.id, llm_config=llm_config, tool_ids=[])
-    try:
-        response = client.agents.messages.create_stream(
-            agent_id=agent_state_no_tools.id,
-            messages=USER_MESSAGE_FORCE_REPLY,
-            stream_tokens=True,
-        )
-        list(response)
-    except:
-        pass  # only some models throw an error TODO: make this consistent
+    last_message = client.agents.messages.list(agent_id=agent_state.id, limit=1)
+    agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
 
-    messages_from_db = client.agents.messages.list(agent_id=agent_state_no_tools.id, after=last_message[0].id)
+    with patch("letta.agents.letta_agent_v2.LettaAgentV2.stream") as mock_step:
+        mock_step.side_effect = ValueError("No tool calls found in response, model must make a tool call")
+
+        with pytest.raises(ApiError):
+            response = client.agents.messages.create_stream(
+                agent_id=agent_state.id,
+                messages=USER_MESSAGE_FORCE_REPLY,
+                stream_tokens=True,
+            )
+            list(response)  # This should trigger the error
+
+    messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
 
 
