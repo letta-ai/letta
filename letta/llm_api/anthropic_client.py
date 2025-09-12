@@ -497,7 +497,7 @@ class AnthropicClient(LLMClientBase):
                         try:
                             args_json = json.loads(arguments)
                             if not isinstance(args_json, dict):
-                                raise ValueError("Expected parseable json object for arguments")
+                                raise LLMServerError("Expected parseable json object for arguments")
                         except:
                             arguments = str(tool_input["function"]["arguments"])
                     else:
@@ -854,7 +854,7 @@ def remap_finish_reason(stop_reason: str) -> str:
     elif stop_reason == "tool_use":
         return "function_call"
     else:
-        raise ValueError(f"Unexpected stop_reason: {stop_reason}")
+        raise LLMServerError(f"Unexpected stop_reason: {stop_reason}")
 
 
 def strip_xml_tags(string: str, tag: Optional[str]) -> str:
