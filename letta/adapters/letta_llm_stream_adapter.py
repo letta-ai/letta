@@ -149,7 +149,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                     request_json=self.request_data,
                     response_json={
                         "content": {
-                            "tool_call": self.tool_call.model_dump_json(),
+                            "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
                             "reasoning": [content.model_dump_json() for content in self.reasoning_content],
                         },
                         "id": self.interface.message_id,
