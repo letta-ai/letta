@@ -22,4 +22,17 @@ async def list_providers(
 
 </SwmSnippet>
 
+&nbsp;
+
+&nbsp;
+
+&nbsp;
+
+<SwmToken path="/letta/embeddings.py" pos="140:2:2" line-data="class OllamaEmbeddings:">`OllamaEmbeddings`</SwmToken>
+
+|   |   |   |
+| - | - | - |
+|   |   |   |
+|   |   |   |
+
 <SwmMeta version="3.0.0" repo-id="Z2l0aHViJTNBJTNBbGV0dGElM0ElM0F5dWFuemhpYW4=" repo-name="letta"><sup>Powered by [Swimm](https://app.swimm.io/)</sup></SwmMeta>
