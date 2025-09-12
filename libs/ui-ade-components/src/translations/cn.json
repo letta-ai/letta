@@ -1970,5 +1970,20 @@
       "attachError": "将内存块附加到智能体失败"
     },
     "success": "内存块创建成功"
+  },
+  "DataSourceDetailTable": {
+    "uploadDialog": {
+      "title": "上传文件",
+      "confirmText": "上传",
+      "triggerLabel": "上传文件",
+      "fileErrorMessage": "请修复文件错误后再上传"
+    },
+    "errors": {
+      "failedToUpload": "上传文件失败",
+      "unknownError": "未知错误"
+    },
+    "success": {
+      "uploadedFile": "成功上传"
+    }
   }
 }

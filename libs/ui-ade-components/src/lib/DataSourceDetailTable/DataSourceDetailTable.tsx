@@ -24,6 +24,7 @@ import {
   TrashIcon,
   EditIcon,
   DatabaseIcon,
+  toast,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import type { FileMetadata } from '@letta-cloud/sdk-core';
@@ -39,17 +40,17 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  DeleteFileModal,
-} from '../ade/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal';
+import { DeleteFileModal } from '../ade/panels/DataSourcesV2/_components/DeleteFileModal/DeleteFileModal';
 import { FileStatus } from '../ade/panels/DataSourcesV2/_components/DataSourceView/FilesView/FileView/FileStatus';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { DeleteDataSourceDialog } from '../ade/panels/DataSourcesV2/_components/DeleteDatasourceDialog/DeleteDatasourceDialog';
 import { RenameDataSourceDialog } from '../ade/panels/DataSourcesV2/_components/RenameDataSourceDialog/RenameDataSourceDialog';
 import { UpdateSourceInstructionsModal } from '../ade/panels/DataSourcesV2/_components/UpdateSourceInstructionsModal/UpdateSourceInstructionsModal';
+import { getUsageLimits } from '@letta-cloud/utils-shared';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 const uploadToFormValuesSchema = z.object({
-  files: z.array(z.custom<File>((v) => v instanceof File)).min(1),
+  files: z.array(z.custom<File>((v) => v instanceof File)),
 });
 
 type UploadToFormValues = z.infer<typeof uploadToFormValuesSchema>;
@@ -69,7 +70,23 @@ function UploadFileDialog({
 }: UploadFileDialogProps) {
   const t = useTranslations('DataSourceDetailTable');
 
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [fileErrorMessage, setFileErrorMessage] = useState<string>('');
+
+  // Get billing tier for usage limits with fallback for different environments
+  const { data: billingData } =
+    webApi.organizations.getCurrentOrganizationBillingInfo.useQuery({
+      queryKey: webApiQueryKeys.organizations.getCurrentOrganizationBillingInfo,
+      retry: false,
+      enabled: !isDesktop, // TODO: detect billing tier for desktop
+    });
+
+  const billingTier = useMemo(() => {
+    return billingData?.body.billingTier || 'free';
+  }, [billingData?.body.billingTier]);
+
+  const limits = useMemo(() => getUsageLimits(billingTier), [billingTier]);
+
   const queryClient = useQueryClient();
   const { mutate, isPending } = useSourcesServiceUploadFileToSource({
     onSuccess: () => {
@@ -103,6 +120,17 @@ function UploadFileDialog({
 
   const onSubmit = useCallback(
     async (values: UploadToFormValues) => {
+      form.clearErrors('files');
+
+      if (values.files.length === 0) {
+        return;
+      }
+
+      const errors: string[] = [];
+      const successMessage: string[] = [t('success.uploadedFile')];
+
+      const failedFiles: File[] = [];
+
       for (const file of values.files) {
         try {
           await new Promise<void>((resolve, reject) => {
@@ -113,6 +141,7 @@ function UploadFileDialog({
               },
               {
                 onSuccess: () => {
+                  successMessage.push(file.name);
                   resolve();
                 },
                 onError: (error) => {
@@ -122,18 +151,36 @@ function UploadFileDialog({
             );
           });
         } catch (error) {
-          console.error('Failed to upload file:', error);
+          console.error(t('errors.failedToUpload'), error);
+          const errorMessage =
+            error instanceof Error ? error.message : t('errors.unknownError');
+          errors.push(` ${file.name}: ${errorMessage}`);
+          failedFiles.push(file);
         }
       }
 
-      void queryClient.invalidateQueries({
-        queryKey: UseJobsServiceListActiveJobsKeyFn(),
-      });
+      form.setValue('files', failedFiles);
+      if (successMessage.length > 1) {
+        toast.success(successMessage.join('\n'));
+      }
 
-      setIsDialogOpen(false);
-      form.reset({ files: [] });
+      if (errors.length === 0) {
+        void queryClient.invalidateQueries({
+          queryKey: UseJobsServiceListActiveJobsKeyFn(),
+        });
+        form.reset({ files: [] });
+        setIsDialogOpen(false);
+        return;
+      }
+
+      // If there were errors, set them on the form and don't close dialog
+      form.setError('files', {
+        type: 'manual',
+        message: errors.join('\n'),
+      });
+      setIsDialogOpen(true);
     },
-    [dataSourceId, mutate, queryClient, form],
+    [dataSourceId, mutate, queryClient, form, t],
   );
 
   if (!canUpload) {
@@ -143,12 +190,19 @@ function UploadFileDialog({
   return (
     <FormProvider {...form}>
       <Dialog
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            form.reset({ files: [] });
+            setFileErrorMessage('');
+          }
+        }}
         isOpen={isDialogOpen}
         onSubmit={form.handleSubmit(onSubmit)}
         title={t('uploadDialog.title')}
         confirmText={t('uploadDialog.confirmText')}
         isConfirmBusy={isPending}
+        disableSubmit={fileErrorMessage.length > 0}
         trigger={
           <Button
             label={t('uploadDialog.triggerLabel')}
@@ -157,18 +211,33 @@ function UploadFileDialog({
           />
         }
       >
-        <FormField
-          render={({ field }) => (
-            <MultiFileUpload
-              fullWidth
-              {...field}
-              hideLabel
-              label="files"
-              maxFiles={10}
-            />
+        <VStack fullWidth gap="small">
+          <FormField
+            render={({ field }) => (
+              <MultiFileUpload
+                fullWidth
+                {...field}
+                hideLabel
+                label="files"
+                maxFiles={10}
+                maxSizePerFile={limits.fileSize}
+                onFileErrorsChange={(hasErrors) => {
+                  if (hasErrors) {
+                    setFileErrorMessage(t('uploadDialog.fileErrorMessage'));
+                  } else {
+                    setFileErrorMessage('');
+                  }
+                }}
+              />
+            )}
+            name="files"
+          />
+          {fileErrorMessage && (
+            <Typography variant="body2" color="destructive">
+              {fileErrorMessage}
+            </Typography>
           )}
-          name="files"
-        />
+        </VStack>
       </Dialog>
     </FormProvider>
   );
@@ -366,8 +435,6 @@ export function DataSourceDetailTable({
     setIsPolling(hasProcessingFiles || false);
   }, [hasProcessingFiles]);
 
-
-
   const [fileToView, setFileToView] = useState<FileMetadata | null>(null);
 
   let formatFileSize: (size: number) => string;
@@ -392,7 +459,9 @@ export function DataSourceDetailTable({
 
           return (
             <HStack align="center" gap="small">
-              <Typography>{file.original_file_name || file.file_name}</Typography>
+              <Typography>
+                {file.original_file_name || file.file_name}
+              </Typography>
               {!isDesktop && file.processing_status !== 'completed' && (
                 <div style={{ marginLeft: '8px' }}>
                   <FileStatus file={file} />
@@ -479,10 +548,12 @@ export function DataSourceDetailTable({
     }
   }, [onNavigateBack, isDesktop]);
 
-  const defaultReturnButton = !isDesktop ? {
-    href: '/data-sources',
-    text: t('returnButtonText'),
-  } : undefined;
+  const defaultReturnButton = !isDesktop
+    ? {
+        href: '/data-sources',
+        text: t('returnButtonText'),
+      }
+    : undefined;
 
   const finalReturnButton = returnButton || defaultReturnButton;
 
@@ -600,7 +671,13 @@ export function DataSourceDetailTable({
         <DashboardPageLayout
           actions={actions}
           title={source?.name || t('title')}
-          returnButton={finalReturnButton && finalReturnButton.href && finalReturnButton.text ? finalReturnButton : undefined}
+          returnButton={
+            finalReturnButton &&
+            finalReturnButton.href &&
+            finalReturnButton.text
+              ? finalReturnButton
+              : undefined
+          }
           encapsulatedFullHeight
         >
           <DashboardPageSection fullHeight>

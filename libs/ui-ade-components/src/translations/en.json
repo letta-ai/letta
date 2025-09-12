@@ -2920,7 +2920,15 @@
     "uploadDialog": {
       "title": "Upload File",
       "confirmText": "Upload",
-      "triggerLabel": "Upload File"
+      "triggerLabel": "Upload File",
+      "fileErrorMessage": "Please remove the affected files"
+    },
+    "errors": {
+      "failedToUpload": "Failed to upload file",
+      "unknownError": "Unknown error"
+    },
+    "success": {
+      "uploadedFile": "Successfully uploaded"
     },
     "fileType": {
       "defaultType": "Text",
