@@ -871,3 +871,6 @@ core-copy-plugins:
 afd:
     @echo "🚧 Running the AFD (agentfile-directory) service..."
     npx nx dev agentfile-directory
+
+pull:
+  git pull origin main --recurse-submodules
