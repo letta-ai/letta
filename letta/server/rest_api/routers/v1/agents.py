@@ -1316,15 +1316,52 @@ async def send_message_streaming(
     try:
         if agent_eligible and model_compatible:
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
-            raw_stream = agent_loop.stream(
-                input_messages=request.messages,
-                max_steps=request.max_steps,
-                stream_tokens=request.stream_tokens and model_compatible_token_streaming,
-                run_id=run.id if run else None,
-                use_assistant_message=request.use_assistant_message,
-                request_start_timestamp_ns=request_start_timestamp_ns,
-                include_return_message_types=request.include_return_message_types,
-            )
+
+            async def error_aware_stream():
+                """Stream that handles early LLM errors gracefully in streaming format."""
+                from letta.errors import LLMAuthenticationError, LLMError, LLMRateLimitError, LLMTimeoutError
+
+                try:
+                    stream = agent_loop.stream(
+                        input_messages=request.messages,
+                        max_steps=request.max_steps,
+                        stream_tokens=request.stream_tokens and model_compatible_token_streaming,
+                        run_id=run.id if run else None,
+                        use_assistant_message=request.use_assistant_message,
+                        request_start_timestamp_ns=request_start_timestamp_ns,
+                        include_return_message_types=request.include_return_message_types,
+                    )
+                    async for chunk in stream:
+                        yield chunk
+
+                except LLMTimeoutError as e:
+                    error_data = {
+                        "error": {"type": "llm_timeout", "message": "The LLM request timed out. Please try again.", "detail": str(e)}
+                    }
+                    yield (f"data: {json.dumps(error_data)}\n\n", 504)
+                except LLMRateLimitError as e:
+                    error_data = {
+                        "error": {
+                            "type": "llm_rate_limit",
+                            "message": "Rate limit exceeded for LLM model provider. Please wait before making another request.",
+                            "detail": str(e),
+                        }
+                    }
+                    yield (f"data: {json.dumps(error_data)}\n\n", 429)
+                except LLMAuthenticationError as e:
+                    error_data = {
+                        "error": {
+                            "type": "llm_authentication",
+                            "message": "Authentication failed with the LLM model provider.",
+                            "detail": str(e),
+                        }
+                    }
+                    yield (f"data: {json.dumps(error_data)}\n\n", 401)
+                except LLMError as e:
+                    error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
+                    yield (f"data: {json.dumps(error_data)}\n\n", 502)
+
+            raw_stream = error_aware_stream()
 
             from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode, add_keepalive_to_stream
 
