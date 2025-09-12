@@ -1360,6 +1360,9 @@ async def send_message_streaming(
                 except LLMError as e:
                     error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
                     yield (f"data: {json.dumps(error_data)}\n\n", 502)
+                except Exception as e:
+                    error_data = {"error": {"type": "internal_error", "message": "An internal server error occurred.", "detail": str(e)}}
+                    yield (f"data: {json.dumps(error_data)}\n\n", 500)
 
             raw_stream = error_aware_stream()
 
