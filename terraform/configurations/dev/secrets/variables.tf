@@ -440,6 +440,11 @@ variable "dev_memgpt_server_LETTA_PINECONE_API_KEY" {
   type        = string
   sensitive   = true
 }
+variable "dev_memgpt_server_COMPOSIO_API_KEY" {
+  description = "Composio API Key for memgpt-server service"
+  type        = string
+  sensitive   = true
+}
 
 # memgpt-server-voice secrets
 
