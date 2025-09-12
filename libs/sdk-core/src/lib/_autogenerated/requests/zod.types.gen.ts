@@ -7232,6 +7232,7 @@ export type StopReasonType = z.infer<typeof StopReasonType>;
 export const StopReasonType = z.union([
   z.literal('end_turn'),
   z.literal('error'),
+  z.literal('llm_api_error'),
   z.literal('invalid_llm_response'),
   z.literal('invalid_tool_call'),
   z.literal('max_steps'),
