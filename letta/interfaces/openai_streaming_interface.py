@@ -278,6 +278,8 @@ class OpenAIStreamingInterface:
                                     self.prev_assistant_message_id = self.function_id_buffer
                                 # Reset message reader at the start of a new send_message stream
                                 self.assistant_message_json_reader.reset()
+                                self.assistant_message_json_reader.in_message = True
+                                self.assistant_message_json_reader.message_started = True
 
                             else:
                                 if prev_message_type and prev_message_type != "tool_call_message":
