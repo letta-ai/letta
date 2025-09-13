@@ -264,39 +264,100 @@ class FunctionArgumentsStreamHandler:
 
     def process_json_chunk(self, chunk: str) -> Optional[str]:
         """Process a chunk from the function arguments and return the plaintext version"""
-        # Use strip to handle only leading and trailing whitespace in control structures
-        if self.accumulating:
-            clean_chunk = chunk.strip()
-            if self.json_key in self.key_buffer:
-                if ":" in clean_chunk:
-                    self.in_message = True
-                    self.accumulating = False
-                    return None
+        clean_chunk = chunk.strip()
+        # Not in message yet: accumulate until we see '<json_key>': (robust to split fragments)
+        if not self.in_message:
+            if clean_chunk == "{":
+                self.key_buffer = ""
+                self.accumulating = True
+                return None
             self.key_buffer += clean_chunk
+            if self.json_key in self.key_buffer and ":" in clean_chunk:
+                # Enter value mode; attempt to extract inline content if it exists in this same chunk
+                self.in_message = True
+                self.accumulating = False
+                # Try to find the first quote after the colon within the original (unstripped) chunk
+                s = chunk
+                colon_idx = s.find(":")
+                if colon_idx != -1:
+                    q_idx = s.find('"', colon_idx + 1)
+                    if q_idx != -1:
+                        self.message_started = True
+                        rem = s[q_idx + 1 :]
+                        # Check if this same chunk also contains the terminating quote (and optional delimiter)
+                        j = len(rem) - 1
+                        while j >= 0 and rem[j] in " \t\r\n":
+                            j -= 1
+                        if j >= 1 and rem[j - 1] == '"' and rem[j] in ",}]":
+                            out = rem[: j - 1]
+                            self.in_message = False
+                            self.message_started = False
+                            return out
+                        if j >= 0 and rem[j] == '"':
+                            out = rem[:j]
+                            self.in_message = False
+                            self.message_started = False
+                            return out
+                        # No terminator yet; emit remainder as content
+                        return rem
+                return None
+            if clean_chunk == "}":
+                self.in_message = False
+                self.message_started = False
+                self.key_buffer = ""
             return None
 
+        # Inside message value
         if self.in_message:
-            if chunk.strip() == '"' and self.message_started:
+            # Bare opening/closing quote tokens
+            if clean_chunk == '"' and self.message_started:
                 self.in_message = False
                 self.message_started = False
                 return None
-            if not self.message_started and chunk.strip() == '"':
+            if not self.message_started and clean_chunk == '"':
                 self.message_started = True
                 return None
             if self.message_started:
-                if chunk.strip().endswith('"'):
+                # Detect closing patterns: '"', '",', '"}' (with optional whitespace)
+                i = len(chunk) - 1
+                while i >= 0 and chunk[i] in " \t\r\n":
+                    i -= 1
+                if i >= 1 and chunk[i - 1] == '"' and chunk[i] in ",}]":
+                    out = chunk[: i - 1]
                     self.in_message = False
-                    return chunk.rstrip('"\n')
+                    self.message_started = False
+                    return out
+                if i >= 0 and chunk[i] == '"':
+                    out = chunk[:i]
+                    self.in_message = False
+                    self.message_started = False
+                    return out
+                # Otherwise, still mid-string
                 return chunk
 
-        if chunk.strip() == "{":
-            self.key_buffer = ""
-            self.accumulating = True
-            return None
-
-        if chunk.strip() == "}":
+        if clean_chunk == "}":
             self.in_message = False
             self.message_started = False
+            self.key_buffer = ""
             return None
 
         return None
+
+
+def sanitize_streamed_message_content(text: str) -> str:
+    """Remove trailing JSON delimiters that can leak into assistant text.
+
+    Specifically handles cases where a message string is immediately followed
+    by a JSON delimiter in the stream (e.g., '"', '",', '"}', '" ]').
+    Internal commas inside the message are preserved.
+    """
+    if not text:
+        return text
+    t = text.rstrip()
+    # strip trailing quote + delimiter
+    if len(t) >= 2 and t[-2] == '"' and t[-1] in ",}]":
+        return t[:-2]
+    # strip lone trailing quote
+    if t.endswith('"'):
+        return t[:-1]
+    return t
