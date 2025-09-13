@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from letta.agents.letta_agent import LettaAgent
+from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.config import LettaConfig
 from letta.schemas.letta_message import ToolCallMessage
 from letta.schemas.message import MessageCreate
@@ -235,18 +235,11 @@ def default_user(server):
     yield server.user_manager.get_user_or_default()
 
 
-async def run_agent_step(server, agent_id, input_messages, actor):
+async def run_agent_step(agent_state, input_messages, actor):
     """Helper function to run agent step using LettaAgent directly instead of server.send_messages."""
-    agent_loop = LettaAgent(
-        agent_id=agent_id,
-        message_manager=server.message_manager,
-        agent_manager=server.agent_manager,
-        block_manager=server.block_manager,
-        job_manager=server.job_manager,
-        passage_manager=server.passage_manager,
+    agent_loop = LettaAgentV2(
+        agent_state=agent_state,
         actor=actor,
-        step_manager=server.step_manager,
-        telemetry_manager=NoopTelemetryManager(),
     )
 
     return await agent_loop.step(
@@ -279,8 +272,7 @@ async def test_single_path_agent_tool_call_graph(
     # Make agent state
     agent_state = setup_agent(server, config_file, agent_uuid=agent_uuid, tool_ids=[t.id for t in tools], tool_rules=tool_rules)
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="What is the fourth secret word?")],
         actor=default_user,
     )
@@ -391,8 +383,7 @@ async def test_claude_initial_tool_rule_enforced(
         )
 
         response = await run_agent_step(
-            server=server,
-            agent_id=agent_state.id,
+            agent_state=agent_state,
             input_messages=[MessageCreate(role="user", content="What is the second secret word?")],
             actor=default_user,
         )
@@ -462,8 +453,7 @@ async def test_agent_no_structured_output_with_one_child_tool_parametrized(
             )
 
             response = await run_agent_step(
-                server=server,
-                agent_id=agent_state.id,
+                agent_state=agent_state,
                 input_messages=[MessageCreate(role="user", content="hi. run archival memory search")],
                 actor=default_user,
             )
@@ -519,8 +509,7 @@ async def test_init_tool_rule_always_fails(
     )
 
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="blah blah blah")],
         actor=default_user,
     )
@@ -558,8 +547,7 @@ async def test_continue_tool_rule(server, default_user):
     print(agent_state)
 
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Send me some messages, and then call core_memory_append to end your turn.")],
         actor=default_user,
     )
@@ -837,8 +825,7 @@ async def test_single_required_before_exit_tool(server, disable_e2b_api_key, sav
 
     # Send message that would normally cause exit
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Please finish your work and send me a message.")],
         actor=default_user,
     )
@@ -881,8 +868,7 @@ async def test_multiple_required_before_exit_tools(server, disable_e2b_api_key, 
 
     # Send message that would normally cause exit
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Complete all necessary tasks and then send me a message.")],
         actor=default_user,
     )
@@ -927,8 +913,7 @@ async def test_required_before_exit_with_other_rules(server, disable_e2b_api_key
 
     # Send message that would trigger tool flow
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Get the first secret word and then finish up.")],
         actor=default_user,
     )
@@ -972,8 +957,7 @@ async def test_required_tools_called_during_normal_flow(server, disable_e2b_api_
 
     # Send message that explicitly mentions calling the required tool
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Please save data and then send me a message when done.")],
         actor=default_user,
     )
@@ -1011,8 +995,7 @@ async def test_terminal_tool_rule_send_message_request_heartbeat_false(server, d
 
     # Send message that should trigger send_message tool call
     response = await run_agent_step(
-        server=server,
-        agent_id=agent_state.id,
+        agent_state=agent_state,
         input_messages=[MessageCreate(role="user", content="Please send me a simple message.")],
         actor=default_user,
     )
