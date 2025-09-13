@@ -24,7 +24,11 @@ from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.openai.chat_completion_response import FunctionCall, ToolCall
 from letta.server.rest_api.json_parser import OptimisticJSONParser
-from letta.streaming_utils import FunctionArgumentsStreamHandler, JSONInnerThoughtsExtractor
+from letta.streaming_utils import (
+    FunctionArgumentsStreamHandler,
+    JSONInnerThoughtsExtractor,
+    sanitize_streamed_message_content,
+)
 from letta.utils import count_tokens
 
 logger = get_logger(__name__)
@@ -278,8 +282,6 @@ class OpenAIStreamingInterface:
                                     self.prev_assistant_message_id = self.function_id_buffer
                                 # Reset message reader at the start of a new send_message stream
                                 self.assistant_message_json_reader.reset()
-                                self.assistant_message_json_reader.in_message = True
-                                self.assistant_message_json_reader.message_started = True
 
                             else:
                                 if prev_message_type and prev_message_type != "tool_call_message":
@@ -334,8 +336,15 @@ class OpenAIStreamingInterface:
                                 self.last_flushed_function_name is not None
                                 and self.last_flushed_function_name == self.assistant_message_tool_name
                             ):
-                                # Minimal, robust extraction: only emit the value of "message"
-                                extracted = self.assistant_message_json_reader.process_json_chunk(tool_call.function.arguments)
+                                # Minimal, robust extraction: only emit the value of "message".
+                                # If we buffered a prefix while name was streaming, feed it first.
+                                if self.function_args_buffer:
+                                    payload = self.function_args_buffer + tool_call.function.arguments
+                                    self.function_args_buffer = None
+                                else:
+                                    payload = tool_call.function.arguments
+                                extracted = self.assistant_message_json_reader.process_json_chunk(payload)
+                                extracted = sanitize_streamed_message_content(extracted or "")
                                 if extracted:
                                     if prev_message_type and prev_message_type != "assistant_message":
                                         message_index += 1
