@@ -19,23 +19,22 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 logger = get_logger(__name__)
 
 
-# Batch APIs
-
-
 @router.post(
     "/batches",
     response_model=BatchJob,
-    operation_id="create_batch_run",
+    operation_id="create_batch",
 )
-async def create_batch_run(
+async def create_batch(
     request: Request,
     payload: CreateBatch = Body(..., description="Messages and config for all agents"),
     server: SyncServer = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Submit a batch of agent messages for asynchronous processing.
+    Submit a batch of agent runs for asynchronous processing.
+
     Creates a job that will fan out messages to all listed agents and process them in parallel.
+    The request will be rejected if it exceeds 256MB.
     """
     # Reject requests greater than 256Mbs
     max_bytes = 256 * 1024 * 1024
@@ -76,10 +75,7 @@ async def create_batch_run(
 
         # TODO: update run metadata
     except Exception as e:
-        import traceback
-
-        print("Error creating batch job", e)
-        traceback.print_exc()
+        logger.error(f"Error creating batch job: {e}")
 
         # mark job as failed
         await server.job_manager.update_job_by_id_async(job_id=batch_job.id, job_update=JobUpdate(status=JobStatus.failed), actor=actor)
@@ -87,14 +83,14 @@ async def create_batch_run(
     return batch_job
 
 
-@router.get("/batches/{batch_id}", response_model=BatchJob, operation_id="retrieve_batch_run")
-async def retrieve_batch_run(
+@router.get("/batches/{batch_id}", response_model=BatchJob, operation_id="retrieve_batch")
+async def retrieve_batch(
     batch_id: str,
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Get the status of a batch run.
+    Retrieve the status and details of a batch run.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
@@ -105,8 +101,8 @@ async def retrieve_batch_run(
         raise HTTPException(status_code=404, detail="Batch not found")
 
 
-@router.get("/batches", response_model=List[BatchJob], operation_id="list_batch_runs")
-async def list_batch_runs(
+@router.get("/batches", response_model=List[BatchJob], operation_id="list_batches")
+async def list_batches(
     before: Optional[str] = Query(
         None, description="Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
     ),
@@ -124,7 +120,6 @@ async def list_batch_runs(
     """
     List all batch runs.
     """
-    # TODO: filter
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
     jobs = server.job_manager.list_jobs(
@@ -161,10 +156,12 @@ async def list_batch_messages(
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
-    """Get response messages for a specific batch job."""
+    """
+    Get response messages for a specific batch job.
+    """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    # First, verify the batch job exists and the user has access to it
+    # Verify the batch job exists and the user has access to it
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
         BatchJob.from_job(job)
@@ -179,8 +176,8 @@ async def list_batch_messages(
     return LettaBatchMessages(messages=messages)
 
 
-@router.patch("/batches/{batch_id}/cancel", operation_id="cancel_batch_run")
-async def cancel_batch_run(
+@router.patch("/batches/{batch_id}/cancel", operation_id="cancel_batch")
+async def cancel_batch(
     batch_id: str,
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
