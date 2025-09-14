@@ -54,7 +54,8 @@ def create_modal_tool_wrapper(tool: PydanticTool):
     packages.append("letta_client")
     packages.append("letta[sqlite]")
 
-    modal_app = modal.App(tool.id)
+    modal_app = modal.App(tool.name)
+    logger.info(f"Creating Modal app {tool.id} with name {tool.name}")
 
     @modal_app.function(
         image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
@@ -79,6 +80,8 @@ def create_modal_tool_wrapper(tool: PydanticTool):
         # Initialize the Letta client
         if letta_api_key:
             letta_client = Letta(token=letta_api_key)
+        else:
+            letta_client = None
 
         tool_namespace = {
             "__builtins__": __builtins__,  # Include built-in functions
@@ -113,6 +116,7 @@ def create_modal_tool_wrapper(tool: PydanticTool):
             "result": result,
             "stdout": stdout,
             "stderr": stderr,
+            "agent_state": agent_state,  # TODO: deprecate (use letta_client instead)
             "error": True if stderr else False,
         }
 
@@ -269,7 +273,7 @@ class ToolManager:
             created_tool = tool.to_pydantic()
 
             # Deploy Modal app for the new tool
-            if tool_settings.sandbox_type == SandboxType.MODAL:
+            if created_tool.tool_type == ToolType.CUSTOM and tool_settings.sandbox_type == SandboxType.MODAL:
                 await self.create_or_update_modal_app(created_tool)
 
             return created_tool
@@ -805,7 +809,7 @@ class ToolManager:
             updated_tool = tool.to_pydantic()
 
             # Check if we need to redeploy the Modal app due to changes
-            if tool_settings.sandbox_type == SandboxType.MODAL:
+            if updated_tool.tool_type == ToolType.CUSTOM and tool_settings.sandbox_type == SandboxType.MODAL:
                 new_hash = compute_tool_hash(updated_tool)
                 old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
 

@@ -41,8 +41,10 @@ class ToolSettings(BaseSettings):
     @property
     def sandbox_type(self) -> SandboxType:
         if self.e2b_api_key:
+            print("SANDBOX TYPE", SandboxType.E2B)
             return SandboxType.E2B
         elif self.modal_token_id and self.modal_token_secret:
+            print("SANDBOX TYPE", SandboxType.MODAL)
             return SandboxType.MODAL
         else:
             return SandboxType.LOCAL
