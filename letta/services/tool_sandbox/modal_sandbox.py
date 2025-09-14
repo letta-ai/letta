@@ -87,8 +87,11 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             letta_api_key = None
         else:
             letta_api_key = additional_env_vars.get("LETTA_API_KEY", None)
+        env_vars = self.provided_sandbox_env_vars.copy()
+        env_vars.update(additional_env_vars)
+        print("ALL ENV VARS", env_vars)
         result = await modal.Function.from_name(self.tool.id, modal_tool_name).remote.aio(
-            tool_name=self.tool_name, agent_id=agent_id, env_vars=additional_env_vars, letta_api_key=letta_api_key, **self.args
+            tool_name=self.tool_name, agent_id=agent_id, env_vars=env_vars, letta_api_key=letta_api_key, **self.args
         )
 
         try:
