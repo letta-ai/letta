@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.step import Step
@@ -93,10 +94,14 @@ async def retrieve_step_metrics(
         raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
+class AddFeedbackRequest(BaseModel):
+    feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
+
+
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
 async def add_feedback(
     step_id: str,
-    feedback: Optional[FeedbackType],
+    feedback: AddFeedbackRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
