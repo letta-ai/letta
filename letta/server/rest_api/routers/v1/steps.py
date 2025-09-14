@@ -116,12 +116,13 @@ async def retrieve_step_trace(
 
 class AddFeedbackRequest(BaseModel):
     feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
+    tags: list[str] | None = Field(None, description="Feedback tags to add to the step")
 
 
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
 async def add_feedback(
     step_id: str,
-    feedback: AddFeedbackRequest = Body(...),
+    request: AddFeedbackRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
@@ -130,7 +131,7 @@ async def add_feedback(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.step_manager.add_feedback_async(step_id=step_id, feedback=feedback, actor=actor)
+        return await server.step_manager.add_feedback_async(step_id=step_id, feedback=request.feedback, tags=request.tags, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
 
