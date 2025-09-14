@@ -331,23 +331,41 @@ class Message(BaseMessage):
 
         return messages[::-1] if reverse else messages
 
-    def _convert_reasoning_messages(self, current_message_count: int = 0) -> List[LettaMessage]:
+    def _convert_reasoning_messages(
+        self,
+        current_message_count: int = 0,
+        text_is_assistant_message: bool = True,  # TODO default false, set to true for react agents
+    ) -> List[LettaMessage]:
         messages = []
         # Check for ReACT-style COT inside of TextContent
         if len(self.content) == 1 and isinstance(self.content[0], TextContent):
             otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
-            messages.append(
-                ReasoningMessage(
-                    id=self.id,
-                    date=self.created_at,
-                    reasoning=self.content[0].text,
-                    name=self.name,
-                    otid=otid,
-                    sender_id=self.sender_id,
-                    step_id=self.step_id,
-                    is_err=self.is_err,
+            if text_is_assistant_message:
+                messages.append(
+                    AssistantMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        content=self.content[0].text,
+                        name=self.name,
+                        otid=otid,
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
                 )
-            )
+            else:
+                messages.append(
+                    ReasoningMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        reasoning=self.content[0].text,
+                        name=self.name,
+                        otid=otid,
+                        sender_id=self.sender_id,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
+                )
         # Otherwise, we may have a list of multiple types
         else:
             # TODO we can probably collapse these two cases into a single loop
@@ -355,18 +373,32 @@ class Message(BaseMessage):
                 otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
                 if isinstance(content_part, TextContent):
                     # COT
-                    messages.append(
-                        ReasoningMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            reasoning=content_part.text,
-                            name=self.name,
-                            otid=otid,
-                            sender_id=self.sender_id,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
+                    if text_is_assistant_message:
+                        messages.append(
+                            AssistantMessage(
+                                id=self.id,
+                                date=self.created_at,
+                                content=content_part.text,
+                                name=self.name,
+                                otid=otid,
+                                sender_id=self.sender_id,
+                                step_id=self.step_id,
+                                is_err=self.is_err,
+                            )
                         )
-                    )
+                    else:
+                        messages.append(
+                            ReasoningMessage(
+                                id=self.id,
+                                date=self.created_at,
+                                reasoning=content_part.text,
+                                name=self.name,
+                                otid=otid,
+                                sender_id=self.sender_id,
+                                step_id=self.step_id,
+                                is_err=self.is_err,
+                            )
+                        )
                 elif isinstance(content_part, ReasoningContent):
                     # "native" COT
                     messages.append(
