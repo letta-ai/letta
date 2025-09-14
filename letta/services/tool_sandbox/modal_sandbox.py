@@ -45,20 +45,54 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
 
         # TODO: check to make sure modal app `App(tool.id)` exists
 
+    async def _wait_for_modal_function_deployment(self, timeout: int = 60):
+        """Wait for Modal app deployment to complete by retrying function lookup."""
+        import asyncio
+        import time
+
+        import modal
+
+        start_time = time.time()
+        retry_delay = 2  # seconds
+
+        while time.time() - start_time < timeout:
+            try:
+                f = modal.Function.from_name(self.tool.id, MODAL_DEFAULT_TOOL_NAME)
+                return f
+            except Exception as e:
+                elapsed = time.time() - start_time
+                if elapsed >= timeout:
+                    raise TimeoutError(f"Modal app {self.tool.id} deployment timed out after {timeout} seconds") from e
+                logger.info(f"Modal app {self.tool.id} not ready yet (elapsed: {elapsed:.1f}s), waiting {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+
+        raise TimeoutError(f"Modal app {self.tool.id} deployment timed out after {timeout} seconds")
+
     @trace_method
     async def run(
         self,
+        agent_id: Optional[str] = None,
         agent_state: Optional[AgentState] = None,
         additional_env_vars: Optional[Dict] = None,
     ) -> ToolExecutionResult:
         import modal
 
+        modal_tool_name = "create_modal_tool_wrapper.<locals>.modal_tool_wrapper"
+        log_event("modal_execution_started", {"tool": self.tool_name, "modal_app_id": self.tool.id})
+        logger.info(f"Waiting for Modal function deployment for app {self.tool.id}")
+        f = await self._wait_for_modal_function_deployment()
+        logger.info(f"Modal function found successfully for app {self.tool.id}, function {str(f)}")
+        logger.info(f"Calling with arguments {self.args}")
+        if additional_env_vars is None:
+            letta_api_key = None
+        else:
+            letta_api_key = additional_env_vars.get("LETTA_API_KEY", None)
+        result = await modal.Function.from_name(self.tool.id, modal_tool_name).remote.aio(
+            tool_name=self.tool_name, agent_id=agent_id, env_vars=additional_env_vars, letta_api_key=letta_api_key, **self.args
+        )
+
         try:
-            log_event("modal_execution_started", {"tool": self.tool_name, "modal_app_id": self.tool.id})
-            f = modal.Function.from_name(self.tool.id, MODAL_DEFAULT_TOOL_NAME)
-            result = f.remote(
-                tool_name=self.tool_name, agent_id=agent_state.id if agent_state else None, env_vars=additional_env_vars, **self.args
-            )
+            # TODO: move back
 
             return ToolExecutionResult(
                 func_return=result["result"],

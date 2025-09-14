@@ -39,4 +39,4 @@ def compute_tool_hash(tool: Tool):
     ]
 
     combined = "|".join(components)
-    return hashlib.sha256(combined.encode()).hexdigest()[:VERSION_HASH_LENGTH]
+    return hashlib.sha256(combined.encode()).hexdigest()[:MODAL_VERSION_HASH_LENGTH]
