@@ -12,8 +12,8 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 
 # Health check
-@router.get("/", response_model=Health, operation_id="health_check")
-def health_check():
+@router.get("/", response_model=Health, operation_id="check_health")
+def check_health():
     return Health(
         version=__version__,
         status="ok",
