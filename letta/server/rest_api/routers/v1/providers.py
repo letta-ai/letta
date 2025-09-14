@@ -25,7 +25,7 @@ async def list_providers(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Get a list of all custom providers in the database
+    Get a list of all custom providers.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
@@ -46,7 +46,7 @@ async def create_provider(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Create a new custom provider
+    Create a new custom provider.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     for field_name in request.model_fields:
@@ -68,7 +68,7 @@ async def modify_provider(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Update an existing custom provider
+    Update an existing custom provider.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     return await server.provider_manager.update_provider_async(provider_id=provider_id, provider_update=request, actor=actor)
@@ -79,6 +79,9 @@ async def check_provider(
     request: ProviderCheck = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
 ):
+    """
+    Verify the API key and additional parameters for a provider.
+    """
     try:
         if request.base_url and len(request.base_url) == 0:
             # set to null if empty string
@@ -100,7 +103,7 @@ async def delete_provider(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Delete an existing custom provider
+    Delete an existing custom provider.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
