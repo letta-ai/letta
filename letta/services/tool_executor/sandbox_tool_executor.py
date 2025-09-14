@@ -74,6 +74,7 @@ class SandboxToolExecutor(ToolExecutor):
                     tool_object=tool,
                     sandbox_config=sandbox_config,
                     sandbox_env_vars=sandbox_env_vars,
+                    organization_id=actor.organization_id,
                 )
             else:
                 sandbox = AsyncToolSandboxLocal(

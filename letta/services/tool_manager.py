@@ -40,7 +40,7 @@ from letta.utils import enforce_types, printd
 logger = get_logger(__name__)
 
 
-def create_modal_tool_wrapper(tool: PydanticTool):
+def create_modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser):
     """Create a Modal function wrapper for a tool"""
     import contextlib
     import io
@@ -54,8 +54,9 @@ def create_modal_tool_wrapper(tool: PydanticTool):
     packages.append("letta_client")
     packages.append("letta[sqlite]")
 
-    modal_app = modal.App(tool.name)
-    logger.info(f"Creating Modal app {tool.id} with name {tool.name}")
+    function_name = f"{tool.name}_{actor.organization_id}"
+    modal_app = modal.App(function_name)
+    logger.info(f"Creating Modal app {tool.id} with name {function_name}")
 
     @modal_app.function(
         image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
@@ -274,7 +275,7 @@ class ToolManager:
 
             # Deploy Modal app for the new tool
             if created_tool.tool_type == ToolType.CUSTOM and tool_settings.sandbox_type == SandboxType.MODAL:
-                await self.create_or_update_modal_app(created_tool)
+                await self.create_or_update_modal_app(created_tool, actor)
 
             return created_tool
 
@@ -824,7 +825,7 @@ class ToolManager:
                     await tool.update_async(db_session=session, actor=actor)
 
                     # Deploy new Modal app
-                    await self.create_or_update_modal_app(updated_tool)
+                    await self.create_or_update_modal_app(updated_tool, actor)
 
             return updated_tool
 
@@ -1099,12 +1100,12 @@ class ToolManager:
 
     # MODAL RELATED METHODS
     @trace_method
-    async def create_or_update_modal_app(self, tool: PydanticTool):
+    async def create_or_update_modal_app(self, tool: PydanticTool, actor: PydanticUser):
         """Create a Modal app with the tool function registered"""
         import modal
 
         # Create the Modal app using the global function
-        modal_app = create_modal_tool_wrapper(tool)
+        modal_app = create_modal_tool_wrapper(tool, actor)
 
         print("MODAL APP")
 
