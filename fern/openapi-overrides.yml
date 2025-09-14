@@ -872,7 +872,7 @@ paths:
         - providers
       x-fern-sdk-method-name: modify
   /v1/providers/check:
-    get:
+    post:
       x-fern-sdk-group-name:
         - providers
       x-fern-sdk-method-name: check
