@@ -898,6 +898,12 @@ paths:
         - steps
         - metrics
       x-fern-sdk-method-name: retrieve
+  /v1/steps/{step_id}/trace:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - trace
+      x-fern-sdk-method-name: retrieve
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
