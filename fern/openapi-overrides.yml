@@ -892,6 +892,12 @@ paths:
         - steps
         - feedback
       x-fern-sdk-method-name: create
+  /v1/steps/{step_id}/metrics:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - metrics
+      x-fern-sdk-method-name: retrieve
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
