@@ -27,13 +27,13 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import ToolType
+from letta.schemas.enums import SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
-from letta.settings import settings
+from letta.settings import settings, tool_settings
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
@@ -65,8 +65,6 @@ def create_modal_tool_wrapper(tool: PydanticTool):
     )
     def modal_tool_wrapper(tool_name: str, agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs):
         """Wrapper function for running untrusted code in a Modal function"""
-
-        print("Modal tool wrapper called", env_vars, letta_api_key, agent_id)
 
         # Set environment variables
         if env_vars:
@@ -266,7 +264,8 @@ class ToolManager:
             created_tool = tool.to_pydantic()
 
             # Deploy Modal app for the new tool
-            await self.create_or_update_modal_app(created_tool)
+            if tool_settings.sandbox_type == SandboxType.MODAL:
+                await self.create_or_update_modal_app(created_tool)
 
             return created_tool
 
@@ -801,21 +800,22 @@ class ToolManager:
             updated_tool = tool.to_pydantic()
 
             # Check if we need to redeploy the Modal app due to changes
-            new_hash = compute_tool_hash(updated_tool)
-            old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
+            if tool_settings.sandbox_type == SandboxType.MODAL:
+                new_hash = compute_tool_hash(updated_tool)
+                old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
 
-            if new_hash != old_hash:
-                # Update the hash in metadata
-                if updated_tool.metadata_ is None:
-                    updated_tool.metadata_ = {}
-                updated_tool.metadata_["tool_hash"] = new_hash
+                if new_hash != old_hash:
+                    # Update the hash in metadata
+                    if updated_tool.metadata_ is None:
+                        updated_tool.metadata_ = {}
+                    updated_tool.metadata_["tool_hash"] = new_hash
 
-                # Update the metadata in the database
-                tool.metadata_ = updated_tool.metadata_
-                await tool.update_async(db_session=session, actor=actor)
+                    # Update the metadata in the database
+                    tool.metadata_ = updated_tool.metadata_
+                    await tool.update_async(db_session=session, actor=actor)
 
-                # Deploy new Modal app
-                await self.create_or_update_modal_app(updated_tool)
+                    # Deploy new Modal app
+                    await self.create_or_update_modal_app(updated_tool)
 
             return updated_tool
 
