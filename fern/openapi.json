@@ -8301,7 +8301,7 @@
       "get": {
         "tags": ["providers"],
         "summary": "List Providers",
-        "description": "Get a list of all custom providers in the database",
+        "description": "Get a list of all custom providers.",
         "operationId": "list_providers",
         "parameters": [
           {
@@ -8400,7 +8400,7 @@
       "post": {
         "tags": ["providers"],
         "summary": "Create Provider",
-        "description": "Create a new custom provider",
+        "description": "Create a new custom provider.",
         "operationId": "create_provider",
         "parameters": [],
         "requestBody": {
@@ -8441,7 +8441,7 @@
       "patch": {
         "tags": ["providers"],
         "summary": "Modify Provider",
-        "description": "Update an existing custom provider",
+        "description": "Update an existing custom provider.",
         "operationId": "modify_provider",
         "parameters": [
           {
@@ -8490,7 +8490,7 @@
       "delete": {
         "tags": ["providers"],
         "summary": "Delete Provider",
-        "description": "Delete an existing custom provider",
+        "description": "Delete an existing custom provider.",
         "operationId": "delete_provider",
         "parameters": [
           {
@@ -8529,6 +8529,7 @@
       "post": {
         "tags": ["providers"],
         "summary": "Check Provider",
+        "description": "Verify the API key and additional parameters for a provider.",
         "operationId": "check_provider",
         "requestBody": {
           "content": {
@@ -9594,6 +9595,54 @@
         }
       }
     },
+    "/v1/steps/{step_id}/trace": {
+      "get": {
+        "tags": ["steps"],
+        "summary": "Retrieve Step Trace",
+        "operationId": "retrieve_step_trace",
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Step Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProviderTrace"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Retrieve Step Trace"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/steps/{step_id}/feedback": {
       "patch": {
         "tags": ["steps"],
@@ -9609,24 +9658,18 @@
               "type": "string",
               "title": "Step Id"
             }
-          },
-          {
-            "name": "feedback",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FeedbackType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Feedback"
-            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFeedbackRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9655,9 +9698,27 @@
       "get": {
         "tags": ["tag", "admin", "admin"],
         "summary": "List Tags",
-        "description": "Get a list of all tags in the database",
+        "description": "Get a list of all agent tags in the database.",
         "operationId": "list_tags",
         "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tag cursor for pagination. Returns tags that come before this tag in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Tag cursor for pagination. Returns tags that come before this tag in the specified sort order"
+          },
           {
             "name": "after",
             "in": "query",
@@ -9671,8 +9732,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Tag cursor for pagination. Returns tags that come after this tag in the specified sort order",
               "title": "After"
-            }
+            },
+            "description": "Tag cursor for pagination. Returns tags that come after this tag in the specified sort order"
           },
           {
             "name": "limit",
@@ -9687,9 +9750,37 @@
                   "type": "null"
                 }
               ],
+              "description": "Maximum number of tags to return",
               "default": 50,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of tags to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "name",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "name",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "query_text",
@@ -9704,8 +9795,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter tags by text search",
               "title": "Query Text"
-            }
+            },
+            "description": "Filter tags by text search"
           }
         ],
         "responses": {
@@ -9787,9 +9880,9 @@
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
-        "summary": "Create Batch Run",
-        "description": "Submit a batch of agent messages for asynchronous processing.\nCreates a job that will fan out messages to all listed agents and process them in parallel.",
-        "operationId": "create_batch_run",
+        "summary": "Create Batch",
+        "description": "Submit a batch of agent runs for asynchronous processing.\n\nCreates a job that will fan out messages to all listed agents and process them in parallel.\nThe request will be rejected if it exceeds 256MB.",
+        "operationId": "create_batch",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9827,10 +9920,92 @@
       },
       "get": {
         "tags": ["messages"],
-        "summary": "List Batch Runs",
+        "summary": "List Batches",
         "description": "List all batch runs.",
-        "operationId": "list_batch_runs",
-        "parameters": [],
+        "operationId": "list_batches",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of jobs to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of jobs to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9841,7 +10016,7 @@
                   "items": {
                     "$ref": "#/components/schemas/BatchJob"
                   },
-                  "title": "Response List Batch Runs"
+                  "title": "Response List Batches"
                 }
               }
             }
@@ -9862,9 +10037,9 @@
     "/v1/messages/batches/{batch_id}": {
       "get": {
         "tags": ["messages"],
-        "summary": "Retrieve Batch Run",
-        "description": "Get the status of a batch run.",
-        "operationId": "retrieve_batch_run",
+        "summary": "Retrieve Batch",
+        "description": "Retrieve the status and details of a batch run.",
+        "operationId": "retrieve_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -9985,6 +10160,19 @@
             "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
           },
           {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "agent_id",
             "in": "query",
             "required": false,
@@ -10030,9 +10218,9 @@
     "/v1/messages/batches/{batch_id}/cancel": {
       "patch": {
         "tags": ["messages"],
-        "summary": "Cancel Batch Run",
+        "summary": "Cancel Batch",
         "description": "Cancel a batch run.",
-        "operationId": "cancel_batch_run",
+        "operationId": "cancel_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -12650,6 +12838,23 @@
         "required": ["properties", "title", "type"],
         "title": "ActionResponseModel",
         "description": "Action response data model."
+      },
+      "AddFeedbackRequest": {
+        "properties": {
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether this feedback is positive or negative"
+          }
+        },
+        "type": "object",
+        "title": "AddFeedbackRequest"
       },
       "AgentEnvironmentVariable": {
         "properties": {
