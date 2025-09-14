@@ -107,6 +107,17 @@ async def retrieve_batch_run(
 
 @router.get("/batches", response_model=List[BatchJob], operation_id="list_batch_runs")
 async def list_batch_runs(
+    before: Optional[str] = Query(
+        None, description="Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of jobs to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
@@ -116,7 +127,15 @@ async def list_batch_runs(
     # TODO: filter
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-    jobs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.BATCH)
+    jobs = server.job_manager.list_jobs(
+        actor=actor,
+        statuses=[JobStatus.created, JobStatus.running],
+        job_type=JobType.BATCH,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+    )
     return [BatchJob.from_job(job) for job in jobs]
 
 
@@ -137,6 +156,7 @@ async def list_batch_messages(
     order: Literal["asc", "desc"] = Query(
         "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     agent_id: Optional[str] = Query(None, description="Filter messages by agent ID"),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
