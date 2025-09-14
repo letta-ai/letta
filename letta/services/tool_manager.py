@@ -27,6 +27,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentState
 from letta.schemas.enums import SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
@@ -63,8 +64,12 @@ def create_modal_tool_wrapper(tool: PydanticTool):
         secrets=[modal.Secret.from_dict({"LETTA_API_KEY": None})],
         serialized=True,
     )
-    def modal_tool_wrapper(tool_name: str, agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs):
+    def modal_tool_wrapper(
+        tool_name: str, agent_state: AgentState, agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs
+    ):
         """Wrapper function for running untrusted code in a Modal function"""
+
+        # TODO: deprecate passing in agent_state
 
         # Set environment variables
         if env_vars:
