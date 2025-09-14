@@ -9,13 +9,17 @@ import {
   CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
+  EyeClosedIcon,
   EyeOpenIcon,
   HiddenOnMobile,
   HStack,
   LettaInvaderIcon,
   PlusIcon,
+  LinkIcon,
   ResponsesIcon,
   Skeleton,
+  StarIcon,
+  StarFilledIcon,
   TemplateIcon,
   Tooltip,
   Typography,
@@ -26,13 +30,14 @@ import { Slot } from '@radix-ui/react-slot';
 import React, { useMemo, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
 import { Tutorials } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 import { DeployAgentDialog } from './agents/DeployAgentDialog/DeployAgentDialog';
-import { useUserHasPermission } from '$web/client/hooks';
+import { useUserHasPermission, useCurrentOrganization } from '$web/client/hooks';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents, useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
@@ -56,6 +61,8 @@ import {
   LettaLoader,
   Frame,
 } from '@letta-cloud/ui-component-library';
+import { MiniObservabilityDashboard } from './observability/_components/MiniObservabilityDashboard/MiniObservabilityDashboard';
+import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 
 function LoadingState() {
   return Array.from({ length: 4 }).map((_, index) => (
@@ -154,7 +161,7 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
                   <DropdownMenuItem
                     doNotCloseOnSelect
                     preIcon={<TrashIcon />}
-                    label="Delete Agent"
+                    label={t('deleteAgent')}
                   />
                 }
                 onSuccess={() => {
@@ -258,7 +265,7 @@ const AgentCard = ({
     >
       <Link href={`/projects/${slug}/agents/${agent.id}`}>
         <VStack gap="small">
-          <Tooltip asChild content={`Go to ${agent.name}`}>
+          <Tooltip asChild content={t('goToAgent', { name: agent.name })}>
             <VStack gap="small">
               <HStack gap="small" align="center">
                 <LettaInvaderIcon />
@@ -319,7 +326,7 @@ const AgentCard = ({
       <HStack align="center" fullWidth gap="small">
           <Button
             color="secondary"
-            label="Preview"
+            label={t('preview')}
             size="small"
             preIcon={<EyeOpenIcon />}
             onClick={handlePreviewClick}
@@ -364,11 +371,11 @@ interface AgentGridProps {
   data?: AgentState[];
   canCreateAgents: boolean;
   slug: string;
+  useGridView?: boolean;
 }
 
-function AgentGrid({ data, canCreateAgents, slug }: AgentGridProps) {
+function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps) {
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
-  const { data: useGridView } = useFeatureFlag('AGENTS_GRID_VIEW');
   const [selectedAgent, setSelectedAgent] = useState<AgentState>();
 
   const agentsList = useMemo(() => data || [], [data]);
@@ -485,6 +492,7 @@ interface RecentAgentsBoxListProps {
   data?: AgentState[];
   canCreateAgents: boolean;
   slug: string;
+  useGridView?: boolean;
 }
 
 function RecentAgentsBoxList({ data, canCreateAgents, slug }: RecentAgentsBoxListProps) {
@@ -554,7 +562,7 @@ function RecentAgentsBoxList({ data, canCreateAgents, slug }: RecentAgentsBoxLis
 }
 
 function RecentAgentsSection() {
-  const { data: useGridView } = useFeatureFlag('AGENTS_GRID_VIEW');
+  const { data: useGridView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
   const { id: currentProjectId, slug } = useCurrentProject();
 
   const { data: agents } = useAgentsServiceListAgents(
@@ -576,6 +584,7 @@ function RecentAgentsSection() {
     data: agents,
     canCreateAgents,
     slug,
+    useGridView,
   };
 
   if (useGridView) {
@@ -712,7 +721,7 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
       justify="spaceBetween"
       fullWidth
     >
-      <Tooltip asChild content={`Go to ${template.name}`}>
+      <Tooltip asChild content={t('RecentTemplatesSection.goToTemplate', { templateName: template.name })}>
         <Link href={`/projects/${slug}/templates/${template.name}`}>
           <VStack gap="small">
             <HStack justify="spaceBetween" align="center" fullWidth>
@@ -911,8 +920,222 @@ function TemplateGrid({ data, canCRDTemplates, slug }: TemplateGridProps) {
   );
 }
 
+function ProjectWelcomeCard() {
+  const { id: projectId, name: projectName, isFavorited, slug: projectSlug, updatedAt } = useCurrentProject();
+  const queryClient = useQueryClient();
+  const currentOrganization = useCurrentOrganization();
+  const t = useTranslations('projects/(projectSlug)/page');
+  const { formatDateAndTime } = useFormatters();
+
+  const [canReadKeys] = useUserHasPermission(ApplicationServices.READ_API_KEYS);
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  const { data: apiKeyData } = webApi.apiKeys.getAPIKey.useQuery({
+    queryKey: webApiQueryKeys.apiKeys.getApiKey('first'),
+    queryData: {
+      params: {
+        apiKeyId: 'first',
+      },
+    },
+    enabled: canReadKeys,
+  });
+
+  const mostRecentApiKey = apiKeyData?.body;
+
+  const { copyToClipboard: copyApiKey } = useCopyToClipboard({
+    textToCopy: mostRecentApiKey?.apiKey || '',
+  });
+
+  const { mutate: toggleFavorite } = webApi.projects.toggleFavoriteProject.useMutation({
+    onMutate: async ({ body }) => {
+      await queryClient.cancelQueries({
+        queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug,
+      });
+
+      const previousProject = queryClient.getQueryData(
+        webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
+      );
+
+      queryClient.setQueryData(
+        webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
+        (old: unknown) => {
+          if (!old || typeof old !== 'object' || !('body' in old)) return old;
+          const typedOld = old as { body?: { isFavorited?: boolean } };
+          if (!typedOld.body) return old;
+          return {
+            body: {
+              ...typedOld.body,
+              isFavorited: body.isFavorited,
+            },
+          };
+        },
+      );
+
+      return { previousProject };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousProject) {
+        queryClient.setQueryData(
+          webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
+          context.previousProject,
+        );
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug,
+      });
+    },
+  });
+
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (projectId) {
+      toggleFavorite({
+        params: { projectId },
+        body: { isFavorited: !isFavorited },
+      });
+    }
+  }, [projectId, isFavorited, toggleFavorite]);
+
+  const formatApiKeyForDisplay = (apiKey: string) => {
+    if (!apiKey || apiKey.length < 6) return apiKey;
+    return `${apiKey.slice(0, 6)}...${apiKey.slice(-12)}`;
+  };
+
+  return (
+    <VStack
+      fullHeight
+      border
+      gap="large"
+      padding
+      justify="spaceBetween"
+    >
+      <VStack gap="small" fullWidth>
+        <HStack align="center" gap="small" justify="spaceBetween" fullWidth>
+          <VStack align="start" gap="small" fullWidth>
+            <Typography variant="body2" color="muted" align="left">
+              {currentOrganization?.name || '--'}
+            </Typography>
+            <HStack align="center" gap="small" justify="spaceBetween" fullWidth>
+              <Typography variant="heading3" bold align="left">
+                {projectName || '--'}
+              </Typography>
+              <Button
+              color="tertiary"
+              size="default"
+              hideLabel
+              onClick={handleFavoriteClick}
+              preIcon={
+                isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
+              }
+              label={isFavorited ? t('ProjectWelcomeCard.removeFromFavorites') : t('ProjectWelcomeCard.addToFavorites')}
+              />
+            </HStack>
+            {updatedAt && (
+              <Typography variant="body3" align="left">
+                {t('ProjectWelcomeCard.updatedAt', { datetime: formatDateAndTime(updatedAt) })}
+              </Typography>
+            )}
+          </VStack>
+        </HStack>
+        <HStack align="center" gap="small">
+          <ArrowCurveIcon size="xsmall" />
+          <Typography
+            className="font-mono text-xs truncate"
+            color="muted"
+            variant="body3"
+          >
+            {projectId || '--'}
+          </Typography>
+          <CopyButton
+            textToCopy={projectId || ''}
+            size="small"
+            hideLabel
+            color="tertiary"
+            iconColor="muted"
+          />
+        </HStack>
+        <HStack align="center" gap="small">
+          <LinkIcon size="xsmall" />
+          <Typography
+            className="font-mono text-xs truncate"
+            color="muted"
+            variant="body3"
+          >
+            {projectSlug || '--'}
+          </Typography>
+          <CopyButton
+            textToCopy={projectSlug || ''}
+            size="small"
+            hideLabel
+            color="tertiary"
+            iconColor="muted"
+          />
+        </HStack>
+      </VStack>
+
+      <VStack gap="small" fullWidth>
+        <Typography variant="body2" color="muted" align="left">
+          {t('ProjectWelcomeCard.apiKey')}
+        </Typography>
+        {mostRecentApiKey ? (
+          <Tooltip asChild content={t('ProjectWelcomeCard.clickToCopy')} placement="top">
+            <HStack
+              color="background-grey2"
+              border
+              paddingLeft="xsmall"
+              paddingY="xxsmall"
+              paddingRight="xsmall"
+              className="border-background-grey2-border dark:border-background-grey3-border hover:bg-background-grey3 transition-colors cursor-pointer"
+              fullWidth
+              onClick={(e) => {
+                e.stopPropagation();
+                copyApiKey();
+              }}
+            >
+              <div className="flex-1 overflow-x-auto whitespace-nowrap">
+                <Typography
+                  className="font-mono text-xs"
+                  color="lighter"
+                  variant="body3"
+                  overrideEl="span"
+                >
+                  {showApiKey
+                    ? (mostRecentApiKey.apiKey || '')
+                    : formatApiKeyForDisplay(mostRecentApiKey.apiKey || '')}
+                </Typography>
+              </div>
+              <div onClick={(e) => e.stopPropagation()}>
+                <Button
+                  color="tertiary"
+                  size="small"
+                  hideLabel
+                  _use_rarely_disableTooltip
+                  _use_rarely_className="hover:bg-transparent hover:text-current"
+                  preIcon={showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                  onClick={() => setShowApiKey((prev) => !prev)}
+                />
+              </div>
+            </HStack>
+          </Tooltip>
+        ) : (
+          <Typography
+            className="font-mono text-xs"
+            color="muted"
+            variant="body3"
+          >
+            {canReadKeys ? t('ProjectWelcomeCard.noApiKeysFound') : t('ProjectWelcomeCard.accessRestricted')}
+          </Typography>
+        )}
+      </VStack>
+    </VStack>
+  );
+}
+
 function RecentTemplatesSection() {
-  const { data: useGridView } = useFeatureFlag('TEMPLATES_GRID_VIEW');
+  const { data: useGridView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
   const { id: currentProjectId, slug } = useCurrentProject();
 
   const { data } = cloudAPI.templates.listTemplates.useQuery({
@@ -950,8 +1173,7 @@ function RecentTemplatesSection() {
 function ProjectPage() {
   const t = useTranslations('projects/(projectSlug)/page');
   const { name } = useCurrentProject();
-  const { data: useGridView } = useFeatureFlag('TEMPLATES_GRID_VIEW');
-
+  const { data: useNewProjectView } = useFeatureFlag('ENABLE_NEW_PROJECT_VIEW');
   const welcomeText = useWelcomeText();
 
   return (
@@ -961,32 +1183,43 @@ function ProjectPage() {
       subtitle={t('subtitle', { name })}
     >
       <DashboardPageSection>
-        <VStack gap="large" fullWidth>
-          {useGridView ? (
+        <VStack gap="large" fullWidth fullHeight>
+          {useNewProjectView && (
             <>
               <HiddenOnMobile>
-                <HStack gap="xlarge" fullWidth align="start">
-                  <div style={{ width: '67%' }}>
-                    <RecentTemplatesSection />
+                <HStack gap="xlarge" fullWidth fullHeight>
+                  <div style={{ width: '25%' }}>
+                    <ProjectWelcomeCard />
                   </div>
-                  <div style={{ width: '33%' }}>
-                    <RecentAgentsSection />
+                  <div style={{ width: '75%' }}>
+                    <MiniObservabilityDashboard />
                   </div>
                 </HStack>
               </HiddenOnMobile>
               <VisibleOnMobile>
                 <VStack gap="large" fullWidth>
-                  <RecentTemplatesSection />
-                  <RecentAgentsSection />
+                  <ProjectWelcomeCard />
+                  <MiniObservabilityDashboard />
                 </VStack>
               </VisibleOnMobile>
             </>
-          ) : (
-            <HStack gap="large" fullWidth>
+          )}
+          <HiddenOnMobile>
+            <HStack gap="xlarge" fullWidth align="start">
+              <div style={{ width: useNewProjectView ? '67%' : '50%' }}>
+                <RecentTemplatesSection />
+              </div>
+              <div style={{ width: useNewProjectView ? '33%' : '50%' }}>
+                <RecentAgentsSection />
+              </div>
+            </HStack>
+          </HiddenOnMobile>
+          <VisibleOnMobile>
+            <VStack gap="large" fullWidth>
               <RecentTemplatesSection />
               <RecentAgentsSection />
-            </HStack>
-          )}
+            </VStack>
+          </VisibleOnMobile>
           <HStack border padding="medium">
             <Tutorials />
           </HStack>

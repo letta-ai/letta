@@ -1583,7 +1583,10 @@
     "createdAt": "Updated at {date}",
     "viewAllAgents": "View all",
     "starterKitTemplate": "Starter kit",
-    "goToTemplate": "Go to {templateName}"
+    "goToTemplate": "Go to {templateName}",
+    "preview": "Preview",
+    "deleteAgent": "Delete Agent",
+    "goToAgent": "Go to {name}"
   },
   "projects/(projectSlug)/page": {
     "RecentTemplatesSection": {
@@ -1599,9 +1602,19 @@
         "noCrdDescription": "Your team has yet to create a template for this project, create one below"
       },
       "createdAt": "Updated at {date}",
-      "viewAllTemplates": "View all"
+      "viewAllTemplates": "View all",
+      "goToTemplate": "Go to {templateName}"
     },
     "subtitle": "Create, manage, and monitor your agents",
+    "ProjectWelcomeCard": {
+      "apiKey": "API Key",
+      "clickToCopy": "Click to copy",
+      "noApiKeysFound": "No API keys found",
+      "accessRestricted": "Access restricted",
+      "addToFavorites": "Add to favorites",
+      "removeFromFavorites": "Remove from favorites",
+      "updatedAt": "Updated at {datetime}"
+    },
     "MiniObservabilityDashboard": {
       "title": "Monitoring",
       "metrics": {
@@ -1619,8 +1632,9 @@
         "toolDurationP99": "Tool Duration (P99)"
       },
       "MetricCard": {
-        "previousPeriod": "Previous Period: ",
-        "value": "Value"
+        "previousPeriod": "Previous Period: {value}",
+        "value": "Value",
+        "noDataAvailable": "No data available"
       }
     },
     "QuickActions": {
@@ -2415,7 +2429,8 @@
     "openInADE": "Open in ADE",
     "agentId": "Agent ID",
     "close": "Close",
-    "actions": "Actions"
+    "actions": "Actions",
+    "deleteAgent": "Delete Agent"
   },
   "development-servers/components/UserIsNotConnectedComponent": {
     "connecting": "Attempting to connect to your server...",

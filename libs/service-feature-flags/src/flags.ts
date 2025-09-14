@@ -172,13 +172,8 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
-  TEMPLATES_GRID_VIEW: {
-    description: 'Enable templates grid view',
-    expiryDate: '2025-12-31',
-    flagValue: z.boolean(),
-  },
-  AGENTS_GRID_VIEW: {
-    description: 'Enable agents grid view',
+  ENABLE_NEW_PROJECT_VIEW: {
+    description: 'Enable the new project view',
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },

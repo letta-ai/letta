@@ -13,6 +13,7 @@ import {
 import { cn } from '@letta-cloud/ui-styles';
 import { ArrowUpIcon } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
+import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import type { EChartsOption } from 'echarts';
 
 interface MetricCardProps {
@@ -48,11 +49,19 @@ export function MetricCard(props: MetricCardProps) {
 
   const t = useTranslations('projects/(projectSlug)/page.MiniObservabilityDashboard.MetricCard');
 
+  const { width = 0 } = useViewportSize();
+  const [debouncedWidth] = useDebouncedValue(width, 100);
+
+  const chartWidth = React.useMemo(() => {
+    const width = debouncedWidth < 1300 ? 100 : 200;
+    return width;
+  }, [debouncedWidth]);
+
   const renderTrendIcon = () => {
     if (!trend || trend === 'neutral') return null;
     const rotation = trend === 'down' ? 'rotate-180' : '';
     const isGoodTrend = isInverted ? trend === 'down' : trend === 'up';
-    const color = isGoodTrend ? '#28A428' : '#BA024C';
+    const color = isGoodTrend ? 'hsl(var(--positive))' : 'hsl(var(--destructive))';
     return (
       <HStack align="center" justify="center" className={cn(rotation)} style={{ color }}>
         <ArrowUpIcon/>
@@ -60,12 +69,14 @@ export function MetricCard(props: MetricCardProps) {
     );
   };
 
-  const chartOptions = React.useMemo((): EChartsOption | null => {
-    if (!chartData || chartData.length === 0) return null;
+  const chartOptions = React.useMemo((): EChartsOption => {
+    const safeChartData = chartData && chartData.length > 0 ? chartData : [{ x: '0', y: 0 }];
+    const hasRealData = chartData && chartData.some(point => point.y > 0);
 
     const isGoodTrend = isInverted ? trend === 'down' : trend === 'up';
-    const chartColor =
-      isGoodTrend ? '#28A428' : trend === 'neutral' ? '#6B7280' : '#BA024C';
+    const chartColor = hasRealData
+      ? (isGoodTrend ? '#28A428' : trend === 'neutral' ? '#6B7280' : '#BA024C')
+      : '#E5E7EB';
 
     return {
       // apache echarts styling
@@ -88,7 +99,7 @@ export function MetricCard(props: MetricCardProps) {
           lineHeight: 18,
         },
         axisPointer: { type: 'line' },
-        formatter: (params: any) => {
+        formatter: hasRealData ? (params: any) => {
           const p = Array.isArray(params) ? params[0] : params;
 
           const rawLabel = p?.axisValueLabel ?? p?.name ?? '';
@@ -126,12 +137,12 @@ export function MetricCard(props: MetricCardProps) {
               </div>
             </div>
           `;
-        },
+        } : () => t('noDataAvailable'),
       },
       xAxis: {
         type: 'category' as const,
         show: false,
-        data: chartData.map((item) => item.x),
+        data: safeChartData.map((item) => item.x),
       },
       yAxis: {
         type: 'value' as const,
@@ -140,7 +151,7 @@ export function MetricCard(props: MetricCardProps) {
       series: [
         {
           name: title,
-          data: chartData.map((item) => item.y),
+          data: safeChartData.map((item) => item.y),
           type: 'line',
           smooth: false,
           symbol: 'none',
@@ -149,8 +160,18 @@ export function MetricCard(props: MetricCardProps) {
             color: chartColor,
           },
           areaStyle: {
-            opacity: 0.1,
+            opacity: hasRealData ? 0.2 : 0.05,
             color: chartColor,
+          },
+          emphasis: {
+            lineStyle: {
+              width: 2.2,
+              color: chartColor,
+            },
+            areaStyle: {
+              opacity: hasRealData ? 0.1 : 0.05,
+              color: chartColor,
+            },
           },
         },
       ],
@@ -170,10 +191,10 @@ export function MetricCard(props: MetricCardProps) {
         <VStack gap={null} align="start">
           <HStack gap="small" align="center">
             {isLoading ? (
-              <Skeleton className="w-[50px] h-6" />
+              <Skeleton className="w-[60px] h-6" />
             ) : previousPeriodValue !== undefined ? (
               <Tooltip
-                content={t('previousPeriod') + previousPeriodValue}
+                content={t('previousPeriod', { value: previousPeriodValue })}
                 placement="top"
                 asChild
               >
@@ -186,8 +207,8 @@ export function MetricCard(props: MetricCardProps) {
                       trend === 'neutral'
                         ? undefined
                         : (isInverted ? trend === 'down' : trend === 'up')
-                          ? '#28A428'
-                          : '#BA024C',
+                          ? 'hsl(var(--positive))'
+                          : 'hsl(var(--destructive))',
                   }}
                 >
                   {value ?? '--'}
@@ -203,8 +224,8 @@ export function MetricCard(props: MetricCardProps) {
                     trend === 'neutral'
                       ? undefined
                       : (isInverted ? trend === 'down' : trend === 'up')
-                        ? '#28A428'
-                        : '#BA024C',
+                        ? 'hsl(var(--positive))'
+                        : 'hsl(var(--destructive))',
                 }}
               >
                 {value ?? '--'}
@@ -221,11 +242,13 @@ export function MetricCard(props: MetricCardProps) {
           </HStack>
         </VStack>
 
-        {chartOptions && !isLoading && (
-          <div className="w-30 h-10 flex items-center justify-center">
-            <Chart options={chartOptions} width={110} height={45} />
-          </div>
-        )}
+        <div className="w-30 h-[45px] flex items-center justify-center">
+          {isLoading ? (
+            <Skeleton className="w-[110px] h-[45px]" />
+          ) : (
+            <Chart key={chartWidth} options={chartOptions} width={chartWidth} height={45} />
+          )}
+        </div>
       </HStack>
     </Card>
   );

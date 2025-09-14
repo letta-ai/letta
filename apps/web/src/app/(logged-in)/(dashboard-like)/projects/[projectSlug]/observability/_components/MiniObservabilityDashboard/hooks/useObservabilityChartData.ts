@@ -40,6 +40,30 @@ export function useObservabilityChartData(data: ObservabilityData): Observabilit
       }));
   };
 
+  //instead of using WITH FILL on the backend, fill in missing data points with 0 to reduce network payload
+  const fillMissingDataPoints = (
+    sparseData: ChartDataPoint[],
+    completeTimeSeriesTemplate: ChartDataPoint[]
+  ): ChartDataPoint[] => {
+    if (completeTimeSeriesTemplate.length === 0) {
+      return sparseData;
+    }
+
+    if (sparseData.length === 0) {
+      return completeTimeSeriesTemplate.map(point => ({
+        x: point.x,
+        y: 0,
+      }));
+    }
+
+    const dataMap = new Map(sparseData.map(point => [point.x, point.y]));
+
+    return completeTimeSeriesTemplate.map(templatePoint => ({
+      x: templatePoint.x,
+      y: dataMap.get(templatePoint.x) ?? 0,
+    }));
+  };
+
   const calculateMedianLatency = (
     items: Array<{ p50LatencyMs?: number; p99LatencyMs?: number }> | undefined,
     field: 'p50LatencyMs' | 'p99LatencyMs'
@@ -66,35 +90,35 @@ export function useObservabilityChartData(data: ObservabilityData): Observabilit
     [data.messagesData]
   );
 
-  const toolErrorsChartData = useMemo(() =>
-    transformToChartData(data.toolErrorsData?.body.items, 'date', 'errorCount'),
-    [data.toolErrorsData]
-  );
+  const toolErrorsChartData = useMemo(() => {
+    const sparseData = transformToChartData(data.toolErrorsData?.body.items, 'date', 'errorCount');
+    return fillMissingDataPoints(sparseData, messagesChartData);
+  }, [data.toolErrorsData, messagesChartData]);
 
-  const stepsPerHourChartData = useMemo(() =>
-    transformToChartData(data.stepsData?.body.items, 'date', 'totalStepsCount'),
-    [data.stepsData]
-  );
+  const stepsPerHourChartData = useMemo(() => {
+    const sparseData = transformToChartData(data.stepsData?.body.items, 'date', 'totalStepsCount');
+    return fillMissingDataPoints(sparseData, messagesChartData);
+  }, [data.stepsData, messagesChartData]);
 
-  const apiErrorsChartData = useMemo(() =>
-    transformToChartData(data.apiErrorsData?.body.items, 'date', 'apiErrorCount'),
-    [data.apiErrorsData]
-  );
+  const apiErrorsChartData = useMemo(() => {
+    const sparseData = transformToChartData(data.apiErrorsData?.body.items, 'date', 'apiErrorCount');
+    return fillMissingDataPoints(sparseData, messagesChartData);
+  }, [data.apiErrorsData, messagesChartData]);
 
-  const toolLatencyP50ChartData = useMemo(() =>
-    transformToChartData(data.toolLatencyData?.body.items, 'date', 'p50LatencyMs'),
-    [data.toolLatencyData]
-  );
+  const toolLatencyP50ChartData = useMemo(() => {
+    const sparseData = transformToChartData(data.toolLatencyData?.body.items, 'date', 'p50LatencyMs');
+    return fillMissingDataPoints(sparseData, messagesChartData);
+  }, [data.toolLatencyData, messagesChartData]);
 
-  const toolLatencyP99ChartData = useMemo(() =>
-    transformToChartData(
+  const toolLatencyP99ChartData = useMemo(() => {
+    const sparseData = transformToChartData(
       data.toolLatencyData?.body.items,
       'date',
       'p99LatencyMs',
       (value) => value * 1_000_000
-    ),
-    [data.toolLatencyData]
-  );
+    );
+    return fillMissingDataPoints(sparseData, messagesChartData);
+  }, [data.toolLatencyData, messagesChartData]);
 
   const medianToolLatencyP50 = useMemo(() =>
     calculateMedianLatency(data.toolLatencyData?.body.items, 'p50LatencyMs'),

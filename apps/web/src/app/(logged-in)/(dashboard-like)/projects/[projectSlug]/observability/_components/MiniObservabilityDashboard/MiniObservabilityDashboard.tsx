@@ -1,10 +1,13 @@
 'use client';
 import React, { useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   HStack,
-  Button,
+  VStack,
   ChevronRightIcon,
   TabGroup,
+  HiddenOnMobile,
+  VisibleOnMobile,
 } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
@@ -108,7 +111,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     });
 
   // data for total messages (current)
-  const { data: messagesData } = webApi.observability.getTotalMessagesPerDay.useQuery({
+  const { data: messagesData, isLoading: messagesLoading } = webApi.observability.getTotalMessagesPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getTotalMessagesPerDay({
       projectId,
       startDate,
@@ -130,7 +133,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
   });
 
   // data for tool error counts (current)
-  const { data: toolErrorsData } = webApi.observability.getToolErrorsMetrics.useQuery({
+  const { data: toolErrorsData, isLoading: toolErrorsLoading } = webApi.observability.getToolErrorsMetrics.useQuery({
     queryKey: webApiQueryKeys.observability.getToolErrorsMetrics({
       projectId,
       startDate,
@@ -174,7 +177,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
   });
 
   // data for step counts (current)
-  const { data: stepsData } = webApi.observability.getStepsMetrics.useQuery({
+  const { data: stepsData, isLoading: stepsLoading } = webApi.observability.getStepsMetrics.useQuery({
     queryKey: webApiQueryKeys.observability.getStepsMetrics({
       projectId,
       startDate,
@@ -218,7 +221,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
   });
 
   // data for API errors (current)
-  const { data: apiErrorsData } = webApi.observability.getApiErrorCount.useQuery({
+  const { data: apiErrorsData, isLoading: apiErrorsLoading } = webApi.observability.getApiErrorCount.useQuery({
     queryKey: webApiQueryKeys.observability.getApiErrorCount({
       projectId,
       startDate,
@@ -262,7 +265,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
   });
 
   // data for tool latency P50/P99 percentiles (current)
-  const { data: toolLatencyData } = webApi.observability.getToolLatencyPerDay.useQuery({
+  const { data: toolLatencyData, isLoading: toolLatencyLoading } = webApi.observability.getToolLatencyPerDay.useQuery({
     queryKey: webApiQueryKeys.observability.getToolLatencyPerDay({
       projectId,
       startDate,
@@ -393,21 +396,12 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
     return currentValue > previousValue ? 'up' : 'down';
   }, []);
 
-  return (
-    <div className="w-1/2 border border-background-grey3-border p-2.5 flex flex-col gap-3">
-      <HStack justify="spaceBetween" align="center" fullWidth>
-        <Button
-          href={`/projects/${projectSlug}/observability`}
-          color="tertiary"
-          size="small"
-          label={t('title')}
-          postIcon={<ChevronRightIcon />}
-          _use_rarely_className="pl-2 h-auto font-bold text-lg hover:!bg-transparent hover:!text-text-lighter"
-        />
-        <TimeRangeSelector />
-      </HStack>
+  const renderMetricCards = useCallback((isMobile: boolean = false) => {
+    const rightBorderForDesktop = (isLast: boolean) => !isMobile && !isLast;
+    const rightBorderForMobile = false;
 
-      <div className="grid grid-cols-2 border border-background-grey3-border">
+    return (
+      <>
         <MetricCard
           title={t('metrics.totalMessages')}
           value={overview?.body.totalMessageCount !== undefined ? formatNumber(overview.body.totalMessageCount) : undefined}
@@ -417,7 +411,7 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
             'neutral'}
           isLoading={overviewLoading}
           chartData={messagesChartData}
-          showRightBorder={true}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
           showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.totalMessagesTooltip'),
@@ -431,9 +425,9 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           trend={previousStepsData ?
             calculatePeriodTrend(currentPeriodTotals.totalSteps, previousPeriodTotals.totalSteps) :
             'neutral'}
-          isLoading={!stepsData}
+          isLoading={stepsLoading || messagesLoading}
           chartData={stepsPerHourChartData}
-          showRightBorder={false}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
           showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.totalStepsTooltip'),
@@ -447,10 +441,10 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           trend={previousToolErrorsData && previousStepsData ?
             calculatePeriodTrend(currentPeriodTotals.toolErrorRate, previousPeriodTotals.toolErrorRate) :
             'neutral'}
-          isLoading={!toolErrorsData || !stepsData}
+          isLoading={toolErrorsLoading || stepsLoading || messagesLoading}
           chartData={toolErrorsChartData}
           isInverted={true}
-          showRightBorder={true}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
           showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.toolErrorRateTooltip'),
@@ -464,10 +458,10 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           trend={previousApiErrorsData ?
             calculatePeriodTrend(currentPeriodTotals.totalApiErrors, previousPeriodTotals.totalApiErrors) :
             'neutral'}
-          isLoading={!apiErrorsData}
+          isLoading={apiErrorsLoading || messagesLoading}
           chartData={apiErrorsChartData}
           isInverted={true}
-          showRightBorder={false}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
           showBottomBorder={true}
           infoTooltip={{
             text: t('metrics.apiErrorsTooltip'),
@@ -485,11 +479,11 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           trend={previousToolLatencyData ?
             calculatePeriodTrend(currentPeriodTotals.medianP50Latency, previousPeriodTotals.medianP50Latency) :
             'neutral'}
-          isLoading={!toolLatencyData}
+          isLoading={toolLatencyLoading || messagesLoading}
           chartData={toolLatencyP50ChartData}
           isInverted={true}
-          showRightBorder={true}
-          showBottomBorder={false}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(false)}
+          showBottomBorder={isMobile}
           infoTooltip={{
             text: t('metrics.toolDurationP50Tooltip'),
           }}
@@ -506,17 +500,59 @@ const MiniObservabilityDashboardInner = React.memo(function MiniObservabilityDas
           trend={previousToolLatencyData ?
             calculatePeriodTrend(currentPeriodTotals.medianP99Latency, previousPeriodTotals.medianP99Latency) :
             'neutral'}
-          isLoading={!toolLatencyData}
+          isLoading={toolLatencyLoading || messagesLoading}
           chartData={toolLatencyP99ChartData}
           isInverted={true}
-          showRightBorder={false}
+          showRightBorder={isMobile ? rightBorderForMobile : rightBorderForDesktop(true)}
           showBottomBorder={false}
           infoTooltip={{
             text: t('metrics.toolDurationP99Tooltip'),
           }}
         />
-      </div>
-    </div>
+      </>
+    );
+  }, [
+    t, overview, previousOverview, calculatePeriodTrend, currentPeriodTotals,
+    overviewLoading, messagesChartData, stepsData, previousStepsData,
+    stepsLoading, messagesLoading, stepsPerHourChartData, previousToolErrorsData,
+    toolErrorsLoading, toolErrorsChartData, apiErrorsData, previousApiErrorsData,
+    apiErrorsLoading, apiErrorsChartData, medianToolLatencyP50, previousPeriodTotals,
+    previousToolLatencyData, toolLatencyLoading, toolLatencyP50ChartData,
+    medianToolLatencyP99, toolLatencyP99ChartData, formatNumber, formatSmallDuration
+  ]);
+
+  return (
+    <VStack
+      fullWidth
+      fullHeight
+      border
+      gap="large"
+      padding
+      className="w-full"
+    >
+      <HStack justify="spaceBetween" align="center" fullWidth className="h-biHeight-sm">
+        <HStack align="center">
+          <Link href={`/projects/${projectSlug}/observability`} className="text-lg text-text-default font-semibold flex items-center gap-1">
+            {t('title')}
+            <ChevronRightIcon className="h-5 w-5" />
+          </Link>
+        </HStack>
+        <TimeRangeSelector />
+      </HStack>
+
+      <>
+        <HiddenOnMobile>
+          <div className="grid grid-cols-2 gap-0 w-full border border-background-grey3-border">
+            {renderMetricCards(false)}
+          </div>
+        </HiddenOnMobile>
+        <VisibleOnMobile>
+          <div className="grid grid-cols-1 gap-0 w-full border border-background-grey3-border">
+            {renderMetricCards(true)}
+          </div>
+        </VisibleOnMobile>
+      </>
+    </VStack>
   );
 });
 
