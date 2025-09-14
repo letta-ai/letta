@@ -64,7 +64,7 @@ def create_modal_tool_wrapper(tool: PydanticTool):
         serialized=True,
     )
     def modal_tool_wrapper(tool_name: str, agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs):
-        """Wrapper function for modal tools."""
+        """Wrapper function for running untrusted code in a Modal function"""
 
         print("Modal tool wrapper called", env_vars, letta_api_key, agent_id)
 
