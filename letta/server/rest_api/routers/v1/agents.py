@@ -256,7 +256,7 @@ def import_agent_legacy(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
 
 
-async def import_agent(
+async def _import_agent(
     agent_file_json: dict,
     server: "SyncServer",
     actor: User,
@@ -367,7 +367,7 @@ async def import_agent(
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
         # This is an AgentFileSchema
-        agent_ids = await import_agent(
+        agent_ids = await _import_agent(
             agent_file_json=agent_json,
             server=server,
             actor=actor,
