@@ -100,9 +100,12 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
             )
 
             # Create Modal app with the tool function registered
+            print("Creating Modal app...")
             app = await self._fetch_or_create_modal_app(sbx_config, envs)
 
             # Execute the tool remotely
+            print("Executing tool remotely...", app)
+            print("Execution script:", execution_script)
             with app.run():
                 # app = modal.Cls.from_name(app.name, "NodeShimServer")()
                 result = app.remote_executor.remote(execution_script, envs)
