@@ -39,9 +39,11 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
         tool_object: Optional[Tool] = None,
         sandbox_config: Optional[SandboxConfig] = None,
         sandbox_env_vars: Optional[Dict[str, Any]] = None,
+        organization_id: Optional[str] = None,
     ):
         super().__init__(tool_name, args, user, tool_object, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars)
         self.force_recreate = force_recreate
+        self.organization_id = organization_id
 
         # TODO: check to make sure modal app `App(tool.id)` exists
 
@@ -99,7 +101,8 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
                 env_vars.update(additional_env_vars)
 
             # call the modal function
-            func = modal.Function.from_name(self.tool.name, modal_tool_name)
+            function_name = f"{self.tool.name}_{self.organization_id}"
+            func = modal.Function.from_name(function_name, modal_tool_name)
             logger.info(f"Calling function {func} with arguments {self.args}")
             result = await func.remote.aio(
                 tool_name=self.tool_name,
