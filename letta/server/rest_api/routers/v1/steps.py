@@ -5,11 +5,13 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.step import Step
 from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.step_manager import FeedbackType
+from letta.settings import settings
 
 router = APIRouter(prefix="/steps", tags=["steps"])
 
@@ -92,6 +94,24 @@ async def retrieve_step_metrics(
         return await server.step_manager.get_step_metrics_async(step_id=step_id, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step metrics not found")
+
+
+@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_step_trace")
+async def retrieve_step_trace(
+    step_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    provider_trace = None
+    if settings.track_provider_trace:
+        try:
+            provider_trace = await server.telemetry_manager.get_provider_trace_by_step_id_async(
+                step_id=step_id, actor=await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+            )
+        except:
+            pass
+
+    return provider_trace
 
 
 class AddFeedbackRequest(BaseModel):
