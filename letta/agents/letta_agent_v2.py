@@ -2,7 +2,7 @@ import asyncio
 import json
 import uuid
 from datetime import datetime
-from typing import AsyncGenerator, Tuple
+from typing import AsyncGenerator, Optional, Tuple
 
 from opentelemetry.trace import Span
 
@@ -399,6 +399,7 @@ class LettaAgentV2(BaseAgentV2):
                 for llm_request_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                     try:
                         request_data = self.llm_client.build_request_data(
+                            agent_type=self.agent_state.agent_type,
                             messages=messages,
                             llm_config=self.agent_state.llm_config,
                             tools=valid_tools,
@@ -454,8 +455,11 @@ class LettaAgentV2(BaseAgentV2):
 
             # Handle the AI response with the extracted data
             if tool_call is None and llm_adapter.tool_call is None:
-                self.stop_reason = LettaStopReason(stop_reason=StopReasonType.no_tool_call.value)
-                raise ValueError("No tool calls found in response, model must make a tool call")
+                # If this is a react agent, this is OK
+                # Otherwise, we should throw an error
+                if self.agent_state.agent_type != AgentType.react_agent:
+                    self.stop_reason = LettaStopReason(stop_reason=StopReasonType.no_tool_call.value)
+                    raise ValueError("No tool calls found in response, model must make a tool call")
 
             persisted_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
                 tool_call or llm_adapter.tool_call,
@@ -479,12 +483,13 @@ class LettaAgentV2(BaseAgentV2):
                 is_denial=(approval_response.approve == False) if approval_response is not None else False,
                 denial_reason=approval_response.denial_reason if approval_response is not None else None,
             )
+            # raise Exception("persisted_messages: " + str(persisted_messages))
 
             new_message_idx = len(input_messages_to_persist) if input_messages_to_persist else 0
             self.response_messages.extend(persisted_messages[new_message_idx:])
 
             if llm_adapter.supports_token_streaming():
-                if persisted_messages[-1].role != "approval":
+                if persisted_messages[-1].role != "approval" and tool_call is not None:
                     tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
                     if not (use_assistant_message and tool_return.name == "send_message"):
                         if include_return_message_types is None or tool_return.message_type in include_return_message_types:
@@ -513,7 +518,11 @@ class LettaAgentV2(BaseAgentV2):
                 )
             step_progression, step_metrics = await self._step_checkpoint_finish(step_metrics, agent_step_span, logged_step)
         except Exception as e:
+            import traceback
+
             self.logger.error(f"Error during step processing: {e}")
+            self.logger.error(f"Error traceback: {traceback.format_exc()}")
+            # self.logger.error(f"Error during step processing: {e}")
             self.job_update_metadata = {"error": str(e)}
 
             # This indicates we failed after we decided to stop stepping, which indicates a bug with our flow.
@@ -857,7 +866,7 @@ class LettaAgentV2(BaseAgentV2):
     @trace_method
     async def _handle_ai_response(
         self,
-        tool_call: ToolCall,
+        tool_call: Optional[ToolCall],  # NOTE: should only be None for react agents
         valid_tool_names: list[str],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
@@ -878,7 +887,11 @@ class LettaAgentV2(BaseAgentV2):
         Handle the final AI response once streaming completes, execute / validate the
         tool call, decide whether we should keep stepping, and persist state.
         """
-        tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+        if tool_call is None:
+            assert self.agent_state.agent_type == AgentType.react_agent, "tool_call should only be None for react_agent types"
+            tool_call_id = None
+        else:
+            tool_call_id: str = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
 
         if is_denial:
             continue_stepping = True
@@ -910,102 +923,26 @@ class LettaAgentV2(BaseAgentV2):
             )
             return persisted_messages, continue_stepping, stop_reason
 
-        # 1.  Parse and validate the tool-call envelope
-        tool_call_name: str = tool_call.function.name
-
-        tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
-        request_heartbeat: bool = _pop_heartbeat(tool_args)
-        tool_args.pop(INNER_THOUGHTS_KWARG, None)
-
-        log_telemetry(
-            self.logger,
-            "_handle_ai_response execute tool start",
-            tool_name=tool_call_name,
-            tool_args=tool_args,
-            tool_call_id=tool_call_id,
-            request_heartbeat=request_heartbeat,
-        )
-
-        if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
-            approval_message = create_approval_request_message_from_llm_response(
-                agent_id=agent_state.id,
-                model=agent_state.llm_config.model,
-                function_name=tool_call_name,
-                function_arguments=tool_args,
-                tool_call_id=tool_call_id,
-                actor=self.actor,
-                continue_stepping=request_heartbeat,
-                reasoning_content=reasoning_content,
-                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                step_id=step_id,
-            )
-            messages_to_persist = (initial_messages or []) + [approval_message]
-            continue_stepping = False
-            stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
-        else:
-            # 2.  Execute the tool (or synthesize an error result if disallowed)
-            tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
-            if tool_rule_violated:
-                tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
-            else:
-                # Track tool execution time
-                tool_start_time = get_utc_timestamp_ns()
-                tool_execution_result = await self._execute_tool(
-                    tool_name=tool_call_name,
-                    tool_args=tool_args,
-                    agent_state=agent_state,
-                    agent_step_span=agent_step_span,
-                    step_id=step_id,
-                )
-                tool_end_time = get_utc_timestamp_ns()
-
-                # Store tool execution time in metrics
-                step_metrics.tool_execution_ns = tool_end_time - tool_start_time
-
-            log_telemetry(
-                self.logger,
-                "_handle_ai_response execute tool finish",
-                tool_execution_result=tool_execution_result,
-                tool_call_id=tool_call_id,
-            )
-
-            # 3.  Prepare the function-response payload
-            truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
-            return_char_limit = next(
-                (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
-                None,
-            )
-            function_response_string = validate_function_response(
-                tool_execution_result.func_return,
-                return_char_limit=return_char_limit,
-                truncate=truncate,
-            )
-            self.last_function_response = package_function_response(
-                was_success=tool_execution_result.success_flag,
-                response_string=function_response_string,
-                timezone=agent_state.timezone,
-            )
-
-            # 4.  Decide whether to keep stepping  (focal section simplified)
+        # 0. If there's no tool call, we can early exit
+        if tool_call is None:
+            # TODO could just hardcode the line here instead of calling the function...
             continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
                 agent_state=agent_state,
-                request_heartbeat=request_heartbeat,
-                tool_call_name=tool_call_name,
-                tool_rule_violated=tool_rule_violated,
+                request_heartbeat=False,
+                tool_call_name=None,
+                tool_rule_violated=False,
                 tool_rules_solver=tool_rules_solver,
                 is_final_step=is_final_step,
             )
-
-            # 5.  Create messages (step was already created at the beginning)
-            tool_call_messages = create_letta_messages_from_llm_response(
+            assistant_message = create_letta_messages_from_llm_response(
                 agent_id=agent_state.id,
                 model=agent_state.llm_config.model,
-                function_name=tool_call_name,
-                function_arguments=tool_args,
-                tool_execution_result=tool_execution_result,
-                tool_call_id=tool_call_id,
-                function_call_success=tool_execution_result.success_flag,
-                function_response=function_response_string,
+                function_name=None,
+                function_arguments=None,
+                tool_execution_result=None,
+                tool_call_id=None,
+                function_call_success=None,
+                function_response=None,
                 timezone=agent_state.timezone,
                 actor=self.actor,
                 continue_stepping=continue_stepping,
@@ -1015,7 +952,115 @@ class LettaAgentV2(BaseAgentV2):
                 step_id=step_id,
                 is_approval_response=is_approval or is_denial,
             )
-            messages_to_persist = (initial_messages or []) + tool_call_messages
+            messages_to_persist = (initial_messages or []) + assistant_message
+
+        else:
+            # 1.  Parse and validate the tool-call envelope
+            tool_call_name: str = tool_call.function.name
+
+            tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
+            request_heartbeat: bool = _pop_heartbeat(tool_args)
+            tool_args.pop(INNER_THOUGHTS_KWARG, None)
+
+            log_telemetry(
+                self.logger,
+                "_handle_ai_response execute tool start",
+                tool_name=tool_call_name,
+                tool_args=tool_args,
+                tool_call_id=tool_call_id,
+                request_heartbeat=request_heartbeat,
+            )
+
+            if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
+                approval_message = create_approval_request_message_from_llm_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=tool_call_name,
+                    function_arguments=tool_args,
+                    tool_call_id=tool_call_id,
+                    actor=self.actor,
+                    continue_stepping=request_heartbeat,
+                    reasoning_content=reasoning_content,
+                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                    step_id=step_id,
+                )
+                messages_to_persist = (initial_messages or []) + [approval_message]
+                continue_stepping = False
+                stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+            else:
+                # 2.  Execute the tool (or synthesize an error result if disallowed)
+                tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
+                if tool_rule_violated:
+                    tool_execution_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
+                else:
+                    # Track tool execution time
+                    tool_start_time = get_utc_timestamp_ns()
+                    tool_execution_result = await self._execute_tool(
+                        tool_name=tool_call_name,
+                        tool_args=tool_args,
+                        agent_state=agent_state,
+                        agent_step_span=agent_step_span,
+                        step_id=step_id,
+                    )
+                    tool_end_time = get_utc_timestamp_ns()
+
+                    # Store tool execution time in metrics
+                    step_metrics.tool_execution_ns = tool_end_time - tool_start_time
+
+                log_telemetry(
+                    self.logger,
+                    "_handle_ai_response execute tool finish",
+                    tool_execution_result=tool_execution_result,
+                    tool_call_id=tool_call_id,
+                )
+
+                # 3.  Prepare the function-response payload
+                truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
+                return_char_limit = next(
+                    (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
+                    None,
+                )
+                function_response_string = validate_function_response(
+                    tool_execution_result.func_return,
+                    return_char_limit=return_char_limit,
+                    truncate=truncate,
+                )
+                self.last_function_response = package_function_response(
+                    was_success=tool_execution_result.success_flag,
+                    response_string=function_response_string,
+                    timezone=agent_state.timezone,
+                )
+
+                # 4.  Decide whether to keep stepping  (focal section simplified)
+                continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
+                    agent_state=agent_state,
+                    request_heartbeat=request_heartbeat,
+                    tool_call_name=tool_call_name,
+                    tool_rule_violated=tool_rule_violated,
+                    tool_rules_solver=tool_rules_solver,
+                    is_final_step=is_final_step,
+                )
+
+                # 5.  Create messages (step was already created at the beginning)
+                tool_call_messages = create_letta_messages_from_llm_response(
+                    agent_id=agent_state.id,
+                    model=agent_state.llm_config.model,
+                    function_name=tool_call_name,
+                    function_arguments=tool_args,
+                    tool_execution_result=tool_execution_result,
+                    tool_call_id=tool_call_id,
+                    function_call_success=tool_execution_result.success_flag,
+                    function_response=function_response_string,
+                    timezone=agent_state.timezone,
+                    actor=self.actor,
+                    continue_stepping=continue_stepping,
+                    heartbeat_reason=heartbeat_reason,
+                    reasoning_content=reasoning_content,
+                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                    step_id=step_id,
+                    is_approval_response=is_approval or is_denial,
+                )
+                messages_to_persist = (initial_messages or []) + tool_call_messages
 
         persisted_messages = await self.message_manager.create_many_messages_async(
             messages_to_persist, actor=self.actor, project_id=agent_state.project_id, template_id=agent_state.template_id
@@ -1035,7 +1080,7 @@ class LettaAgentV2(BaseAgentV2):
         self,
         agent_state: AgentState,
         request_heartbeat: bool,
-        tool_call_name: str,
+        tool_call_name: Optional[str],
         tool_rule_violated: bool,
         tool_rules_solver: ToolRulesSolver,
         is_final_step: bool | None,
@@ -1043,6 +1088,14 @@ class LettaAgentV2(BaseAgentV2):
         continue_stepping = request_heartbeat
         heartbeat_reason: str | None = None
         stop_reason: LettaStopReason | None = None
+
+        # Shortcut for react agent
+        # TODO properly integrate
+        if self.agent_state.agent_type == AgentType.react_agent:
+            if tool_call_name is not None:
+                return True, None, None
+            else:
+                return False, None, LettaStopReason(stop_reason=StopReasonType.end_turn.value)
 
         if tool_rule_violated:
             continue_stepping = True

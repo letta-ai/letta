@@ -13,7 +13,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, TOOL_CALL_ID_MAX_LEN
+from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REQUEST_HEARTBEAT_PARAM, TOOL_CALL_ID_MAX_LEN
 from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
 from letta.helpers.json_helpers import json_dumps
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
@@ -280,12 +280,19 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
         reverse: bool = True,
         include_err: Optional[bool] = None,
+        # if true, then treat the content field as AssistantMessage
+        native_content: bool = False,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
+        assert not (use_assistant_message and native_content), "use_assistant_message and native_content cannot both be true"
+
         messages = []
         if self.role == MessageRole.assistant:
             if self.content:
-                messages.extend(self._convert_reasoning_messages())
+                if native_content:
+                    messages.append(self._convert_assistant_message())
+                else:
+                    messages.extend(self._convert_reasoning_messages())
             if self.tool_calls is not None:
                 messages.extend(
                     self._convert_tool_call_messages(
@@ -407,6 +414,25 @@ class Message(BaseMessage):
                 else:
                     warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
         return messages
+
+    def _convert_assistant_message(
+        self,
+    ) -> AssistantMessage:
+        if self.content and len(self.content) == 1 and isinstance(self.content[0], TextContent):
+            text_content = self.content[0].text
+        else:
+            raise ValueError(f"Invalid assistant message (no text object on message): {self.content}")
+
+        return AssistantMessage(
+            id=self.id,
+            date=self.created_at,
+            content=text_content,
+            name=self.name,
+            otid=self.otid,
+            sender_id=self.sender_id,
+            step_id=self.step_id,
+            # is_err=self.is_err,
+        )
 
     def _convert_tool_call_messages(
         self,
@@ -746,8 +772,13 @@ class Message(BaseMessage):
         max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
         put_inner_thoughts_in_kwargs: bool = False,
         use_developer_message: bool = False,
+        # if true, then treat the content field as AssistantMessage
+        native_content: bool = False,
+        strip_request_heartbeat: bool = False,
     ) -> dict | None:
         """Go from Message class to ChatCompletion message object"""
+        assert not (native_content and put_inner_thoughts_in_kwargs), "native_content and put_inner_thoughts_in_kwargs cannot both be true"
+
         if self.role == "approval" and self.tool_calls is None:
             return None
 
@@ -789,10 +820,21 @@ class Message(BaseMessage):
 
         elif self.role == "assistant" or self.role == "approval":
             assert self.tool_calls is not None or text_content is not None
-            openai_message = {
-                "content": None if (put_inner_thoughts_in_kwargs and self.tool_calls is not None) else text_content,
-                "role": "assistant",
-            }
+
+            # if native content, then put it directly inside the content
+            if native_content:
+                openai_message = {
+                    # TODO support listed content (if it's possible for role assistant?)
+                    # "content": self.content,
+                    "content": text_content,  # here content is not reasoning, it's assistant message
+                    "role": "assistant",
+                }
+            # otherwise, if inner_thoughts_in_kwargs, hold it for the tool calls
+            else:
+                openai_message = {
+                    "content": None if (put_inner_thoughts_in_kwargs and self.tool_calls is not None) else text_content,
+                    "role": "assistant",
+                }
 
             if self.tool_calls is not None:
                 if put_inner_thoughts_in_kwargs:
@@ -807,6 +849,11 @@ class Message(BaseMessage):
                     ]
                 else:
                     openai_message["tool_calls"] = [tool_call.model_dump() for tool_call in self.tool_calls]
+
+                if strip_request_heartbeat:
+                    for tool_call_dict in openai_message["tool_calls"]:
+                        tool_call_dict.pop(REQUEST_HEARTBEAT_PARAM, None)
+
                 if max_tool_id_length:
                     for tool_call_dict in openai_message["tool_calls"]:
                         tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
@@ -862,6 +909,9 @@ class Message(BaseMessage):
         self,
         inner_thoughts_xml_tag="thinking",
         put_inner_thoughts_in_kwargs: bool = False,
+        # if true, then treat the content field as AssistantMessage
+        native_content: bool = False,
+        strip_request_heartbeat: bool = False,
     ) -> dict | None:
         """
         Convert to an Anthropic message dictionary
@@ -869,6 +919,8 @@ class Message(BaseMessage):
         Args:
             inner_thoughts_xml_tag (str): The XML tag to wrap around inner thoughts
         """
+        assert not (native_content and put_inner_thoughts_in_kwargs), "native_content and put_inner_thoughts_in_kwargs cannot both be true"
+
         if self.role == "approval" and self.tool_calls is None:
             return None
 
@@ -929,43 +981,76 @@ class Message(BaseMessage):
                 }
 
         elif self.role == "assistant" or self.role == "approval":
-            assert self.tool_calls is not None or text_content is not None
+            # assert self.tool_calls is not None or text_content is not None, vars(self)
+            assert self.tool_calls is not None or len(self.content) > 0
             anthropic_message = {
                 "role": "assistant",
             }
             content = []
-            # COT / reasoning / thinking
-            if self.content is not None and len(self.content) >= 1:
-                for content_part in self.content:
-                    if isinstance(content_part, ReasoningContent):
-                        content.append(
-                            {
-                                "type": "thinking",
-                                "thinking": content_part.reasoning,
-                                "signature": content_part.signature,
-                            }
-                        )
-                    if isinstance(content_part, RedactedReasoningContent):
-                        content.append(
-                            {
-                                "type": "redacted_thinking",
-                                "data": content_part.data,
-                            }
-                        )
-                    if isinstance(content_part, TextContent):
-                        content.append(
-                            {
-                                "type": "text",
-                                "text": content_part.text,
-                            }
-                        )
-            elif text_content is not None:
-                content.append(
-                    {
-                        "type": "text",
-                        "text": add_xml_tag(string=text_content, xml_tag=inner_thoughts_xml_tag),
-                    }
-                )
+            if native_content:
+                # No special handling for TextContent
+                if self.content is not None:
+                    for content_part in self.content:
+                        # TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
+                        if isinstance(content_part, ReasoningContent):
+                            content.append(
+                                {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                    "signature": content_part.signature,
+                                }
+                            )
+                        elif isinstance(content_part, RedactedReasoningContent):
+                            content.append(
+                                {
+                                    "type": "redacted_thinking",
+                                    "data": content_part.data,
+                                }
+                            )
+                        elif isinstance(content_part, TextContent):
+                            content.append(
+                                {
+                                    "type": "text",
+                                    "text": content_part.text,
+                                }
+                            )
+                        else:
+                            # Skip unsupported types eg OmmitedReasoningContent
+                            pass
+
+            else:
+                # COT / reasoning / thinking
+                if self.content is not None and len(self.content) >= 1:
+                    for content_part in self.content:
+                        if isinstance(content_part, ReasoningContent):
+                            content.append(
+                                {
+                                    "type": "thinking",
+                                    "thinking": content_part.reasoning,
+                                    "signature": content_part.signature,
+                                }
+                            )
+                        if isinstance(content_part, RedactedReasoningContent):
+                            content.append(
+                                {
+                                    "type": "redacted_thinking",
+                                    "data": content_part.data,
+                                }
+                            )
+                        if isinstance(content_part, TextContent):
+                            content.append(
+                                {
+                                    "type": "text",
+                                    "text": content_part.text,
+                                }
+                            )
+                elif text_content is not None:
+                    content.append(
+                        {
+                            "type": "text",
+                            "text": add_xml_tag(string=text_content, xml_tag=inner_thoughts_xml_tag),
+                        }
+                    )
             # Tool calling
             if self.tool_calls is not None:
                 for tool_call in self.tool_calls:
@@ -978,6 +1063,9 @@ class Message(BaseMessage):
                     else:
                         tool_call_input = parse_json(tool_call.function.arguments)
 
+                    if strip_request_heartbeat:
+                        tool_call_input.pop(REQUEST_HEARTBEAT_PARAM, None)
+
                     content.append(
                         {
                             "type": "tool_use",
@@ -987,8 +1075,6 @@ class Message(BaseMessage):
                         }
                     )
 
-            # If the only content was text, unpack it back into a singleton
-            # TODO support multi-modal
             anthropic_message["content"] = content
 
         elif self.role == "tool":
@@ -1016,21 +1102,34 @@ class Message(BaseMessage):
         messages: List[Message],
         inner_thoughts_xml_tag: str = "thinking",
         put_inner_thoughts_in_kwargs: bool = False,
+        # if true, then treat the content field as AssistantMessage
+        native_content: bool = False,
+        strip_request_heartbeat: bool = False,
     ) -> List[dict]:
         result = [
             m.to_anthropic_dict(
                 inner_thoughts_xml_tag=inner_thoughts_xml_tag,
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                native_content=native_content,
+                strip_request_heartbeat=strip_request_heartbeat,
             )
             for m in messages
         ]
         result = [m for m in result if m is not None]
         return result
 
-    def to_google_dict(self, put_inner_thoughts_in_kwargs: bool = True) -> dict | None:
+    def to_google_dict(
+        self,
+        put_inner_thoughts_in_kwargs: bool = True,
+        # if true, then treat the content field as AssistantMessage
+        native_content: bool = False,
+        strip_request_heartbeat: bool = False,
+    ) -> dict | None:
         """
         Go from Message class to Google AI REST message object
         """
+        assert not (native_content and put_inner_thoughts_in_kwargs), "native_content and put_inner_thoughts_in_kwargs cannot both be true"
+
         if self.role == "approval" and self.tool_calls is None:
             return None
 
@@ -1088,7 +1187,12 @@ class Message(BaseMessage):
             # NOTE: Google AI API doesn't allow non-null content + function call
             # To get around this, just two a two part message, inner thoughts first then
             parts = []
-            if not put_inner_thoughts_in_kwargs and text_content is not None:
+
+            if native_content and text_content is not None:
+                # TODO support multi-part assistant content
+                parts.append({"text": text_content})
+
+            elif not put_inner_thoughts_in_kwargs and text_content is not None:
                 # NOTE: ideally we do multi-part for CoT / inner thoughts + function call, but Google AI API doesn't allow it
                 raise NotImplementedError
                 parts.append({"text": text_content})
@@ -1109,6 +1213,9 @@ class Message(BaseMessage):
                         assert INNER_THOUGHTS_KWARG not in function_args, function_args
                         assert len(self.tool_calls) == 1
                         function_args[INNER_THOUGHTS_KWARG_VERTEX] = text_content
+
+                    if strip_request_heartbeat:
+                        function_args.pop(REQUEST_HEARTBEAT_PARAM, None)
 
                     parts.append(
                         {
