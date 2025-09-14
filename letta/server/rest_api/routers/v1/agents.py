@@ -162,8 +162,8 @@ class IndentedORJSONResponse(Response):
         return orjson.dumps(content, option=orjson.OPT_INDENT_2)
 
 
-@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
-async def export_agent_serialized(
+@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent")
+async def export_agent(
     agent_id: str,
     max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
@@ -313,8 +313,8 @@ async def import_agent(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
 
 
-@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent_serialized")
-async def import_agent_serialized(
+@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
+async def import_agent(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
