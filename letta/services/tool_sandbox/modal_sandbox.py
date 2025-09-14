@@ -77,34 +77,43 @@ class AsyncToolSandboxModal(AsyncToolSandboxBase):
     ) -> ToolExecutionResult:
         import modal
 
-        modal_tool_name = "create_modal_tool_wrapper.<locals>.modal_tool_wrapper"
-        log_event("modal_execution_started", {"tool": self.tool_name, "modal_app_id": self.tool.id})
-        logger.info(f"Waiting for Modal function deployment for app {self.tool.id}")
-        f = await self._wait_for_modal_function_deployment()
-        logger.info(f"Modal function found successfully for app {self.tool.id}, function {str(f)}")
-        logger.info(f"Calling with arguments {self.args}")
-        if additional_env_vars is None:
-            letta_api_key = None
-        else:
-            letta_api_key = additional_env_vars.get("LETTA_API_KEY", None)
-        env_vars = self.provided_sandbox_env_vars.copy()
-        env_vars.update(additional_env_vars)
-        print("ALL ENV VARS", env_vars)
-        result = await modal.Function.from_name(self.tool.id, modal_tool_name).remote.aio(
-            tool_name=self.tool_name,
-            agent_state=agent_state,
-            agent_id=agent_id,
-            env_vars=env_vars,
-            letta_api_key=letta_api_key,
-            **self.args,
-        )
-
         try:
-            # TODO: move back
+            modal_tool_name = "create_modal_tool_wrapper.<locals>.modal_tool_wrapper"
+            log_event("modal_execution_started", {"tool": self.tool_name, "modal_app_id": self.tool.id})
+            logger.info(f"Waiting for Modal function deployment for app {self.tool.id}")
+            f = await self._wait_for_modal_function_deployment()
+            logger.info(f"Modal function found successfully for app {self.tool.id}, function {str(f)}")
+            logger.info(f"Calling with arguments {self.args}")
+
+            # TODO: use another mechanism to pass through the key
+            if additional_env_vars is None:
+                letta_api_key = None
+            else:
+                letta_api_key = additional_env_vars.get("LETTA_API_KEY", None)
+
+            # construct the env vars
+            env_vars = {}
+            if self.provided_sandbox_env_vars:
+                env_vars = self.provided_sandbox_env_vars.copy()
+            if additional_env_vars:
+                env_vars.update(additional_env_vars)
+
+            # call the modal function
+            func = modal.Function.from_name(self.tool.name, modal_tool_name)
+            logger.info(f"Calling function {func} with arguments {self.args}")
+            result = await func.remote.aio(
+                tool_name=self.tool_name,
+                agent_state=agent_state,
+                agent_id=agent_id,
+                env_vars=env_vars,
+                letta_api_key=letta_api_key,
+                **self.args,
+            )
+            logger.info(f"Modal function result: {result}")
 
             return ToolExecutionResult(
                 func_return=result["result"],
-                agent_state=agent_state,
+                agent_state=result["agent_state"],
                 stdout=[result["stdout"]],
                 stderr=[result["stderr"]],
                 status="error" if result["error"] else "success",

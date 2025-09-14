@@ -192,79 +192,75 @@ async def list_tools(
     """
     Get a list of all tools available to agents belonging to the org of the user
     """
-    try:
-        # Helper function to parse tool types - supports both repeated params and comma-separated values
-        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
-            if tool_types_input is None:
-                return None
 
-            # Flatten any comma-separated values and validate against ToolType enum
-            flattened_types = []
-            for item in tool_types_input:
-                # Split by comma in case user provided comma-separated values
-                types_in_item = [t.strip() for t in item.split(",") if t.strip()]
-                flattened_types.extend(types_in_item)
+    # Helper function to parse tool types - supports both repeated params and comma-separated values
+    def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+        if tool_types_input is None:
+            return None
 
-            # Validate each type against the ToolType enum
-            valid_types = []
-            valid_values = [tt.value for tt in ToolType]
+        # Flatten any comma-separated values and validate against ToolType enum
+        flattened_types = []
+        for item in tool_types_input:
+            # Split by comma in case user provided comma-separated values
+            types_in_item = [t.strip() for t in item.split(",") if t.strip()]
+            flattened_types.extend(types_in_item)
 
-            for tool_type in flattened_types:
-                if tool_type not in valid_values:
-                    raise HTTPException(
-                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
-                    )
-                valid_types.append(tool_type)
+        # Validate each type against the ToolType enum
+        valid_types = []
+        valid_values = [tt.value for tt in ToolType]
 
-            return valid_types if valid_types else None
+        for tool_type in flattened_types:
+            if tool_type not in valid_values:
+                raise HTTPException(status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}")
+            valid_types.append(tool_type)
 
-        # Parse and validate tool types
-        tool_types_str = parse_tool_types(tool_types)
-        exclude_tool_types_str = parse_tool_types(exclude_tool_types)
+        return valid_types if valid_types else None
 
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    # Parse and validate tool types
+    tool_types_str = parse_tool_types(tool_types)
+    exclude_tool_types_str = parse_tool_types(exclude_tool_types)
 
-        # Combine single name with names list for unified processing
-        combined_names = []
-        if name is not None:
-            combined_names.append(name)
-        if names is not None:
-            combined_names.extend(names)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
-        # Use None if no names specified, otherwise use the combined list
-        final_names = combined_names if combined_names else None
+    # Combine single name with names list for unified processing
+    combined_names = []
+    if name is not None:
+        combined_names.append(name)
+    if names is not None:
+        combined_names.extend(names)
 
-        # Helper function to parse tool IDs - supports both repeated params and comma-separated values
-        def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
-            if tool_ids_input is None:
-                return None
+    # Use None if no names specified, otherwise use the combined list
+    final_names = combined_names if combined_names else None
 
-            # Flatten any comma-separated values
-            flattened_ids = []
-            for item in tool_ids_input:
-                # Split by comma in case user provided comma-separated values
-                ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
-                flattened_ids.extend(ids_in_item)
+    # Helper function to parse tool IDs - supports both repeated params and comma-separated values
+    def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
+        if tool_ids_input is None:
+            return None
 
-            return flattened_ids if flattened_ids else None
+        # Flatten any comma-separated values
+        flattened_ids = []
+        for item in tool_ids_input:
+            # Split by comma in case user provided comma-separated values
+            ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
+            flattened_ids.extend(ids_in_item)
 
-        # Parse tool IDs
-        final_tool_ids = parse_tool_ids(tool_ids)
+        return flattened_ids if flattened_ids else None
 
-        # Get the list of tools using unified query
-        return await server.tool_manager.list_tools_async(
-            actor=actor,
-            after=after,
-            limit=limit,
-            tool_types=tool_types_str,
-            exclude_tool_types=exclude_tool_types_str,
-            names=final_names,
-            tool_ids=final_tool_ids,
-            search=search,
-            return_only_letta_tools=return_only_letta_tools,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Parse tool IDs
+    final_tool_ids = parse_tool_ids(tool_ids)
+
+    # Get the list of tools using unified query
+    return await server.tool_manager.list_tools_async(
+        actor=actor,
+        after=after,
+        limit=limit,
+        tool_types=tool_types_str,
+        exclude_tool_types=exclude_tool_types_str,
+        names=final_names,
+        tool_ids=final_tool_ids,
+        search=search,
+        return_only_letta_tools=return_only_letta_tools,
+    )
 
 
 @router.post("/", response_model=Tool, operation_id="create_tool")

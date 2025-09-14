@@ -55,28 +55,26 @@ class SandboxToolExecutor(ToolExecutor):
                 )
             # TODO (cliandy): this is just for testing right now, separate this out into it's own subclass and handling logic
             elif tool_settings.sandbox_type == SandboxType.MODAL:
-                from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal, TypescriptToolSandboxModal
+                from letta.services.tool_sandbox.modal_sandbox import AsyncToolSandboxModal  # , TypescriptToolSandboxModal
 
-                if tool.source_type == ToolSourceType.typescript:
-                    sandbox = TypescriptToolSandboxModal(
-                        function_name,
-                        function_args,
-                        actor,
-                        tool_object=tool,
-                        sandbox_config=sandbox_config,
-                        sandbox_env_vars=sandbox_env_vars,
-                    )
-                elif tool.source_type == ToolSourceType.python:
-                    sandbox = AsyncToolSandboxModal(
-                        function_name,
-                        function_args,
-                        actor,
-                        tool_object=tool,
-                        sandbox_config=sandbox_config,
-                        sandbox_env_vars=sandbox_env_vars,
-                    )
-                else:
-                    raise ValueError(f"Tool source type was {tool.source_type} but is required to be python or typescript to run in Modal.")
+                # if tool.source_type == ToolSourceType.typescript:
+                #    sandbox = TypescriptToolSandboxModal(
+                #        function_name,
+                #        function_args,
+                #        actor,
+                #        tool_object=tool,
+                #        sandbox_config=sandbox_config,
+                #        sandbox_env_vars=sandbox_env_vars,
+                #    )
+                # elif tool.source_type == ToolSourceType.python:
+                sandbox = AsyncToolSandboxModal(
+                    function_name,
+                    function_args,
+                    actor,
+                    tool_object=tool,
+                    sandbox_config=sandbox_config,
+                    sandbox_env_vars=sandbox_env_vars,
+                )
             else:
                 sandbox = AsyncToolSandboxLocal(
                     function_name, function_args, actor, tool_object=tool, sandbox_config=sandbox_config, sandbox_env_vars=sandbox_env_vars
