@@ -20,6 +20,7 @@ from letta.constants import (
 )
 from letta.errors import LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
+from letta.helpers.tool_helpers import compute_tool_hash
 from letta.log import get_logger
 
 # TODO: Remove this once we translate all of these to the ORM
@@ -978,3 +979,74 @@ class ToolManager:
                     created_tool = await self.create_tool_async(tool, actor=actor)
                     tools.append(created_tool)
         return tools
+
+    # MODAL RELATED METHODS
+    @trace_method
+    async def create_or_update_modal_app(self, tool: PydanticTool):
+        """Create a Modal app with the tool function registered"""
+        import contextlib
+        import io
+        import os
+
+        import modal
+        from letta_client import Letta
+
+        modal_app = modal.App(tool.id)
+        packages = [str(req) for req in tool.pip_requirements]
+        packages.append("letta_client")
+        env_vars = {"LETTA_API_KEY": None}  # TODO: pass in default
+
+        @modal_app.function(
+            image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
+            restrict_modal_access=True,  # untrusted
+            timeout=10,
+            secrets=[modal.Secret.from_dict(env_vars)],
+        )
+        def modal_tool_wrapper(tool_name: str, agent_id: str, env_vars: dict, letta_api_key: Optional[str] = None, **kwargs):
+            """Wrapper function for modal tools."""
+
+            stdout = None
+            stderr = None
+            result = None
+
+            if letta_api_key:
+                client = Letta(token=letta_api_key)
+
+            # initialize the agent code
+            exec(tool.source_code)
+            # try:
+            # except Exception as e:
+            #    return {
+            #        "result": None,
+            #        "stdout": None,
+            #        "stderr": f"Failed to initialize tool code: {str(e)}",
+            #        "error": True
+            #    }
+
+            # set environment variables
+            for key, value in env_vars.items():
+                os.environ[key] = str(value)
+
+            # call the tool (capture stdout and stderr)
+            tool = globals()[tool_name]
+
+            # Capture stdout and stderr during tool execution
+            stdout_capture = io.StringIO()
+            stderr_capture = io.StringIO()
+
+            with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
+                result = tool(**kwargs)
+
+            # Get captured output
+            stdout = stdout_capture.getvalue()
+            stderr = stderr_capture.getvalue()
+
+            return {
+                "result": result,
+                "stdout": stdout,
+                "stderr": stderr,
+                "error": True if stderr else False,
+            }
+
+        # deploy the app
+        return await modal_app.deploy.aio()
