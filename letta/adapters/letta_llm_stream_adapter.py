@@ -3,9 +3,10 @@ from typing import AsyncGenerator
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
-from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface
+from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface, SimpleAnthropicStreamingInterface
 from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
+from letta.schemas.agent import AgentType
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
 from letta.schemas.llm_config import LLMConfig
@@ -54,11 +55,16 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
 
         # Instantiate streaming interface
         if self.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
-            self.interface = AnthropicStreamingInterface(
-                use_assistant_message=use_assistant_message,
-                put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
-                requires_approval_tools=requires_approval_tools,
-            )
+            if True:  # self.agent_state.agent_type == AgentType.react_agent:
+                self.interface = SimpleAnthropicStreamingInterface(
+                    requires_approval_tools=requires_approval_tools,
+                )
+            else:
+                self.interface = AnthropicStreamingInterface(
+                    use_assistant_message=use_assistant_message,
+                    put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
+                    requires_approval_tools=requires_approval_tools,
+                )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             self.interface = OpenAIStreamingInterface(
                 use_assistant_message=use_assistant_message,
@@ -94,6 +100,9 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
 
         # Extract reasoning content from the interface
         self.reasoning_content = self.interface.get_reasoning_content()
+
+        # Extract non-reasoning content (eg text)
+        self.content = self.interface.get_content()
 
         # Extract usage statistics
         # Some providers don't provide usage in streaming, use fallback if needed
