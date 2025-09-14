@@ -4,8 +4,8 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from letta.orm import ProviderTrace
 from letta.orm.errors import NoResultFound
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.step import Step
 from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.utils import get_letta_server
@@ -116,6 +116,7 @@ async def retrieve_step_trace(
 
 class AddFeedbackRequest(BaseModel):
     feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
+
 
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
 async def add_feedback(
