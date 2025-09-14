@@ -804,6 +804,8 @@ class SimpleAnthropicStreamingInterface:
                         f"Streaming integrity failed - received BetaInputJSONDelta object while not in TOOL_USE EventMode: {delta}"
                     )
 
+                self.accumulated_tool_call_args += delta.partial_json
+
                 if self.tool_call_name in self.requires_approval_tools:
                     tool_call_msg = ApprovalRequestMessage(
                         id=self.letta_message_id,
