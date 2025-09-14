@@ -29,7 +29,8 @@ class AgentType(str, Enum):
 
     memgpt_agent = "memgpt_agent"  # the OG set of memgpt tools
     memgpt_v2_agent = "memgpt_v2_agent"  # memgpt style tools, but refreshed
-    react_agent = "react_agent"  # basic react agent, no memory tools
+    # react_agent = "react_agent"  # basic react agent, no memory tools
+    react_agent = "react_agent"  # no heartbeats & no default send_message
     workflow_agent = "workflow_agent"  # workflow with auto-clearing message buffer
     split_thread_agent = "split_thread_agent"
     sleeptime_agent = "sleeptime_agent"
@@ -382,7 +383,8 @@ class AgentStepResponse(BaseModel):
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
     # Workflow agents and ReAct agents don't use memory blocks
     # However, they still allow files to be injected into the context
-    if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
+    # if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
+    if agent_type == AgentType.workflow_agent:
         return (
             "{% if sources %}"
             "<directories>\n"
@@ -428,7 +430,8 @@ def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
 
     # Sleeptime agents use the MemGPT v2 memory tools (line numbers)
     # MemGPT v2 tools use line-number, so core memory blocks should have line numbers
-    elif agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
+    # elif agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
+    elif agent_type == AgentType.react_agent or agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
         return (
             "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
             "{% for block in blocks %}"
