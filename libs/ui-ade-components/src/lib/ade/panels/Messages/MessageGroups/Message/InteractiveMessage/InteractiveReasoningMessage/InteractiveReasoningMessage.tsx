@@ -1,7 +1,6 @@
 import type { ReasoningMessage } from '@letta-cloud/sdk-core';
 import {
   BlockQuote,
-  ClaudeLogoMarkDynamic,
   HStack,
   InnerMonologueIcon,
   Tooltip,
@@ -30,11 +29,9 @@ export function InteractiveReasoningMessage(
             <HStack align="center" gap="small">
               {source === 'reasoner_model' ? (
                 <Tooltip content={t('reasonerModel')}>
-                  <ClaudeLogoMarkDynamic
-                    color="violet"
-                    size="small"
-                    className="opacity-60"
-                  />
+                  <HStack align="center">
+                    <InnerMonologueIcon color="violet" size="small" />
+                  </HStack>
                 </Tooltip>
               ) : (
                 <InnerMonologueIcon color="violet" size="small" />

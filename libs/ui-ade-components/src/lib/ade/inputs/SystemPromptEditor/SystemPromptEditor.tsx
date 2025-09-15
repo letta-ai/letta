@@ -165,22 +165,23 @@ export function SystemPromptEditor() {
         />
       )}
       <RawInputContainer
+        fullWidth
         infoTooltip={{
           text: t('SystemPromptEditor.tooltip'),
         }}
         label={t('SystemPromptEditor.label')}
       >
         <Tooltip asChild content={t('SystemPromptEditor.trigger')}>
-          <div>
-            <HStack
-              as="button"
-              onClick={() => {
-                setIsExpanded(true);
-              }}
-              padding="xsmall"
-              gap="small"
-              className="border rounded-[2px] bg-background-grey2 dark:bg-card-background border-background-grey2-border dark:border-background-grey3-border w-full"
-            >
+          <HStack
+            fullWidth
+            as="button"
+            onClick={() => {
+              setIsExpanded(true);
+            }}
+            padding="xsmall"
+            gap="small"
+            className="border rounded-[2px] bg-background-grey2 dark:bg-card-background border-background-grey2-border dark:border-background-grey3-border"
+          >
               <Typography
                 noWrap
                 color="lighter"
@@ -190,7 +191,6 @@ export function SystemPromptEditor() {
                 {currentAgent.system}
               </Typography>
             </HStack>
-          </div>
         </Tooltip>
       </RawInputContainer>
     </>
