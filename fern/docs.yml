@@ -492,7 +492,7 @@ navigation:
               - DELETE /v1/blocks/{block_id}
               - GET /v1/blocks/count
               - agents:
-                  GET /v1/blocks/{block_id}/agents
+                  - GET /v1/blocks/{block_id}/agents
           - identities:
               - GET /v1/identities
               - GET /v1/identities/{identity_id}
@@ -524,20 +524,20 @@ navigation:
               - POST /v1/groups
               - PATCH /v1/groups/{group_id}
               - DELETE /v1/groups/{group_id}
-              - COUNT /v1/groups/count
+              - GET /v1/groups/count
           - providers:
               - GET /v1/providers
               - GET /v1/providers/{provider_id}
               - POST /v1/providers
               - PATCH /v1/providers/{provider_id}
               - DELETE /v1/providers/{provider_id}
-              - POST /v1/providers
+              - POST /v1/providers/check
           - tags
           - batches:
               - GET /v1/batches
               - GET /v1/batches/{batch_id}
               - POST /v1/batches
-              - PATCH GET /v1/batches/{batch_id}/cancel
+              - PATCH /v1/batches/{batch_id}/cancel
               - messages:
                   - GET /v1/batches/{batch_id}/messages
           - voice
@@ -547,8 +547,6 @@ navigation:
           - client side access tokens
           - telemetry
           - sources
-
-
 
   - tab: showcase
     layout:
