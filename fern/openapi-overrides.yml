@@ -864,6 +864,10 @@ paths:
         - providers
       x-fern-sdk-method-name: create
   /v1/providers/{provider_id}:
+    get:
+      x-fern-sdk-group-name:
+        - providers
+      x-fern-sdk-method-name: retrieve
     delete:
       x-fern-sdk-group-name:
         - providers
