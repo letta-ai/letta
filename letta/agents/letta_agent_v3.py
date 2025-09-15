@@ -53,7 +53,7 @@ class LettaAgentV3(LettaAgentV2):
         input_messages: list[MessageCreate],
         max_steps: int = DEFAULT_MAX_STEPS,
         run_id: str | None = None,
-        # use_assistant_message: bool = True,
+        use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
     ) -> LettaResponse:
@@ -128,7 +128,7 @@ class LettaAgentV3(LettaAgentV2):
         max_steps: int = DEFAULT_MAX_STEPS,
         stream_tokens: bool = False,
         run_id: str | None = None,
-        # use_assistant_message: bool = True,
+        use_assistant_message: bool = True,  # NOTE: not used
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
     ) -> AsyncGenerator[str, None]:
@@ -259,7 +259,7 @@ class LettaAgentV3(LettaAgentV2):
         """
         step_progression = StepProgression.START
         # TODO(@caren): clean this up
-        tool_call, reasoning_content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
+        tool_call, content, agent_step_span, first_chunk, step_id, logged_step, step_start_ns, step_metrics = (
             None,
             None,
             None,
@@ -556,8 +556,8 @@ class LettaAgentV3(LettaAgentV2):
         if tool_call is None:
             # TODO could just hardcode the line here instead of calling the function...
             continue_stepping, heartbeat_reason, stop_reason = self._decide_continuation(
-                agent_state=agent_state,
-                request_heartbeat=False,
+                # agent_state=agent_state,
+                # request_heartbeat=False,
                 tool_call_name=None,
                 tool_rule_violated=False,
                 tool_rules_solver=tool_rules_solver,
