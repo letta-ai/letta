@@ -19,6 +19,11 @@ export function InteractiveMessage(props: InteractiveMessageProps) {
   const { message, toolReturnMessage } = props;
 
   switch (message.message_type) {
+    case 'assistant_message': {
+      // New backend behavior: AssistantMessage can be emitted without send_message tool
+      // Render it using the same UI we use for send_message
+      return <InteractiveAgentMessage message={message} />;
+    }
     case 'tool_call_message': {
       if (message.tool_call.name === 'send_message') {
         return <InteractiveAgentMessage message={message} />;

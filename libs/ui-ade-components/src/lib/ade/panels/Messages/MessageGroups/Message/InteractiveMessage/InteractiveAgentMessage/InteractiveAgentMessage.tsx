@@ -1,5 +1,5 @@
-/* AgentMessage comes if the tool_call message is send_message */
-import type { ToolCallMessage } from '@letta-cloud/sdk-core';
+/* AgentMessage renders assistant output. Historically from send_message tool, now also AssistantMessage */
+import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
 import React, { useCallback, useMemo } from 'react';
 import { HStack, Markdown, Typography, VStack } from '@letta-cloud/ui-component-library';
 import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
@@ -7,12 +7,9 @@ import { useTranslations } from '@letta-cloud/translations';
 import { EditMessageButton } from '../../EditMessageButton/EditMessageButton';
 import { parseMessageFromPartialJson } from '@letta-cloud/utils-client';
 
-interface InteractiveAgentMessageProps {
-  message: ToolCallMessage
-}
+interface InteractiveAgentMessageProps { message: LettaMessageUnion }
 
 export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
-
   const { message } = props;
 
   const t = useTranslations('components/Messages/InteractiveAgentMessage');
@@ -33,17 +30,34 @@ export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
   );
 
   const content = useMemo(() => {
-    if (!message.tool_call.arguments) {
-      return null;
+    // Tool call pathway (send_message): parse from arguments JSON
+    if (message.message_type === 'tool_call_message') {
+      if (!message.tool_call || message.tool_call.name !== 'send_message') {
+        return null;
+      }
+      const args = message.tool_call.arguments;
+      if (!args) return null;
+      return parseMessageFromPartialJson(args);
     }
 
-    return parseMessageFromPartialJson(message.tool_call.arguments);
-  }, [message.tool_call.arguments]);
+    // AssistantMessage pathway: use content directly
+    if (message.message_type === 'assistant_message') {
+      // Backend should provide string content; guard for safety
+      const raw: any = (message as any).content;
+      if (typeof raw === 'string') return raw;
+      if (Array.isArray(raw)) {
+        // attempt to join text-like entries
+        const joined = raw
+          .map((r) => (typeof r === 'string' ? r : (r?.text ?? '')))
+          .join('');
+        return joined || null;
+      }
+      return raw ? String(raw) : null;
+    }
 
-
-  if (!message.tool_call.arguments) {
     return null;
-  }
+  }, [message]);
+
 
   if (!content) {
     return (

@@ -305,6 +305,29 @@ function processAgentMessage(
                 };
                 break;
               }
+              case 'assistant_message': {
+                const prev = (newMessage as any).content;
+                const next = (extracted as any).content;
+
+                const toArray = (val: any) => {
+                  if (!val) return [] as any[];
+                  if (Array.isArray(val)) return val as any[];
+                  if (typeof val === 'string') return [{ type: 'text', text: val }];
+                  return [] as any[];
+                };
+
+                if (Array.isArray(prev) || Array.isArray(next)) {
+                  const prevArr = toArray(prev);
+                  const nextArr = toArray(next);
+                  (newMessage as any).content = [...prevArr, ...nextArr];
+                } else {
+                  // Fallback to string concatenation
+                  const prevStr = prev ? String(prev) : '';
+                  const nextStr = next ? String(next) : '';
+                  (newMessage as any).content = prevStr + nextStr;
+                }
+                break;
+              }
               case 'tool_return_message': {
                 newMessage.tool_return = extracted.tool_return;
                 break;

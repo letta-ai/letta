@@ -53,6 +53,20 @@ export const UserMessageSchema = z.object({
   is_err: z.boolean().nullish(),
 });
 
+export const AssistantMessageSchema = z.object({
+  message_type: z.literal('assistant_message'),
+  // Backend may send a string or an array of text segments
+  content: z.union([z.string(), z.array(LettaUserMessageContentUnion)]),
+  step_id: z.string().nullish(),
+  run_id: z.string().nullish(),
+  seq_id: z.number().nullish(),
+  otid: z.string().nullish(),
+  name: z.string().nullish(),
+  date: z.string(),
+  id: z.string(),
+  is_err: z.boolean().nullish(),
+});
+
 export const ReasoningMessageSchema = z.object({
   message_type: z.literal('reasoning_message'),
   source: z.enum(['reasoner_model', 'non_reasoner_model']),
@@ -130,6 +144,7 @@ export type ToolReturnMessageSchemaType = z.infer<
 export const AgentMessageSchema = z.discriminatedUnion('message_type', [
   ToolReturnMessageSchema,
   ToolCallMessageSchema,
+  AssistantMessageSchema,
   ReasoningMessageSchema,
   HiddenReasoningMessageSchema,
   UserMessageSchema,
@@ -154,6 +169,7 @@ export const ErrorMessageSchema = z.object({
 export const AgentMessageTypeSchema = z.enum([
   'tool_return_message',
   'tool_call_message',
+  'assistant_message',
   'reasoning_message',
   'user_message',
   'system_message',
