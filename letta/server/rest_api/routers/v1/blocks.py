@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from letta.orm.errors import NoResultFound
 from letta.schemas.agent import AgentState
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 
 if TYPE_CHECKING:
@@ -26,12 +26,16 @@ async def list_blocks(
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
     before: Optional[str] = Query(
         None,
-        description="Cursor for pagination. If provided, returns blocks before this cursor.",
+        description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
     ),
     after: Optional[str] = Query(
         None,
-        description="Cursor for pagination. If provided, returns blocks after this cursor.",
+        description="Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
     ),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     label_search: Optional[str] = Query(
         None,
         description=("Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."),
@@ -74,9 +78,9 @@ async def list_blocks(
         description="If set to True, include blocks marked as hidden in the results.",
     ),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.block_manager.get_blocks_async(
         actor=actor,
         label=label,
@@ -94,6 +98,7 @@ async def list_blocks(
         connected_to_agents_count_eq=connected_to_agents_count_eq,
         limit=limit,
         after=after,
+        ascending=(order == "asc"),
         show_hidden_blocks=show_hidden_blocks,
     )
 
@@ -101,12 +106,12 @@ async def list_blocks(
 @router.get("/count", response_model=int, operation_id="count_blocks")
 async def count_blocks(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Count all blocks created by a user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.block_manager.size_async(actor=actor)
 
 
@@ -114,9 +119,9 @@ async def count_blocks(
 async def create_block(
     create_block: CreateBlock = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     block = Block(**create_block.model_dump())
     return await server.block_manager.create_or_update_block_async(actor=actor, block=block)
 
@@ -126,9 +131,9 @@ async def modify_block(
     block_id: str,
     block_update: BlockUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.block_manager.update_block_async(block_id=block_id, block_update=block_update, actor=actor)
 
 
@@ -136,9 +141,9 @@ async def modify_block(
 async def delete_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.block_manager.delete_block_async(block_id=block_id, actor=actor)
 
 
@@ -146,9 +151,9 @@ async def delete_block(
 async def retrieve_block(
     block_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         block = await server.block_manager.get_block_by_id_async(block_id=block_id, actor=actor)
         if block is None:
@@ -170,13 +175,13 @@ async def list_agents_for_block(
         ),
     ),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieves all agents associated with the specified block.
     Raises a 404 if the block does not exist.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         agents = await server.block_manager.get_agents_for_block_async(
             block_id=block_id, include_relationships=include_relationships, actor=actor

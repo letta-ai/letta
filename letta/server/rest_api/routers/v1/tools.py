@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
@@ -11,7 +11,7 @@ from composio.exceptions import (
     EnumMetadataNotFound,
     EnumStringNotFound,
 )
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from httpx import ConnectError, HTTPStatusError
 from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
@@ -34,8 +34,8 @@ from letta.schemas.mcp import UpdateSSEMCPServer, UpdateStdioMCPServer, UpdateSt
 from letta.schemas.message import Message
 from letta.schemas.pip_requirement import PipRequirement
 from letta.schemas.tool import Tool, ToolCreate, ToolRunFromSource, ToolUpdate
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.streaming_response import StreamingResponseWithStatusCode
-from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.mcp.oauth_utils import MCPOAuthSession, drill_down_exception, oauth_stream_event
 from letta.services.mcp.stdio_client import AsyncStdioMCPClient
@@ -51,12 +51,12 @@ logger = get_logger(__name__)
 async def delete_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a tool by name
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.tool_manager.delete_tool_by_id_async(tool_id=tool_id, actor=actor)
 
 
@@ -75,7 +75,7 @@ async def count_tools(
     return_only_letta_tools: Optional[bool] = Query(False, description="Count only tools with tool_type starting with 'letta_'"),
     exclude_letta_tools: Optional[bool] = Query(False, description="Exclude built-in Letta tools from the count"),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a count of all tools available to agents belonging to the org of the user.
@@ -110,7 +110,7 @@ async def count_tools(
         tool_types_str = parse_tool_types(tool_types)
         exclude_tool_types_str = parse_tool_types(exclude_tool_types)
 
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         # Combine single name with names list for unified processing (same logic as list_tools)
         combined_names = []
@@ -158,12 +158,12 @@ async def count_tools(
 async def retrieve_tool(
     tool_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a tool by ID
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     tool = await server.tool_manager.get_tool_by_id_async(tool_id=tool_id, actor=actor)
     if tool is None:
         # return 404 error
@@ -173,9 +173,18 @@ async def retrieve_tool(
 
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
 async def list_tools(
-    after: Optional[str] = None,
-    limit: Optional[int] = 50,
-    name: Optional[str] = None,
+    before: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of tools to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    name: Optional[str] = Query(None, description="Filter by single tool name"),
     names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
     tool_ids: Optional[List[str]] = Query(
         None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
@@ -187,93 +196,99 @@ async def list_tools(
     ),
     return_only_letta_tools: Optional[bool] = Query(False, description="Return only tools with tool_type starting with 'letta_'"),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get a list of all tools available to agents belonging to the org of the user
+    Get a list of all tools available to agents.
     """
+    try:
+        # Helper function to parse tool types - supports both repeated params and comma-separated values
+        def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_types_input is None:
+                return None
 
-    # Helper function to parse tool types - supports both repeated params and comma-separated values
-    def parse_tool_types(tool_types_input: Optional[List[str]]) -> Optional[List[str]]:
-        if tool_types_input is None:
-            return None
+            # Flatten any comma-separated values and validate against ToolType enum
+            flattened_types = []
+            for item in tool_types_input:
+                # Split by comma in case user provided comma-separated values
+                types_in_item = [t.strip() for t in item.split(",") if t.strip()]
+                flattened_types.extend(types_in_item)
 
-        # Flatten any comma-separated values and validate against ToolType enum
-        flattened_types = []
-        for item in tool_types_input:
-            # Split by comma in case user provided comma-separated values
-            types_in_item = [t.strip() for t in item.split(",") if t.strip()]
-            flattened_types.extend(types_in_item)
+            # Validate each type against the ToolType enum
+            valid_types = []
+            valid_values = [tt.value for tt in ToolType]
 
-        # Validate each type against the ToolType enum
-        valid_types = []
-        valid_values = [tt.value for tt in ToolType]
+            for tool_type in flattened_types:
+                if tool_type not in valid_values:
+                    raise HTTPException(
+                        status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}"
+                    )
+                valid_types.append(tool_type)
 
-        for tool_type in flattened_types:
-            if tool_type not in valid_values:
-                raise HTTPException(status_code=400, detail=f"Invalid tool_type '{tool_type}'. Must be one of: {', '.join(valid_values)}")
-            valid_types.append(tool_type)
+            return valid_types if valid_types else None
 
-        return valid_types if valid_types else None
+        # Parse and validate tool types
+        tool_types_str = parse_tool_types(tool_types)
+        exclude_tool_types_str = parse_tool_types(exclude_tool_types)
 
-    # Parse and validate tool types
-    tool_types_str = parse_tool_types(tool_types)
-    exclude_tool_types_str = parse_tool_types(exclude_tool_types)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        # Combine single name with names list for unified processing
+        combined_names = []
+        if name is not None:
+            combined_names.append(name)
+        if names is not None:
+            combined_names.extend(names)
 
-    # Combine single name with names list for unified processing
-    combined_names = []
-    if name is not None:
-        combined_names.append(name)
-    if names is not None:
-        combined_names.extend(names)
+        # Use None if no names specified, otherwise use the combined list
+        final_names = combined_names if combined_names else None
 
-    # Use None if no names specified, otherwise use the combined list
-    final_names = combined_names if combined_names else None
+        # Helper function to parse tool IDs - supports both repeated params and comma-separated values
+        def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
+            if tool_ids_input is None:
+                return None
 
-    # Helper function to parse tool IDs - supports both repeated params and comma-separated values
-    def parse_tool_ids(tool_ids_input: Optional[List[str]]) -> Optional[List[str]]:
-        if tool_ids_input is None:
-            return None
+            # Flatten any comma-separated values
+            flattened_ids = []
+            for item in tool_ids_input:
+                # Split by comma in case user provided comma-separated values
+                ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
+                flattened_ids.extend(ids_in_item)
 
-        # Flatten any comma-separated values
-        flattened_ids = []
-        for item in tool_ids_input:
-            # Split by comma in case user provided comma-separated values
-            ids_in_item = [id.strip() for id in item.split(",") if id.strip()]
-            flattened_ids.extend(ids_in_item)
+            return flattened_ids if flattened_ids else None
 
-        return flattened_ids if flattened_ids else None
+        # Parse tool IDs
+        final_tool_ids = parse_tool_ids(tool_ids)
 
-    # Parse tool IDs
-    final_tool_ids = parse_tool_ids(tool_ids)
-
-    # Get the list of tools using unified query
-    return await server.tool_manager.list_tools_async(
-        actor=actor,
-        after=after,
-        limit=limit,
-        tool_types=tool_types_str,
-        exclude_tool_types=exclude_tool_types_str,
-        names=final_names,
-        tool_ids=final_tool_ids,
-        search=search,
-        return_only_letta_tools=return_only_letta_tools,
-    )
+        # Get the list of tools using unified query
+        return await server.tool_manager.list_tools_async(
+            actor=actor,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+            tool_types=tool_types_str,
+            exclude_tool_types=exclude_tool_types_str,
+            names=final_names,
+            tool_ids=final_tool_ids,
+            search=search,
+            return_only_letta_tools=return_only_letta_tools,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/", response_model=Tool, operation_id="create_tool")
 async def create_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new tool
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         tool = Tool(**request.model_dump(exclude_unset=True))
         return await server.tool_manager.create_tool_async(pydantic_tool=tool, actor=actor)
     except UniqueConstraintViolationError as e:
@@ -291,13 +306,13 @@ async def create_tool(
 async def upsert_tool(
     request: ToolCreate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create or update a tool
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         tool = await server.tool_manager.create_or_update_tool_async(
             pydantic_tool=Tool(**request.model_dump(exclude_unset=True)), actor=actor
         )
@@ -318,13 +333,13 @@ async def modify_tool(
     tool_id: str,
     request: ToolUpdate = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Update an existing tool
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         tool = await server.tool_manager.update_tool_by_id_async(tool_id=tool_id, tool_update=request, actor=actor)
         return tool
     except LettaToolNameConflictError as e:
@@ -341,12 +356,12 @@ async def modify_tool(
 @router.post("/add-base-tools", response_model=List[Tool], operation_id="add_base_tools")
 async def upsert_base_tools(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Upsert base tools
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.tool_manager.upsert_base_tools_async(actor=actor)
 
 
@@ -354,12 +369,12 @@ async def upsert_base_tools(
 async def run_tool_from_source(
     server: SyncServer = Depends(get_letta_server),
     request: ToolRunFromSource = Body(...),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attempt to build a tool from source, then run it on the provided arguments
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         return await server.run_tool_from_source(
@@ -384,11 +399,14 @@ async def run_tool_from_source(
 
 # Specific routes for Composio
 @router.get("/composio/apps", response_model=List[AppModel], operation_id="list_composio_apps")
-def list_composio_apps(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
+def list_composio_apps(
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
     """
     Get a list of all Composio apps
     """
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
     composio_api_key = get_composio_api_key(actor=actor, logger=logger)
     if not composio_api_key:
         raise HTTPException(
@@ -402,12 +420,12 @@ def list_composio_apps(server: SyncServer = Depends(get_letta_server), user_id: 
 def list_composio_actions_by_app(
     composio_app_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a list of all Composio actions for a specific app
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
     composio_api_key = get_composio_api_key(actor=actor, logger=logger)
     if not composio_api_key:
         raise HTTPException(
@@ -421,12 +439,12 @@ def list_composio_actions_by_app(
 async def add_composio_tool(
     composio_action_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Add a new Composio tool by action name (Composio refers to each tool as an `Action`)
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         tool_create = ToolCreate.from_composio(action_name=composio_action_name)
@@ -511,14 +529,17 @@ async def add_composio_tool(
     response_model=dict[str, Union[SSEServerConfig, StdioServerConfig, StreamableHTTPServerConfig]],
     operation_id="list_mcp_servers",
 )
-async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_id: Optional[str] = Header(None, alias="user_id")):
+async def list_mcp_servers(
+    server: SyncServer = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
     """
     Get a list of all configured MCP servers
     """
     if tool_settings.mcp_read_from_config:
         return server.get_mcp_servers()
     else:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_servers = await server.mcp_manager.list_mcp_servers(actor=actor)
         return {server.server_name: server.to_config(resolve_variables=False) for server in mcp_servers}
 
@@ -529,13 +550,13 @@ async def list_mcp_servers(server: SyncServer = Depends(get_letta_server), user_
 async def list_mcp_tools_by_server(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a list of all tools for a specific MCP server
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_tools = await server.mcp_manager.list_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor)
         return mcp_tools
     except Exception as e:
@@ -572,7 +593,7 @@ async def list_mcp_tools_by_server(
 async def resync_mcp_server_tools(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     agent_id: Optional[str] = None,
 ):
     """
@@ -584,7 +605,7 @@ async def resync_mcp_server_tools(
 
     Returns a summary of changes made.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         result = await server.mcp_manager.resync_mcp_server_tools(mcp_server_name=mcp_server_name, actor=actor, agent_id=agent_id)
@@ -615,12 +636,12 @@ async def add_mcp_tool(
     mcp_server_name: str,
     mcp_tool_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Register a new MCP tool as a Letta server by MCP server + tool name
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     if tool_settings.mcp_read_from_config:
         try:
@@ -694,13 +715,13 @@ async def add_mcp_tool(
 async def add_mcp_server_to_config(
     request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Add a new MCP server to the Letta MCP server config
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         if tool_settings.mcp_read_from_config:
             # write to config file
@@ -763,13 +784,13 @@ async def update_mcp_server(
     mcp_server_name: str,
     request: Union[UpdateStdioMCPServer, UpdateSSEMCPServer, UpdateStreamableHTTPMCPServer] = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Update an existing MCP server configuration
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         if tool_settings.mcp_read_from_config:
             raise HTTPException(status_code=501, detail="Update not implemented for config file mode, config files to be deprecated.")
@@ -793,7 +814,7 @@ async def update_mcp_server(
 async def delete_mcp_server_from_config(
     mcp_server_name: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a MCP server configuration
@@ -803,7 +824,7 @@ async def delete_mcp_server_from_config(
         return server.delete_mcp_server_from_config(server_name=mcp_server_name)
     else:
         # log to DB
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         mcp_server_id = await server.mcp_manager.get_mcp_server_id_by_name(mcp_server_name, actor)
         await server.mcp_manager.delete_mcp_server_by_id(mcp_server_id, actor=actor)
 
@@ -817,7 +838,7 @@ async def delete_mcp_server_from_config(
 async def test_mcp_server(
     request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Test connection to an MCP server without adding it.
@@ -825,7 +846,7 @@ async def test_mcp_server(
     """
     client = None
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         request.resolve_environment_variables()
         client = await server.mcp_manager.get_mcp_client(request, actor)
 
@@ -884,7 +905,7 @@ async def test_mcp_server(
 async def connect_mcp_server(
     request: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig] = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     http_request: Request = None,
 ) -> StreamingResponse:
     """
@@ -903,7 +924,7 @@ async def connect_mcp_server(
             # Acknolwedge connection attempt
             yield oauth_stream_event(OauthStreamEvent.CONNECTION_ATTEMPT, server_name=request.server_name)
 
-            actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+            actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
             # Create MCP client with respective transport type
             try:
@@ -970,7 +991,7 @@ class CodeInput(BaseModel):
 async def generate_json_schema(
     request: CodeInput = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Generate a JSON schema from the given source code defining a function or class.
@@ -1001,7 +1022,7 @@ async def execute_mcp_tool(
     tool_name: str,
     request: MCPToolExecuteRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Execute a specific MCP tool from a configured server.
@@ -1009,7 +1030,7 @@ async def execute_mcp_tool(
     """
     client = None
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         # Get the MCP server by name
         mcp_server = await server.mcp_manager.get_mcp_server(mcp_server_name, actor)
@@ -1113,7 +1134,7 @@ class GenerateToolOutput(BaseModel):
 async def generate_tool_from_prompt(
     request: GenerateToolInput = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Generate a tool from the given user prompt.
@@ -1121,7 +1142,7 @@ async def generate_tool_from_prompt(
     response_data = None
 
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         llm_config = await server.get_cached_llm_config_async(actor=actor, handle=request.handle or "anthropic/claude-3-5-sonnet-20240620")
         formatted_prompt = (
             f"Generate a python function named {request.tool_name} using the instructions below "

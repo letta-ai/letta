@@ -11,9 +11,10 @@ from letta.log import get_logger
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
 from letta.server.rest_api.chat_completions_interface import ChatCompletionsStreamingInterface
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 
 # TODO this belongs in a controller!
-from letta.server.rest_api.utils import get_letta_server, get_user_message_from_chat_completions_request, sse_async_generator
+from letta.server.rest_api.utils import get_user_message_from_chat_completions_request, sse_async_generator
 from letta.utils import safe_create_task
 
 if TYPE_CHECKING:
@@ -39,13 +40,13 @@ async def create_chat_completions(
     agent_id: str,
     completion_request: CompletionCreateParams = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     # Validate and process fields
     if not completion_request["stream"]:
         raise HTTPException(status_code=400, detail="Must be streaming request: `stream` was set to `False` in the request.")
 
-    actor = server.user_manager.get_user_or_default(user_id=user_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     letta_agent = server.load_agent(agent_id=agent_id, actor=actor)
     llm_config = letta_agent.agent_state.llm_config

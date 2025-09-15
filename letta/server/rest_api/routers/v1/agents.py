@@ -13,7 +13,6 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
 
 from letta.agents.agent_loop import AgentLoop
-from letta.agents.letta_agent import LettaAgent
 from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
@@ -24,13 +23,12 @@ from letta.errors import (
     AgentNotFoundForExportError,
     PendingApprovalError,
 )
-from letta.groups.sleeptime_multi_agent_v2 import SleeptimeMultiAgentV2
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import JobType
@@ -54,11 +52,9 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.user import User
 from letta.serialize_schemas.pydantic_agent_schema import AgentSchema
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import create_background_stream_processor, redis_sse_stream_generator
-from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
-from letta.services.summarizer.enums import SummarizationMode
-from letta.services.telemetry_manager import NoopTelemetryManager
 from letta.settings import settings
 from letta.utils import safe_create_shielded_task, safe_create_task, truncate_file_visible_content
 
@@ -79,7 +75,7 @@ async def list_agents(
         description="If True, only returns agents that match ALL given tags. Otherwise, return agents that have ANY of the passed-in tags.",
     ),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     before: str | None = Query(None, description="Cursor for pagination"),
     after: str | None = Query(None, description="Cursor for pagination"),
     limit: int | None = Query(50, description="Limit for pagination"),
@@ -97,13 +93,19 @@ async def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
         ),
     ),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+        deprecated=True,
     ),
     sort_by: str | None = Query(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+        deprecated=True,
     ),
     show_hidden_agents: bool | None = Query(
         False,
@@ -119,7 +121,11 @@ async def list_agents(
     """
 
     # Retrieve the actor (user) details
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    # Handle backwards compatibility - prefer new parameters over legacy ones
+    final_ascending = (order == "asc") if order else ascending
+    final_sort_by = order_by if order_by else sort_by
 
     # Call list_agents directly without unnecessary dict handling
     return await server.agent_manager.list_agents_async(
@@ -137,8 +143,8 @@ async def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
-        ascending=ascending,
-        sort_by=sort_by,
+        ascending=final_ascending,
+        sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
     )
 
@@ -146,12 +152,12 @@ async def list_agents(
 @router.get("/count", response_model=int, operation_id="count_agents")
 async def count_agents(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the count of all agents associated with a given user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.size_async(actor=actor)
 
 
@@ -162,12 +168,12 @@ class IndentedORJSONResponse(Response):
         return orjson.dumps(content, option=orjson.OPT_INDENT_2)
 
 
-@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
-async def export_agent_serialized(
+@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent")
+async def export_agent(
     agent_id: str,
     max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     use_legacy_format: bool = Query(
         False,
         description="If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).",
@@ -184,7 +190,7 @@ async def export_agent_serialized(
     - Legacy format (use_legacy_format=true): Single agent with inline tools/blocks
     - New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     if use_legacy_format:
         # Use the legacy serialization method
@@ -256,7 +262,7 @@ def import_agent_legacy(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
 
 
-async def import_agent(
+async def _import_agent(
     agent_file_json: dict,
     server: "SyncServer",
     actor: User,
@@ -313,11 +319,11 @@ async def import_agent(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
 
 
-@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent_serialized")
-async def import_agent_serialized(
+@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
+async def import_agent(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     x_override_embedding_model: str | None = Header(None, alias="x-override-embedding-model"),
     append_copy_suffix: bool = Form(True, description='If set to True, appends "_copy" to the end of the agent name.'),
     override_existing_tools: bool = Form(
@@ -341,7 +347,7 @@ async def import_agent_serialized(
     Import a serialized agent file and recreate the agent(s) in the system.
     Returns the IDs of all imported agents.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     try:
         serialized_data = file.file.read()
@@ -367,7 +373,7 @@ async def import_agent_serialized(
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
         # This is an AgentFileSchema
-        agent_ids = await import_agent(
+        agent_ids = await _import_agent(
             agent_file_json=agent_json,
             server=server,
             actor=actor,
@@ -398,12 +404,12 @@ async def import_agent_serialized(
 async def retrieve_agent_context_window(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve the context window of a specific agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         return await server.agent_manager.get_context_window(agent_id=agent_id, actor=actor)
     except Exception as e:
@@ -424,7 +430,7 @@ class CreateAgentRequest(CreateAgent):
 async def create_agent(
     agent: CreateAgentRequest = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
     x_project: str | None = Header(
         None, alias="X-Project", description="The project slug to associate with the agent (cloud only)."
     ),  # Only handled by next js middleware
@@ -433,7 +439,7 @@ async def create_agent(
     Create a new agent with the specified configuration.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.create_agent_async(agent, actor=actor)
     except Exception as e:
         traceback.print_exc()
@@ -445,10 +451,10 @@ async def modify_agent(
     agent_id: str,
     update_agent: UpdateAgent = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """Update an existing agent"""
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
 
@@ -456,10 +462,10 @@ async def modify_agent(
 async def list_agent_tools(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """Get tools from an existing agent"""
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.list_attached_tools_async(agent_id=agent_id, actor=actor)
 
 
@@ -468,12 +474,12 @@ async def attach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attach a tool to an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.attach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -484,12 +490,12 @@ async def detach_tool(
     agent_id: str,
     tool_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Detach a tool from an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.detach_tool_async(agent_id=agent_id, tool_id=tool_id, actor=actor)
     # TODO: Unfortunately we need this to preserve our current API behavior
     return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, actor=actor)
@@ -501,12 +507,12 @@ async def modify_approval(
     tool_name: str,
     requires_approval: bool,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attach a tool to an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.agent_manager.modify_approvals_async(
         agent_id=agent_id, tool_name=tool_name, requires_approval=requires_approval, actor=actor
     )
@@ -519,12 +525,12 @@ async def attach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attach a source to an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
 
     # Check if the agent is missing any files tools
@@ -546,12 +552,12 @@ async def attach_folder_to_agent(
     agent_id: str,
     folder_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attach a folder to an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent_state = await server.agent_manager.attach_source_async(agent_id=agent_id, source_id=folder_id, actor=actor)
 
     # Check if the agent is missing any files tools
@@ -573,12 +579,12 @@ async def detach_source(
     agent_id: str,
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Detach a source from an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=source_id, actor=actor)
 
     if not agent_state.sources:
@@ -603,12 +609,12 @@ async def detach_folder_from_agent(
     agent_id: str,
     folder_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Detach a folder from an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent_state = await server.agent_manager.detach_source_async(agent_id=agent_id, source_id=folder_id, actor=actor)
 
     if not agent_state.sources:
@@ -632,7 +638,7 @@ async def detach_folder_from_agent(
 async def close_all_open_files(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Closes all currently open files for a given agent.
@@ -640,7 +646,7 @@ async def close_all_open_files(
     This endpoint updates the file state for the agent so that no files are marked as open.
     Typically used to reset the working memory view for the agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.file_agent_manager.close_all_other_files(agent_id=agent_id, keep_file_names=[], actor=actor)
 
@@ -650,7 +656,7 @@ async def open_file(
     agent_id: str,
     file_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Opens a specific file for a given agent.
@@ -659,7 +665,7 @@ async def open_file(
     The file will be included in the agent's working memory view.
     Returns a list of file names that were closed due to LRU eviction.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Get the agent to access files configuration
     try:
@@ -702,7 +708,7 @@ async def close_file(
     agent_id: str,
     file_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Closes a specific file for a given agent.
@@ -710,7 +716,7 @@ async def close_file(
     This endpoint marks a specific file as closed in the agent's file state.
     The file will be removed from the agent's working memory view.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Use update_file_agent_by_id to close the file
     try:
@@ -737,7 +743,7 @@ async def retrieve_agent(
         ),
     ),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the state of the agent.
@@ -746,7 +752,7 @@ async def retrieve_agent(
     if not AGENT_ID_PATTERN.match(agent_id):
         raise HTTPException(status_code=400, detail=f"agent_id {agent_id} is not in the valid format 'agent-<uuid4>'")
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         return await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=include_relationships, actor=actor)
@@ -758,12 +764,12 @@ async def retrieve_agent(
 async def delete_agent(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         await server.agent_manager.delete_agent_async(agent_id=agent_id, actor=actor)
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Agent id={agent_id} successfully deleted"})
@@ -775,12 +781,12 @@ async def delete_agent(
 async def list_agent_sources(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the sources associated with an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
 
 
@@ -788,12 +794,12 @@ async def list_agent_sources(
 async def list_agent_folders(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the folders associated with an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.list_attached_sources_async(agent_id=agent_id, actor=actor)
 
 
@@ -804,12 +810,12 @@ async def list_agent_files(
     limit: int = Query(20, ge=1, le=100, description="Number of items to return (1-100)"),
     is_open: Optional[bool] = Query(None, description="Filter by open status (true for open files, false for closed files)"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the files attached to an agent with their open/closed status (paginated).
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # get paginated file-agent relationships for this agent
     file_agents, next_cursor, has_more = await server.file_agent_manager.list_files_for_agent_paginated(
@@ -845,13 +851,13 @@ async def list_agent_files(
 async def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve the memory state of a specific agent.
     This endpoint fetches the current memory state of the agent identified by the user ID and agent ID.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.get_agent_memory_async(agent_id=agent_id, actor=actor)
 
@@ -861,12 +867,12 @@ async def retrieve_block(
     agent_id: str,
     block_label: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve a core memory block from an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         return await server.agent_manager.get_block_with_label_async(agent_id=agent_id, block_label=block_label, actor=actor)
@@ -878,12 +884,12 @@ async def retrieve_block(
 async def list_blocks(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve the core memory blocks of a specific agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         agent = await server.agent_manager.get_agent_by_id_async(agent_id=agent_id, include_relationships=["memory"], actor=actor)
         return agent.memory.blocks
@@ -897,12 +903,12 @@ async def modify_block(
     block_label: str,
     block_update: BlockUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Updates a core memory block of an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     block = await server.agent_manager.modify_block_by_label_async(
         agent_id=agent_id, block_label=block_label, block_update=block_update, actor=actor
@@ -919,12 +925,12 @@ async def attach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Attach a core memory block to an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.attach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
@@ -933,12 +939,12 @@ async def detach_block(
     agent_id: str,
     block_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Detach a core memory block from an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.detach_block_async(agent_id=agent_id, block_id=block_id, actor=actor)
 
 
@@ -953,12 +959,12 @@ async def list_passages(
     ascending: bool | None = Query(
         True, description="Whether to sort passages oldest to newest (True, default) or newest to oldest (False)"
     ),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve the memories in an agent's archival memory store (paginated query).
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.get_agent_archival_async(
         agent_id=agent_id,
@@ -976,12 +982,12 @@ async def create_passage(
     agent_id: str,
     request: CreateArchivalMemory = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Insert a memory into an agent's archival memory store.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.insert_archival_memory_async(
         agent_id=agent_id, memory_contents=request.text, actor=actor, tags=request.tags, created_at=request.created_at
@@ -1000,7 +1006,7 @@ async def search_archival_memory(
     start_datetime: Optional[datetime] = Query(None, description="Filter results to passages created after this datetime"),
     end_datetime: Optional[datetime] = Query(None, description="Filter results to passages created before this datetime"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Search archival memory using semantic (embedding-based) search with optional temporal filtering.
@@ -1009,7 +1015,7 @@ async def search_archival_memory(
     an agent's archival memory store directly via the API. The search uses the same functionality
     as the agent's archival_memory_search tool but is accessible for external API usage.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         # convert datetime to string in ISO 8601 format
@@ -1049,12 +1055,12 @@ async def delete_passage(
     memory_id: str,
     # memory_id: str = Query(..., description="Unique ID of the memory to be deleted."),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a memory from an agent's archival memory store.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     await server.delete_archival_memory_async(memory_id=memory_id, actor=actor)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": f"Memory id={memory_id} successfully deleted"})
@@ -1079,12 +1085,12 @@ async def list_messages(
     include_err: bool | None = Query(
         None, description="Whether to include error messages and error statuses. For debugging purposes only."
     ),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve message history for an agent.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.get_agent_recall_async(
         agent_id=agent_id,
@@ -1108,13 +1114,13 @@ def modify_message(
     message_id: str,
     request: LettaMessageUpdateUnion = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Update the details of a message associated with an agent.
     """
     # TODO: support modifying tool calls/returns
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
     return server.message_manager.update_message_by_letta_message(message_id=message_id, letta_message_update=request, actor=actor)
 
 
@@ -1129,7 +1135,7 @@ async def send_message(
     request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaRequest = Body(...),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Process a user message and return the agent's response.
@@ -1140,7 +1146,7 @@ async def send_message(
     request_start_timestamp_ns = get_utc_timestamp_ns()
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(
         agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
@@ -1253,7 +1259,7 @@ async def send_message_streaming(
     request_obj: Request,  # FastAPI Request
     server: SyncServer = Depends(get_letta_server),
     request: LettaStreamingRequest = Body(...),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ) -> StreamingResponse | LettaResponse:
     """
     Process a user message and return the agent's response.
@@ -1266,7 +1272,7 @@ async def send_message_streaming(
     # TODO (cliandy): clean this up
     redis_client = await get_redis_client()
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     # TODO: This is redundant, remove soon
     agent = await server.agent_manager.get_agent_by_id_async(
         agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
@@ -1453,14 +1459,14 @@ async def cancel_agent_run(
     agent_id: str,
     request: CancelAgentRunRequest = Body(None),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ) -> dict:
     """
     Cancel runs associated with an agent. If run_ids are passed in, cancel those in particular.
 
     Note to cancel active runs associated with an agent, redis is required.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     if not settings.track_agent_run:
         raise HTTPException(status_code=400, detail="Agent run tracking is disabled")
     run_ids = request.run_ids if request else None
@@ -1494,14 +1500,14 @@ async def cancel_agent_run(
 async def search_messages(
     request: MessageSearchRequest = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Search messages across the entire organization with optional project and template filtering. Returns messages with FTS/vector ranks and total RRF score.
 
     This is a cloud-only feature.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # get embedding config from the default agent if needed
     # check if any agents exist in the org
@@ -1617,7 +1623,7 @@ async def send_message_async(
     agent_id: str,
     server: SyncServer = Depends(get_letta_server),
     request: LettaAsyncRequest = Body(...),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Asynchronously process a user message and return a run object.
@@ -1627,7 +1633,7 @@ async def send_message_async(
     This is more like `send_message_job`
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Create a new job
     run = Run(
@@ -1696,10 +1702,10 @@ async def reset_messages(
     agent_id: str,
     add_default_initial_messages: bool = Query(default=False, description="If true, adds the default initial messages after resetting."),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """Resets the messages for an agent"""
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.reset_messages_async(
         agent_id=agent_id, actor=actor, add_default_initial_messages=add_default_initial_messages
     )
@@ -1710,10 +1716,10 @@ async def list_agent_groups(
     agent_id: str,
     manager_type: str | None = Query(None, description="Manager type to filter groups by"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """Lists the groups for an agent"""
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     logger.info("in list agents with manager_type", manager_type)
     return server.agent_manager.list_groups(agent_id=agent_id, manager_type=manager_type, actor=actor)
 
@@ -1727,7 +1733,7 @@ async def preview_raw_payload(
     agent_id: str,
     request: Union[LettaRequest, LettaStreamingRequest] = Body(...),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Inspect the raw LLM request payload without sending it.
@@ -1736,7 +1742,7 @@ async def preview_raw_payload(
     the LLM request, then returns the raw request payload that would
     be sent to the LLM provider. Useful for debugging and inspection.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [
@@ -1771,7 +1777,7 @@ async def summarize_agent_conversation(
     request_obj: Request,  # FastAPI Request
     max_message_length: int = Query(..., description="Maximum number of messages to retain after summarization."),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str | None = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Summarize an agent's conversation history to a target message length.
@@ -1780,7 +1786,7 @@ async def summarize_agent_conversation(
     truncating and compressing it down to the specified `max_message_length`.
     """
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     agent = await server.agent_manager.get_agent_by_id_async(agent_id, actor, include_relationships=["multi_agent_group"])
     agent_eligible = agent.multi_agent_group is None or agent.multi_agent_group.manager_type in ["sleeptime", "voice_sleeptime"]
     model_compatible = agent.llm_config.model_endpoint_type in [

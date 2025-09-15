@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from letta.schemas.organization import Organization, OrganizationCreate, OrganizationUpdate
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import get_letta_server
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer

@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -18,17 +18,27 @@ async def list_identities(
     project_id: Optional[str] = Query(None),
     identifier_key: Optional[str] = Query(None),
     identity_type: Optional[IdentityType] = Query(None),
-    before: Optional[str] = Query(None),
-    after: Optional[str] = Query(None),
-    limit: Optional[int] = Query(50),
+    before: Optional[str] = Query(
+        None,
+        description="Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of identities to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a list of all identities in the database
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         identities = await server.identity_manager.list_identities_async(
             name=name,
@@ -38,6 +48,7 @@ async def list_identities(
             before=before,
             after=after,
             limit=limit,
+            ascending=(order == "asc"),
             actor=actor,
         )
     except HTTPException:
@@ -52,13 +63,13 @@ async def list_identities(
 @router.get("/count", tags=["identities"], response_model=int, operation_id="count_identities")
 async def count_identities(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get count of all identities for a user
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.size_async(actor=actor)
     except NoResultFound:
         return 0
@@ -72,10 +83,10 @@ async def count_identities(
 async def retrieve_identity(
     identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -85,13 +96,13 @@ async def retrieve_identity(
 async def create_identity(
     identity: IdentityCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
     x_project: Optional[str] = Header(
         None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
     ),  # Only handled by next js middleware
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
     except HTTPException:
         raise
@@ -111,13 +122,13 @@ async def create_identity(
 async def upsert_identity(
     identity: IdentityUpsert = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
     x_project: Optional[str] = Header(
         None, alias="X-Project", description="The project slug to associate with the identity (cloud only)."
     ),  # Only handled by next js middleware
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
     except HTTPException:
         raise
@@ -132,10 +143,10 @@ async def modify_identity(
     identity_id: str,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
@@ -150,10 +161,10 @@ async def upsert_identity_properties(
     identity_id: str,
     properties: List[IdentityProperty] = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.upsert_identity_properties_async(identity_id=identity_id, properties=properties, actor=actor)
     except HTTPException:
         raise
@@ -167,13 +178,13 @@ async def upsert_identity_properties(
 async def delete_identity(
     identity_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete an identity by its identifier key
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         await server.identity_manager.delete_identity_async(identity_id=identity_id, actor=actor)
     except HTTPException:
         raise

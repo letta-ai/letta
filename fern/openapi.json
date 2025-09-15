@@ -340,9 +340,27 @@
       "get": {
         "tags": ["tools"],
         "summary": "List Tools",
-        "description": "Get a list of all tools available to agents belonging to the org of the user",
+        "description": "Get a list of all tools available to agents.",
         "operationId": "list_tools",
         "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+          },
           {
             "name": "after",
             "in": "query",
@@ -356,8 +374,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order",
               "title": "After"
-            }
+            },
+            "description": "Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -372,9 +392,37 @@
                   "type": "null"
                 }
               ],
+              "description": "Maximum number of tools to return",
               "default": 50,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of tools to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "name",
@@ -389,8 +437,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter by single tool name",
               "title": "Name"
-            }
+            },
+            "description": "Filter by single tool name"
           },
           {
             "name": "names",
@@ -702,24 +752,7 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -840,24 +873,7 @@
         "summary": "List Mcp Servers",
         "description": "Get a list of all configured MCP servers",
         "operationId": "list_mcp_servers",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2496,7 +2512,89 @@
         "summary": "List Folders",
         "description": "List all data folders created by a user.",
         "operationId": "list_folders",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of folders to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of folders to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3158,16 +3256,44 @@
             "description": "Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins."
           },
           {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["created_at", "last_run_completion"],
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "ascending",
             "in": "query",
             "required": false,
             "schema": {
               "type": "boolean",
               "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+              "deprecated": true,
               "default": false,
               "title": "Ascending"
             },
-            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)"
+            "description": "Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+            "deprecated": true
           },
           {
             "name": "sort_by",
@@ -3183,10 +3309,12 @@
                 }
               ],
               "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+              "deprecated": true,
               "default": "created_at",
               "title": "Sort By"
             },
-            "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'"
+            "description": "Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+            "deprecated": true
           }
         ],
         "responses": {
@@ -3310,9 +3438,9 @@
     "/v1/agents/{agent_id}/export": {
       "get": {
         "tags": ["agents"],
-        "summary": "Export Agent Serialized",
+        "summary": "Export Agent",
         "description": "Export the serialized JSON representation of an agent, formatted with indentation.\n\nSupports two export formats:\n- Legacy format (use_legacy_format=true): Single agent with inline tools/blocks\n- New format (default): Multi-entity format with separate agents, tools, blocks, files, etc.",
-        "operationId": "export_agent_serialized",
+        "operationId": "export_agent",
         "parameters": [
           {
             "name": "agent_id",
@@ -3350,7 +3478,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_export_agent_serialized"
+                "$ref": "#/components/schemas/Body_export_agent"
               }
             }
           }
@@ -3382,9 +3510,9 @@
     "/v1/agents/import": {
       "post": {
         "tags": ["agents"],
-        "summary": "Import Agent Serialized",
+        "summary": "Import Agent",
         "description": "Import a serialized agent file and recreate the agent(s) in the system.\nReturns the IDs of all imported agents.",
-        "operationId": "import_agent_serialized",
+        "operationId": "import_agent",
         "parameters": [
           {
             "name": "x-override-embedding-model",
@@ -3408,7 +3536,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_import_agent_serialized"
+                "$ref": "#/components/schemas/Body_import_agent"
               }
             }
           }
@@ -5822,10 +5950,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Cursor for pagination"
+            "description": "Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order"
           },
           {
             "name": "after",
@@ -5840,10 +5968,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination",
+              "description": "Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order",
               "title": "After"
             },
-            "description": "Cursor for pagination"
+            "description": "Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -5858,10 +5986,37 @@
                   "type": "null"
                 }
               ],
-              "description": "Limit for pagination",
+              "description": "Maximum number of groups to return",
+              "default": 50,
               "title": "Limit"
             },
-            "description": "Limit for pagination"
+            "description": "Maximum number of groups to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "project_id",
@@ -6615,8 +6770,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order",
               "title": "Before"
-            }
+            },
+            "description": "Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order"
           },
           {
             "name": "after",
@@ -6631,8 +6788,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order",
               "title": "After"
-            }
+            },
+            "description": "Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -6647,9 +6806,37 @@
                   "type": "null"
                 }
               ],
+              "description": "Maximum number of identities to return",
               "default": 50,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of identities to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           }
         ],
         "responses": {
@@ -7492,10 +7679,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination. If provided, returns blocks before this cursor.",
+              "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Cursor for pagination. If provided, returns blocks before this cursor."
+            "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order"
           },
           {
             "name": "after",
@@ -7510,10 +7697,36 @@
                   "type": "null"
                 }
               ],
-              "description": "Cursor for pagination. If provided, returns blocks after this cursor.",
+              "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
               "title": "After"
             },
-            "description": "Cursor for pagination. If provided, returns blocks after this cursor."
+            "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "label_search",
@@ -8281,8 +8494,8 @@
     "/v1/health/": {
       "get": {
         "tags": ["health"],
-        "summary": "Health Check",
-        "operationId": "health_check",
+        "summary": "Check Health",
+        "operationId": "check_health",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8301,11 +8514,11 @@
       "get": {
         "tags": ["providers"],
         "summary": "List Providers",
-        "description": "Get a list of all custom providers in the database",
+        "description": "Get a list of all custom providers.",
         "operationId": "list_providers",
         "parameters": [
           {
-            "name": "name",
+            "name": "before",
             "in": "query",
             "required": false,
             "schema": {
@@ -8317,24 +8530,10 @@
                   "type": "null"
                 }
               ],
-              "title": "Name"
-            }
-          },
-          {
-            "name": "provider_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/ProviderType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Provider Type"
-            }
+              "description": "Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order"
           },
           {
             "name": "after",
@@ -8349,8 +8548,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order",
               "title": "After"
-            }
+            },
+            "description": "Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order"
           },
           {
             "name": "limit",
@@ -8365,9 +8566,73 @@
                   "type": "null"
                 }
               ],
+              "description": "Maximum number of providers to return",
               "default": 50,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of providers to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter providers by name",
+              "title": "Name"
+            },
+            "description": "Filter providers by name"
+          },
+          {
+            "name": "provider_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProviderType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter providers by type",
+              "title": "Provider Type"
+            },
+            "description": "Filter providers by type"
           }
         ],
         "responses": {
@@ -8400,7 +8665,7 @@
       "post": {
         "tags": ["providers"],
         "summary": "Create Provider",
-        "description": "Create a new custom provider",
+        "description": "Create a new custom provider.",
         "operationId": "create_provider",
         "parameters": [],
         "requestBody": {
@@ -8438,10 +8703,49 @@
       }
     },
     "/v1/providers/{provider_id}": {
+      "get": {
+        "tags": ["providers"],
+        "summary": "Retrieve Provider",
+        "description": "Get a provider by ID.",
+        "operationId": "retrieve_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": ["providers"],
         "summary": "Modify Provider",
-        "description": "Update an existing custom provider",
+        "description": "Update an existing custom provider.",
         "operationId": "modify_provider",
         "parameters": [
           {
@@ -8490,7 +8794,7 @@
       "delete": {
         "tags": ["providers"],
         "summary": "Delete Provider",
-        "description": "Delete an existing custom provider",
+        "description": "Delete an existing custom provider.",
         "operationId": "delete_provider",
         "parameters": [
           {
@@ -8529,6 +8833,7 @@
       "post": {
         "tags": ["providers"],
         "summary": "Check Provider",
+        "description": "Verify the API key and additional parameters for a provider.",
         "operationId": "check_provider",
         "requestBody": {
           "content": {
@@ -9219,7 +9524,7 @@
       "get": {
         "tags": ["steps"],
         "summary": "List Steps",
-        "description": "List steps with optional pagination and date filters.\nDates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)",
+        "description": "List steps with optional pagination and date filters.",
         "operationId": "list_steps",
         "parameters": [
           {
@@ -9282,19 +9587,26 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Sort order (asc or desc)",
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first",
               "default": "desc",
               "title": "Order"
             },
-            "description": "Sort order (asc or desc)"
+            "description": "Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "start_date",
@@ -9556,9 +9868,9 @@
     "/v1/steps/{step_id}/metrics": {
       "get": {
         "tags": ["steps"],
-        "summary": "Retrieve Step Metrics",
+        "summary": "Retrieve Metrics For Step",
         "description": "Get step metrics by step ID.",
-        "operationId": "retrieve_step_metrics",
+        "operationId": "retrieve_metrics_for_step",
         "parameters": [
           {
             "name": "step_id",
@@ -9594,12 +9906,11 @@
         }
       }
     },
-    "/v1/steps/{step_id}/feedback": {
-      "patch": {
+    "/v1/steps/{step_id}/trace": {
+      "get": {
         "tags": ["steps"],
-        "summary": "Add Feedback",
-        "description": "Add feedback to a step.",
-        "operationId": "add_feedback",
+        "summary": "Retrieve Trace For Step",
+        "operationId": "retrieve_trace_for_step",
         "parameters": [
           {
             "name": "step_id",
@@ -9609,24 +9920,67 @@
               "type": "string",
               "title": "Step Id"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProviderTrace"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Retrieve Trace For Step"
+                }
+              }
+            }
           },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/steps/{step_id}/feedback": {
+      "patch": {
+        "tags": ["steps"],
+        "summary": "Modify Feedback For Step",
+        "description": "Modify feedback for a given step.",
+        "operationId": "modify_feedback_for_step",
+        "parameters": [
           {
-            "name": "feedback",
-            "in": "query",
+            "name": "step_id",
+            "in": "path",
             "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FeedbackType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Feedback"
+              "type": "string",
+              "title": "Step Id"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModifyFeedbackRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9655,9 +10009,27 @@
       "get": {
         "tags": ["tag", "admin", "admin"],
         "summary": "List Tags",
-        "description": "Get a list of all tags in the database",
+        "description": "Get the list of all agent tags that have been created.",
         "operationId": "list_tags",
         "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tag cursor for pagination. Returns tags that come before this tag in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Tag cursor for pagination. Returns tags that come before this tag in the specified sort order"
+          },
           {
             "name": "after",
             "in": "query",
@@ -9671,8 +10043,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Tag cursor for pagination. Returns tags that come after this tag in the specified sort order",
               "title": "After"
-            }
+            },
+            "description": "Tag cursor for pagination. Returns tags that come after this tag in the specified sort order"
           },
           {
             "name": "limit",
@@ -9687,9 +10061,37 @@
                   "type": "null"
                 }
               ],
+              "description": "Maximum number of tags to return",
               "default": 50,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of tags to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "name",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "name",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "query_text",
@@ -9704,8 +10106,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter tags by text search",
               "title": "Query Text"
-            }
+            },
+            "description": "Filter tags by text search"
           }
         ],
         "responses": {
@@ -9739,8 +10143,10 @@
     "/v1/telemetry/{step_id}": {
       "get": {
         "tags": ["telemetry"],
-        "summary": "Retrieve Provider Trace By Step Id",
+        "summary": "Retrieve Provider Trace",
+        "description": "**DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.\n\nRetrieve provider trace by step ID.",
         "operationId": "retrieve_provider_trace",
+        "deprecated": true,
         "parameters": [
           {
             "name": "step_id",
@@ -9787,9 +10193,9 @@
     "/v1/messages/batches": {
       "post": {
         "tags": ["messages"],
-        "summary": "Create Batch Run",
-        "description": "Submit a batch of agent messages for asynchronous processing.\nCreates a job that will fan out messages to all listed agents and process them in parallel.",
-        "operationId": "create_batch_run",
+        "summary": "Create Batch",
+        "description": "Submit a batch of agent runs for asynchronous processing.\n\nCreates a job that will fan out messages to all listed agents and process them in parallel.\nThe request will be rejected if it exceeds 256MB.",
+        "operationId": "create_batch",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -9827,10 +10233,92 @@
       },
       "get": {
         "tags": ["messages"],
-        "summary": "List Batch Runs",
+        "summary": "List Batches",
         "description": "List all batch runs.",
-        "operationId": "list_batch_runs",
-        "parameters": [],
+        "operationId": "list_batches",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of jobs to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of jobs to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -9841,7 +10329,7 @@
                   "items": {
                     "$ref": "#/components/schemas/BatchJob"
                   },
-                  "title": "Response List Batch Runs"
+                  "title": "Response List Batches"
                 }
               }
             }
@@ -9862,9 +10350,9 @@
     "/v1/messages/batches/{batch_id}": {
       "get": {
         "tags": ["messages"],
-        "summary": "Retrieve Batch Run",
-        "description": "Get the status of a batch run.",
-        "operationId": "retrieve_batch_run",
+        "summary": "Retrieve Batch",
+        "description": "Retrieve the status and details of a batch run.",
+        "operationId": "retrieve_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -9903,9 +10391,9 @@
     "/v1/messages/batches/{batch_id}/messages": {
       "get": {
         "tags": ["messages"],
-        "summary": "List Batch Messages",
+        "summary": "List Messages For Batch",
         "description": "Get response messages for a specific batch job.",
-        "operationId": "list_batch_messages",
+        "operationId": "list_messages_for_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -9985,6 +10473,19 @@
             "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
           },
           {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "agent_id",
             "in": "query",
             "required": false,
@@ -10030,9 +10531,9 @@
     "/v1/messages/batches/{batch_id}/cancel": {
       "patch": {
         "tags": ["messages"],
-        "summary": "Cancel Batch Run",
+        "summary": "Cancel Batch",
         "description": "Cancel a batch run.",
-        "operationId": "cancel_batch_run",
+        "operationId": "cancel_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -10079,22 +10580,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -14902,7 +15387,7 @@
         "title": "BlockUpdate",
         "description": "Update a block"
       },
-      "Body_export_agent_serialized": {
+      "Body_export_agent": {
         "properties": {
           "spec": {
             "anyOf": [
@@ -14926,9 +15411,9 @@
           }
         },
         "type": "object",
-        "title": "Body_export_agent_serialized"
+        "title": "Body_export_agent"
       },
-      "Body_import_agent_serialized": {
+      "Body_import_agent": {
         "properties": {
           "file": {
             "type": "string",
@@ -14992,7 +15477,7 @@
         },
         "type": "object",
         "required": ["file"],
-        "title": "Body_import_agent_serialized"
+        "title": "Body_import_agent"
       },
       "Body_upload_file_to_folder": {
         "properties": {
@@ -17824,6 +18309,28 @@
               }
             ],
             "title": "Description"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
           }
         },
         "type": "object",
@@ -22986,6 +23493,38 @@
         },
         "type": "object",
         "title": "ModalSandboxConfig"
+      },
+      "ModifyFeedbackRequest": {
+        "properties": {
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether this feedback is positive or negative"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Feedback tags to add to the step"
+          }
+        },
+        "type": "object",
+        "title": "ModifyFeedbackRequest"
       },
       "NpmRequirement": {
         "properties": {

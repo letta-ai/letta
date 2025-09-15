@@ -1,12 +1,12 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from letta.schemas.agent import AgentState, InternalTemplateAgentCreate
 from letta.schemas.block import Block, InternalTemplateBlockCreate
 from letta.schemas.group import Group, InternalTemplateGroupCreate
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 
 router = APIRouter(prefix="/_internal_templates", tags=["_internal_templates"])
@@ -16,13 +16,13 @@ router = APIRouter(prefix="/_internal_templates", tags=["_internal_templates"])
 async def create_group(
     group: InternalTemplateGroupCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new multi-agent group with the specified configuration.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.group_manager.create_group_async(group, actor=actor)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -32,13 +32,13 @@ async def create_group(
 async def create_agent(
     agent: InternalTemplateAgentCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new agent with template-related fields.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.agent_manager.create_agent_async(agent, actor=actor)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -48,13 +48,13 @@ async def create_agent(
 async def create_block(
     block: InternalTemplateBlockCreate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new block with template-related fields.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         block_obj = Block(**block.model_dump())
         return await server.block_manager.create_or_update_block_async(block_obj, actor=actor)
     except Exception as e:
@@ -68,6 +68,8 @@ class DeploymentEntity(BaseModel):
     type: str
     name: Optional[str] = None
     description: Optional[str] = None
+    entity_id: Optional[str] = None
+    project_id: Optional[str] = None
 
 
 class ListDeploymentEntitiesResponse(BaseModel):
@@ -92,7 +94,7 @@ class DeleteDeploymentResponse(BaseModel):
 async def list_deployment_entities(
     deployment_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     entity_types: Optional[List[str]] = Query(None, description="Filter by entity types (block, agent, group)"),
 ):
     """
@@ -100,7 +102,7 @@ async def list_deployment_entities(
     Optionally filter by entity types.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         entities = []
 
@@ -140,6 +142,8 @@ async def list_deployment_entities(
                             type="block",
                             name=getattr(block, "template_name", None) or getattr(block, "label", None),
                             description=block.description,
+                            entity_id=getattr(block, "entity_id", None),
+                            project_id=getattr(block, "project_id", None),
                         )
                     )
 
@@ -155,7 +159,16 @@ async def list_deployment_entities(
                 agents = result.scalars().all()
 
                 for agent in agents:
-                    entities.append(DeploymentEntity(id=agent.id, type="agent", name=agent.name, description=agent.description))
+                    entities.append(
+                        DeploymentEntity(
+                            id=agent.id,
+                            type="agent",
+                            name=agent.name,
+                            description=agent.description,
+                            entity_id=getattr(agent, "entity_id", None),
+                            project_id=getattr(agent, "project_id", None),
+                        )
+                    )
 
         # Query groups if requested
         if "group" in types_to_include:
@@ -175,6 +188,8 @@ async def list_deployment_entities(
                             type="group",
                             name=None,  # Groups don't have a name field
                             description=group.description,
+                            entity_id=getattr(group, "entity_id", None),
+                            project_id=getattr(group, "project_id", None),
                         )
                     )
 
@@ -191,14 +206,14 @@ async def list_deployment_entities(
 async def delete_deployment(
     deployment_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete all entities (blocks, agents, groups) with the specified deployment_id.
     Deletion order: blocks -> agents -> groups to maintain referential integrity.
     """
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
         deleted_blocks = []
         deleted_agents = []

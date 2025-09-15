@@ -1,11 +1,10 @@
-import asyncio
 import mimetypes
 import os
 import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from starlette import status
 from starlette.responses import Response
 
@@ -26,7 +25,7 @@ from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
@@ -48,12 +47,12 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 @router.get("/count", response_model=int, operation_id="count_sources")
 async def count_sources(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Count all data sources created by a user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.size_async(actor=actor)
 
 
@@ -61,12 +60,12 @@ async def count_sources(
 async def retrieve_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get all sources
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if not source:
@@ -78,12 +77,12 @@ async def retrieve_source(
 async def get_source_id_by_name(
     source_name: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a source by name
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     source = await server.source_manager.get_source_by_name(source_name=source_name, actor=actor)
     if not source:
@@ -94,7 +93,7 @@ async def get_source_id_by_name(
 @router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_sources_metadata")
 async def get_sources_metadata(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     include_detailed_per_source_metadata: bool = False,
 ):
     """
@@ -106,7 +105,7 @@ async def get_sources_metadata(
     - Total size of all files
     - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.get_organization_sources_metadata(
         actor=actor, include_detailed_per_source_metadata=include_detailed_per_source_metadata
     )
@@ -115,12 +114,12 @@ async def get_sources_metadata(
 @router.get("/", response_model=List[Source], operation_id="list_sources")
 async def list_sources(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all data sources created by a user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.list_sources(actor=actor)
 
 
@@ -128,12 +127,12 @@ async def list_sources(
 async def create_source(
     source_create: SourceCreate,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new data source.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # TODO: need to asyncify this
     if not source_create.embedding_config:
@@ -163,13 +162,13 @@ async def modify_source(
     source_id: str,
     source: SourceUpdate,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Update the name or documentation of an existing data source.
     """
     # TODO: allow updating the handle/embedding config
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     if not await server.source_manager.get_source_by_id(source_id=source_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Source with id={source_id} does not exist.")
     return await server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
@@ -179,12 +178,12 @@ async def modify_source(
 async def delete_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a data source.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     agent_states = await server.source_manager.list_attached_agents(source_id=source_id, actor=actor)
     files = await server.file_manager.list_files(source_id, actor)
@@ -219,7 +218,7 @@ async def upload_file_to_source(
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Upload a file to a data source.
@@ -256,7 +255,7 @@ async def upload_file_to_source(
             ),
         )
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     source = await server.source_manager.get_source_by_id(source_id=source_id, actor=actor)
     if source is None:
@@ -334,12 +333,12 @@ async def upload_file_to_source(
 async def get_agents_for_source(
     source_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get all agent IDs that have the specified source attached.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.get_agents_for_source_id(source_id=source_id, actor=actor)
 
 
@@ -350,12 +349,12 @@ async def list_source_passages(
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(100, description="Maximum number of messages to retrieve."),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all passages associated with a data source.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.query_source_passages_async(
         actor=actor,
         source_id=source_id,
@@ -376,12 +375,12 @@ async def list_source_files(
         description="Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.",
     ),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List paginated files associated with a data source.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.list_files(
         source_id=source_id,
         limit=limit,
@@ -399,12 +398,12 @@ async def get_file_metadata(
     file_id: str,
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Retrieve metadata for a specific file by its ID.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Get file metadata using the file manager
     file_metadata = await server.file_manager.get_file_by_id(
@@ -431,12 +430,12 @@ async def delete_file_from_source(
     source_id: str,
     file_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a data source.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     deleted_file = await server.file_manager.delete_file(file_id=file_id, actor=actor)
 
