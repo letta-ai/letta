@@ -752,24 +752,7 @@
         "summary": "List Composio Apps",
         "description": "Get a list of all Composio apps",
         "operationId": "list_composio_apps",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -890,24 +873,7 @@
         "summary": "List Mcp Servers",
         "description": "Get a list of all configured MCP servers",
         "operationId": "list_mcp_servers",
-        "parameters": [
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -8737,6 +8703,45 @@
       }
     },
     "/v1/providers/{provider_id}": {
+      "get": {
+        "tags": ["providers"],
+        "summary": "Retrieve Provider",
+        "description": "Get a provider by ID.",
+        "operationId": "retrieve_provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": ["providers"],
         "summary": "Modify Provider",
@@ -9863,9 +9868,9 @@
     "/v1/steps/{step_id}/metrics": {
       "get": {
         "tags": ["steps"],
-        "summary": "Retrieve Step Metrics",
+        "summary": "Retrieve Metrics For Step",
         "description": "Get step metrics by step ID.",
-        "operationId": "retrieve_step_metrics",
+        "operationId": "retrieve_metrics_for_step",
         "parameters": [
           {
             "name": "step_id",
@@ -9904,8 +9909,8 @@
     "/v1/steps/{step_id}/trace": {
       "get": {
         "tags": ["steps"],
-        "summary": "Retrieve Step Trace",
-        "operationId": "retrieve_step_trace",
+        "summary": "Retrieve Trace For Step",
+        "operationId": "retrieve_trace_for_step",
         "parameters": [
           {
             "name": "step_id",
@@ -9931,7 +9936,7 @@
                       "type": "null"
                     }
                   ],
-                  "title": "Response Retrieve Step Trace"
+                  "title": "Response Retrieve Trace For Step"
                 }
               }
             }
@@ -9952,9 +9957,9 @@
     "/v1/steps/{step_id}/feedback": {
       "patch": {
         "tags": ["steps"],
-        "summary": "Add Feedback",
-        "description": "Add feedback to a step.",
-        "operationId": "add_feedback",
+        "summary": "Modify Feedback For Step",
+        "description": "Modify feedback for a given step.",
+        "operationId": "modify_feedback_for_step",
         "parameters": [
           {
             "name": "step_id",
@@ -9971,7 +9976,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddFeedbackRequest"
+                "$ref": "#/components/schemas/ModifyFeedbackRequest"
               }
             }
           }
@@ -10138,8 +10143,10 @@
     "/v1/telemetry/{step_id}": {
       "get": {
         "tags": ["telemetry"],
-        "summary": "Retrieve Provider Trace By Step Id",
+        "summary": "Retrieve Provider Trace",
+        "description": "**DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.\n\nRetrieve provider trace by step ID.",
         "operationId": "retrieve_provider_trace",
+        "deprecated": true,
         "parameters": [
           {
             "name": "step_id",
@@ -10384,9 +10391,9 @@
     "/v1/messages/batches/{batch_id}/messages": {
       "get": {
         "tags": ["messages"],
-        "summary": "List Batch Messages",
+        "summary": "List Messages For Batch",
         "description": "Get response messages for a specific batch job.",
-        "operationId": "list_batch_messages",
+        "operationId": "list_messages_for_batch",
         "parameters": [
           {
             "name": "batch_id",
@@ -10573,22 +10580,6 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
-            }
-          },
-          {
-            "name": "user-id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
             }
           }
         ],
@@ -13144,38 +13135,6 @@
         "required": ["properties", "title", "type"],
         "title": "ActionResponseModel",
         "description": "Action response data model."
-      },
-      "AddFeedbackRequest": {
-        "properties": {
-          "feedback": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FeedbackType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Whether this feedback is positive or negative"
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags",
-            "description": "Feedback tags to add to the step"
-          }
-        },
-        "type": "object",
-        "title": "AddFeedbackRequest"
       },
       "AgentEnvironmentVariable": {
         "properties": {
@@ -23534,6 +23493,38 @@
         },
         "type": "object",
         "title": "ModalSandboxConfig"
+      },
+      "ModifyFeedbackRequest": {
+        "properties": {
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether this feedback is positive or negative"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "Feedback tags to add to the step"
+          }
+        },
+        "type": "object",
+        "title": "ModifyFeedbackRequest"
       },
       "NpmRequirement": {
         "properties": {
