@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from composio.client import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.collections import ActionModel, AppModel
@@ -173,9 +173,18 @@ async def retrieve_tool(
 
 @router.get("/", response_model=List[Tool], operation_id="list_tools")
 async def list_tools(
-    after: Optional[str] = None,
-    limit: Optional[int] = 50,
-    name: Optional[str] = None,
+    before: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of tools to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    name: Optional[str] = Query(None, description="Filter by single tool name"),
     names: Optional[List[str]] = Query(None, description="Filter by specific tool names"),
     tool_ids: Optional[List[str]] = Query(
         None, description="Filter by specific tool IDs - accepts repeated params or comma-separated values"
@@ -190,7 +199,7 @@ async def list_tools(
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     """
-    Get a list of all tools available to agents belonging to the org of the user
+    Get a list of all tools available to agents.
     """
     try:
         # Helper function to parse tool types - supports both repeated params and comma-separated values
@@ -254,8 +263,10 @@ async def list_tools(
         # Get the list of tools using unified query
         return await server.tool_manager.list_tools_async(
             actor=actor,
+            before=before,
             after=after,
             limit=limit,
+            ascending=(order == "asc"),
             tool_types=tool_types_str,
             exclude_tool_types=exclude_tool_types_str,
             names=final_names,
