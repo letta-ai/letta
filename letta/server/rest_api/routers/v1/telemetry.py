@@ -10,12 +10,17 @@ from letta.settings import settings
 router = APIRouter(prefix="/telemetry", tags=["telemetry"])
 
 
-@router.get("/{step_id}", response_model=Optional[ProviderTrace], operation_id="retrieve_provider_trace")
+@router.get("/{step_id}", response_model=Optional[ProviderTrace], operation_id="retrieve_provider_trace", deprecated=True)
 async def retrieve_provider_trace_by_step_id(
     step_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
+    """
+    **DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.
+
+    Retrieve provider trace by step ID.
+    """
     provider_trace = None
     if settings.track_provider_trace:
         try:
