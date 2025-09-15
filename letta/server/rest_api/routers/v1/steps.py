@@ -41,7 +41,7 @@ async def list_steps(
     ),  # Only handled by next js middleware
 ):
     """
-    List steps with optional pagination and date filters.
+    Get a list of all steps.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
@@ -82,8 +82,8 @@ async def retrieve_step(
         raise HTTPException(status_code=404, detail="Step not found")
 
 
-@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_step_metrics")
-async def retrieve_step_metrics(
+@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_metrics_for_step")
+async def retrieve_metrics_for_step(
     step_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
@@ -98,12 +98,15 @@ async def retrieve_step_metrics(
         raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
-@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_step_trace")
-async def retrieve_step_trace(
+@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
+async def retrieve_trace_for_step(
     step_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
+    """
+    Get the raw llm request and response trace for a step.
+    """
     provider_trace = None
     if settings.track_provider_trace:
         try:
@@ -121,15 +124,15 @@ class AddFeedbackRequest(BaseModel):
     tags: list[str] | None = Field(None, description="Feedback tags to add to the step")
 
 
-@router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
-async def add_feedback(
+@router.patch("/{step_id}/feedback", response_model=Step, operation_id="modify_feedback_for_step")
+async def modify_feedback_for_step(
     step_id: str,
     request: AddFeedbackRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
-    Add feedback to a step.
+    Modify feedback for the given step.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
