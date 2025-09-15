@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@letta-ai/letta-client": "^0.1.202"
+  }
+}

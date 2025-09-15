@@ -1,0 +1,57 @@
+IMPORTANT CONTACTS
+
+TEAM MEMBERS:
+Sarah Chen - Lead Frontend Developer
+Email: sarah.chen@company.com
+Slack: @sarahc
+Phone: (555) 123-4567
+Timezone: PST
+Notes: Expert in React/TypeScript, handles UI/UX decisions
+
+Mike Johnson - DevOps Engineer  
+Email: mike.j@company.com
+Slack: @mikej
+Phone: (555) 234-5678
+Timezone: EST
+Notes: Manages CI/CD, AWS infrastructure, on-call rotation
+
+Jessica Liu - Product Manager
+Email: jessica.liu@company.com
+Slack: @jliu
+Phone: (555) 345-6789
+Timezone: PST
+Notes: Stakeholder communication, feature prioritization
+
+David Park - Senior Backend Engineer
+Email: david.park@company.com
+Slack: @dpark
+Phone: (555) 456-7890
+Timezone: CST
+Notes: Database expert, security specialist
+
+EXTERNAL CONTACTS:
+Dr. Amanda Foster - AI Research Consultant
+Email: amanda@airesearch.org
+Phone: (555) 567-8901
+Notes: ML model optimization, research collaboration
+
+Alex Thompson - Client Technical Lead
+Email: alex.thompson@clientcorp.com
+Phone: (555) 678-9012
+Notes: Primary client contact for integration issues
+
+VENDORS:
+CloudTech Support - Infrastructure
+Support: support@cloudtech.com
+Emergency: (555) 789-0123
+Account Manager: Lisa Wang (lisa.wang@cloudtech.com)
+
+DataBase Solutions - Managed PostgreSQL
+Support: help@dbsolutions.com
+Emergency: (555) 890-1234
+Account Rep: Robert Kim (r.kim@dbsolutions.com)
+
+EMERGENCY CONTACTS:
+IT Security Incident: security@company.com
+System Outage Hotline: (555) 999-0000
+Manager: Jennifer Martinez (jennifer.m@company.com)

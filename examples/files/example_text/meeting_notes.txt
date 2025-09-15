@@ -1,0 +1,41 @@
+MEETING NOTES: Weekly Team Standup
+Date: August 13, 2025
+Attendees: Cameron, Sarah, Mike, Jessica, David
+Duration: 45 minutes
+
+AGENDA:
+1. Sprint review
+2. Blockers and challenges
+3. Next week planning
+4. Architecture decisions
+
+KEY DISCUSSIONS:
+- Memory system performance improvements needed
+- New agent deployment pipeline ready for testing
+- Client feedback on API response times
+- Database migration scheduled for next weekend
+
+ACTION ITEMS:
+[ ] Cameron: Optimize memory retrieval queries by Friday
+[ ] Sarah: Complete API documentation updates
+[ ] Mike: Test new deployment pipeline in staging
+[ ] Jessica: Schedule client demo for next Tuesday
+[ ] David: Review security audit findings
+
+DECISIONS MADE:
+- Adopt new caching layer for 30% performance boost
+- Move weekly demos to Tuesdays 2pm PST
+- Implement rate limiting on public API endpoints
+- Upgrade to Python 3.12 next sprint
+
+BLOCKERS:
+- Waiting for cloud provider to resolve networking issue
+- Third-party API integration still pending vendor approval
+- QA environment needs additional memory allocation
+
+NEXT MEETING: August 20, 2025 at 10:00 AM PST
+
+FOLLOW-UP NOTES:
+- Research alternative vector databases for better scaling
+- Consider implementing async processing for long-running tasks
+- Schedule architecture review meeting with senior engineers
