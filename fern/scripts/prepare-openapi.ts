@@ -98,7 +98,7 @@ for (const path of Object.keys(lettaAgentsAPI.paths)) {
       ][method].parameters.filter(
         (param: Record<string, string>) =>
           param.in !== 'header' ||
-          (param.name !== 'user_id' && param.name !== 'actor_id'),
+          (param.name !== 'user_id' && param.name !== 'User-Agent' && param.name !== 'X-Project-Id'),
       );
     }
   }
