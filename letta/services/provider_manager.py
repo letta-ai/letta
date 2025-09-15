@@ -154,10 +154,14 @@ class ProviderManager:
         actor: PydanticUser,
         name: Optional[str] = None,
         provider_type: Optional[ProviderType] = None,
+        before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: bool = False,
     ) -> List[PydanticProvider]:
-        """List all providers with optional pagination."""
+        """
+        List all providers with pagination support.
+        """
         filter_kwargs = {}
         if name:
             filter_kwargs["name"] = name
@@ -166,9 +170,11 @@ class ProviderManager:
         async with db_registry.async_session() as session:
             providers = await ProviderModel.list_async(
                 db_session=session,
+                before=before,
                 after=after,
                 limit=limit,
                 actor=actor,
+                ascending=ascending,
                 check_is_deleted=True,
                 **filter_kwargs,
             )
