@@ -4,6 +4,7 @@ import { CloseIcon, DisabledByDefaultIcon } from '../../icons';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { cn } from '@letta-cloud/ui-styles';
 import { useTranslations } from '@letta-cloud/translations';
+import './ImagePreview.scss';
 
 export interface ImagePreviewProps {
   src: string;
@@ -66,7 +67,7 @@ export function ImagePreview({
   );
 
   return (
-    <div className="relative inline-block group">
+    <div className="relative inline-block image-preview-container">
       {onClick ? (
         <button
           onClick={onClick}
@@ -90,7 +91,7 @@ export function ImagePreview({
             onClick={() => {
               onRemove(id);
             }}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-background border border-border rounded-full flex items-center justify-center shadow-sm opacity-0 hover:opacity-100 transition-opacity duration-200"
+            className="absolute -top-2 -right-2 w-5 h-5 bg-background border border-border rounded-full flex items-center justify-center shadow-sm opacity-0 hover:opacity-100 transition-opacity duration-200 image-preview-remove-btn"
             style={{ zIndex: 3 }}
           >
             <CloseIcon size="xsmall" className="text-default" />
