@@ -1,0 +1,720 @@
+{
+  "agents": [
+    {
+      "name": "test_disk_agent_9215c344-8b17-4989-98f4-fd73e99fc451",
+      "memory_blocks": [],
+      "tools": [],
+      "tool_ids": [
+        "tool-0",
+        "tool-1",
+        "tool-2",
+        "tool-3",
+        "tool-4",
+        "tool-5",
+        "tool-6"
+      ],
+      "source_ids": [
+        "source-0"
+      ],
+      "block_ids": [
+        "block-0",
+        "block-1"
+      ],
+      "tool_rules": [
+        {
+          "tool_name": "send_message",
+          "type": "exit_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "memory_replace",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "conversation_search",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        },
+        {
+          "tool_name": "memory_insert",
+          "type": "continue_loop",
+          "prompt_template": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+        }
+      ],
+      "tags": [
+        "test",
+        "disk",
+        "files"
+      ],
+      "system": "You are a helpful assistant with file reading capabilities.",
+      "agent_type": "memgpt_v2_agent",
+      "llm_config": {
+        "model": "gpt-4o-mini",
+        "model_endpoint_type": "openai",
+        "model_endpoint": "https://api.openai.com/v1",
+        "provider_name": "openai",
+        "provider_category": "base",
+        "model_wrapper": null,
+        "context_window": 32000,
+        "put_inner_thoughts_in_kwargs": true,
+        "handle": "openai/gpt-4o-mini",
+        "temperature": 0.7,
+        "max_tokens": 4096,
+        "enable_reasoner": true,
+        "reasoning_effort": null,
+        "max_reasoning_tokens": 0,
+        "frequency_penalty": 1.0,
+        "compatibility_type": null,
+        "verbosity": "medium"
+      },
+      "embedding_config": {
+        "embedding_endpoint_type": "openai",
+        "embedding_endpoint": "https://api.openai.com/v1",
+        "embedding_model": "text-embedding-3-small",
+        "embedding_dim": 2000,
+        "embedding_chunk_size": 300,
+        "handle": "openai/text-embedding-3-small",
+        "batch_size": 1024,
+        "azure_endpoint": null,
+        "azure_version": null,
+        "azure_deployment": null
+      },
+      "initial_message_sequence": null,
+      "include_base_tools": false,
+      "include_multi_agent_tools": false,
+      "include_base_tool_rules": false,
+      "include_default_source": false,
+      "description": null,
+      "metadata": null,
+      "model": null,
+      "embedding": null,
+      "context_window_limit": null,
+      "embedding_chunk_size": null,
+      "max_tokens": null,
+      "max_reasoning_tokens": null,
+      "enable_reasoner": false,
+      "reasoning": null,
+      "from_template": null,
+      "template": false,
+      "project": null,
+      "tool_exec_environment_variables": {},
+      "memory_variables": null,
+      "project_id": null,
+      "template_id": null,
+      "base_template_id": null,
+      "identity_ids": null,
+      "message_buffer_autoclear": false,
+      "enable_sleeptime": false,
+      "response_format": null,
+      "timezone": "UTC",
+      "max_files_open": 5,
+      "per_file_view_window_char_limit": 15000,
+      "hidden": null,
+      "id": "agent-0",
+      "in_context_message_ids": [
+        "message-0",
+        "message-1",
+        "message-2",
+        "message-3",
+        "message-4",
+        "message-5",
+        "message-6"
+      ],
+      "messages": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "You are a helpful assistant with file reading capabilities.\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<human>\n<description>\nThe human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\n</description>\n<metadata>\n- chars_current=14\n- chars_limit=20000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: username: alex\n</value>\n</human>\n\n<persona>\n<description>\nThe persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\n</description>\n<metadata>\n- chars_current=46\n- chars_limit=20000\n</metadata>\n<value>\n# NOTE: Line numbers shown below are to help during editing. Do NOT include line number prefixes in your memory edit tool calls.\nLine 1: I am a helpful assistant with access to files.\n</value>\n</persona>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\nmemory_replace requires continuing your response when called\n</tool_rule>\n<tool_rule>\nconversation_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nmemory_insert requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n<directories>\n<file_limits>\n- current_files_open=2\n- max_files_open=5\n</file_limits>\n<directory name=\"test_disk_export_source\">\n<file status=\"open\" name=\"test_disk_export_source/test.txt\">\n<metadata>\n- read_only=true\n- chars_current=45\n- chars_limit=15000\n</metadata>\n<value>\n[Viewing file start (out of 1 lines)]\n1: test\n</value>\n</file>\n<file status=\"open\" name=\"test_disk_export_source/test.md\">\n<metadata>\n- read_only=true\n- chars_current=5068\n- chars_limit=15000\n</metadata>\n<value>\n[Viewing file start (out of 138 lines)]\n1: ---\n2: __Advertisement :)__\n3: - __[pica](https://nodeca.github.io/pica/demo/)__ - high quality and fast image\n4: resize in browser.\n5: - __[babelfish](https://github.com/nodeca/babelfish/)__ - developer friendly\n6: i18n with plurals support and easy syntax.\n7: You will like those projects!\n8: ---\n9: # h1 Heading 8-)\n10: ## h2 Heading\n11: ### h3 Heading\n12: #### h4 Heading\n13: ##### h5 Heading\n14: ###### h6 Heading\n15: ## Horizontal Rules\n16: ___\n17: ---\n18: ***\n19: ## Typographic replacements\n20: Enable typographer option to see result.\n21: (c) (C) (r) (R) (tm) (TM) (p) (P) +-\n22: test.. test... test..... test?..... test!....\n23: !!!!!! ???? ,,  -- ---\n24: \"Smartypants, double quotes\" and 'single quotes'\n25: ## Emphasis\n26: **This is bold text**\n27: __This is bold text__\n28: *This is italic text*\n29: _This is italic text_\n30: ~~Strikethrough~~\n31: ## Blockquotes\n32: > Blockquotes can also be nested...\n33: >> ...by using additional greater-than signs right next to each other...\n34: > > > ...or with spaces between arrows.\n35: ## Lists\n36: Unordered\n37: + Create a list by starting a line with `+`, `-`, or `*`\n38: + Sub-lists are made by indenting 2 spaces:\n39: - Marker character change forces new list start:\n40: * Ac tristique libero volutpat at\n41: + Facilisis in pretium nisl aliquet\n42: - Nulla volutpat aliquam velit\n43: + Very easy!\n44: Ordered\n45: 1. Lorem ipsum dolor sit amet\n46: 2. Consectetur adipiscing elit\n47: 3. Integer molestie lorem at massa\n48: 1. You can use sequential numbers...\n49: 1. ...or keep all the numbers as `1.`\n50: Start numbering with offset:\n51: 57. foo\n52: 1. bar\n53: ## Code\n54: Inline `code`\n55: Indented code\n56: // Some comments\n57: line 1 of code\n58: line 2 of code\n59: line 3 of code\n60: Block code \"fences\"\n61: ```\n62: Sample text here...\n63: ```\n64: Syntax highlighting\n65: ``` js\n66: var foo = function (bar) {\n67: return bar++;\n68: };\n69: console.log(foo(5));\n70: ```\n71: ## Tables\n72: | Option | Description |\n73: | ------ | ----------- |\n74: | data   | path to data files to supply the data that will be passed into templates. |\n75: | engine | engine to be used for processing templates. Handlebars is the default. |\n76: | ext    | extension to be used for dest files. |\n77: Right aligned columns\n78: | Option | Description |\n79: | ------:| -----------:|\n80: | data   | path to data files to supply the data that will be passed into templates. |\n81: | engine | engine to be used for processing templates. Handlebars is the default. |\n82: | ext    | extension to be used for dest files. |\n83: ## Links\n84: [link text](http://dev.nodeca.com)\n85: [link with title](http://nodeca.github.io/pica/demo/ \"title text!\")\n86: Autoconverted link https://github.com/nodeca/pica (enable linkify to see)\n87: ## Images\n88: ![Minion](https://octodex.github.com/images/minion.png)\n89: ![Stormtroopocat](https://octodex.github.com/images/stormtroopocat.jpg \"The Stormtroopocat\")\n90: Like links, Images also have a footnote style syntax\n91: ![Alt text][id]\n92: With a reference later in the document defining the URL location:\n93: [id]: https://octodex.github.com/images/dojocat.jpg  \"The Dojocat\"\n94: ## Plugins\n95: The killer feature of `markdown-it` is very effective support of\n96: [syntax plugins](https://www.npmjs.org/browse/keyword/markdown-it-plugin).\n97: ### [Emojies](https://github.com/markdown-it/markdown-it-emoji)\n98: > Classic markup: :wink: :cry: :laughing: :yum:\n99: >\n100: > Shortcuts (emoticons): :-) :-( 8-) ;)\n101: see [how to change output](https://github.com/markdown-it/markdown-it-emoji#change-output) with twemoji.\n102: ### [Subscript](https://github.com/markdown-it/markdown-it-sub) / [Superscript](https://github.com/markdown-it/markdown-it-sup)\n103: - 19^th^\n104: - H~2~O\n105: ### [\\<ins>](https://github.com/markdown-it/markdown-it-ins)\n106: ++Inserted text++\n107: ### [\\<mark>](https://github.com/markdown-it/markdown-it-mark)\n108: ==Marked text==\n109: ### [Footnotes](https://github.com/markdown-it/markdown-it-footnote)\n110: Footnote 1 link[^first].\n111: Footnote 2 link[^second].\n112: Inline footnote^[Text of inline footnote] definition.\n113: Duplicated footnote reference[^second].\n114: [^first]: Footnote **can have markup**\n115: and multiple paragraphs.\n116: [^second]: Footnote text.\n117: ### [Definition lists](https://github.com/markdown-it/markdown-it-deflist)\n118: Term 1\n119: :   Definition 1\n120: with lazy continuation.\n121: Term 2 with *inline markup*\n122: :   Definition 2\n123: { some code, part of Definition 2 }\n124: Third paragraph of definition 2.\n125: _Compact style:_\n126: Term 1\n127: ~ Definition 1\n128: Term 2\n129: ~ Definition 2a\n130: ~ Definition 2b\n131: ### [Abbreviations](https://github.com/markdown-it/markdown-it-abbr)\n132: This is HTML abbreviation example.\n133: It converts \"HTML\", but keep intact partial entries like \"xxxHTMLyyy\" and so on.\n134: *[HTML]: Hyper Text Markup Language\n135: ### [Custom containers](https://github.com/markdown-it/markdown-it-container)\n136: ::: warning\n137: *here be dragons*\n138: :::\n</value>\n</file>\n</directory>\n</directories>\n\n<memory_metadata>\n- The current time is: 2025-08-21 11:20:43 PM UTC+0000\n- Memory blocks were last modified: 2025-08-21 11:20:43 PM UTC+0000\n- -1 previous messages between you and the user are stored in recall memory (use tools to access them)\n</memory_metadata>"
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-0",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": null,
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:42.913125+00:00"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Bootup sequence complete. Persona activated. Testing messaging functionality."
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-1",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": [
+            {
+              "id": "de2e1c55-4b33-409d-aff7-b4d6c47c8efe",
+              "function": {
+                "arguments": "{\n  \"message\": \"More human than human is our motto.\"\n}",
+                "name": "send_message"
+              },
+              "type": "function"
+            }
+          ],
+          "tool_call_id": null,
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:42.916667+00:00"
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-08-21 11:20:42 PM UTC+0000\"\n}"
+            }
+          ],
+          "name": "send_message",
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-2",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": "de2e1c55-4b33-409d-aff7-b4d6c47c8efe",
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:42.917126+00:00"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-08-21 11:20:42 PM UTC+0000\"\n}"
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-3",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": null,
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:42.917145+00:00"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Please tell me about the files you have access to."
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-4",
+          "model": null,
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": null,
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:43.165596+00:00"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Providing an overview of available files for user clarity."
+            }
+          ],
+          "name": null,
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-5",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": [
+            {
+              "id": "call_8KxcQ86q9CHLabJdvyA5oFbt",
+              "function": {
+                "arguments": "{\"message\": \"I currently have access to two files:\\n\\n1. **test.txt** - This is a text file that contains the following content:\\n   - `test`\\n\\n2. **test.md** - This is a markdown file with a variety of content including headings, lists, code snippets, and more. The first few lines include advertisements and examples of markdown syntax such as headings, typographic replacements, emphasis styles (bold and italic), lists (both ordered and unordered), code blocks, tables, links, images, plugins support information (like emojis), and various formatting options.\", \"request_heartbeat\": false}",
+                "name": "send_message"
+              },
+              "type": "function"
+            }
+          ],
+          "tool_call_id": "call_8KxcQ86q9CHLabJdvyA5oFbt",
+          "tool_returns": [],
+          "created_at": "2025-08-21T23:20:45.656152+00:00"
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"status\": \"OK\",\n  \"message\": \"Sent message successfully.\",\n  \"time\": \"2025-08-21 11:20:45 PM UTC+0000\"\n}"
+            }
+          ],
+          "name": "send_message",
+          "otid": null,
+          "sender_id": null,
+          "batch_item_id": null,
+          "group_id": null,
+          "id": "message-6",
+          "model": "gpt-4o-mini",
+          "agent_id": "agent-0",
+          "tool_calls": null,
+          "tool_call_id": "call_8KxcQ86q9CHLabJdvyA5oFbt",
+          "tool_returns": [
+            {
+              "status": "success",
+              "stdout": null,
+              "stderr": null
+            }
+          ],
+          "created_at": "2025-08-21T23:20:45.658271+00:00"
+        }
+      ],
+      "files_agents": [
+        {
+          "agent_id": "agent-0",
+          "file_id": "file-0",
+          "source_id": "source-0",
+          "file_name": "test_disk_export_source/test.txt",
+          "is_open": true,
+          "visible_content": "[Viewing file start (out of 1 lines)]\n1: test",
+          "last_accessed_at": "2025-08-21T23:20:42.951647+00:00",
+          "start_line": null,
+          "end_line": null,
+          "id": "file_agent-9c9137af-04a5-4ad5-8977-d294f8c61e85"
+        },
+        {
+          "agent_id": "agent-0",
+          "file_id": "file-1",
+          "source_id": "source-0",
+          "file_name": "test_disk_export_source/test.md",
+          "is_open": true,
+          "visible_content": "[Viewing file start (out of 138 lines)]\n1: ---\n2: __Advertisement :)__\n3: - __[pica](https://nodeca.github.io/pica/demo/)__ - high quality and fast image\n4: resize in browser.\n5: - __[babelfish](https://github.com/nodeca/babelfish/)__ - developer friendly\n6: i18n with plurals support and easy syntax.\n7: You will like those projects!\n8: ---\n9: # h1 Heading 8-)\n10: ## h2 Heading\n11: ### h3 Heading\n12: #### h4 Heading\n13: ##### h5 Heading\n14: ###### h6 Heading\n15: ## Horizontal Rules\n16: ___\n17: ---\n18: ***\n19: ## Typographic replacements\n20: Enable typographer option to see result.\n21: (c) (C) (r) (R) (tm) (TM) (p) (P) +-\n22: test.. test... test..... test?..... test!....\n23: !!!!!! ???? ,,  -- ---\n24: \"Smartypants, double quotes\" and 'single quotes'\n25: ## Emphasis\n26: **This is bold text**\n27: __This is bold text__\n28: *This is italic text*\n29: _This is italic text_\n30: ~~Strikethrough~~\n31: ## Blockquotes\n32: > Blockquotes can also be nested...\n33: >> ...by using additional greater-than signs right next to each other...\n34: > > > ...or with spaces between arrows.\n35: ## Lists\n36: Unordered\n37: + Create a list by starting a line with `+`, `-`, or `*`\n38: + Sub-lists are made by indenting 2 spaces:\n39: - Marker character change forces new list start:\n40: * Ac tristique libero volutpat at\n41: + Facilisis in pretium nisl aliquet\n42: - Nulla volutpat aliquam velit\n43: + Very easy!\n44: Ordered\n45: 1. Lorem ipsum dolor sit amet\n46: 2. Consectetur adipiscing elit\n47: 3. Integer molestie lorem at massa\n48: 1. You can use sequential numbers...\n49: 1. ...or keep all the numbers as `1.`\n50: Start numbering with offset:\n51: 57. foo\n52: 1. bar\n53: ## Code\n54: Inline `code`\n55: Indented code\n56: // Some comments\n57: line 1 of code\n58: line 2 of code\n59: line 3 of code\n60: Block code \"fences\"\n61: ```\n62: Sample text here...\n63: ```\n64: Syntax highlighting\n65: ``` js\n66: var foo = function (bar) {\n67: return bar++;\n68: };\n69: console.log(foo(5));\n70: ```\n71: ## Tables\n72: | Option | Description |\n73: | ------ | ----------- |\n74: | data   | path to data files to supply the data that will be passed into templates. |\n75: | engine | engine to be used for processing templates. Handlebars is the default. |\n76: | ext    | extension to be used for dest files. |\n77: Right aligned columns\n78: | Option | Description |\n79: | ------:| -----------:|\n80: | data   | path to data files to supply the data that will be passed into templates. |\n81: | engine | engine to be used for processing templates. Handlebars is the default. |\n82: | ext    | extension to be used for dest files. |\n83: ## Links\n84: [link text](http://dev.nodeca.com)\n85: [link with title](http://nodeca.github.io/pica/demo/ \"title text!\")\n86: Autoconverted link https://github.com/nodeca/pica (enable linkify to see)\n87: ## Images\n88: ![Minion](https://octodex.github.com/images/minion.png)\n89: ![Stormtroopocat](https://octodex.github.com/images/stormtroopocat.jpg \"The Stormtroopocat\")\n90: Like links, Images also have a footnote style syntax\n91: ![Alt text][id]\n92: With a reference later in the document defining the URL location:\n93: [id]: https://octodex.github.com/images/dojocat.jpg  \"The Dojocat\"\n94: ## Plugins\n95: The killer feature of `markdown-it` is very effective support of\n96: [syntax plugins](https://www.npmjs.org/browse/keyword/markdown-it-plugin).\n97: ### [Emojies](https://github.com/markdown-it/markdown-it-emoji)\n98: > Classic markup: :wink: :cry: :laughing: :yum:\n99: >\n100: > Shortcuts (emoticons): :-) :-( 8-) ;)\n101: see [how to change output](https://github.com/markdown-it/markdown-it-emoji#change-output) with twemoji.\n102: ### [Subscript](https://github.com/markdown-it/markdown-it-sub) / [Superscript](https://github.com/markdown-it/markdown-it-sup)\n103: - 19^th^\n104: - H~2~O\n105: ### [\\<ins>](https://github.com/markdown-it/markdown-it-ins)\n106: ++Inserted text++\n107: ### [\\<mark>](https://github.com/markdown-it/markdown-it-mark)\n108: ==Marked text==\n109: ### [Footnotes](https://github.com/markdown-it/markdown-it-footnote)\n110: Footnote 1 link[^first].\n111: Footnote 2 link[^second].\n112: Inline footnote^[Text of inline footnote] definition.\n113: Duplicated footnote reference[^second].\n114: [^first]: Footnote **can have markup**\n115: and multiple paragraphs.\n116: [^second]: Footnote text.\n117: ### [Definition lists](https://github.com/markdown-it/markdown-it-deflist)\n118: Term 1\n119: :   Definition 1\n120: with lazy continuation.\n121: Term 2 with *inline markup*\n122: :   Definition 2\n123: { some code, part of Definition 2 }\n124: Third paragraph of definition 2.\n125: _Compact style:_\n126: Term 1\n127: ~ Definition 1\n128: Term 2\n129: ~ Definition 2a\n130: ~ Definition 2b\n131: ### [Abbreviations](https://github.com/markdown-it/markdown-it-abbr)\n132: This is HTML abbreviation example.\n133: It converts \"HTML\", but keep intact partial entries like \"xxxHTMLyyy\" and so on.\n134: *[HTML]: Hyper Text Markup Language\n135: ### [Custom containers](https://github.com/markdown-it/markdown-it-container)\n136: ::: warning\n137: *here be dragons*\n138: :::",
+          "last_accessed_at": "2025-08-21T23:20:42.951647+00:00",
+          "start_line": null,
+          "end_line": null,
+          "id": "file_agent-c9c055aa-6f69-4c80-8303-a70a906325a3"
+        }
+      ],
+      "group_ids": []
+    }
+  ],
+  "groups": [],
+  "blocks": [
+    {
+      "value": "username: alex",
+      "limit": 20000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "preserve_on_migration": false,
+      "label": "human",
+      "read_only": false,
+      "description": "The human block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.",
+      "metadata": {},
+      "id": "block-0"
+    },
+    {
+      "value": "I am a helpful assistant with access to files.",
+      "limit": 20000,
+      "project_id": null,
+      "template_name": null,
+      "is_template": false,
+      "preserve_on_migration": false,
+      "label": "persona",
+      "read_only": false,
+      "description": "The persona block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.",
+      "metadata": {},
+      "id": "block-1"
+    }
+  ],
+  "files": [
+    {
+      "source_id": "source-0",
+      "file_name": "test_disk_export_source/test.txt",
+      "original_file_name": "test.txt",
+      "file_path": null,
+      "file_type": "text/plain",
+      "file_size": 4,
+      "file_creation_date": null,
+      "file_last_modified_date": null,
+      "processing_status": "completed",
+      "error_message": null,
+      "total_chunks": 1,
+      "chunks_embedded": 1,
+      "content": "test",
+      "id": "file-0"
+    },
+    {
+      "source_id": "source-0",
+      "file_name": "test_disk_export_source/test.md",
+      "original_file_name": "test.md",
+      "file_path": null,
+      "file_type": "text/x-markdown",
+      "file_size": 4612,
+      "file_creation_date": null,
+      "file_last_modified_date": null,
+      "processing_status": "completed",
+      "error_message": null,
+      "total_chunks": 6,
+      "chunks_embedded": 6,
+      "content": "---\n__Advertisement :)__\n\n- __[pica](https://nodeca.github.io/pica/demo/)__ - high quality and fast image\n  resize in browser.\n- __[babelfish](https://github.com/nodeca/babelfish/)__ - developer friendly\n  i18n with plurals support and easy syntax.\n\nYou will like those projects!\n\n---\n\n# h1 Heading 8-)\n## h2 Heading\n### h3 Heading\n#### h4 Heading\n##### h5 Heading\n###### h6 Heading\n\n\n## Horizontal Rules\n\n___\n\n---\n\n***\n\n\n## Typographic replacements\n\nEnable typographer option to see result.\n\n(c) (C) (r) (R) (tm) (TM) (p) (P) +-\n\ntest.. test... test..... test?..... test!....\n\n!!!!!! ???? ,,  -- ---\n\n\"Smartypants, double quotes\" and 'single quotes'\n\n\n## Emphasis\n\n**This is bold text**\n\n__This is bold text__\n\n*This is italic text*\n\n_This is italic text_\n\n~~Strikethrough~~\n\n\n## Blockquotes\n\n\n> Blockquotes can also be nested...\n>> ...by using additional greater-than signs right next to each other...\n> > > ...or with spaces between arrows.\n\n\n## Lists\n\nUnordered\n\n+ Create a list by starting a line with `+`, `-`, or `*`\n+ Sub-lists are made by indenting 2 spaces:\n  - Marker character change forces new list start:\n    * Ac tristique libero volutpat at\n    + Facilisis in pretium nisl aliquet\n    - Nulla volutpat aliquam velit\n+ Very easy!\n\nOrdered\n\n1. Lorem ipsum dolor sit amet\n2. Consectetur adipiscing elit\n3. Integer molestie lorem at massa\n\n\n1. You can use sequential numbers...\n1. ...or keep all the numbers as `1.`\n\nStart numbering with offset:\n\n57. foo\n1. bar\n\n\n## Code\n\nInline `code`\n\nIndented code\n\n    // Some comments\n    line 1 of code\n    line 2 of code\n    line 3 of code\n\n\nBlock code \"fences\"\n\n```\nSample text here...\n```\n\nSyntax highlighting\n\n``` js\nvar foo = function (bar) {\n  return bar++;\n};\n\nconsole.log(foo(5));\n```\n\n## Tables\n\n| Option | Description |\n| ------ | ----------- |\n| data   | path to data files to supply the data that will be passed into templates. |\n| engine | engine to be used for processing templates. Handlebars is the default. |\n| ext    | extension to be used for dest files. |\n\nRight aligned columns\n\n| Option | Description |\n| ------:| -----------:|\n| data   | path to data files to supply the data that will be passed into templates. |\n| engine | engine to be used for processing templates. Handlebars is the default. |\n| ext    | extension to be used for dest files. |\n\n\n## Links\n\n[link text](http://dev.nodeca.com)\n\n[link with title](http://nodeca.github.io/pica/demo/ \"title text!\")\n\nAutoconverted link https://github.com/nodeca/pica (enable linkify to see)\n\n\n## Images\n\n![Minion](https://octodex.github.com/images/minion.png)\n![Stormtroopocat](https://octodex.github.com/images/stormtroopocat.jpg \"The Stormtroopocat\")\n\nLike links, Images also have a footnote style syntax\n\n![Alt text][id]\n\nWith a reference later in the document defining the URL location:\n\n[id]: https://octodex.github.com/images/dojocat.jpg  \"The Dojocat\"\n\n\n## Plugins\n\nThe killer feature of `markdown-it` is very effective support of\n[syntax plugins](https://www.npmjs.org/browse/keyword/markdown-it-plugin).\n\n\n### [Emojies](https://github.com/markdown-it/markdown-it-emoji)\n\n> Classic markup: :wink: :cry: :laughing: :yum:\n>\n> Shortcuts (emoticons): :-) :-( 8-) ;)\n\nsee [how to change output](https://github.com/markdown-it/markdown-it-emoji#change-output) with twemoji.\n\n\n### [Subscript](https://github.com/markdown-it/markdown-it-sub) / [Superscript](https://github.com/markdown-it/markdown-it-sup)\n\n- 19^th^\n- H~2~O\n\n\n### [\\<ins>](https://github.com/markdown-it/markdown-it-ins)\n\n++Inserted text++\n\n\n### [\\<mark>](https://github.com/markdown-it/markdown-it-mark)\n\n==Marked text==\n\n\n### [Footnotes](https://github.com/markdown-it/markdown-it-footnote)\n\nFootnote 1 link[^first].\n\nFootnote 2 link[^second].\n\nInline footnote^[Text of inline footnote] definition.\n\nDuplicated footnote reference[^second].\n\n[^first]: Footnote **can have markup**\n\n    and multiple paragraphs.\n\n[^second]: Footnote text.\n\n\n### [Definition lists](https://github.com/markdown-it/markdown-it-deflist)\n\nTerm 1\n\n:   Definition 1\nwith lazy continuation.\n\nTerm 2 with *inline markup*\n\n:   Definition 2\n\n        { some code, part of Definition 2 }\n\n    Third paragraph of definition 2.\n\n_Compact style:_\n\nTerm 1\n  ~ Definition 1\n\nTerm 2\n  ~ Definition 2a\n  ~ Definition 2b\n\n\n### [Abbreviations](https://github.com/markdown-it/markdown-it-abbr)\n\nThis is HTML abbreviation example.\n\nIt converts \"HTML\", but keep intact partial entries like \"xxxHTMLyyy\" and so on.\n\n*[HTML]: Hyper Text Markup Language\n\n### [Custom containers](https://github.com/markdown-it/markdown-it-container)\n\n::: warning\n*here be dragons*\n:::\n",
+      "id": "file-1"
+    }
+  ],
+  "sources": [
+    {
+      "name": "test_disk_export_source",
+      "description": null,
+      "instructions": null,
+      "metadata": null,
+      "embedding": null,
+      "embedding_chunk_size": null,
+      "embedding_config": {
+        "embedding_endpoint_type": "openai",
+        "embedding_endpoint": "https://api.openai.com/v1",
+        "embedding_model": "text-embedding-3-small",
+        "embedding_dim": 2000,
+        "embedding_chunk_size": 300,
+        "handle": "openai/text-embedding-3-small",
+        "batch_size": 1024,
+        "azure_endpoint": null,
+        "azure_version": null,
+        "azure_deployment": null
+      },
+      "id": "source-0"
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool-3",
+      "tool_type": "letta_core",
+      "description": "Search prior conversation history using case-insensitive string matching.",
+      "source_type": "python",
+      "name": "conversation_search",
+      "tags": [
+        "letta_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "conversation_search",
+        "description": "Search prior conversation history using case-insensitive string matching.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "String to search for."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-4",
+      "tool_type": "letta_files_core",
+      "description": "Searches file contents for pattern matches with surrounding context.\n\nResults are paginated - shows 20 matches per call. The response includes:\n- A summary of total matches and which files contain them\n- The current page of matches (20 at a time)\n- Instructions for viewing more matches using the offset parameter\n\nExample usage:\n    First call: grep_files(pattern=\"TODO\")\n    Next call: grep_files(pattern=\"TODO\", offset=20)  # Shows matches 21-40\n\nReturns search results containing:\n- Summary with total match count and file distribution\n- List of files with match counts per file\n- Current page of matches (up to 20)\n- Navigation hint for next page if more matches exist",
+      "source_type": "python",
+      "name": "grep_files",
+      "tags": [
+        "letta_files_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "grep_files",
+        "description": "Searches file contents for pattern matches with surrounding context.\n\nResults are paginated - shows 20 matches per call. The response includes:\n- A summary of total matches and which files contain them\n- The current page of matches (20 at a time)\n- Instructions for viewing more matches using the offset parameter\n\nExample usage:\n    First call: grep_files(pattern=\"TODO\")\n    Next call: grep_files(pattern=\"TODO\", offset=20)  # Shows matches 21-40\n\nReturns search results containing:\n- Summary with total match count and file distribution\n- List of files with match counts per file\n- Current page of matches (up to 20)\n- Navigation hint for next page if more matches exist",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Keyword or regex pattern to search within file contents."
+            },
+            "include": {
+              "type": "string",
+              "description": "Optional keyword or regex pattern to filter filenames to include in the search."
+            },
+            "context_lines": {
+              "type": "integer",
+              "description": "Number of lines of context to show before and after each match.\nEquivalent to `-C` in grep_files. Defaults to 1."
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of matches to skip before showing results. Used for pagination.\nFor example, offset=20 shows matches starting from the 21st match.\nUse offset=0 (or omit) for first page, offset=20 for second page,\noffset=40 for third page, etc. The tool will tell you the exact\noffset to use for the next page."
+            }
+          },
+          "required": [
+            "pattern"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-1",
+      "tool_type": "letta_sleeptime_core",
+      "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+      "source_type": "python",
+      "name": "memory_insert",
+      "tags": [
+        "letta_sleeptime_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "memory_insert",
+        "description": "The memory_insert command allows you to insert text at a specific location in a memory block.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited, identified by its label."
+            },
+            "new_str": {
+              "type": "string",
+              "description": "The text to insert. Do not include line number prefixes."
+            },
+            "insert_line": {
+              "type": "integer",
+              "description": "The line number after which to insert the text (0 for beginning of file). Defaults to -1 (end of the file)."
+            }
+          },
+          "required": [
+            "label",
+            "new_str"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-2",
+      "tool_type": "letta_sleeptime_core",
+      "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+      "source_type": "python",
+      "name": "memory_replace",
+      "tags": [
+        "letta_sleeptime_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "memory_replace",
+        "description": "The memory_replace command allows you to replace a specific string in a memory block with a new string. This is used for making precise edits.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited, identified by its label."
+            },
+            "old_str": {
+              "type": "string",
+              "description": "The text to replace (must match exactly, including whitespace and indentation)."
+            },
+            "new_str": {
+              "type": "string",
+              "description": "The new text to insert in place of the old text. Do not include line number prefixes."
+            }
+          },
+          "required": [
+            "label",
+            "old_str",
+            "new_str"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-6",
+      "tool_type": "letta_files_core",
+      "description": "Open one or more files and load their contents into files section in core memory. Maximum of 5 files can be opened simultaneously.\n\nUse this when you want to:\n- Inspect or reference file contents during reasoning\n- View specific portions of large files (e.g. functions or definitions)\n- Replace currently open files with a new set for focused context (via `close_all_others=True`)\n\nExamples:\n        Open single file belonging to a directory named `project_utils` (entire content):\n            file_requests = [FileOpenRequest(file_name=\"project_utils/config.py\")]\n\n        Open multiple files with different view ranges:\n            file_requests = [\n                FileOpenRequest(file_name=\"project_utils/config.py\", offset=0, length=50),     # Lines 1-50\n                FileOpenRequest(file_name=\"project_utils/main.py\", offset=100, length=100),    # Lines 101-200\n                FileOpenRequest(file_name=\"project_utils/utils.py\")                            # Entire file\n            ]\n\n        Close all other files and open new ones:\n            open_files(agent_state, file_requests, close_all_others=True)\n\n    Args:\n        file_requests (List[FileOpenRequest]): List of file open requests, each specifying file name and optional view range.\n        close_all_others (bool): If True, closes all other currently open files first. Defaults to False.\n\n    Returns:\n        str: A status message",
+      "source_type": "python",
+      "name": "open_files",
+      "tags": [
+        "letta_files_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "open_files",
+        "description": "Open one or more files and load their contents into files section in core memory. Maximum of 5 files can be opened simultaneously.\n\nUse this when you want to:\n- Inspect or reference file contents during reasoning\n- View specific portions of large files (e.g. functions or definitions)\n- Replace currently open files with a new set for focused context (via `close_all_others=True`)\n\nExamples:\n        Open single file belonging to a directory named `project_utils` (entire content):\n            file_requests = [FileOpenRequest(file_name=\"project_utils/config.py\")]\n\n        Open multiple files with different view ranges:\n            file_requests = [\n                FileOpenRequest(file_name=\"project_utils/config.py\", offset=0, length=50),     # Lines 1-50\n                FileOpenRequest(file_name=\"project_utils/main.py\", offset=100, length=100),    # Lines 101-200\n                FileOpenRequest(file_name=\"project_utils/utils.py\")                            # Entire file\n            ]\n\n        Close all other files and open new ones:\n            open_files(agent_state, file_requests, close_all_others=True)\n\n    Args:\n        file_requests (List[FileOpenRequest]): List of file open requests, each specifying file name and optional view range.\n        close_all_others (bool): If True, closes all other currently open files first. Defaults to False.\n\n    Returns:\n        str: A status message",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "file_requests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "file_name": {
+                    "type": "string",
+                    "description": "Name of the file to open"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "description": "Optional offset for starting line number (0-indexed). If not specified, starts from beginning of file."
+                  },
+                  "length": {
+                    "type": "integer",
+                    "description": "Optional number of lines to view from offset (inclusive). If not specified, views to end of file."
+                  }
+                },
+                "required": [
+                  "file_name"
+                ]
+              },
+              "description": "List of file open requests, each specifying file name and optional view range."
+            },
+            "close_all_others": {
+              "type": "boolean",
+              "description": "If True, closes all other currently open files first. Defaults to False."
+            }
+          },
+          "required": [
+            "file_requests"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-5",
+      "tool_type": "letta_files_core",
+      "description": "Searches file contents using semantic meaning rather than exact matches.\n\nIdeal for:\n- Finding conceptually related information across files\n- Discovering relevant content without knowing exact keywords\n- Locating files with similar topics or themes",
+      "source_type": "python",
+      "name": "semantic_search_files",
+      "tags": [
+        "letta_files_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "semantic_search_files",
+        "description": "Searches file contents using semantic meaning rather than exact matches.\n\nIdeal for:\n- Finding conceptually related information across files\n- Discovering relevant content without knowing exact keywords\n- Locating files with similar topics or themes",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "The search query text to find semantically similar content."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of results to return (default: 5)"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    },
+    {
+      "id": "tool-0",
+      "tool_type": "letta_core",
+      "description": "Sends a message to the human user.",
+      "source_type": "python",
+      "name": "send_message",
+      "tags": [
+        "letta_core"
+      ],
+      "source_code": null,
+      "json_schema": {
+        "name": "send_message",
+        "description": "Sends a message to the human user.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Message contents. All unicode (including emojis) are supported."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        }
+      },
+      "args_json_schema": null,
+      "return_char_limit": 1000000,
+      "pip_requirements": null,
+      "npm_requirements": null,
+      "created_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "last_updated_by_id": "user-00000000-0000-4000-8000-000000000000",
+      "metadata_": {}
+    }
+  ],
+  "mcp_servers": [],
+  "metadata": {
+    "revision_id": "ffb17eb241fc"
+  },
+  "created_at": "2025-08-21T23:20:45.961923+00:00"
+}

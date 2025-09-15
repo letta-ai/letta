@@ -102,7 +102,7 @@ async def test_deep_research_agent(client: Letta, server_url, disable_e2b_api_ke
 
 
 async def test_11x_agent(client: Letta, server_url, disable_e2b_api_key):
-    imported_af = upload_test_agentfile_from_disk(client, "mock_alice.af")
+    imported_af = upload_test_agentfile_from_disk(client, "long_running_kylie.af")
 
     agent_id = imported_af.agent_ids[0]
 
