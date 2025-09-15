@@ -1,0 +1,44 @@
+{
+  "name": "letta-sync",
+  "version": "1.0.0",
+  "description": "CLI tool for syncing local directories to Letta's filesystem",
+  "main": "dist/index.js",
+  "bin": {
+    "letta-sync": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "letta",
+    "filesystem",
+    "sync",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "axios": "^1.6.2",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "dotenv": "^16.3.1",
+    "cli-table3": "^0.6.3",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10",
+    "form-data": "^4.0.0",
+    "axios-retry": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2",
+    "@types/node": "^20.10.4",
+    "@types/fs-extra": "^11.0.4",
+    "tsx": "^4.6.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,70 @@
+KNOWLEDGE BASE: Key Facts and Data
+
+TECHNICAL SPECIFICATIONS:
+- Current system handles 10,000 concurrent users
+- Average response time: 150ms (target: <100ms)
+- Database size: 2.3TB with 45M records
+- Memory usage: 16GB average, 32GB peak
+- API endpoints: 47 public, 23 internal
+- Supported LLM models: GPT-4, Claude-3, Llama-2, Mistral-7B
+
+PERFORMANCE METRICS (July 2025):
+- Uptime: 99.7%
+- Error rate: 0.3%
+- Average session duration: 12 minutes
+- Peak traffic: 1,500 requests/minute
+- Customer satisfaction: 4.2/5.0
+
+BUSINESS DATA:
+- Monthly active users: 85,000
+- Enterprise clients: 47
+- Revenue growth: 23% QoQ
+- Support tickets: avg 150/week
+- Feature requests: 89 pending
+
+SYSTEM ARCHITECTURE:
+- Load balancer: NGINX with 3 instances
+- Application servers: 8 Python FastAPI containers
+- Database: PostgreSQL 15 with read replicas
+- Cache layer: Redis Cluster (6 nodes)
+- File storage: AWS S3 with CloudFront CDN
+- Monitoring: Prometheus + Grafana
+
+SECURITY INFORMATION:
+- SSL/TLS encryption for all traffic
+- OAuth 2.0 + JWT authentication
+- Rate limiting: 100 requests/minute per user
+- Data retention: 2 years for logs, 7 years for user data
+- Compliance: SOC 2 Type II, GDPR compliant
+- Last security audit: June 2025 (passed)
+
+KEY INTEGRATIONS:
+- OpenAI API (primary LLM provider)
+- Anthropic Claude API (secondary provider)
+- Stripe for payment processing
+- SendGrid for email notifications
+- Slack for team communications
+- GitHub for code repository
+- AWS for cloud infrastructure
+
+IMPORTANT CONFIGURATIONS:
+- Database connection pool: max 50 connections
+- Memory limit per agent: 512MB
+- Session timeout: 30 minutes inactive
+- File upload limit: 25MB
+- Batch processing: max 1000 items
+- Backup frequency: daily incremental, weekly full
+
+VENDOR INFORMATION:
+- AWS account ID: 123456789012
+- OpenAI organization: org-abc123def456
+- Database cluster: letta-prod-cluster
+- CDN distribution: E1ABCDEFGHIJKL
+- Load balancer: letta-prod-lb
+
+EMERGENCY PROCEDURES:
+- Database failover time: <5 minutes
+- Application deployment rollback: <2 minutes
+- Customer notification SLA: within 15 minutes
+- Incident response team: on-call 24/7
+- Backup restoration: <4 hours for full system
