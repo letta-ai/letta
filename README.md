@@ -16,9 +16,12 @@ Letta is the platform for building stateful agents: open AI with advanced memory
 * [**Letta Desktop**](https://docs.letta.com/guides/ade/desktop): A fully-local version of the ADE, available on MacOS and Windows
 * [**Letta Cloud**](https://app.letta.com/): The fastest way to try Letta, with agents running in the cloud
 
+
 ## Get started
 
-To get started, install the Letta SDK (available for both Python and TypeScript):
+### [One-Shot ✨ Vibecoding ⚡️ Prompts](https://github.com/letta-ai/letta/blob/main/fern/pages/getting-started/prompts.mdx)
+
+Or install the Letta SDK (available for both Python and TypeScript):
 
 ### [Python SDK](https://github.com/letta-ai/letta-python)
 ```sh
@@ -29,9 +32,6 @@ pip install letta-client
 ```sh
 npm install @letta-ai/letta-client
 ```
-
-or try our
-### [Ready to Use Vibecoding Prompts](https://github.com/letta-ai/letta/blob/main/fern/pages/getting-started/prompts.mdx)
 
 ## Simple Hello World example
 
