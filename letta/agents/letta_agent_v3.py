@@ -542,6 +542,7 @@ class LettaAgentV3(LettaAgentV2):
                 pre_computed_assistant_message_id=None,
                 step_id=step_id,
                 is_approval_response=True,
+                force_set_request_heartbeat=False,
             )
             messages_to_persist = (initial_messages or []) + tool_call_messages
             persisted_messages = await self.message_manager.create_many_messages_async(
@@ -581,6 +582,7 @@ class LettaAgentV3(LettaAgentV2):
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                 step_id=step_id,
                 is_approval_response=is_approval or is_denial,
+                force_set_request_heartbeat=False,
             )
             messages_to_persist = (initial_messages or []) + assistant_message
 
@@ -695,6 +697,7 @@ class LettaAgentV3(LettaAgentV2):
                     pre_computed_assistant_message_id=pre_computed_assistant_message_id,
                     step_id=step_id,
                     is_approval_response=is_approval or is_denial,
+                    force_set_request_heartbeat=False,
                 )
                 messages_to_persist = (initial_messages or []) + tool_call_messages
 
