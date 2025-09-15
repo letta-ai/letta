@@ -31,8 +31,12 @@ async def list_identities(
         "desc", description="Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    include: Optional[List[Literal["identity.agents", "identity.blocks"]]] = Query(
+        None, description="Specify which relationships to include. If not provided, no relationships are loaded by default for performance."
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    user_agent: Optional[str] = Header(None, alias="User-Agent"),
 ):
     """
     Get a list of all identities in the database
@@ -49,6 +53,8 @@ async def list_identities(
             after=after,
             limit=limit,
             ascending=(order == "asc"),
+            include=include,
+            user_agent=user_agent,
             actor=actor,
         )
     except HTTPException:
@@ -82,12 +88,15 @@ async def count_identities(
 @router.get("/{identity_id}", tags=["identities"], response_model=Identity, operation_id="retrieve_identity")
 async def retrieve_identity(
     identity_id: str,
+    include: Optional[List[Literal["identity.agents", "identity.blocks"]]] = Query(
+        None, description="Specify which relationships to include. If not provided, no relationships are loaded by default for performance."
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor)
+        return await server.identity_manager.get_identity_async(identity_id=identity_id, actor=actor, include=include)
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -95,6 +104,9 @@ async def retrieve_identity(
 @router.post("/", tags=["identities"], response_model=Identity, operation_id="create_identity")
 async def create_identity(
     identity: IdentityCreate = Body(...),
+    include: Optional[List[Literal["identity.agents", "identity.blocks"]]] = Query(
+        None, description="Specify which relationships to include. If not provided, no relationships are loaded by default for performance."
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(
@@ -103,7 +115,7 @@ async def create_identity(
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.identity_manager.create_identity_async(identity=identity, actor=actor)
+        return await server.identity_manager.create_identity_async(identity=identity, actor=actor, include=include)
     except HTTPException:
         raise
     except UniqueConstraintViolationError:
@@ -121,6 +133,9 @@ async def create_identity(
 @router.put("/", tags=["identities"], response_model=Identity, operation_id="upsert_identity")
 async def upsert_identity(
     identity: IdentityUpsert = Body(...),
+    include: Optional[List[Literal["identity.agents", "identity.blocks"]]] = Query(
+        None, description="Specify which relationships to include. If not provided, no relationships are loaded by default for performance."
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
     x_project: Optional[str] = Header(
@@ -129,7 +144,7 @@ async def upsert_identity(
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor)
+        return await server.identity_manager.upsert_identity_async(identity=identity, actor=actor, include=include)
     except HTTPException:
         raise
     except NoResultFound as e:
@@ -142,12 +157,15 @@ async def upsert_identity(
 async def modify_identity(
     identity_id: str,
     identity: IdentityUpdate = Body(...),
+    include: Optional[List[Literal["identity.agents", "identity.blocks"]]] = Query(
+        None, description="Specify which relationships to include. If not provided, no relationships are loaded by default for performance."
+    ),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
+        return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor, include=include)
     except HTTPException:
         raise
     except NoResultFound as e:
