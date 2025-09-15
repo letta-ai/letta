@@ -116,20 +116,20 @@ async def retrieve_trace_for_step(
     return provider_trace
 
 
-class AddFeedbackRequest(BaseModel):
+class ModifyFeedbackRequest(BaseModel):
     feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
     tags: list[str] | None = Field(None, description="Feedback tags to add to the step")
 
 
-@router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
-async def add_feedback(
+@router.patch("/{step_id}/feedback", response_model=Step, operation_id="modify_feedback_for_step")
+async def modify_feedback_for_step(
     step_id: str,
-    request: AddFeedbackRequest = Body(...),
+    request: ModifyFeedbackRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
-    Add feedback to a step.
+    Modify feedback for a given step.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
