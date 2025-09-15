@@ -52,6 +52,18 @@ SSE_ARTIFICIAL_DELAY = 0.1
 logger = get_logger(__name__)
 
 
+class HeaderParams(BaseModel):
+    actor_id: Optional[str] = None
+    api_version: Optional[str] = None
+
+
+async def get_headers(
+    actor_id: Optional[str] = Header(None, alias="user_id", description="Actor ID for authorization"),
+    api_version: Optional[str] = Header(None, alias="user-agent", description="Letta client API version for request"),
+) -> HeaderParams:
+    return HeaderParams(actor_id=actor_id, api_version=api_version)
+
+
 def sse_formatter(data: Union[dict, str]) -> str:
     """Prefix with 'data: ', and always include double newlines"""
     assert type(data) in [dict, str], f"Expected type dict or str, got type {type(data)}"
