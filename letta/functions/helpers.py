@@ -17,7 +17,7 @@ from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.user import User
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import get_letta_server
 from letta.settings import settings
 from letta.utils import safe_create_task
 
