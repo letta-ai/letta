@@ -55,16 +55,11 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
 
         # Instantiate streaming interface
         if self.llm_config.model_endpoint_type in [ProviderType.anthropic, ProviderType.bedrock]:
-            if True:  # self.agent_state.agent_type == AgentType.react_agent:
-                self.interface = SimpleAnthropicStreamingInterface(
-                    requires_approval_tools=requires_approval_tools,
-                )
-            else:
-                self.interface = AnthropicStreamingInterface(
-                    use_assistant_message=use_assistant_message,
-                    put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
-                    requires_approval_tools=requires_approval_tools,
-                )
+            self.interface = AnthropicStreamingInterface(
+                use_assistant_message=use_assistant_message,
+                put_inner_thoughts_in_kwarg=self.llm_config.put_inner_thoughts_in_kwargs,
+                requires_approval_tools=requires_approval_tools,
+            )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
             self.interface = OpenAIStreamingInterface(
                 use_assistant_message=use_assistant_message,
@@ -99,11 +94,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
             self.tool_call = None
 
         # Extract reasoning content from the interface
-        # TODO this should probably just be called "content"?
         self.reasoning_content = self.interface.get_reasoning_content()
-
-        # Extract non-reasoning content (eg text)
-        # self.content = self.interface.get_content()
 
         # Extract usage statistics
         # Some providers don't provide usage in streaming, use fallback if needed
@@ -160,9 +151,7 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                     response_json={
                         "content": {
                             "tool_call": self.tool_call.model_dump_json() if self.tool_call else None,
-                            # "reasoning": [content.model_dump_json() for content in self.reasoning_content],
-                            # TODO potentially split this into both content and reasoning?
-                            "content": [content.model_dump_json() for content in self.reasoning_content],
+                            "reasoning": [content.model_dump_json() for content in self.reasoning_content],
                         },
                         "id": self.interface.message_id,
                         "model": self.interface.model,
