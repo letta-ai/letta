@@ -4,7 +4,6 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
-from letta.server.rest_api.dependencies.headers import HeaderParams, get_headers
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
