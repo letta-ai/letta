@@ -321,8 +321,10 @@ class ToolManager:
     async def list_tools_async(
         self,
         actor: PydanticUser,
+        before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: bool = False,
         upsert_base_tools: bool = True,
         tool_types: Optional[List[str]] = None,
         exclude_tool_types: Optional[List[str]] = None,
@@ -331,11 +333,13 @@ class ToolManager:
         search: Optional[str] = None,
         return_only_letta_tools: bool = False,
     ) -> List[PydanticTool]:
-        """List all tools with optional pagination."""
+        """List all tools with pagination support."""
         tools = await self._list_tools_async(
             actor=actor,
+            before=before,
             after=after,
             limit=limit,
+            ascending=ascending,
             tool_types=tool_types,
             exclude_tool_types=exclude_tool_types,
             names=names,
@@ -359,8 +363,10 @@ class ToolManager:
                 # Re-fetch the tools list after upserting base tools
                 tools = await self._list_tools_async(
                     actor=actor,
+                    before=before,
                     after=after,
                     limit=limit,
+                    ascending=ascending,
                     tool_types=tool_types,
                     exclude_tool_types=exclude_tool_types,
                     names=names,
@@ -376,8 +382,10 @@ class ToolManager:
     async def _list_tools_async(
         self,
         actor: PydanticUser,
+        before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: bool = False,
         tool_types: Optional[List[str]] = None,
         exclude_tool_types: Optional[List[str]] = None,
         names: Optional[List[str]] = None,
@@ -416,23 +424,52 @@ class ToolManager:
             if return_only_letta_tools:
                 query = query.where(ToolModel.tool_type.like("letta_%"))
 
-            # Apply pagination if specified
+            # Handle pagination cursors
             if after is not None:
                 after_tool = await session.get(ToolModel, after)
                 if after_tool:
-                    query = query.where(
-                        or_(
-                            ToolModel.created_at < after_tool.created_at,
-                            and_(ToolModel.created_at == after_tool.created_at, ToolModel.id < after_tool.id),
+                    if ascending:
+                        query = query.where(
+                            or_(
+                                ToolModel.created_at > after_tool.created_at,
+                                and_(ToolModel.created_at == after_tool.created_at, ToolModel.id > after_tool.id),
+                            )
                         )
-                    )
+                    else:
+                        query = query.where(
+                            or_(
+                                ToolModel.created_at < after_tool.created_at,
+                                and_(ToolModel.created_at == after_tool.created_at, ToolModel.id < after_tool.id),
+                            )
+                        )
+
+            if before is not None:
+                before_tool = await session.get(ToolModel, before)
+                if before_tool:
+                    if ascending:
+                        query = query.where(
+                            or_(
+                                ToolModel.created_at < before_tool.created_at,
+                                and_(ToolModel.created_at == before_tool.created_at, ToolModel.id < before_tool.id),
+                            )
+                        )
+                    else:
+                        query = query.where(
+                            or_(
+                                ToolModel.created_at > before_tool.created_at,
+                                and_(ToolModel.created_at == before_tool.created_at, ToolModel.id > before_tool.id),
+                            )
+                        )
 
             # Apply limit
             if limit is not None:
                 query = query.limit(limit)
 
-            # Order by created_at and id for consistent pagination
-            query = query.order_by(ToolModel.created_at.desc(), ToolModel.id.desc())
+            # Apply ordering based on ascending parameter
+            if ascending:
+                query = query.order_by(ToolModel.created_at.asc(), ToolModel.id.asc())
+            else:
+                query = query.order_by(ToolModel.created_at.desc(), ToolModel.id.desc())
 
             # Execute query
             result = await session.execute(query)
