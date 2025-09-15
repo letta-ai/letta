@@ -256,7 +256,8 @@ def run_docqa_task(
     print("Results file:", filename)
 
     if os.path.exists(filename):
-        all_response_data = json.load(open(filename, "r"))
+        with open(filename, "r") as f:
+            all_response_data = json.load(f)
     else:
         all_response_data = []
 

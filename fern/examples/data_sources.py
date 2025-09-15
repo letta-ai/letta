@@ -25,7 +25,8 @@ with open("dummy.txt", "w") as f:
     f.write("Remember that the user is a redhead")
 
 # upload a file into the source
-job = client.sources.files.upload(source_id=source.id, file=open("dummy.txt", "rb"))
+with open("dummy.txt", "rb") as f:
+    job = client.sources.files.upload(source_id=source.id, file=f)
 
 # wait until the job is completed
 while True:

@@ -66,14 +66,13 @@ except Exception as e:
 
 # 1. From an existing file
 # "rb" means "read binary"
-file = open("example-on-disk.txt", "rb")
-
-# Upload the file to the folder
-file = client.folders.files.upload(
-    folder_id=folder_id,
-    file=file,
-    duplicate_handling="skip"
-)
+with open("example-on-disk.txt", "rb") as f:
+    # Upload the file to the folder
+    file = client.folders.files.upload(
+        folder_id=folder_id,
+        file=f,
+        duplicate_handling="skip"
+    )
 
 # 2. From a string by encoding it into a base64 string
 import io
@@ -111,11 +110,12 @@ if not os.path.exists("memgpt.pdf"):
         f.write(response.content)
 
 # Upload the PDF to the folder
-file = client.folders.files.upload(
-    folder_id=folder_id,
-    file=open("memgpt.pdf", "rb"),
-    duplicate_handling="skip"
-)
+with open("memgpt.pdf", "rb") as f:
+    file = client.folders.files.upload(
+        folder_id=folder_id,
+        file=f,
+        duplicate_handling="skip"
+    )
 
 #
 # Now we need to create an agent that can use this folder

@@ -86,7 +86,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # load data
-    data = json.load(open(args.file))
+    with open(args.file, "r") as f:
+        data = json.load(f)
 
     # counters
     correct = 0
@@ -149,9 +150,10 @@ if __name__ == "__main__":
         total += 1
 
     # Dump aggregated results
-    json.dump(
-        {"accuracy": correct / total, "total": total, "results": results},
-        open(f"results_{model}_{num_docs}_{baseline}.json", "w"),
-        indent=4,
-    )
+    with open(f"results_{model}_{num_docs}_{baseline}.json", "w") as f:
+        json.dump(
+            {"accuracy": correct / total, "total": total, "results": results},
+            f,
+            indent=4,
+        )
     print(correct / total)

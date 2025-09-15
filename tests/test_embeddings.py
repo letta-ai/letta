@@ -18,9 +18,11 @@ included_files = [
 ]
 config_dir = "tests/configs/embedding_model_configs"
 config_files = glob.glob(os.path.join(config_dir, "*.json"))
-embedding_configs = [
-    EmbeddingConfig(**json.load(open(config_file))) for config_file in config_files if config_file.split("/")[-1] in included_files
-]
+embedding_configs = []
+for config_file in config_files:
+    if config_file.split("/")[-1] in included_files:
+        with open(config_file, "r") as f:
+            embedding_configs.append(EmbeddingConfig(**json.load(f)))
 
 
 @pytest.fixture

@@ -50,9 +50,11 @@ def setup_agent(
     include_base_tools: bool = True,
     include_base_tool_rules: bool = True,
 ) -> AgentState:
-    config_data = json.load(open(filename, "r"))
+    with open(filename, "r") as f:
+        config_data = json.load(f)
     llm_config = LLMConfig(**config_data)
-    embedding_config = EmbeddingConfig(**json.load(open(EMBEDDING_CONFIG_PATH)))
+    with open(EMBEDDING_CONFIG_PATH, "r") as f:
+        embedding_config = EmbeddingConfig(**json.load(f))
 
     # setup config
     config = LettaConfig()
@@ -93,7 +95,8 @@ def setup_agent(
 
 async def run_embedding_endpoint(filename, actor=None):
     # load JSON file
-    config_data = json.load(open(filename, "r"))
+    with open(filename, "r") as f:
+        config_data = json.load(f)
     print(config_data)
     embedding_config = EmbeddingConfig(**config_data)
 

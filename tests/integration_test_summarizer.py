@@ -269,9 +269,11 @@ def test_summarizer(config_filename, server, default_user):
     agent_name = str(uuid.uuid5(namespace, f"integration-test-summarizer-{config_filename}"))
 
     # Load configs
-    config_data = json.load(open(os.path.join(LLM_CONFIG_DIR, config_filename)))
+    with open(os.path.join(LLM_CONFIG_DIR, config_filename), "r") as f:
+        config_data = json.load(f)
     llm_config = LLMConfig(**config_data)
-    embedding_config = EmbeddingConfig(**json.load(open(EMBEDDING_CONFIG_PATH)))
+    with open(EMBEDDING_CONFIG_PATH, "r") as f:
+        embedding_config = EmbeddingConfig(**json.load(f))
 
     # Ensure cleanup
     cleanup(server=server, agent_uuid=agent_name, actor=default_user)

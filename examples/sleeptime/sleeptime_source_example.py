@@ -39,10 +39,11 @@ client.agents.sources.attach(
 )
 
 # upload a file: this will trigger processing
-job = client.sources.files.upload(
-    file=open("handbook.pdf", "rb"),
-    source_id=source.id
-)
+with open("handbook.pdf", "rb") as f:
+    job = client.sources.files.upload(
+        file=f,
+        source_id=source.id
+    )
 
 time.sleep(2)
 

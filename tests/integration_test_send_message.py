@@ -47,7 +47,8 @@ logger = get_logger(__name__)
 
 def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
     filename = os.path.join(llm_config_dir, filename)
-    config_data = json.load(open(filename, "r"))
+    with open(filename, "r") as f:
+        config_data = json.load(f)
     llm_config = LLMConfig(**config_data)
     return llm_config
 
