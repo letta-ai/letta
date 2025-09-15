@@ -3,24 +3,31 @@ import {
   type Tool,
   type ToolType,
   useAgentsServiceDetachTool,
-  UseAgentsServiceRetrieveAgentKeyFn
+  UseAgentsServiceRetrieveAgentKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useCurrentAgent } from '../../../../../hooks';
 import { useOptimisticAgentTools } from '../../hooks/useOptimisticAgentTools/useOptimisticAgentTools';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@letta-cloud/translations';
 import { useCallback, useState } from 'react';
-import { Button, Dialog, LinkOffIcon, toast, Typography } from '@letta-cloud/ui-component-library';
+import {
+  Button,
+  Dialog,
+  LinkOffIcon,
+  toast,
+  Typography,
+} from '@letta-cloud/ui-component-library';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 
 interface DetachToolDialogProps {
   toolType: ToolType;
-  trigger?: React.ReactNode,
+  trigger?: React.ReactNode;
   idToDetach: string;
   size?: 'default' | 'large' | 'small' | 'xsmall';
   disabled?: boolean;
   hideLabel?: boolean;
+  onClose?: () => void;
 }
 
 interface ToolWithMCPMetadata extends Tool {
@@ -33,15 +40,14 @@ interface ToolWithMCPMetadata extends Tool {
 }
 
 export function DetachToolDialog(props: DetachToolDialogProps) {
-  const { idToDetach, trigger, toolType, size, disabled, hideLabel } = props;
+  const { idToDetach, trigger, toolType, size, disabled, hideLabel, onClose } =
+    props;
   const { id: agentId } = useCurrentAgent();
   const { removeOptimisticTool, updateAgentTools, addOptimisticTool } =
     useOptimisticAgentTools(agentId);
   const queryClient = useQueryClient();
 
   const t = useTranslations('ToolActionsHeader');
-
-  const [open, setOpen] = useState(false);
 
   const getToolToRestore = useCallback(
     (idToDetach: string): ToolWithMCPMetadata | undefined => {
@@ -60,6 +66,8 @@ export function DetachToolDialog(props: DetachToolDialogProps) {
     [queryClient, agentId],
   );
 
+
+  const [open, setOpen] = useState(false);
   const { mutate, isPending } = useAgentsServiceDetachTool({
     onError: (_error, _variables, context) => {
       if (context?.toolToRestore) {
@@ -85,8 +93,11 @@ export function DetachToolDialog(props: DetachToolDialogProps) {
       return {};
     },
     onSuccess: (payload) => {
-      updateAgentTools(payload);
       setOpen(false);
+      if (onClose) {
+        onClose();
+      }
+      updateAgentTools(payload);
       toast.success(t('DetachToolDialog.success'));
     },
   });
@@ -118,24 +129,38 @@ export function DetachToolDialog(props: DetachToolDialogProps) {
   return (
     <Dialog
       testId="detach-tool"
-      trigger={trigger ||
-        <Button
-          size={size}
-          color="secondary"
-          preIcon={<LinkOffIcon />}
-          label={t('DetachToolDialog.label')}
-          hideLabel={hideLabel}
-          disabled={disabled}
-        />
+      trigger={
+        trigger || (
+          <Button
+            size={size}
+            color="secondary"
+            preIcon={<LinkOffIcon />}
+            label={t('DetachToolDialog.label')}
+            hideLabel={hideLabel}
+            disabled={disabled}
+          />
+        )
       }
       isOpen={open}
-      onOpenChange={setOpen}
       isConfirmBusy={isPending}
       onConfirm={handleDetach}
       title={t('DetachToolDialog.title')}
       confirmText={t('DetachToolDialog.confirm')}
+      onOpenChange={(open) => {
+        setOpen(open);
+
+        if (!open && onClose) {
+          onClose();
+        }
+      }}
     >
-      <Typography>{t('DetachToolDialog.description')}</Typography>
+      <Typography>
+        {t('DetachToolDialog.descriptionBefore')}
+        <Typography overrideEl="span" bold>
+          {getToolToRestore(idToDetach)?.name || 'this tool'}
+        </Typography>
+        {t('DetachToolDialog.descriptionAfter')}
+      </Typography>
     </Dialog>
   );
 }

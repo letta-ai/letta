@@ -1,7 +1,7 @@
 import { useCurrentAgent } from '../../../../hooks';
 import { useToolManagerState } from '@letta-cloud/ui-ade-components';
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { isLettaTool, type Tool, type ToolType } from '@letta-cloud/sdk-core';
 import { SpecificToolIcon } from '../../ToolManager/components/SpecificToolIcon/SpecificToolIcon';
 import {
@@ -109,6 +109,7 @@ interface ToolOptionsProps {
 function ToolOptions(props: ToolOptionsProps) {
   const { tool } = props;
   const isReadOnlyTool = tool.tool_type !== 'custom';
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const t = useTranslations('ADE/Tools.ToolsList.ToolOptions');
   const { openToolManager } = useToolManagerState();
@@ -123,6 +124,8 @@ function ToolOptions(props: ToolOptionsProps) {
     <DropdownMenu
       triggerAsChild
       align="end"
+      open={dropdownOpen}
+      onOpenChange={setDropdownOpen}
       trigger={
         <Button
           size="xsmall"
@@ -155,10 +158,12 @@ function ToolOptions(props: ToolOptionsProps) {
       <DetachToolDialog
         toolType={tool.tool_type || 'custom'}
         idToDetach={tool.id || ''}
+        onClose={() => setDropdownOpen(false)} // to close dropdown when 'cancel' gets clicked in dialog
         trigger={
           <DropdownMenuItem
             color="tertiary"
             label={t('detachTool')}
+            doNotCloseOnSelect
           />
         }
       />

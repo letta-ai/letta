@@ -1801,7 +1801,8 @@
       "title": "Detach tool from agent",
       "confirm": "Detach",
       "error": "There was an error detaching this tool, please try again or contact support.",
-      "description": "Are you sure you want to detach this tool? This will remove the tool from this agent, but any other agents that use this tool will still have it."
+      "descriptionBefore": "Are you sure you want to detach ",
+      "descriptionAfter": "? This will remove the tool from this agent, but any other agents that use this tool will still have it."
     },
     "AttachLocalTool": {
       "error": "There was an error attaching this tool, please try again or contact support.",
