@@ -49,6 +49,10 @@ export type AddFeedbackRequest = {
    * Whether this feedback is positive or negative
    */
   feedback?: FeedbackType | null;
+  /**
+   * Feedback tags to add to the step
+   */
+  tags?: Array<string> | null;
 };
 
 export type AgentEnvironmentVariable = {
@@ -923,12 +927,12 @@ export type BlockUpdate = {
   hidden?: boolean | null;
 };
 
-export type Body_export_agent_serialized = {
+export type Body_export_agent = {
   spec?: AgentFileSchema | null;
   legacy_spec?: letta__serialize_schemas__pydantic_agent_schema__AgentSchema | null;
 };
 
-export type Body_import_agent_serialized = {
+export type Body_import_agent = {
   file: Blob | File;
   /**
    * If set to True, appends "_copy" to the end of the agent name.
@@ -1884,6 +1888,8 @@ export type DeploymentEntity = {
   type: string;
   name?: string | null;
   description?: string | null;
+  entity_id?: string | null;
+  project_id?: string | null;
 };
 
 /**
@@ -6745,17 +6751,38 @@ export type CountToolsData = {
 export type CountToolsResponse = number;
 
 export type ListToolsData = {
+  /**
+   * Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order
+   */
   after?: string | null;
+  /**
+   * Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order
+   */
+  before?: string | null;
   /**
    * Tool type(s) to exclude - accepts repeated params or comma-separated values
    */
   excludeToolTypes?: Array<string> | null;
+  /**
+   * Maximum number of tools to return
+   */
   limit?: number | null;
+  /**
+   * Filter by single tool name
+   */
   name?: string | null;
   /**
    * Filter by specific tool names
    */
   names?: Array<string> | null;
+  /**
+   * Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Return only tools with tool_type starting with 'letta_'
    */
@@ -7134,6 +7161,26 @@ export type GetFoldersMetadataData = {
 export type GetFoldersMetadataResponse = OrganizationSourcesStats;
 
 export type ListFoldersData = {
+  /**
+   * Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of folders to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userId?: string | null;
 };
 
@@ -7222,6 +7269,7 @@ export type ListAgentsData = {
   after?: string | null;
   /**
    * Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
+   * @deprecated
    */
   ascending?: boolean;
   /**
@@ -7257,6 +7305,14 @@ export type ListAgentsData = {
    */
   name?: string | null;
   /**
+   * Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at' | 'last_run_completion';
+  /**
    * Search agents by project ID - this will default to your default project on cloud
    */
   projectId?: string | null;
@@ -7266,6 +7322,7 @@ export type ListAgentsData = {
   queryText?: string | null;
   /**
    * Field to sort by. Options: 'created_at' (default), 'last_run_completion'
+   * @deprecated
    */
   sortBy?: string | null;
   /**
@@ -7298,10 +7355,10 @@ export type CountAgentsData = {
 
 export type CountAgentsResponse = number;
 
-export type ExportAgentSerializedData = {
+export type ExportAgentData = {
   agentId: string;
   maxSteps?: number;
-  requestBody?: Body_export_agent_serialized;
+  requestBody?: Body_export_agent;
   /**
    * If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
    */
@@ -7309,15 +7366,15 @@ export type ExportAgentSerializedData = {
   userId?: string | null;
 };
 
-export type ExportAgentSerializedResponse = string;
+export type ExportAgentResponse = string;
 
-export type ImportAgentSerializedData = {
-  formData: Body_import_agent_serialized;
+export type ImportAgentData = {
+  formData: Body_import_agent;
   userId?: string | null;
   xOverrideEmbeddingModel?: string | null;
 };
 
-export type ImportAgentSerializedResponse = ImportedAgentsResponse;
+export type ImportAgentResponse = ImportedAgentsResponse;
 
 export type RetrieveAgentContextWindowData = {
   agentId: string;
@@ -7740,21 +7797,29 @@ export type SummarizeAgentConversationResponse = void;
 
 export type ListGroupsData = {
   /**
-   * Cursor for pagination
+   * Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
    */
   after?: string | null;
   /**
-   * Cursor for pagination
+   * Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
    */
   before?: string | null;
   /**
-   * Limit for pagination
+   * Maximum number of groups to return
    */
   limit?: number | null;
   /**
    * Search groups by manager type
    */
   managerType?: ManagerType | null;
+  /**
+   * Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Search groups by project id
    */
@@ -7884,12 +7949,29 @@ export type ResetGroupMessagesData = {
 export type ResetGroupMessagesResponse = unknown;
 
 export type ListIdentitiesData = {
+  /**
+   * Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order
+   */
   after?: string | null;
+  /**
+   * Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order
+   */
   before?: string | null;
   identifierKey?: string | null;
   identityType?: IdentityType | null;
+  /**
+   * Maximum number of identities to return
+   */
   limit?: number | null;
   name?: string | null;
+  /**
+   * Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   projectId?: string | null;
   userId?: string | null;
 };
@@ -8010,11 +8092,11 @@ export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
 
 export type ListBlocksData = {
   /**
-   * Cursor for pagination. If provided, returns blocks after this cursor.
+   * Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
    */
   after?: string | null;
   /**
-   * Cursor for pagination. If provided, returns blocks before this cursor.
+   * Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
    */
   before?: string | null;
   /**
@@ -8057,6 +8139,14 @@ export type ListBlocksData = {
    * Name of the block
    */
   name?: string | null;
+  /**
+   * Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Search blocks by project id
    */
@@ -8193,7 +8283,7 @@ export type CancelJobData = {
 
 export type CancelJobResponse = Job;
 
-export type HealthCheckResponse = Health;
+export type CheckHealthResponse = Health;
 
 export type CreateSandboxConfigV1SandboxConfigPostData = {
   requestBody: SandboxConfigCreate;
@@ -8315,9 +8405,33 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteR
   void;
 
 export type ListProvidersData = {
+  /**
+   * Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order
+   */
   after?: string | null;
+  /**
+   * Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of providers to return
+   */
   limit?: number | null;
+  /**
+   * Filter providers by name
+   */
   name?: string | null;
+  /**
+   * Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
+  /**
+   * Filter providers by type
+   */
   providerType?: ProviderType | null;
   userId?: string | null;
 };
@@ -8505,9 +8619,13 @@ export type ListStepsData = {
    */
   model?: string | null;
   /**
-   * Sort order (asc or desc)
+   * Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
    */
-  order?: string | null;
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Filter by the project ID that is associated with the step (cloud only).
    */
@@ -9581,7 +9699,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/{agent_id}/export': {
     get: {
-      req: ExportAgentSerializedData;
+      req: ExportAgentData;
       res: {
         /**
          * Successful Response
@@ -9596,7 +9714,7 @@ export type $OpenApiTs = {
   };
   '/v1/agents/import': {
     post: {
-      req: ImportAgentSerializedData;
+      req: ImportAgentData;
       res: {
         /**
          * Successful Response

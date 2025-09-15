@@ -87,6 +87,13 @@ export const AddFeedbackRequest = z.object({
   feedback: z
     .union([FeedbackType, z.null(), z.array(z.union([FeedbackType, z.null()]))])
     .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
 });
 
 export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;
@@ -3496,10 +3503,8 @@ export const letta__serialize_schemas__pydantic_agent_schema__AgentSchema =
     version: z.string(),
   });
 
-export type Body_export_agent_serialized = z.infer<
-  typeof Body_export_agent_serialized
->;
-export const Body_export_agent_serialized = z.object({
+export type Body_export_agent = z.infer<typeof Body_export_agent>;
+export const Body_export_agent = z.object({
   spec: z
     .union([
       AgentFileSchema,
@@ -3521,10 +3526,8 @@ export const Body_export_agent_serialized = z.object({
     .optional(),
 });
 
-export type Body_import_agent_serialized = z.infer<
-  typeof Body_import_agent_serialized
->;
-export const Body_import_agent_serialized = z.object({
+export type Body_import_agent = z.infer<typeof Body_import_agent>;
+export const Body_import_agent = z.object({
   file: z.string(),
   append_copy_suffix: z.union([z.boolean(), z.undefined()]).optional(),
   override_existing_tools: z.union([z.boolean(), z.undefined()]).optional(),
@@ -5633,6 +5636,22 @@ export const DeploymentEntity = z.object({
     ])
     .optional(),
   description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  entity_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  project_id: z
     .union([
       z.string(),
       z.null(),
@@ -9203,12 +9222,17 @@ export const get_List_tools = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       name: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -10087,6 +10111,19 @@ export const get_List_folders = {
   path: z.literal('/v1/folders/'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -10290,6 +10327,10 @@ export const get_List_agents = {
           z.array(z.union([z.array(z.string()), z.null()])),
         ])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z
+        .union([z.literal('created_at'), z.literal('last_run_completion')])
+        .optional(),
       ascending: z.boolean().optional(),
       sort_by: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -10338,8 +10379,8 @@ export const get_Count_agents = {
   response: z.number(),
 };
 
-export type get_Export_agent_serialized = typeof get_Export_agent_serialized;
-export const get_Export_agent_serialized = {
+export type get_Export_agent = typeof get_Export_agent;
+export const get_Export_agent = {
   method: z.literal('GET'),
   path: z.literal('/v1/agents/{agent_id}/export'),
   requestFormat: z.literal('json'),
@@ -10356,13 +10397,13 @@ export const get_Export_agent_serialized = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: Body_export_agent_serialized,
+    body: Body_export_agent,
   }),
   response: z.string(),
 };
 
-export type post_Import_agent_serialized = typeof post_Import_agent_serialized;
-export const post_Import_agent_serialized = {
+export type post_Import_agent = typeof post_Import_agent;
+export const post_Import_agent = {
   method: z.literal('POST'),
   path: z.literal('/v1/agents/import'),
   requestFormat: z.literal('form-data'),
@@ -10375,7 +10416,7 @@ export const post_Import_agent_serialized = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
-    body: Body_import_agent_serialized,
+    body: Body_import_agent,
   }),
   response: ImportedAgentsResponse,
 };
@@ -11275,6 +11316,8 @@ export const get_List_groups = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       project_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -11542,6 +11585,8 @@ export const get_List_identities = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
     }),
     header: z.object({
       user_id: z
@@ -11861,6 +11906,8 @@ export const get_List_blocks = {
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       label_search: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -12120,8 +12167,8 @@ export const patch_Cancel_job = {
   response: Job,
 };
 
-export type get_Health_check = typeof get_Health_check;
-export const get_Health_check = {
+export type get_Check_health = typeof get_Check_health;
+export const get_Check_health = {
   method: z.literal('GET'),
   path: z.literal('/v1/health/'),
   requestFormat: z.literal('json'),
@@ -12428,6 +12475,17 @@ export const get_List_providers = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       name: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -12437,12 +12495,6 @@ export const get_List_providers = {
           z.null(),
           z.array(z.union([ProviderType, z.null()])),
         ])
-        .optional(),
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      limit: z
-        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
     }),
     header: z.object({
@@ -12739,9 +12791,8 @@ export const get_List_steps = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
-      order: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       start_date: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -13281,7 +13332,7 @@ export const EndpointByMethod = {
     '/v1/folders/{folder_id}/files': get_List_folder_files,
     '/v1/agents/': get_List_agents,
     '/v1/agents/count': get_Count_agents,
-    '/v1/agents/{agent_id}/export': get_Export_agent_serialized,
+    '/v1/agents/{agent_id}/export': get_Export_agent,
     '/v1/agents/{agent_id}/context': get_Retrieve_agent_context_window,
     '/v1/agents/{agent_id}': get_Retrieve_agent,
     '/v1/agents/{agent_id}/tools': get_List_agent_tools,
@@ -13314,7 +13365,7 @@ export const EndpointByMethod = {
     '/v1/jobs/': get_List_jobs,
     '/v1/jobs/active': get_List_active_jobs,
     '/v1/jobs/{job_id}': get_Retrieve_job,
-    '/v1/health/': get_Health_check,
+    '/v1/health/': get_Check_health,
     '/v1/sandbox-config/': get_List_sandbox_configs_v1_sandbox_config__get,
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get,
@@ -13403,7 +13454,7 @@ export const EndpointByMethod = {
     '/v1/folders/': post_Create_folder,
     '/v1/folders/{folder_id}/upload': post_Upload_file_to_folder,
     '/v1/agents/': post_Create_agent,
-    '/v1/agents/import': post_Import_agent_serialized,
+    '/v1/agents/import': post_Import_agent,
     '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
     '/v1/agents/{agent_id}/messages': post_Send_message,
     '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,

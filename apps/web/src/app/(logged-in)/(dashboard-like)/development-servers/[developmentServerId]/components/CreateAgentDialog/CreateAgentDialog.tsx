@@ -15,7 +15,7 @@ import type { StarterKit } from '@letta-cloud/config-agent-starter-kits';
 import { useCurrentDevelopmentServerConfig } from '@letta-cloud/utils-client';
 import { useCallback, useMemo, useState } from 'react';
 import { ToolsService, useToolsServiceListTools } from '@letta-cloud/sdk-core';
-import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
+import { useHealthServiceCheckHealth } from '@letta-cloud/sdk-core';
 import {
   useAgentsServiceCreateAgent,
   useLlmsServiceListEmbeddingModels,
@@ -40,7 +40,7 @@ function CreateAgentDialog(props: CreateAgentDialogProps) {
   const config = useCurrentDevelopmentServerConfig();
 
   const { data: isHealthy, isLoading: isFetchingStatus } =
-    useHealthServiceHealthCheck(undefined, {
+    useHealthServiceCheckHealth(undefined, {
       retry: false,
     });
 

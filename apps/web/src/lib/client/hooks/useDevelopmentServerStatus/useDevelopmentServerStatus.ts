@@ -2,7 +2,7 @@ import { atom, useAtom } from 'jotai';
 import { useEffect } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { DevelopmentServerConfig } from '@letta-cloud/utils-client';
-import type { HealthCheckResponse } from '@letta-cloud/sdk-core';
+import type { CheckHealthResponse } from '@letta-cloud/sdk-core';
 
 interface Status {
   isHealthy: boolean;
@@ -36,7 +36,7 @@ export function useDevelopmentServerStatus(
           throw new Error('Failed to fetch health check');
         }
 
-        const data: HealthCheckResponse = await response.json();
+        const data: CheckHealthResponse = await response.json();
 
         setDevelopmentServerStatus((old) => ({
           ...old,

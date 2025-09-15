@@ -64,7 +64,7 @@ export async function getAgentfile(
     };
   }
 
-  const exportedAgentfile = await AgentsService.exportAgentSerialized(
+  const exportedAgentfile = await AgentsService.exportAgent(
     {
       agentId,
     },

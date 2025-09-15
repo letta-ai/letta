@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
+import { useHealthServiceCheckHealth } from '@letta-cloud/sdk-core';
 
 const ServerStatusContext = createContext<boolean>(false);
 
@@ -14,7 +14,7 @@ interface ServerStatusProviderProps {
 export function ServerStatusProvider(props: ServerStatusProviderProps) {
   const { children } = props;
 
-  const { data: status } = useHealthServiceHealthCheck();
+  const { data: status } = useHealthServiceCheckHealth();
 
   return (
     <ServerStatusContext.Provider value={!!status?.status}>

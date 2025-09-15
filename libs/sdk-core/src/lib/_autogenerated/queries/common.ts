@@ -29,7 +29,7 @@ import {
   VoiceService,
 } from '../requests/services.gen';
 import {
-  Body_export_agent_serialized,
+  Body_export_agent,
   IdentityType,
   ManagerType,
   ProviderCategory,
@@ -112,10 +112,13 @@ export const useToolsServiceListToolsKey = 'ToolsServiceListTools';
 export const UseToolsServiceListToolsKeyFn = (
   {
     after,
+    before,
     excludeToolTypes,
     limit,
     name,
     names,
+    order,
+    orderBy,
     returnOnlyLettaTools,
     search,
     toolIds,
@@ -123,10 +126,13 @@ export const UseToolsServiceListToolsKeyFn = (
     userId,
   }: {
     after?: string;
+    before?: string;
     excludeToolTypes?: string[];
     limit?: number;
     name?: string;
     names?: string[];
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     returnOnlyLettaTools?: boolean;
     search?: string;
     toolIds?: string[];
@@ -139,10 +145,13 @@ export const UseToolsServiceListToolsKeyFn = (
   ...(queryKey ?? [
     {
       after,
+      before,
       excludeToolTypes,
       limit,
       name,
       names,
+      order,
+      orderBy,
       returnOnlyLettaTools,
       search,
       toolIds,
@@ -554,12 +563,25 @@ export type FoldersServiceListFoldersQueryResult<
 export const useFoldersServiceListFoldersKey = 'FoldersServiceListFolders';
 export const UseFoldersServiceListFoldersKeyFn = (
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useFoldersServiceListFoldersKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useFoldersServiceListFoldersKey,
+  ...(queryKey ?? [{ after, before, limit, order, orderBy, userId }]),
+];
 export type FoldersServiceGetAgentsForFolderDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.getAgentsForFolder>
 >;
@@ -658,6 +680,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
     limit,
     matchAllTags,
     name,
+    order,
+    orderBy,
     projectId,
     queryText,
     sortBy,
@@ -675,6 +699,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at' | 'last_run_completion';
     projectId?: string;
     queryText?: string;
     sortBy?: string;
@@ -697,6 +723,8 @@ export const UseAgentsServiceListAgentsKeyFn = (
       limit,
       matchAllTags,
       name,
+      order,
+      orderBy,
       projectId,
       queryText,
       sortBy,
@@ -722,16 +750,15 @@ export const UseAgentsServiceCountAgentsKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useAgentsServiceCountAgentsKey, ...(queryKey ?? [{ userId }])];
-export type AgentsServiceExportAgentSerializedDefaultResponse = Awaited<
-  ReturnType<typeof AgentsService.exportAgentSerialized>
+export type AgentsServiceExportAgentDefaultResponse = Awaited<
+  ReturnType<typeof AgentsService.exportAgent>
 >;
-export type AgentsServiceExportAgentSerializedQueryResult<
-  TData = AgentsServiceExportAgentSerializedDefaultResponse,
+export type AgentsServiceExportAgentQueryResult<
+  TData = AgentsServiceExportAgentDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useAgentsServiceExportAgentSerializedKey =
-  'AgentsServiceExportAgentSerialized';
-export const UseAgentsServiceExportAgentSerializedKeyFn = (
+export const useAgentsServiceExportAgentKey = 'AgentsServiceExportAgent';
+export const UseAgentsServiceExportAgentKeyFn = (
   {
     agentId,
     maxSteps,
@@ -741,13 +768,13 @@ export const UseAgentsServiceExportAgentSerializedKeyFn = (
   }: {
     agentId: string;
     maxSteps?: number;
-    requestBody?: Body_export_agent_serialized;
+    requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useAgentsServiceExportAgentSerializedKey,
+  useAgentsServiceExportAgentKey,
   ...(queryKey ?? [
     { agentId, maxSteps, requestBody, useLegacyFormat, userId },
   ]),
@@ -1123,6 +1150,8 @@ export const UseGroupsServiceListGroupsKeyFn = (
     before,
     limit,
     managerType,
+    order,
+    orderBy,
     projectId,
     userId,
   }: {
@@ -1130,13 +1159,17 @@ export const UseGroupsServiceListGroupsKeyFn = (
     before?: string;
     limit?: number;
     managerType?: ManagerType;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useGroupsServiceListGroupsKey,
-  ...(queryKey ?? [{ after, before, limit, managerType, projectId, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, managerType, order, orderBy, projectId, userId },
+  ]),
 ];
 export type GroupsServiceCountGroupsDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.countGroups>
@@ -1234,6 +1267,8 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     identityType,
     limit,
     name,
+    order,
+    orderBy,
     projectId,
     userId,
   }: {
@@ -1243,6 +1278,8 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     identityType?: IdentityType;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     userId?: string;
   } = {},
@@ -1257,6 +1294,8 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
       identityType,
       limit,
       name,
+      order,
+      orderBy,
       projectId,
       userId,
     },
@@ -1430,6 +1469,8 @@ export const UseBlocksServiceListBlocksKeyFn = (
     labelSearch,
     limit,
     name,
+    order,
+    orderBy,
     projectId,
     templatesOnly,
     userId,
@@ -1447,6 +1488,8 @@ export const UseBlocksServiceListBlocksKeyFn = (
     labelSearch?: string;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
     userId?: string;
@@ -1469,6 +1512,8 @@ export const UseBlocksServiceListBlocksKeyFn = (
       labelSearch,
       limit,
       name,
+      order,
+      orderBy,
       projectId,
       templatesOnly,
       userId,
@@ -1610,16 +1655,16 @@ export const UseJobsServiceRetrieveJobKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [useJobsServiceRetrieveJobKey, ...(queryKey ?? [{ jobId, userId }])];
-export type HealthServiceHealthCheckDefaultResponse = Awaited<
-  ReturnType<typeof HealthService.healthCheck>
+export type HealthServiceCheckHealthDefaultResponse = Awaited<
+  ReturnType<typeof HealthService.checkHealth>
 >;
-export type HealthServiceHealthCheckQueryResult<
-  TData = HealthServiceHealthCheckDefaultResponse,
+export type HealthServiceCheckHealthQueryResult<
+  TData = HealthServiceCheckHealthDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useHealthServiceHealthCheckKey = 'HealthServiceHealthCheck';
-export const UseHealthServiceHealthCheckKeyFn = (queryKey?: Array<unknown>) => [
-  useHealthServiceHealthCheckKey,
+export const useHealthServiceCheckHealthKey = 'HealthServiceCheckHealth';
+export const UseHealthServiceCheckHealthKeyFn = (queryKey?: Array<unknown>) => [
+  useHealthServiceCheckHealthKey,
   ...(queryKey ?? []),
 ];
 export type SandboxConfigServiceListSandboxConfigsV1SandboxConfigGetDefaultResponse =
@@ -1692,21 +1737,29 @@ export const useProvidersServiceListProvidersKey =
 export const UseProvidersServiceListProvidersKeyFn = (
   {
     after,
+    before,
     limit,
     name,
+    order,
+    orderBy,
     providerType,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     providerType?: ProviderType;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useProvidersServiceListProvidersKey,
-  ...(queryKey ?? [{ after, limit, name, providerType, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, name, order, orderBy, providerType, userId },
+  ]),
 ];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
@@ -1877,6 +1930,7 @@ export const UseStepsServiceListStepsKeyFn = (
     limit,
     model,
     order,
+    orderBy,
     projectId,
     startDate,
     tags,
@@ -1892,7 +1946,8 @@ export const UseStepsServiceListStepsKeyFn = (
     hasFeedback?: boolean;
     limit?: number;
     model?: string;
-    order?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     startDate?: string;
     tags?: string[];
@@ -1914,6 +1969,7 @@ export const UseStepsServiceListStepsKeyFn = (
       limit,
       model,
       order,
+      orderBy,
       projectId,
       startDate,
       tags,
@@ -2302,8 +2358,8 @@ export type FoldersServiceUploadFileToFolderMutationResult = Awaited<
 export type AgentsServiceCreateAgentMutationResult = Awaited<
   ReturnType<typeof AgentsService.createAgent>
 >;
-export type AgentsServiceImportAgentSerializedMutationResult = Awaited<
-  ReturnType<typeof AgentsService.importAgentSerialized>
+export type AgentsServiceImportAgentMutationResult = Awaited<
+  ReturnType<typeof AgentsService.importAgent>
 >;
 export type AgentsServiceCreatePassageMutationResult = Awaited<
   ReturnType<typeof AgentsService.createPassage>

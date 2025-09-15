@@ -114,10 +114,10 @@ import type {
   CreateAgentResponse,
   CountAgentsData,
   CountAgentsResponse,
-  ExportAgentSerializedData,
-  ExportAgentSerializedResponse,
-  ImportAgentSerializedData,
-  ImportAgentSerializedResponse,
+  ExportAgentData,
+  ExportAgentResponse,
+  ImportAgentData,
+  ImportAgentResponse,
   RetrieveAgentContextWindowData,
   RetrieveAgentContextWindowResponse,
   ModifyAgentData,
@@ -272,7 +272,7 @@ import type {
   DeleteJobResponse,
   CancelJobData,
   CancelJobResponse,
-  HealthCheckResponse,
+  CheckHealthResponse,
   CreateSandboxConfigV1SandboxConfigPostData,
   CreateSandboxConfigV1SandboxConfigPostResponse,
   ListSandboxConfigsV1SandboxConfigGetData,
@@ -497,11 +497,14 @@ export class ToolsService {
 
   /**
    * List Tools
-   * Get a list of all tools available to agents belonging to the org of the user
+   * Get a list of all tools available to agents.
    * @param data The data for the request.
-   * @param data.after
-   * @param data.limit
-   * @param data.name
+   * @param data.before Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order
+   * @param data.after Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order
+   * @param data.limit Maximum number of tools to return
+   * @param data.order Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
+   * @param data.name Filter by single tool name
    * @param data.names Filter by specific tool names
    * @param data.toolIds Filter by specific tool IDs - accepts repeated params or comma-separated values
    * @param data.search Search tool names (case-insensitive partial match)
@@ -520,8 +523,11 @@ export class ToolsService {
       method: 'GET',
       url: '/v1/tools/',
       query: {
+        before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         name: data.name,
         names: data.names,
         tool_ids: data.toolIds,
@@ -1640,6 +1646,11 @@ export class FoldersService {
    * List Folders
    * List all data folders created by a user.
    * @param data The data for the request.
+   * @param data.before Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order
+   * @param data.after Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order
+   * @param data.limit Maximum number of folders to return
+   * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @returns Folder Successful Response
    * @throws ApiError
@@ -1651,6 +1662,13 @@ export class FoldersService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/folders/',
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -1862,6 +1880,8 @@ export class AgentsService {
    * @param data.identityId Search agents by identity ID
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
+   * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
    * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
    * @param data.userId
@@ -1889,6 +1909,8 @@ export class AgentsService {
         identity_id: data.identityId,
         identifier_keys: data.identifierKeys,
         include_relationships: data.includeRelationships,
+        order: data.order,
+        order_by: data.orderBy,
         ascending: data.ascending,
         sort_by: data.sortBy,
       },
@@ -1948,7 +1970,7 @@ export class AgentsService {
   }
 
   /**
-   * Export Agent Serialized
+   * Export Agent
    * Export the serialized JSON representation of an agent, formatted with indentation.
    *
    * Supports two export formats:
@@ -1963,10 +1985,10 @@ export class AgentsService {
    * @returns string Successful Response
    * @throws ApiError
    */
-  public static exportAgentSerialized(
-    data: ExportAgentSerializedData,
+  public static exportAgent(
+    data: ExportAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<ExportAgentSerializedResponse> {
+  ): CancelablePromise<ExportAgentResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/agents/{agent_id}/export',
@@ -1987,7 +2009,7 @@ export class AgentsService {
   }
 
   /**
-   * Import Agent Serialized
+   * Import Agent
    * Import a serialized agent file and recreate the agent(s) in the system.
    * Returns the IDs of all imported agents.
    * @param data The data for the request.
@@ -1997,10 +2019,10 @@ export class AgentsService {
    * @returns ImportedAgentsResponse Successful Response
    * @throws ApiError
    */
-  public static importAgentSerialized(
-    data: ImportAgentSerializedData,
+  public static importAgent(
+    data: ImportAgentData,
     headers?: { user_id: string },
-  ): CancelablePromise<ImportAgentSerializedResponse> {
+  ): CancelablePromise<ImportAgentResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/agents/import',
@@ -3195,9 +3217,11 @@ export class GroupsService {
    * Fetch all multi-agent groups matching query.
    * @param data The data for the request.
    * @param data.managerType Search groups by manager type
-   * @param data.before Cursor for pagination
-   * @param data.after Cursor for pagination
-   * @param data.limit Limit for pagination
+   * @param data.before Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
+   * @param data.after Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
+   * @param data.limit Maximum number of groups to return
+   * @param data.order Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.projectId Search groups by project id
    * @param data.userId
    * @returns Group Successful Response
@@ -3215,6 +3239,8 @@ export class GroupsService {
         before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         project_id: data.projectId,
       },
       errors: {
@@ -3522,9 +3548,11 @@ export class IdentitiesService {
    * @param data.projectId
    * @param data.identifierKey
    * @param data.identityType
-   * @param data.before
-   * @param data.after
-   * @param data.limit
+   * @param data.before Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order
+   * @param data.after Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order
+   * @param data.limit Maximum number of identities to return
+   * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @returns Identity Successful Response
    * @throws ApiError
@@ -3544,6 +3572,8 @@ export class IdentitiesService {
         before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',
@@ -3986,8 +4016,10 @@ export class BlocksService {
    * @param data.identifierKeys Search agents by identifier keys
    * @param data.projectId Search blocks by project id
    * @param data.limit Number of blocks to return
-   * @param data.before Cursor for pagination. If provided, returns blocks before this cursor.
-   * @param data.after Cursor for pagination. If provided, returns blocks after this cursor.
+   * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+   * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+   * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.labelSearch Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.
    * @param data.descriptionSearch Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.
    * @param data.valueSearch Search blocks by value. If provided, returns blocks that match this value.
@@ -4015,6 +4047,8 @@ export class BlocksService {
         limit: data.limit,
         before: data.before,
         after: data.after,
+        order: data.order,
+        order_by: data.orderBy,
         label_search: data.labelSearch,
         description_search: data.descriptionSearch,
         value_search: data.valueSearch,
@@ -4339,13 +4373,13 @@ export class JobsService {
 
 export class HealthService {
   /**
-   * Health Check
+   * Check Health
    * @returns Health Successful Response
    * @throws ApiError
    */
-  public static healthCheck(headers?: {
+  public static checkHealth(headers?: {
     user_id: string;
-  }): CancelablePromise<HealthCheckResponse> {
+  }): CancelablePromise<CheckHealthResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/health/',
@@ -4669,10 +4703,13 @@ export class ProvidersService {
    * List Providers
    * Get a list of all custom providers.
    * @param data The data for the request.
-   * @param data.name
-   * @param data.providerType
-   * @param data.after
-   * @param data.limit
+   * @param data.before Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order
+   * @param data.after Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order
+   * @param data.limit Maximum number of providers to return
+   * @param data.order Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
+   * @param data.name Filter providers by name
+   * @param data.providerType Filter providers by type
    * @param data.userId
    * @returns Provider Successful Response
    * @throws ApiError
@@ -4685,10 +4722,13 @@ export class ProvidersService {
       method: 'GET',
       url: '/v1/providers/',
       query: {
-        name: data.name,
-        provider_type: data.providerType,
+        before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+        name: data.name,
+        provider_type: data.providerType,
       },
       errors: {
         422: 'Validation Error',
@@ -5060,12 +5100,12 @@ export class StepsService {
   /**
    * List Steps
    * List steps with optional pagination and date filters.
-   * Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
    * @param data The data for the request.
    * @param data.before Return steps before this step ID
    * @param data.after Return steps after this step ID
    * @param data.limit Maximum number of steps to return
-   * @param data.order Sort order (asc or desc)
+   * @param data.order Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.startDate Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
    * @param data.endDate Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
    * @param data.model Filter by the name of the model used for the step
@@ -5092,6 +5132,7 @@ export class StepsService {
         after: data.after,
         limit: data.limit,
         order: data.order,
+        order_by: data.orderBy,
         start_date: data.startDate,
         end_date: data.endDate,
         model: data.model,
@@ -5247,7 +5288,7 @@ export class StepsService {
 export class TagService {
   /**
    * List Tags
-   * Get a list of all agent tags in the database.
+   * Get the list of all agent tags that have been created.
    * @param data The data for the request.
    * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
    * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
@@ -5285,7 +5326,7 @@ export class TagService {
 export class AdminService {
   /**
    * List Tags
-   * Get a list of all agent tags in the database.
+   * Get the list of all agent tags that have been created.
    * @param data The data for the request.
    * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
    * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order

@@ -27,7 +27,7 @@ import {
   UsersService,
 } from '../requests/services.gen';
 import {
-  Body_export_agent_serialized,
+  Body_export_agent,
   IdentityType,
   ManagerType,
   ProviderCategory,
@@ -125,11 +125,14 @@ export const prefetchUseToolsServiceCountTools = (
   });
 /**
  * List Tools
- * Get a list of all tools available to agents belonging to the org of the user
+ * Get a list of all tools available to agents.
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.name
+ * @param data.before Tool ID cursor for pagination. Returns tools that come before this tool ID in the specified sort order
+ * @param data.after Tool ID cursor for pagination. Returns tools that come after this tool ID in the specified sort order
+ * @param data.limit Maximum number of tools to return
+ * @param data.order Sort order for tools by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.name Filter by single tool name
  * @param data.names Filter by specific tool names
  * @param data.toolIds Filter by specific tool IDs - accepts repeated params or comma-separated values
  * @param data.search Search tool names (case-insensitive partial match)
@@ -144,10 +147,13 @@ export const prefetchUseToolsServiceListTools = (
   queryClient: QueryClient,
   {
     after,
+    before,
     excludeToolTypes,
     limit,
     name,
     names,
+    order,
+    orderBy,
     returnOnlyLettaTools,
     search,
     toolIds,
@@ -155,10 +161,13 @@ export const prefetchUseToolsServiceListTools = (
     userId,
   }: {
     after?: string;
+    before?: string;
     excludeToolTypes?: string[];
     limit?: number;
     name?: string;
     names?: string[];
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     returnOnlyLettaTools?: boolean;
     search?: string;
     toolIds?: string[];
@@ -169,10 +178,13 @@ export const prefetchUseToolsServiceListTools = (
   queryClient.prefetchQuery({
     queryKey: Common.UseToolsServiceListToolsKeyFn({
       after,
+      before,
       excludeToolTypes,
       limit,
       name,
       names,
+      order,
+      orderBy,
       returnOnlyLettaTools,
       search,
       toolIds,
@@ -182,10 +194,13 @@ export const prefetchUseToolsServiceListTools = (
     queryFn: () =>
       ToolsService.listTools({
         after,
+        before,
         excludeToolTypes,
         limit,
         name,
         names,
+        order,
+        orderBy,
         returnOnlyLettaTools,
         search,
         toolIds,
@@ -726,6 +741,11 @@ export const prefetchUseFoldersServiceGetFoldersMetadata = (
  * List Folders
  * List all data folders created by a user.
  * @param data The data for the request.
+ * @param data.before Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order
+ * @param data.after Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order
+ * @param data.limit Maximum number of folders to return
+ * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @returns Folder Successful Response
  * @throws ApiError
@@ -733,14 +753,39 @@ export const prefetchUseFoldersServiceGetFoldersMetadata = (
 export const prefetchUseFoldersServiceListFolders = (
   queryClient: QueryClient,
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseFoldersServiceListFoldersKeyFn({ userId }),
-    queryFn: () => FoldersService.listFolders({ userId }),
+    queryKey: Common.UseFoldersServiceListFoldersKeyFn({
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      userId,
+    }),
+    queryFn: () =>
+      FoldersService.listFolders({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        userId,
+      }),
   });
 /**
  * Get Agents For Folder
@@ -878,6 +923,8 @@ export const prefetchUseFoldersServiceListFolderFiles = (
  * @param data.identityId Search agents by identity ID
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
  * @param data.userId
@@ -897,6 +944,8 @@ export const prefetchUseAgentsServiceListAgents = (
     limit,
     matchAllTags,
     name,
+    order,
+    orderBy,
     projectId,
     queryText,
     sortBy,
@@ -914,6 +963,8 @@ export const prefetchUseAgentsServiceListAgents = (
     limit?: number;
     matchAllTags?: boolean;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at' | 'last_run_completion';
     projectId?: string;
     queryText?: string;
     sortBy?: string;
@@ -934,6 +985,8 @@ export const prefetchUseAgentsServiceListAgents = (
       limit,
       matchAllTags,
       name,
+      order,
+      orderBy,
       projectId,
       queryText,
       sortBy,
@@ -953,6 +1006,8 @@ export const prefetchUseAgentsServiceListAgents = (
         limit,
         matchAllTags,
         name,
+        order,
+        orderBy,
         projectId,
         queryText,
         sortBy,
@@ -982,7 +1037,7 @@ export const prefetchUseAgentsServiceCountAgents = (
     queryFn: () => AgentsService.countAgents({ userId }),
   });
 /**
- * Export Agent Serialized
+ * Export Agent
  * Export the serialized JSON representation of an agent, formatted with indentation.
  *
  * Supports two export formats:
@@ -997,7 +1052,7 @@ export const prefetchUseAgentsServiceCountAgents = (
  * @returns string Successful Response
  * @throws ApiError
  */
-export const prefetchUseAgentsServiceExportAgentSerialized = (
+export const prefetchUseAgentsServiceExportAgent = (
   queryClient: QueryClient,
   {
     agentId,
@@ -1008,13 +1063,13 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
   }: {
     agentId: string;
     maxSteps?: number;
-    requestBody?: Body_export_agent_serialized;
+    requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
     userId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceExportAgentSerializedKeyFn({
+    queryKey: Common.UseAgentsServiceExportAgentKeyFn({
       agentId,
       maxSteps,
       requestBody,
@@ -1022,7 +1077,7 @@ export const prefetchUseAgentsServiceExportAgentSerialized = (
       userId,
     }),
     queryFn: () =>
-      AgentsService.exportAgentSerialized({
+      AgentsService.exportAgent({
         agentId,
         maxSteps,
         requestBody,
@@ -1505,9 +1560,11 @@ export const prefetchUseAgentsServiceListAgentGroups = (
  * Fetch all multi-agent groups matching query.
  * @param data The data for the request.
  * @param data.managerType Search groups by manager type
- * @param data.before Cursor for pagination
- * @param data.after Cursor for pagination
- * @param data.limit Limit for pagination
+ * @param data.before Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order
+ * @param data.after Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order
+ * @param data.limit Maximum number of groups to return
+ * @param data.order Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.projectId Search groups by project id
  * @param data.userId
  * @returns Group Successful Response
@@ -1520,6 +1577,8 @@ export const prefetchUseGroupsServiceListGroups = (
     before,
     limit,
     managerType,
+    order,
+    orderBy,
     projectId,
     userId,
   }: {
@@ -1527,6 +1586,8 @@ export const prefetchUseGroupsServiceListGroups = (
     before?: string;
     limit?: number;
     managerType?: ManagerType;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     userId?: string;
   } = {},
@@ -1537,6 +1598,8 @@ export const prefetchUseGroupsServiceListGroups = (
       before,
       limit,
       managerType,
+      order,
+      orderBy,
       projectId,
       userId,
     }),
@@ -1546,6 +1609,8 @@ export const prefetchUseGroupsServiceListGroups = (
         before,
         limit,
         managerType,
+        order,
+        orderBy,
         projectId,
         userId,
       }),
@@ -1661,9 +1726,11 @@ export const prefetchUseGroupsServiceListGroupMessages = (
  * @param data.projectId
  * @param data.identifierKey
  * @param data.identityType
- * @param data.before
- * @param data.after
- * @param data.limit
+ * @param data.before Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order
+ * @param data.after Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order
+ * @param data.limit Maximum number of identities to return
+ * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @returns Identity Successful Response
  * @throws ApiError
@@ -1677,6 +1744,8 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     identityType,
     limit,
     name,
+    order,
+    orderBy,
     projectId,
     userId,
   }: {
@@ -1686,6 +1755,8 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     identityType?: IdentityType;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     userId?: string;
   } = {},
@@ -1698,6 +1769,8 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       identityType,
       limit,
       name,
+      order,
+      orderBy,
       projectId,
       userId,
     }),
@@ -1709,6 +1782,8 @@ export const prefetchUseIdentitiesServiceListIdentities = (
         identityType,
         limit,
         name,
+        order,
+        orderBy,
         projectId,
         userId,
       }),
@@ -1924,8 +1999,10 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @param data.identifierKeys Search agents by identifier keys
  * @param data.projectId Search blocks by project id
  * @param data.limit Number of blocks to return
- * @param data.before Cursor for pagination. If provided, returns blocks before this cursor.
- * @param data.after Cursor for pagination. If provided, returns blocks after this cursor.
+ * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+ * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+ * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.labelSearch Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels.
  * @param data.descriptionSearch Search blocks by description. If provided, returns blocks that match this description. This is a full-text search on block descriptions.
  * @param data.valueSearch Search blocks by value. If provided, returns blocks that match this value.
@@ -1951,6 +2028,8 @@ export const prefetchUseBlocksServiceListBlocks = (
     labelSearch,
     limit,
     name,
+    order,
+    orderBy,
     projectId,
     templatesOnly,
     userId,
@@ -1968,6 +2047,8 @@ export const prefetchUseBlocksServiceListBlocks = (
     labelSearch?: string;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
     userId?: string;
@@ -1988,6 +2069,8 @@ export const prefetchUseBlocksServiceListBlocks = (
       labelSearch,
       limit,
       name,
+      order,
+      orderBy,
       projectId,
       templatesOnly,
       userId,
@@ -2007,6 +2090,8 @@ export const prefetchUseBlocksServiceListBlocks = (
         labelSearch,
         limit,
         name,
+        order,
+        orderBy,
         projectId,
         templatesOnly,
         userId,
@@ -2216,14 +2301,14 @@ export const prefetchUseJobsServiceRetrieveJob = (
     queryFn: () => JobsService.retrieveJob({ jobId, userId }),
   });
 /**
- * Health Check
+ * Check Health
  * @returns Health Successful Response
  * @throws ApiError
  */
-export const prefetchUseHealthServiceHealthCheck = (queryClient: QueryClient) =>
+export const prefetchUseHealthServiceCheckHealth = (queryClient: QueryClient) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseHealthServiceHealthCheckKeyFn(),
-    queryFn: () => HealthService.healthCheck(),
+    queryKey: Common.UseHealthServiceCheckHealthKeyFn(),
+    queryFn: () => HealthService.checkHealth(),
   });
 /**
  * List Sandbox Configs
@@ -2302,10 +2387,13 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
  * List Providers
  * Get a list of all custom providers.
  * @param data The data for the request.
- * @param data.name
- * @param data.providerType
- * @param data.after
- * @param data.limit
+ * @param data.before Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order
+ * @param data.after Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order
+ * @param data.limit Maximum number of providers to return
+ * @param data.order Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.name Filter providers by name
+ * @param data.providerType Filter providers by type
  * @param data.userId
  * @returns Provider Successful Response
  * @throws ApiError
@@ -2314,14 +2402,20 @@ export const prefetchUseProvidersServiceListProviders = (
   queryClient: QueryClient,
   {
     after,
+    before,
     limit,
     name,
+    order,
+    orderBy,
     providerType,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
     name?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     providerType?: ProviderType;
     userId?: string;
   } = {},
@@ -2329,16 +2423,22 @@ export const prefetchUseProvidersServiceListProviders = (
   queryClient.prefetchQuery({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn({
       after,
+      before,
       limit,
       name,
+      order,
+      orderBy,
       providerType,
       userId,
     }),
     queryFn: () =>
       ProvidersService.listProviders({
         after,
+        before,
         limit,
         name,
+        order,
+        orderBy,
         providerType,
         userId,
       }),
@@ -2580,12 +2680,12 @@ export const prefetchUseRunsServiceListRunSteps = (
 /**
  * List Steps
  * List steps with optional pagination and date filters.
- * Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
  * @param data The data for the request.
  * @param data.before Return steps before this step ID
  * @param data.after Return steps after this step ID
  * @param data.limit Maximum number of steps to return
- * @param data.order Sort order (asc or desc)
+ * @param data.order Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.startDate Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
  * @param data.endDate Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")
  * @param data.model Filter by the name of the model used for the step
@@ -2612,6 +2712,7 @@ export const prefetchUseStepsServiceListSteps = (
     limit,
     model,
     order,
+    orderBy,
     projectId,
     startDate,
     tags,
@@ -2627,7 +2728,8 @@ export const prefetchUseStepsServiceListSteps = (
     hasFeedback?: boolean;
     limit?: number;
     model?: string;
-    order?: string;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     projectId?: string;
     startDate?: string;
     tags?: string[];
@@ -2647,6 +2749,7 @@ export const prefetchUseStepsServiceListSteps = (
       limit,
       model,
       order,
+      orderBy,
       projectId,
       startDate,
       tags,
@@ -2665,6 +2768,7 @@ export const prefetchUseStepsServiceListSteps = (
         limit,
         model,
         order,
+        orderBy,
         projectId,
         startDate,
         tags,
@@ -2746,7 +2850,7 @@ export const prefetchUseStepsServiceRetrieveStepTrace = (
   });
 /**
  * List Tags
- * Get a list of all agent tags in the database.
+ * Get the list of all agent tags that have been created.
  * @param data The data for the request.
  * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
  * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
@@ -2801,7 +2905,7 @@ export const prefetchUseTagServiceListTags = (
   });
 /**
  * List Tags
- * Get a list of all agent tags in the database.
+ * Get the list of all agent tags that have been created.
  * @param data The data for the request.
  * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
  * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order

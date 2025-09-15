@@ -195,6 +195,21 @@ export const $AddFeedbackRequest = {
       ],
       description: 'Whether this feedback is positive or negative',
     },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'Feedback tags to add to the step',
+    },
   },
   type: 'object',
   title: 'AddFeedbackRequest',
@@ -2554,7 +2569,7 @@ export const $BlockUpdate = {
   description: 'Update a block',
 } as const;
 
-export const $Body_export_agent_serialized = {
+export const $Body_export_agent = {
   properties: {
     spec: {
       anyOf: [
@@ -2578,10 +2593,10 @@ export const $Body_export_agent_serialized = {
     },
   },
   type: 'object',
-  title: 'Body_export_agent_serialized',
+  title: 'Body_export_agent',
 } as const;
 
-export const $Body_import_agent_serialized = {
+export const $Body_import_agent = {
   properties: {
     file: {
       type: 'string',
@@ -2649,7 +2664,7 @@ export const $Body_import_agent_serialized = {
   },
   type: 'object',
   required: ['file'],
-  title: 'Body_import_agent_serialized',
+  title: 'Body_import_agent',
 } as const;
 
 export const $Body_upload_file_to_folder = {
@@ -5579,6 +5594,28 @@ export const $DeploymentEntity = {
         },
       ],
       title: 'Description',
+    },
+    entity_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Entity Id',
+    },
+    project_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Project Id',
     },
   },
   type: 'object',

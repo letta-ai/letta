@@ -17,7 +17,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { Tutorials } from '$web/client/components';
 import React, { useEffect, useMemo, useState } from 'react';
 import { SUPPORTED_LETTA_AGENTS_VERSIONS } from '$web/constants';
-import { useHealthServiceHealthCheck } from '@letta-cloud/sdk-core';
+import { useHealthServiceCheckHealth } from '@letta-cloud/sdk-core';
 
 import semver from 'semver/preload';
 import Link from 'next/link';
@@ -80,7 +80,7 @@ function UserIsNotConnectedComponent() {
 
 function DevelopmentServersDashboardPage() {
   const t = useTranslations('development-servers/dashboard/page');
-  const { data: isLocalServiceOnline } = useHealthServiceHealthCheck(
+  const { data: isLocalServiceOnline } = useHealthServiceCheckHealth(
     undefined,
     {
       retry: 1,

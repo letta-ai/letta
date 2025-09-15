@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   UseAgentsServiceListAgentsKeyFn,
-  useAgentsServiceImportAgentSerialized,
+  useAgentsServiceImportAgent,
 } from '@letta-cloud/sdk-core';
 import type { AgentFileSchema } from '@letta-cloud/sdk-core';
 import {
@@ -244,7 +244,7 @@ export function ImportAgentsDialog(props: ImportAgentsDialogProps) {
     mutate: importAgent,
     reset: resetImportAgent,
     isPending: isImportAgentPending,
-  } = useAgentsServiceImportAgentSerialized({
+  } = useAgentsServiceImportAgent({
     onError: () => {
       toast.error(t('errors.failedToImport'));
     },

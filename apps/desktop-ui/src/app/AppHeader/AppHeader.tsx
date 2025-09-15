@@ -13,7 +13,7 @@ import {
 } from '@letta-cloud/ui-component-library';
 import {
   useAgentsServiceRetrieveAgent,
-  useHealthServiceHealthCheck,
+  useHealthServiceCheckHealth,
 } from '@letta-cloud/sdk-core';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useCallback, useMemo } from 'react';
@@ -26,7 +26,7 @@ import {
 function ServerStatus() {
   const t = useTranslations('AppHeader');
 
-  const { data } = useHealthServiceHealthCheck(undefined, {
+  const { data } = useHealthServiceCheckHealth(undefined, {
     refetchInterval: 2500,
   });
 
