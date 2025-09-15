@@ -50,6 +50,19 @@ async def list_providers(
     return providers
 
 
+@router.get("/{provider_id}", response_model=Provider, operation_id="retrieve_provider")
+async def retrieve_provider(
+    provider_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: "SyncServer" = Depends(get_letta_server),
+):
+    """
+    Get a provider by ID.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    return await server.provider_manager.get_provider_async(provider_id=provider_id, actor=actor)
+
+
 @router.post("/", response_model=Provider, operation_id="create_provider")
 async def create_provider(
     request: ProviderCreate = Body(...),

@@ -82,8 +82,8 @@ async def retrieve_step(
         raise HTTPException(status_code=404, detail="Step not found")
 
 
-@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_step_metrics")
-async def retrieve_step_metrics(
+@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_metrics_for_step")
+async def retrieve_metrics_for_step(
     step_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
@@ -98,8 +98,8 @@ async def retrieve_step_metrics(
         raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
-@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_step_trace")
-async def retrieve_step_trace(
+@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
+async def retrieve_trace_for_step(
     step_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -116,20 +116,20 @@ async def retrieve_step_trace(
     return provider_trace
 
 
-class AddFeedbackRequest(BaseModel):
+class ModifyFeedbackRequest(BaseModel):
     feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
     tags: list[str] | None = Field(None, description="Feedback tags to add to the step")
 
 
-@router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
-async def add_feedback(
+@router.patch("/{step_id}/feedback", response_model=Step, operation_id="modify_feedback_for_step")
+async def modify_feedback_for_step(
     step_id: str,
-    request: AddFeedbackRequest = Body(...),
+    request: ModifyFeedbackRequest = Body(...),
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
-    Add feedback to a step.
+    Modify feedback for a given step.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)

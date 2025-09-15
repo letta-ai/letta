@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import uuid
@@ -8,8 +7,6 @@ from typing import List
 import pytest
 
 from letta.agent import Agent
-from letta.agents.agent_loop import AgentLoop
-from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.config import LettaConfig
 from letta.llm_api.helpers import calculate_summarizer_cutoff
 from letta.schemas.agent import CreateAgent
@@ -19,10 +16,6 @@ from letta.schemas.letta_message_content import TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message, MessageCreate
 from letta.server.server import SyncServer
-from letta.services.agent_manager import AgentManager
-from letta.services.message_manager import MessageManager
-from letta.services.summarizer.enums import SummarizationMode
-from letta.services.summarizer.summarizer import Summarizer
 from letta.streaming_interface import StreamingRefreshCLIInterface
 from tests.helpers.endpoints_helper import EMBEDDING_CONFIG_PATH
 from tests.helpers.utils import cleanup
@@ -68,20 +61,6 @@ def agent_state(server, default_user):
     server.agent_manager.delete_agent(agent_state.id, default_user)
 
 
-def get_summarizer(agent_state, default_user, server, percentage: float):
-    return Summarizer(
-        mode=SummarizationMode.PARTIAL_EVICT_MESSAGE_BUFFER,
-        summarizer_agent=None,
-        message_buffer_limit=None,
-        message_buffer_min=None,
-        partial_evict_summarizer_percentage=percentage,
-        agent_manager=server.agent_manager,
-        message_manager=server.message_manager,
-        actor=default_user,
-        agent_id=agent_state.id,
-    )
-
-
 # Sample data setup
 def generate_message(role: str, text: str = None, tool_calls: List = None) -> Message:
     """Helper to generate a Message object."""
@@ -92,64 +71,6 @@ def generate_message(role: str, text: str = None, tool_calls: List = None) -> Me
         created_at=datetime.now(timezone.utc),
         tool_calls=tool_calls or [],
     )
-
-
-all_configs = [
-    "ollama.json",
-    "together-qwen-2.5-72b-instruct.json",
-    "vllm.json",
-    "lmstudio.json",
-    "groq.json",
-    "openai-gpt-4o-mini.json",
-    "openai-o4-mini.json",
-    "azure-gpt-4o-mini.json",
-    "claude-3-5-sonnet.json",
-    "gemini-2.5-pro-vertex.json",
-]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("llm_config", all_configs, ids=[c.model for c in all_configs])
-async def test_summarizer_message_is_first_user_message(agent_state, default_user, server, llm_config):
-    # update the agent state
-    agent_state.llm_config = LLMConfig(**llm_config)
-
-    # get the summarizer
-    summarizer = get_summarizer(agent_state, default_user, server, 0.6)
-    in_context_messages = [
-        generate_message("system"),
-        generate_message("user"),
-        generate_message("assistant"),
-        generate_message("user"),
-        generate_message("assistant"),
-        generate_message("user"),
-    ]
-    new_letta_messages = [
-        generate_message("user"),
-        generate_message("assistant"),
-    ]
-    new_in_context_messages, summarized = await summarizer.summarize(in_context_messages, new_letta_messages, force=True, clear=True)
-    assert summarized, "Summarizer should have summarized the messages"
-    summary_expected_index = 1
-    assert new_in_context_messages[summary_expected_index].role == MessageRole.user
-    assert SUMMARY_KEY_PHRASE in new_in_context_messages[summary_expected_index].content[0].text, (
-        f"Summary key phrase not found in summary message: {new_in_context_messages[summary_expected_index].content[0].text}"
-    )
-
-    # assert message size is less
-    assert len(new_in_context_messages) < len(in_context_messages + new_letta_messages), (
-        f"New in context messages (size {len(new_in_context_messages)}) should be less than in context messages (size {len(in_context_messages)}) + new letta messages (size {len(new_letta_messages)})"
-    )
-
-    # assert not in any other messages
-    for i in range(len(new_in_context_messages)):
-        if i != summary_expected_index:
-            assert new_in_context_messages[i].content[0].text != MessageRole.user, (
-                f"Summary message found in message {new_in_context_messages[i].content[0].text}"
-            )
-
-    for i in range(len(new_in_context_messages)):
-        print(new_in_context_messages[i].role, new_in_context_messages[i].content[0].text)
 
 
 def test_cutoff_calculation(mocker):
@@ -247,3 +168,144 @@ def test_cutoff_calculation_with_tool_call(mocker, server, agent_state, default_
     server.agent_manager.trim_older_in_context_messages(agent_id=agent_state.id, num=2, actor=default_user)
     test2 = mock_set_messages.call_args_list[0][1]
     assert len(test2["message_ids"]) == 6
+
+
+def test_summarize_many_messages_basic(server, default_user):
+    """Test that a small-context agent gets enough messages for summarization."""
+    small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
+    small_context_llm_config.context_window = 3000
+
+    agent_state = server.create_agent(
+        CreateAgent(
+            name="small_context_agent",
+            llm_config=small_context_llm_config,
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
+    )
+
+    try:
+        for _ in range(10):
+            server.send_messages(
+                actor=default_user,
+                agent_id=agent_state.id,
+                input_messages=[MessageCreate(role="user", content="hi " * 60)],
+            )
+    finally:
+        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+def test_summarize_messages_inplace(server, agent_state, default_user):
+    """Test summarization logic via agent object API."""
+    for msg in [
+        "Hey, how's it going? What do you think about this whole shindig?",
+        "Any thoughts on the meaning of life?",
+        "Does the number 42 ring a bell?",
+        "Would you be surprised to learn that you're actually conversing with an AI right now?",
+    ]:
+        response = server.send_messages(
+            actor=default_user,
+            agent_id=agent_state.id,
+            input_messages=[MessageCreate(role="user", content=msg)],
+        )
+        assert response.steps_messages
+
+    agent = server.load_agent(agent_id=agent_state.id, actor=default_user)
+    agent.summarize_messages_inplace()
+
+
+def test_auto_summarize(server, default_user):
+    """Test that summarization is automatically triggered."""
+    small_context_llm_config = LLMConfig.default_config("gpt-4o-mini")
+    small_context_llm_config.context_window = 3000
+
+    agent_state = server.create_agent(
+        CreateAgent(
+            name="small_context_agent",
+            llm_config=small_context_llm_config,
+            embedding="letta/letta-free",
+        ),
+        actor=default_user,
+    )
+
+    def summarize_message_exists(messages: list[Message]) -> bool:
+        for message in messages:
+            if message.content[0].text and "The following is a summary of the previous" in message.content[0].text:
+                return True
+        return False
+
+    try:
+        MAX_ATTEMPTS = 10
+        for attempt in range(MAX_ATTEMPTS):
+            server.send_messages(
+                actor=default_user,
+                agent_id=agent_state.id,
+                input_messages=[MessageCreate(role="user", content="What is the meaning of life?")],
+            )
+
+            in_context_messages = server.agent_manager.get_in_context_messages(agent_id=agent_state.id, actor=default_user)
+
+            if summarize_message_exists(in_context_messages):
+                return
+
+        raise AssertionError("Summarization was not triggered after 10 messages")
+    finally:
+        server.agent_manager.delete_agent(agent_id=agent_state.id, actor=default_user)
+
+
+@pytest.mark.parametrize(
+    "config_filename",
+    [
+        "openai-gpt-4o.json",
+        # "azure-gpt-4o-mini.json",
+        "claude-3-5-haiku.json",
+        # "groq.json",  # rate limits
+        # "gemini-pro.json",  # broken
+    ],
+)
+def test_summarizer(config_filename, server, default_user):
+    """Test summarization across different LLM configs."""
+    namespace = uuid.NAMESPACE_DNS
+    agent_name = str(uuid.uuid5(namespace, f"integration-test-summarizer-{config_filename}"))
+
+    # Load configs
+    config_data = json.load(open(os.path.join(LLM_CONFIG_DIR, config_filename)))
+    llm_config = LLMConfig(**config_data)
+    embedding_config = EmbeddingConfig(**json.load(open(EMBEDDING_CONFIG_PATH)))
+
+    # Ensure cleanup
+    cleanup(server=server, agent_uuid=agent_name, actor=default_user)
+
+    # Create agent
+    agent_state = server.create_agent(
+        CreateAgent(
+            name=agent_name,
+            llm_config=llm_config,
+            embedding_config=embedding_config,
+        ),
+        actor=default_user,
+    )
+
+    full_agent_state = server.agent_manager.get_agent_by_id(agent_id=agent_state.id, actor=default_user)
+
+    letta_agent = Agent(
+        interface=StreamingRefreshCLIInterface(),
+        agent_state=full_agent_state,
+        first_message_verify_mono=False,
+        user=default_user,
+    )
+
+    for msg in [
+        "Did you know that honey never spoils? Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly edible.",
+        "Octopuses have three hearts, and two of them stop beating when they swim.",
+    ]:
+        letta_agent.step_user_message(
+            user_message_str=msg,
+            first_message=False,
+            skip_verify=False,
+            stream=False,
+        )
+
+    letta_agent.summarize_messages_inplace()
+    in_context_messages = server.agent_manager.get_in_context_messages(agent_state.id, actor=default_user)
+    assert SUMMARY_KEY_PHRASE in in_context_messages[1].content[0].text, f"Test failed for config: {config_filename}"
