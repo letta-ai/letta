@@ -2,8 +2,12 @@ name: Preview Docs
 
 on:
   pull_request:
-    paths:
-      - 'fern/**'
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,6 +15,7 @@ concurrency:
 
 jobs:
   run:
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
     runs-on: [self-hosted, small]
     permissions: write-all
     steps:
