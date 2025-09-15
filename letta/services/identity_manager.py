@@ -1,8 +1,10 @@
+import re
 from typing import List, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import noload, selectinload
 
 from letta.orm.agent import Agent as AgentModel
 from letta.orm.block import Block as BlockModel
@@ -24,6 +26,68 @@ from letta.utils import enforce_types
 
 
 class IdentityManager:
+    def _supports_selective_loading(self, user_agent: Optional[str]) -> bool:
+        """Check if the client version supports selective relationship loading."""
+        if not user_agent:
+            return False
+
+        # Parse version from User-Agent header
+        # Expected format: "letta-client/1.2.3" or similar
+        version_match = re.search(r"letta-client/(\d+)\.(\d+)\.(\d+)", user_agent, re.IGNORECASE)
+        if not version_match:
+            return False
+
+        major, minor, patch = map(int, version_match.groups())
+
+        # Define the minimum version that supports selective loading
+        # For example, version 1.1.0 and above
+        min_major, min_minor, min_patch = 1, 1, 0
+
+        if major > min_major:
+            return True
+        elif major == min_major and minor > min_minor:
+            return True
+        elif major == min_major and minor == min_minor and patch >= min_patch:
+            return True
+
+        return False
+
+    async def _refresh_identity_relationships_async(self, session, identity_id: str, include: Optional[List[str]] = None) -> IdentityModel:
+        """Helper method to refresh an identity with specific relationships loaded."""
+        query = select(IdentityModel).where(IdentityModel.id == identity_id)
+
+        # Default: noload all relationships for performance
+        query = query.options(noload(IdentityModel.agents), noload(IdentityModel.blocks))
+
+        # If include is specified, load requested relationships
+        if include:
+            if "identity.agents" in include:
+                query = query.options(selectinload(IdentityModel.agents))
+            if "identity.blocks" in include:
+                query = query.options(selectinload(IdentityModel.blocks))
+
+        result = await session.execute(query)
+        return result.scalar_one()
+
+    async def _handle_identity_response_async(
+        self, session, identity: PydanticIdentity, include: Optional[List[str]] = None, user_agent: Optional[str] = None
+    ) -> PydanticIdentity:
+        """Helper method to handle identity response based on client version and include parameter."""
+        supports_selective = self._supports_selective_loading(user_agent)
+
+        if supports_selective:
+            # New client: only load relationships if explicitly requested via include
+            if include:
+                refreshed_identity = await self._refresh_identity_relationships_async(session, identity.id, include)
+                return refreshed_identity.to_pydantic()
+            return identity
+        else:
+            # Old client: load all relationships by default for backwards compatibility
+            refreshed_identity = await self._refresh_identity_relationships_async(
+                session, identity.id, ["identity.agents", "identity.blocks"]
+            )
+            return refreshed_identity.to_pydantic()
+
     @enforce_types
     @trace_method
     async def list_identities_async(
@@ -36,6 +100,8 @@ class IdentityManager:
         after: Optional[str] = None,
         limit: Optional[int] = 50,
         ascending: bool = False,
+        include: Optional[List[str]] = None,
+        user_agent: Optional[str] = None,
         actor: PydanticUser = None,
     ) -> list[PydanticIdentity]:
         async with db_registry.async_session() as session:
@@ -46,6 +112,28 @@ class IdentityManager:
                 filters["identifier_key"] = identifier_key
             if identity_type:
                 filters["identity_type"] = identity_type
+
+            # Handle backwards compatibility based on client version
+            supports_selective = self._supports_selective_loading(user_agent)
+            query_options = []
+
+            if supports_selective:
+                # New client: use selective loading with include parameter
+                # Default: noload all relationships for performance
+                query_options.append(noload(IdentityModel.agents))
+                query_options.append(noload(IdentityModel.blocks))
+
+                # If include is specified, override with selectinload for requested relationships
+                if include:
+                    if "identity.agents" in include:
+                        query_options[-2] = selectinload(IdentityModel.agents)  # Replace noload for agents
+                    if "identity.blocks" in include:
+                        query_options[-1] = selectinload(IdentityModel.blocks)  # Replace noload for blocks
+            else:
+                # Old client: load all relationships by default for backwards compatibility
+                query_options.append(selectinload(IdentityModel.agents))
+                query_options.append(selectinload(IdentityModel.blocks))
+
             identities = await IdentityModel.list_async(
                 db_session=session,
                 query_text=name,
@@ -53,22 +141,54 @@ class IdentityManager:
                 after=after,
                 limit=limit,
                 ascending=ascending,
+                query_options=query_options,
                 **filters,
             )
             return [identity.to_pydantic() for identity in identities]
 
     @enforce_types
     @trace_method
-    async def get_identity_async(self, identity_id: str, actor: PydanticUser) -> PydanticIdentity:
+    async def get_identity_async(
+        self, identity_id: str, actor: PydanticUser, include: Optional[List[str]] = None, user_agent: Optional[str] = None
+    ) -> PydanticIdentity:
         async with db_registry.async_session() as session:
-            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+            # Build query with options for relationship loading
+            query = select(IdentityModel).where(IdentityModel.id == identity_id)
+
+            # Handle backwards compatibility based on client version
+            supports_selective = self._supports_selective_loading(user_agent)
+
+            if supports_selective:
+                # New client: use selective loading with include parameter
+                # Default: noload all relationships for performance
+                query = query.options(noload(IdentityModel.agents), noload(IdentityModel.blocks))
+
+                # If include is specified, load requested relationships
+                if include:
+                    if "identity.agents" in include:
+                        query = query.options(selectinload(IdentityModel.agents))
+                    if "identity.blocks" in include:
+                        query = query.options(selectinload(IdentityModel.blocks))
+            else:
+                # Old client: load all relationships by default for backwards compatibility
+                query = query.options(selectinload(IdentityModel.agents), selectinload(IdentityModel.blocks))
+
+            result = await session.execute(query)
+            identity = result.scalar_one()
+
+            # Apply access control
+            IdentityModel.apply_access_predicate_read_single(identity, actor, ["read"])
+
             return identity.to_pydantic()
 
     @enforce_types
     @trace_method
-    async def create_identity_async(self, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
+    async def create_identity_async(
+        self, identity: IdentityCreate, actor: PydanticUser, include: Optional[List[str]] = None, user_agent: Optional[str] = None
+    ) -> PydanticIdentity:
         async with db_registry.async_session() as session:
-            return await self._create_identity_async(db_session=session, identity=identity, actor=actor)
+            created_identity = await self._create_identity_async(db_session=session, identity=identity, actor=actor)
+            return await self._handle_identity_response_async(session, created_identity, include, user_agent)
 
     async def _create_identity_async(self, db_session, identity: IdentityCreate, actor: PydanticUser) -> PydanticIdentity:
         new_identity = IdentityModel(**identity.model_dump(exclude={"agent_ids", "block_ids"}, exclude_unset=True))
@@ -114,7 +234,9 @@ class IdentityManager:
 
     @enforce_types
     @trace_method
-    async def upsert_identity_async(self, identity: IdentityUpsert, actor: PydanticUser) -> PydanticIdentity:
+    async def upsert_identity_async(
+        self, identity: IdentityUpsert, actor: PydanticUser, include: Optional[List[str]] = None, user_agent: Optional[str] = None
+    ) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             existing_identity = await IdentityModel.read_async(
                 db_session=session,
@@ -125,7 +247,14 @@ class IdentityManager:
             )
 
             if existing_identity is None:
-                return await self._create_identity_async(db_session=session, identity=IdentityCreate(**identity.model_dump()), actor=actor)
+                created_identity = await self._create_identity_async(
+                    db_session=session, identity=IdentityCreate(**identity.model_dump()), actor=actor
+                )
+                # If include is specified, refresh with relationships
+                if include:
+                    refreshed_identity = await self._refresh_identity_relationships_async(session, created_identity.id, include)
+                    return refreshed_identity.to_pydantic()
+                return created_identity
             else:
                 identity_update = IdentityUpdate(
                     name=identity.name,
@@ -134,14 +263,25 @@ class IdentityManager:
                     agent_ids=identity.agent_ids,
                     properties=identity.properties,
                 )
-                return await self._update_identity_async(
+                updated_identity = await self._update_identity_async(
                     db_session=session, existing_identity=existing_identity, identity=identity_update, actor=actor, replace=True
                 )
+                # If include is specified, refresh with relationships
+                if include:
+                    refreshed_identity = await self._refresh_identity_relationships_async(session, updated_identity.id, include)
+                    return refreshed_identity.to_pydantic()
+                return updated_identity
 
     @enforce_types
     @trace_method
     async def update_identity_async(
-        self, identity_id: str, identity: IdentityUpdate, actor: PydanticUser, replace: bool = False
+        self,
+        identity_id: str,
+        identity: IdentityUpdate,
+        actor: PydanticUser,
+        replace: bool = False,
+        include: Optional[List[str]] = None,
+        user_agent: Optional[str] = None,
     ) -> PydanticIdentity:
         async with db_registry.async_session() as session:
             try:
@@ -151,9 +291,14 @@ class IdentityManager:
             if existing_identity.organization_id != actor.organization_id:
                 raise HTTPException(status_code=403, detail="Forbidden")
 
-            return await self._update_identity_async(
+            updated_identity = await self._update_identity_async(
                 db_session=session, existing_identity=existing_identity, identity=identity, actor=actor, replace=replace
             )
+            # If include is specified, refresh with relationships
+            if include:
+                refreshed_identity = await self._refresh_identity_relationships_async(session, updated_identity.id, include)
+                return refreshed_identity.to_pydantic()
+            return updated_identity
 
     async def _update_identity_async(
         self,
