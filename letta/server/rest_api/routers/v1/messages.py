@@ -137,9 +137,9 @@ async def list_batches(
 @router.get(
     "/batches/{batch_id}/messages",
     response_model=LettaBatchMessages,
-    operation_id="list_batch_messages",
+    operation_id="list_messages_for_batch",
 )
-async def list_batch_messages(
+async def list_messages_for_batch(
     batch_id: str,
     before: Optional[str] = Query(
         None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
