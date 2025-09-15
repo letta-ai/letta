@@ -720,7 +720,8 @@ paths:
   /v1/models/embedding:
     get:
       x-fern-sdk-group-name:
-        - embedding_models
+        - models
+        - embeddings
       x-fern-sdk-method-name: list
   /v1/blocks/:
     get:
