@@ -3,7 +3,7 @@ import json
 import os
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
+from typing import AsyncGenerator, Dict, Iterable, List, Optional, Union, cast
 
 from fastapi import Header, HTTPException
 from openai.types.chat import ChatCompletionMessageParam
@@ -34,9 +34,6 @@ from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 from letta.system import get_heartbeat, package_function_response
-
-if TYPE_CHECKING:
-    from letta.server.server import SyncServer
 
 SENTRY_ENABLED = bool(os.getenv("SENTRY_DSN"))
 
@@ -143,20 +140,6 @@ async def sse_async_generator(
         if finish_message:
             # Signal that the stream is complete
             yield sse_formatter(SSE_FINISH_MSG)
-
-
-# TODO: why does this double up the interface?
-def get_letta_server() -> "SyncServer":
-    # Check if a global server is already instantiated
-    from letta.server.rest_api.app import server
-
-    # assert isinstance(server, SyncServer)
-    return server
-
-
-# Dependency to get user_id from headers
-def get_user_id(user_id: Optional[str] = Header(None, alias="user_id")) -> Optional[str]:
-    return user_id
 
 
 def capture_sentry_exception(e: BaseException):
