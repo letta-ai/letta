@@ -30,6 +30,9 @@ pip install letta-client
 npm install @letta-ai/letta-client
 ```
 
+or try our
+### [Ready to Use Vibecoding Prompts](https://github.com/letta-ai/letta/blob/main/fern/pages/getting-started/prompts.mdx)
+
 ## Simple Hello World example
 
 In the example below, we'll create a stateful agent with two memory blocks, one for itself (the `persona` block), and one for the human. We'll initialize the `human` memory block with incorrect information, and correct agent in our first message - which will trigger the agent to update its own memory with a tool call.
@@ -330,7 +333,7 @@ Once you attach a folder to an agent, the agent will be able to use filesystem t
 
 <details>
 <summary>View code snippets</summary>
-  
+
 ### Python
 ```python
 # get an available embedding_config
@@ -442,7 +445,7 @@ When agents need to execute multiple tool calls or perform complex operations (l
 
 <details>
 <summary>View code snippets</summary>
-  
+
 ### Python
 ```python
 stream = client.agents.messages.create_stream(
@@ -527,7 +530,7 @@ Letta is an open source project built by over a hundred contributors. There are 
 
 * [**Join the Discord**](https://discord.gg/letta): Chat with the Letta devs and other AI developers.
 * [**Chat on our forum**](https://forum.letta.com/): If you're not into Discord, check out our developer forum.
-* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai) 
+* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai)
 
 ---
 
