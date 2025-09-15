@@ -268,9 +268,18 @@ def create_letta_messages_from_llm_response(
             )
             # TODO: Use ToolCallContent instead of tool_calls
             # TODO: This helps preserve ordering
+
+            # Safeguard against empty text messages
+            content = []
+            if reasoning_content:
+                for content_part in reasoning_content:
+                    if isinstance(content_part, TextContent) and content_part.text == "":
+                        continue
+                    content.append(content_part)
+
             assistant_message = Message(
                 role=MessageRole.assistant,
-                content=reasoning_content if reasoning_content else [],
+                content=content,
                 agent_id=agent_id,
                 model=model,
                 tool_calls=[tool_call],
@@ -279,22 +288,34 @@ def create_letta_messages_from_llm_response(
                 batch_item_id=llm_batch_item_id,
             )
         else:
-            # Should only hit this if using react agents
-            assistant_message = Message(
-                role=MessageRole.assistant,
-                # NOTE: weird that this is called "reasoning_content" here, since it's not
-                content=reasoning_content if reasoning_content else [],
-                agent_id=agent_id,
-                model=model,
-                tool_calls=None,
-                tool_call_id=None,
-                created_at=get_utc_time(),
-                batch_item_id=llm_batch_item_id,
-            )
+            # Safeguard against empty text messages
+            content = []
+            if reasoning_content:
+                for content_part in reasoning_content:
+                    if isinstance(content_part, TextContent) and content_part.text == "":
+                        continue
+                    content.append(content_part)
 
-        if pre_computed_assistant_message_id:
-            assistant_message.id = pre_computed_assistant_message_id
-        messages.append(assistant_message)
+            # Should only hit this if using react agents
+            if content and len(content) > 0:
+                assistant_message = Message(
+                    role=MessageRole.assistant,
+                    # NOTE: weird that this is called "reasoning_content" here, since it's not
+                    content=content,
+                    agent_id=agent_id,
+                    model=model,
+                    tool_calls=None,
+                    tool_call_id=None,
+                    created_at=get_utc_time(),
+                    batch_item_id=llm_batch_item_id,
+                )
+            else:
+                assistant_message = None
+
+        if assistant_message:
+            if pre_computed_assistant_message_id:
+                assistant_message.id = pre_computed_assistant_message_id
+            messages.append(assistant_message)
 
     # TODO: Use ToolReturnContent instead of TextContent
     # TODO: This helps preserve ordering

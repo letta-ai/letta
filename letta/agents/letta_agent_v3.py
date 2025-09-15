@@ -83,6 +83,7 @@ class LettaAgentV3(LettaAgentV2):
             response = self._step(
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
+                # TODO need to support non-streaming adapter too
                 llm_adapter=LettaLLMRequestAdapter(llm_client=self.llm_client, llm_config=self.agent_state.llm_config),
                 run_id=run_id,
                 # use_assistant_message=use_assistant_message,
