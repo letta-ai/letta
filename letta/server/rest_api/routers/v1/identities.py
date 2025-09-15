@@ -144,10 +144,10 @@ async def modify_identity(
     identity_id: str,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    headers: HeaderParams = Depends(get_headers),
+    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
