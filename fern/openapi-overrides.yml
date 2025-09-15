@@ -556,7 +556,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: preview_raw_payload
+      x-fern-sdk-method-name: preview
   /v1/agents/messages/search:
     post:
       x-fern-sdk-group-name:
