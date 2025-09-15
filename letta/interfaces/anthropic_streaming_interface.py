@@ -651,14 +651,15 @@ class SimpleAnthropicStreamingInterface:
 
         return merged
 
-    def get_content(self) -> list[TextContent]:
-        concat = ""
-        for msg in self.assistant_messages:
-            if isinstance(msg.content, list):
-                concat += "".join([c.text for c in msg.content])
-            else:
-                concat += msg.content
-        return [TextContent(text=concat)]
+    def get_content(self) -> list[TextContent | ReasoningContent | RedactedReasoningContent]:
+        return self.get_reasoning_content()
+        # concat = ""
+        # for msg in self.assistant_messages:
+        #     if isinstance(msg.content, list):
+        #         concat += "".join([c.text for c in msg.content])
+        #     else:
+        #         concat += msg.content
+        # return [TextContent(text=concat)]
 
     async def process(
         self,
