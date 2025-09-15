@@ -329,6 +329,8 @@ import type {
   RetrieveStepResponse,
   RetrieveStepMetricsData,
   RetrieveStepMetricsResponse,
+  RetrieveStepTraceData,
+  RetrieveStepTraceResponse,
   AddFeedbackData,
   AddFeedbackResponse,
   UpdateStepTransactionIdData,
@@ -353,16 +355,16 @@ import type {
   UpdateOrganizationResponse,
   RetrieveProviderTraceData,
   RetrieveProviderTraceResponse,
-  CreateBatchRunData,
-  CreateBatchRunResponse,
-  ListBatchRunsData,
-  ListBatchRunsResponse,
-  RetrieveBatchRunData,
-  RetrieveBatchRunResponse,
+  CreateBatchData,
+  CreateBatchResponse,
+  ListBatchesData,
+  ListBatchesResponse,
+  RetrieveBatchData,
+  RetrieveBatchResponse,
   ListBatchMessagesData,
   ListBatchMessagesResponse,
-  CancelBatchRunData,
-  CancelBatchRunResponse,
+  CancelBatchData,
+  CancelBatchResponse,
   CreateVoiceChatCompletionsData,
   CreateVoiceChatCompletionsResponse,
   GetTotalStorageSizeData,
@@ -4665,7 +4667,7 @@ export class SandboxConfigService {
 export class ProvidersService {
   /**
    * List Providers
-   * Get a list of all custom providers in the database
+   * Get a list of all custom providers.
    * @param data The data for the request.
    * @param data.name
    * @param data.providerType
@@ -4697,7 +4699,7 @@ export class ProvidersService {
 
   /**
    * Create Provider
-   * Create a new custom provider
+   * Create a new custom provider.
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
@@ -4722,7 +4724,7 @@ export class ProvidersService {
 
   /**
    * Modify Provider
-   * Update an existing custom provider
+   * Update an existing custom provider.
    * @param data The data for the request.
    * @param data.providerId
    * @param data.requestBody
@@ -4751,7 +4753,7 @@ export class ProvidersService {
 
   /**
    * Delete Provider
-   * Delete an existing custom provider
+   * Delete an existing custom provider.
    * @param data The data for the request.
    * @param data.providerId
    * @param data.userId
@@ -4777,6 +4779,7 @@ export class ProvidersService {
 
   /**
    * Check Provider
+   * Verify the API key and additional parameters for a provider.
    * @param data The data for the request.
    * @param data.requestBody
    * @returns unknown Successful Response
@@ -5159,11 +5162,36 @@ export class StepsService {
   }
 
   /**
+   * Retrieve Step Trace
+   * @param data The data for the request.
+   * @param data.stepId
+   * @param data.userId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static retrieveStepTrace(
+    data: RetrieveStepTraceData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveStepTraceResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/steps/{step_id}/trace',
+      path: {
+        step_id: data.stepId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Add Feedback
    * Add feedback to a step.
    * @param data The data for the request.
    * @param data.stepId
-   * @param data.feedback
+   * @param data.requestBody
    * @param data.userId
    * @returns Step Successful Response
    * @throws ApiError
@@ -5178,9 +5206,8 @@ export class StepsService {
       path: {
         step_id: data.stepId,
       },
-      query: {
-        feedback: data.feedback,
-      },
+      body: data.requestBody,
+      mediaType: 'application/json',
       errors: {
         422: 'Validation Error',
       },
@@ -5220,11 +5247,14 @@ export class StepsService {
 export class TagService {
   /**
    * List Tags
-   * Get a list of all tags in the database
+   * Get a list of all agent tags in the database.
    * @param data The data for the request.
-   * @param data.after
-   * @param data.limit
-   * @param data.queryText
+   * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+   * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+   * @param data.limit Maximum number of tags to return
+   * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+   * @param data.orderBy Field to sort by
+   * @param data.queryText Filter tags by text search
    * @param data.userId
    * @returns string Successful Response
    * @throws ApiError
@@ -5237,8 +5267,11 @@ export class TagService {
       method: 'GET',
       url: '/v1/tags/',
       query: {
+        before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         query_text: data.queryText,
       },
       errors: {
@@ -5252,11 +5285,14 @@ export class TagService {
 export class AdminService {
   /**
    * List Tags
-   * Get a list of all tags in the database
+   * Get a list of all agent tags in the database.
    * @param data The data for the request.
-   * @param data.after
-   * @param data.limit
-   * @param data.queryText
+   * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+   * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+   * @param data.limit Maximum number of tags to return
+   * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+   * @param data.orderBy Field to sort by
+   * @param data.queryText Filter tags by text search
    * @param data.userId
    * @returns string Successful Response
    * @throws ApiError
@@ -5269,8 +5305,11 @@ export class AdminService {
       method: 'GET',
       url: '/v1/tags/',
       query: {
+        before: data.before,
         after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         query_text: data.queryText,
       },
       errors: {
@@ -5511,19 +5550,21 @@ export class TelemetryService {
 
 export class MessagesService {
   /**
-   * Create Batch Run
-   * Submit a batch of agent messages for asynchronous processing.
+   * Create Batch
+   * Submit a batch of agent runs for asynchronous processing.
+   *
    * Creates a job that will fan out messages to all listed agents and process them in parallel.
+   * The request will be rejected if it exceeds 256MB.
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
-  public static createBatchRun(
-    data: CreateBatchRunData,
+  public static createBatch(
+    data: CreateBatchData,
     headers?: { user_id: string },
-  ): CancelablePromise<CreateBatchRunResponse> {
+  ): CancelablePromise<CreateBatchResponse> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/v1/messages/batches',
@@ -5537,20 +5578,32 @@ export class MessagesService {
   }
 
   /**
-   * List Batch Runs
+   * List Batches
    * List all batch runs.
    * @param data The data for the request.
+   * @param data.before Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+   * @param data.after Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+   * @param data.limit Maximum number of jobs to return
+   * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
-  public static listBatchRuns(
-    data: ListBatchRunsData = {},
+  public static listBatches(
+    data: ListBatchesData = {},
     headers?: { user_id: string },
-  ): CancelablePromise<ListBatchRunsResponse> {
+  ): CancelablePromise<ListBatchesResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/messages/batches',
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -5559,18 +5612,18 @@ export class MessagesService {
   }
 
   /**
-   * Retrieve Batch Run
-   * Get the status of a batch run.
+   * Retrieve Batch
+   * Retrieve the status and details of a batch run.
    * @param data The data for the request.
    * @param data.batchId
    * @param data.userId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
-  public static retrieveBatchRun(
-    data: RetrieveBatchRunData,
+  public static retrieveBatch(
+    data: RetrieveBatchData,
     headers?: { user_id: string },
-  ): CancelablePromise<RetrieveBatchRunResponse> {
+  ): CancelablePromise<RetrieveBatchResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/messages/batches/{batch_id}',
@@ -5593,6 +5646,7 @@ export class MessagesService {
    * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    * @param data.limit Maximum number of messages to return
    * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.agentId Filter messages by agent ID
    * @param data.userId
    * @returns LettaBatchMessages Successful Response
@@ -5613,6 +5667,7 @@ export class MessagesService {
         after: data.after,
         limit: data.limit,
         order: data.order,
+        order_by: data.orderBy,
         agent_id: data.agentId,
       },
       errors: {
@@ -5623,7 +5678,7 @@ export class MessagesService {
   }
 
   /**
-   * Cancel Batch Run
+   * Cancel Batch
    * Cancel a batch run.
    * @param data The data for the request.
    * @param data.batchId
@@ -5631,10 +5686,10 @@ export class MessagesService {
    * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static cancelBatchRun(
-    data: CancelBatchRunData,
+  public static cancelBatch(
+    data: CancelBatchData,
     headers?: { user_id: string },
-  ): CancelablePromise<CancelBatchRunResponse> {
+  ): CancelablePromise<CancelBatchResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/messages/batches/{batch_id}/cancel',

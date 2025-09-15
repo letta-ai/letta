@@ -34,6 +34,7 @@ import {
   VoiceService,
 } from '../requests/services.gen';
 import {
+  AddFeedbackRequest,
   AuthRequest,
   BlockUpdate,
   Body_export_agent_serialized,
@@ -47,7 +48,6 @@ import {
   CreateBatch,
   CreateBlock,
   DuplicateFileHandling,
-  FeedbackType,
   GenerateToolInput,
   GroupCreate,
   GroupUpdate,
@@ -2780,7 +2780,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     });
 /**
  * List Providers
- * Get a list of all custom providers in the database
+ * Get a list of all custom providers.
  * @param data The data for the request.
  * @param data.name
  * @param data.providerType
@@ -3267,12 +3267,46 @@ export const useStepsServiceRetrieveStepMetrics = <
     ...options,
   });
 /**
- * List Tags
- * Get a list of all tags in the database
+ * Retrieve Step Trace
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.stepId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useStepsServiceRetrieveStepTrace = <
+  TData = Common.StepsServiceRetrieveStepTraceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn(
+      { stepId, userId },
+      queryKey,
+    ),
+    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }) as TData,
+    ...options,
+  });
+/**
+ * List Tags
+ * Get a list of all agent tags in the database.
+ * @param data The data for the request.
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -3284,12 +3318,18 @@ export const useTagServiceListTags = <
 >(
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -3298,20 +3338,31 @@ export const useTagServiceListTags = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseTagServiceListTagsKeyFn(
-      { after, limit, queryText, userId },
+      { after, before, limit, order, orderBy, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      TagService.listTags({ after, limit, queryText, userId }) as TData,
+      TagService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
  * List Tags
- * Get a list of all tags in the database
+ * Get a list of all agent tags in the database.
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -3323,12 +3374,18 @@ export const useAdminServiceListTags = <
 >(
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -3337,11 +3394,19 @@ export const useAdminServiceListTags = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListTagsKeyFn(
-      { after, limit, queryText, userId },
+      { after, before, limit, order, orderBy, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      AdminService.listTags({ after, limit, queryText, userId }) as TData,
+      AdminService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3435,42 +3500,68 @@ export const useTelemetryServiceRetrieveProviderTrace = <
     ...options,
   });
 /**
- * List Batch Runs
+ * List Batches
  * List all batch runs.
  * @param data The data for the request.
+ * @param data.before Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+ * @param data.after Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+ * @param data.limit Maximum number of jobs to return
+ * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceListBatchRuns = <
-  TData = Common.MessagesServiceListBatchRunsDefaultResponse,
+export const useMessagesServiceListBatches = <
+  TData = Common.MessagesServiceListBatchesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }, queryKey),
-    queryFn: () => MessagesService.listBatchRuns({ userId }) as TData,
+    queryKey: Common.UseMessagesServiceListBatchesKeyFn(
+      { after, before, limit, order, orderBy, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.listBatches({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Batch Run
- * Get the status of a batch run.
+ * Retrieve Batch
+ * Retrieve the status and details of a batch run.
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceRetrieveBatchRun = <
-  TData = Common.MessagesServiceRetrieveBatchRunDefaultResponse,
+export const useMessagesServiceRetrieveBatch = <
+  TData = Common.MessagesServiceRetrieveBatchDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -3485,12 +3576,11 @@ export const useMessagesServiceRetrieveBatchRun = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn(
+    queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn(
       { batchId, userId },
       queryKey,
     ),
-    queryFn: () =>
-      MessagesService.retrieveBatchRun({ batchId, userId }) as TData,
+    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }) as TData,
     ...options,
   });
 /**
@@ -3502,6 +3592,7 @@ export const useMessagesServiceRetrieveBatchRun = <
  * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
  * @returns LettaBatchMessages Successful Response
@@ -3519,6 +3610,7 @@ export const useMessagesServiceListBatchMessages = <
     before,
     limit,
     order,
+    orderBy,
     userId,
   }: {
     after?: string;
@@ -3527,6 +3619,7 @@ export const useMessagesServiceListBatchMessages = <
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -3534,7 +3627,7 @@ export const useMessagesServiceListBatchMessages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn(
-      { after, agentId, batchId, before, limit, order, userId },
+      { after, agentId, batchId, before, limit, order, orderBy, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -3545,6 +3638,7 @@ export const useMessagesServiceListBatchMessages = <
         before,
         limit,
         order,
+        orderBy,
         userId,
       }) as TData,
     ...options,
@@ -5441,7 +5535,7 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
     });
 /**
  * Create Provider
- * Create a new custom provider
+ * Create a new custom provider.
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
@@ -5484,6 +5578,7 @@ export const useProvidersServiceCreateProvider = <
   });
 /**
  * Check Provider
+ * Verify the API key and additional parameters for a provider.
  * @param data The data for the request.
  * @param data.requestBody
  * @returns unknown Successful Response
@@ -5643,17 +5738,19 @@ export const useAdminServiceCreateOrganization = <
     ...options,
   });
 /**
- * Create Batch Run
- * Submit a batch of agent messages for asynchronous processing.
+ * Create Batch
+ * Submit a batch of agent runs for asynchronous processing.
+ *
  * Creates a job that will fan out messages to all listed agents and process them in parallel.
+ * The request will be rejected if it exceeds 256MB.
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceCreateBatchRun = <
-  TData = Common.MessagesServiceCreateBatchRunMutationResult,
+export const useMessagesServiceCreateBatch = <
+  TData = Common.MessagesServiceCreateBatchMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -5680,7 +5777,7 @@ export const useMessagesServiceCreateBatchRun = <
     TContext
   >({
     mutationFn: ({ requestBody, userId }) =>
-      MessagesService.createBatchRun({
+      MessagesService.createBatch({
         requestBody,
         userId,
       }) as unknown as Promise<TData>,
@@ -7459,7 +7556,7 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
     });
 /**
  * Modify Provider
- * Update an existing custom provider
+ * Update an existing custom provider.
  * @param data The data for the request.
  * @param data.providerId
  * @param data.requestBody
@@ -7509,7 +7606,7 @@ export const useProvidersServiceModifyProvider = <
  * Add feedback to a step.
  * @param data The data for the request.
  * @param data.stepId
- * @param data.feedback
+ * @param data.requestBody
  * @param data.userId
  * @returns Step Successful Response
  * @throws ApiError
@@ -7524,7 +7621,7 @@ export const useStepsServiceAddFeedback = <
       TData,
       TError,
       {
-        feedback: FeedbackType;
+        requestBody: AddFeedbackRequest;
         stepId: string;
         userId?: string;
       },
@@ -7537,15 +7634,15 @@ export const useStepsServiceAddFeedback = <
     TData,
     TError,
     {
-      feedback: FeedbackType;
+      requestBody: AddFeedbackRequest;
       stepId: string;
       userId?: string;
     },
     TContext
   >({
-    mutationFn: ({ feedback, stepId, userId }) =>
+    mutationFn: ({ requestBody, stepId, userId }) =>
       StepsService.addFeedback({
-        feedback,
+        requestBody,
         stepId,
         userId,
       }) as unknown as Promise<TData>,
@@ -7641,7 +7738,7 @@ export const useAdminServiceUpdateOrganization = <
     ...options,
   });
 /**
- * Cancel Batch Run
+ * Cancel Batch
  * Cancel a batch run.
  * @param data The data for the request.
  * @param data.batchId
@@ -7649,8 +7746,8 @@ export const useAdminServiceUpdateOrganization = <
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceCancelBatchRun = <
-  TData = Common.MessagesServiceCancelBatchRunMutationResult,
+export const useMessagesServiceCancelBatch = <
+  TData = Common.MessagesServiceCancelBatchMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -7677,7 +7774,7 @@ export const useMessagesServiceCancelBatchRun = <
     TContext
   >({
     mutationFn: ({ batchId, userId }) =>
-      MessagesService.cancelBatchRun({
+      MessagesService.cancelBatch({
         batchId,
         userId,
       }) as unknown as Promise<TData>,
@@ -8376,7 +8473,7 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
     });
 /**
  * Delete Provider
- * Delete an existing custom provider
+ * Delete an existing custom provider.
  * @param data The data for the request.
  * @param data.providerId
  * @param data.userId

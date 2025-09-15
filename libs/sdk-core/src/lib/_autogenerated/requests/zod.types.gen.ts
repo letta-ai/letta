@@ -76,6 +76,19 @@ export const ActionModel = z.object({
   enabled: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
+export type FeedbackType = z.infer<typeof FeedbackType>;
+export const FeedbackType = z.union([
+  z.literal('positive'),
+  z.literal('negative'),
+]);
+
+export type AddFeedbackRequest = z.infer<typeof AddFeedbackRequest>;
+export const AddFeedbackRequest = z.object({
+  feedback: z
+    .union([FeedbackType, z.null(), z.array(z.union([FeedbackType, z.null()]))])
+    .optional(),
+});
+
 export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;
 export const AgentEnvironmentVariable = z.object({
   created_by_id: z
@@ -5665,12 +5678,6 @@ export const E2BSandboxConfig = z.object({
     ])
     .optional(),
 });
-
-export type FeedbackType = z.infer<typeof FeedbackType>;
-export const FeedbackType = z.union([
-  z.literal('positive'),
-  z.literal('negative'),
-]);
 
 export type FileMetadata = z.infer<typeof FileMetadata>;
 export const FileMetadata = z.object({
@@ -12830,19 +12837,12 @@ export const get_Retrieve_step_metrics = {
   response: StepMetrics,
 };
 
-export type patch_Add_feedback = typeof patch_Add_feedback;
-export const patch_Add_feedback = {
-  method: z.literal('PATCH'),
-  path: z.literal('/v1/steps/{step_id}/feedback'),
+export type get_Retrieve_step_trace = typeof get_Retrieve_step_trace;
+export const get_Retrieve_step_trace = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/steps/{step_id}/trace'),
   requestFormat: z.literal('json'),
   parameters: z.object({
-    query: z.object({
-      feedback: z.union([
-        FeedbackType,
-        z.null(),
-        z.array(z.union([FeedbackType, z.null()])),
-      ]),
-    }),
     path: z.object({
       step_id: z.string(),
     }),
@@ -12851,6 +12851,29 @@ export const patch_Add_feedback = {
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
+  }),
+  response: z.union([
+    ProviderTrace,
+    z.null(),
+    z.array(z.union([ProviderTrace, z.null()])),
+  ]),
+};
+
+export type patch_Add_feedback = typeof patch_Add_feedback;
+export const patch_Add_feedback = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/steps/{step_id}/feedback'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: AddFeedbackRequest,
   }),
   response: Step,
 };
@@ -12882,12 +12905,17 @@ export const get_List_tags = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       query_text: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -12923,8 +12951,8 @@ export const get_Retrieve_provider_trace = {
   ]),
 };
 
-export type post_Create_batch_run = typeof post_Create_batch_run;
-export const post_Create_batch_run = {
+export type post_Create_batch = typeof post_Create_batch;
+export const post_Create_batch = {
   method: z.literal('POST'),
   path: z.literal('/v1/messages/batches'),
   requestFormat: z.literal('json'),
@@ -12939,12 +12967,25 @@ export const post_Create_batch_run = {
   response: BatchJob,
 };
 
-export type get_List_batch_runs = typeof get_List_batch_runs;
-export const get_List_batch_runs = {
+export type get_List_batches = typeof get_List_batches;
+export const get_List_batches = {
   method: z.literal('GET'),
   path: z.literal('/v1/messages/batches'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
     header: z.object({
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
@@ -12954,8 +12995,8 @@ export const get_List_batch_runs = {
   response: z.array(BatchJob),
 };
 
-export type get_Retrieve_batch_run = typeof get_Retrieve_batch_run;
-export const get_Retrieve_batch_run = {
+export type get_Retrieve_batch = typeof get_Retrieve_batch;
+export const get_Retrieve_batch = {
   method: z.literal('GET'),
   path: z.literal('/v1/messages/batches/{batch_id}'),
   requestFormat: z.literal('json'),
@@ -12989,6 +13030,7 @@ export const get_List_batch_messages = {
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
       order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       agent_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
@@ -13005,8 +13047,8 @@ export const get_List_batch_messages = {
   response: LettaBatchMessages,
 };
 
-export type patch_Cancel_batch_run = typeof patch_Cancel_batch_run;
-export const patch_Cancel_batch_run = {
+export type patch_Cancel_batch = typeof patch_Cancel_batch;
+export const patch_Cancel_batch = {
   method: z.literal('PATCH'),
   path: z.literal('/v1/messages/batches/{batch_id}/cancel'),
   requestFormat: z.literal('json'),
@@ -13286,10 +13328,11 @@ export const EndpointByMethod = {
     '/v1/steps/': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/steps/{step_id}/metrics': get_Retrieve_step_metrics,
+    '/v1/steps/{step_id}/trace': get_Retrieve_step_trace,
     '/v1/tags/': get_List_tags,
     '/v1/telemetry/{step_id}': get_Retrieve_provider_trace,
-    '/v1/messages/batches': get_List_batch_runs,
-    '/v1/messages/batches/{batch_id}': get_Retrieve_batch_run,
+    '/v1/messages/batches': get_List_batches,
+    '/v1/messages/batches/{batch_id}': get_Retrieve_batch,
     '/v1/messages/batches/{batch_id}/messages': get_List_batch_messages,
     '/v1/embeddings/total_storage_size': get_Get_total_storage_size,
     '/v1/admin/users/': get_List_users,
@@ -13337,7 +13380,7 @@ export const EndpointByMethod = {
     '/v1/steps/{step_id}/feedback': patch_Add_feedback,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
-    '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch_run,
+    '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch,
     '/v1/admin/orgs/': patch_Update_organization,
   },
   post: {
@@ -13392,7 +13435,7 @@ export const EndpointByMethod = {
     '/v1/providers/': post_Create_provider,
     '/v1/providers/check': post_Check_provider,
     '/v1/runs/{run_id}/stream': post_Retrieve_stream,
-    '/v1/messages/batches': post_Create_batch_run,
+    '/v1/messages/batches': post_Create_batch,
     '/v1/voice-beta/{agent_id}/chat/completions':
       post_Create_voice_chat_completions,
     '/v1/admin/users/': post_Create_user,

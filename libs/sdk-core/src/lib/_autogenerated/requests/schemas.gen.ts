@@ -182,6 +182,24 @@ export const $ActionResponseModel = {
   description: 'Action response data model.',
 } as const;
 
+export const $AddFeedbackRequest = {
+  properties: {
+    feedback: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/FeedbackType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Whether this feedback is positive or negative',
+    },
+  },
+  type: 'object',
+  title: 'AddFeedbackRequest',
+} as const;
+
 export const $AgentEnvironmentVariable = {
   properties: {
     created_by_id: {

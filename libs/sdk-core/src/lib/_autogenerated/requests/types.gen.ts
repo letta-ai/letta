@@ -44,6 +44,13 @@ export type ActionResponseModel = {
   examples?: Array<unknown> | null;
 };
 
+export type AddFeedbackRequest = {
+  /**
+   * Whether this feedback is positive or negative
+   */
+  feedback?: FeedbackType | null;
+};
+
 export type AgentEnvironmentVariable = {
   /**
    * The id of the user that made this object.
@@ -8540,8 +8547,15 @@ export type RetrieveStepMetricsData = {
 
 export type RetrieveStepMetricsResponse = StepMetrics;
 
+export type RetrieveStepTraceData = {
+  stepId: string;
+  userId?: string | null;
+};
+
+export type RetrieveStepTraceResponse = ProviderTrace | null;
+
 export type AddFeedbackData = {
-  feedback: FeedbackType | null;
+  requestBody: AddFeedbackRequest;
   stepId: string;
   userId?: string | null;
 };
@@ -8557,8 +8571,29 @@ export type UpdateStepTransactionIdData = {
 export type UpdateStepTransactionIdResponse = Step;
 
 export type ListTagsData = {
+  /**
+   * Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+   */
   after?: string | null;
+  /**
+   * Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of tags to return
+   */
   limit?: number | null;
+  /**
+   * Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'name';
+  /**
+   * Filter tags by text search
+   */
   queryText?: string | null;
   userId?: string | null;
 };
@@ -8632,25 +8667,45 @@ export type RetrieveProviderTraceData = {
 
 export type RetrieveProviderTraceResponse = ProviderTrace | null;
 
-export type CreateBatchRunData = {
+export type CreateBatchData = {
   requestBody: CreateBatch;
   userId?: string | null;
 };
 
-export type CreateBatchRunResponse = BatchJob;
+export type CreateBatchResponse = BatchJob;
 
-export type ListBatchRunsData = {
+export type ListBatchesData = {
+  /**
+   * Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of jobs to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userId?: string | null;
 };
 
-export type ListBatchRunsResponse = Array<BatchJob>;
+export type ListBatchesResponse = Array<BatchJob>;
 
-export type RetrieveBatchRunData = {
+export type RetrieveBatchData = {
   batchId: string;
   userId?: string | null;
 };
 
-export type RetrieveBatchRunResponse = BatchJob;
+export type RetrieveBatchResponse = BatchJob;
 
 export type ListBatchMessagesData = {
   /**
@@ -8674,17 +8729,21 @@ export type ListBatchMessagesData = {
    * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    */
   order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userId?: string | null;
 };
 
 export type ListBatchMessagesResponse = LettaBatchMessages;
 
-export type CancelBatchRunData = {
+export type CancelBatchData = {
   batchId: string;
   userId?: string | null;
 };
 
-export type CancelBatchRunResponse = unknown;
+export type CancelBatchResponse = unknown;
 
 export type CreateVoiceChatCompletionsData = {
   agentId: string;
@@ -11107,6 +11166,21 @@ export type $OpenApiTs = {
       };
     };
   };
+  '/v1/steps/{step_id}/trace': {
+    get: {
+      req: RetrieveStepTraceData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: ProviderTrace | null;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/steps/{step_id}/feedback': {
     patch: {
       req: AddFeedbackData;
@@ -11277,7 +11351,7 @@ export type $OpenApiTs = {
   };
   '/v1/messages/batches': {
     post: {
-      req: CreateBatchRunData;
+      req: CreateBatchData;
       res: {
         /**
          * Successful Response
@@ -11290,7 +11364,7 @@ export type $OpenApiTs = {
       };
     };
     get: {
-      req: ListBatchRunsData;
+      req: ListBatchesData;
       res: {
         /**
          * Successful Response
@@ -11305,7 +11379,7 @@ export type $OpenApiTs = {
   };
   '/v1/messages/batches/{batch_id}': {
     get: {
-      req: RetrieveBatchRunData;
+      req: RetrieveBatchData;
       res: {
         /**
          * Successful Response
@@ -11335,7 +11409,7 @@ export type $OpenApiTs = {
   };
   '/v1/messages/batches/{batch_id}/cancel': {
     patch: {
-      req: CancelBatchRunData;
+      req: CancelBatchData;
       res: {
         /**
          * Successful Response

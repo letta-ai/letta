@@ -2300,7 +2300,7 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
     });
 /**
  * List Providers
- * Get a list of all custom providers in the database
+ * Get a list of all custom providers.
  * @param data The data for the request.
  * @param data.name
  * @param data.providerType
@@ -2723,12 +2723,37 @@ export const prefetchUseStepsServiceRetrieveStepMetrics = (
     queryFn: () => StepsService.retrieveStepMetrics({ stepId, userId }),
   });
 /**
- * List Tags
- * Get a list of all tags in the database
+ * Retrieve Step Trace
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.stepId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseStepsServiceRetrieveStepTrace = (
+  queryClient: QueryClient,
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn({ stepId, userId }),
+    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }),
+  });
+/**
+ * List Tags
+ * Get a list of all agent tags in the database.
+ * @param data The data for the request.
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -2737,12 +2762,18 @@ export const prefetchUseTagServiceListTags = (
   queryClient: QueryClient,
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -2750,19 +2781,34 @@ export const prefetchUseTagServiceListTags = (
   queryClient.prefetchQuery({
     queryKey: Common.UseTagServiceListTagsKeyFn({
       after,
+      before,
       limit,
+      order,
+      orderBy,
       queryText,
       userId,
     }),
-    queryFn: () => TagService.listTags({ after, limit, queryText, userId }),
+    queryFn: () =>
+      TagService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }),
   });
 /**
  * List Tags
- * Get a list of all tags in the database
+ * Get a list of all agent tags in the database.
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -2771,12 +2817,18 @@ export const prefetchUseAdminServiceListTags = (
   queryClient: QueryClient,
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -2784,11 +2836,23 @@ export const prefetchUseAdminServiceListTags = (
   queryClient.prefetchQuery({
     queryKey: Common.UseAdminServiceListTagsKeyFn({
       after,
+      before,
       limit,
+      order,
+      orderBy,
       queryText,
       userId,
     }),
-    queryFn: () => AdminService.listTags({ after, limit, queryText, userId }),
+    queryFn: () =>
+      AdminService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }),
   });
 /**
  * List Users
@@ -2862,35 +2926,65 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
     queryFn: () => TelemetryService.retrieveProviderTrace({ stepId, userId }),
   });
 /**
- * List Batch Runs
+ * List Batches
  * List all batch runs.
  * @param data The data for the request.
+ * @param data.before Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+ * @param data.after Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+ * @param data.limit Maximum number of jobs to return
+ * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const prefetchUseMessagesServiceListBatchRuns = (
+export const prefetchUseMessagesServiceListBatches = (
   queryClient: QueryClient,
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }),
-    queryFn: () => MessagesService.listBatchRuns({ userId }),
+    queryKey: Common.UseMessagesServiceListBatchesKeyFn({
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      userId,
+    }),
+    queryFn: () =>
+      MessagesService.listBatches({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        userId,
+      }),
   });
 /**
- * Retrieve Batch Run
- * Get the status of a batch run.
+ * Retrieve Batch
+ * Retrieve the status and details of a batch run.
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const prefetchUseMessagesServiceRetrieveBatchRun = (
+export const prefetchUseMessagesServiceRetrieveBatch = (
   queryClient: QueryClient,
   {
     batchId,
@@ -2901,11 +2995,8 @@ export const prefetchUseMessagesServiceRetrieveBatchRun = (
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn({
-      batchId,
-      userId,
-    }),
-    queryFn: () => MessagesService.retrieveBatchRun({ batchId, userId }),
+    queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn({ batchId, userId }),
+    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }),
   });
 /**
  * List Batch Messages
@@ -2916,6 +3007,7 @@ export const prefetchUseMessagesServiceRetrieveBatchRun = (
  * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
  * @returns LettaBatchMessages Successful Response
@@ -2930,6 +3022,7 @@ export const prefetchUseMessagesServiceListBatchMessages = (
     before,
     limit,
     order,
+    orderBy,
     userId,
   }: {
     after?: string;
@@ -2938,6 +3031,7 @@ export const prefetchUseMessagesServiceListBatchMessages = (
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   },
 ) =>
@@ -2949,6 +3043,7 @@ export const prefetchUseMessagesServiceListBatchMessages = (
       before,
       limit,
       order,
+      orderBy,
       userId,
     }),
     queryFn: () =>
@@ -2959,6 +3054,7 @@ export const prefetchUseMessagesServiceListBatchMessages = (
         before,
         limit,
         order,
+        orderBy,
         userId,
       }),
   });

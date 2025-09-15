@@ -1963,6 +1963,28 @@ export const UseStepsServiceRetrieveStepMetricsKeyFn = (
   useStepsServiceRetrieveStepMetricsKey,
   ...(queryKey ?? [{ stepId, userId }]),
 ];
+export type StepsServiceRetrieveStepTraceDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.retrieveStepTrace>
+>;
+export type StepsServiceRetrieveStepTraceQueryResult<
+  TData = StepsServiceRetrieveStepTraceDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceRetrieveStepTraceKey =
+  'StepsServiceRetrieveStepTrace';
+export const UseStepsServiceRetrieveStepTraceKeyFn = (
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useStepsServiceRetrieveStepTraceKey,
+  ...(queryKey ?? [{ stepId, userId }]),
+];
 export type TagServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof TagService.listTags>
 >;
@@ -1974,19 +1996,27 @@ export const useTagServiceListTagsKey = 'TagServiceListTags';
 export const UseTagServiceListTagsKeyFn = (
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useTagServiceListTagsKey,
-  ...(queryKey ?? [{ after, limit, queryText, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, orderBy, queryText, userId },
+  ]),
 ];
 export type AdminServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listTags>
@@ -1999,19 +2029,27 @@ export const useAdminServiceListTagsKey = 'AdminServiceListTags';
 export const UseAdminServiceListTagsKeyFn = (
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useAdminServiceListTagsKey,
-  ...(queryKey ?? [{ after, limit, queryText, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, orderBy, queryText, userId },
+  ]),
 ];
 export type AdminServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof AdminService.listUsers>
@@ -2071,33 +2109,45 @@ export const UseTelemetryServiceRetrieveProviderTraceKeyFn = (
   useTelemetryServiceRetrieveProviderTraceKey,
   ...(queryKey ?? [{ stepId, userId }]),
 ];
-export type MessagesServiceListBatchRunsDefaultResponse = Awaited<
-  ReturnType<typeof MessagesService.listBatchRuns>
+export type MessagesServiceListBatchesDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.listBatches>
 >;
-export type MessagesServiceListBatchRunsQueryResult<
-  TData = MessagesServiceListBatchRunsDefaultResponse,
+export type MessagesServiceListBatchesQueryResult<
+  TData = MessagesServiceListBatchesDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useMessagesServiceListBatchRunsKey =
-  'MessagesServiceListBatchRuns';
-export const UseMessagesServiceListBatchRunsKeyFn = (
+export const useMessagesServiceListBatchesKey = 'MessagesServiceListBatches';
+export const UseMessagesServiceListBatchesKeyFn = (
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useMessagesServiceListBatchRunsKey, ...(queryKey ?? [{ userId }])];
-export type MessagesServiceRetrieveBatchRunDefaultResponse = Awaited<
-  ReturnType<typeof MessagesService.retrieveBatchRun>
+) => [
+  useMessagesServiceListBatchesKey,
+  ...(queryKey ?? [{ after, before, limit, order, orderBy, userId }]),
+];
+export type MessagesServiceRetrieveBatchDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.retrieveBatch>
 >;
-export type MessagesServiceRetrieveBatchRunQueryResult<
-  TData = MessagesServiceRetrieveBatchRunDefaultResponse,
+export type MessagesServiceRetrieveBatchQueryResult<
+  TData = MessagesServiceRetrieveBatchDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useMessagesServiceRetrieveBatchRunKey =
-  'MessagesServiceRetrieveBatchRun';
-export const UseMessagesServiceRetrieveBatchRunKeyFn = (
+export const useMessagesServiceRetrieveBatchKey =
+  'MessagesServiceRetrieveBatch';
+export const UseMessagesServiceRetrieveBatchKeyFn = (
   {
     batchId,
     userId,
@@ -2107,7 +2157,7 @@ export const UseMessagesServiceRetrieveBatchRunKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [
-  useMessagesServiceRetrieveBatchRunKey,
+  useMessagesServiceRetrieveBatchKey,
   ...(queryKey ?? [{ batchId, userId }]),
 ];
 export type MessagesServiceListBatchMessagesDefaultResponse = Awaited<
@@ -2127,6 +2177,7 @@ export const UseMessagesServiceListBatchMessagesKeyFn = (
     before,
     limit,
     order,
+    orderBy,
     userId,
   }: {
     after?: string;
@@ -2135,12 +2186,15 @@ export const UseMessagesServiceListBatchMessagesKeyFn = (
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useMessagesServiceListBatchMessagesKey,
-  ...(queryKey ?? [{ after, agentId, batchId, before, limit, order, userId }]),
+  ...(queryKey ?? [
+    { after, agentId, batchId, before, limit, order, orderBy, userId },
+  ]),
 ];
 export type EmbeddingsServiceGetTotalStorageSizeDefaultResponse = Awaited<
   ReturnType<typeof EmbeddingsService.getTotalStorageSize>
@@ -2353,8 +2407,8 @@ export type AdminServiceCreateUserMutationResult = Awaited<
 export type AdminServiceCreateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.createOrganization>
 >;
-export type MessagesServiceCreateBatchRunMutationResult = Awaited<
-  ReturnType<typeof MessagesService.createBatchRun>
+export type MessagesServiceCreateBatchMutationResult = Awaited<
+  ReturnType<typeof MessagesService.createBatch>
 >;
 export type VoiceServiceCreateVoiceChatCompletionsMutationResult = Awaited<
   ReturnType<typeof VoiceService.createVoiceChatCompletions>
@@ -2488,8 +2542,8 @@ export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
 export type AdminServiceUpdateOrganizationMutationResult = Awaited<
   ReturnType<typeof AdminService.updateOrganization>
 >;
-export type MessagesServiceCancelBatchRunMutationResult = Awaited<
-  ReturnType<typeof MessagesService.cancelBatchRun>
+export type MessagesServiceCancelBatchMutationResult = Awaited<
+  ReturnType<typeof MessagesService.cancelBatch>
 >;
 export type OrganizationServiceUpdateOrganizationMutationResult = Awaited<
   ReturnType<typeof OrganizationService.updateOrganization>

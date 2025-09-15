@@ -2717,7 +2717,7 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     });
 /**
  * List Providers
- * Get a list of all custom providers in the database
+ * Get a list of all custom providers.
  * @param data The data for the request.
  * @param data.name
  * @param data.providerType
@@ -3204,12 +3204,46 @@ export const useStepsServiceRetrieveStepMetricsSuspense = <
     ...options,
   });
 /**
- * List Tags
- * Get a list of all tags in the database
+ * Retrieve Step Trace
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.stepId
+ * @param data.userId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const useStepsServiceRetrieveStepTraceSuspense = <
+  TData = Common.StepsServiceRetrieveStepTraceDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    stepId,
+    userId,
+  }: {
+    stepId: string;
+    userId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn(
+      { stepId, userId },
+      queryKey,
+    ),
+    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }) as TData,
+    ...options,
+  });
+/**
+ * List Tags
+ * Get a list of all agent tags in the database.
+ * @param data The data for the request.
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -3221,12 +3255,18 @@ export const useTagServiceListTagsSuspense = <
 >(
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -3235,20 +3275,31 @@ export const useTagServiceListTagsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseTagServiceListTagsKeyFn(
-      { after, limit, queryText, userId },
+      { after, before, limit, order, orderBy, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      TagService.listTags({ after, limit, queryText, userId }) as TData,
+      TagService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
  * List Tags
- * Get a list of all tags in the database
+ * Get a list of all agent tags in the database.
  * @param data The data for the request.
- * @param data.after
- * @param data.limit
- * @param data.queryText
+ * @param data.before Tag cursor for pagination. Returns tags that come before this tag in the specified sort order
+ * @param data.after Tag cursor for pagination. Returns tags that come after this tag in the specified sort order
+ * @param data.limit Maximum number of tags to return
+ * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
+ * @param data.orderBy Field to sort by
+ * @param data.queryText Filter tags by text search
  * @param data.userId
  * @returns string Successful Response
  * @throws ApiError
@@ -3260,12 +3311,18 @@ export const useAdminServiceListTagsSuspense = <
 >(
   {
     after,
+    before,
     limit,
+    order,
+    orderBy,
     queryText,
     userId,
   }: {
     after?: string;
+    before?: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'name';
     queryText?: string;
     userId?: string;
   } = {},
@@ -3274,11 +3331,19 @@ export const useAdminServiceListTagsSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListTagsKeyFn(
-      { after, limit, queryText, userId },
+      { after, before, limit, order, orderBy, queryText, userId },
       queryKey,
     ),
     queryFn: () =>
-      AdminService.listTags({ after, limit, queryText, userId }) as TData,
+      AdminService.listTags({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3372,42 +3437,68 @@ export const useTelemetryServiceRetrieveProviderTraceSuspense = <
     ...options,
   });
 /**
- * List Batch Runs
+ * List Batches
  * List all batch runs.
  * @param data The data for the request.
+ * @param data.before Job ID cursor for pagination. Returns jobs that come before this job ID in the specified sort order
+ * @param data.after Job ID cursor for pagination. Returns jobs that come after this job ID in the specified sort order
+ * @param data.limit Maximum number of jobs to return
+ * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceListBatchRunsSuspense = <
-  TData = Common.MessagesServiceListBatchRunsDefaultResponse,
+export const useMessagesServiceListBatchesSuspense = <
+  TData = Common.MessagesServiceListBatchesDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
     userId,
   }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceListBatchRunsKeyFn({ userId }, queryKey),
-    queryFn: () => MessagesService.listBatchRuns({ userId }) as TData,
+    queryKey: Common.UseMessagesServiceListBatchesKeyFn(
+      { after, before, limit, order, orderBy, userId },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.listBatches({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        userId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Batch Run
- * Get the status of a batch run.
+ * Retrieve Batch
+ * Retrieve the status and details of a batch run.
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceRetrieveBatchRunSuspense = <
-  TData = Common.MessagesServiceRetrieveBatchRunDefaultResponse,
+export const useMessagesServiceRetrieveBatchSuspense = <
+  TData = Common.MessagesServiceRetrieveBatchDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -3422,12 +3513,11 @@ export const useMessagesServiceRetrieveBatchRunSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceRetrieveBatchRunKeyFn(
+    queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn(
       { batchId, userId },
       queryKey,
     ),
-    queryFn: () =>
-      MessagesService.retrieveBatchRun({ batchId, userId }) as TData,
+    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }) as TData,
     ...options,
   });
 /**
@@ -3439,6 +3529,7 @@ export const useMessagesServiceRetrieveBatchRunSuspense = <
  * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
  * @returns LettaBatchMessages Successful Response
@@ -3456,6 +3547,7 @@ export const useMessagesServiceListBatchMessagesSuspense = <
     before,
     limit,
     order,
+    orderBy,
     userId,
   }: {
     after?: string;
@@ -3464,6 +3556,7 @@ export const useMessagesServiceListBatchMessagesSuspense = <
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userId?: string;
   },
   queryKey?: TQueryKey,
@@ -3471,7 +3564,7 @@ export const useMessagesServiceListBatchMessagesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn(
-      { after, agentId, batchId, before, limit, order, userId },
+      { after, agentId, batchId, before, limit, order, orderBy, userId },
       queryKey,
     ),
     queryFn: () =>
@@ -3482,6 +3575,7 @@ export const useMessagesServiceListBatchMessagesSuspense = <
         before,
         limit,
         order,
+        orderBy,
         userId,
       }) as TData,
     ...options,
