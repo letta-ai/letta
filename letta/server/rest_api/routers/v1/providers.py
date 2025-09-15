@@ -36,7 +36,7 @@ async def list_providers(
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Get a list of all custom providers with pagination support.
+    Get a list of all custom providers.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
