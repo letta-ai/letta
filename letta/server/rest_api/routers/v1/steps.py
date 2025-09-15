@@ -82,8 +82,8 @@ async def retrieve_step(
         raise HTTPException(status_code=404, detail="Step not found")
 
 
-@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_step_metrics")
-async def retrieve_step_metrics(
+@router.get("/{step_id}/metrics", response_model=StepMetrics, operation_id="retrieve_metrics_for_step")
+async def retrieve_metrics_for_step(
     step_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
@@ -98,8 +98,8 @@ async def retrieve_step_metrics(
         raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
-@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_step_trace")
-async def retrieve_step_trace(
+@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
+async def retrieve_trace_for_step(
     step_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
