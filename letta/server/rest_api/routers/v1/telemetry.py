@@ -10,8 +10,8 @@ from letta.settings import settings
 router = APIRouter(prefix="/telemetry", tags=["telemetry"])
 
 
-@router.get("/{step_id}", response_model=Optional[ProviderTrace], operation_id="retrieve_provider_trace")
-async def retrieve_provider_trace_by_step_id(
+@router.get("/{step_id}", response_model=Optional[ProviderTrace], operation_id="retrieve_trace_for_step")
+async def retrieve_trace_for_step(
     step_id: str,
     server: SyncServer = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
