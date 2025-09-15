@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -17,20 +17,31 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 
 @router.get("/", response_model=List[Provider], operation_id="list_providers")
 async def list_providers(
-    name: Optional[str] = Query(None),
-    provider_type: Optional[ProviderType] = Query(None),
-    after: Optional[str] = Query(None),
-    limit: Optional[int] = Query(50),
+    before: Optional[str] = Query(
+        None,
+        description="Provider ID cursor for pagination. Returns providers that come before this provider ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Provider ID cursor for pagination. Returns providers that come after this provider ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of providers to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for providers by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    name: Optional[str] = Query(None, description="Filter providers by name"),
+    provider_type: Optional[ProviderType] = Query(None, description="Filter providers by type"),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
-    Get a list of all custom providers.
+    Get a list of all custom providers with pagination support.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
         providers = await server.provider_manager.list_providers_async(
-            after=after, limit=limit, actor=actor, name=name, provider_type=provider_type
+            before=before, after=after, limit=limit, actor=actor, name=name, provider_type=provider_type, ascending=(order == "asc")
         )
     except HTTPException:
         raise
