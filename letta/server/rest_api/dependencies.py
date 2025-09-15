@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import Header
 from pydantic import BaseModel
 
-from letta.server.server import SyncServer
+if TYPE_CHECKING:
+    from letta.server.server import SyncServer
 
 
 class HeaderParams(BaseModel):
@@ -28,7 +29,7 @@ def get_headers(
 
 
 # TODO: why does this double up the interface?
-async def get_letta_server() -> SyncServer:
+async def get_letta_server() -> "SyncServer":
     # Check if a global server is already instantiated
     from letta.server.rest_api.app import server
 
