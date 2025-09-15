@@ -563,6 +563,12 @@ paths:
         - agents
         - messages
       x-fern-sdk-method-name: search
+  /v1/agents/summarize:
+    post:
+      x-fern-sdk-group-name:
+        - agents
+        - messages
+      x-fern-sdk-method-name: summarize
   /v1/agents/{agent_id}/template:
     post:
       x-fern-sdk-group-name:
