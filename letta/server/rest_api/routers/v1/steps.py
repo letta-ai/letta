@@ -1,14 +1,17 @@
 from datetime import datetime
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.step import Step
 from letta.schemas.step_metrics import StepMetrics
 from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.services.step_manager import FeedbackType
+from letta.settings import settings
 
 router = APIRouter(prefix="/steps", tags=["steps"])
 
@@ -18,7 +21,10 @@ async def list_steps(
     before: Optional[str] = Query(None, description="Return steps before this step ID"),
     after: Optional[str] = Query(None, description="Return steps after this step ID"),
     limit: Optional[int] = Query(50, description="Maximum number of steps to return"),
-    order: Optional[str] = Query("desc", description="Sort order (asc or desc)"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     start_date: Optional[str] = Query(None, description='Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     end_date: Optional[str] = Query(None, description='Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     model: Optional[str] = Query(None, description="Filter by the name of the model used for the step"),
@@ -36,7 +42,6 @@ async def list_steps(
 ):
     """
     List steps with optional pagination and date filters.
-    Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
@@ -51,7 +56,7 @@ async def list_steps(
         start_date=start_dt,
         end_date=end_dt,
         limit=limit,
-        order=order,
+        order=(order == "asc"),
         model=model,
         agent_id=agent_id,
         trace_ids=trace_ids,
@@ -93,10 +98,33 @@ async def retrieve_step_metrics(
         raise HTTPException(status_code=404, detail="Step metrics not found")
 
 
+@router.get("/{step_id}/trace", response_model=Optional[ProviderTrace], operation_id="retrieve_step_trace")
+async def retrieve_step_trace(
+    step_id: str,
+    server: SyncServer = Depends(get_letta_server),
+    actor_id: str | None = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+):
+    provider_trace = None
+    if settings.track_provider_trace:
+        try:
+            provider_trace = await server.telemetry_manager.get_provider_trace_by_step_id_async(
+                step_id=step_id, actor=await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+            )
+        except:
+            pass
+
+    return provider_trace
+
+
+class AddFeedbackRequest(BaseModel):
+    feedback: FeedbackType | None = Field(None, description="Whether this feedback is positive or negative")
+    tags: list[str] | None = Field(None, description="Feedback tags to add to the step")
+
+
 @router.patch("/{step_id}/feedback", response_model=Step, operation_id="add_feedback")
 async def add_feedback(
     step_id: str,
-    feedback: Optional[FeedbackType],
+    request: AddFeedbackRequest = Body(...),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     server: SyncServer = Depends(get_letta_server),
 ):
@@ -105,7 +133,7 @@ async def add_feedback(
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-        return await server.step_manager.add_feedback_async(step_id=step_id, feedback=feedback, actor=actor)
+        return await server.step_manager.add_feedback_async(step_id=step_id, feedback=request.feedback, tags=request.tags, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
 

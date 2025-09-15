@@ -808,86 +808,33 @@ class StreamingServerInterface(AgentChunkStreamingInterface):
                         # If there was nothing in the name buffer, we can proceed to
                         # output the arguments chunk as a ToolCallMessage
                         else:
-                            # use_assisitant_message means that we should also not release main_json raw, and instead should only release the contents of "message": "..."
+                            # use_assistant_message means we should emit only the value of "message"
                             if self.use_assistant_message and (
                                 self.last_flushed_function_name is not None
                                 and self.last_flushed_function_name == self.assistant_message_tool_name
                             ):
-                                # do an additional parse on the updates_main_json
-                                if self.function_args_buffer:
-                                    updates_main_json = self.function_args_buffer + updates_main_json
-                                    self.function_args_buffer = None
+                                # Feed any buffered prefix first to avoid missing the start of the value
+                                payload = (self.function_args_buffer or "") + (updates_main_json or "")
+                                self.function_args_buffer = None
+                                cleaned = self.streaming_chat_completion_json_reader.process_json_chunk(payload)
+                                from letta.streaming_utils import sanitize_streamed_message_content
 
-                                    # Pretty gross hardcoding that assumes that if we're toggling into the keywords, we have the full prefix
-                                    match_str = '{"' + self.assistant_message_tool_kwarg + '":"'
-                                    if updates_main_json == match_str:
-                                        updates_main_json = None
-
-                                else:
-                                    # Some hardcoding to strip off the trailing "}"
-                                    if updates_main_json in ["}", '"}']:
-                                        updates_main_json = None
-                                    if updates_main_json and len(updates_main_json) > 0 and updates_main_json[-1:] == '"':
-                                        updates_main_json = updates_main_json[:-1]
-
-                                if not updates_main_json:
-                                    # early exit to turn into content mode
+                                cleaned = sanitize_streamed_message_content(cleaned or "")
+                                if not cleaned:
                                     return None
-
-                                # There may be a buffer from a previous chunk, for example
-                                # if the previous chunk had arguments but we needed to flush name
-                                if self.function_args_buffer:
-                                    # In this case, we should release the buffer + new data at once
-                                    combined_chunk = self.function_args_buffer + updates_main_json
-
-                                    if prev_message_type and prev_message_type != "assistant_message":
-                                        message_index += 1
-                                    processed_chunk = AssistantMessage(
-                                        id=message_id,
-                                        date=message_date,
-                                        content=combined_chunk,
-                                        name=name,
-                                        otid=Message.generate_otid_from_id(message_id, message_index),
-                                    )
-                                    # Store the ID of the tool call so allow skipping the corresponding response
-                                    if self.function_id_buffer:
-                                        self.prev_assistant_message_id = self.function_id_buffer
-                                    # clear buffer
-                                    self.function_args_buffer = None
-                                    self.function_id_buffer = None
-
-                                else:
-                                    # If there's no buffer to clear, just output a new chunk with new data
-                                    # TODO: THIS IS HORRIBLE
-                                    # TODO: WE USE THE OLD JSON PARSER EARLIER (WHICH DOES NOTHING) AND NOW THE NEW JSON PARSER
-                                    # TODO: THIS IS TOTALLY WRONG AND BAD, BUT SAVING FOR A LARGER REWRITE IN THE NEAR FUTURE
-                                    parsed_args = self.optimistic_json_parser.parse(self.current_function_arguments)
-
-                                    if parsed_args.get(self.assistant_message_tool_kwarg) and parsed_args.get(
-                                        self.assistant_message_tool_kwarg
-                                    ) != self.current_json_parse_result.get(self.assistant_message_tool_kwarg):
-                                        new_content = parsed_args.get(self.assistant_message_tool_kwarg)
-                                        prev_content = self.current_json_parse_result.get(self.assistant_message_tool_kwarg, "")
-                                        # TODO: Assumes consistent state and that prev_content is subset of new_content
-                                        diff = new_content.replace(prev_content, "", 1)
-                                        self.current_json_parse_result = parsed_args
-                                        if prev_message_type and prev_message_type != "assistant_message":
-                                            message_index += 1
-                                        processed_chunk = AssistantMessage(
-                                            id=message_id,
-                                            date=message_date,
-                                            content=diff,
-                                            name=name,
-                                            otid=Message.generate_otid_from_id(message_id, message_index),
-                                        )
-                                    else:
-                                        return None
-
-                                    # Store the ID of the tool call so allow skipping the corresponding response
-                                    if self.function_id_buffer:
-                                        self.prev_assistant_message_id = self.function_id_buffer
-                                    # clear buffers
-                                    self.function_id_buffer = None
+                                if prev_message_type and prev_message_type != "assistant_message":
+                                    message_index += 1
+                                processed_chunk = AssistantMessage(
+                                    id=message_id,
+                                    date=message_date,
+                                    content=cleaned,
+                                    name=name,
+                                    otid=Message.generate_otid_from_id(message_id, message_index),
+                                )
+                                # Store the ID of the tool call so allow skipping the corresponding response
+                                if self.function_id_buffer:
+                                    self.prev_assistant_message_id = self.function_id_buffer
+                                # Do not clear function_id_buffer here — we may still need it
                             else:
                                 # There may be a buffer from a previous chunk, for example
                                 # if the previous chunk had arguments but we needed to flush name

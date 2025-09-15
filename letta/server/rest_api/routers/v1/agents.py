@@ -97,13 +97,19 @@ async def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
         ),
     ),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+        deprecated=True,
     ),
     sort_by: str | None = Query(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+        deprecated=True,
     ),
     show_hidden_agents: bool | None = Query(
         False,
@@ -121,6 +127,10 @@ async def list_agents(
     # Retrieve the actor (user) details
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
+    # Handle backwards compatibility - prefer new parameters over legacy ones
+    final_ascending = (order == "asc") if order else ascending
+    final_sort_by = order_by if order_by else sort_by
+
     # Call list_agents directly without unnecessary dict handling
     return await server.agent_manager.list_agents_async(
         actor=actor,
@@ -137,8 +147,8 @@ async def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
-        ascending=ascending,
-        sort_by=sort_by,
+        ascending=final_ascending,
+        sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
     )
 
@@ -162,8 +172,8 @@ class IndentedORJSONResponse(Response):
         return orjson.dumps(content, option=orjson.OPT_INDENT_2)
 
 
-@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent_serialized")
-async def export_agent_serialized(
+@router.get("/{agent_id}/export", response_class=IndentedORJSONResponse, operation_id="export_agent")
+async def export_agent(
     agent_id: str,
     max_steps: int = 100,
     server: "SyncServer" = Depends(get_letta_server),
@@ -256,7 +266,7 @@ def import_agent_legacy(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while uploading the agent: {e!s}")
 
 
-async def import_agent(
+async def _import_agent(
     agent_file_json: dict,
     server: "SyncServer",
     actor: User,
@@ -313,8 +323,8 @@ async def import_agent(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred while importing agents: {e!s}")
 
 
-@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent_serialized")
-async def import_agent_serialized(
+@router.post("/import", response_model=ImportedAgentsResponse, operation_id="import_agent")
+async def import_agent(
     file: UploadFile = File(...),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: str | None = Header(None, alias="user_id"),
@@ -367,7 +377,7 @@ async def import_agent_serialized(
     # TODO: This is kind of hacky, but should work as long as dont' change the schema
     if "agents" in agent_json and isinstance(agent_json.get("agents"), list):
         # This is an AgentFileSchema
-        agent_ids = await import_agent(
+        agent_ids = await _import_agent(
             agent_file_json=agent_json,
             server=server,
             actor=actor,
@@ -1360,6 +1370,9 @@ async def send_message_streaming(
                 except LLMError as e:
                     error_data = {"error": {"type": "llm_error", "message": "An error occurred with the LLM request.", "detail": str(e)}}
                     yield (f"data: {json.dumps(error_data)}\n\n", 502)
+                except Exception as e:
+                    error_data = {"error": {"type": "internal_error", "message": "An internal server error occurred.", "detail": str(e)}}
+                    yield (f"data: {json.dumps(error_data)}\n\n", 500)
 
             raw_stream = error_aware_stream()
 

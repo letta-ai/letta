@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
@@ -18,9 +18,19 @@ async def list_identities(
     project_id: Optional[str] = Query(None),
     identifier_key: Optional[str] = Query(None),
     identity_type: Optional[IdentityType] = Query(None),
-    before: Optional[str] = Query(None),
-    after: Optional[str] = Query(None),
-    limit: Optional[int] = Query(50),
+    before: Optional[str] = Query(
+        None,
+        description="Identity ID cursor for pagination. Returns identities that come before this identity ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Identity ID cursor for pagination. Returns identities that come after this identity ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of identities to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -38,6 +48,7 @@ async def list_identities(
             before=before,
             after=after,
             limit=limit,
+            ascending=(order == "asc"),
             actor=actor,
         )
     except HTTPException:

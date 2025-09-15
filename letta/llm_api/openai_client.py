@@ -99,7 +99,7 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
 
     # FIXME pretty hacky - turn off for providers we know users will use,
     #       but also don't support structured output
-    if "nebius.com" in llm_config.model_endpoint:
+    if llm_config.model_endpoint and "nebius.com" in llm_config.model_endpoint:
         return False
     else:
         return True
@@ -108,7 +108,7 @@ def supports_structured_output(llm_config: LLMConfig) -> bool:
 # TODO move into LLMConfig as a field?
 def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     """Certain providers require the tool choice to be set to 'auto'."""
-    if "nebius.com" in llm_config.model_endpoint:
+    if llm_config.model_endpoint and "nebius.com" in llm_config.model_endpoint:
         return True
     if llm_config.handle and "vllm" in llm_config.handle:
         return True
@@ -168,7 +168,9 @@ class OpenAIClient(LLMClientBase):
             # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
             # TODO(fix)
             inner_thoughts_desc = (
-                INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST if ":1234" in llm_config.model_endpoint else INNER_THOUGHTS_KWARG_DESCRIPTION
+                INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
+                if llm_config.model_endpoint and ":1234" in llm_config.model_endpoint
+                else INNER_THOUGHTS_KWARG_DESCRIPTION
             )
             tools = add_inner_thoughts_to_functions(
                 functions=tools,

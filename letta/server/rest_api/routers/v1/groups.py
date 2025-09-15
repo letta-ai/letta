@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -21,9 +21,17 @@ async def list_groups(
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),
     manager_type: Optional[ManagerType] = Query(None, description="Search groups by manager type"),
-    before: Optional[str] = Query(None, description="Cursor for pagination"),
-    after: Optional[str] = Query(None, description="Cursor for pagination"),
-    limit: Optional[int] = Query(None, description="Limit for pagination"),
+    before: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come before this group ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Group ID cursor for pagination. Returns groups that come after this group ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of groups to return"),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for groups by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     project_id: Optional[str] = Query(None, description="Search groups by project id"),
     show_hidden_groups: bool | None = Query(
         False,
@@ -42,6 +50,7 @@ async def list_groups(
         before=before,
         after=after,
         limit=limit,
+        ascending=(order == "asc"),
         show_hidden_groups=show_hidden_groups,
     )
 

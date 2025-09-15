@@ -3542,19 +3542,27 @@ class AgentManager:
     @enforce_types
     @trace_method
     async def list_tags_async(
-        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, query_text: Optional[str] = None
+        self,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        query_text: Optional[str] = None,
+        ascending: bool = True,
     ) -> List[str]:
         """
         Get all tags a user has created, ordered alphabetically.
 
         Args:
             actor: User performing the action.
-            after: Cursor for forward pagination.
-            limit: Maximum number of tags to return.
-            query text to filter tags by.
+            before: Cursor for backward pagination (tags before this tag).
+            after: Cursor for forward pagination (tags after this tag).
+            limit: Maximum number of tags to return (default: 50).
+            query_text: Filter tags by text search.
+            ascending: Sort order - True for alphabetical, False for reverse (default: True).
 
         Returns:
-            List[str]: List of all tags.
+            List[str]: List of all tags matching the criteria.
         """
         async with db_registry.async_session() as session:
             # Build the query using select() for async SQLAlchemy
@@ -3573,10 +3581,26 @@ class AgentManager:
                     # SQLite: Use LIKE with LOWER for case-insensitive search
                     query = query.where(func.lower(AgentsTags.tag).like(func.lower(f"%{query_text}%")))
 
+            # Handle pagination cursors
             if after:
-                query = query.where(AgentsTags.tag > after)
+                if ascending:
+                    query = query.where(AgentsTags.tag > after)
+                else:
+                    query = query.where(AgentsTags.tag < after)
 
-            query = query.order_by(AgentsTags.tag).limit(limit)
+            if before:
+                if ascending:
+                    query = query.where(AgentsTags.tag < before)
+                else:
+                    query = query.where(AgentsTags.tag > before)
+
+            # Apply ordering based on ascending parameter
+            if ascending:
+                query = query.order_by(AgentsTags.tag.asc())
+            else:
+                query = query.order_by(AgentsTags.tag.desc())
+
+            query = query.limit(limit)
 
             # Execute the query asynchronously
             result = await session.execute(query)
