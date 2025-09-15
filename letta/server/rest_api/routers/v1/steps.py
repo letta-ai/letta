@@ -21,7 +21,10 @@ async def list_steps(
     before: Optional[str] = Query(None, description="Return steps before this step ID"),
     after: Optional[str] = Query(None, description="Return steps after this step ID"),
     limit: Optional[int] = Query(50, description="Maximum number of steps to return"),
-    order: Optional[str] = Query("desc", description="Sort order (asc or desc)"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for steps by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     start_date: Optional[str] = Query(None, description='Return steps after this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     end_date: Optional[str] = Query(None, description='Return steps before this ISO datetime (e.g. "2025-01-29T15:01:19-08:00")'),
     model: Optional[str] = Query(None, description="Filter by the name of the model used for the step"),
@@ -39,7 +42,6 @@ async def list_steps(
 ):
     """
     List steps with optional pagination and date filters.
-    Dates should be provided in ISO 8601 format (e.g. 2025-01-29T15:01:19-08:00)
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
@@ -54,7 +56,7 @@ async def list_steps(
         start_date=start_dt,
         end_date=end_dt,
         limit=limit,
-        order=order,
+        order=(order == "asc"),
         model=model,
         agent_id=agent_id,
         trace_ids=trace_ids,
