@@ -18,4 +18,5 @@ jobs:
         working-directory: .
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
         run: fern generate --docs --log-level debug

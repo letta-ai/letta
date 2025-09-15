@@ -554,6 +554,11 @@ js:
     strategy: lazyOnload
     # strategy: afterInteractive
 
+analytics:
+  posthog:
+    api-key: ${POSTHOG_API_KEY}
+    endpoint: https://us.i.posthog.com
+
 favicon: assets/favicon.png
 
 logo:
