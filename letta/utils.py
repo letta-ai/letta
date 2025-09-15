@@ -536,6 +536,8 @@ def enforce_types(func):
 
             if origin is Union:  # Handle Union types (including Optional)
                 return any(matches_type(value, arg) for arg in args)
+            elif hasattr(hint, "__class__") and hint.__class__.__name__ == "UnionType":  # Handle Python 3.10+ X | Y syntax
+                return any(matches_type(value, arg) for arg in args)
             elif origin is list and isinstance(value, list):  # Handle List[T]
                 element_type = args[0] if args else None
                 return all(isinstance(v, element_type) for v in value) if element_type else True
