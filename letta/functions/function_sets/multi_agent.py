@@ -11,7 +11,7 @@ from letta.functions.helpers import (
 )
 from letta.schemas.enums import MessageRole
 from letta.schemas.message import MessageCreate
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import get_letta_server
 from letta.settings import settings
 
 if TYPE_CHECKING:

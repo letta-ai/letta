@@ -17,7 +17,7 @@ from letta.schemas.sandbox_config import (
     SandboxConfigCreate,
     SandboxConfigUpdate,
 )
-from letta.server.rest_api.utils import get_letta_server, get_user_id
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.services.helpers.tool_execution_helper import create_venv_for_local_sandbox, install_pip_requirements_for_sandbox
 
@@ -32,9 +32,9 @@ logger = get_logger(__name__)
 async def create_sandbox_config(
     config_create: SandboxConfigCreate,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     return await server.sandbox_config_manager.create_or_update_sandbox_config_async(config_create, actor)
 
@@ -42,18 +42,18 @@ async def create_sandbox_config(
 @router.post("/e2b/default", response_model=PydanticSandboxConfig)
 async def create_default_e2b_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.E2B, actor=actor)
 
 
 @router.post("/local/default", response_model=PydanticSandboxConfig)
 async def create_default_local_sandbox_config(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.LOCAL, actor=actor)
 
 
@@ -61,7 +61,7 @@ async def create_default_local_sandbox_config(
 async def create_custom_local_sandbox_config(
     local_sandbox_config: LocalSandboxConfig,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create or update a custom LocalSandboxConfig, including pip_requirements.
@@ -74,7 +74,7 @@ async def create_custom_local_sandbox_config(
         )
 
     # Retrieve the user (actor)
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Wrap the LocalSandboxConfig into a SandboxConfigCreate
     sandbox_config_create = SandboxConfigCreate(config=local_sandbox_config)
@@ -90,9 +90,9 @@ async def update_sandbox_config(
     sandbox_config_id: str,
     config_update: SandboxConfigUpdate,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.update_sandbox_config_async(sandbox_config_id, config_update, actor)
 
 
@@ -100,9 +100,9 @@ async def update_sandbox_config(
 async def delete_sandbox_config(
     sandbox_config_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.sandbox_config_manager.delete_sandbox_config_async(sandbox_config_id, actor)
 
 
@@ -112,22 +112,22 @@ async def list_sandbox_configs(
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     sandbox_type: Optional[SandboxType] = Query(None, description="Filter for this specific sandbox type"),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.list_sandbox_configs_async(actor, limit=limit, after=after, sandbox_type=sandbox_type)
 
 
 @router.post("/local/recreate-venv", response_model=PydanticSandboxConfig)
 async def force_recreate_local_sandbox_venv(
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Forcefully recreate the virtual environment for the local sandbox.
     Deletes and recreates the venv, then reinstalls required dependencies.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Retrieve the local sandbox config
     sbx_config = await server.sandbox_config_manager.get_or_create_default_sandbox_config_async(sandbox_type=SandboxType.LOCAL, actor=actor)
@@ -169,9 +169,9 @@ async def create_sandbox_env_var(
     sandbox_config_id: str,
     env_var_create: SandboxEnvironmentVariableCreate,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.create_sandbox_env_var_async(env_var_create, sandbox_config_id, actor)
 
 
@@ -180,9 +180,9 @@ async def update_sandbox_env_var(
     env_var_id: str,
     env_var_update: SandboxEnvironmentVariableUpdate,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.update_sandbox_env_var_async(env_var_id, env_var_update, actor)
 
 
@@ -190,9 +190,9 @@ async def update_sandbox_env_var(
 async def delete_sandbox_env_var(
     env_var_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     await server.sandbox_config_manager.delete_sandbox_env_var_async(env_var_id, actor)
 
 
@@ -202,7 +202,7 @@ async def list_sandbox_env_vars(
     limit: int = Query(1000, description="Number of results to return"),
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: str = Depends(get_user_id),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.sandbox_config_manager.list_sandbox_env_vars_async(sandbox_config_id, actor, limit=limit, after=after)
