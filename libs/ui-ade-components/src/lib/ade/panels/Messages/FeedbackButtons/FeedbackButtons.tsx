@@ -59,7 +59,9 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
       mutate(
         {
           stepId,
-          feedback,
+          requestBody: {
+            feedback,
+          },
         },
         {
           onError: () => {
