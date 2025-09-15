@@ -1,6 +1,6 @@
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, Query
+from fastapi import APIRouter, Body, Depends, Query
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
@@ -10,7 +10,7 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.job import BatchJob, JobStatus, JobType, JobUpdate
 from letta.schemas.letta_request import CreateBatch
 from letta.schemas.letta_response import LettaBatchMessages
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -28,7 +28,7 @@ async def create_batch(
     request: Request,
     payload: CreateBatch = Body(..., description="Messages and config for all agents"),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Submit a batch of agent runs for asynchronous processing.
@@ -47,7 +47,7 @@ async def create_batch(
     if not settings.enable_batch_job_polling:
         logger.warning("Batch job polling is disabled. Enable batch processing by setting LETTA_ENABLE_BATCH_JOB_POLLING to True.")
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     batch_job = BatchJob(
         user_id=actor.id,
         status=JobStatus.running,
@@ -86,13 +86,13 @@ async def create_batch(
 @router.get("/batches/{batch_id}", response_model=BatchJob, operation_id="retrieve_batch")
 async def retrieve_batch(
     batch_id: str,
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     Retrieve the status and details of a batch run.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)
@@ -114,13 +114,13 @@ async def list_batches(
         "desc", description="Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     List all batch runs.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     jobs = server.job_manager.list_jobs(
         actor=actor,
@@ -153,13 +153,13 @@ async def list_batch_messages(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     agent_id: Optional[str] = Query(None, description="Filter messages by agent ID"),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: SyncServer = Depends(get_letta_server),
 ):
     """
     Get response messages for a specific batch job.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Verify the batch job exists and the user has access to it
     try:
@@ -180,12 +180,12 @@ async def list_batch_messages(
 async def cancel_batch(
     batch_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Cancel a batch run.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=batch_id, actor=actor)

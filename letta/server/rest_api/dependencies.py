@@ -3,6 +3,8 @@ from typing import Optional
 from fastapi import Header
 from pydantic import BaseModel
 
+from letta.server.server import SyncServer
+
 
 class HeaderParams(BaseModel):
     """Common header parameters used across REST API endpoints."""
@@ -23,3 +25,12 @@ def get_headers(
         user_agent=user_agent,
         project_id=project_id,
     )
+
+
+# TODO: why does this double up the interface?
+async def get_letta_server() -> SyncServer:
+    # Check if a global server is already instantiated
+    from letta.server.rest_api.app import server
+
+    # assert isinstance(server, SyncServer)
+    return server

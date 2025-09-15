@@ -1,25 +1,25 @@
 from datetime import timedelta
 from typing import Annotated, List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
 
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.orm.errors import NoResultFound
-from letta.schemas.enums import JobStatus, JobType, MessageRole
+from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import RetrieveStreamRequest
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
 from letta.schemas.step import Step
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.rest_api.redis_stream_manager import redis_sse_stream_generator
 from letta.server.rest_api.streaming_response import (
     StreamingResponseWithStatusCode,
     add_keepalive_to_stream,
     cancellation_aware_stream_wrapper,
 )
-from letta.server.rest_api.utils import get_letta_server
 from letta.server.server import SyncServer
 from letta.settings import settings
 
@@ -38,12 +38,12 @@ def list_runs(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
     ),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all runs.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     runs = [
         Run.from_job(job)
@@ -68,12 +68,12 @@ def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all active runs.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     active_runs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN)
     active_runs = [Run.from_job(job) for job in active_runs]
@@ -90,13 +90,13 @@ def list_active_runs(
 @router.get("/{run_id}", response_model=Run, operation_id="retrieve_run")
 def retrieve_run(
     run_id: str,
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     Get the status of a run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     try:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
@@ -118,7 +118,7 @@ RunMessagesResponse = Annotated[
 async def list_run_messages(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(
         None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
     ),
@@ -131,7 +131,7 @@ async def list_run_messages(
     ),
 ):
     """Get response messages associated with a run."""
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         messages = server.job_manager.get_run_messages(
@@ -150,13 +150,13 @@ async def list_run_messages(
 @router.get("/{run_id}/usage", response_model=UsageStatistics, operation_id="retrieve_run_usage")
 def retrieve_run_usage(
     run_id: str,
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     Get usage statistics for a run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=actor_id)
+    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     try:
         usage = server.job_manager.get_job_usage(job_id=run_id, actor=actor)
@@ -173,7 +173,7 @@ def retrieve_run_usage(
 async def list_run_steps(
     run_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
@@ -197,7 +197,7 @@ async def list_run_steps(
     if order not in ["asc", "desc"]:
         raise HTTPException(status_code=400, detail="Order must be 'asc' or 'desc'")
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         steps = server.job_manager.get_job_steps(
@@ -216,13 +216,13 @@ async def list_run_steps(
 @router.delete("/{run_id}", response_model=Run, operation_id="delete_run")
 async def delete_run(
     run_id: str,
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
     """
     Delete a run by its run_id.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         job = await server.job_manager.delete_job_by_id_async(job_id=run_id, actor=actor)
@@ -266,10 +266,10 @@ async def delete_run(
 async def retrieve_stream(
     run_id: str,
     request: RetrieveStreamRequest = Body(None),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
     except NoResultFound:

@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Query
 
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 
 if TYPE_CHECKING:
     from letta.server.server import SyncServer
@@ -26,12 +26,12 @@ async def list_tags(
     order_by: Literal["name"] = Query("name", description="Field to sort by"),
     query_text: Optional[str] = Query(None, description="Filter tags by text search"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get the list of all agent tags that have been created.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     tags = await server.agent_manager.list_tags_async(
         actor=actor, before=before, after=after, limit=limit, query_text=query_text, ascending=(order == "asc")
     )

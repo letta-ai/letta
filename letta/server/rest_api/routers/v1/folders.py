@@ -1,11 +1,10 @@
-import asyncio
 import mimetypes
 import os
 import tempfile
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from starlette import status
 from starlette.responses import Response
 
@@ -27,7 +26,7 @@ from letta.schemas.passage import Passage
 from letta.schemas.source import Source, SourceCreate, SourceUpdate
 from letta.schemas.source_metadata import OrganizationSourcesStats
 from letta.schemas.user import User
-from letta.server.rest_api.utils import get_letta_server
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
 from letta.services.file_processor.embedder.openai_embedder import OpenAIEmbedder
 from letta.services.file_processor.embedder.pinecone_embedder import PineconeEmbedder
@@ -50,12 +49,12 @@ router = APIRouter(prefix="/folders", tags=["folders"])
 @router.get("/count", response_model=int, operation_id="count_folders")
 async def count_folders(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Count all data folders created by a user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.size_async(actor=actor)
 
 
@@ -63,12 +62,12 @@ async def count_folders(
 async def retrieve_folder(
     folder_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a folder by ID
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
     if not folder:
@@ -80,12 +79,12 @@ async def retrieve_folder(
 async def get_folder_id_by_name(
     folder_name: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get a folder by name
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_name(source_name=folder_name, actor=actor)
     if not folder:
@@ -96,7 +95,7 @@ async def get_folder_id_by_name(
 @router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_folders_metadata")
 async def get_folders_metadata(
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
     include_detailed_per_source_metadata: bool = False,
 ):
     """
@@ -108,7 +107,7 @@ async def get_folders_metadata(
     - Total size of all files
     - Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.get_organization_sources_metadata(
         actor=actor, include_detailed_per_source_metadata=include_detailed_per_source_metadata
     )
@@ -128,12 +127,12 @@ async def list_folders(
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all data folders created by a user.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.list_sources(actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"))
 
 
@@ -141,12 +140,12 @@ async def list_folders(
 async def create_folder(
     folder_create: SourceCreate,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Create a new data folder.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # TODO: need to asyncify this
     if not folder_create.embedding_config:
@@ -176,13 +175,13 @@ async def modify_folder(
     folder_id: str,
     folder: SourceUpdate,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Update the name or documentation of an existing data folder.
     """
     # TODO: allow updating the handle/embedding config
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     if not await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor):
         raise HTTPException(status_code=404, detail=f"Folder with id={folder_id} does not exist.")
     return await server.source_manager.update_source(source_id=folder_id, source_update=folder, actor=actor)
@@ -192,12 +191,12 @@ async def modify_folder(
 async def delete_folder(
     folder_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a data folder.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
     agent_states = await server.source_manager.list_attached_agents(source_id=folder_id, actor=actor)
     files = await server.file_manager.list_files(folder_id, actor)
@@ -232,7 +231,7 @@ async def upload_file_to_folder(
     duplicate_handling: DuplicateFileHandling = Query(DuplicateFileHandling.SUFFIX, description="How to handle duplicate filenames"),
     name: Optional[str] = Query(None, description="Optional custom name to override the uploaded file's name"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Upload a file to a data folder.
@@ -269,7 +268,7 @@ async def upload_file_to_folder(
             ),
         )
 
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     folder = await server.source_manager.get_source_by_id(source_id=folder_id, actor=actor)
     if folder is None:
@@ -347,12 +346,12 @@ async def upload_file_to_folder(
 async def get_agents_for_folder(
     folder_id: str,
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Get all agent IDs that have the specified folder attached.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.source_manager.get_agents_for_source_id(source_id=folder_id, actor=actor)
 
 
@@ -363,12 +362,12 @@ async def list_folder_passages(
     before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
     limit: int = Query(100, description="Maximum number of messages to retrieve."),
     server: SyncServer = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all passages associated with a data folder.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.query_source_passages_async(
         actor=actor,
         source_id=folder_id,
@@ -385,12 +384,12 @@ async def list_folder_files(
     after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     List paginated files associated with a data folder.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.list_files(
         source_id=folder_id,
         limit=limit,
@@ -407,12 +406,12 @@ async def list_folder_files(
 #    file_id: str,
 #    include_content: bool = Query(False, description="Whether to include full file content"),
 #    server: "SyncServer" = Depends(get_letta_server),
-#    actor_id: Optional[str] = Header(None, alias="user_id"),
+#    headers: HeaderParams = Depends(get_headers),
 # ):
 #    """
 #    Retrieve metadata for a specific file by its ID.
 #    """
-#    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+#    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 #
 #    # Get file metadata using the file manager
 #    file_metadata = await server.file_manager.get_file_by_id(
@@ -457,12 +456,12 @@ async def delete_file_from_folder(
     folder_id: str,
     file_id: str,
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     """
     Delete a file from a folder.
     """
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     deleted_file = await server.file_manager.delete_file(file_id=file_id, actor=actor)
 

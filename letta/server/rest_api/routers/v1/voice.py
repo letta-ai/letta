@@ -1,12 +1,13 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 
 import openai
-from fastapi import APIRouter, Body, Depends, Header
+from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
 
 from letta.agents.voice_agent import VoiceAgent
 from letta.log import get_logger
-from letta.server.rest_api.utils import get_letta_server, get_user_message_from_chat_completions_request
+from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
+from letta.server.rest_api.utils import get_user_message_from_chat_completions_request
 from letta.settings import model_settings
 
 if TYPE_CHECKING:
@@ -33,9 +34,9 @@ async def create_voice_chat_completions(
     agent_id: str,
     completion_request: Dict[str, Any] = Body(...),  # The validation is soft in case providers like VAPI send extra params
     server: "SyncServer" = Depends(get_letta_server),
-    user_id: Optional[str] = Header(None, alias="user_id"),
+    headers: HeaderParams = Depends(get_headers),
 ):
-    actor = await server.user_manager.get_actor_or_default_async(actor_id=user_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     # Create OpenAI async client
     client = openai.AsyncClient(
