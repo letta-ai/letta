@@ -182,6 +182,13 @@ class ProviderManager:
 
     @enforce_types
     @trace_method
+    async def get_provider_async(self, provider_id: str, actor: PydanticUser) -> PydanticProvider:
+        async with db_registry.async_session() as session:
+            provider_model = await ProviderModel.read_async(db_session=session, identifier=provider_id, actor=actor)
+            return provider_model.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def get_provider_id_from_name(self, provider_name: Union[str, None], actor: PydanticUser) -> Optional[str]:
         providers = self.list_providers(name=provider_name, actor=actor)
         return providers[0].id if providers else None
