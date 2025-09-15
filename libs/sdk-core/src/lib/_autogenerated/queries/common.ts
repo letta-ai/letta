@@ -47,13 +47,20 @@ export const useToolsServiceRetrieveToolKey = 'ToolsServiceRetrieveTool';
 export const UseToolsServiceRetrieveToolKeyFn = (
   {
     toolId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     toolId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useToolsServiceRetrieveToolKey, ...(queryKey ?? [{ toolId, userId }])];
+) => [
+  useToolsServiceRetrieveToolKey,
+  ...(queryKey ?? [{ toolId, userAgent, userId, xProjectId }]),
+];
 export type ToolsServiceCountToolsDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.countTools>
 >;
@@ -72,7 +79,9 @@ export const UseToolsServiceCountToolsKeyFn = (
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     excludeLettaTools?: boolean;
     excludeToolTypes?: string[];
@@ -82,7 +91,9 @@ export const UseToolsServiceCountToolsKeyFn = (
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -97,7 +108,9 @@ export const UseToolsServiceCountToolsKeyFn = (
       search,
       toolIds,
       toolTypes,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -123,7 +136,9 @@ export const UseToolsServiceListToolsKeyFn = (
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -137,7 +152,9 @@ export const UseToolsServiceListToolsKeyFn = (
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -156,7 +173,9 @@ export const UseToolsServiceListToolsKeyFn = (
       search,
       toolIds,
       toolTypes,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -171,12 +190,19 @@ export const useToolsServiceListComposioAppsKey =
   'ToolsServiceListComposioApps';
 export const UseToolsServiceListComposioAppsKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useToolsServiceListComposioAppsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useToolsServiceListComposioAppsKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type ToolsServiceListComposioActionsByAppDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listComposioActionsByApp>
 >;
@@ -189,15 +215,19 @@ export const useToolsServiceListComposioActionsByAppKey =
 export const UseToolsServiceListComposioActionsByAppKeyFn = (
   {
     composioAppName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     composioAppName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useToolsServiceListComposioActionsByAppKey,
-  ...(queryKey ?? [{ composioAppName, userId }]),
+  ...(queryKey ?? [{ composioAppName, userAgent, userId, xProjectId }]),
 ];
 export type ToolsServiceListMcpServersDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listMcpServers>
@@ -209,12 +239,19 @@ export type ToolsServiceListMcpServersQueryResult<
 export const useToolsServiceListMcpServersKey = 'ToolsServiceListMcpServers';
 export const UseToolsServiceListMcpServersKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useToolsServiceListMcpServersKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useToolsServiceListMcpServersKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type ToolsServiceListMcpToolsByServerDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.listMcpToolsByServer>
 >;
@@ -227,15 +264,19 @@ export const useToolsServiceListMcpToolsByServerKey =
 export const UseToolsServiceListMcpToolsByServerKeyFn = (
   {
     mcpServerName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     mcpServerName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useToolsServiceListMcpToolsByServerKey,
-  ...(queryKey ?? [{ mcpServerName, userId }]),
+  ...(queryKey ?? [{ mcpServerName, userAgent, userId, xProjectId }]),
 ];
 export type ToolsServiceMcpOauthCallbackDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.mcpOauthCallback>
@@ -275,12 +316,19 @@ export type SourcesServiceCountSourcesQueryResult<
 export const useSourcesServiceCountSourcesKey = 'SourcesServiceCountSources';
 export const UseSourcesServiceCountSourcesKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useSourcesServiceCountSourcesKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useSourcesServiceCountSourcesKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type SourcesServiceRetrieveSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.retrieveSource>
 >;
@@ -293,15 +341,19 @@ export const useSourcesServiceRetrieveSourceKey =
 export const UseSourcesServiceRetrieveSourceKeyFn = (
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceRetrieveSourceKey,
-  ...(queryKey ?? [{ sourceId, userId }]),
+  ...(queryKey ?? [{ sourceId, userAgent, userId, xProjectId }]),
 ];
 export type SourcesServiceGetSourceIdByNameDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSourceIdByName>
@@ -315,15 +367,19 @@ export const useSourcesServiceGetSourceIdByNameKey =
 export const UseSourcesServiceGetSourceIdByNameKeyFn = (
   {
     sourceName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceGetSourceIdByNameKey,
-  ...(queryKey ?? [{ sourceName, userId }]),
+  ...(queryKey ?? [{ sourceName, userAgent, userId, xProjectId }]),
 ];
 export type SourcesServiceGetSourcesMetadataDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getSourcesMetadata>
@@ -337,15 +393,21 @@ export const useSourcesServiceGetSourcesMetadataKey =
 export const UseSourcesServiceGetSourcesMetadataKeyFn = (
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceGetSourcesMetadataKey,
-  ...(queryKey ?? [{ includeDetailedPerSourceMetadata, userId }]),
+  ...(queryKey ?? [
+    { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
+  ]),
 ];
 export type SourcesServiceListSourcesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSources>
@@ -357,12 +419,19 @@ export type SourcesServiceListSourcesQueryResult<
 export const useSourcesServiceListSourcesKey = 'SourcesServiceListSources';
 export const UseSourcesServiceListSourcesKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useSourcesServiceListSourcesKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useSourcesServiceListSourcesKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type SourcesServiceGetAgentsForSourceDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.getAgentsForSource>
 >;
@@ -375,15 +444,19 @@ export const useSourcesServiceGetAgentsForSourceKey =
 export const UseSourcesServiceGetAgentsForSourceKeyFn = (
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceGetAgentsForSourceKey,
-  ...(queryKey ?? [{ sourceId, userId }]),
+  ...(queryKey ?? [{ sourceId, userAgent, userId, xProjectId }]),
 ];
 export type SourcesServiceListSourcePassagesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourcePassages>
@@ -400,18 +473,24 @@ export const UseSourcesServiceListSourcePassagesKeyFn = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourcePassagesKey,
-  ...(queryKey ?? [{ after, before, limit, sourceId, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, sourceId, userAgent, userId, xProjectId },
+  ]),
 ];
 export type SourcesServiceListSourceFilesDefaultResponse = Awaited<
   ReturnType<typeof SourcesService.listSourceFiles>
@@ -429,20 +508,33 @@ export const UseSourcesServiceListSourceFilesKeyFn = (
     includeContent,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceListSourceFilesKey,
   ...(queryKey ?? [
-    { after, checkStatusUpdates, includeContent, limit, sourceId, userId },
+    {
+      after,
+      checkStatusUpdates,
+      includeContent,
+      limit,
+      sourceId,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type SourcesServiceGetFileMetadataDefaultResponse = Awaited<
@@ -459,17 +551,23 @@ export const UseSourcesServiceGetFileMetadataKeyFn = (
     fileId,
     includeContent,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     fileId: string;
     includeContent?: boolean;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useSourcesServiceGetFileMetadataKey,
-  ...(queryKey ?? [{ fileId, includeContent, sourceId, userId }]),
+  ...(queryKey ?? [
+    { fileId, includeContent, sourceId, userAgent, userId, xProjectId },
+  ]),
 ];
 export type FoldersServiceCountFoldersDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.countFolders>
@@ -481,12 +579,19 @@ export type FoldersServiceCountFoldersQueryResult<
 export const useFoldersServiceCountFoldersKey = 'FoldersServiceCountFolders';
 export const UseFoldersServiceCountFoldersKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useFoldersServiceCountFoldersKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useFoldersServiceCountFoldersKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type FoldersServiceRetrieveFolderDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.retrieveFolder>
 >;
@@ -499,15 +604,19 @@ export const useFoldersServiceRetrieveFolderKey =
 export const UseFoldersServiceRetrieveFolderKeyFn = (
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceRetrieveFolderKey,
-  ...(queryKey ?? [{ folderId, userId }]),
+  ...(queryKey ?? [{ folderId, userAgent, userId, xProjectId }]),
 ];
 export type FoldersServiceGetFolderIdByNameDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.getFolderIdByName>
@@ -521,15 +630,19 @@ export const useFoldersServiceGetFolderIdByNameKey =
 export const UseFoldersServiceGetFolderIdByNameKeyFn = (
   {
     folderName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceGetFolderIdByNameKey,
-  ...(queryKey ?? [{ folderName, userId }]),
+  ...(queryKey ?? [{ folderName, userAgent, userId, xProjectId }]),
 ];
 export type FoldersServiceGetFoldersMetadataDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.getFoldersMetadata>
@@ -543,15 +656,21 @@ export const useFoldersServiceGetFoldersMetadataKey =
 export const UseFoldersServiceGetFoldersMetadataKeyFn = (
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceGetFoldersMetadataKey,
-  ...(queryKey ?? [{ includeDetailedPerSourceMetadata, userId }]),
+  ...(queryKey ?? [
+    { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
+  ]),
 ];
 export type FoldersServiceListFoldersDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.listFolders>
@@ -568,19 +687,25 @@ export const UseFoldersServiceListFoldersKeyFn = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceListFoldersKey,
-  ...(queryKey ?? [{ after, before, limit, order, orderBy, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
+  ]),
 ];
 export type FoldersServiceGetAgentsForFolderDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.getAgentsForFolder>
@@ -594,15 +719,19 @@ export const useFoldersServiceGetAgentsForFolderKey =
 export const UseFoldersServiceGetAgentsForFolderKeyFn = (
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceGetAgentsForFolderKey,
-  ...(queryKey ?? [{ folderId, userId }]),
+  ...(queryKey ?? [{ folderId, userAgent, userId, xProjectId }]),
 ];
 export type FoldersServiceListFolderPassagesDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.listFolderPassages>
@@ -619,18 +748,24 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
     before,
     folderId,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     folderId: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceListFolderPassagesKey,
-  ...(queryKey ?? [{ after, before, folderId, limit, userId }]),
+  ...(queryKey ?? [
+    { after, before, folderId, limit, userAgent, userId, xProjectId },
+  ]),
 ];
 export type FoldersServiceListFolderFilesDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.listFolderFiles>
@@ -647,18 +782,24 @@ export const UseFoldersServiceListFolderFilesKeyFn = (
     folderId,
     includeContent,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useFoldersServiceListFolderFilesKey,
-  ...(queryKey ?? [{ after, folderId, includeContent, limit, userId }]),
+  ...(queryKey ?? [
+    { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
+  ]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgents>
@@ -687,7 +828,9 @@ export const UseAgentsServiceListAgentsKeyFn = (
     sortBy,
     tags,
     templateId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
@@ -706,7 +849,9 @@ export const UseAgentsServiceListAgentsKeyFn = (
     sortBy?: string;
     tags?: string[];
     templateId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -730,7 +875,9 @@ export const UseAgentsServiceListAgentsKeyFn = (
       sortBy,
       tags,
       templateId,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -744,12 +891,19 @@ export type AgentsServiceCountAgentsQueryResult<
 export const useAgentsServiceCountAgentsKey = 'AgentsServiceCountAgents';
 export const UseAgentsServiceCountAgentsKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useAgentsServiceCountAgentsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useAgentsServiceCountAgentsKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type AgentsServiceExportAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.exportAgent>
 >;
@@ -764,19 +918,31 @@ export const UseAgentsServiceExportAgentKeyFn = (
     maxSteps,
     requestBody,
     useLegacyFormat,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     maxSteps?: number;
     requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceExportAgentKey,
   ...(queryKey ?? [
-    { agentId, maxSteps, requestBody, useLegacyFormat, userId },
+    {
+      agentId,
+      maxSteps,
+      requestBody,
+      useLegacyFormat,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceRetrieveAgentContextWindowDefaultResponse = Awaited<
@@ -791,15 +957,19 @@ export const useAgentsServiceRetrieveAgentContextWindowKey =
 export const UseAgentsServiceRetrieveAgentContextWindowKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceRetrieveAgentContextWindowKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceRetrieveAgentDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgent>
@@ -813,16 +983,22 @@ export const UseAgentsServiceRetrieveAgentKeyFn = (
   {
     agentId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceRetrieveAgentKey,
-  ...(queryKey ?? [{ agentId, includeRelationships, userId }]),
+  ...(queryKey ?? [
+    { agentId, includeRelationships, userAgent, userId, xProjectId },
+  ]),
 ];
 export type AgentsServiceListAgentToolsDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentTools>
@@ -835,15 +1011,19 @@ export const useAgentsServiceListAgentToolsKey = 'AgentsServiceListAgentTools';
 export const UseAgentsServiceListAgentToolsKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentToolsKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceListAgentSourcesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentSources>
@@ -857,15 +1037,19 @@ export const useAgentsServiceListAgentSourcesKey =
 export const UseAgentsServiceListAgentSourcesKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentSourcesKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceListAgentFoldersDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentFolders>
@@ -879,15 +1063,19 @@ export const useAgentsServiceListAgentFoldersKey =
 export const UseAgentsServiceListAgentFoldersKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentFoldersKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceListAgentFilesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listAgentFiles>
@@ -903,18 +1091,24 @@ export const UseAgentsServiceListAgentFilesKeyFn = (
     cursor,
     isOpen,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentFilesKey,
-  ...(queryKey ?? [{ agentId, cursor, isOpen, limit, userId }]),
+  ...(queryKey ?? [
+    { agentId, cursor, isOpen, limit, userAgent, userId, xProjectId },
+  ]),
 ];
 export type AgentsServiceRetrieveAgentMemoryDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveAgentMemory>
@@ -928,15 +1122,19 @@ export const useAgentsServiceRetrieveAgentMemoryKey =
 export const UseAgentsServiceRetrieveAgentMemoryKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceRetrieveAgentMemoryKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceRetrieveCoreMemoryBlockDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.retrieveCoreMemoryBlock>
@@ -951,16 +1149,20 @@ export const UseAgentsServiceRetrieveCoreMemoryBlockKeyFn = (
   {
     agentId,
     blockLabel,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     blockLabel: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceRetrieveCoreMemoryBlockKey,
-  ...(queryKey ?? [{ agentId, blockLabel, userId }]),
+  ...(queryKey ?? [{ agentId, blockLabel, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceListCoreMemoryBlocksDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listCoreMemoryBlocks>
@@ -974,15 +1176,19 @@ export const useAgentsServiceListCoreMemoryBlocksKey =
 export const UseAgentsServiceListCoreMemoryBlocksKeyFn = (
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListCoreMemoryBlocksKey,
-  ...(queryKey ?? [{ agentId, userId }]),
+  ...(queryKey ?? [{ agentId, userAgent, userId, xProjectId }]),
 ];
 export type AgentsServiceListPassagesDefaultResponse = Awaited<
   ReturnType<typeof AgentsService.listPassages>
@@ -1000,7 +1206,9 @@ export const UseAgentsServiceListPassagesKeyFn = (
     before,
     limit,
     search,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1008,13 +1216,25 @@ export const UseAgentsServiceListPassagesKeyFn = (
     before?: string;
     limit?: number;
     search?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListPassagesKey,
   ...(queryKey ?? [
-    { after, agentId, ascending, before, limit, search, userId },
+    {
+      after,
+      agentId,
+      ascending,
+      before,
+      limit,
+      search,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceSearchArchivalMemoryDefaultResponse = Awaited<
@@ -1035,7 +1255,9 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
     tagMatchMode,
     tags,
     topK,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     endDatetime?: string;
@@ -1044,7 +1266,9 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
     tagMatchMode?: 'any' | 'all';
     tags?: string[];
     topK?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
@@ -1058,7 +1282,9 @@ export const UseAgentsServiceSearchArchivalMemoryKeyFn = (
       tagMatchMode,
       tags,
       topK,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -1081,7 +1307,9 @@ export const UseAgentsServiceListMessagesKeyFn = (
     includeErr,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1092,7 +1320,9 @@ export const UseAgentsServiceListMessagesKeyFn = (
     includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
@@ -1108,7 +1338,9 @@ export const UseAgentsServiceListMessagesKeyFn = (
       includeErr,
       limit,
       useAssistantMessage,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -1125,16 +1357,20 @@ export const UseAgentsServiceListAgentGroupsKeyFn = (
   {
     agentId,
     managerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     managerType?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useAgentsServiceListAgentGroupsKey,
-  ...(queryKey ?? [{ agentId, managerType, userId }]),
+  ...(queryKey ?? [{ agentId, managerType, userAgent, userId, xProjectId }]),
 ];
 export type GroupsServiceListGroupsDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroups>
@@ -1153,7 +1389,9 @@ export const UseGroupsServiceListGroupsKeyFn = (
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1162,13 +1400,26 @@ export const UseGroupsServiceListGroupsKeyFn = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useGroupsServiceListGroupsKey,
   ...(queryKey ?? [
-    { after, before, limit, managerType, order, orderBy, projectId, userId },
+    {
+      after,
+      before,
+      limit,
+      managerType,
+      order,
+      orderBy,
+      projectId,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type GroupsServiceCountGroupsDefaultResponse = Awaited<
@@ -1181,12 +1432,19 @@ export type GroupsServiceCountGroupsQueryResult<
 export const useGroupsServiceCountGroupsKey = 'GroupsServiceCountGroups';
 export const UseGroupsServiceCountGroupsKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useGroupsServiceCountGroupsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useGroupsServiceCountGroupsKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type GroupsServiceRetrieveGroupDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.retrieveGroup>
 >;
@@ -1198,13 +1456,20 @@ export const useGroupsServiceRetrieveGroupKey = 'GroupsServiceRetrieveGroup';
 export const UseGroupsServiceRetrieveGroupKeyFn = (
   {
     groupId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     groupId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useGroupsServiceRetrieveGroupKey, ...(queryKey ?? [{ groupId, userId }])];
+) => [
+  useGroupsServiceRetrieveGroupKey,
+  ...(queryKey ?? [{ groupId, userAgent, userId, xProjectId }]),
+];
 export type GroupsServiceListGroupMessagesDefaultResponse = Awaited<
   ReturnType<typeof GroupsService.listGroupMessages>
 >;
@@ -1223,7 +1488,9 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     groupId,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     assistantMessageToolKwarg?: string;
@@ -1232,7 +1499,9 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     groupId: string;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
@@ -1246,7 +1515,9 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
       groupId,
       limit,
       useAssistantMessage,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -1270,7 +1541,9 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1281,7 +1554,9 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -1297,7 +1572,9 @@ export const UseIdentitiesServiceListIdentitiesKeyFn = (
       order,
       orderBy,
       projectId,
+      userAgent,
       userId,
+      xProjectId,
     },
   ]),
 ];
@@ -1312,12 +1589,19 @@ export const useIdentitiesServiceCountIdentitiesKey =
   'IdentitiesServiceCountIdentities';
 export const UseIdentitiesServiceCountIdentitiesKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useIdentitiesServiceCountIdentitiesKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useIdentitiesServiceCountIdentitiesKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type IdentitiesServiceRetrieveIdentityDefaultResponse = Awaited<
   ReturnType<typeof IdentitiesService.retrieveIdentity>
 >;
@@ -1330,15 +1614,19 @@ export const useIdentitiesServiceRetrieveIdentityKey =
 export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
   {
     identityId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     identityId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useIdentitiesServiceRetrieveIdentityKey,
-  ...(queryKey ?? [{ identityId, userId }]),
+  ...(queryKey ?? [{ identityId, userAgent, userId, xProjectId }]),
 ];
 export type InternalTemplatesServiceListDeploymentEntitiesDefaultResponse =
   Awaited<ReturnType<typeof InternalTemplatesService.listDeploymentEntities>>;
@@ -1352,16 +1640,22 @@ export const UseInternalTemplatesServiceListDeploymentEntitiesKeyFn = (
   {
     deploymentId,
     entityTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     deploymentId: string;
     entityTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useInternalTemplatesServiceListDeploymentEntitiesKey,
-  ...(queryKey ?? [{ deploymentId, entityTypes, userId }]),
+  ...(queryKey ?? [
+    { deploymentId, entityTypes, userAgent, userId, xProjectId },
+  ]),
 ];
 export type ModelsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listModels>
@@ -1376,17 +1670,30 @@ export const UseModelsServiceListModelsKeyFn = (
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useModelsServiceListModelsKey,
-  ...(queryKey ?? [{ providerCategory, providerName, providerType, userId }]),
+  ...(queryKey ?? [
+    {
+      providerCategory,
+      providerName,
+      providerType,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type ModelsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof ModelsService.listEmbeddingModels>
@@ -1399,12 +1706,19 @@ export const useModelsServiceListEmbeddingModelsKey =
   'ModelsServiceListEmbeddingModels';
 export const UseModelsServiceListEmbeddingModelsKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useModelsServiceListEmbeddingModelsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useModelsServiceListEmbeddingModelsKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type LlmsServiceListModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listModels>
 >;
@@ -1418,17 +1732,30 @@ export const UseLlmsServiceListModelsKeyFn = (
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useLlmsServiceListModelsKey,
-  ...(queryKey ?? [{ providerCategory, providerName, providerType, userId }]),
+  ...(queryKey ?? [
+    {
+      providerCategory,
+      providerName,
+      providerType,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type LlmsServiceListEmbeddingModelsDefaultResponse = Awaited<
   ReturnType<typeof LlmsService.listEmbeddingModels>
@@ -1441,12 +1768,19 @@ export const useLlmsServiceListEmbeddingModelsKey =
   'LlmsServiceListEmbeddingModels';
 export const UseLlmsServiceListEmbeddingModelsKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useLlmsServiceListEmbeddingModelsKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useLlmsServiceListEmbeddingModelsKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type BlocksServiceListBlocksDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.listBlocks>
 >;
@@ -1473,8 +1807,10 @@ export const UseBlocksServiceListBlocksKeyFn = (
     orderBy,
     projectId,
     templatesOnly,
+    userAgent,
     userId,
     valueSearch,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1492,8 +1828,10 @@ export const UseBlocksServiceListBlocksKeyFn = (
     orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
+    userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -1516,8 +1854,10 @@ export const UseBlocksServiceListBlocksKeyFn = (
       orderBy,
       projectId,
       templatesOnly,
+      userAgent,
       userId,
       valueSearch,
+      xProjectId,
     },
   ]),
 ];
@@ -1531,12 +1871,19 @@ export type BlocksServiceCountBlocksQueryResult<
 export const useBlocksServiceCountBlocksKey = 'BlocksServiceCountBlocks';
 export const UseBlocksServiceCountBlocksKeyFn = (
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
-) => [useBlocksServiceCountBlocksKey, ...(queryKey ?? [{ userId }])];
+) => [
+  useBlocksServiceCountBlocksKey,
+  ...(queryKey ?? [{ userAgent, userId, xProjectId }]),
+];
 export type BlocksServiceRetrieveBlockDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.retrieveBlock>
 >;
@@ -1548,13 +1895,20 @@ export const useBlocksServiceRetrieveBlockKey = 'BlocksServiceRetrieveBlock';
 export const UseBlocksServiceRetrieveBlockKeyFn = (
   {
     blockId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useBlocksServiceRetrieveBlockKey, ...(queryKey ?? [{ blockId, userId }])];
+) => [
+  useBlocksServiceRetrieveBlockKey,
+  ...(queryKey ?? [{ blockId, userAgent, userId, xProjectId }]),
+];
 export type BlocksServiceListAgentsForBlockDefaultResponse = Awaited<
   ReturnType<typeof BlocksService.listAgentsForBlock>
 >;
@@ -1568,16 +1922,22 @@ export const UseBlocksServiceListAgentsForBlockKeyFn = (
   {
     blockId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useBlocksServiceListAgentsForBlockKey,
-  ...(queryKey ?? [{ blockId, includeRelationships, userId }]),
+  ...(queryKey ?? [
+    { blockId, includeRelationships, userAgent, userId, xProjectId },
+  ]),
 ];
 export type JobsServiceListJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listJobs>
@@ -1594,19 +1954,34 @@ export const UseJobsServiceListJobsKeyFn = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useJobsServiceListJobsKey,
-  ...(queryKey ?? [{ after, ascending, before, limit, sourceId, userId }]),
+  ...(queryKey ?? [
+    {
+      after,
+      ascending,
+      before,
+      limit,
+      sourceId,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type JobsServiceListActiveJobsDefaultResponse = Awaited<
   ReturnType<typeof JobsService.listActiveJobs>
@@ -1623,19 +1998,34 @@ export const UseJobsServiceListActiveJobsKeyFn = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useJobsServiceListActiveJobsKey,
-  ...(queryKey ?? [{ after, ascending, before, limit, sourceId, userId }]),
+  ...(queryKey ?? [
+    {
+      after,
+      ascending,
+      before,
+      limit,
+      sourceId,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type JobsServiceRetrieveJobDefaultResponse = Awaited<
   ReturnType<typeof JobsService.retrieveJob>
@@ -1648,13 +2038,20 @@ export const useJobsServiceRetrieveJobKey = 'JobsServiceRetrieveJob';
 export const UseJobsServiceRetrieveJobKeyFn = (
   {
     jobId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     jobId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useJobsServiceRetrieveJobKey, ...(queryKey ?? [{ jobId, userId }])];
+) => [
+  useJobsServiceRetrieveJobKey,
+  ...(queryKey ?? [{ jobId, userAgent, userId, xProjectId }]),
+];
 export type HealthServiceCheckHealthDefaultResponse = Awaited<
   ReturnType<typeof HealthService.checkHealth>
 >;
@@ -1683,17 +2080,23 @@ export const UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn =
       after,
       limit,
       sandboxType,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxType?: SandboxType;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     } = {},
     queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKey,
-    ...(queryKey ?? [{ after, limit, sandboxType, userId }]),
+    ...(queryKey ?? [
+      { after, limit, sandboxType, userAgent, userId, xProjectId },
+    ]),
   ];
 export type SandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetDefaultResponse =
   Awaited<
@@ -1713,17 +2116,23 @@ export const UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       after,
       limit,
       sandboxConfigId,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxConfigId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     queryKey?: Array<unknown>,
   ) => [
     useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKey,
-    ...(queryKey ?? [{ after, limit, sandboxConfigId, userId }]),
+    ...(queryKey ?? [
+      { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
+    ]),
   ];
 export type ProvidersServiceListProvidersDefaultResponse = Awaited<
   ReturnType<typeof ProvidersService.listProviders>
@@ -1743,7 +2152,9 @@ export const UseProvidersServiceListProvidersKeyFn = (
     order,
     orderBy,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1752,14 +2163,53 @@ export const UseProvidersServiceListProvidersKeyFn = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useProvidersServiceListProvidersKey,
   ...(queryKey ?? [
-    { after, before, limit, name, order, orderBy, providerType, userId },
+    {
+      after,
+      before,
+      limit,
+      name,
+      order,
+      orderBy,
+      providerType,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
+];
+export type ProvidersServiceRetrieveProviderDefaultResponse = Awaited<
+  ReturnType<typeof ProvidersService.retrieveProvider>
+>;
+export type ProvidersServiceRetrieveProviderQueryResult<
+  TData = ProvidersServiceRetrieveProviderDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useProvidersServiceRetrieveProviderKey =
+  'ProvidersServiceRetrieveProvider';
+export const UseProvidersServiceRetrieveProviderKeyFn = (
+  {
+    providerId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    providerId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useProvidersServiceRetrieveProviderKey,
+  ...(queryKey ?? [{ providerId, userAgent, userId, xProjectId }]),
 ];
 export type RunsServiceListRunsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRuns>
@@ -1777,7 +2227,9 @@ export const UseRunsServiceListRunsKeyFn = (
     background,
     before,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentIds?: string[];
@@ -1785,13 +2237,25 @@ export const UseRunsServiceListRunsKeyFn = (
     background?: boolean;
     before?: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunsKey,
   ...(queryKey ?? [
-    { after, agentIds, ascending, background, before, limit, userId },
+    {
+      after,
+      agentIds,
+      ascending,
+      background,
+      before,
+      limit,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type RunsServiceListActiveRunsDefaultResponse = Awaited<
@@ -1806,16 +2270,20 @@ export const UseRunsServiceListActiveRunsKeyFn = (
   {
     agentIds,
     background,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentIds?: string[];
     background?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListActiveRunsKey,
-  ...(queryKey ?? [{ agentIds, background, userId }]),
+  ...(queryKey ?? [{ agentIds, background, userAgent, userId, xProjectId }]),
 ];
 export type RunsServiceRetrieveRunDefaultResponse = Awaited<
   ReturnType<typeof RunsService.retrieveRun>
@@ -1828,13 +2296,20 @@ export const useRunsServiceRetrieveRunKey = 'RunsServiceRetrieveRun';
 export const UseRunsServiceRetrieveRunKeyFn = (
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useRunsServiceRetrieveRunKey, ...(queryKey ?? [{ runId, userId }])];
+) => [
+  useRunsServiceRetrieveRunKey,
+  ...(queryKey ?? [{ runId, userAgent, userId, xProjectId }]),
+];
 export type RunsServiceListRunMessagesDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRunMessages>
 >;
@@ -1850,19 +2325,25 @@ export const UseRunsServiceListRunMessagesKeyFn = (
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunMessagesKey,
-  ...(queryKey ?? [{ after, before, limit, order, runId, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, runId, userAgent, userId, xProjectId },
+  ]),
 ];
 export type RunsServiceRetrieveRunUsageDefaultResponse = Awaited<
   ReturnType<typeof RunsService.retrieveRunUsage>
@@ -1875,13 +2356,20 @@ export const useRunsServiceRetrieveRunUsageKey = 'RunsServiceRetrieveRunUsage';
 export const UseRunsServiceRetrieveRunUsageKeyFn = (
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
-) => [useRunsServiceRetrieveRunUsageKey, ...(queryKey ?? [{ runId, userId }])];
+) => [
+  useRunsServiceRetrieveRunUsageKey,
+  ...(queryKey ?? [{ runId, userAgent, userId, xProjectId }]),
+];
 export type RunsServiceListRunStepsDefaultResponse = Awaited<
   ReturnType<typeof RunsService.listRunSteps>
 >;
@@ -1897,19 +2385,25 @@ export const UseRunsServiceListRunStepsKeyFn = (
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: string;
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListRunStepsKey,
-  ...(queryKey ?? [{ after, before, limit, order, runId, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, runId, userAgent, userId, xProjectId },
+  ]),
 ];
 export type StepsServiceListStepsDefaultResponse = Awaited<
   ReturnType<typeof StepsService.listSteps>
@@ -1935,8 +2429,10 @@ export const UseStepsServiceListStepsKeyFn = (
     startDate,
     tags,
     traceIds,
+    userAgent,
     userId,
     xProject,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -1952,8 +2448,10 @@ export const UseStepsServiceListStepsKeyFn = (
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
+    userAgent?: string;
     userId?: string;
     xProject?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
@@ -1974,8 +2472,10 @@ export const UseStepsServiceListStepsKeyFn = (
       startDate,
       tags,
       traceIds,
+      userAgent,
       userId,
       xProject,
+      xProjectId,
     },
   ]),
 ];
@@ -1990,56 +2490,71 @@ export const useStepsServiceRetrieveStepKey = 'StepsServiceRetrieveStep';
 export const UseStepsServiceRetrieveStepKeyFn = (
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
-  },
-  queryKey?: Array<unknown>,
-) => [useStepsServiceRetrieveStepKey, ...(queryKey ?? [{ stepId, userId }])];
-export type StepsServiceRetrieveStepMetricsDefaultResponse = Awaited<
-  ReturnType<typeof StepsService.retrieveStepMetrics>
->;
-export type StepsServiceRetrieveStepMetricsQueryResult<
-  TData = StepsServiceRetrieveStepMetricsDefaultResponse,
-  TError = unknown,
-> = UseQueryResult<TData, TError>;
-export const useStepsServiceRetrieveStepMetricsKey =
-  'StepsServiceRetrieveStepMetrics';
-export const UseStepsServiceRetrieveStepMetricsKeyFn = (
-  {
-    stepId,
-    userId,
-  }: {
-    stepId: string;
-    userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useStepsServiceRetrieveStepMetricsKey,
-  ...(queryKey ?? [{ stepId, userId }]),
+  useStepsServiceRetrieveStepKey,
+  ...(queryKey ?? [{ stepId, userAgent, userId, xProjectId }]),
 ];
-export type StepsServiceRetrieveStepTraceDefaultResponse = Awaited<
-  ReturnType<typeof StepsService.retrieveStepTrace>
+export type StepsServiceRetrieveMetricsForStepDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.retrieveMetricsForStep>
 >;
-export type StepsServiceRetrieveStepTraceQueryResult<
-  TData = StepsServiceRetrieveStepTraceDefaultResponse,
+export type StepsServiceRetrieveMetricsForStepQueryResult<
+  TData = StepsServiceRetrieveMetricsForStepDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useStepsServiceRetrieveStepTraceKey =
-  'StepsServiceRetrieveStepTrace';
-export const UseStepsServiceRetrieveStepTraceKeyFn = (
+export const useStepsServiceRetrieveMetricsForStepKey =
+  'StepsServiceRetrieveMetricsForStep';
+export const UseStepsServiceRetrieveMetricsForStepKeyFn = (
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useStepsServiceRetrieveStepTraceKey,
-  ...(queryKey ?? [{ stepId, userId }]),
+  useStepsServiceRetrieveMetricsForStepKey,
+  ...(queryKey ?? [{ stepId, userAgent, userId, xProjectId }]),
+];
+export type StepsServiceRetrieveTraceForStepDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.retrieveTraceForStep>
+>;
+export type StepsServiceRetrieveTraceForStepQueryResult<
+  TData = StepsServiceRetrieveTraceForStepDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceRetrieveTraceForStepKey =
+  'StepsServiceRetrieveTraceForStep';
+export const UseStepsServiceRetrieveTraceForStepKeyFn = (
+  {
+    stepId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    stepId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useStepsServiceRetrieveTraceForStepKey,
+  ...(queryKey ?? [{ stepId, userAgent, userId, xProjectId }]),
 ];
 export type TagServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof TagService.listTags>
@@ -2057,7 +2572,9 @@ export const UseTagServiceListTagsKeyFn = (
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2065,13 +2582,25 @@ export const UseTagServiceListTagsKeyFn = (
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useTagServiceListTagsKey,
   ...(queryKey ?? [
-    { after, before, limit, order, orderBy, queryText, userId },
+    {
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      queryText,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type AdminServiceListTagsDefaultResponse = Awaited<
@@ -2090,7 +2619,9 @@ export const UseAdminServiceListTagsKeyFn = (
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2098,13 +2629,25 @@ export const UseAdminServiceListTagsKeyFn = (
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useAdminServiceListTagsKey,
   ...(queryKey ?? [
-    { after, before, limit, order, orderBy, queryText, userId },
+    {
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      queryText,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type AdminServiceListUsersDefaultResponse = Awaited<
@@ -2155,15 +2698,19 @@ export const useTelemetryServiceRetrieveProviderTraceKey =
 export const UseTelemetryServiceRetrieveProviderTraceKeyFn = (
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useTelemetryServiceRetrieveProviderTraceKey,
-  ...(queryKey ?? [{ stepId, userId }]),
+  ...(queryKey ?? [{ stepId, userAgent, userId, xProjectId }]),
 ];
 export type MessagesServiceListBatchesDefaultResponse = Awaited<
   ReturnType<typeof MessagesService.listBatches>
@@ -2180,19 +2727,25 @@ export const UseMessagesServiceListBatchesKeyFn = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useMessagesServiceListBatchesKey,
-  ...(queryKey ?? [{ after, before, limit, order, orderBy, userId }]),
+  ...(queryKey ?? [
+    { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
+  ]),
 ];
 export type MessagesServiceRetrieveBatchDefaultResponse = Awaited<
   ReturnType<typeof MessagesService.retrieveBatch>
@@ -2206,26 +2759,30 @@ export const useMessagesServiceRetrieveBatchKey =
 export const UseMessagesServiceRetrieveBatchKeyFn = (
   {
     batchId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     batchId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
   useMessagesServiceRetrieveBatchKey,
-  ...(queryKey ?? [{ batchId, userId }]),
+  ...(queryKey ?? [{ batchId, userAgent, userId, xProjectId }]),
 ];
-export type MessagesServiceListBatchMessagesDefaultResponse = Awaited<
-  ReturnType<typeof MessagesService.listBatchMessages>
+export type MessagesServiceListMessagesForBatchDefaultResponse = Awaited<
+  ReturnType<typeof MessagesService.listMessagesForBatch>
 >;
-export type MessagesServiceListBatchMessagesQueryResult<
-  TData = MessagesServiceListBatchMessagesDefaultResponse,
+export type MessagesServiceListMessagesForBatchQueryResult<
+  TData = MessagesServiceListMessagesForBatchDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useMessagesServiceListBatchMessagesKey =
-  'MessagesServiceListBatchMessages';
-export const UseMessagesServiceListBatchMessagesKeyFn = (
+export const useMessagesServiceListMessagesForBatchKey =
+  'MessagesServiceListMessagesForBatch';
+export const UseMessagesServiceListMessagesForBatchKeyFn = (
   {
     after,
     agentId,
@@ -2234,7 +2791,9 @@ export const UseMessagesServiceListBatchMessagesKeyFn = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -2243,13 +2802,26 @@ export const UseMessagesServiceListBatchMessagesKeyFn = (
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useMessagesServiceListBatchMessagesKey,
+  useMessagesServiceListMessagesForBatchKey,
   ...(queryKey ?? [
-    { after, agentId, batchId, before, limit, order, orderBy, userId },
+    {
+      after,
+      agentId,
+      batchId,
+      before,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type EmbeddingsServiceGetTotalStorageSizeDefaultResponse = Awaited<
@@ -2264,15 +2836,19 @@ export const useEmbeddingsServiceGetTotalStorageSizeKey =
 export const UseEmbeddingsServiceGetTotalStorageSizeKeyFn = (
   {
     storageUnit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     storageUnit?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: Array<unknown>,
 ) => [
   useEmbeddingsServiceGetTotalStorageSizeKey,
-  ...(queryKey ?? [{ storageUnit, userId }]),
+  ...(queryKey ?? [{ storageUnit, userAgent, userId, xProjectId }]),
 ];
 export type UsersServiceListUsersDefaultResponse = Awaited<
   ReturnType<typeof UsersService.listUsers>
@@ -2589,8 +3165,8 @@ export type SandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmentVar
 export type ProvidersServiceModifyProviderMutationResult = Awaited<
   ReturnType<typeof ProvidersService.modifyProvider>
 >;
-export type StepsServiceAddFeedbackMutationResult = Awaited<
-  ReturnType<typeof StepsService.addFeedback>
+export type StepsServiceModifyFeedbackForStepMutationResult = Awaited<
+  ReturnType<typeof StepsService.modifyFeedbackForStep>
 >;
 export type StepsServiceUpdateStepTransactionIdMutationResult = Awaited<
   ReturnType<typeof StepsService.updateStepTransactionId>

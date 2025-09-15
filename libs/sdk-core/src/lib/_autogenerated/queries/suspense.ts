@@ -41,6 +41,8 @@ import * as Common from './common';
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -51,20 +53,30 @@ export const useToolsServiceRetrieveToolSuspense = <
 >(
   {
     toolId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     toolId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseToolsServiceRetrieveToolKeyFn(
-      { toolId, userId },
+      { toolId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => ToolsService.retrieveTool({ toolId, userId }) as TData,
+    queryFn: () =>
+      ToolsService.retrieveTool({
+        toolId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -80,6 +92,8 @@ export const useToolsServiceRetrieveToolSuspense = <
  * @param data.returnOnlyLettaTools Count only tools with tool_type starting with 'letta_'
  * @param data.excludeLettaTools Exclude built-in Letta tools from the count
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -97,7 +111,9 @@ export const useToolsServiceCountToolsSuspense = <
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     excludeLettaTools?: boolean;
     excludeToolTypes?: string[];
@@ -107,7 +123,9 @@ export const useToolsServiceCountToolsSuspense = <
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -123,7 +141,9 @@ export const useToolsServiceCountToolsSuspense = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -137,7 +157,9 @@ export const useToolsServiceCountToolsSuspense = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -158,6 +180,8 @@ export const useToolsServiceCountToolsSuspense = <
  * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
  * @param data.returnOnlyLettaTools Return only tools with tool_type starting with 'letta_'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -179,7 +203,9 @@ export const useToolsServiceListToolsSuspense = <
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -193,7 +219,9 @@ export const useToolsServiceListToolsSuspense = <
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -213,7 +241,9 @@ export const useToolsServiceListToolsSuspense = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -231,7 +261,9 @@ export const useToolsServiceListToolsSuspense = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -240,6 +272,8 @@ export const useToolsServiceListToolsSuspense = <
  * Get a list of all Composio apps
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AppModel Successful Response
  * @throws ApiError
  */
@@ -249,16 +283,24 @@ export const useToolsServiceListComposioAppsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listComposioApps({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.listComposioApps({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -267,6 +309,8 @@ export const useToolsServiceListComposioAppsSuspense = <
  * @param data The data for the request.
  * @param data.composioAppName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ActionModel Successful Response
  * @throws ApiError
  */
@@ -277,23 +321,29 @@ export const useToolsServiceListComposioActionsByAppSuspense = <
 >(
   {
     composioAppName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     composioAppName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
-      { composioAppName, userId },
+      { composioAppName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       ToolsService.listComposioActionsByApp({
         composioAppName,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -302,6 +352,8 @@ export const useToolsServiceListComposioActionsByAppSuspense = <
  * Get a list of all configured MCP servers
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -311,16 +363,24 @@ export const useToolsServiceListMcpServersSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListMcpServersKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listMcpServers({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListMcpServersKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.listMcpServers({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -329,6 +389,8 @@ export const useToolsServiceListMcpServersSuspense = <
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns MCPTool Successful Response
  * @throws ApiError
  */
@@ -339,21 +401,30 @@ export const useToolsServiceListMcpToolsByServerSuspense = <
 >(
   {
     mcpServerName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     mcpServerName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListMcpToolsByServerKeyFn(
-      { mcpServerName, userId },
+      { mcpServerName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      ToolsService.listMcpToolsByServer({ mcpServerName, userId }) as TData,
+      ToolsService.listMcpToolsByServer({
+        mcpServerName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -409,6 +480,8 @@ export const useToolsServiceMcpOauthCallbackSuspense = <
  * Count all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -418,16 +491,24 @@ export const useSourcesServiceCountSourcesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }, queryKey),
-    queryFn: () => SourcesService.countSources({ userId }) as TData,
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.countSources({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -436,6 +517,8 @@ export const useSourcesServiceCountSourcesSuspense = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -446,20 +529,30 @@ export const useSourcesServiceRetrieveSourceSuspense = <
 >(
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn(
-      { sourceId, userId },
+      { sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => SourcesService.retrieveSource({ sourceId, userId }) as TData,
+    queryFn: () =>
+      SourcesService.retrieveSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -468,6 +561,8 @@ export const useSourcesServiceRetrieveSourceSuspense = <
  * @param data The data for the request.
  * @param data.sourceName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -478,21 +573,30 @@ export const useSourcesServiceGetSourceIdByNameSuspense = <
 >(
   {
     sourceName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
-      { sourceName, userId },
+      { sourceName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.getSourceIdByName({ sourceName, userId }) as TData,
+      SourcesService.getSourceIdByName({
+        sourceName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -507,6 +611,8 @@ export const useSourcesServiceGetSourceIdByNameSuspense = <
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -517,23 +623,29 @@ export const useSourcesServiceGetSourcesMetadataSuspense = <
 >(
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn(
-      { includeDetailedPerSourceMetadata, userId },
+      { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.getSourcesMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -542,6 +654,8 @@ export const useSourcesServiceGetSourcesMetadataSuspense = <
  * List all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -551,16 +665,24 @@ export const useSourcesServiceListSourcesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }, queryKey),
-    queryFn: () => SourcesService.listSources({ userId }) as TData,
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.listSources({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -569,6 +691,8 @@ export const useSourcesServiceListSourcesSuspense = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -579,21 +703,30 @@ export const useSourcesServiceGetAgentsForSourceSuspense = <
 >(
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn(
-      { sourceId, userId },
+      { sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.getAgentsForSource({ sourceId, userId }) as TData,
+      SourcesService.getAgentsForSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -605,6 +738,8 @@ export const useSourcesServiceGetAgentsForSourceSuspense = <
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -618,20 +753,24 @@ export const useSourcesServiceListSourcePassagesSuspense = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
-      { after, before, limit, sourceId, userId },
+      { after, before, limit, sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -640,7 +779,9 @@ export const useSourcesServiceListSourcePassagesSuspense = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -654,6 +795,8 @@ export const useSourcesServiceListSourcePassagesSuspense = <
  * @param data.includeContent Whether to include full file content
  * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -668,21 +811,34 @@ export const useSourcesServiceListSourceFilesSuspense = <
     includeContent,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
-      { after, checkStatusUpdates, includeContent, limit, sourceId, userId },
+      {
+        after,
+        checkStatusUpdates,
+        includeContent,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -692,7 +848,9 @@ export const useSourcesServiceListSourceFilesSuspense = <
         includeContent,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -704,6 +862,8 @@ export const useSourcesServiceListSourceFilesSuspense = <
  * @param data.fileId
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -716,19 +876,23 @@ export const useSourcesServiceGetFileMetadataSuspense = <
     fileId,
     includeContent,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     fileId: string;
     includeContent?: boolean;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetFileMetadataKeyFn(
-      { fileId, includeContent, sourceId, userId },
+      { fileId, includeContent, sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -736,7 +900,9 @@ export const useSourcesServiceGetFileMetadataSuspense = <
         fileId,
         includeContent,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -745,6 +911,8 @@ export const useSourcesServiceGetFileMetadataSuspense = <
  * Count all data folders created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -754,16 +922,24 @@ export const useFoldersServiceCountFoldersSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({ userId }, queryKey),
-    queryFn: () => FoldersService.countFolders({ userId }) as TData,
+    queryKey: Common.UseFoldersServiceCountFoldersKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.countFolders({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -772,6 +948,8 @@ export const useFoldersServiceCountFoldersSuspense = <
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -782,20 +960,30 @@ export const useFoldersServiceRetrieveFolderSuspense = <
 >(
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn(
-      { folderId, userId },
+      { folderId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => FoldersService.retrieveFolder({ folderId, userId }) as TData,
+    queryFn: () =>
+      FoldersService.retrieveFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -804,6 +992,8 @@ export const useFoldersServiceRetrieveFolderSuspense = <
  * @param data The data for the request.
  * @param data.folderName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -814,21 +1004,30 @@ export const useFoldersServiceGetFolderIdByNameSuspense = <
 >(
   {
     folderName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn(
-      { folderName, userId },
+      { folderName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFolderIdByName({ folderName, userId }) as TData,
+      FoldersService.getFolderIdByName({
+        folderName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -843,6 +1042,8 @@ export const useFoldersServiceGetFolderIdByNameSuspense = <
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -853,23 +1054,29 @@ export const useFoldersServiceGetFoldersMetadataSuspense = <
 >(
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn(
-      { includeDetailedPerSourceMetadata, userId },
+      { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       FoldersService.getFoldersMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -883,6 +1090,8 @@ export const useFoldersServiceGetFoldersMetadataSuspense = <
  * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -897,21 +1106,25 @@ export const useFoldersServiceListFoldersSuspense = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFoldersKeyFn(
-      { after, before, limit, order, orderBy, userId },
+      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -921,7 +1134,9 @@ export const useFoldersServiceListFoldersSuspense = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -931,6 +1146,8 @@ export const useFoldersServiceListFoldersSuspense = <
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -941,21 +1158,30 @@ export const useFoldersServiceGetAgentsForFolderSuspense = <
 >(
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn(
-      { folderId, userId },
+      { folderId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getAgentsForFolder({ folderId, userId }) as TData,
+      FoldersService.getAgentsForFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -967,6 +1193,8 @@ export const useFoldersServiceGetAgentsForFolderSuspense = <
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -980,20 +1208,24 @@ export const useFoldersServiceListFolderPassagesSuspense = <
     before,
     folderId,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     folderId: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn(
-      { after, before, folderId, limit, userId },
+      { after, before, folderId, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1002,7 +1234,9 @@ export const useFoldersServiceListFolderPassagesSuspense = <
         before,
         folderId,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1015,6 +1249,8 @@ export const useFoldersServiceListFolderPassagesSuspense = <
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1028,20 +1264,24 @@ export const useFoldersServiceListFolderFilesSuspense = <
     folderId,
     includeContent,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderFilesKeyFn(
-      { after, folderId, includeContent, limit, userId },
+      { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1050,7 +1290,9 @@ export const useFoldersServiceListFolderFilesSuspense = <
         folderId,
         includeContent,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1079,6 +1321,8 @@ export const useFoldersServiceListFolderFilesSuspense = <
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1105,7 +1349,9 @@ export const useAgentsServiceListAgentsSuspense = <
     sortBy,
     tags,
     templateId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
@@ -1124,7 +1370,9 @@ export const useAgentsServiceListAgentsSuspense = <
     sortBy?: string;
     tags?: string[];
     templateId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1149,7 +1397,9 @@ export const useAgentsServiceListAgentsSuspense = <
         sortBy,
         tags,
         templateId,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1172,7 +1422,9 @@ export const useAgentsServiceListAgentsSuspense = <
         sortBy,
         tags,
         templateId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1181,6 +1433,8 @@ export const useAgentsServiceListAgentsSuspense = <
  * Get the count of all agents associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1190,16 +1444,24 @@ export const useAgentsServiceCountAgentsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceCountAgentsKeyFn({ userId }, queryKey),
-    queryFn: () => AgentsService.countAgents({ userId }) as TData,
+    queryKey: Common.UseAgentsServiceCountAgentsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.countAgents({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -1214,6 +1476,8 @@ export const useAgentsServiceCountAgentsSuspense = <
  * @param data.maxSteps
  * @param data.useLegacyFormat If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @param data.requestBody
  * @returns string Successful Response
  * @throws ApiError
@@ -1228,20 +1492,32 @@ export const useAgentsServiceExportAgentSuspense = <
     maxSteps,
     requestBody,
     useLegacyFormat,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     maxSteps?: number;
     requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceExportAgentKeyFn(
-      { agentId, maxSteps, requestBody, useLegacyFormat, userId },
+      {
+        agentId,
+        maxSteps,
+        requestBody,
+        useLegacyFormat,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1250,7 +1526,9 @@ export const useAgentsServiceExportAgentSuspense = <
         maxSteps,
         requestBody,
         useLegacyFormat,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1260,6 +1538,8 @@ export const useAgentsServiceExportAgentSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
@@ -1270,21 +1550,30 @@ export const useAgentsServiceRetrieveAgentContextWindowSuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.retrieveAgentContextWindow({ agentId, userId }) as TData,
+      AgentsService.retrieveAgentContextWindow({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1294,6 +1583,8 @@ export const useAgentsServiceRetrieveAgentContextWindowSuspense = <
  * @param data.agentId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1305,25 +1596,31 @@ export const useAgentsServiceRetrieveAgentSuspense = <
   {
     agentId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn(
-      { agentId, includeRelationships, userId },
+      { agentId, includeRelationships, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.retrieveAgent({
         agentId,
         includeRelationships,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1333,6 +1630,8 @@ export const useAgentsServiceRetrieveAgentSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -1343,20 +1642,30 @@ export const useAgentsServiceListAgentToolsSuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentToolsKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentTools({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentTools({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1365,6 +1674,8 @@ export const useAgentsServiceListAgentToolsSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1375,20 +1686,30 @@ export const useAgentsServiceListAgentSourcesSuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentSources({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentSources({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1397,6 +1718,8 @@ export const useAgentsServiceListAgentSourcesSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1407,20 +1730,30 @@ export const useAgentsServiceListAgentFoldersSuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentFolders({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1432,6 +1765,8 @@ export const useAgentsServiceListAgentFoldersSuspense = <
  * @param data.limit Number of items to return (1-100)
  * @param data.isOpen Filter by open status (true for open files, false for closed files)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns PaginatedAgentFiles Successful Response
  * @throws ApiError
  */
@@ -1445,20 +1780,24 @@ export const useAgentsServiceListAgentFilesSuspense = <
     cursor,
     isOpen,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFilesKeyFn(
-      { agentId, cursor, isOpen, limit, userId },
+      { agentId, cursor, isOpen, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1467,7 +1806,9 @@ export const useAgentsServiceListAgentFilesSuspense = <
         cursor,
         isOpen,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1478,6 +1819,8 @@ export const useAgentsServiceListAgentFilesSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Memory Successful Response
  * @throws ApiError
  */
@@ -1488,21 +1831,30 @@ export const useAgentsServiceRetrieveAgentMemorySuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.retrieveAgentMemory({ agentId, userId }) as TData,
+      AgentsService.retrieveAgentMemory({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1512,6 +1864,8 @@ export const useAgentsServiceRetrieveAgentMemorySuspense = <
  * @param data.agentId
  * @param data.blockLabel
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1523,25 +1877,31 @@ export const useAgentsServiceRetrieveCoreMemoryBlockSuspense = <
   {
     agentId,
     blockLabel,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     blockLabel: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveCoreMemoryBlockKeyFn(
-      { agentId, blockLabel, userId },
+      { agentId, blockLabel, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.retrieveCoreMemoryBlock({
         agentId,
         blockLabel,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1551,6 +1911,8 @@ export const useAgentsServiceRetrieveCoreMemoryBlockSuspense = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1561,21 +1923,30 @@ export const useAgentsServiceListCoreMemoryBlocksSuspense = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listCoreMemoryBlocks({ agentId, userId }) as TData,
+      AgentsService.listCoreMemoryBlocks({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1589,6 +1960,8 @@ export const useAgentsServiceListCoreMemoryBlocksSuspense = <
  * @param data.search Search passages by text
  * @param data.ascending Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1604,7 +1977,9 @@ export const useAgentsServiceListPassagesSuspense = <
     before,
     limit,
     search,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1612,14 +1987,26 @@ export const useAgentsServiceListPassagesSuspense = <
     before?: string;
     limit?: number;
     search?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListPassagesKeyFn(
-      { after, agentId, ascending, before, limit, search, userId },
+      {
+        after,
+        agentId,
+        ascending,
+        before,
+        limit,
+        search,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1630,7 +2017,9 @@ export const useAgentsServiceListPassagesSuspense = <
         before,
         limit,
         search,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1650,6 +2039,8 @@ export const useAgentsServiceListPassagesSuspense = <
  * @param data.startDatetime Filter results to passages created after this datetime
  * @param data.endDatetime Filter results to passages created before this datetime
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
  */
@@ -1666,7 +2057,9 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
     tagMatchMode,
     tags,
     topK,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     endDatetime?: string;
@@ -1675,7 +2068,9 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
     tagMatchMode?: 'any' | 'all';
     tags?: string[];
     topK?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1690,7 +2085,9 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
         tagMatchMode,
         tags,
         topK,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1703,7 +2100,9 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
         tagMatchMode,
         tags,
         topK,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1721,6 +2120,8 @@ export const useAgentsServiceSearchArchivalMemorySuspense = <
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -1739,7 +2140,9 @@ export const useAgentsServiceListMessagesSuspense = <
     includeErr,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1750,7 +2153,9 @@ export const useAgentsServiceListMessagesSuspense = <
     includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1767,7 +2172,9 @@ export const useAgentsServiceListMessagesSuspense = <
         includeErr,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1782,7 +2189,9 @@ export const useAgentsServiceListMessagesSuspense = <
         includeErr,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1793,6 +2202,8 @@ export const useAgentsServiceListMessagesSuspense = <
  * @param data.agentId
  * @param data.managerType Manager type to filter groups by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1804,22 +2215,32 @@ export const useAgentsServiceListAgentGroupsSuspense = <
   {
     agentId,
     managerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     managerType?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn(
-      { agentId, managerType, userId },
+      { agentId, managerType, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgentGroups({ agentId, managerType, userId }) as TData,
+      AgentsService.listAgentGroups({
+        agentId,
+        managerType,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1834,6 +2255,8 @@ export const useAgentsServiceListAgentGroupsSuspense = <
  * @param data.orderBy Field to sort by
  * @param data.projectId Search groups by project id
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1850,7 +2273,9 @@ export const useGroupsServiceListGroupsSuspense = <
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1859,14 +2284,27 @@ export const useGroupsServiceListGroupsSuspense = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceListGroupsKeyFn(
-      { after, before, limit, managerType, order, orderBy, projectId, userId },
+      {
+        after,
+        before,
+        limit,
+        managerType,
+        order,
+        orderBy,
+        projectId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1878,7 +2316,9 @@ export const useGroupsServiceListGroupsSuspense = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1887,6 +2327,8 @@ export const useGroupsServiceListGroupsSuspense = <
  * Get the count of all groups associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1896,16 +2338,24 @@ export const useGroupsServiceCountGroupsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({ userId }, queryKey),
-    queryFn: () => GroupsService.countGroups({ userId }) as TData,
+    queryKey: Common.UseGroupsServiceCountGroupsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.countGroups({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -1914,6 +2364,8 @@ export const useGroupsServiceCountGroupsSuspense = <
  * @param data The data for the request.
  * @param data.groupId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1924,20 +2376,30 @@ export const useGroupsServiceRetrieveGroupSuspense = <
 >(
   {
     groupId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     groupId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn(
-      { groupId, userId },
+      { groupId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => GroupsService.retrieveGroup({ groupId, userId }) as TData,
+    queryFn: () =>
+      GroupsService.retrieveGroup({
+        groupId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1952,6 +2414,8 @@ export const useGroupsServiceRetrieveGroupSuspense = <
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -1968,7 +2432,9 @@ export const useGroupsServiceListGroupMessagesSuspense = <
     groupId,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     assistantMessageToolKwarg?: string;
@@ -1977,7 +2443,9 @@ export const useGroupsServiceListGroupMessagesSuspense = <
     groupId: string;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1992,7 +2460,9 @@ export const useGroupsServiceListGroupMessagesSuspense = <
         groupId,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2005,7 +2475,9 @@ export const useGroupsServiceListGroupMessagesSuspense = <
         groupId,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2023,6 +2495,8 @@ export const useGroupsServiceListGroupMessagesSuspense = <
  * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2041,7 +2515,9 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2052,7 +2528,9 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2069,7 +2547,9 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2084,7 +2564,9 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2093,6 +2575,8 @@ export const useIdentitiesServiceListIdentitiesSuspense = <
  * Get count of all identities for a user
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2102,19 +2586,28 @@ export const useIdentitiesServiceCountIdentitiesSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => IdentitiesService.countIdentities({ userId }) as TData,
+    queryFn: () =>
+      IdentitiesService.countIdentities({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2122,6 +2615,8 @@ export const useIdentitiesServiceCountIdentitiesSuspense = <
  * @param data The data for the request.
  * @param data.identityId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2132,21 +2627,30 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
 >(
   {
     identityId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     identityId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
-      { identityId, userId },
+      { identityId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      IdentitiesService.retrieveIdentity({ identityId, userId }) as TData,
+      IdentitiesService.retrieveIdentity({
+        identityId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2157,6 +2661,8 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
  * @param data.deploymentId
  * @param data.entityTypes Filter by entity types (block, agent, group)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ListDeploymentEntitiesResponse Successful Response
  * @throws ApiError
  */
@@ -2168,25 +2674,31 @@ export const useInternalTemplatesServiceListDeploymentEntitiesSuspense = <
   {
     deploymentId,
     entityTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     deploymentId: string;
     entityTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseInternalTemplatesServiceListDeploymentEntitiesKeyFn(
-      { deploymentId, entityTypes, userId },
+      { deploymentId, entityTypes, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       InternalTemplatesService.listDeploymentEntities({
         deploymentId,
         entityTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2198,6 +2710,8 @@ export const useInternalTemplatesServiceListDeploymentEntitiesSuspense = <
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -2210,19 +2724,30 @@ export const useModelsServiceListModelsSuspense = <
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListModelsKeyFn(
-      { providerCategory, providerName, providerType, userId },
+      {
+        providerCategory,
+        providerName,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2230,7 +2755,9 @@ export const useModelsServiceListModelsSuspense = <
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2239,6 +2766,8 @@ export const useModelsServiceListModelsSuspense = <
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -2248,19 +2777,28 @@ export const useModelsServiceListEmbeddingModelsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => ModelsService.listEmbeddingModels({ userId }) as TData,
+    queryFn: () =>
+      ModelsService.listEmbeddingModels({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2271,6 +2809,8 @@ export const useModelsServiceListEmbeddingModelsSuspense = <
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -2283,19 +2823,30 @@ export const useLlmsServiceListModelsSuspense = <
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListModelsKeyFn(
-      { providerCategory, providerName, providerType, userId },
+      {
+        providerCategory,
+        providerName,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2303,7 +2854,9 @@ export const useLlmsServiceListModelsSuspense = <
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2312,6 +2865,8 @@ export const useLlmsServiceListModelsSuspense = <
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -2321,19 +2876,28 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => LlmsService.listEmbeddingModels({ userId }) as TData,
+    queryFn: () =>
+      LlmsService.listEmbeddingModels({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2357,6 +2921,8 @@ export const useLlmsServiceListEmbeddingModelsSuspense = <
  * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
  * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2382,8 +2948,10 @@ export const useBlocksServiceListBlocksSuspense = <
     orderBy,
     projectId,
     templatesOnly,
+    userAgent,
     userId,
     valueSearch,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2401,8 +2969,10 @@ export const useBlocksServiceListBlocksSuspense = <
     orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
+    userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2426,8 +2996,10 @@ export const useBlocksServiceListBlocksSuspense = <
         orderBy,
         projectId,
         templatesOnly,
+        userAgent,
         userId,
         valueSearch,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2449,8 +3021,10 @@ export const useBlocksServiceListBlocksSuspense = <
         orderBy,
         projectId,
         templatesOnly,
+        userAgent,
         userId,
         valueSearch,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2459,6 +3033,8 @@ export const useBlocksServiceListBlocksSuspense = <
  * Count all blocks created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2468,16 +3044,24 @@ export const useBlocksServiceCountBlocksSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({ userId }, queryKey),
-    queryFn: () => BlocksService.countBlocks({ userId }) as TData,
+    queryKey: Common.UseBlocksServiceCountBlocksKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      BlocksService.countBlocks({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -2485,6 +3069,8 @@ export const useBlocksServiceCountBlocksSuspense = <
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2495,20 +3081,30 @@ export const useBlocksServiceRetrieveBlockSuspense = <
 >(
   {
     blockId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn(
-      { blockId, userId },
+      { blockId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => BlocksService.retrieveBlock({ blockId, userId }) as TData,
+    queryFn: () =>
+      BlocksService.retrieveBlock({
+        blockId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2519,6 +3115,8 @@ export const useBlocksServiceRetrieveBlockSuspense = <
  * @param data.blockId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2530,25 +3128,31 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
   {
     blockId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
-      { blockId, includeRelationships, userId },
+      { blockId, includeRelationships, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.listAgentsForBlock({
         blockId,
         includeRelationships,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2563,6 +3167,8 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2577,21 +3183,34 @@ export const useJobsServiceListJobsSuspense = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListJobsKeyFn(
-      { after, ascending, before, limit, sourceId, userId },
+      {
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2601,7 +3220,9 @@ export const useJobsServiceListJobsSuspense = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2615,6 +3236,8 @@ export const useJobsServiceListJobsSuspense = <
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2629,21 +3252,34 @@ export const useJobsServiceListActiveJobsSuspense = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListActiveJobsKeyFn(
-      { after, ascending, before, limit, sourceId, userId },
+      {
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2653,7 +3289,9 @@ export const useJobsServiceListActiveJobsSuspense = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2663,6 +3301,8 @@ export const useJobsServiceListActiveJobsSuspense = <
  * @param data The data for the request.
  * @param data.jobId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2673,20 +3313,30 @@ export const useJobsServiceRetrieveJobSuspense = <
 >(
   {
     jobId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     jobId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseJobsServiceRetrieveJobKeyFn(
-      { jobId, userId },
+      { jobId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => JobsService.retrieveJob({ jobId, userId }) as TData,
+    queryFn: () =>
+      JobsService.retrieveJob({
+        jobId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2714,6 +3364,8 @@ export const useHealthServiceCheckHealthSuspense = <
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -2727,12 +3379,16 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetSuspense
       after,
       limit,
       sandboxType,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxType?: SandboxType;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     } = {},
     queryKey?: TQueryKey,
     options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2740,7 +3396,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetSuspense
     useSuspenseQuery<TData, TError>({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-          { after, limit, sandboxType, userId },
+          { after, limit, sandboxType, userAgent, userId, xProjectId },
           queryKey,
         ),
       queryFn: () =>
@@ -2748,7 +3404,9 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetSuspense
           after,
           limit,
           sandboxType,
+          userAgent,
           userId,
+          xProjectId,
         }) as TData,
       ...options,
     });
@@ -2759,6 +3417,8 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetSuspense
  * @param data.limit Number of results to return
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -2772,12 +3432,16 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       after,
       limit,
       sandboxConfigId,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxConfigId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     queryKey?: TQueryKey,
     options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2785,12 +3449,12 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     useSuspenseQuery<TData, TError>({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
           queryKey,
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
         ) as TData,
       ...options,
     });
@@ -2806,6 +3470,8 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * @param data.name Filter providers by name
  * @param data.providerType Filter providers by type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -2822,7 +3488,9 @@ export const useProvidersServiceListProvidersSuspense = <
     order,
     orderBy,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2831,14 +3499,27 @@ export const useProvidersServiceListProvidersSuspense = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { after, before, limit, name, order, orderBy, providerType, userId },
+      {
+        after,
+        before,
+        limit,
+        name,
+        order,
+        orderBy,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2850,7 +3531,53 @@ export const useProvidersServiceListProvidersSuspense = <
         order,
         orderBy,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Provider
+ * Get a provider by ID.
+ * @param data The data for the request.
+ * @param data.providerId
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceRetrieveProviderSuspense = <
+  TData = Common.ProvidersServiceRetrieveProviderDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    providerId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    providerId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseProvidersServiceRetrieveProviderKeyFn(
+      { providerId, userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ProvidersService.retrieveProvider({
+        providerId,
+        userAgent,
+        userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2865,6 +3592,8 @@ export const useProvidersServiceListProvidersSuspense = <
  * @param data.limit Maximum number of runs to return
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2880,7 +3609,9 @@ export const useRunsServiceListRunsSuspense = <
     background,
     before,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentIds?: string[];
@@ -2888,14 +3619,26 @@ export const useRunsServiceListRunsSuspense = <
     background?: boolean;
     before?: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunsKeyFn(
-      { after, agentIds, ascending, background, before, limit, userId },
+      {
+        after,
+        agentIds,
+        ascending,
+        background,
+        before,
+        limit,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2906,7 +3649,9 @@ export const useRunsServiceListRunsSuspense = <
         background,
         before,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2917,6 +3662,8 @@ export const useRunsServiceListRunsSuspense = <
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2928,22 +3675,32 @@ export const useRunsServiceListActiveRunsSuspense = <
   {
     agentIds,
     background,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentIds?: string[];
     background?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListActiveRunsKeyFn(
-      { agentIds, background, userId },
+      { agentIds, background, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      RunsService.listActiveRuns({ agentIds, background, userId }) as TData,
+      RunsService.listActiveRuns({
+        agentIds,
+        background,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2952,6 +3709,8 @@ export const useRunsServiceListActiveRunsSuspense = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2962,20 +3721,30 @@ export const useRunsServiceRetrieveRunSuspense = <
 >(
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunKeyFn(
-      { runId, userId },
+      { runId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => RunsService.retrieveRun({ runId, userId }) as TData,
+    queryFn: () =>
+      RunsService.retrieveRun({
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2988,6 +3757,8 @@ export const useRunsServiceRetrieveRunSuspense = <
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -3002,21 +3773,25 @@ export const useRunsServiceListRunMessagesSuspense = <
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunMessagesKeyFn(
-      { after, before, limit, order, runId, userId },
+      { after, before, limit, order, runId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3026,7 +3801,9 @@ export const useRunsServiceListRunMessagesSuspense = <
         limit,
         order,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3036,6 +3813,8 @@ export const useRunsServiceListRunMessagesSuspense = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
@@ -3046,20 +3825,30 @@ export const useRunsServiceRetrieveRunUsageSuspense = <
 >(
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn(
-      { runId, userId },
+      { runId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => RunsService.retrieveRunUsage({ runId, userId }) as TData,
+    queryFn: () =>
+      RunsService.retrieveRunUsage({
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3082,6 +3871,8 @@ export const useRunsServiceRetrieveRunUsageSuspense = <
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3096,21 +3887,25 @@ export const useRunsServiceListRunStepsSuspense = <
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: string;
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunStepsKeyFn(
-      { after, before, limit, order, runId, userId },
+      { after, before, limit, order, runId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3120,7 +3915,9 @@ export const useRunsServiceListRunStepsSuspense = <
         limit,
         order,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3142,8 +3939,10 @@ export const useRunsServiceListRunStepsSuspense = <
  * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
  * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
- * @param data.userId
  * @param data.xProject Filter by project slug to associate with the group (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3167,8 +3966,10 @@ export const useStepsServiceListStepsSuspense = <
     startDate,
     tags,
     traceIds,
+    userAgent,
     userId,
     xProject,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -3184,8 +3985,10 @@ export const useStepsServiceListStepsSuspense = <
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
+    userAgent?: string;
     userId?: string;
     xProject?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -3207,8 +4010,10 @@ export const useStepsServiceListStepsSuspense = <
         startDate,
         tags,
         traceIds,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       },
       queryKey,
     ),
@@ -3228,8 +4033,10 @@ export const useStepsServiceListStepsSuspense = <
         startDate,
         tags,
         traceIds,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3239,6 +4046,8 @@ export const useStepsServiceListStepsSuspense = <
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3249,84 +4058,117 @@ export const useStepsServiceRetrieveStepSuspense = <
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseStepsServiceRetrieveStepKeyFn(
-      { stepId, userId },
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => StepsService.retrieveStep({ stepId, userId }) as TData,
+    queryFn: () =>
+      StepsService.retrieveStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Step Metrics
+ * Retrieve Metrics For Step
  * Get step metrics by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns StepMetrics Successful Response
  * @throws ApiError
  */
-export const useStepsServiceRetrieveStepMetricsSuspense = <
-  TData = Common.StepsServiceRetrieveStepMetricsDefaultResponse,
+export const useStepsServiceRetrieveMetricsForStepSuspense = <
+  TData = Common.StepsServiceRetrieveMetricsForStepDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseStepsServiceRetrieveStepMetricsKeyFn(
-      { stepId, userId },
+    queryKey: Common.UseStepsServiceRetrieveMetricsForStepKeyFn(
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      StepsService.retrieveStepMetrics({ stepId, userId }) as TData,
+      StepsService.retrieveMetricsForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Step Trace
+ * Retrieve Trace For Step
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const useStepsServiceRetrieveStepTraceSuspense = <
-  TData = Common.StepsServiceRetrieveStepTraceDefaultResponse,
+export const useStepsServiceRetrieveTraceForStepSuspense = <
+  TData = Common.StepsServiceRetrieveTraceForStepDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn(
-      { stepId, userId },
+    queryKey: Common.UseStepsServiceRetrieveTraceForStepKeyFn(
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }) as TData,
+    queryFn: () =>
+      StepsService.retrieveTraceForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3340,6 +4182,8 @@ export const useStepsServiceRetrieveStepTraceSuspense = <
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -3355,7 +4199,9 @@ export const useTagServiceListTagsSuspense = <
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -3363,14 +4209,26 @@ export const useTagServiceListTagsSuspense = <
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseTagServiceListTagsKeyFn(
-      { after, before, limit, order, orderBy, queryText, userId },
+      {
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3381,7 +4239,9 @@ export const useTagServiceListTagsSuspense = <
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3396,6 +4256,8 @@ export const useTagServiceListTagsSuspense = <
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -3411,7 +4273,9 @@ export const useAdminServiceListTagsSuspense = <
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -3419,14 +4283,26 @@ export const useAdminServiceListTagsSuspense = <
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListTagsKeyFn(
-      { after, before, limit, order, orderBy, queryText, userId },
+      {
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3437,7 +4313,9 @@ export const useAdminServiceListTagsSuspense = <
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3500,10 +4378,16 @@ export const useAdminServiceListOrgsSuspense = <
     ...options,
   });
 /**
- * Retrieve Provider Trace By Step Id
+ * @deprecated
+ * Retrieve Provider Trace
+ * **DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.
+ *
+ * Retrieve provider trace by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -3514,21 +4398,30 @@ export const useTelemetryServiceRetrieveProviderTraceSuspense = <
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn(
-      { stepId, userId },
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      TelemetryService.retrieveProviderTrace({ stepId, userId }) as TData,
+      TelemetryService.retrieveProviderTrace({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3541,6 +4434,8 @@ export const useTelemetryServiceRetrieveProviderTraceSuspense = <
  * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3555,21 +4450,25 @@ export const useMessagesServiceListBatchesSuspense = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceListBatchesKeyFn(
-      { after, before, limit, order, orderBy, userId },
+      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3579,7 +4478,9 @@ export const useMessagesServiceListBatchesSuspense = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3589,6 +4490,8 @@ export const useMessagesServiceListBatchesSuspense = <
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3599,24 +4502,34 @@ export const useMessagesServiceRetrieveBatchSuspense = <
 >(
   {
     batchId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     batchId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn(
-      { batchId, userId },
+      { batchId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }) as TData,
+    queryFn: () =>
+      MessagesService.retrieveBatch({
+        batchId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * List Batch Messages
+ * List Messages For Batch
  * Get response messages for a specific batch job.
  * @param data The data for the request.
  * @param data.batchId
@@ -3627,11 +4540,13 @@ export const useMessagesServiceRetrieveBatchSuspense = <
  * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaBatchMessages Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceListBatchMessagesSuspense = <
-  TData = Common.MessagesServiceListBatchMessagesDefaultResponse,
+export const useMessagesServiceListMessagesForBatchSuspense = <
+  TData = Common.MessagesServiceListMessagesForBatchDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -3643,7 +4558,9 @@ export const useMessagesServiceListBatchMessagesSuspense = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -3652,18 +4569,16 @@ export const useMessagesServiceListBatchMessagesSuspense = <
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn(
-      { after, agentId, batchId, before, limit, order, orderBy, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      MessagesService.listBatchMessages({
+    queryKey: Common.UseMessagesServiceListMessagesForBatchKeyFn(
+      {
         after,
         agentId,
         batchId,
@@ -3671,7 +4586,24 @@ export const useMessagesServiceListBatchMessagesSuspense = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.listMessagesForBatch({
+        after,
+        agentId,
+        batchId,
+        before,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3679,8 +4611,10 @@ export const useMessagesServiceListBatchMessagesSuspense = <
  * Get Embeddings Total Storage Size
  * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.
- * @param data.userId
  * @param data.storageUnit
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3691,21 +4625,30 @@ export const useEmbeddingsServiceGetTotalStorageSizeSuspense = <
 >(
   {
     storageUnit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     storageUnit?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn(
-      { storageUnit, userId },
+      { storageUnit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      EmbeddingsService.getTotalStorageSize({ storageUnit, userId }) as TData,
+      EmbeddingsService.getTotalStorageSize({
+        storageUnit,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**

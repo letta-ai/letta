@@ -44,17 +44,6 @@ export type ActionResponseModel = {
   examples?: Array<unknown> | null;
 };
 
-export type AddFeedbackRequest = {
-  /**
-   * Whether this feedback is positive or negative
-   */
-  feedback?: FeedbackType | null;
-  /**
-   * Feedback tags to add to the step
-   */
-  tags?: Array<string> | null;
-};
-
 export type AgentEnvironmentVariable = {
   /**
    * The id of the user that made this object.
@@ -4063,6 +4052,17 @@ export type ModalSandboxConfig = {
 
 export type language = 'python' | 'typescript';
 
+export type ModifyFeedbackRequest = {
+  /**
+   * Whether this feedback is positive or negative
+   */
+  feedback?: FeedbackType | null;
+  /**
+   * Feedback tags to add to the step
+   */
+  tags?: Array<string> | null;
+};
+
 export type NpmRequirement = {
   /**
    * Name of the npm package.
@@ -6695,14 +6695,18 @@ export type LettaPing = {
 
 export type DeleteToolData = {
   toolId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteToolResponse = unknown;
 
 export type RetrieveToolData = {
   toolId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveToolResponse = Tool;
@@ -6710,7 +6714,9 @@ export type RetrieveToolResponse = Tool;
 export type ModifyToolData = {
   requestBody: ToolUpdate;
   toolId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyToolResponse = Tool;
@@ -6745,7 +6751,9 @@ export type CountToolsData = {
    * Filter by tool type(s) - accepts repeated params or comma-separated values
    */
   toolTypes?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountToolsResponse = number;
@@ -6799,60 +6807,78 @@ export type ListToolsData = {
    * Filter by tool type(s) - accepts repeated params or comma-separated values
    */
   toolTypes?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListToolsResponse = Array<Tool>;
 
 export type CreateToolData = {
   requestBody: ToolCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateToolResponse = Tool;
 
 export type UpsertToolData = {
   requestBody: ToolCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpsertToolResponse = Tool;
 
 export type AddBaseToolsData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AddBaseToolsResponse = Array<Tool>;
 
 export type RunToolFromSourceData = {
   requestBody: ToolRunFromSource;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RunToolFromSourceResponse = ToolReturnMessage;
 
 export type ListComposioAppsData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListComposioAppsResponse = Array<AppModel>;
 
 export type ListComposioActionsByAppData = {
   composioAppName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListComposioActionsByAppResponse = Array<ActionModel>;
 
 export type AddComposioToolData = {
   composioActionName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AddComposioToolResponse = Tool;
 
 export type ListMcpServersData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListMcpServersResponse = {
@@ -6864,7 +6890,9 @@ export type ListMcpServersResponse = {
 
 export type AddMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AddMcpServerResponse = Array<
@@ -6873,7 +6901,9 @@ export type AddMcpServerResponse = Array<
 
 export type ListMcpToolsByServerData = {
   mcpServerName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListMcpToolsByServerResponse = Array<MCPTool>;
@@ -6881,7 +6911,9 @@ export type ListMcpToolsByServerResponse = Array<MCPTool>;
 export type ResyncMcpServerToolsData = {
   agentId?: string | null;
   mcpServerName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ResyncMcpServerToolsResponse = unknown;
@@ -6889,7 +6921,9 @@ export type ResyncMcpServerToolsResponse = unknown;
 export type AddMcpToolData = {
   mcpServerName: string;
   mcpToolName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AddMcpToolResponse = Tool;
@@ -6900,7 +6934,9 @@ export type UpdateMcpServerData = {
     | UpdateStdioMCPServer
     | UpdateSSEMCPServer
     | UpdateStreamableHTTPMCPServer;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpdateMcpServerResponse =
@@ -6910,7 +6946,9 @@ export type UpdateMcpServerResponse =
 
 export type DeleteMcpServerData = {
   mcpServerName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteMcpServerResponse = Array<
@@ -6919,21 +6957,27 @@ export type DeleteMcpServerResponse = Array<
 
 export type TestMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type TestMcpServerResponse = unknown;
 
 export type ConnectMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ConnectMcpServerResponse = unknown;
 
 export type GenerateJsonSchemaData = {
   requestBody: CodeInput;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GenerateJsonSchemaResponse = {
@@ -6944,7 +6988,9 @@ export type ExecuteMcpToolData = {
   mcpServerName: string;
   requestBody: MCPToolExecuteRequest;
   toolName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ExecuteMcpToolResponse = unknown;
@@ -6973,20 +7019,26 @@ export type McpOauthCallbackResponse = unknown;
 
 export type GenerateToolData = {
   requestBody: GenerateToolInput;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GenerateToolResponse = GenerateToolOutput;
 
 export type CountSourcesData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountSourcesResponse = number;
 
 export type RetrieveSourceData = {
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveSourceResponse = Source;
@@ -6994,41 +7046,53 @@ export type RetrieveSourceResponse = Source;
 export type ModifySourceData = {
   requestBody: SourceUpdate;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifySourceResponse = Source;
 
 export type DeleteSourceData = {
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteSourceResponse = unknown;
 
 export type GetSourceIdByNameData = {
   sourceName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetSourceIdByNameResponse = string;
 
 export type GetSourcesMetadataData = {
   includeDetailedPerSourceMetadata?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetSourcesMetadataResponse = OrganizationSourcesStats;
 
 export type ListSourcesData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListSourcesResponse = Array<Source>;
 
 export type CreateSourceData = {
   requestBody: SourceCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateSourceResponse = Source;
@@ -7044,14 +7108,18 @@ export type UploadFileToSourceData = {
    */
   name?: string | null;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UploadFileToSourceResponse = FileMetadata;
 
 export type GetAgentsForSourceData = {
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetAgentsForSourceResponse = Array<string>;
@@ -7070,7 +7138,9 @@ export type ListSourcePassagesData = {
    */
   limit?: number;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListSourcePassagesResponse = Array<Passage>;
@@ -7093,7 +7163,9 @@ export type ListSourceFilesData = {
    */
   limit?: number;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListSourceFilesResponse = Array<FileMetadata>;
@@ -7105,7 +7177,9 @@ export type GetFileMetadataData = {
    */
   includeContent?: boolean;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetFileMetadataResponse = FileMetadata;
@@ -7113,20 +7187,26 @@ export type GetFileMetadataResponse = FileMetadata;
 export type DeleteFileFromSourceData = {
   fileId: string;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteFileFromSourceResponse = void;
 
 export type CountFoldersData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountFoldersResponse = number;
 
 export type RetrieveFolderData = {
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveFolderResponse = Folder;
@@ -7134,28 +7214,36 @@ export type RetrieveFolderResponse = Folder;
 export type ModifyFolderData = {
   folderId: string;
   requestBody: SourceUpdate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyFolderResponse = Folder;
 
 export type DeleteFolderData = {
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteFolderResponse = unknown;
 
 export type GetFolderIdByNameData = {
   folderName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetFolderIdByNameResponse = string;
 
 export type GetFoldersMetadataData = {
   includeDetailedPerSourceMetadata?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetFoldersMetadataResponse = OrganizationSourcesStats;
@@ -7181,14 +7269,18 @@ export type ListFoldersData = {
    * Field to sort by
    */
   orderBy?: 'created_at';
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListFoldersResponse = Array<Folder>;
 
 export type CreateFolderData = {
   requestBody: SourceCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateFolderResponse = Folder;
@@ -7204,14 +7296,18 @@ export type UploadFileToFolderData = {
    * Optional custom name to override the uploaded file's name
    */
   name?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UploadFileToFolderResponse = FileMetadata;
 
 export type GetAgentsForFolderData = {
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetAgentsForFolderResponse = Array<string>;
@@ -7230,7 +7326,9 @@ export type ListFolderPassagesData = {
    * Maximum number of messages to retrieve.
    */
   limit?: number;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListFolderPassagesResponse = Array<Passage>;
@@ -7249,7 +7347,9 @@ export type ListFolderFilesData = {
    * Number of files to return
    */
   limit?: number;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListFolderFilesResponse = Array<FileMetadata>;
@@ -7257,7 +7357,9 @@ export type ListFolderFilesResponse = Array<FileMetadata>;
 export type DeleteFileFromFolderData = {
   fileId: string;
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteFileFromFolderResponse = void;
@@ -7333,24 +7435,30 @@ export type ListAgentsData = {
    * Search agents by template ID
    */
   templateId?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentsResponse = Array<AgentState>;
 
 export type CreateAgentData = {
   requestBody: CreateAgentRequest;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * The project slug to associate with the agent (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateAgentResponse = AgentState;
 
 export type CountAgentsData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountAgentsResponse = number;
@@ -7363,22 +7471,28 @@ export type ExportAgentData = {
    * If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
    */
   useLegacyFormat?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ExportAgentResponse = string;
 
 export type ImportAgentData = {
   formData: Body_import_agent;
+  userAgent?: string | null;
   userId?: string | null;
   xOverrideEmbeddingModel?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ImportAgentResponse = ImportedAgentsResponse;
 
 export type RetrieveAgentContextWindowData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveAgentContextWindowResponse = ContextWindowOverview;
@@ -7386,7 +7500,9 @@ export type RetrieveAgentContextWindowResponse = ContextWindowOverview;
 export type ModifyAgentData = {
   agentId: string;
   requestBody: UpdateAgent;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyAgentResponse = AgentState;
@@ -7397,21 +7513,27 @@ export type RetrieveAgentData = {
    * Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    */
   includeRelationships?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveAgentResponse = AgentState;
 
 export type DeleteAgentData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteAgentResponse = unknown;
 
 export type ListAgentToolsData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentToolsResponse = Array<Tool>;
@@ -7419,7 +7541,9 @@ export type ListAgentToolsResponse = Array<Tool>;
 export type AttachToolData = {
   agentId: string;
   toolId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AttachToolResponse = AgentState;
@@ -7427,7 +7551,9 @@ export type AttachToolResponse = AgentState;
 export type DetachToolData = {
   agentId: string;
   toolId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DetachToolResponse = AgentState;
@@ -7436,7 +7562,9 @@ export type ModifyApprovalData = {
   agentId: string;
   requiresApproval: boolean;
   toolName: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyApprovalResponse = AgentState;
@@ -7444,7 +7572,9 @@ export type ModifyApprovalResponse = AgentState;
 export type AttachSourceToAgentData = {
   agentId: string;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AttachSourceToAgentResponse = AgentState;
@@ -7452,7 +7582,9 @@ export type AttachSourceToAgentResponse = AgentState;
 export type AttachFolderToAgentData = {
   agentId: string;
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AttachFolderToAgentResponse = AgentState;
@@ -7460,7 +7592,9 @@ export type AttachFolderToAgentResponse = AgentState;
 export type DetachSourceFromAgentData = {
   agentId: string;
   sourceId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DetachSourceFromAgentResponse = AgentState;
@@ -7468,14 +7602,18 @@ export type DetachSourceFromAgentResponse = AgentState;
 export type DetachFolderFromAgentData = {
   agentId: string;
   folderId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DetachFolderFromAgentResponse = AgentState;
 
 export type CloseAllOpenFilesData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CloseAllOpenFilesResponse = Array<string>;
@@ -7483,7 +7621,9 @@ export type CloseAllOpenFilesResponse = Array<string>;
 export type OpenFileData = {
   agentId: string;
   fileId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type OpenFileResponse = Array<string>;
@@ -7491,21 +7631,27 @@ export type OpenFileResponse = Array<string>;
 export type CloseFileData = {
   agentId: string;
   fileId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CloseFileResponse = unknown;
 
 export type ListAgentSourcesData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentSourcesResponse = Array<Source>;
 
 export type ListAgentFoldersData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentFoldersResponse = Array<Source>;
@@ -7524,14 +7670,18 @@ export type ListAgentFilesData = {
    * Number of items to return (1-100)
    */
   limit?: number;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentFilesResponse = PaginatedAgentFiles;
 
 export type RetrieveAgentMemoryData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveAgentMemoryResponse = Memory;
@@ -7539,7 +7689,9 @@ export type RetrieveAgentMemoryResponse = Memory;
 export type RetrieveCoreMemoryBlockData = {
   agentId: string;
   blockLabel: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveCoreMemoryBlockResponse = Block;
@@ -7548,14 +7700,18 @@ export type ModifyCoreMemoryBlockData = {
   agentId: string;
   blockLabel: string;
   requestBody: BlockUpdate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyCoreMemoryBlockResponse = Block;
 
 export type ListCoreMemoryBlocksData = {
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListCoreMemoryBlocksResponse = Array<Block>;
@@ -7563,7 +7719,9 @@ export type ListCoreMemoryBlocksResponse = Array<Block>;
 export type AttachCoreMemoryBlockData = {
   agentId: string;
   blockId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type AttachCoreMemoryBlockResponse = AgentState;
@@ -7571,7 +7729,9 @@ export type AttachCoreMemoryBlockResponse = AgentState;
 export type DetachCoreMemoryBlockData = {
   agentId: string;
   blockId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DetachCoreMemoryBlockResponse = AgentState;
@@ -7598,7 +7758,9 @@ export type ListPassagesData = {
    * Search passages by text
    */
   search?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListPassagesResponse = Array<Passage>;
@@ -7606,7 +7768,9 @@ export type ListPassagesResponse = Array<Passage>;
 export type CreatePassageData = {
   agentId: string;
   requestBody: CreateArchivalMemory;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreatePassageResponse = Array<Passage>;
@@ -7637,7 +7801,9 @@ export type SearchArchivalMemoryData = {
    * Maximum number of results to return. Uses system default if not specified
    */
   topK?: number | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SearchArchivalMemoryResponse = ArchivalMemorySearchResponse;
@@ -7645,7 +7811,9 @@ export type SearchArchivalMemoryResponse = ArchivalMemorySearchResponse;
 export type DeletePassageData = {
   agentId: string;
   memoryId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeletePassageResponse = unknown;
@@ -7684,7 +7852,9 @@ export type ListMessagesData = {
    * Whether to use assistant messages
    */
   useAssistantMessage?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListMessagesResponse = Array<LettaMessageUnion>;
@@ -7692,7 +7862,9 @@ export type ListMessagesResponse = Array<LettaMessageUnion>;
 export type SendMessageData = {
   agentId: string;
   requestBody: LettaRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SendMessageResponse = LettaResponse;
@@ -7705,7 +7877,9 @@ export type ModifyMessageData = {
     | UpdateUserMessage
     | UpdateReasoningMessage
     | UpdateAssistantMessage;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyMessageResponse =
@@ -7722,7 +7896,9 @@ export type ModifyMessageResponse =
 export type CreateAgentMessageStreamData = {
   agentId: string;
   requestBody: LettaStreamingRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateAgentMessageStreamResponse = unknown;
@@ -7730,7 +7906,9 @@ export type CreateAgentMessageStreamResponse = unknown;
 export type CancelAgentRunData = {
   agentId: string;
   requestBody?: CancelAgentRunRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CancelAgentRunResponse = {
@@ -7739,7 +7917,9 @@ export type CancelAgentRunResponse = {
 
 export type SearchMessagesData = {
   requestBody: MessageSearchRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SearchMessagesResponse = Array<MessageSearchResult>;
@@ -7747,7 +7927,9 @@ export type SearchMessagesResponse = Array<MessageSearchResult>;
 export type CreateAgentMessageAsyncData = {
   agentId: string;
   requestBody: LettaAsyncRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateAgentMessageAsyncResponse = Run;
@@ -7758,7 +7940,9 @@ export type ResetMessagesData = {
    */
   addDefaultInitialMessages?: boolean;
   agentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ResetMessagesResponse = AgentState;
@@ -7769,7 +7953,9 @@ export type ListAgentGroupsData = {
    * Manager type to filter groups by
    */
   managerType?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentGroupsResponse = Array<Group>;
@@ -7777,7 +7963,9 @@ export type ListAgentGroupsResponse = Array<Group>;
 export type PreviewRawPayloadData = {
   agentId: string;
   requestBody: LettaRequest | LettaStreamingRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type PreviewRawPayloadResponse = {
@@ -7790,7 +7978,9 @@ export type SummarizeAgentConversationData = {
    * Maximum number of messages to retain after summarization.
    */
   maxMessageLength: number;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SummarizeAgentConversationResponse = void;
@@ -7824,31 +8014,39 @@ export type ListGroupsData = {
    * Search groups by project id
    */
   projectId?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListGroupsResponse = Array<Group>;
 
 export type CreateGroupData = {
   requestBody: GroupCreate;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * The project slug to associate with the group (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateGroupResponse = Group;
 
 export type CountGroupsData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountGroupsResponse = number;
 
 export type RetrieveGroupData = {
   groupId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveGroupResponse = Group;
@@ -7856,18 +8054,22 @@ export type RetrieveGroupResponse = Group;
 export type ModifyGroupData = {
   groupId: string;
   requestBody: GroupUpdate;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * The project slug to associate with the group (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyGroupResponse = Group;
 
 export type DeleteGroupData = {
   groupId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteGroupResponse = unknown;
@@ -7875,7 +8077,9 @@ export type DeleteGroupResponse = unknown;
 export type SendGroupMessageData = {
   groupId: string;
   requestBody: LettaRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SendGroupMessageResponse = LettaResponse;
@@ -7906,7 +8110,9 @@ export type ListGroupMessagesData = {
    * Whether to use assistant messages
    */
   useAssistantMessage?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListGroupMessagesResponse = Array<LettaMessageUnion>;
@@ -7914,7 +8120,9 @@ export type ListGroupMessagesResponse = Array<LettaMessageUnion>;
 export type SendGroupMessageStreamingData = {
   groupId: string;
   requestBody: LettaStreamingRequest;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type SendGroupMessageStreamingResponse = unknown;
@@ -7927,7 +8135,9 @@ export type ModifyGroupMessageData = {
     | UpdateUserMessage
     | UpdateReasoningMessage
     | UpdateAssistantMessage;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyGroupMessageResponse =
@@ -7943,7 +8153,9 @@ export type ModifyGroupMessageResponse =
 
 export type ResetGroupMessagesData = {
   groupId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ResetGroupMessagesResponse = unknown;
@@ -7973,42 +8185,52 @@ export type ListIdentitiesData = {
    */
   orderBy?: 'created_at';
   projectId?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListIdentitiesResponse = Array<Identity>;
 
 export type CreateIdentityData = {
   requestBody: IdentityCreate;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * The project slug to associate with the identity (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateIdentityResponse = Identity;
 
 export type UpsertIdentityData = {
   requestBody: IdentityUpsert;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * The project slug to associate with the identity (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpsertIdentityResponse = Identity;
 
 export type CountIdentitiesData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountIdentitiesResponse = number;
 
 export type RetrieveIdentityData = {
   identityId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveIdentityResponse = Identity;
@@ -8016,14 +8238,18 @@ export type RetrieveIdentityResponse = Identity;
 export type UpdateIdentityData = {
   identityId: string;
   requestBody: IdentityUpdate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpdateIdentityResponse = Identity;
 
 export type DeleteIdentityData = {
   identityId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteIdentityResponse = unknown;
@@ -8031,28 +8257,36 @@ export type DeleteIdentityResponse = unknown;
 export type UpsertIdentityPropertiesData = {
   identityId: string;
   requestBody: Array<IdentityProperty>;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpsertIdentityPropertiesResponse = unknown;
 
 export type CreateInternalTemplateGroupData = {
   requestBody: InternalTemplateGroupCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateInternalTemplateGroupResponse = Group;
 
 export type CreateInternalTemplateAgentData = {
   requestBody: InternalTemplateAgentCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateInternalTemplateAgentResponse = AgentState;
 
 export type CreateInternalTemplateBlockData = {
   requestBody: InternalTemplateBlockCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateInternalTemplateBlockResponse = Block;
@@ -8063,14 +8297,18 @@ export type ListDeploymentEntitiesData = {
    * Filter by entity types (block, agent, group)
    */
   entityTypes?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListDeploymentEntitiesResponse2 = ListDeploymentEntitiesResponse;
 
 export type DeleteDeploymentData = {
   deploymentId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteDeploymentResponse2 = DeleteDeploymentResponse;
@@ -8079,13 +8317,17 @@ export type ListModelsData = {
   providerCategory?: Array<ProviderCategory> | null;
   providerName?: string | null;
   providerType?: ProviderType | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListModelsResponse = Array<LLMConfig>;
 
 export type ListEmbeddingModelsData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListEmbeddingModelsResponse = Array<EmbeddingConfig>;
@@ -8155,24 +8397,30 @@ export type ListBlocksData = {
    * Whether to include only templates
    */
   templatesOnly?: boolean;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * Search blocks by value. If provided, returns blocks that match this value.
    */
   valueSearch?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListBlocksResponse = Array<Block>;
 
 export type CreateBlockData = {
   requestBody: CreateBlock;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateBlockResponse = Block;
 
 export type CountBlocksData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CountBlocksResponse = number;
@@ -8180,21 +8428,27 @@ export type CountBlocksResponse = number;
 export type ModifyBlockData = {
   blockId: string;
   requestBody: BlockUpdate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyBlockResponse = Block;
 
 export type DeleteBlockData = {
   blockId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteBlockResponse = unknown;
 
 export type RetrieveBlockData = {
   blockId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveBlockResponse = Block;
@@ -8205,7 +8459,9 @@ export type ListAgentsForBlockData = {
    * Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    */
   includeRelationships?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListAgentsForBlockResponse = Array<AgentState>;
@@ -8231,7 +8487,9 @@ export type ListJobsData = {
    * Only list jobs associated with the source.
    */
   sourceId?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListJobsResponse = Array<Job>;
@@ -8257,28 +8515,36 @@ export type ListActiveJobsData = {
    * Only list jobs associated with the source.
    */
   sourceId?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListActiveJobsResponse = Array<Job>;
 
 export type RetrieveJobData = {
   jobId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveJobResponse = Job;
 
 export type DeleteJobData = {
   jobId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteJobResponse = Job;
 
 export type CancelJobData = {
   jobId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CancelJobResponse = Job;
@@ -8287,7 +8553,9 @@ export type CheckHealthResponse = Health;
 
 export type CreateSandboxConfigV1SandboxConfigPostData = {
   requestBody: SandboxConfigCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateSandboxConfigV1SandboxConfigPostResponse = SandboxConfig;
@@ -8305,13 +8573,17 @@ export type ListSandboxConfigsV1SandboxConfigGetData = {
    * Filter for this specific sandbox type
    */
   sandboxType?: SandboxType | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListSandboxConfigsV1SandboxConfigGetResponse = Array<SandboxConfig>;
 
 export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse =
@@ -8319,7 +8591,9 @@ export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostResponse =
 
 export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData =
   {
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostResponse =
@@ -8327,7 +8601,9 @@ export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostRespon
 
 export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData = {
   requestBody: LocalSandboxConfig;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse =
@@ -8336,7 +8612,9 @@ export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostResponse =
 export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData = {
   requestBody: SandboxConfigUpdate;
   sandboxConfigId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse =
@@ -8344,7 +8622,9 @@ export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchResponse =
 
 export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData = {
   sandboxConfigId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse =
@@ -8352,7 +8632,9 @@ export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteResponse =
 
 export type ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostData =
   {
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostResponse =
@@ -8362,7 +8644,9 @@ export type CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariable
   {
     requestBody: SandboxEnvironmentVariableCreate;
     sandboxConfigId: string;
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePostResponse =
@@ -8379,7 +8663,9 @@ export type ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableG
      */
     limit?: number;
     sandboxConfigId: string;
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetResponse =
@@ -8389,7 +8675,9 @@ export type UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchDa
   {
     envVarId: string;
     requestBody: SandboxEnvironmentVariableUpdate;
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchResponse =
@@ -8398,7 +8686,9 @@ export type UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchRe
 export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteData =
   {
     envVarId: string;
+    userAgent?: string | null;
     userId?: string | null;
+    xProjectId?: string | null;
   };
 
 export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteResponse =
@@ -8433,29 +8723,46 @@ export type ListProvidersData = {
    * Filter providers by type
    */
   providerType?: ProviderType | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListProvidersResponse = Array<Provider>;
 
 export type CreateProviderData = {
   requestBody: ProviderCreate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateProviderResponse = Provider;
 
+export type RetrieveProviderData = {
+  providerId: string;
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type RetrieveProviderResponse = Provider;
+
 export type ModifyProviderData = {
   providerId: string;
   requestBody: ProviderUpdate;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ModifyProviderResponse = Provider;
 
 export type DeleteProviderData = {
   providerId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteProviderResponse = unknown;
@@ -8491,7 +8798,9 @@ export type ListRunsData = {
    * Maximum number of runs to return
    */
   limit?: number | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListRunsResponse = Array<Run>;
@@ -8505,21 +8814,27 @@ export type ListActiveRunsData = {
    * If True, filters for runs that were created in background mode.
    */
   background?: boolean | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListActiveRunsResponse = Array<Run>;
 
 export type RetrieveRunData = {
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveRunResponse = Run;
 
 export type DeleteRunData = {
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type DeleteRunResponse = Run;
@@ -8542,14 +8857,18 @@ export type ListRunMessagesData = {
    */
   order?: 'asc' | 'desc';
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListRunMessagesResponse = Array<LettaMessageUnion>;
 
 export type RetrieveRunUsageData = {
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveRunUsageResponse = UsageStatistics;
@@ -8572,7 +8891,9 @@ export type ListRunStepsData = {
    */
   order?: string;
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListRunStepsResponse = Array<Step>;
@@ -8580,7 +8901,9 @@ export type ListRunStepsResponse = Array<Step>;
 export type RetrieveStreamData = {
   requestBody?: RetrieveStreamRequest;
   runId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveStreamResponse = unknown;
@@ -8642,48 +8965,60 @@ export type ListStepsData = {
    * Filter by trace ids returned by the server
    */
   traceIds?: Array<string> | null;
+  userAgent?: string | null;
   userId?: string | null;
   /**
    * Filter by project slug to associate with the group (cloud only).
    */
   xProject?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListStepsResponse = Array<Step>;
 
 export type RetrieveStepData = {
   stepId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveStepResponse = Step;
 
-export type RetrieveStepMetricsData = {
+export type RetrieveMetricsForStepData = {
   stepId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
-export type RetrieveStepMetricsResponse = StepMetrics;
+export type RetrieveMetricsForStepResponse = StepMetrics;
 
-export type RetrieveStepTraceData = {
+export type RetrieveTraceForStepData = {
   stepId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
-export type RetrieveStepTraceResponse = ProviderTrace | null;
+export type RetrieveTraceForStepResponse = ProviderTrace | null;
 
-export type AddFeedbackData = {
-  requestBody: AddFeedbackRequest;
+export type ModifyFeedbackForStepData = {
+  requestBody: ModifyFeedbackRequest;
   stepId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
-export type AddFeedbackResponse = Step;
+export type ModifyFeedbackForStepResponse = Step;
 
 export type UpdateStepTransactionIdData = {
   stepId: string;
   transactionId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type UpdateStepTransactionIdResponse = Step;
@@ -8713,7 +9048,9 @@ export type ListTagsData = {
    * Filter tags by text search
    */
   queryText?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListTagsResponse = Array<string>;
@@ -8780,14 +9117,18 @@ export type UpdateOrganizationResponse = Organization;
 
 export type RetrieveProviderTraceData = {
   stepId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveProviderTraceResponse = ProviderTrace | null;
 
 export type CreateBatchData = {
   requestBody: CreateBatch;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateBatchResponse = BatchJob;
@@ -8813,19 +9154,23 @@ export type ListBatchesData = {
    * Field to sort by
    */
   orderBy?: 'created_at';
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type ListBatchesResponse = Array<BatchJob>;
 
 export type RetrieveBatchData = {
   batchId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type RetrieveBatchResponse = BatchJob;
 
-export type ListBatchMessagesData = {
+export type ListMessagesForBatchData = {
   /**
    * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    */
@@ -8851,14 +9196,18 @@ export type ListBatchMessagesData = {
    * Field to sort by
    */
   orderBy?: 'created_at';
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
-export type ListBatchMessagesResponse = LettaBatchMessages;
+export type ListMessagesForBatchResponse = LettaBatchMessages;
 
 export type CancelBatchData = {
   batchId: string;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CancelBatchResponse = unknown;
@@ -8868,14 +9217,18 @@ export type CreateVoiceChatCompletionsData = {
   requestBody: {
     [key: string]: unknown;
   };
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type CreateVoiceChatCompletionsResponse = unknown;
 
 export type GetTotalStorageSizeData = {
   storageUnit?: string | null;
+  userAgent?: string | null;
   userId?: string | null;
+  xProjectId?: string | null;
 };
 
 export type GetTotalStorageSizeResponse = number;
@@ -11079,6 +11432,19 @@ export type $OpenApiTs = {
     };
   };
   '/v1/providers/{provider_id}': {
+    get: {
+      req: RetrieveProviderData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Provider;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
     patch: {
       req: ModifyProviderData;
       res: {
@@ -11271,7 +11637,7 @@ export type $OpenApiTs = {
   };
   '/v1/steps/{step_id}/metrics': {
     get: {
-      req: RetrieveStepMetricsData;
+      req: RetrieveMetricsForStepData;
       res: {
         /**
          * Successful Response
@@ -11286,7 +11652,7 @@ export type $OpenApiTs = {
   };
   '/v1/steps/{step_id}/trace': {
     get: {
-      req: RetrieveStepTraceData;
+      req: RetrieveTraceForStepData;
       res: {
         /**
          * Successful Response
@@ -11301,7 +11667,7 @@ export type $OpenApiTs = {
   };
   '/v1/steps/{step_id}/feedback': {
     patch: {
-      req: AddFeedbackData;
+      req: ModifyFeedbackForStepData;
       res: {
         /**
          * Successful Response
@@ -11512,7 +11878,7 @@ export type $OpenApiTs = {
   };
   '/v1/messages/batches/{batch_id}/messages': {
     get: {
-      req: ListBatchMessagesData;
+      req: ListMessagesForBatchData;
       res: {
         /**
          * Successful Response

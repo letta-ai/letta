@@ -182,39 +182,6 @@ export const $ActionResponseModel = {
   description: 'Action response data model.',
 } as const;
 
-export const $AddFeedbackRequest = {
-  properties: {
-    feedback: {
-      anyOf: [
-        {
-          $ref: '#/components/schemas/FeedbackType',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      description: 'Whether this feedback is positive or negative',
-    },
-    tags: {
-      anyOf: [
-        {
-          items: {
-            type: 'string',
-          },
-          type: 'array',
-        },
-        {
-          type: 'null',
-        },
-      ],
-      title: 'Tags',
-      description: 'Feedback tags to add to the step',
-    },
-  },
-  type: 'object',
-  title: 'AddFeedbackRequest',
-} as const;
-
 export const $AgentEnvironmentVariable = {
   properties: {
     created_by_id: {
@@ -11058,6 +11025,39 @@ export const $ModalSandboxConfig = {
   },
   type: 'object',
   title: 'ModalSandboxConfig',
+} as const;
+
+export const $ModifyFeedbackRequest = {
+  properties: {
+    feedback: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/FeedbackType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'Whether this feedback is positive or negative',
+    },
+    tags: {
+      anyOf: [
+        {
+          items: {
+            type: 'string',
+          },
+          type: 'array',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Tags',
+      description: 'Feedback tags to add to the step',
+    },
+  },
+  type: 'object',
+  title: 'ModifyFeedbackRequest',
 } as const;
 
 export const $NpmRequirement = {

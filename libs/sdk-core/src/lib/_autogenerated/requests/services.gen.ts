@@ -301,6 +301,8 @@ import type {
   ListProvidersResponse,
   CreateProviderData,
   CreateProviderResponse,
+  RetrieveProviderData,
+  RetrieveProviderResponse,
   ModifyProviderData,
   ModifyProviderResponse,
   DeleteProviderData,
@@ -327,12 +329,12 @@ import type {
   ListStepsResponse,
   RetrieveStepData,
   RetrieveStepResponse,
-  RetrieveStepMetricsData,
-  RetrieveStepMetricsResponse,
-  RetrieveStepTraceData,
-  RetrieveStepTraceResponse,
-  AddFeedbackData,
-  AddFeedbackResponse,
+  RetrieveMetricsForStepData,
+  RetrieveMetricsForStepResponse,
+  RetrieveTraceForStepData,
+  RetrieveTraceForStepResponse,
+  ModifyFeedbackForStepData,
+  ModifyFeedbackForStepResponse,
   UpdateStepTransactionIdData,
   UpdateStepTransactionIdResponse,
   ListTagsData,
@@ -361,8 +363,8 @@ import type {
   ListBatchesResponse,
   RetrieveBatchData,
   RetrieveBatchResponse,
-  ListBatchMessagesData,
-  ListBatchMessagesResponse,
+  ListMessagesForBatchData,
+  ListMessagesForBatchResponse,
   CancelBatchData,
   CancelBatchResponse,
   CreateVoiceChatCompletionsData,
@@ -380,6 +382,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.toolId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -406,6 +410,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.toolId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -433,6 +439,8 @@ export class ToolsService {
    * @param data.toolId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -468,6 +476,8 @@ export class ToolsService {
    * @param data.returnOnlyLettaTools Count only tools with tool_type starting with 'letta_'
    * @param data.excludeLettaTools Exclude built-in Letta tools from the count
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -512,6 +522,8 @@ export class ToolsService {
    * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
    * @param data.returnOnlyLettaTools Return only tools with tool_type starting with 'letta_'
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -549,6 +561,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -574,6 +588,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -598,6 +614,8 @@ export class ToolsService {
    * Upsert base tools
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -621,6 +639,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ToolReturnMessage Successful Response
    * @throws ApiError
    */
@@ -645,6 +665,8 @@ export class ToolsService {
    * Get a list of all Composio apps
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AppModel Successful Response
    * @throws ApiError
    */
@@ -668,6 +690,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.composioAppName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ActionModel Successful Response
    * @throws ApiError
    */
@@ -694,6 +718,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.composioActionName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -719,6 +745,8 @@ export class ToolsService {
    * Get a list of all configured MCP servers
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -742,6 +770,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -767,6 +797,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.mcpServerName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns MCPTool Successful Response
    * @throws ApiError
    */
@@ -800,6 +832,8 @@ export class ToolsService {
    * @param data.mcpServerName
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -830,6 +864,8 @@ export class ToolsService {
    * @param data.mcpServerName
    * @param data.mcpToolName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -858,6 +894,8 @@ export class ToolsService {
    * @param data.mcpServerName
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -886,6 +924,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.mcpServerName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -913,6 +953,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -939,6 +981,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -965,6 +1009,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -993,6 +1039,8 @@ export class ToolsService {
    * @param data.toolName
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1057,6 +1105,8 @@ export class ToolsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns GenerateToolOutput Successful Response
    * @throws ApiError
    */
@@ -1083,6 +1133,8 @@ export class SourcesService {
    * Count all data sources created by a user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -1106,6 +1158,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1133,6 +1187,8 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1161,6 +1217,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1187,6 +1245,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1219,6 +1279,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.includeDetailedPerSourceMetadata
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
@@ -1245,6 +1307,8 @@ export class SourcesService {
    * List all data sources created by a user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1268,6 +1332,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1296,6 +1362,8 @@ export class SourcesService {
    * @param data.duplicateHandling How to handle duplicate filenames
    * @param data.name Optional custom name to override the uploaded file's name
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1328,6 +1396,8 @@ export class SourcesService {
    * @param data The data for the request.
    * @param data.sourceId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1357,6 +1427,8 @@ export class SourcesService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -1392,6 +1464,8 @@ export class SourcesService {
    * @param data.includeContent Whether to include full file content
    * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1426,6 +1500,8 @@ export class SourcesService {
    * @param data.fileId
    * @param data.includeContent Whether to include full file content
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1457,6 +1533,8 @@ export class SourcesService {
    * @param data.sourceId
    * @param data.fileId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -1485,6 +1563,8 @@ export class FoldersService {
    * Count all data folders created by a user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -1508,6 +1588,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.folderId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1535,6 +1617,8 @@ export class FoldersService {
    * @param data.folderId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1563,6 +1647,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.folderId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1589,6 +1675,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.folderName
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1621,6 +1709,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.includeDetailedPerSourceMetadata
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
@@ -1652,6 +1742,8 @@ export class FoldersService {
    * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.orderBy Field to sort by
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1682,6 +1774,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1710,6 +1804,8 @@ export class FoldersService {
    * @param data.duplicateHandling How to handle duplicate filenames
    * @param data.name Optional custom name to override the uploaded file's name
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1742,6 +1838,8 @@ export class FoldersService {
    * @param data The data for the request.
    * @param data.folderId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1771,6 +1869,8 @@ export class FoldersService {
    * @param data.before Message before which to retrieve the returned messages.
    * @param data.limit Maximum number of messages to retrieve.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -1805,6 +1905,8 @@ export class FoldersService {
    * @param data.after Pagination cursor to fetch the next set of results
    * @param data.includeContent Whether to include full file content
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1837,6 +1939,8 @@ export class FoldersService {
    * @param data.folderId
    * @param data.fileId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -1885,6 +1989,8 @@ export class AgentsService {
    * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
    * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -1926,8 +2032,10 @@ export class AgentsService {
    * Create a new agent with the specified configuration.
    * @param data The data for the request.
    * @param data.requestBody
-   * @param data.userId
    * @param data.xProject The project slug to associate with the agent (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -1952,6 +2060,8 @@ export class AgentsService {
    * Get the count of all agents associated with a given user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -1981,6 +2091,8 @@ export class AgentsService {
    * @param data.maxSteps
    * @param data.useLegacyFormat If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @param data.requestBody
    * @returns string Successful Response
    * @throws ApiError
@@ -2014,8 +2126,10 @@ export class AgentsService {
    * Returns the IDs of all imported agents.
    * @param data The data for the request.
    * @param data.formData
-   * @param data.userId
    * @param data.xOverrideEmbeddingModel
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ImportedAgentsResponse Successful Response
    * @throws ApiError
    */
@@ -2041,6 +2155,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ContextWindowOverview Successful Response
    * @throws ApiError
    */
@@ -2068,6 +2184,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2097,6 +2215,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2126,6 +2246,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2152,6 +2274,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -2179,6 +2303,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.toolId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2207,6 +2333,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.toolId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2236,6 +2364,8 @@ export class AgentsService {
    * @param data.toolName
    * @param data.requiresApproval
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2267,6 +2397,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.sourceId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2295,6 +2427,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.folderId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2323,6 +2457,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.sourceId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2351,6 +2487,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.folderId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2381,6 +2519,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -2412,6 +2552,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.fileId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -2443,6 +2585,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.fileId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2470,6 +2614,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -2496,6 +2642,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -2525,6 +2673,8 @@ export class AgentsService {
    * @param data.limit Number of items to return (1-100)
    * @param data.isOpen Filter by open status (true for open files, false for closed files)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns PaginatedAgentFiles Successful Response
    * @throws ApiError
    */
@@ -2557,6 +2707,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -2584,6 +2736,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.blockLabel
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2613,6 +2767,8 @@ export class AgentsService {
    * @param data.blockLabel
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2642,6 +2798,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2669,6 +2827,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.blockId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2697,6 +2857,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.blockId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2729,6 +2891,8 @@ export class AgentsService {
    * @param data.search Search passages by text
    * @param data.ascending Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -2763,6 +2927,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -2801,6 +2967,8 @@ export class AgentsService {
    * @param data.startDatetime Filter results to passages created after this datetime
    * @param data.endDatetime Filter results to passages created before this datetime
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ArchivalMemorySearchResponse Successful Response
    * @throws ApiError
    */
@@ -2836,6 +3004,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.memoryId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2871,6 +3041,8 @@ export class AgentsService {
    * @param data.assistantMessageToolKwarg The name of the message argument.
    * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -2909,6 +3081,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
@@ -2939,6 +3113,8 @@ export class AgentsService {
    * @param data.messageId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2971,6 +3147,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -3001,6 +3179,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.agentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @param data.requestBody
    * @returns unknown Successful Response
    * @throws ApiError
@@ -3032,6 +3212,8 @@ export class AgentsService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns MessageSearchResult Successful Response
    * @throws ApiError
    */
@@ -3062,6 +3244,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -3091,6 +3275,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -3121,6 +3307,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.managerType Manager type to filter groups by
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3155,6 +3343,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3187,6 +3377,8 @@ export class AgentsService {
    * @param data.agentId
    * @param data.maxMessageLength Maximum number of messages to retain after summarization.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -3224,6 +3416,8 @@ export class GroupsService {
    * @param data.orderBy Field to sort by
    * @param data.projectId Search groups by project id
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3255,8 +3449,10 @@ export class GroupsService {
    * Create a new multi-agent group with the specified configuration.
    * @param data The data for the request.
    * @param data.requestBody
-   * @param data.userId
    * @param data.xProject The project slug to associate with the group (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3281,6 +3477,8 @@ export class GroupsService {
    * Get the count of all groups associated with a given user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -3304,6 +3502,8 @@ export class GroupsService {
    * @param data The data for the request.
    * @param data.groupId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3330,8 +3530,10 @@ export class GroupsService {
    * @param data The data for the request.
    * @param data.groupId
    * @param data.requestBody
-   * @param data.userId
    * @param data.xProject The project slug to associate with the group (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3360,6 +3562,8 @@ export class GroupsService {
    * @param data The data for the request.
    * @param data.groupId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3388,6 +3592,8 @@ export class GroupsService {
    * @param data.groupId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
@@ -3422,6 +3628,8 @@ export class GroupsService {
    * @param data.assistantMessageToolName The name of the designated message tool.
    * @param data.assistantMessageToolKwarg The name of the message argument.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -3459,6 +3667,8 @@ export class GroupsService {
    * @param data.groupId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -3489,6 +3699,8 @@ export class GroupsService {
    * @param data.messageId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3518,6 +3730,8 @@ export class GroupsService {
    * @param data The data for the request.
    * @param data.groupId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3554,6 +3768,8 @@ export class IdentitiesService {
    * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.orderBy Field to sort by
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3586,8 +3802,10 @@ export class IdentitiesService {
    * Create Identity
    * @param data The data for the request.
    * @param data.requestBody
-   * @param data.userId
    * @param data.xProject The project slug to associate with the identity (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3611,8 +3829,10 @@ export class IdentitiesService {
    * Upsert Identity
    * @param data The data for the request.
    * @param data.requestBody
-   * @param data.userId
    * @param data.xProject The project slug to associate with the identity (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3637,6 +3857,8 @@ export class IdentitiesService {
    * Get count of all identities for a user
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -3659,6 +3881,8 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.identityId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3685,6 +3909,8 @@ export class IdentitiesService {
    * @param data.identityId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3713,6 +3939,8 @@ export class IdentitiesService {
    * @param data The data for the request.
    * @param data.identityId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3739,6 +3967,8 @@ export class IdentitiesService {
    * @param data.identityId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3769,6 +3999,8 @@ export class InternalTemplatesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3794,6 +4026,8 @@ export class InternalTemplatesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -3819,6 +4053,8 @@ export class InternalTemplatesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -3846,6 +4082,8 @@ export class InternalTemplatesService {
    * @param data.deploymentId
    * @param data.entityTypes Filter by entity types (block, agent, group)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns ListDeploymentEntitiesResponse Successful Response
    * @throws ApiError
    */
@@ -3876,6 +4114,8 @@ export class InternalTemplatesService {
    * @param data The data for the request.
    * @param data.deploymentId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns DeleteDeploymentResponse Successful Response
    * @throws ApiError
    */
@@ -3906,6 +4146,8 @@ export class ModelsService {
    * @param data.providerName
    * @param data.providerType
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -3933,6 +4175,8 @@ export class ModelsService {
    * List available embedding models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -3960,6 +4204,8 @@ export class LlmsService {
    * @param data.providerName
    * @param data.providerType
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -3987,6 +4233,8 @@ export class LlmsService {
    * List available embedding models using the asynchronous implementation for improved performance
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -4027,6 +4275,8 @@ export class BlocksService {
    * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
    * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4068,6 +4318,8 @@ export class BlocksService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4092,6 +4344,8 @@ export class BlocksService {
    * Count all blocks created by a user.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -4115,6 +4369,8 @@ export class BlocksService {
    * @param data.blockId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4142,6 +4398,8 @@ export class BlocksService {
    * @param data The data for the request.
    * @param data.blockId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -4167,6 +4425,8 @@ export class BlocksService {
    * @param data The data for the request.
    * @param data.blockId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4195,6 +4455,8 @@ export class BlocksService {
    * @param data.blockId
    * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -4231,6 +4493,8 @@ export class JobsService {
    * @param data.limit Limit for pagination
    * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4265,6 +4529,8 @@ export class JobsService {
    * @param data.limit Limit for pagination
    * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4295,6 +4561,8 @@ export class JobsService {
    * @param data The data for the request.
    * @param data.jobId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4321,6 +4589,8 @@ export class JobsService {
    * @param data The data for the request.
    * @param data.jobId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4350,6 +4620,8 @@ export class JobsService {
    * @param data The data for the request.
    * @param data.jobId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4394,6 +4666,8 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4420,6 +4694,8 @@ export class SandboxConfigService {
    * @param data.after Pagination cursor to fetch the next set of results
    * @param data.sandboxType Filter for this specific sandbox type
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4446,6 +4722,8 @@ export class SandboxConfigService {
    * Create Default E2B Sandbox Config
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4467,6 +4745,8 @@ export class SandboxConfigService {
    * Create Default Local Sandbox Config
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4490,6 +4770,8 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4515,6 +4797,8 @@ export class SandboxConfigService {
    * @param data.sandboxConfigId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4542,6 +4826,8 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.sandboxConfigId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -4568,6 +4854,8 @@ export class SandboxConfigService {
    * Deletes and recreates the venv, then reinstalls required dependencies.
    * @param data The data for the request.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4591,6 +4879,8 @@ export class SandboxConfigService {
    * @param data.sandboxConfigId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -4620,6 +4910,8 @@ export class SandboxConfigService {
    * @param data.limit Number of results to return
    * @param data.after Pagination cursor to fetch the next set of results
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -4650,6 +4942,8 @@ export class SandboxConfigService {
    * @param data.envVarId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -4677,6 +4971,8 @@ export class SandboxConfigService {
    * @param data The data for the request.
    * @param data.envVarId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -4711,6 +5007,8 @@ export class ProvidersService {
    * @param data.name Filter providers by name
    * @param data.providerType Filter providers by type
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -4743,6 +5041,8 @@ export class ProvidersService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -4763,12 +5063,42 @@ export class ProvidersService {
   }
 
   /**
+   * Retrieve Provider
+   * Get a provider by ID.
+   * @param data The data for the request.
+   * @param data.providerId
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns Provider Successful Response
+   * @throws ApiError
+   */
+  public static retrieveProvider(
+    data: RetrieveProviderData,
+    headers?: { user_id: string },
+  ): CancelablePromise<RetrieveProviderResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/providers/{provider_id}',
+      path: {
+        provider_id: data.providerId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
    * Modify Provider
    * Update an existing custom provider.
    * @param data The data for the request.
    * @param data.providerId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -4797,6 +5127,8 @@ export class ProvidersService {
    * @param data The data for the request.
    * @param data.providerId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -4854,6 +5186,8 @@ export class RunsService {
    * @param data.limit Maximum number of runs to return
    * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -4886,6 +5220,8 @@ export class RunsService {
    * @param data.agentIds The unique identifier of the agent associated with the run.
    * @param data.background If True, filters for runs that were created in background mode.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -4913,6 +5249,8 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.runId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -4939,6 +5277,8 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.runId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -4969,6 +5309,8 @@ export class RunsService {
    * @param data.limit Maximum number of messages to return
    * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -5001,6 +5343,8 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.runId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns UsageStatistics Successful Response
    * @throws ApiError
    */
@@ -5041,6 +5385,8 @@ export class RunsService {
    * @param data.limit Maximum number of messages to return
    * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5072,6 +5418,8 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.runId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @param data.requestBody
    * @returns unknown Successful response
    * @throws ApiError
@@ -5115,8 +5463,10 @@ export class StepsService {
    * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
    * @param data.tags Filter by tags
    * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
-   * @param data.userId
    * @param data.xProject Filter by project slug to associate with the group (cloud only).
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5156,6 +5506,8 @@ export class StepsService {
    * @param data The data for the request.
    * @param data.stepId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5177,18 +5529,20 @@ export class StepsService {
   }
 
   /**
-   * Retrieve Step Metrics
+   * Retrieve Metrics For Step
    * Get step metrics by step ID.
    * @param data The data for the request.
    * @param data.stepId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns StepMetrics Successful Response
    * @throws ApiError
    */
-  public static retrieveStepMetrics(
-    data: RetrieveStepMetricsData,
+  public static retrieveMetricsForStep(
+    data: RetrieveMetricsForStepData,
     headers?: { user_id: string },
-  ): CancelablePromise<RetrieveStepMetricsResponse> {
+  ): CancelablePromise<RetrieveMetricsForStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/steps/{step_id}/metrics',
@@ -5203,17 +5557,19 @@ export class StepsService {
   }
 
   /**
-   * Retrieve Step Trace
+   * Retrieve Trace For Step
    * @param data The data for the request.
    * @param data.stepId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static retrieveStepTrace(
-    data: RetrieveStepTraceData,
+  public static retrieveTraceForStep(
+    data: RetrieveTraceForStepData,
     headers?: { user_id: string },
-  ): CancelablePromise<RetrieveStepTraceResponse> {
+  ): CancelablePromise<RetrieveTraceForStepResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/steps/{step_id}/trace',
@@ -5228,19 +5584,21 @@ export class StepsService {
   }
 
   /**
-   * Add Feedback
-   * Add feedback to a step.
+   * Modify Feedback For Step
+   * Modify feedback for a given step.
    * @param data The data for the request.
    * @param data.stepId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Step Successful Response
    * @throws ApiError
    */
-  public static addFeedback(
-    data: AddFeedbackData,
+  public static modifyFeedbackForStep(
+    data: ModifyFeedbackForStepData,
     headers?: { user_id: string },
-  ): CancelablePromise<AddFeedbackResponse> {
+  ): CancelablePromise<ModifyFeedbackForStepResponse> {
     return __request(OpenAPI, {
       method: 'PATCH',
       url: '/v1/steps/{step_id}/feedback',
@@ -5263,6 +5621,8 @@ export class StepsService {
    * @param data.stepId
    * @param data.transactionId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5297,6 +5657,8 @@ export class TagService {
    * @param data.orderBy Field to sort by
    * @param data.queryText Filter tags by text search
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -5335,6 +5697,8 @@ export class AdminService {
    * @param data.orderBy Field to sort by
    * @param data.queryText Filter tags by text search
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -5564,10 +5928,16 @@ export class AdminService {
 
 export class TelemetryService {
   /**
-   * Retrieve Provider Trace By Step Id
+   * @deprecated
+   * Retrieve Provider Trace
+   * **DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.
+   *
+   * Retrieve provider trace by step ID.
    * @param data The data for the request.
    * @param data.stepId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -5599,6 +5969,8 @@ export class MessagesService {
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -5628,6 +6000,8 @@ export class MessagesService {
    * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.orderBy Field to sort by
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -5658,6 +6032,8 @@ export class MessagesService {
    * @param data The data for the request.
    * @param data.batchId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -5679,7 +6055,7 @@ export class MessagesService {
   }
 
   /**
-   * List Batch Messages
+   * List Messages For Batch
    * Get response messages for a specific batch job.
    * @param data The data for the request.
    * @param data.batchId
@@ -5690,13 +6066,15 @@ export class MessagesService {
    * @param data.orderBy Field to sort by
    * @param data.agentId Filter messages by agent ID
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns LettaBatchMessages Successful Response
    * @throws ApiError
    */
-  public static listBatchMessages(
-    data: ListBatchMessagesData,
+  public static listMessagesForBatch(
+    data: ListMessagesForBatchData,
     headers?: { user_id: string },
-  ): CancelablePromise<ListBatchMessagesResponse> {
+  ): CancelablePromise<ListMessagesForBatchResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/messages/batches/{batch_id}/messages',
@@ -5724,6 +6102,8 @@ export class MessagesService {
    * @param data The data for the request.
    * @param data.batchId
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -5752,6 +6132,8 @@ export class VoiceService {
    * @param data.agentId
    * @param data.requestBody
    * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -5780,8 +6162,10 @@ export class EmbeddingsService {
    * Get Embeddings Total Storage Size
    * Get the total size of all embeddings in the database for a user in the storage unit given.
    * @param data The data for the request.
-   * @param data.userId
    * @param data.storageUnit
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
    * @returns number Successful Response
    * @throws ApiError
    */

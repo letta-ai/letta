@@ -1,6 +1,6 @@
 import type { Step } from '@letta-cloud/sdk-core';
 import {
-  useStepsServiceAddFeedback,
+  useStepsServiceModifyFeedbackForStep,
   useStepsServiceRetrieveStep,
   UseStepsServiceRetrieveStepKeyFn,
 } from '@letta-cloud/sdk-core';
@@ -30,7 +30,7 @@ export function FeedbackButtons(props: FeedbackButtonsProps) {
   });
 
   const queryClient = useQueryClient();
-  const { mutate } = useStepsServiceAddFeedback();
+  const { mutate } = useStepsServiceModifyFeedbackForStep();
 
   const handleAddFeedback = useCallback(
     (feedback: 'negative' | 'positive') => {

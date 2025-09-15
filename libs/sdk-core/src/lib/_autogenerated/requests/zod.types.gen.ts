@@ -76,26 +76,6 @@ export const ActionModel = z.object({
   enabled: z.union([z.boolean(), z.undefined()]).optional(),
 });
 
-export type FeedbackType = z.infer<typeof FeedbackType>;
-export const FeedbackType = z.union([
-  z.literal('positive'),
-  z.literal('negative'),
-]);
-
-export type AddFeedbackRequest = z.infer<typeof AddFeedbackRequest>;
-export const AddFeedbackRequest = z.object({
-  feedback: z
-    .union([FeedbackType, z.null(), z.array(z.union([FeedbackType, z.null()]))])
-    .optional(),
-  tags: z
-    .union([
-      z.array(z.string()),
-      z.null(),
-      z.array(z.union([z.array(z.string()), z.null()])),
-    ])
-    .optional(),
-});
-
 export type AgentEnvironmentVariable = z.infer<typeof AgentEnvironmentVariable>;
 export const AgentEnvironmentVariable = z.object({
   created_by_id: z
@@ -5698,6 +5678,12 @@ export const E2BSandboxConfig = z.object({
     .optional(),
 });
 
+export type FeedbackType = z.infer<typeof FeedbackType>;
+export const FeedbackType = z.union([
+  z.literal('positive'),
+  z.literal('negative'),
+]);
+
 export type FileMetadata = z.infer<typeof FileMetadata>;
 export const FileMetadata = z.object({
   source_id: z.string(),
@@ -7525,6 +7511,20 @@ export const ModalSandboxConfig = z.object({
   language: z.union([z.literal('python'), z.literal('typescript')]).optional(),
 });
 
+export type ModifyFeedbackRequest = z.infer<typeof ModifyFeedbackRequest>;
+export const ModifyFeedbackRequest = z.object({
+  feedback: z
+    .union([FeedbackType, z.null(), z.array(z.union([FeedbackType, z.null()]))])
+    .optional(),
+  tags: z
+    .union([
+      z.array(z.string()),
+      z.null(),
+      z.array(z.union([z.array(z.string()), z.null()])),
+    ])
+    .optional(),
+});
+
 export type Organization = z.infer<typeof Organization>;
 export const Organization = z.object({
   id: z.string().optional(),
@@ -9108,6 +9108,12 @@ export const delete_Delete_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -9126,6 +9132,12 @@ export const get_Retrieve_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -9142,6 +9154,12 @@ export const patch_Modify_tool = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9208,6 +9226,12 @@ export const get_Count_tools = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9279,6 +9303,12 @@ export const get_List_tools = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Tool),
@@ -9292,6 +9322,12 @@ export const post_Create_tool = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9310,6 +9346,12 @@ export const put_Upsert_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ToolCreate,
   }),
@@ -9324,6 +9366,12 @@ export const post_Add_base_tools = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9341,6 +9389,12 @@ export const post_Run_tool_from_source = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ToolRunFromSource,
   }),
@@ -9354,7 +9408,13 @@ export const get_List_composio_apps = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      'user-id': z
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9376,6 +9436,12 @@ export const get_List_composio_actions_by_app = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(ActionModel),
@@ -9394,6 +9460,12 @@ export const post_Add_composio_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -9406,7 +9478,13 @@ export const get_List_mcp_servers = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      'user-id': z
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9422,6 +9500,12 @@ export const put_Add_mcp_server = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9467,6 +9551,12 @@ export const get_List_mcp_tools_by_server = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(MCPTool),
@@ -9490,6 +9580,12 @@ export const post_Resync_mcp_server_tools = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -9509,6 +9605,12 @@ export const post_Add_mcp_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Tool,
@@ -9525,6 +9627,12 @@ export const patch_Update_mcp_server = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9564,6 +9672,12 @@ export const delete_Delete_mcp_server = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(
@@ -9590,6 +9704,12 @@ export const post_Test_mcp_server = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9619,6 +9739,12 @@ export const post_Connect_mcp_server = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: z.union([
       StdioServerConfig,
@@ -9646,6 +9772,12 @@ export const post_Generate_json_schema = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CodeInput,
   }),
@@ -9666,6 +9798,12 @@ export const post_Execute_mcp_tool = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9711,6 +9849,12 @@ export const post_Generate_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: GenerateToolInput,
   }),
@@ -9725,6 +9869,12 @@ export const get_Count_sources = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9745,6 +9895,12 @@ export const get_Retrieve_source = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Source,
@@ -9761,6 +9917,12 @@ export const patch_Modify_source = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9782,6 +9944,12 @@ export const delete_Delete_source = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -9798,6 +9966,12 @@ export const get_Get_source_id_by_name = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9818,6 +9992,12 @@ export const get_Get_sources_metadata = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: OrganizationSourcesStats,
@@ -9833,6 +10013,12 @@ export const get_List_sources = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Source),
@@ -9846,6 +10032,12 @@ export const post_Create_source = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9880,6 +10072,12 @@ export const post_Upload_file_to_source = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_upload_file_to_source,
   }),
@@ -9897,6 +10095,12 @@ export const get_Get_agents_for_source = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -9926,6 +10130,12 @@ export const get_List_source_passages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Passage),
@@ -9952,6 +10162,12 @@ export const get_List_source_files = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(FileMetadata),
@@ -9974,6 +10190,12 @@ export const get_Get_file_metadata = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: FileMetadata,
@@ -9994,6 +10216,12 @@ export const delete_Delete_file_from_source = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -10007,6 +10235,12 @@ export const get_Count_folders = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10027,6 +10261,12 @@ export const get_Retrieve_folder = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Folder,
@@ -10043,6 +10283,12 @@ export const patch_Modify_folder = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10064,6 +10310,12 @@ export const delete_Delete_folder = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -10082,6 +10334,12 @@ export const get_Get_folder_id_by_name = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.string(),
@@ -10098,6 +10356,12 @@ export const get_Get_folders_metadata = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10128,6 +10392,12 @@ export const get_List_folders = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Folder),
@@ -10141,6 +10411,12 @@ export const post_Create_folder = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10175,6 +10451,12 @@ export const post_Upload_file_to_folder = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_upload_file_to_folder,
   }),
@@ -10192,6 +10474,12 @@ export const get_Get_agents_for_folder = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10221,6 +10509,12 @@ export const get_List_folder_passages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Passage),
@@ -10246,6 +10540,12 @@ export const get_List_folder_files = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(FileMetadata),
@@ -10264,6 +10564,12 @@ export const delete_Delete_file_from_folder = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10340,6 +10646,12 @@ export const get_List_agents = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(AgentState),
@@ -10352,10 +10664,16 @@ export const post_Create_agent = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10372,6 +10690,12 @@ export const get_Count_agents = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10396,6 +10720,12 @@ export const get_Export_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: Body_export_agent,
   }),
@@ -10409,10 +10739,16 @@ export const post_Import_agent = {
   requestFormat: z.literal('form-data'),
   parameters: z.object({
     header: z.object({
+      'x-override-embedding-model': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'x-override-embedding-model': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10435,6 +10771,12 @@ export const get_Retrieve_agent_context_window = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ContextWindowOverview,
@@ -10451,6 +10793,12 @@ export const patch_Modify_agent = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10481,6 +10829,12 @@ export const get_Retrieve_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10499,6 +10853,12 @@ export const delete_Delete_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -10515,6 +10875,12 @@ export const get_List_agent_tools = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10536,6 +10902,12 @@ export const patch_Attach_tool = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10553,6 +10925,12 @@ export const patch_Detach_tool = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10577,6 +10955,12 @@ export const patch_Modify_approval = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10596,6 +10980,12 @@ export const patch_Attach_source_to_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10613,6 +11003,12 @@ export const patch_Attach_folder_to_agent = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10635,6 +11031,12 @@ export const patch_Detach_source_from_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10655,6 +11057,12 @@ export const patch_Detach_folder_from_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10671,6 +11079,12 @@ export const patch_Close_all_open_files = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10692,6 +11106,12 @@ export const patch_Open_file = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(z.string()),
@@ -10709,6 +11129,12 @@ export const patch_Close_file = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10729,6 +11155,12 @@ export const get_List_agent_sources = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Source),
@@ -10745,6 +11177,12 @@ export const get_List_agent_folders = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10778,6 +11216,12 @@ export const get_List_agent_files = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: PaginatedAgentFiles,
@@ -10794,6 +11238,12 @@ export const get_Retrieve_agent_memory = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10816,6 +11266,12 @@ export const get_Retrieve_core_memory_block = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Block,
@@ -10836,6 +11292,12 @@ export const patch_Modify_core_memory_block = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: BlockUpdate,
   }),
@@ -10853,6 +11315,12 @@ export const get_List_core_memory_blocks = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10875,6 +11343,12 @@ export const patch_Attach_core_memory_block = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: AgentState,
@@ -10893,6 +11367,12 @@ export const patch_Detach_core_memory_block = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -10934,6 +11414,12 @@ export const get_List_passages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Passage),
@@ -10950,6 +11436,12 @@ export const post_Create_passage = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11003,6 +11495,12 @@ export const get_Search_archival_memory = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ArchivalMemorySearchResponse,
@@ -11020,6 +11518,12 @@ export const delete_Delete_passage = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11062,6 +11566,12 @@ export const get_List_messages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -11078,6 +11588,12 @@ export const post_Send_message = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11098,6 +11614,12 @@ export const patch_Modify_message = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11143,6 +11665,12 @@ export const post_Create_agent_message_stream = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: LettaStreamingRequest,
   }),
@@ -11162,6 +11690,12 @@ export const post_Cancel_agent_run = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: CancelAgentRunRequest,
   }),
@@ -11176,6 +11710,12 @@ export const post_Search_messages = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11198,6 +11738,12 @@ export const post_Create_agent_message_async = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: LettaAsyncRequest,
   }),
@@ -11218,6 +11764,12 @@ export const patch_Reset_messages = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11243,6 +11795,12 @@ export const get_List_agent_groups = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Group),
@@ -11259,6 +11817,12 @@ export const post_Preview_raw_payload = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11286,6 +11850,12 @@ export const post_Summarize_agent_conversation = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11326,6 +11896,12 @@ export const get_List_groups = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Group),
@@ -11338,10 +11914,16 @@ export const post_Create_group = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11358,6 +11940,12 @@ export const get_Count_groups = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11378,6 +11966,12 @@ export const get_Retrieve_group = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Group,
@@ -11393,10 +11987,16 @@ export const patch_Modify_group = {
       group_id: z.string(),
     }),
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11418,6 +12018,12 @@ export const delete_Delete_group = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -11434,6 +12040,12 @@ export const post_Send_group_message = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11467,6 +12079,12 @@ export const get_List_group_messages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -11484,6 +12102,12 @@ export const post_Send_group_message_streaming = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11504,6 +12128,12 @@ export const patch_Modify_group_message = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11546,6 +12176,12 @@ export const patch_Reset_group_messages = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11592,6 +12228,12 @@ export const get_List_identities = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Identity),
@@ -11604,10 +12246,16 @@ export const post_Create_identity = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11623,10 +12271,16 @@ export const put_Upsert_identity = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11643,6 +12297,12 @@ export const get_Count_identities = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11663,6 +12323,12 @@ export const get_Retrieve_identity = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Identity,
@@ -11679,6 +12345,12 @@ export const patch_Update_identity = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11700,6 +12372,12 @@ export const delete_Delete_identity = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -11719,6 +12397,12 @@ export const put_Upsert_identity_properties = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: z.array(IdentityProperty),
   }),
@@ -11734,6 +12418,12 @@ export const post_Create_internal_template_group = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11753,6 +12443,12 @@ export const post_Create_internal_template_agent = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: InternalTemplateAgentCreate,
   }),
@@ -11768,6 +12464,12 @@ export const post_Create_internal_template_block = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11798,6 +12500,12 @@ export const get_List_deployment_entities = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: ListDeploymentEntitiesResponse,
@@ -11814,6 +12522,12 @@ export const delete_Delete_deployment = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11850,6 +12564,12 @@ export const get_List_models = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LLMConfig),
@@ -11863,6 +12583,12 @@ export const get_List_embedding_models = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11935,6 +12661,12 @@ export const get_List_blocks = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Block),
@@ -11948,6 +12680,12 @@ export const post_Create_block = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -11966,6 +12704,12 @@ export const get_Count_blocks = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.number(),
@@ -11982,6 +12726,12 @@ export const patch_Modify_block = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12003,6 +12753,12 @@ export const delete_Delete_block = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -12019,6 +12775,12 @@ export const get_Retrieve_block = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12046,6 +12808,12 @@ export const get_List_agents_for_block = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12078,6 +12846,12 @@ export const get_List_jobs = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Job),
@@ -12108,6 +12882,12 @@ export const get_List_active_jobs = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Job),
@@ -12124,6 +12904,12 @@ export const get_Retrieve_job = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12144,6 +12930,12 @@ export const delete_Delete_job = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Job,
@@ -12160,6 +12952,12 @@ export const patch_Cancel_job = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12184,7 +12982,13 @@ export const post_Create_sandbox_config_v1_sandbox_config__post = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
-      'user-id': z
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12214,7 +13018,13 @@ export const get_List_sandbox_configs_v1_sandbox_config__get = {
         .optional(),
     }),
     header: z.object({
-      'user-id': z
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12231,7 +13041,21 @@ export const post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_defaul
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12252,7 +13076,21 @@ export const post_Create_default_local_sandbox_config_v1_sandbox_config_local_de
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12273,7 +13111,21 @@ export const post_Create_custom_local_sandbox_config_v1_sandbox_config_local_pos
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12298,7 +13150,21 @@ export const patch_Update_sandbox_config_v1_sandbox_config__sandbox_config_id__p
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12323,7 +13189,21 @@ export const delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12344,7 +13224,21 @@ export const post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recr
     requestFormat: z.literal('json'),
     parameters: z.object({
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12370,7 +13264,21 @@ export const post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__e
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12407,7 +13315,21 @@ export const get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__env
         sandbox_config_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12431,7 +13353,21 @@ export const patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable
         env_var_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12456,7 +13392,21 @@ export const delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variabl
         env_var_id: z.string(),
       }),
       header: z.object({
-        'user-id': z
+        user_id: z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'User-Agent': z
+          .union([
+            z.string(),
+            z.null(),
+            z.array(z.union([z.string(), z.null()])),
+          ])
+          .optional(),
+        'X-Project-Id': z
           .union([
             z.string(),
             z.null(),
@@ -12501,6 +13451,12 @@ export const get_List_providers = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Provider),
@@ -12516,8 +13472,38 @@ export const post_Create_provider = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     body: ProviderCreate,
+  }),
+  response: Provider,
+};
+
+export type get_Retrieve_provider = typeof get_Retrieve_provider;
+export const get_Retrieve_provider = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/providers/{provider_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      provider_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
   }),
   response: Provider,
 };
@@ -12533,6 +13519,12 @@ export const patch_Modify_provider = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12552,6 +13544,12 @@ export const delete_Delete_provider = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12606,6 +13604,12 @@ export const get_List_runs = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Run),
@@ -12637,6 +13641,12 @@ export const get_List_active_runs = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Run),
@@ -12655,6 +13665,12 @@ export const get_Retrieve_run = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Run,
@@ -12671,6 +13687,12 @@ export const delete_Delete_run = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12703,6 +13725,12 @@ export const get_List_run_messages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(LettaMessageUnion),
@@ -12719,6 +13747,12 @@ export const get_Retrieve_run_usage = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12751,6 +13785,12 @@ export const get_List_run_steps = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(Step),
@@ -12767,6 +13807,12 @@ export const post_Retrieve_stream = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12841,10 +13887,16 @@ export const get_List_steps = {
         .optional(),
     }),
     header: z.object({
+      'X-Project': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'X-Project': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12865,13 +13917,20 @@ export const get_Retrieve_step = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: Step,
 };
 
-export type get_Retrieve_step_metrics = typeof get_Retrieve_step_metrics;
-export const get_Retrieve_step_metrics = {
+export type get_Retrieve_metrics_for_step =
+  typeof get_Retrieve_metrics_for_step;
+export const get_Retrieve_metrics_for_step = {
   method: z.literal('GET'),
   path: z.literal('/v1/steps/{step_id}/metrics'),
   requestFormat: z.literal('json'),
@@ -12883,13 +13942,19 @@ export const get_Retrieve_step_metrics = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: StepMetrics,
 };
 
-export type get_Retrieve_step_trace = typeof get_Retrieve_step_trace;
-export const get_Retrieve_step_trace = {
+export type get_Retrieve_trace_for_step = typeof get_Retrieve_trace_for_step;
+export const get_Retrieve_trace_for_step = {
   method: z.literal('GET'),
   path: z.literal('/v1/steps/{step_id}/trace'),
   requestFormat: z.literal('json'),
@@ -12901,6 +13966,12 @@ export const get_Retrieve_step_trace = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.union([
@@ -12910,8 +13981,9 @@ export const get_Retrieve_step_trace = {
   ]),
 };
 
-export type patch_Add_feedback = typeof patch_Add_feedback;
-export const patch_Add_feedback = {
+export type patch_Modify_feedback_for_step =
+  typeof patch_Modify_feedback_for_step;
+export const patch_Modify_feedback_for_step = {
   method: z.literal('PATCH'),
   path: z.literal('/v1/steps/{step_id}/feedback'),
   requestFormat: z.literal('json'),
@@ -12923,8 +13995,14 @@ export const patch_Add_feedback = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
-    body: AddFeedbackRequest,
+    body: ModifyFeedbackRequest,
   }),
   response: Step,
 };
@@ -12942,6 +14020,12 @@ export const patch_Update_step_transaction_id = {
     }),
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -12975,31 +14059,15 @@ export const get_List_tags = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-    }),
-  }),
-  response: z.array(z.string()),
-};
-
-export type get_Retrieve_provider_trace = typeof get_Retrieve_provider_trace;
-export const get_Retrieve_provider_trace = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/telemetry/{step_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      step_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
   }),
-  response: z.union([
-    ProviderTrace,
-    z.null(),
-    z.array(z.union([ProviderTrace, z.null()])),
-  ]),
+  response: z.array(z.string()),
 };
 
 export type post_Create_batch = typeof post_Create_batch;
@@ -13010,6 +14078,12 @@ export const post_Create_batch = {
   parameters: z.object({
     header: z.object({
       user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13041,6 +14115,12 @@ export const get_List_batches = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.array(BatchJob),
@@ -13059,13 +14139,19 @@ export const get_Retrieve_batch = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: BatchJob,
 };
 
-export type get_List_batch_messages = typeof get_List_batch_messages;
-export const get_List_batch_messages = {
+export type get_List_messages_for_batch = typeof get_List_messages_for_batch;
+export const get_List_messages_for_batch = {
   method: z.literal('GET'),
   path: z.literal('/v1/messages/batches/{batch_id}/messages'),
   requestFormat: z.literal('json'),
@@ -13093,6 +14179,12 @@ export const get_List_batch_messages = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: LettaBatchMessages,
@@ -13111,6 +14203,12 @@ export const patch_Cancel_batch = {
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
   }),
   response: z.unknown(),
@@ -13127,7 +14225,13 @@ export const post_Create_voice_chat_completions = {
       agent_id: z.string(),
     }),
     header: z.object({
-      'user-id': z
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13143,10 +14247,16 @@ export const get_Get_total_storage_size = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     header: z.object({
+      'storage-unit': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       user_id: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      'storage-unit': z
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
     }),
@@ -13370,6 +14480,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
       get_List_sandbox_env_vars_v1_sandbox_config__sandbox_config_id__environment_variable_get,
     '/v1/providers/': get_List_providers,
+    '/v1/providers/{provider_id}': get_Retrieve_provider,
     '/v1/runs/': get_List_runs,
     '/v1/runs/active': get_List_active_runs,
     '/v1/runs/{run_id}': get_Retrieve_run,
@@ -13378,13 +14489,12 @@ export const EndpointByMethod = {
     '/v1/runs/{run_id}/steps': get_List_run_steps,
     '/v1/steps/': get_List_steps,
     '/v1/steps/{step_id}': get_Retrieve_step,
-    '/v1/steps/{step_id}/metrics': get_Retrieve_step_metrics,
-    '/v1/steps/{step_id}/trace': get_Retrieve_step_trace,
+    '/v1/steps/{step_id}/metrics': get_Retrieve_metrics_for_step,
+    '/v1/steps/{step_id}/trace': get_Retrieve_trace_for_step,
     '/v1/tags/': get_List_tags,
-    '/v1/telemetry/{step_id}': get_Retrieve_provider_trace,
     '/v1/messages/batches': get_List_batches,
     '/v1/messages/batches/{batch_id}': get_Retrieve_batch,
-    '/v1/messages/batches/{batch_id}/messages': get_List_batch_messages,
+    '/v1/messages/batches/{batch_id}/messages': get_List_messages_for_batch,
     '/v1/embeddings/total_storage_size': get_Get_total_storage_size,
     '/v1/admin/users/': get_List_users,
     '/v1/admin/orgs/': get_List_orgs,
@@ -13428,7 +14538,7 @@ export const EndpointByMethod = {
     '/v1/sandbox-config/environment-variable/{env_var_id}':
       patch_Update_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__patch,
     '/v1/providers/{provider_id}': patch_Modify_provider,
-    '/v1/steps/{step_id}/feedback': patch_Add_feedback,
+    '/v1/steps/{step_id}/feedback': patch_Modify_feedback_for_step,
     '/v1/steps/{step_id}/transaction/{transaction_id}':
       patch_Update_step_transaction_id,
     '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch,

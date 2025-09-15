@@ -41,6 +41,8 @@ import * as Common from './common';
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -48,15 +50,25 @@ export const prefetchUseToolsServiceRetrieveTool = (
   queryClient: QueryClient,
   {
     toolId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     toolId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceRetrieveToolKeyFn({ toolId, userId }),
-    queryFn: () => ToolsService.retrieveTool({ toolId, userId }),
+    queryKey: Common.UseToolsServiceRetrieveToolKeyFn({
+      toolId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      ToolsService.retrieveTool({ toolId, userAgent, userId, xProjectId }),
   });
 /**
  * Count Tools
@@ -71,6 +83,8 @@ export const prefetchUseToolsServiceRetrieveTool = (
  * @param data.returnOnlyLettaTools Count only tools with tool_type starting with 'letta_'
  * @param data.excludeLettaTools Exclude built-in Letta tools from the count
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -85,7 +99,9 @@ export const prefetchUseToolsServiceCountTools = (
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     excludeLettaTools?: boolean;
     excludeToolTypes?: string[];
@@ -95,7 +111,9 @@ export const prefetchUseToolsServiceCountTools = (
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -108,7 +126,9 @@ export const prefetchUseToolsServiceCountTools = (
       search,
       toolIds,
       toolTypes,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       ToolsService.countTools({
@@ -120,7 +140,9 @@ export const prefetchUseToolsServiceCountTools = (
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -140,6 +162,8 @@ export const prefetchUseToolsServiceCountTools = (
  * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
  * @param data.returnOnlyLettaTools Return only tools with tool_type starting with 'letta_'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -158,7 +182,9 @@ export const prefetchUseToolsServiceListTools = (
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -172,7 +198,9 @@ export const prefetchUseToolsServiceListTools = (
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -189,7 +217,9 @@ export const prefetchUseToolsServiceListTools = (
       search,
       toolIds,
       toolTypes,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       ToolsService.listTools({
@@ -205,7 +235,9 @@ export const prefetchUseToolsServiceListTools = (
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -213,20 +245,31 @@ export const prefetchUseToolsServiceListTools = (
  * Get a list of all Composio apps
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AppModel Successful Response
  * @throws ApiError
  */
 export const prefetchUseToolsServiceListComposioApps = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }),
-    queryFn: () => ToolsService.listComposioApps({ userId }),
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      ToolsService.listComposioApps({ userAgent, userId, xProjectId }),
   });
 /**
  * List Composio Actions By App
@@ -234,6 +277,8 @@ export const prefetchUseToolsServiceListComposioApps = (
  * @param data The data for the request.
  * @param data.composioAppName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ActionModel Successful Response
  * @throws ApiError
  */
@@ -241,39 +286,61 @@ export const prefetchUseToolsServiceListComposioActionsByApp = (
   queryClient: QueryClient,
   {
     composioAppName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     composioAppName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn({
       composioAppName,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      ToolsService.listComposioActionsByApp({ composioAppName, userId }),
+      ToolsService.listComposioActionsByApp({
+        composioAppName,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Mcp Servers
  * Get a list of all configured MCP servers
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
 export const prefetchUseToolsServiceListMcpServers = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseToolsServiceListMcpServersKeyFn({ userId }),
-    queryFn: () => ToolsService.listMcpServers({ userId }),
+    queryKey: Common.UseToolsServiceListMcpServersKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      ToolsService.listMcpServers({ userAgent, userId, xProjectId }),
   });
 /**
  * List Mcp Tools By Server
@@ -281,6 +348,8 @@ export const prefetchUseToolsServiceListMcpServers = (
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns MCPTool Successful Response
  * @throws ApiError
  */
@@ -288,18 +357,30 @@ export const prefetchUseToolsServiceListMcpToolsByServer = (
   queryClient: QueryClient,
   {
     mcpServerName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     mcpServerName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseToolsServiceListMcpToolsByServerKeyFn({
       mcpServerName,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => ToolsService.listMcpToolsByServer({ mcpServerName, userId }),
+    queryFn: () =>
+      ToolsService.listMcpToolsByServer({
+        mcpServerName,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Mcp Oauth Callback
@@ -351,20 +432,31 @@ export const prefetchUseToolsServiceMcpOauthCallback = (
  * Count all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseSourcesServiceCountSources = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }),
-    queryFn: () => SourcesService.countSources({ userId }),
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      SourcesService.countSources({ userAgent, userId, xProjectId }),
   });
 /**
  * Retrieve Source
@@ -372,6 +464,8 @@ export const prefetchUseSourcesServiceCountSources = (
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -379,15 +473,30 @@ export const prefetchUseSourcesServiceRetrieveSource = (
   queryClient: QueryClient,
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn({ sourceId, userId }),
-    queryFn: () => SourcesService.retrieveSource({ sourceId, userId }),
+    queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn({
+      sourceId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      SourcesService.retrieveSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Get Source Id By Name
@@ -395,6 +504,8 @@ export const prefetchUseSourcesServiceRetrieveSource = (
  * @param data The data for the request.
  * @param data.sourceName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -402,18 +513,30 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
   queryClient: QueryClient,
   {
     sourceName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn({
       sourceName,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => SourcesService.getSourceIdByName({ sourceName, userId }),
+    queryFn: () =>
+      SourcesService.getSourceIdByName({
+        sourceName,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Get Sources Metadata
@@ -427,6 +550,8 @@ export const prefetchUseSourcesServiceGetSourceIdByName = (
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -434,21 +559,29 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
   queryClient: QueryClient,
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn({
       includeDetailedPerSourceMetadata,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       SourcesService.getSourcesMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -456,20 +589,31 @@ export const prefetchUseSourcesServiceGetSourcesMetadata = (
  * List all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
 export const prefetchUseSourcesServiceListSources = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }),
-    queryFn: () => SourcesService.listSources({ userId }),
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      SourcesService.listSources({ userAgent, userId, xProjectId }),
   });
 /**
  * Get Agents For Source
@@ -477,6 +621,8 @@ export const prefetchUseSourcesServiceListSources = (
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -484,18 +630,30 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
   queryClient: QueryClient,
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn({
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => SourcesService.getAgentsForSource({ sourceId, userId }),
+    queryFn: () =>
+      SourcesService.getAgentsForSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Source Passages
@@ -506,6 +664,8 @@ export const prefetchUseSourcesServiceGetAgentsForSource = (
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -516,13 +676,17 @@ export const prefetchUseSourcesServiceListSourcePassages = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -531,7 +695,9 @@ export const prefetchUseSourcesServiceListSourcePassages = (
       before,
       limit,
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       SourcesService.listSourcePassages({
@@ -539,7 +705,9 @@ export const prefetchUseSourcesServiceListSourcePassages = (
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -552,6 +720,8 @@ export const prefetchUseSourcesServiceListSourcePassages = (
  * @param data.includeContent Whether to include full file content
  * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -563,14 +733,18 @@ export const prefetchUseSourcesServiceListSourceFiles = (
     includeContent,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -580,7 +754,9 @@ export const prefetchUseSourcesServiceListSourceFiles = (
       includeContent,
       limit,
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       SourcesService.listSourceFiles({
@@ -589,7 +765,9 @@ export const prefetchUseSourcesServiceListSourceFiles = (
         includeContent,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -600,6 +778,8 @@ export const prefetchUseSourcesServiceListSourceFiles = (
  * @param data.fileId
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -609,12 +789,16 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
     fileId,
     includeContent,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     fileId: string;
     includeContent?: boolean;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -622,14 +806,18 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
       fileId,
       includeContent,
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       SourcesService.getFileMetadata({
         fileId,
         includeContent,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -637,20 +825,31 @@ export const prefetchUseSourcesServiceGetFileMetadata = (
  * Count all data folders created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseFoldersServiceCountFolders = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({ userId }),
-    queryFn: () => FoldersService.countFolders({ userId }),
+    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      FoldersService.countFolders({ userAgent, userId, xProjectId }),
   });
 /**
  * Retrieve Folder
@@ -658,6 +857,8 @@ export const prefetchUseFoldersServiceCountFolders = (
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -665,15 +866,30 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
   queryClient: QueryClient,
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn({ folderId, userId }),
-    queryFn: () => FoldersService.retrieveFolder({ folderId, userId }),
+    queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn({
+      folderId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      FoldersService.retrieveFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Get Folder Id By Name
@@ -681,6 +897,8 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
  * @param data The data for the request.
  * @param data.folderName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -688,18 +906,30 @@ export const prefetchUseFoldersServiceGetFolderIdByName = (
   queryClient: QueryClient,
   {
     folderName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn({
       folderName,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => FoldersService.getFolderIdByName({ folderName, userId }),
+    queryFn: () =>
+      FoldersService.getFolderIdByName({
+        folderName,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Get Folders Metadata
@@ -713,6 +943,8 @@ export const prefetchUseFoldersServiceGetFolderIdByName = (
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -720,21 +952,29 @@ export const prefetchUseFoldersServiceGetFoldersMetadata = (
   queryClient: QueryClient,
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn({
       includeDetailedPerSourceMetadata,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       FoldersService.getFoldersMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -747,6 +987,8 @@ export const prefetchUseFoldersServiceGetFoldersMetadata = (
  * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -758,14 +1000,18 @@ export const prefetchUseFoldersServiceListFolders = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -775,7 +1021,9 @@ export const prefetchUseFoldersServiceListFolders = (
       limit,
       order,
       orderBy,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       FoldersService.listFolders({
@@ -784,7 +1032,9 @@ export const prefetchUseFoldersServiceListFolders = (
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -793,6 +1043,8 @@ export const prefetchUseFoldersServiceListFolders = (
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -800,18 +1052,30 @@ export const prefetchUseFoldersServiceGetAgentsForFolder = (
   queryClient: QueryClient,
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn({
       folderId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => FoldersService.getAgentsForFolder({ folderId, userId }),
+    queryFn: () =>
+      FoldersService.getAgentsForFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Folder Passages
@@ -822,6 +1086,8 @@ export const prefetchUseFoldersServiceGetAgentsForFolder = (
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -832,13 +1098,17 @@ export const prefetchUseFoldersServiceListFolderPassages = (
     before,
     folderId,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     folderId: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -847,7 +1117,9 @@ export const prefetchUseFoldersServiceListFolderPassages = (
       before,
       folderId,
       limit,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       FoldersService.listFolderPassages({
@@ -855,7 +1127,9 @@ export const prefetchUseFoldersServiceListFolderPassages = (
         before,
         folderId,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -867,6 +1141,8 @@ export const prefetchUseFoldersServiceListFolderPassages = (
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -877,13 +1153,17 @@ export const prefetchUseFoldersServiceListFolderFiles = (
     folderId,
     includeContent,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -892,7 +1172,9 @@ export const prefetchUseFoldersServiceListFolderFiles = (
       folderId,
       includeContent,
       limit,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       FoldersService.listFolderFiles({
@@ -900,7 +1182,9 @@ export const prefetchUseFoldersServiceListFolderFiles = (
         folderId,
         includeContent,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -928,6 +1212,8 @@ export const prefetchUseFoldersServiceListFolderFiles = (
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -951,7 +1237,9 @@ export const prefetchUseAgentsServiceListAgents = (
     sortBy,
     tags,
     templateId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
@@ -970,7 +1258,9 @@ export const prefetchUseAgentsServiceListAgents = (
     sortBy?: string;
     tags?: string[];
     templateId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -992,7 +1282,9 @@ export const prefetchUseAgentsServiceListAgents = (
       sortBy,
       tags,
       templateId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AgentsService.listAgents({
@@ -1013,7 +1305,9 @@ export const prefetchUseAgentsServiceListAgents = (
         sortBy,
         tags,
         templateId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1021,20 +1315,30 @@ export const prefetchUseAgentsServiceListAgents = (
  * Get the count of all agents associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseAgentsServiceCountAgents = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceCountAgentsKeyFn({ userId }),
-    queryFn: () => AgentsService.countAgents({ userId }),
+    queryKey: Common.UseAgentsServiceCountAgentsKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () => AgentsService.countAgents({ userAgent, userId, xProjectId }),
   });
 /**
  * Export Agent
@@ -1048,6 +1352,8 @@ export const prefetchUseAgentsServiceCountAgents = (
  * @param data.maxSteps
  * @param data.useLegacyFormat If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @param data.requestBody
  * @returns string Successful Response
  * @throws ApiError
@@ -1059,13 +1365,17 @@ export const prefetchUseAgentsServiceExportAgent = (
     maxSteps,
     requestBody,
     useLegacyFormat,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     maxSteps?: number;
     requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1074,7 +1384,9 @@ export const prefetchUseAgentsServiceExportAgent = (
       maxSteps,
       requestBody,
       useLegacyFormat,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AgentsService.exportAgent({
@@ -1082,7 +1394,9 @@ export const prefetchUseAgentsServiceExportAgent = (
         maxSteps,
         requestBody,
         useLegacyFormat,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1091,6 +1405,8 @@ export const prefetchUseAgentsServiceExportAgent = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
@@ -1098,19 +1414,30 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn({
       agentId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      AgentsService.retrieveAgentContextWindow({ agentId, userId }),
+      AgentsService.retrieveAgentContextWindow({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Retrieve Agent
@@ -1119,6 +1446,8 @@ export const prefetchUseAgentsServiceRetrieveAgentContextWindow = (
  * @param data.agentId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1127,21 +1456,33 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
   {
     agentId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn({
       agentId,
       includeRelationships,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      AgentsService.retrieveAgent({ agentId, includeRelationships, userId }),
+      AgentsService.retrieveAgent({
+        agentId,
+        includeRelationships,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Agent Tools
@@ -1149,6 +1490,8 @@ export const prefetchUseAgentsServiceRetrieveAgent = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -1156,15 +1499,25 @@ export const prefetchUseAgentsServiceListAgentTools = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentToolsKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.listAgentTools({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceListAgentToolsKeyFn({
+      agentId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      AgentsService.listAgentTools({ agentId, userAgent, userId, xProjectId }),
   });
 /**
  * List Agent Sources
@@ -1172,6 +1525,8 @@ export const prefetchUseAgentsServiceListAgentTools = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1179,15 +1534,30 @@ export const prefetchUseAgentsServiceListAgentSources = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.listAgentSources({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn({
+      agentId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      AgentsService.listAgentSources({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Agent Folders
@@ -1195,6 +1565,8 @@ export const prefetchUseAgentsServiceListAgentSources = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1202,15 +1574,30 @@ export const prefetchUseAgentsServiceListAgentFolders = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn({ agentId, userId }),
-    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }),
+    queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn({
+      agentId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      AgentsService.listAgentFolders({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Agent Files
@@ -1221,6 +1608,8 @@ export const prefetchUseAgentsServiceListAgentFolders = (
  * @param data.limit Number of items to return (1-100)
  * @param data.isOpen Filter by open status (true for open files, false for closed files)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns PaginatedAgentFiles Successful Response
  * @throws ApiError
  */
@@ -1231,13 +1620,17 @@ export const prefetchUseAgentsServiceListAgentFiles = (
     cursor,
     isOpen,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1246,10 +1639,20 @@ export const prefetchUseAgentsServiceListAgentFiles = (
       cursor,
       isOpen,
       limit,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      AgentsService.listAgentFiles({ agentId, cursor, isOpen, limit, userId }),
+      AgentsService.listAgentFiles({
+        agentId,
+        cursor,
+        isOpen,
+        limit,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Retrieve Agent Memory
@@ -1258,6 +1661,8 @@ export const prefetchUseAgentsServiceListAgentFiles = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Memory Successful Response
  * @throws ApiError
  */
@@ -1265,18 +1670,30 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn({
       agentId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => AgentsService.retrieveAgentMemory({ agentId, userId }),
+    queryFn: () =>
+      AgentsService.retrieveAgentMemory({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Retrieve Block
@@ -1285,6 +1702,8 @@ export const prefetchUseAgentsServiceRetrieveAgentMemory = (
  * @param data.agentId
  * @param data.blockLabel
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1293,21 +1712,33 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
   {
     agentId,
     blockLabel,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     blockLabel: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceRetrieveCoreMemoryBlockKeyFn({
       agentId,
       blockLabel,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      AgentsService.retrieveCoreMemoryBlock({ agentId, blockLabel, userId }),
+      AgentsService.retrieveCoreMemoryBlock({
+        agentId,
+        blockLabel,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Blocks
@@ -1315,6 +1746,8 @@ export const prefetchUseAgentsServiceRetrieveCoreMemoryBlock = (
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1322,18 +1755,30 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
   queryClient: QueryClient,
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn({
       agentId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => AgentsService.listCoreMemoryBlocks({ agentId, userId }),
+    queryFn: () =>
+      AgentsService.listCoreMemoryBlocks({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Passages
@@ -1346,6 +1791,8 @@ export const prefetchUseAgentsServiceListCoreMemoryBlocks = (
  * @param data.search Search passages by text
  * @param data.ascending Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1358,7 +1805,9 @@ export const prefetchUseAgentsServiceListPassages = (
     before,
     limit,
     search,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1366,7 +1815,9 @@ export const prefetchUseAgentsServiceListPassages = (
     before?: string;
     limit?: number;
     search?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1377,7 +1828,9 @@ export const prefetchUseAgentsServiceListPassages = (
       before,
       limit,
       search,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AgentsService.listPassages({
@@ -1387,7 +1840,9 @@ export const prefetchUseAgentsServiceListPassages = (
         before,
         limit,
         search,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1406,6 +1861,8 @@ export const prefetchUseAgentsServiceListPassages = (
  * @param data.startDatetime Filter results to passages created after this datetime
  * @param data.endDatetime Filter results to passages created before this datetime
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
  */
@@ -1419,7 +1876,9 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
     tagMatchMode,
     tags,
     topK,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     endDatetime?: string;
@@ -1428,7 +1887,9 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
     tagMatchMode?: 'any' | 'all';
     tags?: string[];
     topK?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1440,7 +1901,9 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
       tagMatchMode,
       tags,
       topK,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AgentsService.searchArchivalMemory({
@@ -1451,7 +1914,9 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
         tagMatchMode,
         tags,
         topK,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1468,6 +1933,8 @@ export const prefetchUseAgentsServiceSearchArchivalMemory = (
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -1483,7 +1950,9 @@ export const prefetchUseAgentsServiceListMessages = (
     includeErr,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1494,7 +1963,9 @@ export const prefetchUseAgentsServiceListMessages = (
     includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1508,7 +1979,9 @@ export const prefetchUseAgentsServiceListMessages = (
       includeErr,
       limit,
       useAssistantMessage,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AgentsService.listMessages({
@@ -1521,7 +1994,9 @@ export const prefetchUseAgentsServiceListMessages = (
         includeErr,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1531,6 +2006,8 @@ export const prefetchUseAgentsServiceListMessages = (
  * @param data.agentId
  * @param data.managerType Manager type to filter groups by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1539,21 +2016,33 @@ export const prefetchUseAgentsServiceListAgentGroups = (
   {
     agentId,
     managerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     managerType?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn({
       agentId,
       managerType,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      AgentsService.listAgentGroups({ agentId, managerType, userId }),
+      AgentsService.listAgentGroups({
+        agentId,
+        managerType,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Groups
@@ -1567,6 +2056,8 @@ export const prefetchUseAgentsServiceListAgentGroups = (
  * @param data.orderBy Field to sort by
  * @param data.projectId Search groups by project id
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1580,7 +2071,9 @@ export const prefetchUseGroupsServiceListGroups = (
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1589,7 +2082,9 @@ export const prefetchUseGroupsServiceListGroups = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -1601,7 +2096,9 @@ export const prefetchUseGroupsServiceListGroups = (
       order,
       orderBy,
       projectId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       GroupsService.listGroups({
@@ -1612,7 +2109,9 @@ export const prefetchUseGroupsServiceListGroups = (
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1620,20 +2119,30 @@ export const prefetchUseGroupsServiceListGroups = (
  * Get the count of all groups associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseGroupsServiceCountGroups = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({ userId }),
-    queryFn: () => GroupsService.countGroups({ userId }),
+    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () => GroupsService.countGroups({ userAgent, userId, xProjectId }),
   });
 /**
  * Retrieve Group
@@ -1641,6 +2150,8 @@ export const prefetchUseGroupsServiceCountGroups = (
  * @param data The data for the request.
  * @param data.groupId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1648,15 +2159,25 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
   queryClient: QueryClient,
   {
     groupId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     groupId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn({ groupId, userId }),
-    queryFn: () => GroupsService.retrieveGroup({ groupId, userId }),
+    queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn({
+      groupId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      GroupsService.retrieveGroup({ groupId, userAgent, userId, xProjectId }),
   });
 /**
  * List Group Messages
@@ -1670,6 +2191,8 @@ export const prefetchUseGroupsServiceRetrieveGroup = (
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -1683,7 +2206,9 @@ export const prefetchUseGroupsServiceListGroupMessages = (
     groupId,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     assistantMessageToolKwarg?: string;
@@ -1692,7 +2217,9 @@ export const prefetchUseGroupsServiceListGroupMessages = (
     groupId: string;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -1704,7 +2231,9 @@ export const prefetchUseGroupsServiceListGroupMessages = (
       groupId,
       limit,
       useAssistantMessage,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       GroupsService.listGroupMessages({
@@ -1715,7 +2244,9 @@ export const prefetchUseGroupsServiceListGroupMessages = (
         groupId,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1732,6 +2263,8 @@ export const prefetchUseGroupsServiceListGroupMessages = (
  * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -1747,7 +2280,9 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1758,7 +2293,9 @@ export const prefetchUseIdentitiesServiceListIdentities = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -1772,7 +2309,9 @@ export const prefetchUseIdentitiesServiceListIdentities = (
       order,
       orderBy,
       projectId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       IdentitiesService.listIdentities({
@@ -1785,7 +2324,9 @@ export const prefetchUseIdentitiesServiceListIdentities = (
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1793,26 +2334,39 @@ export const prefetchUseIdentitiesServiceListIdentities = (
  * Get count of all identities for a user
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseIdentitiesServiceCountIdentities = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn({ userId }),
-    queryFn: () => IdentitiesService.countIdentities({ userId }),
+    queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      IdentitiesService.countIdentities({ userAgent, userId, xProjectId }),
   });
 /**
  * Retrieve Identity
  * @param data The data for the request.
  * @param data.identityId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -1820,18 +2374,30 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
   queryClient: QueryClient,
   {
     identityId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     identityId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn({
       identityId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => IdentitiesService.retrieveIdentity({ identityId, userId }),
+    queryFn: () =>
+      IdentitiesService.retrieveIdentity({
+        identityId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Deployment Entities
@@ -1841,6 +2407,8 @@ export const prefetchUseIdentitiesServiceRetrieveIdentity = (
  * @param data.deploymentId
  * @param data.entityTypes Filter by entity types (block, agent, group)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ListDeploymentEntitiesResponse Successful Response
  * @throws ApiError
  */
@@ -1849,24 +2417,32 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
   {
     deploymentId,
     entityTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     deploymentId: string;
     entityTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseInternalTemplatesServiceListDeploymentEntitiesKeyFn({
       deploymentId,
       entityTypes,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       InternalTemplatesService.listDeploymentEntities({
         deploymentId,
         entityTypes,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1877,6 +2453,8 @@ export const prefetchUseInternalTemplatesServiceListDeploymentEntities = (
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1886,12 +2464,16 @@ export const prefetchUseModelsServiceListModels = (
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -1899,14 +2481,18 @@ export const prefetchUseModelsServiceListModels = (
       providerCategory,
       providerName,
       providerType,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       ModelsService.listModels({
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1914,20 +2500,31 @@ export const prefetchUseModelsServiceListModels = (
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseModelsServiceListEmbeddingModels = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn({ userId }),
-    queryFn: () => ModelsService.listEmbeddingModels({ userId }),
+    queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      ModelsService.listEmbeddingModels({ userAgent, userId, xProjectId }),
   });
 /**
  * List Llm Models
@@ -1937,6 +2534,8 @@ export const prefetchUseModelsServiceListEmbeddingModels = (
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -1946,12 +2545,16 @@ export const prefetchUseLlmsServiceListModels = (
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -1959,14 +2562,18 @@ export const prefetchUseLlmsServiceListModels = (
       providerCategory,
       providerName,
       providerType,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       LlmsService.listModels({
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -1974,20 +2581,31 @@ export const prefetchUseLlmsServiceListModels = (
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
 export const prefetchUseLlmsServiceListEmbeddingModels = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn({ userId }),
-    queryFn: () => LlmsService.listEmbeddingModels({ userId }),
+    queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      LlmsService.listEmbeddingModels({ userAgent, userId, xProjectId }),
   });
 /**
  * List Blocks
@@ -2010,6 +2628,8 @@ export const prefetchUseLlmsServiceListEmbeddingModels = (
  * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
  * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2032,8 +2652,10 @@ export const prefetchUseBlocksServiceListBlocks = (
     orderBy,
     projectId,
     templatesOnly,
+    userAgent,
     userId,
     valueSearch,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2051,8 +2673,10 @@ export const prefetchUseBlocksServiceListBlocks = (
     orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
+    userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2073,8 +2697,10 @@ export const prefetchUseBlocksServiceListBlocks = (
       orderBy,
       projectId,
       templatesOnly,
+      userAgent,
       userId,
       valueSearch,
+      xProjectId,
     }),
     queryFn: () =>
       BlocksService.listBlocks({
@@ -2094,8 +2720,10 @@ export const prefetchUseBlocksServiceListBlocks = (
         orderBy,
         projectId,
         templatesOnly,
+        userAgent,
         userId,
         valueSearch,
+        xProjectId,
       }),
   });
 /**
@@ -2103,26 +2731,38 @@ export const prefetchUseBlocksServiceListBlocks = (
  * Count all blocks created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
 export const prefetchUseBlocksServiceCountBlocks = (
   queryClient: QueryClient,
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({ userId }),
-    queryFn: () => BlocksService.countBlocks({ userId }),
+    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () => BlocksService.countBlocks({ userAgent, userId, xProjectId }),
   });
 /**
  * Retrieve Block
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2130,15 +2770,25 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
   queryClient: QueryClient,
   {
     blockId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn({ blockId, userId }),
-    queryFn: () => BlocksService.retrieveBlock({ blockId, userId }),
+    queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn({
+      blockId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      BlocksService.retrieveBlock({ blockId, userAgent, userId, xProjectId }),
   });
 /**
  * List Agents For Block
@@ -2148,6 +2798,8 @@ export const prefetchUseBlocksServiceRetrieveBlock = (
  * @param data.blockId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2156,24 +2808,32 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
   {
     blockId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn({
       blockId,
       includeRelationships,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       BlocksService.listAgentsForBlock({
         blockId,
         includeRelationships,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2187,6 +2847,8 @@ export const prefetchUseBlocksServiceListAgentsForBlock = (
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2198,14 +2860,18 @@ export const prefetchUseJobsServiceListJobs = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2215,7 +2881,9 @@ export const prefetchUseJobsServiceListJobs = (
       before,
       limit,
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       JobsService.listJobs({
@@ -2224,7 +2892,9 @@ export const prefetchUseJobsServiceListJobs = (
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2237,6 +2907,8 @@ export const prefetchUseJobsServiceListJobs = (
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2248,14 +2920,18 @@ export const prefetchUseJobsServiceListActiveJobs = (
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2265,7 +2941,9 @@ export const prefetchUseJobsServiceListActiveJobs = (
       before,
       limit,
       sourceId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       JobsService.listActiveJobs({
@@ -2274,7 +2952,9 @@ export const prefetchUseJobsServiceListActiveJobs = (
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2283,6 +2963,8 @@ export const prefetchUseJobsServiceListActiveJobs = (
  * @param data The data for the request.
  * @param data.jobId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2290,15 +2972,25 @@ export const prefetchUseJobsServiceRetrieveJob = (
   queryClient: QueryClient,
   {
     jobId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     jobId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseJobsServiceRetrieveJobKeyFn({ jobId, userId }),
-    queryFn: () => JobsService.retrieveJob({ jobId, userId }),
+    queryKey: Common.UseJobsServiceRetrieveJobKeyFn({
+      jobId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      JobsService.retrieveJob({ jobId, userAgent, userId, xProjectId }),
   });
 /**
  * Check Health
@@ -2317,6 +3009,8 @@ export const prefetchUseHealthServiceCheckHealth = (queryClient: QueryClient) =>
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -2327,25 +3021,31 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
       after,
       limit,
       sandboxType,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxType?: SandboxType;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     } = {},
   ) =>
     queryClient.prefetchQuery({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-          { after, limit, sandboxType, userId },
+          { after, limit, sandboxType, userAgent, userId, xProjectId },
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxConfigsV1SandboxConfigGet({
           after,
           limit,
           sandboxType,
+          userAgent,
           userId,
+          xProjectId,
         }),
     });
 /**
@@ -2355,6 +3055,8 @@ export const prefetchUseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet
  * @param data.limit Number of results to return
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -2365,22 +3067,26 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
       after,
       limit,
       sandboxConfigId,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxConfigId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
   ) =>
     queryClient.prefetchQuery({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
         ),
     });
 /**
@@ -2395,6 +3101,8 @@ export const prefetchUseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSan
  * @param data.name Filter providers by name
  * @param data.providerType Filter providers by type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -2408,7 +3116,9 @@ export const prefetchUseProvidersServiceListProviders = (
     order,
     orderBy,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2417,7 +3127,9 @@ export const prefetchUseProvidersServiceListProviders = (
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2429,7 +3141,9 @@ export const prefetchUseProvidersServiceListProviders = (
       order,
       orderBy,
       providerType,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       ProvidersService.listProviders({
@@ -2440,7 +3154,49 @@ export const prefetchUseProvidersServiceListProviders = (
         order,
         orderBy,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
+      }),
+  });
+/**
+ * Retrieve Provider
+ * Get a provider by ID.
+ * @param data The data for the request.
+ * @param data.providerId
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseProvidersServiceRetrieveProvider = (
+  queryClient: QueryClient,
+  {
+    providerId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    providerId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseProvidersServiceRetrieveProviderKeyFn({
+      providerId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      ProvidersService.retrieveProvider({
+        providerId,
+        userAgent,
+        userId,
+        xProjectId,
       }),
   });
 /**
@@ -2454,6 +3210,8 @@ export const prefetchUseProvidersServiceListProviders = (
  * @param data.limit Maximum number of runs to return
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2466,7 +3224,9 @@ export const prefetchUseRunsServiceListRuns = (
     background,
     before,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentIds?: string[];
@@ -2474,7 +3234,9 @@ export const prefetchUseRunsServiceListRuns = (
     background?: boolean;
     before?: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2485,7 +3247,9 @@ export const prefetchUseRunsServiceListRuns = (
       background,
       before,
       limit,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       RunsService.listRuns({
@@ -2495,7 +3259,9 @@ export const prefetchUseRunsServiceListRuns = (
         background,
         before,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2505,6 +3271,8 @@ export const prefetchUseRunsServiceListRuns = (
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2513,20 +3281,33 @@ export const prefetchUseRunsServiceListActiveRuns = (
   {
     agentIds,
     background,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentIds?: string[];
     background?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseRunsServiceListActiveRunsKeyFn({
       agentIds,
       background,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => RunsService.listActiveRuns({ agentIds, background, userId }),
+    queryFn: () =>
+      RunsService.listActiveRuns({
+        agentIds,
+        background,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * Retrieve Run
@@ -2534,6 +3315,8 @@ export const prefetchUseRunsServiceListActiveRuns = (
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2541,15 +3324,25 @@ export const prefetchUseRunsServiceRetrieveRun = (
   queryClient: QueryClient,
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceRetrieveRunKeyFn({ runId, userId }),
-    queryFn: () => RunsService.retrieveRun({ runId, userId }),
+    queryKey: Common.UseRunsServiceRetrieveRunKeyFn({
+      runId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      RunsService.retrieveRun({ runId, userAgent, userId, xProjectId }),
   });
 /**
  * List Run Messages
@@ -2561,6 +3354,8 @@ export const prefetchUseRunsServiceRetrieveRun = (
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2572,14 +3367,18 @@ export const prefetchUseRunsServiceListRunMessages = (
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -2589,7 +3388,9 @@ export const prefetchUseRunsServiceListRunMessages = (
       limit,
       order,
       runId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       RunsService.listRunMessages({
@@ -2598,7 +3399,9 @@ export const prefetchUseRunsServiceListRunMessages = (
         limit,
         order,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2607,6 +3410,8 @@ export const prefetchUseRunsServiceListRunMessages = (
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
@@ -2614,15 +3419,25 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
   queryClient: QueryClient,
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn({ runId, userId }),
-    queryFn: () => RunsService.retrieveRunUsage({ runId, userId }),
+    queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn({
+      runId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      RunsService.retrieveRunUsage({ runId, userAgent, userId, xProjectId }),
   });
 /**
  * List Run Steps
@@ -2644,6 +3459,8 @@ export const prefetchUseRunsServiceRetrieveRunUsage = (
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -2655,14 +3472,18 @@ export const prefetchUseRunsServiceListRunSteps = (
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: string;
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
@@ -2672,10 +3493,21 @@ export const prefetchUseRunsServiceListRunSteps = (
       limit,
       order,
       runId,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      RunsService.listRunSteps({ after, before, limit, order, runId, userId }),
+      RunsService.listRunSteps({
+        after,
+        before,
+        limit,
+        order,
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Steps
@@ -2695,8 +3527,10 @@ export const prefetchUseRunsServiceListRunSteps = (
  * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
  * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
- * @param data.userId
  * @param data.xProject Filter by project slug to associate with the group (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -2717,8 +3551,10 @@ export const prefetchUseStepsServiceListSteps = (
     startDate,
     tags,
     traceIds,
+    userAgent,
     userId,
     xProject,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -2734,8 +3570,10 @@ export const prefetchUseStepsServiceListSteps = (
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
+    userAgent?: string;
     userId?: string;
     xProject?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2754,8 +3592,10 @@ export const prefetchUseStepsServiceListSteps = (
       startDate,
       tags,
       traceIds,
+      userAgent,
       userId,
       xProject,
+      xProjectId,
     }),
     queryFn: () =>
       StepsService.listSteps({
@@ -2773,8 +3613,10 @@ export const prefetchUseStepsServiceListSteps = (
         startDate,
         tags,
         traceIds,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }),
   });
 /**
@@ -2783,6 +3625,8 @@ export const prefetchUseStepsServiceListSteps = (
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -2790,63 +3634,104 @@ export const prefetchUseStepsServiceRetrieveStep = (
   queryClient: QueryClient,
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseStepsServiceRetrieveStepKeyFn({ stepId, userId }),
-    queryFn: () => StepsService.retrieveStep({ stepId, userId }),
+    queryKey: Common.UseStepsServiceRetrieveStepKeyFn({
+      stepId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      StepsService.retrieveStep({ stepId, userAgent, userId, xProjectId }),
   });
 /**
- * Retrieve Step Metrics
+ * Retrieve Metrics For Step
  * Get step metrics by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns StepMetrics Successful Response
  * @throws ApiError
  */
-export const prefetchUseStepsServiceRetrieveStepMetrics = (
+export const prefetchUseStepsServiceRetrieveMetricsForStep = (
   queryClient: QueryClient,
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseStepsServiceRetrieveStepMetricsKeyFn({
+    queryKey: Common.UseStepsServiceRetrieveMetricsForStepKeyFn({
       stepId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => StepsService.retrieveStepMetrics({ stepId, userId }),
+    queryFn: () =>
+      StepsService.retrieveMetricsForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
- * Retrieve Step Trace
+ * Retrieve Trace For Step
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const prefetchUseStepsServiceRetrieveStepTrace = (
+export const prefetchUseStepsServiceRetrieveTraceForStep = (
   queryClient: QueryClient,
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn({ stepId, userId }),
-    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }),
+    queryKey: Common.UseStepsServiceRetrieveTraceForStepKeyFn({
+      stepId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      StepsService.retrieveTraceForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Tags
@@ -2859,6 +3744,8 @@ export const prefetchUseStepsServiceRetrieveStepTrace = (
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -2871,7 +3758,9 @@ export const prefetchUseTagServiceListTags = (
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2879,7 +3768,9 @@ export const prefetchUseTagServiceListTags = (
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2890,7 +3781,9 @@ export const prefetchUseTagServiceListTags = (
       order,
       orderBy,
       queryText,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       TagService.listTags({
@@ -2900,7 +3793,9 @@ export const prefetchUseTagServiceListTags = (
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -2914,6 +3809,8 @@ export const prefetchUseTagServiceListTags = (
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -2926,7 +3823,9 @@ export const prefetchUseAdminServiceListTags = (
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2934,7 +3833,9 @@ export const prefetchUseAdminServiceListTags = (
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -2945,7 +3846,9 @@ export const prefetchUseAdminServiceListTags = (
       order,
       orderBy,
       queryText,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       AdminService.listTags({
@@ -2955,7 +3858,9 @@ export const prefetchUseAdminServiceListTags = (
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -3005,10 +3910,16 @@ export const prefetchUseAdminServiceListOrgs = (
     queryFn: () => AdminService.listOrgs({ after, limit }),
   });
 /**
- * Retrieve Provider Trace By Step Id
+ * @deprecated
+ * Retrieve Provider Trace
+ * **DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.
+ *
+ * Retrieve provider trace by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -3016,18 +3927,30 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
   queryClient: QueryClient,
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn({
       stepId,
+      userAgent,
       userId,
+      xProjectId,
     }),
-    queryFn: () => TelemetryService.retrieveProviderTrace({ stepId, userId }),
+    queryFn: () =>
+      TelemetryService.retrieveProviderTrace({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Batches
@@ -3039,6 +3962,8 @@ export const prefetchUseTelemetryServiceRetrieveProviderTrace = (
  * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3050,14 +3975,18 @@ export const prefetchUseMessagesServiceListBatches = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
@@ -3067,7 +3996,9 @@ export const prefetchUseMessagesServiceListBatches = (
       limit,
       order,
       orderBy,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
       MessagesService.listBatches({
@@ -3076,7 +4007,9 @@ export const prefetchUseMessagesServiceListBatches = (
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
@@ -3085,6 +4018,8 @@ export const prefetchUseMessagesServiceListBatches = (
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3092,18 +4027,28 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
   queryClient: QueryClient,
   {
     batchId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     batchId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn({ batchId, userId }),
-    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }),
+    queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn({
+      batchId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      MessagesService.retrieveBatch({ batchId, userAgent, userId, xProjectId }),
   });
 /**
- * List Batch Messages
+ * List Messages For Batch
  * Get response messages for a specific batch job.
  * @param data The data for the request.
  * @param data.batchId
@@ -3114,10 +4059,12 @@ export const prefetchUseMessagesServiceRetrieveBatch = (
  * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaBatchMessages Successful Response
  * @throws ApiError
  */
-export const prefetchUseMessagesServiceListBatchMessages = (
+export const prefetchUseMessagesServiceListMessagesForBatch = (
   queryClient: QueryClient,
   {
     after,
@@ -3127,7 +4074,9 @@ export const prefetchUseMessagesServiceListBatchMessages = (
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -3136,11 +4085,13 @@ export const prefetchUseMessagesServiceListBatchMessages = (
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
 ) =>
   queryClient.prefetchQuery({
-    queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn({
+    queryKey: Common.UseMessagesServiceListMessagesForBatchKeyFn({
       after,
       agentId,
       batchId,
@@ -3148,10 +4099,12 @@ export const prefetchUseMessagesServiceListBatchMessages = (
       limit,
       order,
       orderBy,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      MessagesService.listBatchMessages({
+      MessagesService.listMessagesForBatch({
         after,
         agentId,
         batchId,
@@ -3159,15 +4112,19 @@ export const prefetchUseMessagesServiceListBatchMessages = (
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }),
   });
 /**
  * Get Embeddings Total Storage Size
  * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.
- * @param data.userId
  * @param data.storageUnit
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3175,19 +4132,30 @@ export const prefetchUseEmbeddingsServiceGetTotalStorageSize = (
   queryClient: QueryClient,
   {
     storageUnit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     storageUnit?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn({
       storageUnit,
+      userAgent,
       userId,
+      xProjectId,
     }),
     queryFn: () =>
-      EmbeddingsService.getTotalStorageSize({ storageUnit, userId }),
+      EmbeddingsService.getTotalStorageSize({
+        storageUnit,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
   });
 /**
  * List Users

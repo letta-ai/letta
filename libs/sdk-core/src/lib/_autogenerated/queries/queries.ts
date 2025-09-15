@@ -34,7 +34,6 @@ import {
   VoiceService,
 } from '../requests/services.gen';
 import {
-  AddFeedbackRequest,
   AuthRequest,
   BlockUpdate,
   Body_export_agent,
@@ -66,6 +65,7 @@ import {
   MCPToolExecuteRequest,
   ManagerType,
   MessageSearchRequest,
+  ModifyFeedbackRequest,
   OrganizationCreate,
   OrganizationUpdate,
   ProviderCategory,
@@ -105,6 +105,8 @@ import * as Common from './common';
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -115,20 +117,30 @@ export const useToolsServiceRetrieveTool = <
 >(
   {
     toolId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     toolId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceRetrieveToolKeyFn(
-      { toolId, userId },
+      { toolId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => ToolsService.retrieveTool({ toolId, userId }) as TData,
+    queryFn: () =>
+      ToolsService.retrieveTool({
+        toolId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -144,6 +156,8 @@ export const useToolsServiceRetrieveTool = <
  * @param data.returnOnlyLettaTools Count only tools with tool_type starting with 'letta_'
  * @param data.excludeLettaTools Exclude built-in Letta tools from the count
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -161,7 +175,9 @@ export const useToolsServiceCountTools = <
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     excludeLettaTools?: boolean;
     excludeToolTypes?: string[];
@@ -171,7 +187,9 @@ export const useToolsServiceCountTools = <
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -187,7 +205,9 @@ export const useToolsServiceCountTools = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -201,7 +221,9 @@ export const useToolsServiceCountTools = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -222,6 +244,8 @@ export const useToolsServiceCountTools = <
  * @param data.excludeToolTypes Tool type(s) to exclude - accepts repeated params or comma-separated values
  * @param data.returnOnlyLettaTools Return only tools with tool_type starting with 'letta_'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -243,7 +267,9 @@ export const useToolsServiceListTools = <
     search,
     toolIds,
     toolTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -257,7 +283,9 @@ export const useToolsServiceListTools = <
     search?: string;
     toolIds?: string[];
     toolTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -277,7 +305,9 @@ export const useToolsServiceListTools = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -295,7 +325,9 @@ export const useToolsServiceListTools = <
         search,
         toolIds,
         toolTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -304,6 +336,8 @@ export const useToolsServiceListTools = <
  * Get a list of all Composio apps
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AppModel Successful Response
  * @throws ApiError
  */
@@ -313,16 +347,24 @@ export const useToolsServiceListComposioApps = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListComposioAppsKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listComposioApps({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListComposioAppsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.listComposioApps({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -331,6 +373,8 @@ export const useToolsServiceListComposioApps = <
  * @param data The data for the request.
  * @param data.composioAppName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ActionModel Successful Response
  * @throws ApiError
  */
@@ -341,23 +385,29 @@ export const useToolsServiceListComposioActionsByApp = <
 >(
   {
     composioAppName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     composioAppName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListComposioActionsByAppKeyFn(
-      { composioAppName, userId },
+      { composioAppName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       ToolsService.listComposioActionsByApp({
         composioAppName,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -366,6 +416,8 @@ export const useToolsServiceListComposioActionsByApp = <
  * Get a list of all configured MCP servers
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -375,16 +427,24 @@ export const useToolsServiceListMcpServers = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseToolsServiceListMcpServersKeyFn({ userId }, queryKey),
-    queryFn: () => ToolsService.listMcpServers({ userId }) as TData,
+    queryKey: Common.UseToolsServiceListMcpServersKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ToolsService.listMcpServers({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -393,6 +453,8 @@ export const useToolsServiceListMcpServers = <
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns MCPTool Successful Response
  * @throws ApiError
  */
@@ -403,21 +465,30 @@ export const useToolsServiceListMcpToolsByServer = <
 >(
   {
     mcpServerName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     mcpServerName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseToolsServiceListMcpToolsByServerKeyFn(
-      { mcpServerName, userId },
+      { mcpServerName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      ToolsService.listMcpToolsByServer({ mcpServerName, userId }) as TData,
+      ToolsService.listMcpToolsByServer({
+        mcpServerName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -473,6 +544,8 @@ export const useToolsServiceMcpOauthCallback = <
  * Count all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -482,16 +555,24 @@ export const useSourcesServiceCountSources = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceCountSourcesKeyFn({ userId }, queryKey),
-    queryFn: () => SourcesService.countSources({ userId }) as TData,
+    queryKey: Common.UseSourcesServiceCountSourcesKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.countSources({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -500,6 +581,8 @@ export const useSourcesServiceCountSources = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -510,20 +593,30 @@ export const useSourcesServiceRetrieveSource = <
 >(
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceRetrieveSourceKeyFn(
-      { sourceId, userId },
+      { sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => SourcesService.retrieveSource({ sourceId, userId }) as TData,
+    queryFn: () =>
+      SourcesService.retrieveSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -532,6 +625,8 @@ export const useSourcesServiceRetrieveSource = <
  * @param data The data for the request.
  * @param data.sourceName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -542,21 +637,30 @@ export const useSourcesServiceGetSourceIdByName = <
 >(
   {
     sourceName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourceIdByNameKeyFn(
-      { sourceName, userId },
+      { sourceName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.getSourceIdByName({ sourceName, userId }) as TData,
+      SourcesService.getSourceIdByName({
+        sourceName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -571,6 +675,8 @@ export const useSourcesServiceGetSourceIdByName = <
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -581,23 +687,29 @@ export const useSourcesServiceGetSourcesMetadata = <
 >(
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetSourcesMetadataKeyFn(
-      { includeDetailedPerSourceMetadata, userId },
+      { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       SourcesService.getSourcesMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -606,6 +718,8 @@ export const useSourcesServiceGetSourcesMetadata = <
  * List all data sources created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -615,16 +729,24 @@ export const useSourcesServiceListSources = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseSourcesServiceListSourcesKeyFn({ userId }, queryKey),
-    queryFn: () => SourcesService.listSources({ userId }) as TData,
+    queryKey: Common.UseSourcesServiceListSourcesKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      SourcesService.listSources({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -633,6 +755,8 @@ export const useSourcesServiceListSources = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -643,21 +767,30 @@ export const useSourcesServiceGetAgentsForSource = <
 >(
   {
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetAgentsForSourceKeyFn(
-      { sourceId, userId },
+      { sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      SourcesService.getAgentsForSource({ sourceId, userId }) as TData,
+      SourcesService.getAgentsForSource({
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -669,6 +802,8 @@ export const useSourcesServiceGetAgentsForSource = <
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -682,20 +817,24 @@ export const useSourcesServiceListSourcePassages = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourcePassagesKeyFn(
-      { after, before, limit, sourceId, userId },
+      { after, before, limit, sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -704,7 +843,9 @@ export const useSourcesServiceListSourcePassages = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -718,6 +859,8 @@ export const useSourcesServiceListSourcePassages = <
  * @param data.includeContent Whether to include full file content
  * @param data.checkStatusUpdates Whether to check and update file processing status (from the vector db service). If False, will not fetch and update the status, which may lead to performance gains.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -732,21 +875,34 @@ export const useSourcesServiceListSourceFiles = <
     includeContent,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     checkStatusUpdates?: boolean;
     includeContent?: boolean;
     limit?: number;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceListSourceFilesKeyFn(
-      { after, checkStatusUpdates, includeContent, limit, sourceId, userId },
+      {
+        after,
+        checkStatusUpdates,
+        includeContent,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -756,7 +912,9 @@ export const useSourcesServiceListSourceFiles = <
         includeContent,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -768,6 +926,8 @@ export const useSourcesServiceListSourceFiles = <
  * @param data.fileId
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -780,19 +940,23 @@ export const useSourcesServiceGetFileMetadata = <
     fileId,
     includeContent,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     fileId: string;
     includeContent?: boolean;
     sourceId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseSourcesServiceGetFileMetadataKeyFn(
-      { fileId, includeContent, sourceId, userId },
+      { fileId, includeContent, sourceId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -800,7 +964,9 @@ export const useSourcesServiceGetFileMetadata = <
         fileId,
         includeContent,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -809,6 +975,8 @@ export const useSourcesServiceGetFileMetadata = <
  * Count all data folders created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -818,16 +986,24 @@ export const useFoldersServiceCountFolders = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceCountFoldersKeyFn({ userId }, queryKey),
-    queryFn: () => FoldersService.countFolders({ userId }) as TData,
+    queryKey: Common.UseFoldersServiceCountFoldersKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      FoldersService.countFolders({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -836,6 +1012,8 @@ export const useFoldersServiceCountFolders = <
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -846,20 +1024,30 @@ export const useFoldersServiceRetrieveFolder = <
 >(
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceRetrieveFolderKeyFn(
-      { folderId, userId },
+      { folderId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => FoldersService.retrieveFolder({ folderId, userId }) as TData,
+    queryFn: () =>
+      FoldersService.retrieveFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -868,6 +1056,8 @@ export const useFoldersServiceRetrieveFolder = <
  * @param data The data for the request.
  * @param data.folderName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -878,21 +1068,30 @@ export const useFoldersServiceGetFolderIdByName = <
 >(
   {
     folderName,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderName: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn(
-      { folderName, userId },
+      { folderName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFolderIdByName({ folderName, userId }) as TData,
+      FoldersService.getFolderIdByName({
+        folderName,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -907,6 +1106,8 @@ export const useFoldersServiceGetFolderIdByName = <
  * @param data The data for the request.
  * @param data.includeDetailedPerSourceMetadata
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
@@ -917,23 +1118,29 @@ export const useFoldersServiceGetFoldersMetadata = <
 >(
   {
     includeDetailedPerSourceMetadata,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     includeDetailedPerSourceMetadata?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn(
-      { includeDetailedPerSourceMetadata, userId },
+      { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       FoldersService.getFoldersMetadata({
         includeDetailedPerSourceMetadata,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -947,6 +1154,8 @@ export const useFoldersServiceGetFoldersMetadata = <
  * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -961,21 +1170,25 @@ export const useFoldersServiceListFolders = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFoldersKeyFn(
-      { after, before, limit, order, orderBy, userId },
+      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -985,7 +1198,9 @@ export const useFoldersServiceListFolders = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -995,6 +1210,8 @@ export const useFoldersServiceListFolders = <
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -1005,21 +1222,30 @@ export const useFoldersServiceGetAgentsForFolder = <
 >(
   {
     folderId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     folderId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn(
-      { folderId, userId },
+      { folderId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getAgentsForFolder({ folderId, userId }) as TData,
+      FoldersService.getAgentsForFolder({
+        folderId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1031,6 +1257,8 @@ export const useFoldersServiceGetAgentsForFolder = <
  * @param data.before Message before which to retrieve the returned messages.
  * @param data.limit Maximum number of messages to retrieve.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1044,20 +1272,24 @@ export const useFoldersServiceListFolderPassages = <
     before,
     folderId,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     folderId: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn(
-      { after, before, folderId, limit, userId },
+      { after, before, folderId, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1066,7 +1298,9 @@ export const useFoldersServiceListFolderPassages = <
         before,
         folderId,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1079,6 +1313,8 @@ export const useFoldersServiceListFolderPassages = <
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.includeContent Whether to include full file content
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -1092,20 +1328,24 @@ export const useFoldersServiceListFolderFiles = <
     folderId,
     includeContent,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderFilesKeyFn(
-      { after, folderId, includeContent, limit, userId },
+      { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1114,7 +1354,9 @@ export const useFoldersServiceListFolderFiles = <
         folderId,
         includeContent,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1143,6 +1385,8 @@ export const useFoldersServiceListFolderFiles = <
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.sortBy Field to sort by. Options: 'created_at' (default), 'last_run_completion'
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1169,7 +1413,9 @@ export const useAgentsServiceListAgents = <
     sortBy,
     tags,
     templateId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
@@ -1188,7 +1434,9 @@ export const useAgentsServiceListAgents = <
     sortBy?: string;
     tags?: string[];
     templateId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1213,7 +1461,9 @@ export const useAgentsServiceListAgents = <
         sortBy,
         tags,
         templateId,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1236,7 +1486,9 @@ export const useAgentsServiceListAgents = <
         sortBy,
         tags,
         templateId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1245,6 +1497,8 @@ export const useAgentsServiceListAgents = <
  * Get the count of all agents associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1254,16 +1508,24 @@ export const useAgentsServiceCountAgents = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseAgentsServiceCountAgentsKeyFn({ userId }, queryKey),
-    queryFn: () => AgentsService.countAgents({ userId }) as TData,
+    queryKey: Common.UseAgentsServiceCountAgentsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      AgentsService.countAgents({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -1278,6 +1540,8 @@ export const useAgentsServiceCountAgents = <
  * @param data.maxSteps
  * @param data.useLegacyFormat If true, exports using the legacy single-agent format (v1). If false, exports using the new multi-entity format (v2).
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @param data.requestBody
  * @returns string Successful Response
  * @throws ApiError
@@ -1292,20 +1556,32 @@ export const useAgentsServiceExportAgent = <
     maxSteps,
     requestBody,
     useLegacyFormat,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     maxSteps?: number;
     requestBody?: Body_export_agent;
     useLegacyFormat?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceExportAgentKeyFn(
-      { agentId, maxSteps, requestBody, useLegacyFormat, userId },
+      {
+        agentId,
+        maxSteps,
+        requestBody,
+        useLegacyFormat,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1314,7 +1590,9 @@ export const useAgentsServiceExportAgent = <
         maxSteps,
         requestBody,
         useLegacyFormat,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1324,6 +1602,8 @@ export const useAgentsServiceExportAgent = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ContextWindowOverview Successful Response
  * @throws ApiError
  */
@@ -1334,21 +1614,30 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentContextWindowKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.retrieveAgentContextWindow({ agentId, userId }) as TData,
+      AgentsService.retrieveAgentContextWindow({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1358,6 +1647,8 @@ export const useAgentsServiceRetrieveAgentContextWindow = <
  * @param data.agentId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -1369,25 +1660,31 @@ export const useAgentsServiceRetrieveAgent = <
   {
     agentId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentKeyFn(
-      { agentId, includeRelationships, userId },
+      { agentId, includeRelationships, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.retrieveAgent({
         agentId,
         includeRelationships,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1397,6 +1694,8 @@ export const useAgentsServiceRetrieveAgent = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -1407,20 +1706,30 @@ export const useAgentsServiceListAgentTools = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentToolsKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentTools({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentTools({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1429,6 +1738,8 @@ export const useAgentsServiceListAgentTools = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1439,20 +1750,30 @@ export const useAgentsServiceListAgentSources = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentSourcesKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentSources({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentSources({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1461,6 +1782,8 @@ export const useAgentsServiceListAgentSources = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -1471,20 +1794,30 @@ export const useAgentsServiceListAgentFolders = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFoldersKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => AgentsService.listAgentFolders({ agentId, userId }) as TData,
+    queryFn: () =>
+      AgentsService.listAgentFolders({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1496,6 +1829,8 @@ export const useAgentsServiceListAgentFolders = <
  * @param data.limit Number of items to return (1-100)
  * @param data.isOpen Filter by open status (true for open files, false for closed files)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns PaginatedAgentFiles Successful Response
  * @throws ApiError
  */
@@ -1509,20 +1844,24 @@ export const useAgentsServiceListAgentFiles = <
     cursor,
     isOpen,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     cursor?: string;
     isOpen?: boolean;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentFilesKeyFn(
-      { agentId, cursor, isOpen, limit, userId },
+      { agentId, cursor, isOpen, limit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -1531,7 +1870,9 @@ export const useAgentsServiceListAgentFiles = <
         cursor,
         isOpen,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1542,6 +1883,8 @@ export const useAgentsServiceListAgentFiles = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Memory Successful Response
  * @throws ApiError
  */
@@ -1552,21 +1895,30 @@ export const useAgentsServiceRetrieveAgentMemory = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveAgentMemoryKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.retrieveAgentMemory({ agentId, userId }) as TData,
+      AgentsService.retrieveAgentMemory({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1576,6 +1928,8 @@ export const useAgentsServiceRetrieveAgentMemory = <
  * @param data.agentId
  * @param data.blockLabel
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1587,25 +1941,31 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
   {
     agentId,
     blockLabel,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     blockLabel: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceRetrieveCoreMemoryBlockKeyFn(
-      { agentId, blockLabel, userId },
+      { agentId, blockLabel, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       AgentsService.retrieveCoreMemoryBlock({
         agentId,
         blockLabel,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1615,6 +1975,8 @@ export const useAgentsServiceRetrieveCoreMemoryBlock = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -1625,21 +1987,30 @@ export const useAgentsServiceListCoreMemoryBlocks = <
 >(
   {
     agentId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListCoreMemoryBlocksKeyFn(
-      { agentId, userId },
+      { agentId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listCoreMemoryBlocks({ agentId, userId }) as TData,
+      AgentsService.listCoreMemoryBlocks({
+        agentId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1653,6 +2024,8 @@ export const useAgentsServiceListCoreMemoryBlocks = <
  * @param data.search Search passages by text
  * @param data.ascending Whether to sort passages oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -1668,7 +2041,9 @@ export const useAgentsServiceListPassages = <
     before,
     limit,
     search,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1676,14 +2051,26 @@ export const useAgentsServiceListPassages = <
     before?: string;
     limit?: number;
     search?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListPassagesKeyFn(
-      { after, agentId, ascending, before, limit, search, userId },
+      {
+        after,
+        agentId,
+        ascending,
+        before,
+        limit,
+        search,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1694,7 +2081,9 @@ export const useAgentsServiceListPassages = <
         before,
         limit,
         search,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1714,6 +2103,8 @@ export const useAgentsServiceListPassages = <
  * @param data.startDatetime Filter results to passages created after this datetime
  * @param data.endDatetime Filter results to passages created before this datetime
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ArchivalMemorySearchResponse Successful Response
  * @throws ApiError
  */
@@ -1730,7 +2121,9 @@ export const useAgentsServiceSearchArchivalMemory = <
     tagMatchMode,
     tags,
     topK,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     endDatetime?: string;
@@ -1739,7 +2132,9 @@ export const useAgentsServiceSearchArchivalMemory = <
     tagMatchMode?: 'any' | 'all';
     tags?: string[];
     topK?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1754,7 +2149,9 @@ export const useAgentsServiceSearchArchivalMemory = <
         tagMatchMode,
         tags,
         topK,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1767,7 +2164,9 @@ export const useAgentsServiceSearchArchivalMemory = <
         tagMatchMode,
         tags,
         topK,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1785,6 +2184,8 @@ export const useAgentsServiceSearchArchivalMemory = <
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.includeErr Whether to include error messages and error statuses. For debugging purposes only.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -1803,7 +2204,9 @@ export const useAgentsServiceListMessages = <
     includeErr,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId: string;
@@ -1814,7 +2217,9 @@ export const useAgentsServiceListMessages = <
     includeErr?: boolean;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -1831,7 +2236,9 @@ export const useAgentsServiceListMessages = <
         includeErr,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -1846,7 +2253,9 @@ export const useAgentsServiceListMessages = <
         includeErr,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1857,6 +2266,8 @@ export const useAgentsServiceListMessages = <
  * @param data.agentId
  * @param data.managerType Manager type to filter groups by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1868,22 +2279,32 @@ export const useAgentsServiceListAgentGroups = <
   {
     agentId,
     managerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentId: string;
     managerType?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAgentsServiceListAgentGroupsKeyFn(
-      { agentId, managerType, userId },
+      { agentId, managerType, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      AgentsService.listAgentGroups({ agentId, managerType, userId }) as TData,
+      AgentsService.listAgentGroups({
+        agentId,
+        managerType,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -1898,6 +2319,8 @@ export const useAgentsServiceListAgentGroups = <
  * @param data.orderBy Field to sort by
  * @param data.projectId Search groups by project id
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1914,7 +2337,9 @@ export const useGroupsServiceListGroups = <
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -1923,14 +2348,27 @@ export const useGroupsServiceListGroups = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceListGroupsKeyFn(
-      { after, before, limit, managerType, order, orderBy, projectId, userId },
+      {
+        after,
+        before,
+        limit,
+        managerType,
+        order,
+        orderBy,
+        projectId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1942,7 +2380,9 @@ export const useGroupsServiceListGroups = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -1951,6 +2391,8 @@ export const useGroupsServiceListGroups = <
  * Get the count of all groups associated with a given user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -1960,16 +2402,24 @@ export const useGroupsServiceCountGroups = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseGroupsServiceCountGroupsKeyFn({ userId }, queryKey),
-    queryFn: () => GroupsService.countGroups({ userId }) as TData,
+    queryKey: Common.UseGroupsServiceCountGroupsKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      GroupsService.countGroups({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -1978,6 +2428,8 @@ export const useGroupsServiceCountGroups = <
  * @param data The data for the request.
  * @param data.groupId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -1988,20 +2440,30 @@ export const useGroupsServiceRetrieveGroup = <
 >(
   {
     groupId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     groupId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseGroupsServiceRetrieveGroupKeyFn(
-      { groupId, userId },
+      { groupId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => GroupsService.retrieveGroup({ groupId, userId }) as TData,
+    queryFn: () =>
+      GroupsService.retrieveGroup({
+        groupId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2016,6 +2478,8 @@ export const useGroupsServiceRetrieveGroup = <
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -2032,7 +2496,9 @@ export const useGroupsServiceListGroupMessages = <
     groupId,
     limit,
     useAssistantMessage,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     assistantMessageToolKwarg?: string;
@@ -2041,7 +2507,9 @@ export const useGroupsServiceListGroupMessages = <
     groupId: string;
     limit?: number;
     useAssistantMessage?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2056,7 +2524,9 @@ export const useGroupsServiceListGroupMessages = <
         groupId,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2069,7 +2539,9 @@ export const useGroupsServiceListGroupMessages = <
         groupId,
         limit,
         useAssistantMessage,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2087,6 +2559,8 @@ export const useGroupsServiceListGroupMessages = <
  * @param data.order Sort order for identities by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2105,7 +2579,9 @@ export const useIdentitiesServiceListIdentities = <
     order,
     orderBy,
     projectId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2116,7 +2592,9 @@ export const useIdentitiesServiceListIdentities = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     projectId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2133,7 +2611,9 @@ export const useIdentitiesServiceListIdentities = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2148,7 +2628,9 @@ export const useIdentitiesServiceListIdentities = <
         order,
         orderBy,
         projectId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2157,6 +2639,8 @@ export const useIdentitiesServiceListIdentities = <
  * Get count of all identities for a user
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2166,19 +2650,28 @@ export const useIdentitiesServiceCountIdentities = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceCountIdentitiesKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => IdentitiesService.countIdentities({ userId }) as TData,
+    queryFn: () =>
+      IdentitiesService.countIdentities({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2186,6 +2679,8 @@ export const useIdentitiesServiceCountIdentities = <
  * @param data The data for the request.
  * @param data.identityId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -2196,21 +2691,30 @@ export const useIdentitiesServiceRetrieveIdentity = <
 >(
   {
     identityId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     identityId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseIdentitiesServiceRetrieveIdentityKeyFn(
-      { identityId, userId },
+      { identityId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      IdentitiesService.retrieveIdentity({ identityId, userId }) as TData,
+      IdentitiesService.retrieveIdentity({
+        identityId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2221,6 +2725,8 @@ export const useIdentitiesServiceRetrieveIdentity = <
  * @param data.deploymentId
  * @param data.entityTypes Filter by entity types (block, agent, group)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ListDeploymentEntitiesResponse Successful Response
  * @throws ApiError
  */
@@ -2232,25 +2738,31 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
   {
     deploymentId,
     entityTypes,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     deploymentId: string;
     entityTypes?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseInternalTemplatesServiceListDeploymentEntitiesKeyFn(
-      { deploymentId, entityTypes, userId },
+      { deploymentId, entityTypes, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       InternalTemplatesService.listDeploymentEntities({
         deploymentId,
         entityTypes,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2262,6 +2774,8 @@ export const useInternalTemplatesServiceListDeploymentEntities = <
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -2274,19 +2788,30 @@ export const useModelsServiceListModels = <
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListModelsKeyFn(
-      { providerCategory, providerName, providerType, userId },
+      {
+        providerCategory,
+        providerName,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2294,7 +2819,9 @@ export const useModelsServiceListModels = <
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2303,6 +2830,8 @@ export const useModelsServiceListModels = <
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -2312,19 +2841,28 @@ export const useModelsServiceListEmbeddingModels = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseModelsServiceListEmbeddingModelsKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => ModelsService.listEmbeddingModels({ userId }) as TData,
+    queryFn: () =>
+      ModelsService.listEmbeddingModels({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2335,6 +2873,8 @@ export const useModelsServiceListEmbeddingModels = <
  * @param data.providerName
  * @param data.providerType
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LLMConfig Successful Response
  * @throws ApiError
  */
@@ -2347,19 +2887,30 @@ export const useLlmsServiceListModels = <
     providerCategory,
     providerName,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     providerCategory?: ProviderCategory[];
     providerName?: string;
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListModelsKeyFn(
-      { providerCategory, providerName, providerType, userId },
+      {
+        providerCategory,
+        providerName,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2367,7 +2918,9 @@ export const useLlmsServiceListModels = <
         providerCategory,
         providerName,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2376,6 +2929,8 @@ export const useLlmsServiceListModels = <
  * List available embedding models using the asynchronous implementation for improved performance
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns EmbeddingConfig Successful Response
  * @throws ApiError
  */
@@ -2385,19 +2940,28 @@ export const useLlmsServiceListEmbeddingModels = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseLlmsServiceListEmbeddingModelsKeyFn(
-      { userId },
+      { userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => LlmsService.listEmbeddingModels({ userId }) as TData,
+    queryFn: () =>
+      LlmsService.listEmbeddingModels({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2421,6 +2985,8 @@ export const useLlmsServiceListEmbeddingModels = <
  * @param data.connectedToAgentsCountLt Filter blocks by the number of connected agents. If provided, returns blocks that have less than this number of connected agents.
  * @param data.connectedToAgentsCountEq Filter blocks by the exact number of connected agents. If provided, returns blocks that have exactly this number of connected agents.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2446,8 +3012,10 @@ export const useBlocksServiceListBlocks = <
     orderBy,
     projectId,
     templatesOnly,
+    userAgent,
     userId,
     valueSearch,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2465,8 +3033,10 @@ export const useBlocksServiceListBlocks = <
     orderBy?: 'created_at';
     projectId?: string;
     templatesOnly?: boolean;
+    userAgent?: string;
     userId?: string;
     valueSearch?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2490,8 +3060,10 @@ export const useBlocksServiceListBlocks = <
         orderBy,
         projectId,
         templatesOnly,
+        userAgent,
         userId,
         valueSearch,
+        xProjectId,
       },
       queryKey,
     ),
@@ -2513,8 +3085,10 @@ export const useBlocksServiceListBlocks = <
         orderBy,
         projectId,
         templatesOnly,
+        userAgent,
         userId,
         valueSearch,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2523,6 +3097,8 @@ export const useBlocksServiceListBlocks = <
  * Count all blocks created by a user.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -2532,16 +3108,24 @@ export const useBlocksServiceCountBlocks = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    userAgent,
     userId,
+    xProjectId,
   }: {
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseBlocksServiceCountBlocksKeyFn({ userId }, queryKey),
-    queryFn: () => BlocksService.countBlocks({ userId }) as TData,
+    queryKey: Common.UseBlocksServiceCountBlocksKeyFn(
+      { userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      BlocksService.countBlocks({ userAgent, userId, xProjectId }) as TData,
     ...options,
   });
 /**
@@ -2549,6 +3133,8 @@ export const useBlocksServiceCountBlocks = <
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -2559,20 +3145,30 @@ export const useBlocksServiceRetrieveBlock = <
 >(
   {
     blockId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceRetrieveBlockKeyFn(
-      { blockId, userId },
+      { blockId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => BlocksService.retrieveBlock({ blockId, userId }) as TData,
+    queryFn: () =>
+      BlocksService.retrieveBlock({
+        blockId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2583,6 +3179,8 @@ export const useBlocksServiceRetrieveBlock = <
  * @param data.blockId
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -2594,25 +3192,31 @@ export const useBlocksServiceListAgentsForBlock = <
   {
     blockId,
     includeRelationships,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     blockId: string;
     includeRelationships?: string[];
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
-      { blockId, includeRelationships, userId },
+      { blockId, includeRelationships, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.listAgentsForBlock({
         blockId,
         includeRelationships,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2627,6 +3231,8 @@ export const useBlocksServiceListAgentsForBlock = <
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2641,21 +3247,34 @@ export const useJobsServiceListJobs = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListJobsKeyFn(
-      { after, ascending, before, limit, sourceId, userId },
+      {
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2665,7 +3284,9 @@ export const useJobsServiceListJobs = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2679,6 +3300,8 @@ export const useJobsServiceListJobs = <
  * @param data.limit Limit for pagination
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2693,21 +3316,34 @@ export const useJobsServiceListActiveJobs = <
     before,
     limit,
     sourceId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     ascending?: boolean;
     before?: string;
     limit?: number;
     sourceId?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListActiveJobsKeyFn(
-      { after, ascending, before, limit, sourceId, userId },
+      {
+        after,
+        ascending,
+        before,
+        limit,
+        sourceId,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2717,7 +3353,9 @@ export const useJobsServiceListActiveJobs = <
         before,
         limit,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2727,6 +3365,8 @@ export const useJobsServiceListActiveJobs = <
  * @param data The data for the request.
  * @param data.jobId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -2737,20 +3377,30 @@ export const useJobsServiceRetrieveJob = <
 >(
   {
     jobId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     jobId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceRetrieveJobKeyFn(
-      { jobId, userId },
+      { jobId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => JobsService.retrieveJob({ jobId, userId }) as TData,
+    queryFn: () =>
+      JobsService.retrieveJob({
+        jobId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -2778,6 +3428,8 @@ export const useHealthServiceCheckHealth = <
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.sandboxType Filter for this specific sandbox type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -2790,12 +3442,16 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
     after,
     limit,
     sandboxType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     limit?: number;
     sandboxType?: SandboxType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2803,7 +3459,7 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
   useQuery<TData, TError>({
     queryKey:
       Common.UseSandboxConfigServiceListSandboxConfigsV1SandboxConfigGetKeyFn(
-        { after, limit, sandboxType, userId },
+        { after, limit, sandboxType, userAgent, userId, xProjectId },
         queryKey,
       ),
     queryFn: () =>
@@ -2811,7 +3467,9 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
         after,
         limit,
         sandboxType,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2822,6 +3480,8 @@ export const useSandboxConfigServiceListSandboxConfigsV1SandboxConfigGet = <
  * @param data.limit Number of results to return
  * @param data.after Pagination cursor to fetch the next set of results
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -2835,12 +3495,16 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
       after,
       limit,
       sandboxConfigId,
+      userAgent,
       userId,
+      xProjectId,
     }: {
       after?: string;
       limit?: number;
       sandboxConfigId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     queryKey?: TQueryKey,
     options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -2848,12 +3512,12 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
     useQuery<TData, TError>({
       queryKey:
         Common.UseSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGetKeyFn(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
           queryKey,
         ),
       queryFn: () =>
         SandboxConfigService.listSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableGet(
-          { after, limit, sandboxConfigId, userId },
+          { after, limit, sandboxConfigId, userAgent, userId, xProjectId },
         ) as TData,
       ...options,
     });
@@ -2869,6 +3533,8 @@ export const useSandboxConfigServiceListSandboxEnvVarsV1SandboxConfigSandboxConf
  * @param data.name Filter providers by name
  * @param data.providerType Filter providers by type
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -2885,7 +3551,9 @@ export const useProvidersServiceListProviders = <
     order,
     orderBy,
     providerType,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -2894,14 +3562,27 @@ export const useProvidersServiceListProviders = <
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     providerType?: ProviderType;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseProvidersServiceListProvidersKeyFn(
-      { after, before, limit, name, order, orderBy, providerType, userId },
+      {
+        after,
+        before,
+        limit,
+        name,
+        order,
+        orderBy,
+        providerType,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2913,7 +3594,53 @@ export const useProvidersServiceListProviders = <
         order,
         orderBy,
         providerType,
+        userAgent,
         userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * Retrieve Provider
+ * Get a provider by ID.
+ * @param data The data for the request.
+ * @param data.providerId
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Provider Successful Response
+ * @throws ApiError
+ */
+export const useProvidersServiceRetrieveProvider = <
+  TData = Common.ProvidersServiceRetrieveProviderDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    providerId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    providerId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseProvidersServiceRetrieveProviderKeyFn(
+      { providerId, userAgent, userId, xProjectId },
+      queryKey,
+    ),
+    queryFn: () =>
+      ProvidersService.retrieveProvider({
+        providerId,
+        userAgent,
+        userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2928,6 +3655,8 @@ export const useProvidersServiceListProviders = <
  * @param data.limit Maximum number of runs to return
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2943,7 +3672,9 @@ export const useRunsServiceListRuns = <
     background,
     before,
     limit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentIds?: string[];
@@ -2951,14 +3682,26 @@ export const useRunsServiceListRuns = <
     background?: boolean;
     before?: string;
     limit?: number;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunsKeyFn(
-      { after, agentIds, ascending, background, before, limit, userId },
+      {
+        after,
+        agentIds,
+        ascending,
+        background,
+        before,
+        limit,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -2969,7 +3712,9 @@ export const useRunsServiceListRuns = <
         background,
         before,
         limit,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -2980,6 +3725,8 @@ export const useRunsServiceListRuns = <
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -2991,22 +3738,32 @@ export const useRunsServiceListActiveRuns = <
   {
     agentIds,
     background,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     agentIds?: string[];
     background?: boolean;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListActiveRunsKeyFn(
-      { agentIds, background, userId },
+      { agentIds, background, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      RunsService.listActiveRuns({ agentIds, background, userId }) as TData,
+      RunsService.listActiveRuns({
+        agentIds,
+        background,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3015,6 +3772,8 @@ export const useRunsServiceListActiveRuns = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -3025,20 +3784,30 @@ export const useRunsServiceRetrieveRun = <
 >(
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunKeyFn(
-      { runId, userId },
+      { runId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => RunsService.retrieveRun({ runId, userId }) as TData,
+    queryFn: () =>
+      RunsService.retrieveRun({
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3051,6 +3820,8 @@ export const useRunsServiceRetrieveRun = <
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaMessageUnion Successful Response
  * @throws ApiError
  */
@@ -3065,21 +3836,25 @@ export const useRunsServiceListRunMessages = <
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunMessagesKeyFn(
-      { after, before, limit, order, runId, userId },
+      { after, before, limit, order, runId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3089,7 +3864,9 @@ export const useRunsServiceListRunMessages = <
         limit,
         order,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3099,6 +3876,8 @@ export const useRunsServiceListRunMessages = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns UsageStatistics Successful Response
  * @throws ApiError
  */
@@ -3109,20 +3888,30 @@ export const useRunsServiceRetrieveRunUsage = <
 >(
   {
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceRetrieveRunUsageKeyFn(
-      { runId, userId },
+      { runId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => RunsService.retrieveRunUsage({ runId, userId }) as TData,
+    queryFn: () =>
+      RunsService.retrieveRunUsage({
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3145,6 +3934,8 @@ export const useRunsServiceRetrieveRunUsage = <
  * @param data.limit Maximum number of messages to return
  * @param data.order Sort order by the created_at timestamp of the objects. asc for ascending order and desc for descending order.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3159,21 +3950,25 @@ export const useRunsServiceListRunSteps = <
     limit,
     order,
     runId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: string;
     runId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunStepsKeyFn(
-      { after, before, limit, order, runId, userId },
+      { after, before, limit, order, runId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3183,7 +3978,9 @@ export const useRunsServiceListRunSteps = <
         limit,
         order,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3205,8 +4002,10 @@ export const useRunsServiceListRunSteps = <
  * @param data.hasFeedback Filter by whether steps have feedback (true) or not (false)
  * @param data.tags Filter by tags
  * @param data.projectId Filter by the project ID that is associated with the step (cloud only).
- * @param data.userId
  * @param data.xProject Filter by project slug to associate with the group (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3230,8 +4029,10 @@ export const useStepsServiceListSteps = <
     startDate,
     tags,
     traceIds,
+    userAgent,
     userId,
     xProject,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -3247,8 +4048,10 @@ export const useStepsServiceListSteps = <
     startDate?: string;
     tags?: string[];
     traceIds?: string[];
+    userAgent?: string;
     userId?: string;
     xProject?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
@@ -3270,8 +4073,10 @@ export const useStepsServiceListSteps = <
         startDate,
         tags,
         traceIds,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       },
       queryKey,
     ),
@@ -3291,8 +4096,10 @@ export const useStepsServiceListSteps = <
         startDate,
         tags,
         traceIds,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3302,6 +4109,8 @@ export const useStepsServiceListSteps = <
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -3312,84 +4121,117 @@ export const useStepsServiceRetrieveStep = <
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseStepsServiceRetrieveStepKeyFn(
-      { stepId, userId },
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => StepsService.retrieveStep({ stepId, userId }) as TData,
+    queryFn: () =>
+      StepsService.retrieveStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Step Metrics
+ * Retrieve Metrics For Step
  * Get step metrics by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns StepMetrics Successful Response
  * @throws ApiError
  */
-export const useStepsServiceRetrieveStepMetrics = <
-  TData = Common.StepsServiceRetrieveStepMetricsDefaultResponse,
+export const useStepsServiceRetrieveMetricsForStep = <
+  TData = Common.StepsServiceRetrieveMetricsForStepDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseStepsServiceRetrieveStepMetricsKeyFn(
-      { stepId, userId },
+    queryKey: Common.UseStepsServiceRetrieveMetricsForStepKeyFn(
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      StepsService.retrieveStepMetrics({ stepId, userId }) as TData,
+      StepsService.retrieveMetricsForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * Retrieve Step Trace
+ * Retrieve Trace For Step
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const useStepsServiceRetrieveStepTrace = <
-  TData = Common.StepsServiceRetrieveStepTraceDefaultResponse,
+export const useStepsServiceRetrieveTraceForStep = <
+  TData = Common.StepsServiceRetrieveTraceForStepDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseStepsServiceRetrieveStepTraceKeyFn(
-      { stepId, userId },
+    queryKey: Common.UseStepsServiceRetrieveTraceForStepKeyFn(
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => StepsService.retrieveStepTrace({ stepId, userId }) as TData,
+    queryFn: () =>
+      StepsService.retrieveTraceForStep({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3403,6 +4245,8 @@ export const useStepsServiceRetrieveStepTrace = <
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -3418,7 +4262,9 @@ export const useTagServiceListTags = <
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -3426,14 +4272,26 @@ export const useTagServiceListTags = <
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseTagServiceListTagsKeyFn(
-      { after, before, limit, order, orderBy, queryText, userId },
+      {
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3444,7 +4302,9 @@ export const useTagServiceListTags = <
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3459,6 +4319,8 @@ export const useTagServiceListTags = <
  * @param data.orderBy Field to sort by
  * @param data.queryText Filter tags by text search
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -3474,7 +4336,9 @@ export const useAdminServiceListTags = <
     order,
     orderBy,
     queryText,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
@@ -3482,14 +4346,26 @@ export const useAdminServiceListTags = <
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseAdminServiceListTagsKeyFn(
-      { after, before, limit, order, orderBy, queryText, userId },
+      {
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        queryText,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -3500,7 +4376,9 @@ export const useAdminServiceListTags = <
         order,
         orderBy,
         queryText,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3563,10 +4441,16 @@ export const useAdminServiceListOrgs = <
     ...options,
   });
 /**
- * Retrieve Provider Trace By Step Id
+ * @deprecated
+ * Retrieve Provider Trace
+ * **DEPRECATED**: Use `GET /steps/{step_id}/trace` instead.
+ *
+ * Retrieve provider trace by step ID.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -3577,21 +4461,30 @@ export const useTelemetryServiceRetrieveProviderTrace = <
 >(
   {
     stepId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     stepId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseTelemetryServiceRetrieveProviderTraceKeyFn(
-      { stepId, userId },
+      { stepId, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      TelemetryService.retrieveProviderTrace({ stepId, userId }) as TData,
+      TelemetryService.retrieveProviderTrace({
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3604,6 +4497,8 @@ export const useTelemetryServiceRetrieveProviderTrace = <
  * @param data.order Sort order for jobs by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3618,21 +4513,25 @@ export const useMessagesServiceListBatches = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     before?: string;
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceListBatchesKeyFn(
-      { after, before, limit, order, orderBy, userId },
+      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
@@ -3642,7 +4541,9 @@ export const useMessagesServiceListBatches = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3652,6 +4553,8 @@ export const useMessagesServiceListBatches = <
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -3662,24 +4565,34 @@ export const useMessagesServiceRetrieveBatch = <
 >(
   {
     batchId,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     batchId: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseMessagesServiceRetrieveBatchKeyFn(
-      { batchId, userId },
+      { batchId, userAgent, userId, xProjectId },
       queryKey,
     ),
-    queryFn: () => MessagesService.retrieveBatch({ batchId, userId }) as TData,
+    queryFn: () =>
+      MessagesService.retrieveBatch({
+        batchId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
- * List Batch Messages
+ * List Messages For Batch
  * Get response messages for a specific batch job.
  * @param data The data for the request.
  * @param data.batchId
@@ -3690,11 +4603,13 @@ export const useMessagesServiceRetrieveBatch = <
  * @param data.orderBy Field to sort by
  * @param data.agentId Filter messages by agent ID
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaBatchMessages Successful Response
  * @throws ApiError
  */
-export const useMessagesServiceListBatchMessages = <
-  TData = Common.MessagesServiceListBatchMessagesDefaultResponse,
+export const useMessagesServiceListMessagesForBatch = <
+  TData = Common.MessagesServiceListMessagesForBatchDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -3706,7 +4621,9 @@ export const useMessagesServiceListBatchMessages = <
     limit,
     order,
     orderBy,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     after?: string;
     agentId?: string;
@@ -3715,18 +4632,16 @@ export const useMessagesServiceListBatchMessages = <
     limit?: number;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   },
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseMessagesServiceListBatchMessagesKeyFn(
-      { after, agentId, batchId, before, limit, order, orderBy, userId },
-      queryKey,
-    ),
-    queryFn: () =>
-      MessagesService.listBatchMessages({
+    queryKey: Common.UseMessagesServiceListMessagesForBatchKeyFn(
+      {
         after,
         agentId,
         batchId,
@@ -3734,7 +4649,24 @@ export const useMessagesServiceListBatchMessages = <
         limit,
         order,
         orderBy,
+        userAgent,
         userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      MessagesService.listMessagesForBatch({
+        after,
+        agentId,
+        batchId,
+        before,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
       }) as TData,
     ...options,
   });
@@ -3742,8 +4674,10 @@ export const useMessagesServiceListBatchMessages = <
  * Get Embeddings Total Storage Size
  * Get the total size of all embeddings in the database for a user in the storage unit given.
  * @param data The data for the request.
- * @param data.userId
  * @param data.storageUnit
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns number Successful Response
  * @throws ApiError
  */
@@ -3754,21 +4688,30 @@ export const useEmbeddingsServiceGetTotalStorageSize = <
 >(
   {
     storageUnit,
+    userAgent,
     userId,
+    xProjectId,
   }: {
     storageUnit?: string;
+    userAgent?: string;
     userId?: string;
+    xProjectId?: string;
   } = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseEmbeddingsServiceGetTotalStorageSizeKeyFn(
-      { storageUnit, userId },
+      { storageUnit, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      EmbeddingsService.getTotalStorageSize({ storageUnit, userId }) as TData,
+      EmbeddingsService.getTotalStorageSize({
+        storageUnit,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
     ...options,
   });
 /**
@@ -3838,6 +4781,8 @@ export const useOrganizationServiceListOrgs = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -3852,7 +4797,9 @@ export const useToolsServiceCreateTool = <
       TError,
       {
         requestBody: ToolCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -3864,14 +4811,18 @@ export const useToolsServiceCreateTool = <
     TError,
     {
       requestBody: ToolCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.createTool({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -3880,6 +4831,8 @@ export const useToolsServiceCreateTool = <
  * Upsert base tools
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -3893,7 +4846,9 @@ export const useToolsServiceAddBaseTools = <
       TData,
       TError,
       {
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -3904,12 +4859,18 @@ export const useToolsServiceAddBaseTools = <
     TData,
     TError,
     {
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ userId }) =>
-      ToolsService.addBaseTools({ userId }) as unknown as Promise<TData>,
+    mutationFn: ({ userAgent, userId, xProjectId }) =>
+      ToolsService.addBaseTools({
+        userAgent,
+        userId,
+        xProjectId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -3918,6 +4879,8 @@ export const useToolsServiceAddBaseTools = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ToolReturnMessage Successful Response
  * @throws ApiError
  */
@@ -3932,7 +4895,9 @@ export const useToolsServiceRunToolFromSource = <
       TError,
       {
         requestBody: ToolRunFromSource;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -3944,14 +4909,18 @@ export const useToolsServiceRunToolFromSource = <
     TError,
     {
       requestBody: ToolRunFromSource;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.runToolFromSource({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -3961,6 +4930,8 @@ export const useToolsServiceRunToolFromSource = <
  * @param data The data for the request.
  * @param data.composioActionName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -3975,7 +4946,9 @@ export const useToolsServiceAddComposioTool = <
       TError,
       {
         composioActionName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -3987,14 +4960,18 @@ export const useToolsServiceAddComposioTool = <
     TError,
     {
       composioActionName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ composioActionName, userId }) =>
+    mutationFn: ({ composioActionName, userAgent, userId, xProjectId }) =>
       ToolsService.addComposioTool({
         composioActionName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4011,6 +4988,8 @@ export const useToolsServiceAddComposioTool = <
  * @param data.mcpServerName
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4026,7 +5005,9 @@ export const useToolsServiceResyncMcpServerTools = <
       {
         agentId?: string;
         mcpServerName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4039,15 +5020,19 @@ export const useToolsServiceResyncMcpServerTools = <
     {
       agentId?: string;
       mcpServerName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, mcpServerName, userId }) =>
+    mutationFn: ({ agentId, mcpServerName, userAgent, userId, xProjectId }) =>
       ToolsService.resyncMcpServerTools({
         agentId,
         mcpServerName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4058,6 +5043,8 @@ export const useToolsServiceResyncMcpServerTools = <
  * @param data.mcpServerName
  * @param data.mcpToolName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -4073,7 +5060,9 @@ export const useToolsServiceAddMcpTool = <
       {
         mcpServerName: string;
         mcpToolName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4086,15 +5075,25 @@ export const useToolsServiceAddMcpTool = <
     {
       mcpServerName: string;
       mcpToolName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ mcpServerName, mcpToolName, userId }) =>
+    mutationFn: ({
+      mcpServerName,
+      mcpToolName,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       ToolsService.addMcpTool({
         mcpServerName,
         mcpToolName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4105,6 +5104,8 @@ export const useToolsServiceAddMcpTool = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4122,7 +5123,9 @@ export const useToolsServiceTestMcpServer = <
           | StdioServerConfig
           | SSEServerConfig
           | StreamableHTTPServerConfig;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4137,14 +5140,18 @@ export const useToolsServiceTestMcpServer = <
         | StdioServerConfig
         | SSEServerConfig
         | StreamableHTTPServerConfig;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.testMcpServer({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4155,6 +5162,8 @@ export const useToolsServiceTestMcpServer = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -4172,7 +5181,9 @@ export const useToolsServiceConnectMcpServer = <
           | StdioServerConfig
           | SSEServerConfig
           | StreamableHTTPServerConfig;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4187,14 +5198,18 @@ export const useToolsServiceConnectMcpServer = <
         | StdioServerConfig
         | SSEServerConfig
         | StreamableHTTPServerConfig;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.connectMcpServer({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4205,6 +5220,8 @@ export const useToolsServiceConnectMcpServer = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4219,7 +5236,9 @@ export const useToolsServiceGenerateJsonSchema = <
       TError,
       {
         requestBody: CodeInput;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4231,14 +5250,18 @@ export const useToolsServiceGenerateJsonSchema = <
     TError,
     {
       requestBody: CodeInput;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.generateJsonSchema({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4251,6 +5274,8 @@ export const useToolsServiceGenerateJsonSchema = <
  * @param data.toolName
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4267,7 +5292,9 @@ export const useToolsServiceExecuteMcpTool = <
         mcpServerName: string;
         requestBody: MCPToolExecuteRequest;
         toolName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4281,16 +5308,27 @@ export const useToolsServiceExecuteMcpTool = <
       mcpServerName: string;
       requestBody: MCPToolExecuteRequest;
       toolName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ mcpServerName, requestBody, toolName, userId }) =>
+    mutationFn: ({
+      mcpServerName,
+      requestBody,
+      toolName,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       ToolsService.executeMcpTool({
         mcpServerName,
         requestBody,
         toolName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4300,6 +5338,8 @@ export const useToolsServiceExecuteMcpTool = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns GenerateToolOutput Successful Response
  * @throws ApiError
  */
@@ -4314,7 +5354,9 @@ export const useToolsServiceGenerateTool = <
       TError,
       {
         requestBody: GenerateToolInput;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4326,14 +5368,18 @@ export const useToolsServiceGenerateTool = <
     TError,
     {
       requestBody: GenerateToolInput;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.generateTool({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4343,6 +5389,8 @@ export const useToolsServiceGenerateTool = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -4357,7 +5405,9 @@ export const useSourcesServiceCreateSource = <
       TError,
       {
         requestBody: SourceCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4369,14 +5419,18 @@ export const useSourcesServiceCreateSource = <
     TError,
     {
       requestBody: SourceCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       SourcesService.createSource({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4389,6 +5443,8 @@ export const useSourcesServiceCreateSource = <
  * @param data.duplicateHandling How to handle duplicate filenames
  * @param data.name Optional custom name to override the uploaded file's name
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -4406,7 +5462,9 @@ export const useSourcesServiceUploadFileToSource = <
         formData: Body_upload_file_to_source;
         name?: string;
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4421,17 +5479,29 @@ export const useSourcesServiceUploadFileToSource = <
       formData: Body_upload_file_to_source;
       name?: string;
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ duplicateHandling, formData, name, sourceId, userId }) =>
+    mutationFn: ({
+      duplicateHandling,
+      formData,
+      name,
+      sourceId,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       SourcesService.uploadFileToSource({
         duplicateHandling,
         formData,
         name,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4441,6 +5511,8 @@ export const useSourcesServiceUploadFileToSource = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -4455,7 +5527,9 @@ export const useFoldersServiceCreateFolder = <
       TError,
       {
         requestBody: SourceCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4467,14 +5541,18 @@ export const useFoldersServiceCreateFolder = <
     TError,
     {
       requestBody: SourceCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       FoldersService.createFolder({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4487,6 +5565,8 @@ export const useFoldersServiceCreateFolder = <
  * @param data.duplicateHandling How to handle duplicate filenames
  * @param data.name Optional custom name to override the uploaded file's name
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns FileMetadata Successful Response
  * @throws ApiError
  */
@@ -4504,7 +5584,9 @@ export const useFoldersServiceUploadFileToFolder = <
         folderId: string;
         formData: Body_upload_file_to_folder;
         name?: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4519,17 +5601,29 @@ export const useFoldersServiceUploadFileToFolder = <
       folderId: string;
       formData: Body_upload_file_to_folder;
       name?: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ duplicateHandling, folderId, formData, name, userId }) =>
+    mutationFn: ({
+      duplicateHandling,
+      folderId,
+      formData,
+      name,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       FoldersService.uploadFileToFolder({
         duplicateHandling,
         folderId,
         formData,
         name,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4538,8 +5632,10 @@ export const useFoldersServiceUploadFileToFolder = <
  * Create a new agent with the specified configuration.
  * @param data The data for the request.
  * @param data.requestBody
- * @param data.userId
  * @param data.xProject The project slug to associate with the agent (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -4554,8 +5650,10 @@ export const useAgentsServiceCreateAgent = <
       TError,
       {
         requestBody: CreateAgentRequest;
+        userAgent?: string;
         userId?: string;
         xProject?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4567,16 +5665,20 @@ export const useAgentsServiceCreateAgent = <
     TError,
     {
       requestBody: CreateAgentRequest;
+      userAgent?: string;
       userId?: string;
       xProject?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId, xProject }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProject, xProjectId }) =>
       AgentsService.createAgent({
         requestBody,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4586,8 +5688,10 @@ export const useAgentsServiceCreateAgent = <
  * Returns the IDs of all imported agents.
  * @param data The data for the request.
  * @param data.formData
- * @param data.userId
  * @param data.xOverrideEmbeddingModel
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns ImportedAgentsResponse Successful Response
  * @throws ApiError
  */
@@ -4602,8 +5706,10 @@ export const useAgentsServiceImportAgent = <
       TError,
       {
         formData: Body_import_agent;
+        userAgent?: string;
         userId?: string;
         xOverrideEmbeddingModel?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4615,16 +5721,26 @@ export const useAgentsServiceImportAgent = <
     TError,
     {
       formData: Body_import_agent;
+      userAgent?: string;
       userId?: string;
       xOverrideEmbeddingModel?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ formData, userId, xOverrideEmbeddingModel }) =>
+    mutationFn: ({
+      formData,
+      userAgent,
+      userId,
+      xOverrideEmbeddingModel,
+      xProjectId,
+    }) =>
       AgentsService.importAgent({
         formData,
+        userAgent,
         userId,
         xOverrideEmbeddingModel,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4635,6 +5751,8 @@ export const useAgentsServiceImportAgent = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Passage Successful Response
  * @throws ApiError
  */
@@ -4650,7 +5768,9 @@ export const useAgentsServiceCreatePassage = <
       {
         agentId: string;
         requestBody: CreateArchivalMemory;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4663,15 +5783,19 @@ export const useAgentsServiceCreatePassage = <
     {
       agentId: string;
       requestBody: CreateArchivalMemory;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.createPassage({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4683,6 +5807,8 @@ export const useAgentsServiceCreatePassage = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaResponse Successful Response
  * @throws ApiError
  */
@@ -4698,7 +5824,9 @@ export const useAgentsServiceSendMessage = <
       {
         agentId: string;
         requestBody: LettaRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4711,15 +5839,19 @@ export const useAgentsServiceSendMessage = <
     {
       agentId: string;
       requestBody: LettaRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.sendMessage({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4732,6 +5864,8 @@ export const useAgentsServiceSendMessage = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -4747,7 +5881,9 @@ export const useAgentsServiceCreateAgentMessageStream = <
       {
         agentId: string;
         requestBody: LettaStreamingRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4760,15 +5896,19 @@ export const useAgentsServiceCreateAgentMessageStream = <
     {
       agentId: string;
       requestBody: LettaStreamingRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.createAgentMessageStream({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4780,6 +5920,8 @@ export const useAgentsServiceCreateAgentMessageStream = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @param data.requestBody
  * @returns unknown Successful Response
  * @throws ApiError
@@ -4796,7 +5938,9 @@ export const useAgentsServiceCancelAgentRun = <
       {
         agentId: string;
         requestBody?: CancelAgentRunRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4809,15 +5953,19 @@ export const useAgentsServiceCancelAgentRun = <
     {
       agentId: string;
       requestBody?: CancelAgentRunRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.cancelAgentRun({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4829,6 +5977,8 @@ export const useAgentsServiceCancelAgentRun = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns MessageSearchResult Successful Response
  * @throws ApiError
  */
@@ -4843,7 +5993,9 @@ export const useAgentsServiceSearchMessages = <
       TError,
       {
         requestBody: MessageSearchRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4855,14 +6007,18 @@ export const useAgentsServiceSearchMessages = <
     TError,
     {
       requestBody: MessageSearchRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.searchMessages({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4877,6 +6033,8 @@ export const useAgentsServiceSearchMessages = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -4892,7 +6050,9 @@ export const useAgentsServiceCreateAgentMessageAsync = <
       {
         agentId: string;
         requestBody: LettaAsyncRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4905,15 +6065,19 @@ export const useAgentsServiceCreateAgentMessageAsync = <
     {
       agentId: string;
       requestBody: LettaAsyncRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.createAgentMessageAsync({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4928,6 +6092,8 @@ export const useAgentsServiceCreateAgentMessageAsync = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -4943,7 +6109,9 @@ export const useAgentsServicePreviewRawPayload = <
       {
         agentId: string;
         requestBody: LettaRequest | LettaStreamingRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -4956,15 +6124,19 @@ export const useAgentsServicePreviewRawPayload = <
     {
       agentId: string;
       requestBody: LettaRequest | LettaStreamingRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.previewRawPayload({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -4978,6 +6150,8 @@ export const useAgentsServicePreviewRawPayload = <
  * @param data.agentId
  * @param data.maxMessageLength Maximum number of messages to retain after summarization.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -4993,7 +6167,9 @@ export const useAgentsServiceSummarizeAgentConversation = <
       {
         agentId: string;
         maxMessageLength: number;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5006,15 +6182,25 @@ export const useAgentsServiceSummarizeAgentConversation = <
     {
       agentId: string;
       maxMessageLength: number;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, maxMessageLength, userId }) =>
+    mutationFn: ({
+      agentId,
+      maxMessageLength,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       AgentsService.summarizeAgentConversation({
         agentId,
         maxMessageLength,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5023,8 +6209,10 @@ export const useAgentsServiceSummarizeAgentConversation = <
  * Create a new multi-agent group with the specified configuration.
  * @param data The data for the request.
  * @param data.requestBody
- * @param data.userId
  * @param data.xProject The project slug to associate with the group (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -5039,8 +6227,10 @@ export const useGroupsServiceCreateGroup = <
       TError,
       {
         requestBody: GroupCreate;
+        userAgent?: string;
         userId?: string;
         xProject?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5052,16 +6242,20 @@ export const useGroupsServiceCreateGroup = <
     TError,
     {
       requestBody: GroupCreate;
+      userAgent?: string;
       userId?: string;
       xProject?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId, xProject }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProject, xProjectId }) =>
       GroupsService.createGroup({
         requestBody,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5073,6 +6267,8 @@ export const useGroupsServiceCreateGroup = <
  * @param data.groupId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns LettaResponse Successful Response
  * @throws ApiError
  */
@@ -5088,7 +6284,9 @@ export const useGroupsServiceSendGroupMessage = <
       {
         groupId: string;
         requestBody: LettaRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5101,15 +6299,19 @@ export const useGroupsServiceSendGroupMessage = <
     {
       groupId: string;
       requestBody: LettaRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, requestBody, userId }) =>
+    mutationFn: ({ groupId, requestBody, userAgent, userId, xProjectId }) =>
       GroupsService.sendGroupMessage({
         groupId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5122,6 +6324,8 @@ export const useGroupsServiceSendGroupMessage = <
  * @param data.groupId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -5137,7 +6341,9 @@ export const useGroupsServiceSendGroupMessageStreaming = <
       {
         groupId: string;
         requestBody: LettaStreamingRequest;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5150,15 +6356,19 @@ export const useGroupsServiceSendGroupMessageStreaming = <
     {
       groupId: string;
       requestBody: LettaStreamingRequest;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, requestBody, userId }) =>
+    mutationFn: ({ groupId, requestBody, userAgent, userId, xProjectId }) =>
       GroupsService.sendGroupMessageStreaming({
         groupId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5166,8 +6376,10 @@ export const useGroupsServiceSendGroupMessageStreaming = <
  * Create Identity
  * @param data The data for the request.
  * @param data.requestBody
- * @param data.userId
  * @param data.xProject The project slug to associate with the identity (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -5182,8 +6394,10 @@ export const useIdentitiesServiceCreateIdentity = <
       TError,
       {
         requestBody: IdentityCreate;
+        userAgent?: string;
         userId?: string;
         xProject?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5195,16 +6409,20 @@ export const useIdentitiesServiceCreateIdentity = <
     TError,
     {
       requestBody: IdentityCreate;
+      userAgent?: string;
       userId?: string;
       xProject?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId, xProject }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProject, xProjectId }) =>
       IdentitiesService.createIdentity({
         requestBody,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5214,6 +6432,8 @@ export const useIdentitiesServiceCreateIdentity = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -5228,7 +6448,9 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
       TError,
       {
         requestBody: InternalTemplateGroupCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5240,14 +6462,18 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
     TError,
     {
       requestBody: InternalTemplateGroupCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       InternalTemplatesService.createInternalTemplateGroup({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5257,6 +6483,8 @@ export const useInternalTemplatesServiceCreateInternalTemplateGroup = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -5271,7 +6499,9 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
       TError,
       {
         requestBody: InternalTemplateAgentCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5283,14 +6513,18 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
     TError,
     {
       requestBody: InternalTemplateAgentCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       InternalTemplatesService.createInternalTemplateAgent({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5300,6 +6534,8 @@ export const useInternalTemplatesServiceCreateInternalTemplateAgent = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -5314,7 +6550,9 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
       TError,
       {
         requestBody: InternalTemplateBlockCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5326,14 +6564,18 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
     TError,
     {
       requestBody: InternalTemplateBlockCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       InternalTemplatesService.createInternalTemplateBlock({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5342,6 +6584,8 @@ export const useInternalTemplatesServiceCreateInternalTemplateBlock = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -5356,7 +6600,9 @@ export const useBlocksServiceCreateBlock = <
       TError,
       {
         requestBody: CreateBlock;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5368,14 +6614,18 @@ export const useBlocksServiceCreateBlock = <
     TError,
     {
       requestBody: CreateBlock;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       BlocksService.createBlock({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5384,6 +6634,8 @@ export const useBlocksServiceCreateBlock = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -5398,7 +6650,9 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
       TError,
       {
         requestBody: SandboxConfigCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5410,14 +6664,18 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
     TError,
     {
       requestBody: SandboxConfigCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       SandboxConfigService.createSandboxConfigV1SandboxConfigPost({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5425,6 +6683,8 @@ export const useSandboxConfigServiceCreateSandboxConfigV1SandboxConfigPost = <
  * Create Default E2B Sandbox Config
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -5439,7 +6699,9 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
         TData,
         TError,
         {
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -5450,13 +6712,15 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
       TData,
       TError,
       {
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ userId }) =>
+      mutationFn: ({ userAgent, userId, xProjectId }) =>
         SandboxConfigService.createDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPost(
-          { userId },
+          { userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -5464,6 +6728,8 @@ export const useSandboxConfigServiceCreateDefaultE2bSandboxConfigV1SandboxConfig
  * Create Default Local Sandbox Config
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -5478,7 +6744,9 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
         TData,
         TError,
         {
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -5489,13 +6757,15 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
       TData,
       TError,
       {
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ userId }) =>
+      mutationFn: ({ userAgent, userId, xProjectId }) =>
         SandboxConfigService.createDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPost(
-          { userId },
+          { userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -5505,6 +6775,8 @@ export const useSandboxConfigServiceCreateDefaultLocalSandboxConfigV1SandboxConf
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -5520,7 +6792,9 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
         TError,
         {
           requestBody: LocalSandboxConfig;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -5532,13 +6806,15 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
       TError,
       {
         requestBody: LocalSandboxConfig;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ requestBody, userId }) =>
+      mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
         SandboxConfigService.createCustomLocalSandboxConfigV1SandboxConfigLocalPost(
-          { requestBody, userId },
+          { requestBody, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -5548,6 +6824,8 @@ export const useSandboxConfigServiceCreateCustomLocalSandboxConfigV1SandboxConfi
  * Deletes and recreates the venv, then reinstalls required dependencies.
  * @param data The data for the request.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -5562,7 +6840,9 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
         TData,
         TError,
         {
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -5573,13 +6853,15 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
       TData,
       TError,
       {
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ userId }) =>
+      mutationFn: ({ userAgent, userId, xProjectId }) =>
         SandboxConfigService.forceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPost(
-          { userId },
+          { userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -5589,6 +6871,8 @@ export const useSandboxConfigServiceForceRecreateLocalSandboxVenvV1SandboxConfig
  * @param data.sandboxConfigId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -5605,7 +6889,9 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
         {
           requestBody: SandboxEnvironmentVariableCreate;
           sandboxConfigId: string;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -5618,13 +6904,21 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
       {
         requestBody: SandboxEnvironmentVariableCreate;
         sandboxConfigId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ requestBody, sandboxConfigId, userId }) =>
+      mutationFn: ({
+        requestBody,
+        sandboxConfigId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) =>
         SandboxConfigService.createSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariablePost(
-          { requestBody, sandboxConfigId, userId },
+          { requestBody, sandboxConfigId, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -5634,6 +6928,8 @@ export const useSandboxConfigServiceCreateSandboxEnvVarV1SandboxConfigSandboxCon
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -5648,7 +6944,9 @@ export const useProvidersServiceCreateProvider = <
       TError,
       {
         requestBody: ProviderCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5660,14 +6958,18 @@ export const useProvidersServiceCreateProvider = <
     TError,
     {
       requestBody: ProviderCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ProvidersService.createProvider({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5715,6 +7017,8 @@ export const useProvidersServiceCheckProvider = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @param data.requestBody
  * @returns unknown Successful response
  * @throws ApiError
@@ -5731,7 +7035,9 @@ export const useRunsServiceRetrieveStream = <
       {
         requestBody?: RetrieveStreamRequest;
         runId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5744,15 +7050,19 @@ export const useRunsServiceRetrieveStream = <
     {
       requestBody?: RetrieveStreamRequest;
       runId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, runId, userId }) =>
+    mutationFn: ({ requestBody, runId, userAgent, userId, xProjectId }) =>
       RunsService.retrieveStream({
         requestBody,
         runId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5841,6 +7151,8 @@ export const useAdminServiceCreateOrganization = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns BatchJob Successful Response
  * @throws ApiError
  */
@@ -5855,7 +7167,9 @@ export const useMessagesServiceCreateBatch = <
       TError,
       {
         requestBody: CreateBatch;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5867,14 +7181,18 @@ export const useMessagesServiceCreateBatch = <
     TError,
     {
       requestBody: CreateBatch;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       MessagesService.createBatch({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -5884,6 +7202,8 @@ export const useMessagesServiceCreateBatch = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful response
  * @throws ApiError
  */
@@ -5899,7 +7219,9 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
       {
         agentId: string;
         requestBody: { [key: string]: unknown };
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -5912,15 +7234,19 @@ export const useVoiceServiceCreateVoiceChatCompletions = <
     {
       agentId: string;
       requestBody: { [key: string]: unknown };
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       VoiceService.createVoiceChatCompletions({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6047,6 +7373,8 @@ export const useAuthServiceAuthenticateUserV1AuthPost = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -6061,7 +7389,9 @@ export const useToolsServiceUpsertTool = <
       TError,
       {
         requestBody: ToolCreate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6073,14 +7403,18 @@ export const useToolsServiceUpsertTool = <
     TError,
     {
       requestBody: ToolCreate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.upsertTool({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6090,6 +7424,8 @@ export const useToolsServiceUpsertTool = <
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6107,7 +7443,9 @@ export const useToolsServiceAddMcpServer = <
           | StdioServerConfig
           | SSEServerConfig
           | StreamableHTTPServerConfig;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6122,14 +7460,18 @@ export const useToolsServiceAddMcpServer = <
         | StdioServerConfig
         | SSEServerConfig
         | StreamableHTTPServerConfig;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProjectId }) =>
       ToolsService.addMcpServer({
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6137,8 +7479,10 @@ export const useToolsServiceAddMcpServer = <
  * Upsert Identity
  * @param data The data for the request.
  * @param data.requestBody
- * @param data.userId
  * @param data.xProject The project slug to associate with the identity (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -6153,8 +7497,10 @@ export const useIdentitiesServiceUpsertIdentity = <
       TError,
       {
         requestBody: IdentityUpsert;
+        userAgent?: string;
         userId?: string;
         xProject?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6166,16 +7512,20 @@ export const useIdentitiesServiceUpsertIdentity = <
     TError,
     {
       requestBody: IdentityUpsert;
+      userAgent?: string;
       userId?: string;
       xProject?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, userId, xProject }) =>
+    mutationFn: ({ requestBody, userAgent, userId, xProject, xProjectId }) =>
       IdentitiesService.upsertIdentity({
         requestBody,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6185,6 +7535,8 @@ export const useIdentitiesServiceUpsertIdentity = <
  * @param data.identityId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6200,7 +7552,9 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
       {
         identityId: string;
         requestBody: IdentityProperty[];
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6213,15 +7567,19 @@ export const useIdentitiesServiceUpsertIdentityProperties = <
     {
       identityId: string;
       requestBody: IdentityProperty[];
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ identityId, requestBody, userId }) =>
+    mutationFn: ({ identityId, requestBody, userAgent, userId, xProjectId }) =>
       IdentitiesService.upsertIdentityProperties({
         identityId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6306,6 +7664,8 @@ export const useUsersServiceUpdateUser = <
  * @param data.toolId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Tool Successful Response
  * @throws ApiError
  */
@@ -6321,7 +7681,9 @@ export const useToolsServiceModifyTool = <
       {
         requestBody: ToolUpdate;
         toolId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6334,15 +7696,19 @@ export const useToolsServiceModifyTool = <
     {
       requestBody: ToolUpdate;
       toolId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, toolId, userId }) =>
+    mutationFn: ({ requestBody, toolId, userAgent, userId, xProjectId }) =>
       ToolsService.modifyTool({
         requestBody,
         toolId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6353,6 +7719,8 @@ export const useToolsServiceModifyTool = <
  * @param data.mcpServerName
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6371,7 +7739,9 @@ export const useToolsServiceUpdateMcpServer = <
           | UpdateStdioMCPServer
           | UpdateSSEMCPServer
           | UpdateStreamableHTTPMCPServer;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6387,15 +7757,25 @@ export const useToolsServiceUpdateMcpServer = <
         | UpdateStdioMCPServer
         | UpdateSSEMCPServer
         | UpdateStreamableHTTPMCPServer;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ mcpServerName, requestBody, userId }) =>
+    mutationFn: ({
+      mcpServerName,
+      requestBody,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       ToolsService.updateMcpServer({
         mcpServerName,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6406,6 +7786,8 @@ export const useToolsServiceUpdateMcpServer = <
  * @param data.sourceId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Source Successful Response
  * @throws ApiError
  */
@@ -6421,7 +7803,9 @@ export const useSourcesServiceModifySource = <
       {
         requestBody: SourceUpdate;
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6434,15 +7818,19 @@ export const useSourcesServiceModifySource = <
     {
       requestBody: SourceUpdate;
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, sourceId, userId }) =>
+    mutationFn: ({ requestBody, sourceId, userAgent, userId, xProjectId }) =>
       SourcesService.modifySource({
         requestBody,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6453,6 +7841,8 @@ export const useSourcesServiceModifySource = <
  * @param data.folderId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Folder Successful Response
  * @throws ApiError
  */
@@ -6468,7 +7858,9 @@ export const useFoldersServiceModifyFolder = <
       {
         folderId: string;
         requestBody: SourceUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6481,15 +7873,19 @@ export const useFoldersServiceModifyFolder = <
     {
       folderId: string;
       requestBody: SourceUpdate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ folderId, requestBody, userId }) =>
+    mutationFn: ({ folderId, requestBody, userAgent, userId, xProjectId }) =>
       FoldersService.modifyFolder({
         folderId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6500,6 +7896,8 @@ export const useFoldersServiceModifyFolder = <
  * @param data.agentId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6515,7 +7913,9 @@ export const useAgentsServiceModifyAgent = <
       {
         agentId: string;
         requestBody: UpdateAgent;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6528,15 +7928,19 @@ export const useAgentsServiceModifyAgent = <
     {
       agentId: string;
       requestBody: UpdateAgent;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requestBody, userId }) =>
+    mutationFn: ({ agentId, requestBody, userAgent, userId, xProjectId }) =>
       AgentsService.modifyAgent({
         agentId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6547,6 +7951,8 @@ export const useAgentsServiceModifyAgent = <
  * @param data.agentId
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6562,7 +7968,9 @@ export const useAgentsServiceAttachTool = <
       {
         agentId: string;
         toolId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6575,15 +7983,19 @@ export const useAgentsServiceAttachTool = <
     {
       agentId: string;
       toolId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, toolId, userId }) =>
+    mutationFn: ({ agentId, toolId, userAgent, userId, xProjectId }) =>
       AgentsService.attachTool({
         agentId,
         toolId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6594,6 +8006,8 @@ export const useAgentsServiceAttachTool = <
  * @param data.agentId
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6609,7 +8023,9 @@ export const useAgentsServiceDetachTool = <
       {
         agentId: string;
         toolId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6622,15 +8038,19 @@ export const useAgentsServiceDetachTool = <
     {
       agentId: string;
       toolId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, toolId, userId }) =>
+    mutationFn: ({ agentId, toolId, userAgent, userId, xProjectId }) =>
       AgentsService.detachTool({
         agentId,
         toolId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6642,6 +8062,8 @@ export const useAgentsServiceDetachTool = <
  * @param data.toolName
  * @param data.requiresApproval
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6658,7 +8080,9 @@ export const useAgentsServiceModifyApproval = <
         agentId: string;
         requiresApproval: boolean;
         toolName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6672,16 +8096,27 @@ export const useAgentsServiceModifyApproval = <
       agentId: string;
       requiresApproval: boolean;
       toolName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, requiresApproval, toolName, userId }) =>
+    mutationFn: ({
+      agentId,
+      requiresApproval,
+      toolName,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       AgentsService.modifyApproval({
         agentId,
         requiresApproval,
         toolName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6692,6 +8127,8 @@ export const useAgentsServiceModifyApproval = <
  * @param data.agentId
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6707,7 +8144,9 @@ export const useAgentsServiceAttachSourceToAgent = <
       {
         agentId: string;
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6720,15 +8159,19 @@ export const useAgentsServiceAttachSourceToAgent = <
     {
       agentId: string;
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, sourceId, userId }) =>
+    mutationFn: ({ agentId, sourceId, userAgent, userId, xProjectId }) =>
       AgentsService.attachSourceToAgent({
         agentId,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6739,6 +8182,8 @@ export const useAgentsServiceAttachSourceToAgent = <
  * @param data.agentId
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6754,7 +8199,9 @@ export const useAgentsServiceAttachFolderToAgent = <
       {
         agentId: string;
         folderId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6767,15 +8214,19 @@ export const useAgentsServiceAttachFolderToAgent = <
     {
       agentId: string;
       folderId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, folderId, userId }) =>
+    mutationFn: ({ agentId, folderId, userAgent, userId, xProjectId }) =>
       AgentsService.attachFolderToAgent({
         agentId,
         folderId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6786,6 +8237,8 @@ export const useAgentsServiceAttachFolderToAgent = <
  * @param data.agentId
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6801,7 +8254,9 @@ export const useAgentsServiceDetachSourceFromAgent = <
       {
         agentId: string;
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6814,15 +8269,19 @@ export const useAgentsServiceDetachSourceFromAgent = <
     {
       agentId: string;
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, sourceId, userId }) =>
+    mutationFn: ({ agentId, sourceId, userAgent, userId, xProjectId }) =>
       AgentsService.detachSourceFromAgent({
         agentId,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6833,6 +8292,8 @@ export const useAgentsServiceDetachSourceFromAgent = <
  * @param data.agentId
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -6848,7 +8309,9 @@ export const useAgentsServiceDetachFolderFromAgent = <
       {
         agentId: string;
         folderId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6861,15 +8324,19 @@ export const useAgentsServiceDetachFolderFromAgent = <
     {
       agentId: string;
       folderId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, folderId, userId }) =>
+    mutationFn: ({ agentId, folderId, userAgent, userId, xProjectId }) =>
       AgentsService.detachFolderFromAgent({
         agentId,
         folderId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6882,6 +8349,8 @@ export const useAgentsServiceDetachFolderFromAgent = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -6896,7 +8365,9 @@ export const useAgentsServiceCloseAllOpenFiles = <
       TError,
       {
         agentId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6908,14 +8379,18 @@ export const useAgentsServiceCloseAllOpenFiles = <
     TError,
     {
       agentId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, userId }) =>
+    mutationFn: ({ agentId, userAgent, userId, xProjectId }) =>
       AgentsService.closeAllOpenFiles({
         agentId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6930,6 +8405,8 @@ export const useAgentsServiceCloseAllOpenFiles = <
  * @param data.agentId
  * @param data.fileId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
@@ -6945,7 +8422,9 @@ export const useAgentsServiceOpenFile = <
       {
         agentId: string;
         fileId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -6958,15 +8437,19 @@ export const useAgentsServiceOpenFile = <
     {
       agentId: string;
       fileId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, fileId, userId }) =>
+    mutationFn: ({ agentId, fileId, userAgent, userId, xProjectId }) =>
       AgentsService.openFile({
         agentId,
         fileId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -6980,6 +8463,8 @@ export const useAgentsServiceOpenFile = <
  * @param data.agentId
  * @param data.fileId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -6995,7 +8480,9 @@ export const useAgentsServiceCloseFile = <
       {
         agentId: string;
         fileId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7008,15 +8495,19 @@ export const useAgentsServiceCloseFile = <
     {
       agentId: string;
       fileId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, fileId, userId }) =>
+    mutationFn: ({ agentId, fileId, userAgent, userId, xProjectId }) =>
       AgentsService.closeFile({
         agentId,
         fileId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7028,6 +8519,8 @@ export const useAgentsServiceCloseFile = <
  * @param data.blockLabel
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -7044,7 +8537,9 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
         agentId: string;
         blockLabel: string;
         requestBody: BlockUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7058,16 +8553,27 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
       agentId: string;
       blockLabel: string;
       requestBody: BlockUpdate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, blockLabel, requestBody, userId }) =>
+    mutationFn: ({
+      agentId,
+      blockLabel,
+      requestBody,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       AgentsService.modifyCoreMemoryBlock({
         agentId,
         blockLabel,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7078,6 +8584,8 @@ export const useAgentsServiceModifyCoreMemoryBlock = <
  * @param data.agentId
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -7093,7 +8601,9 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
       {
         agentId: string;
         blockId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7106,15 +8616,19 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
     {
       agentId: string;
       blockId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, blockId, userId }) =>
+    mutationFn: ({ agentId, blockId, userAgent, userId, xProjectId }) =>
       AgentsService.attachCoreMemoryBlock({
         agentId,
         blockId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7125,6 +8639,8 @@ export const useAgentsServiceAttachCoreMemoryBlock = <
  * @param data.agentId
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -7140,7 +8656,9 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
       {
         agentId: string;
         blockId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7153,15 +8671,19 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
     {
       agentId: string;
       blockId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, blockId, userId }) =>
+    mutationFn: ({ agentId, blockId, userAgent, userId, xProjectId }) =>
       AgentsService.detachCoreMemoryBlock({
         agentId,
         blockId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7173,6 +8695,8 @@ export const useAgentsServiceDetachCoreMemoryBlock = <
  * @param data.messageId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7193,7 +8717,9 @@ export const useAgentsServiceModifyMessage = <
           | UpdateUserMessage
           | UpdateReasoningMessage
           | UpdateAssistantMessage;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7211,16 +8737,27 @@ export const useAgentsServiceModifyMessage = <
         | UpdateUserMessage
         | UpdateReasoningMessage
         | UpdateAssistantMessage;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, messageId, requestBody, userId }) =>
+    mutationFn: ({
+      agentId,
+      messageId,
+      requestBody,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       AgentsService.modifyMessage({
         agentId,
         messageId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7231,6 +8768,8 @@ export const useAgentsServiceModifyMessage = <
  * @param data.agentId
  * @param data.addDefaultInitialMessages If true, adds the default initial messages after resetting.
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns AgentState Successful Response
  * @throws ApiError
  */
@@ -7246,7 +8785,9 @@ export const useAgentsServiceResetMessages = <
       {
         addDefaultInitialMessages?: boolean;
         agentId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7259,15 +8800,25 @@ export const useAgentsServiceResetMessages = <
     {
       addDefaultInitialMessages?: boolean;
       agentId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ addDefaultInitialMessages, agentId, userId }) =>
+    mutationFn: ({
+      addDefaultInitialMessages,
+      agentId,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       AgentsService.resetMessages({
         addDefaultInitialMessages,
         agentId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7277,8 +8828,10 @@ export const useAgentsServiceResetMessages = <
  * @param data The data for the request.
  * @param data.groupId
  * @param data.requestBody
- * @param data.userId
  * @param data.xProject The project slug to associate with the group (cloud only).
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Group Successful Response
  * @throws ApiError
  */
@@ -7294,8 +8847,10 @@ export const useGroupsServiceModifyGroup = <
       {
         groupId: string;
         requestBody: GroupUpdate;
+        userAgent?: string;
         userId?: string;
         xProject?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7308,17 +8863,28 @@ export const useGroupsServiceModifyGroup = <
     {
       groupId: string;
       requestBody: GroupUpdate;
+      userAgent?: string;
       userId?: string;
       xProject?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, requestBody, userId, xProject }) =>
+    mutationFn: ({
+      groupId,
+      requestBody,
+      userAgent,
+      userId,
+      xProject,
+      xProjectId,
+    }) =>
       GroupsService.modifyGroup({
         groupId,
         requestBody,
+        userAgent,
         userId,
         xProject,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7330,6 +8896,8 @@ export const useGroupsServiceModifyGroup = <
  * @param data.messageId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7350,7 +8918,9 @@ export const useGroupsServiceModifyGroupMessage = <
           | UpdateUserMessage
           | UpdateReasoningMessage
           | UpdateAssistantMessage;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7368,16 +8938,27 @@ export const useGroupsServiceModifyGroupMessage = <
         | UpdateUserMessage
         | UpdateReasoningMessage
         | UpdateAssistantMessage;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, messageId, requestBody, userId }) =>
+    mutationFn: ({
+      groupId,
+      messageId,
+      requestBody,
+      userAgent,
+      userId,
+      xProjectId,
+    }) =>
       GroupsService.modifyGroupMessage({
         groupId,
         messageId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7387,6 +8968,8 @@ export const useGroupsServiceModifyGroupMessage = <
  * @param data The data for the request.
  * @param data.groupId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7401,7 +8984,9 @@ export const useGroupsServiceResetGroupMessages = <
       TError,
       {
         groupId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7413,14 +8998,18 @@ export const useGroupsServiceResetGroupMessages = <
     TError,
     {
       groupId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, userId }) =>
+    mutationFn: ({ groupId, userAgent, userId, xProjectId }) =>
       GroupsService.resetGroupMessages({
         groupId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7430,6 +9019,8 @@ export const useGroupsServiceResetGroupMessages = <
  * @param data.identityId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Identity Successful Response
  * @throws ApiError
  */
@@ -7445,7 +9036,9 @@ export const useIdentitiesServiceUpdateIdentity = <
       {
         identityId: string;
         requestBody: IdentityUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7458,15 +9051,19 @@ export const useIdentitiesServiceUpdateIdentity = <
     {
       identityId: string;
       requestBody: IdentityUpdate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ identityId, requestBody, userId }) =>
+    mutationFn: ({ identityId, requestBody, userAgent, userId, xProjectId }) =>
       IdentitiesService.updateIdentity({
         identityId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7476,6 +9073,8 @@ export const useIdentitiesServiceUpdateIdentity = <
  * @param data.blockId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Block Successful Response
  * @throws ApiError
  */
@@ -7491,7 +9090,9 @@ export const useBlocksServiceModifyBlock = <
       {
         blockId: string;
         requestBody: BlockUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7504,15 +9105,19 @@ export const useBlocksServiceModifyBlock = <
     {
       blockId: string;
       requestBody: BlockUpdate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ blockId, requestBody, userId }) =>
+    mutationFn: ({ blockId, requestBody, userAgent, userId, xProjectId }) =>
       BlocksService.modifyBlock({
         blockId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7525,6 +9130,8 @@ export const useBlocksServiceModifyBlock = <
  * @param data The data for the request.
  * @param data.jobId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -7539,7 +9146,9 @@ export const useJobsServiceCancelJob = <
       TError,
       {
         jobId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7551,12 +9160,19 @@ export const useJobsServiceCancelJob = <
     TError,
     {
       jobId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ jobId, userId }) =>
-      JobsService.cancelJob({ jobId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ jobId, userAgent, userId, xProjectId }) =>
+      JobsService.cancelJob({
+        jobId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -7565,6 +9181,8 @@ export const useJobsServiceCancelJob = <
  * @param data.sandboxConfigId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxConfig Successful Response
  * @throws ApiError
  */
@@ -7581,7 +9199,9 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
         {
           requestBody: SandboxConfigUpdate;
           sandboxConfigId: string;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -7594,13 +9214,21 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
       {
         requestBody: SandboxConfigUpdate;
         sandboxConfigId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ requestBody, sandboxConfigId, userId }) =>
+      mutationFn: ({
+        requestBody,
+        sandboxConfigId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) =>
         SandboxConfigService.updateSandboxConfigV1SandboxConfigSandboxConfigIdPatch(
-          { requestBody, sandboxConfigId, userId },
+          { requestBody, sandboxConfigId, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -7610,6 +9238,8 @@ export const useSandboxConfigServiceUpdateSandboxConfigV1SandboxConfigSandboxCon
  * @param data.envVarId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns SandboxEnvironmentVariable Successful Response
  * @throws ApiError
  */
@@ -7626,7 +9256,9 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
         {
           envVarId: string;
           requestBody: SandboxEnvironmentVariableUpdate;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -7639,13 +9271,15 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
       {
         envVarId: string;
         requestBody: SandboxEnvironmentVariableUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ envVarId, requestBody, userId }) =>
+      mutationFn: ({ envVarId, requestBody, userAgent, userId, xProjectId }) =>
         SandboxConfigService.updateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatch(
-          { envVarId, requestBody, userId },
+          { envVarId, requestBody, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -7656,6 +9290,8 @@ export const useSandboxConfigServiceUpdateSandboxEnvVarV1SandboxConfigEnvironmen
  * @param data.providerId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Provider Successful Response
  * @throws ApiError
  */
@@ -7671,7 +9307,9 @@ export const useProvidersServiceModifyProvider = <
       {
         providerId: string;
         requestBody: ProviderUpdate;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7684,30 +9322,36 @@ export const useProvidersServiceModifyProvider = <
     {
       providerId: string;
       requestBody: ProviderUpdate;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ providerId, requestBody, userId }) =>
+    mutationFn: ({ providerId, requestBody, userAgent, userId, xProjectId }) =>
       ProvidersService.modifyProvider({
         providerId,
         requestBody,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
 /**
- * Add Feedback
- * Add feedback to a step.
+ * Modify Feedback For Step
+ * Modify feedback for a given step.
  * @param data The data for the request.
  * @param data.stepId
  * @param data.requestBody
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
-export const useStepsServiceAddFeedback = <
-  TData = Common.StepsServiceAddFeedbackMutationResult,
+export const useStepsServiceModifyFeedbackForStep = <
+  TData = Common.StepsServiceModifyFeedbackForStepMutationResult,
   TError = unknown,
   TContext = unknown,
 >(
@@ -7716,9 +9360,11 @@ export const useStepsServiceAddFeedback = <
       TData,
       TError,
       {
-        requestBody: AddFeedbackRequest;
+        requestBody: ModifyFeedbackRequest;
         stepId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7729,17 +9375,21 @@ export const useStepsServiceAddFeedback = <
     TData,
     TError,
     {
-      requestBody: AddFeedbackRequest;
+      requestBody: ModifyFeedbackRequest;
       stepId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ requestBody, stepId, userId }) =>
-      StepsService.addFeedback({
+    mutationFn: ({ requestBody, stepId, userAgent, userId, xProjectId }) =>
+      StepsService.modifyFeedbackForStep({
         requestBody,
         stepId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7750,6 +9400,8 @@ export const useStepsServiceAddFeedback = <
  * @param data.stepId
  * @param data.transactionId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Step Successful Response
  * @throws ApiError
  */
@@ -7765,7 +9417,9 @@ export const useStepsServiceUpdateStepTransactionId = <
       {
         stepId: string;
         transactionId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7778,15 +9432,19 @@ export const useStepsServiceUpdateStepTransactionId = <
     {
       stepId: string;
       transactionId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ stepId, transactionId, userId }) =>
+    mutationFn: ({ stepId, transactionId, userAgent, userId, xProjectId }) =>
       StepsService.updateStepTransactionId({
         stepId,
         transactionId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7838,6 +9496,8 @@ export const useAdminServiceUpdateOrganization = <
  * @param data The data for the request.
  * @param data.batchId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7852,7 +9512,9 @@ export const useMessagesServiceCancelBatch = <
       TError,
       {
         batchId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7864,14 +9526,18 @@ export const useMessagesServiceCancelBatch = <
     TError,
     {
       batchId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ batchId, userId }) =>
+    mutationFn: ({ batchId, userAgent, userId, xProjectId }) =>
       MessagesService.cancelBatch({
         batchId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -7923,6 +9589,8 @@ export const useOrganizationServiceUpdateOrganization = <
  * @param data The data for the request.
  * @param data.toolId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7937,7 +9605,9 @@ export const useToolsServiceDeleteTool = <
       TError,
       {
         toolId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7949,12 +9619,19 @@ export const useToolsServiceDeleteTool = <
     TError,
     {
       toolId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ toolId, userId }) =>
-      ToolsService.deleteTool({ toolId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ toolId, userAgent, userId, xProjectId }) =>
+      ToolsService.deleteTool({
+        toolId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -7963,6 +9640,8 @@ export const useToolsServiceDeleteTool = <
  * @param data The data for the request.
  * @param data.mcpServerName
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -7977,7 +9656,9 @@ export const useToolsServiceDeleteMcpServer = <
       TError,
       {
         mcpServerName: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -7989,14 +9670,18 @@ export const useToolsServiceDeleteMcpServer = <
     TError,
     {
       mcpServerName: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ mcpServerName, userId }) =>
+    mutationFn: ({ mcpServerName, userAgent, userId, xProjectId }) =>
       ToolsService.deleteMcpServer({
         mcpServerName,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8006,6 +9691,8 @@ export const useToolsServiceDeleteMcpServer = <
  * @param data The data for the request.
  * @param data.sourceId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8020,7 +9707,9 @@ export const useSourcesServiceDeleteSource = <
       TError,
       {
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8032,14 +9721,18 @@ export const useSourcesServiceDeleteSource = <
     TError,
     {
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ sourceId, userId }) =>
+    mutationFn: ({ sourceId, userAgent, userId, xProjectId }) =>
       SourcesService.deleteSource({
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8050,6 +9743,8 @@ export const useSourcesServiceDeleteSource = <
  * @param data.sourceId
  * @param data.fileId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -8065,7 +9760,9 @@ export const useSourcesServiceDeleteFileFromSource = <
       {
         fileId: string;
         sourceId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8078,15 +9775,19 @@ export const useSourcesServiceDeleteFileFromSource = <
     {
       fileId: string;
       sourceId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ fileId, sourceId, userId }) =>
+    mutationFn: ({ fileId, sourceId, userAgent, userId, xProjectId }) =>
       SourcesService.deleteFileFromSource({
         fileId,
         sourceId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8096,6 +9797,8 @@ export const useSourcesServiceDeleteFileFromSource = <
  * @param data The data for the request.
  * @param data.folderId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8110,7 +9813,9 @@ export const useFoldersServiceDeleteFolder = <
       TError,
       {
         folderId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8122,14 +9827,18 @@ export const useFoldersServiceDeleteFolder = <
     TError,
     {
       folderId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ folderId, userId }) =>
+    mutationFn: ({ folderId, userAgent, userId, xProjectId }) =>
       FoldersService.deleteFolder({
         folderId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8140,6 +9849,8 @@ export const useFoldersServiceDeleteFolder = <
  * @param data.folderId
  * @param data.fileId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -8155,7 +9866,9 @@ export const useFoldersServiceDeleteFileFromFolder = <
       {
         fileId: string;
         folderId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8168,15 +9881,19 @@ export const useFoldersServiceDeleteFileFromFolder = <
     {
       fileId: string;
       folderId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ fileId, folderId, userId }) =>
+    mutationFn: ({ fileId, folderId, userAgent, userId, xProjectId }) =>
       FoldersService.deleteFileFromFolder({
         fileId,
         folderId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8186,6 +9903,8 @@ export const useFoldersServiceDeleteFileFromFolder = <
  * @param data The data for the request.
  * @param data.agentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8200,7 +9919,9 @@ export const useAgentsServiceDeleteAgent = <
       TError,
       {
         agentId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8212,14 +9933,18 @@ export const useAgentsServiceDeleteAgent = <
     TError,
     {
       agentId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, userId }) =>
+    mutationFn: ({ agentId, userAgent, userId, xProjectId }) =>
       AgentsService.deleteAgent({
         agentId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8230,6 +9955,8 @@ export const useAgentsServiceDeleteAgent = <
  * @param data.agentId
  * @param data.memoryId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8245,7 +9972,9 @@ export const useAgentsServiceDeletePassage = <
       {
         agentId: string;
         memoryId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8258,15 +9987,19 @@ export const useAgentsServiceDeletePassage = <
     {
       agentId: string;
       memoryId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ agentId, memoryId, userId }) =>
+    mutationFn: ({ agentId, memoryId, userAgent, userId, xProjectId }) =>
       AgentsService.deletePassage({
         agentId,
         memoryId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8276,6 +10009,8 @@ export const useAgentsServiceDeletePassage = <
  * @param data The data for the request.
  * @param data.groupId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8290,7 +10025,9 @@ export const useGroupsServiceDeleteGroup = <
       TError,
       {
         groupId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8302,14 +10039,18 @@ export const useGroupsServiceDeleteGroup = <
     TError,
     {
       groupId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ groupId, userId }) =>
+    mutationFn: ({ groupId, userAgent, userId, xProjectId }) =>
       GroupsService.deleteGroup({
         groupId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8319,6 +10060,8 @@ export const useGroupsServiceDeleteGroup = <
  * @param data The data for the request.
  * @param data.identityId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8333,7 +10076,9 @@ export const useIdentitiesServiceDeleteIdentity = <
       TError,
       {
         identityId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8345,14 +10090,18 @@ export const useIdentitiesServiceDeleteIdentity = <
     TError,
     {
       identityId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ identityId, userId }) =>
+    mutationFn: ({ identityId, userAgent, userId, xProjectId }) =>
       IdentitiesService.deleteIdentity({
         identityId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8363,6 +10112,8 @@ export const useIdentitiesServiceDeleteIdentity = <
  * @param data The data for the request.
  * @param data.deploymentId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns DeleteDeploymentResponse Successful Response
  * @throws ApiError
  */
@@ -8377,7 +10128,9 @@ export const useInternalTemplatesServiceDeleteDeployment = <
       TError,
       {
         deploymentId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8389,14 +10142,18 @@ export const useInternalTemplatesServiceDeleteDeployment = <
     TError,
     {
       deploymentId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ deploymentId, userId }) =>
+    mutationFn: ({ deploymentId, userAgent, userId, xProjectId }) =>
       InternalTemplatesService.deleteDeployment({
         deploymentId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8405,6 +10162,8 @@ export const useInternalTemplatesServiceDeleteDeployment = <
  * @param data The data for the request.
  * @param data.blockId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8419,7 +10178,9 @@ export const useBlocksServiceDeleteBlock = <
       TError,
       {
         blockId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8431,14 +10192,18 @@ export const useBlocksServiceDeleteBlock = <
     TError,
     {
       blockId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ blockId, userId }) =>
+    mutationFn: ({ blockId, userAgent, userId, xProjectId }) =>
       BlocksService.deleteBlock({
         blockId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8448,6 +10213,8 @@ export const useBlocksServiceDeleteBlock = <
  * @param data The data for the request.
  * @param data.jobId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Job Successful Response
  * @throws ApiError
  */
@@ -8462,7 +10229,9 @@ export const useJobsServiceDeleteJob = <
       TError,
       {
         jobId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8474,12 +10243,19 @@ export const useJobsServiceDeleteJob = <
     TError,
     {
       jobId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ jobId, userId }) =>
-      JobsService.deleteJob({ jobId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ jobId, userAgent, userId, xProjectId }) =>
+      JobsService.deleteJob({
+        jobId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
@@ -8487,6 +10263,8 @@ export const useJobsServiceDeleteJob = <
  * @param data The data for the request.
  * @param data.sandboxConfigId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -8502,7 +10280,9 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
         TError,
         {
           sandboxConfigId: string;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -8514,13 +10294,15 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
       TError,
       {
         sandboxConfigId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ sandboxConfigId, userId }) =>
+      mutationFn: ({ sandboxConfigId, userAgent, userId, xProjectId }) =>
         SandboxConfigService.deleteSandboxConfigV1SandboxConfigSandboxConfigIdDelete(
-          { sandboxConfigId, userId },
+          { sandboxConfigId, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -8529,6 +10311,8 @@ export const useSandboxConfigServiceDeleteSandboxConfigV1SandboxConfigSandboxCon
  * @param data The data for the request.
  * @param data.envVarId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns void Successful Response
  * @throws ApiError
  */
@@ -8544,7 +10328,9 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
         TError,
         {
           envVarId: string;
+          userAgent?: string;
           userId?: string;
+          xProjectId?: string;
         },
         TContext
       >,
@@ -8556,13 +10342,15 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
       TError,
       {
         envVarId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >({
-      mutationFn: ({ envVarId, userId }) =>
+      mutationFn: ({ envVarId, userAgent, userId, xProjectId }) =>
         SandboxConfigService.deleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDelete(
-          { envVarId, userId },
+          { envVarId, userAgent, userId, xProjectId },
         ) as unknown as Promise<TData>,
       ...options,
     });
@@ -8572,6 +10360,8 @@ export const useSandboxConfigServiceDeleteSandboxEnvVarV1SandboxConfigEnvironmen
  * @param data The data for the request.
  * @param data.providerId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns unknown Successful Response
  * @throws ApiError
  */
@@ -8586,7 +10376,9 @@ export const useProvidersServiceDeleteProvider = <
       TError,
       {
         providerId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8598,14 +10390,18 @@ export const useProvidersServiceDeleteProvider = <
     TError,
     {
       providerId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ providerId, userId }) =>
+    mutationFn: ({ providerId, userAgent, userId, xProjectId }) =>
       ProvidersService.deleteProvider({
         providerId,
+        userAgent,
         userId,
+        xProjectId,
       }) as unknown as Promise<TData>,
     ...options,
   });
@@ -8615,6 +10411,8 @@ export const useProvidersServiceDeleteProvider = <
  * @param data The data for the request.
  * @param data.runId
  * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
  * @returns Run Successful Response
  * @throws ApiError
  */
@@ -8629,7 +10427,9 @@ export const useRunsServiceDeleteRun = <
       TError,
       {
         runId: string;
+        userAgent?: string;
         userId?: string;
+        xProjectId?: string;
       },
       TContext
     >,
@@ -8641,12 +10441,19 @@ export const useRunsServiceDeleteRun = <
     TError,
     {
       runId: string;
+      userAgent?: string;
       userId?: string;
+      xProjectId?: string;
     },
     TContext
   >({
-    mutationFn: ({ runId, userId }) =>
-      RunsService.deleteRun({ runId, userId }) as unknown as Promise<TData>,
+    mutationFn: ({ runId, userAgent, userId, xProjectId }) =>
+      RunsService.deleteRun({
+        runId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as unknown as Promise<TData>,
     ...options,
   });
 /**
