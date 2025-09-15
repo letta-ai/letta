@@ -230,14 +230,22 @@ class SourceManager:
     @enforce_types
     @trace_method
     async def list_sources(
-        self, actor: PydanticUser, after: Optional[str] = None, limit: Optional[int] = 50, **kwargs
+        self,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = False,
+        **kwargs,
     ) -> List[PydanticSource]:
         """List all sources with optional pagination."""
         async with db_registry.async_session() as session:
             sources = await SourceModel.list_async(
                 db_session=session,
+                before=before,
                 after=after,
                 limit=limit,
+                ascending=ascending,
                 organization_id=actor.organization_id,
                 **kwargs,
             )
