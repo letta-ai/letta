@@ -29,7 +29,7 @@ async def list_tags(
     actor_id: Optional[str] = Header(None, alias="user_id"),
 ):
     """
-    Get a list of all agent tags in the database.
+    Get the list of all agent tags that have been created.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
     tags = await server.agent_manager.list_tags_async(
