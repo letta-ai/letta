@@ -124,7 +124,7 @@ async def list_folders(
     ),
     limit: Optional[int] = Query(50, description="Maximum number of folders to return"),
     order: Literal["asc", "desc"] = Query(
-        "desc", description="Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
+        "asc", description="Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: "SyncServer" = Depends(get_letta_server),

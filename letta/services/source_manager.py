@@ -235,7 +235,7 @@ class SourceManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
-        ascending: bool = False,
+        ascending: bool = True,
         **kwargs,
     ) -> List[PydanticSource]:
         """List all sources with optional pagination."""
