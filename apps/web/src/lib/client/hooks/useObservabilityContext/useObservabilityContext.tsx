@@ -73,8 +73,11 @@ export function ObservabilityProvider({
   });
 
   // Compute dates based on time range
-  const { startDate: computedStartDate, endDate: computedEndDate } =
-    computeStartEndDates(timeRange);
+  const { startDate: computedStartDate, endDate: computedEndDate } = useMemo(
+    () => computeStartEndDates(timeRange),
+    [timeRange],
+  );
+
   const [customStartDate, setCustomStartDate] = useState(computedStartDate);
   const [customEndDate, setCustomEndDate] = useState(computedEndDate);
 
