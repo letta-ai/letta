@@ -5,7 +5,7 @@ from typing import Optional
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from letta.settings import settings
 
@@ -25,7 +25,7 @@ class CryptoUtils:
     @classmethod
     def _derive_key(cls, master_key: str, salt: bytes) -> bytes:
         """Derive an AES key from the master key using PBKDF2."""
-        kdf = PBKDF2(algorithm=hashes.SHA256(), length=cls.KEY_SIZE, salt=salt, iterations=100000, backend=default_backend())
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=cls.KEY_SIZE, salt=salt, iterations=100000, backend=default_backend())
         return kdf.derive(master_key.encode())
 
     @classmethod
