@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.interfaces.anthropic_streaming_interface import AnthropicStreamingInterface, SimpleAnthropicStreamingInterface
-from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface
+from letta.interfaces.openai_streaming_interface import OpenAIStreamingInterface, SimpleOpenAIStreamingInterface
 from letta.llm_api.llm_client_base import LLMClientBase
 from letta.schemas.agent import AgentType
 from letta.schemas.enums import ProviderType
@@ -211,7 +211,13 @@ class SimpleLettaLLMStreamAdapter(LettaLLMStreamAdapter):
                 requires_approval_tools=requires_approval_tools,
             )
         elif self.llm_config.model_endpoint_type == ProviderType.openai:
-            raise NotImplementedError("OpenAI streaming is not supported for simple adapter")
+            self.interface = SimpleOpenAIStreamingInterface(
+                is_openai_proxy=self.llm_config.provider_name == "lmstudio_openai",
+                messages=messages,
+                tools=tools,
+                requires_approval_tools=requires_approval_tools,
+                model=self.llm_config.model,
+            )
         else:
             raise ValueError(f"Streaming not supported for provider {self.llm_config.model_endpoint_type}")
 

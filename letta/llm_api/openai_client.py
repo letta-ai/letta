@@ -7,7 +7,7 @@ from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from letta.constants import LETTA_MODEL_ENDPOINT
+from letta.constants import LETTA_MODEL_ENDPOINT, REQUEST_HEARTBEAT_PARAM
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
@@ -26,6 +26,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION, INNER_THOUGHTS_KWARG_DESCRIPTION_GO_FIRST
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentType
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.letta_message_content import MessageContentType
 from letta.schemas.llm_config import LLMConfig
@@ -156,6 +157,7 @@ class OpenAIClient(LLMClientBase):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,  # if react, use native content + strip heartbeats
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
@@ -164,6 +166,10 @@ class OpenAIClient(LLMClientBase):
         """
         Constructs a request object in the expected data format for the OpenAI API.
         """
+        if agent_type == AgentType.react_agent:
+            # Safety hard override in case it got set somewhere by accident
+            llm_config.put_inner_thoughts_in_kwargs = False
+
         if tools and llm_config.put_inner_thoughts_in_kwargs:
             # Special case for LM Studio backend since it needs extra guidance to force out the thoughts first
             # TODO(fix)
@@ -201,7 +207,7 @@ class OpenAIClient(LLMClientBase):
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
-            if self.requires_auto_tool_choice(llm_config):
+            if self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.react_agent:
                 tool_choice = "auto"
             else:
                 # only set if tools is non-Null
@@ -247,6 +253,20 @@ class OpenAIClient(LLMClientBase):
                 data.user = str(uuid.UUID(int=0))
 
             data.model = "memgpt-openai"
+
+        # For some reason, request heartbeats are still leaking into here...
+        # So strip them manually for v3
+        if agent_type == AgentType.react_agent:
+            new_tools = []
+            for tool in data.tools:
+                # Remove request_heartbeat from the properties if it exists
+                if tool.function.parameters and "properties" in tool.function.parameters:
+                    tool.function.parameters["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                    # Also remove from required list if present
+                    if "required" in tool.function.parameters and REQUEST_HEARTBEAT_PARAM in tool.function.parameters["required"]:
+                        tool.function.parameters["required"].remove(REQUEST_HEARTBEAT_PARAM)
+                new_tools.append(tool.model_copy(deep=True))
+            data.tools = new_tools
 
         if data.tools is not None and len(data.tools) > 0:
             # Convert to structured output style (which has 'strict' and no optionals)

@@ -341,18 +341,20 @@ class Message(BaseMessage):
         if len(self.content) == 1 and isinstance(self.content[0], TextContent):
             otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
             if text_is_assistant_message:
-                messages.append(
-                    AssistantMessage(
-                        id=self.id,
-                        date=self.created_at,
-                        content=self.content[0].text,
-                        name=self.name,
-                        otid=otid,
-                        sender_id=self.sender_id,
-                        step_id=self.step_id,
-                        is_err=self.is_err,
+                # Safeguard against empty text messages
+                if self.content[0].text != "":
+                    messages.append(
+                        AssistantMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            content=self.content[0].text,
+                            name=self.name,
+                            otid=otid,
+                            sender_id=self.sender_id,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
                     )
-                )
             else:
                 messages.append(
                     ReasoningMessage(

@@ -427,3 +427,248 @@ class OpenAIStreamingInterface:
                                     prev_message_type = tool_call_msg.message_type
                                     yield tool_call_msg
                                     self.function_id_buffer = None
+
+
+class SimpleOpenAIStreamingInterface:
+    """
+    Encapsulates the logic for streaming responses from OpenAI.
+    This class handles parsing of partial tokens, pre-execution messages,
+    and detection of tool call events.
+    """
+
+    def __init__(
+        self,
+        is_openai_proxy: bool = False,
+        messages: Optional[list] = None,
+        tools: Optional[list] = None,
+        requires_approval_tools: list = [],
+        model: str = None,
+    ):
+        # Premake IDs for database writes
+        self.letta_message_id = Message.generate_id()
+
+        self.message_id = None
+        self.model = model
+
+        # Token counters (from OpenAI usage)
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+        # Fallback token counters (using tiktoken cl200k-base)
+        self.fallback_input_tokens = 0
+        self.fallback_output_tokens = 0
+
+        # Store messages and tools for fallback counting
+        self.is_openai_proxy = is_openai_proxy
+        self.messages = messages or []
+        self.tools = tools or []
+
+        # Buffers to hold accumulating tools
+        self.tool_call_name = ""
+        self.tool_call_args = ""
+        self.tool_call_id = ""
+
+        self.content_messages = []
+        self.emitted_hidden_reasoning = False  # Track if we've emitted hidden reasoning message
+
+        self.requires_approval_tools = requires_approval_tools
+
+    def get_content(self) -> list[TextContent | OmittedReasoningContent]:
+        shown_omitted = False
+        concat_content = ""
+        merged_messages = []
+        for msg in self.content_messages:
+            if isinstance(msg, HiddenReasoningMessage) and not shown_omitted:
+                merged_messages.append(OmittedReasoningContent())
+                shown_omitted = True
+            elif isinstance(msg, AssistantMessage):
+                if isinstance(msg.content, list):
+                    concat_content += "".join([c.text for c in msg.content])
+                else:
+                    concat_content += msg.content
+        merged_messages.append(TextContent(text=concat_content))
+        return merged_messages
+
+    def get_tool_call_object(self) -> ToolCall:
+        """Useful for agent loop"""
+        if not self.tool_call_name:
+            raise ValueError("No tool call name available")
+        if not self.tool_call_args:
+            raise ValueError("No tool call arguments available")
+        if not self.tool_call_id:
+            raise ValueError("No tool call ID available")
+
+        return ToolCall(
+            id=self.tool_call_id,
+            function=FunctionCall(arguments=self.tool_call_args, name=self.tool_call_name),
+        )
+
+    async def process(
+        self,
+        stream: AsyncStream[ChatCompletionChunk],
+        ttft_span: Optional["Span"] = None,
+    ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
+        """
+        Iterates over the OpenAI stream, yielding SSE events.
+        It also collects tokens and detects if a tool call is triggered.
+        """
+        # Fallback input token counting - this should only be required for non-OpenAI providers using the OpenAI client (e.g. LMStudio)
+        if self.is_openai_proxy:
+            if self.messages:
+                # Convert messages to dict format for token counting
+                message_dicts = [msg.to_openai_dict() if hasattr(msg, "to_openai_dict") else msg for msg in self.messages]
+                message_dicts = [m for m in message_dicts if m is not None]
+                self.fallback_input_tokens = num_tokens_from_messages(message_dicts)  # fallback to gpt-4 cl100k-base
+
+            if self.tools:
+                # Convert tools to dict format for token counting
+                tool_dicts = [tool["function"] if isinstance(tool, dict) and "function" in tool else tool for tool in self.tools]
+                self.fallback_input_tokens += num_tokens_from_functions(tool_dicts)
+
+        prev_message_type = None
+        message_index = 0
+        try:
+            async with stream:
+                # For reasoning models, emit a hidden reasoning message before the first chunk
+                if not self.emitted_hidden_reasoning and is_openai_reasoning_model(self.model):
+                    self.emitted_hidden_reasoning = True
+                    hidden_message = HiddenReasoningMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc),
+                        state="omitted",
+                        hidden_reasoning=None,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    )
+                    self.content_messages.append(hidden_message)
+                    prev_message_type = hidden_message.message_type
+                    message_index += 1  # Increment for the next message
+                    yield hidden_message
+
+                async for chunk in stream:
+                    try:
+                        async for message in self._process_chunk(chunk, ttft_span, prev_message_type, message_index):
+                            new_message_type = message.message_type
+                            if new_message_type != prev_message_type:
+                                if prev_message_type != None:
+                                    message_index += 1
+                                prev_message_type = new_message_type
+                            yield message
+                    except asyncio.CancelledError as e:
+                        import traceback
+
+                        logger.info("Cancelled stream attempt but overriding %s: %s", e, traceback.format_exc())
+                        async for message in self._process_chunk(chunk, ttft_span, prev_message_type, message_index):
+                            new_message_type = message.message_type
+                            if new_message_type != prev_message_type:
+                                if prev_message_type != None:
+                                    message_index += 1
+                                prev_message_type = new_message_type
+                            yield message
+
+                        # Don't raise the exception here
+                        continue
+
+        except Exception as e:
+            import traceback
+
+            logger.error("Error processing stream: %s\n%s", e, traceback.format_exc())
+            if ttft_span:
+                ttft_span.add_event(
+                    name="stop_reason",
+                    attributes={"stop_reason": StopReasonType.error.value, "error": str(e), "stacktrace": traceback.format_exc()},
+                )
+            yield LettaStopReason(stop_reason=StopReasonType.error)
+            raise e
+        finally:
+            logger.info("OpenAIStreamingInterface: Stream processing complete.")
+
+    async def _process_chunk(
+        self,
+        chunk: ChatCompletionChunk,
+        ttft_span: Optional["Span"] = None,
+        prev_message_type: Optional[str] = None,
+        message_index: int = 0,
+    ) -> AsyncGenerator[LettaMessage | LettaStopReason, None]:
+        if not self.model or not self.message_id:
+            self.model = chunk.model
+            self.message_id = chunk.id
+
+        # track usage
+        if chunk.usage:
+            self.input_tokens += chunk.usage.prompt_tokens
+            self.output_tokens += chunk.usage.completion_tokens
+
+        if chunk.choices:
+            choice = chunk.choices[0]
+            message_delta = choice.delta
+
+            if message_delta.content is not None and message_delta.content != "":
+                assistant_msg = AssistantMessage(
+                    id=self.letta_message_id,
+                    content=[TextContent(text=message_delta.content)],
+                    date=datetime.now(timezone.utc).isoformat(),
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                )
+                self.content_messages.append(assistant_msg)
+                prev_message_type = assistant_msg.message_type
+                message_index += 1  # Increment for the next message
+                yield assistant_msg
+
+            if message_delta.tool_calls is not None and len(message_delta.tool_calls) > 0:
+                tool_call = message_delta.tool_calls[0]
+
+                # For OpenAI reasoning models, emit a hidden reasoning message before the first tool call
+                # if not self.emitted_hidden_reasoning and is_openai_reasoning_model(self.model):
+                #     self.emitted_hidden_reasoning = True
+                #     if prev_message_type and prev_message_type != "hidden_reasoning_message":
+                #         message_index += 1
+                #     hidden_message = HiddenReasoningMessage(
+                #         id=self.letta_message_id,
+                #         date=datetime.now(timezone.utc),
+                #         state="omitted",
+                #         hidden_reasoning=None,
+                #         otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                #     )
+                #     self.content_messages.append(hidden_message)
+                #     prev_message_type = hidden_message.message_type
+                #     message_index += 1  # Increment for the next message
+                #     yield hidden_message
+
+                if not tool_call.function.name and not tool_call.function.arguments and not tool_call.id:
+                    # No chunks to process, exit
+                    return
+
+                if tool_call.function.name:
+                    self.tool_call_name += tool_call.function.name
+                if tool_call.function.arguments:
+                    self.tool_call_args += tool_call.function.arguments
+                if tool_call.id:
+                    self.tool_call_id += tool_call.id
+
+                if self.requires_approval_tools:
+                    tool_call_msg = ApprovalRequestMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc),
+                        tool_call=ToolCallDelta(
+                            name=tool_call.function.name,
+                            arguments=tool_call.function.arguments,
+                            tool_call_id=tool_call.id,
+                        ),
+                        # name=name,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    )
+                else:
+                    tool_call_msg = ToolCallMessage(
+                        id=self.letta_message_id,
+                        date=datetime.now(timezone.utc),
+                        tool_call=ToolCallDelta(
+                            name=tool_call.function.name,
+                            arguments=tool_call.function.arguments,
+                            tool_call_id=tool_call.id,
+                        ),
+                        # name=name,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    )
+                prev_message_type = tool_call_msg.message_type
+                message_index += 1  # Increment for the next message
+                yield tool_call_msg
