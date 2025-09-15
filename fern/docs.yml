@@ -471,7 +471,84 @@ navigation:
           typescript: "@letta-ai/letta-client"
           python: letta-client
         layout:
-          - agents
+          - agents:
+              - GET /v1/agents
+              - GET /v1/agents/{agent_id}
+              - POST /v1/agents
+              - PATCH /v1/agents/{agent_id}
+              - DELETE /v1/agents/{agent_id}
+              - GET /v1/agents/count
+              - POST /v1/agents/import
+              - GET /v1/agents/{agent_id}/export
+              - GET /v1/agents/search
+          - models:
+              - GET /v1/models
+              - GET /v1/models/embedding
+          - blocks:
+              - GET /v1/blocks
+              - GET /v1/blocks/{block_id}
+              - POST /v1/blocks
+              - PATCH /v1/blocks/{block_id}
+              - DELETE /v1/blocks/{block_id}
+              - GET /v1/blocks/count
+              - agents:
+                  GET /v1/blocks/{block_id}/agents
+          - identities:
+              - GET /v1/identities
+              - GET /v1/identities/{identity_id}
+              - POST /v1/identities
+              - PUT /v1/identities
+              - PATCH /v1/identities/{identity_id}
+              - DELETE /v1/identities/{identity_id}
+              - GET /v1/identities/count
+          - tools
+          - folders:
+              - GET /v1/folders
+              - GET /v1/folders/{folder_id}
+              - POST /v1/folders
+              - PATCH /v1/folders/{folder_id}
+              - DELETE /v1/folders/{folder_id}
+              - GET /v1/folders/count
+              - files:
+                  - GET /v1/folders/{folder_id}/files
+                  - POST /v1/folders/{folder_id}/upload
+                  - DELETE /v1/folders/{folder_id}/{file_id}
+              - passages:
+                  - GET /v1/folders/{folder_id}/passages
+          - jobs
+          - runs
+          - steps
+          - groups:
+              - GET /v1/groups
+              - GET /v1/groups/{group_id}
+              - POST /v1/groups
+              - PATCH /v1/groups/{group_id}
+              - DELETE /v1/groups/{group_id}
+              - COUNT /v1/groups/count
+          - providers:
+              - GET /v1/providers
+              - GET /v1/providers/{provider_id}
+              - POST /v1/providers
+              - PATCH /v1/providers/{provider_id}
+              - DELETE /v1/providers/{provider_id}
+              - POST /v1/providers
+          - tags
+          - batches:
+              - GET /v1/batches
+              - GET /v1/batches/{batch_id}
+              - POST /v1/batches
+              - PATCH GET /v1/batches/{batch_id}/cancel
+              - messages:
+                  - GET /v1/batches/{batch_id}/messages
+          - voice
+          - health
+          - projects
+          - templates
+          - client side access tokens
+          - telemetry
+          - sources
+
+
 
   - tab: showcase
     layout:
