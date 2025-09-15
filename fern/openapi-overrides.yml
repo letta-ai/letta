@@ -556,7 +556,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
         - messages
-      x-fern-sdk-method-name: preview_raw_payload
+      x-fern-sdk-method-name: preview
   /v1/agents/messages/search:
     post:
       x-fern-sdk-group-name:
@@ -720,7 +720,8 @@ paths:
   /v1/models/embedding:
     get:
       x-fern-sdk-group-name:
-        - embedding_models
+        - models
+        - embeddings
       x-fern-sdk-method-name: list
   /v1/blocks/:
     get:
@@ -872,7 +873,7 @@ paths:
         - providers
       x-fern-sdk-method-name: modify
   /v1/providers/check:
-    get:
+    post:
       x-fern-sdk-group-name:
         - providers
       x-fern-sdk-method-name: check
@@ -892,6 +893,18 @@ paths:
         - steps
         - feedback
       x-fern-sdk-method-name: create
+  /v1/steps/{step_id}/metrics:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - metrics
+      x-fern-sdk-method-name: retrieve
+  /v1/steps/{step_id}/trace:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - trace
+      x-fern-sdk-method-name: retrieve
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
@@ -1109,7 +1122,7 @@ paths:
         - files
       x-fern-sdk-method-name: close_all
   /v1/agents/{agent_id}/files:
-    patch:
+    get:
       x-fern-sdk-group-name:
         - agents
         - files

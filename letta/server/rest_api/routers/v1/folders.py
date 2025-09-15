@@ -3,7 +3,7 @@ import mimetypes
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from starlette import status
@@ -116,6 +116,17 @@ async def get_folders_metadata(
 
 @router.get("/", response_model=List[Folder], operation_id="list_folders")
 async def list_folders(
+    before: Optional[str] = Query(
+        None, description="Folder ID cursor for pagination. Returns folders that come before this folder ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Folder ID cursor for pagination. Returns folders that come after this folder ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of folders to return"),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: "SyncServer" = Depends(get_letta_server),
     actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
 ):
@@ -123,7 +134,7 @@ async def list_folders(
     List all data folders created by a user.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
-    return await server.source_manager.list_sources(actor=actor)
+    return await server.source_manager.list_sources(actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"))
 
 
 @router.post("/", response_model=Folder, operation_id="create_folder")

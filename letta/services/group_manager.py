@@ -29,6 +29,7 @@ class GroupManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: bool = True,
         show_hidden_groups: Optional[bool] = None,
     ) -> list[PydanticGroup]:
         async with db_registry.async_session() as session:
@@ -50,7 +51,7 @@ class GroupManager:
                 query = query.where((GroupModel.hidden.is_(None)) | (GroupModel.hidden == False))
 
             # Apply pagination
-            query = await _apply_group_pagination_async(query, before, after, session, ascending=True)
+            query = await _apply_group_pagination_async(query, before, after, session, ascending=ascending)
 
             if limit:
                 query = query.limit(limit)
