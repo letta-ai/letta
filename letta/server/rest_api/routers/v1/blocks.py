@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
@@ -26,12 +26,16 @@ async def list_blocks(
     limit: Optional[int] = Query(50, description="Number of blocks to return"),
     before: Optional[str] = Query(
         None,
-        description="Cursor for pagination. If provided, returns blocks before this cursor.",
+        description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
     ),
     after: Optional[str] = Query(
         None,
-        description="Cursor for pagination. If provided, returns blocks after this cursor.",
+        description="Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
     ),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     label_search: Optional[str] = Query(
         None,
         description=("Search blocks by label. If provided, returns blocks that match this label. This is a full-text search on labels."),
@@ -94,6 +98,7 @@ async def list_blocks(
         connected_to_agents_count_eq=connected_to_agents_count_eq,
         limit=limit,
         after=after,
+        ascending=(order == "asc"),
         show_hidden_blocks=show_hidden_blocks,
     )
 
