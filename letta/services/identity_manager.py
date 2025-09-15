@@ -35,6 +35,7 @@ class IdentityManager:
         before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: bool = False,
         actor: PydanticUser = None,
     ) -> list[PydanticIdentity]:
         async with db_registry.async_session() as session:
@@ -51,6 +52,7 @@ class IdentityManager:
                 before=before,
                 after=after,
                 limit=limit,
+                ascending=ascending,
                 **filters,
             )
             return [identity.to_pydantic() for identity in identities]
