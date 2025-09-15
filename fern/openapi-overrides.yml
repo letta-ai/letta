@@ -196,12 +196,14 @@ paths:
       x-fern-sdk-method-name: upload
   /v1/folders/{folder_id}/passages:
     get:
+      summary: List Passages For Folder
       x-fern-sdk-group-name:
         - folders
         - passages
       x-fern-sdk-method-name: list
   /v1/folders/{folder_id}/files:
     get:
+      summary: List Files For Folder
       x-fern-sdk-group-name:
         - folders
         - files
@@ -244,6 +246,7 @@ paths:
       x-fern-sdk-group-name:
         - agents
       x-fern-sdk-method-name: search
+      summary: Search Agents
       description: |
         <Note>This endpoint is only available on Letta Cloud.</Note>
 
@@ -796,18 +799,21 @@ paths:
       x-fern-sdk-method-name: delete
   /v1/runs/{run_id}/messages:
     get:
+      summary: List Messages For Run
       x-fern-sdk-group-name:
         - runs
         - messages
       x-fern-sdk-method-name: list
   /v1/runs/{run_id}/usage:
     get:
+      summary: Retrieve Usage For Run
       x-fern-sdk-group-name:
         - runs
         - usage
       x-fern-sdk-method-name: retrieve
   /v1/runs/{run_id}/steps:
     get:
+      summary: List Steps For Run
       x-fern-sdk-group-name:
         - runs
         - steps
@@ -938,6 +944,7 @@ paths:
       x-fern-sdk-method-name: count
   /v1/identities/{identity_id}/properties:
     put:
+      summary: Upsert Properties For Identity
       x-fern-sdk-group-name:
         - identities
         - properties
@@ -971,6 +978,7 @@ paths:
       x-fern-sdk-method-name: count
   /v1/groups/{group_id}/reset-messages:
     patch:
+      summary: Reset Messages For Group
       x-fern-sdk-group-name:
         - groups
         - messages
@@ -983,11 +991,13 @@ paths:
             type: string
   /v1/groups/{group_id}/messages:
     get:
+      summary: List Messages For Group
       x-fern-sdk-group-name:
         - groups
         - messages
       x-fern-sdk-method-name: list
     post:
+      summary: Send Message To Group
       x-fern-sdk-group-name:
         - groups
         - messages
@@ -1003,12 +1013,14 @@ paths:
                       text: "The sky above the port was the color of television, tuned to a dead channel."
   /v1/groups/{group_id}/messages/{message_id}:
     patch:
+      summary: Modify Message For Group
       x-fern-sdk-group-name:
         - groups
         - messages
       x-fern-sdk-method-name: modify
   /v1/groups/{group_id}/messages/stream:
     post:
+      summary: Stream Message To Group
       x-fern-streaming:
         format: sse
       x-fern-sdk-group-name:
