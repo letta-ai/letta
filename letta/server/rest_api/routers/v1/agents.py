@@ -97,13 +97,19 @@ async def list_agents(
             "Using this can optimize performance by reducing unnecessary joins."
         ),
     ),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at", "last_run_completion"] = Query("created_at", description="Field to sort by"),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
+        deprecated=True,
     ),
     sort_by: str | None = Query(
         "created_at",
         description="Field to sort by. Options: 'created_at' (default), 'last_run_completion'",
+        deprecated=True,
     ),
     show_hidden_agents: bool | None = Query(
         False,
@@ -121,6 +127,10 @@ async def list_agents(
     # Retrieve the actor (user) details
     actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
 
+    # Handle backwards compatibility - prefer new parameters over legacy ones
+    final_ascending = (order == "asc") if order else ascending
+    final_sort_by = order_by if order_by else sort_by
+
     # Call list_agents directly without unnecessary dict handling
     return await server.agent_manager.list_agents_async(
         actor=actor,
@@ -137,8 +147,8 @@ async def list_agents(
         identity_id=identity_id,
         identifier_keys=identifier_keys,
         include_relationships=include_relationships,
-        ascending=ascending,
-        sort_by=sort_by,
+        ascending=final_ascending,
+        sort_by=final_sort_by,
         show_hidden_agents=show_hidden_agents,
     )
 
