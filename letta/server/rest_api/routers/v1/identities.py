@@ -4,6 +4,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
 from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
+from letta.server.rest_api.dependencies.headers import HeaderParams, get_headers
 from letta.server.rest_api.utils import get_letta_server
 
 if TYPE_CHECKING:
@@ -143,10 +144,10 @@ async def modify_identity(
     identity_id: str,
     identity: IdentityUpdate = Body(...),
     server: "SyncServer" = Depends(get_letta_server),
-    actor_id: Optional[str] = Header(None, alias="user_id"),  # Extract user_id from header, default to None if not present
+    headers: HeaderParams = Depends(get_headers),
 ):
     try:
-        actor = await server.user_manager.get_actor_or_default_async(actor_id=actor_id)
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.identity_manager.update_identity_async(identity_id=identity_id, identity=identity, actor=actor)
     except HTTPException:
         raise
