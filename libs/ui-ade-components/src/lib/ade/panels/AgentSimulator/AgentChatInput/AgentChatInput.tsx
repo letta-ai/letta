@@ -319,7 +319,7 @@ export function AgentChatInput() {
     refetchInterval: false,
   });
 
-  const mostRecentMessage = useMemo(() => {
+  const mostRecentHTIL = useMemo(() => {
     // pages
     if (!messages) {
       return null;
@@ -328,23 +328,37 @@ export function AgentChatInput() {
     if (messages.pages.length === 0) {
       return null;
     }
-    return messages.pages[0][messages.pages[0].length - 1];
+
+    // find message with most recent timestamp
+    const mostRecentPage = messages.pages[0];
+
+    // look for the first approval_request_message in the most recent page, or approval_response_message
+    const mostRecentHTILMessage = mostRecentPage.toReversed().find(
+      (message) => message.message_type === 'approval_request_message' || message.message_type === 'approval_response_message'
+    );
+
+    // if the first one is an approval_response_message, return null
+    if (mostRecentHTILMessage?.message_type === 'approval_response_message') {
+      return null;
+    }
+
+    return mostRecentHTILMessage || null;
   }, [messages]);
 
   if (
 
-    mostRecentMessage?.message_type === 'approval_request_message' &&
+    mostRecentHTIL?.message_type === 'approval_request_message' &&
     !isPending
   ) {
     return (
       <HTILConfirmationInput
-        mostRecentMessageId={mostRecentMessage.id}
+        mostRecentMessageId={mostRecentHTIL.id}
         onApprove={() => {
           sendMessage({
             message: {
               type: 'approval',
               approve: true,
-              approval_request_id: mostRecentMessage.id,
+              approval_request_id: mostRecentHTIL.id,
             },
             agentId: agentIdToUse || '',
           });
@@ -354,13 +368,13 @@ export function AgentChatInput() {
             message: {
               type: 'approval',
               approve: false,
-              approval_request_id: mostRecentMessage.id,
+              approval_request_id: mostRecentHTIL.id,
               reason: 'Cancelled by user',
             },
             agentId: agentIdToUse || '',
           });
         }}
-        message={mostRecentMessage}
+        message={mostRecentHTIL}
       />
     );
   }

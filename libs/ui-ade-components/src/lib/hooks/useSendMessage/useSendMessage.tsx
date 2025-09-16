@@ -691,6 +691,7 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
             return {
               type: 'approval',
               approve,
+              otid: userMessageOtid,
               approval_request_id: approval_request_id,
               ...(reason ? { reason } : {}),
             };
