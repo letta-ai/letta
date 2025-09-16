@@ -5,8 +5,10 @@ from typing import List, Optional
 import openai
 from httpx import stream
 from openai import AsyncOpenAI, AsyncStream, OpenAI
+from openai.types import Reasoning
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from openai.types.responses import ResponseTextConfigParam
 from openai.types.responses.response_stream_event import ResponseStreamEvent
 
 from letta.constants import LETTA_MODEL_ENDPOINT, REQUEST_HEARTBEAT_PARAM
@@ -269,16 +271,16 @@ class OpenAIClient(LLMClientBase):
         if supports_verbosity_control(model) and llm_config.verbosity:
             # data.verbosity = llm_config.verbosity
             # https://cookbook.openai.com/examples/gpt-5/gpt-5_new_params_and_tools
-            data.text = {"verbosity": llm_config.verbosity}
+            data.text = ResponseTextConfigParam(verbosity=llm_config.verbosity)
 
         # Add reasoning effort control for reasoning models
         if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
             # data.reasoning_effort = llm_config.reasoning_effort
-            data.reasoning = {
-                "effort": llm_config.reasoning_effort,
+            data.reasoning = Reasoning(
+                effort=llm_config.reasoning_effort,
                 # NOTE: hardcoding summary level, could put in llm_config?
-                "summary": "detailed",
-            }
+                summary="detailed",
+            )
 
         # TODO I don't see this in Responses?
         # Add frequency penalty

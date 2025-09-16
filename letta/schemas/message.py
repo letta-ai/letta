@@ -354,6 +354,7 @@ class Message(BaseMessage):
                         )
                     )
             else:
+                # Treating .content as COT
                 messages.append(
                     ReasoningMessage(
                         id=self.id,
@@ -372,8 +373,8 @@ class Message(BaseMessage):
             for content_part in self.content:
                 otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
                 if isinstance(content_part, TextContent):
-                    # COT
                     if text_is_assistant_message:
+                        # .content is assistant message
                         messages.append(
                             AssistantMessage(
                                 id=self.id,
@@ -387,6 +388,7 @@ class Message(BaseMessage):
                             )
                         )
                     else:
+                        # .content is COT
                         messages.append(
                             ReasoningMessage(
                                 id=self.id,
@@ -408,6 +410,22 @@ class Message(BaseMessage):
                             reasoning=content_part.reasoning,
                             source="reasoner_model",  # TODO do we want to tag like this?
                             signature=content_part.signature,
+                            name=self.name,
+                            otid=otid,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
+                    )
+                elif isinstance(content_part, SummarizedReasoningContent):
+                    # TODO remove the cast and just return the native type
+                    casted_content_part = content_part.to_reasoning_content()
+                    messages.append(
+                        ReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            reasoning=casted_content_part.reasoning,
+                            source="reasoner_model",  # TODO do we want to tag like this?
+                            signature=casted_content_part.signature,
                             name=self.name,
                             otid=otid,
                             step_id=self.step_id,

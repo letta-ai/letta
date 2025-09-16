@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional, Union
 
 from openai import NOT_GIVEN
 from openai.types import Metadata, Reasoning, ResponsesModel

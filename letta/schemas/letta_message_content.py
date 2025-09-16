@@ -267,6 +267,16 @@ class SummarizedReasoningContent(MessageContent):
     summary: List[SummarizedReasoningContentPart] = Field(..., description="Summaries of the reasoning content.")
     encrypted_content: str = Field(default=None, description="The encrypted reasoning content.")
 
+    # Temporary stop-gap until the SDKs are updated
+    def to_reasoning_content(self):
+        # Merge the summary parts with a '\n' join
+        combined_summary = "\n\n".join([s.text for s in self.summary])
+        return ReasoningContent(
+            is_native=True,
+            reasoning=combined_summary,
+            signature=self.encrypted_content,
+        )
+
 
 LettaMessageContentUnion = Annotated[
     Union[

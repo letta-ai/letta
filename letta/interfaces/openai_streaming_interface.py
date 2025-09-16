@@ -720,6 +720,8 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.requires_approval_tools = requires_approval_tools
         # We need to store the name for approvals
         self.tool_call_name = None
+        # ID responses used
+        self.message_id = None
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
@@ -934,7 +936,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                     date=datetime.now(timezone.utc).isoformat(),
                     otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
                     source="reasoner_model",
-                    reasoning=part.text,
+                    reasoning="\n\n" + part.text,
                 )
             else:
                 return
@@ -1056,6 +1058,7 @@ class SimpleOpenAIResponsesStreamingInterface:
             self.model = event.response.model
             self.input_tokens = event.response.usage.input_tokens
             self.output_tokens = event.response.usage.output_tokens
+            self.message_id = event.response.id
             return
 
         else:
