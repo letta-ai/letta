@@ -27,7 +27,13 @@ from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import tracer
 from letta.schemas.agent import AgentState
 from letta.schemas.enums import MessageRole
-from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
+from letta.schemas.letta_message_content import (
+    OmittedReasoningContent,
+    ReasoningContent,
+    RedactedReasoningContent,
+    SummarizedReasoningContent,
+    TextContent,
+)
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import ApprovalCreate, Message, MessageCreate, ToolReturn
 from letta.schemas.tool_execution_result import ToolExecutionResult
@@ -226,13 +232,16 @@ def create_letta_messages_from_llm_response(
     actor: User,
     continue_stepping: bool = False,
     heartbeat_reason: Optional[str] = None,
-    reasoning_content: Optional[List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent]]] = None,
+    reasoning_content: Optional[
+        List[Union[TextContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent | SummarizedReasoningContent]]
+    ] = None,
     pre_computed_assistant_message_id: Optional[str] = None,
     llm_batch_item_id: Optional[str] = None,
     step_id: str | None = None,
     is_approval_response: bool | None = None,
     # force set request_heartbeat, useful for v2 loop to ensure matching tool rules
     force_set_request_heartbeat: bool = True,
+    add_heartbeat_on_continue: bool = True,
 ) -> List[Message]:
     messages = []
     if not is_approval_response:  # Skip approval responses (omit them)
@@ -324,7 +333,7 @@ def create_letta_messages_from_llm_response(
         )
         messages.append(tool_message)
 
-    if continue_stepping:
+    if continue_stepping and add_heartbeat_on_continue:
         # TODO skip this for react agents, instead we just force looping
         heartbeat_system_message = create_heartbeat_system_message(
             agent_id=agent_id,

@@ -947,7 +947,7 @@ class Message(BaseMessage):
         """Go from Message class to ChatCompletion message object"""
 
         if self.role == "approval" and self.tool_calls is None:
-            return None
+            return []
 
         message_dicts = []
 

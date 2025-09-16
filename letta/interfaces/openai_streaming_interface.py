@@ -718,10 +718,11 @@ class SimpleOpenAIResponsesStreamingInterface:
         self.messages = messages
         self.tools = tools
         self.requires_approval_tools = requires_approval_tools
+        # We need to store the name for approvals
+        self.tool_call_name = None
 
         # Premake IDs for database writes
         self.letta_message_id = Message.generate_id()
-        self.message_id = None
         self.model = model
         self.final_response = None
 
@@ -877,16 +878,30 @@ class SimpleOpenAIResponsesStreamingInterface:
                 call_id = new_event_item.call_id
                 name = new_event_item.name
                 arguments = new_event_item.arguments
-                yield ToolCallMessage(
-                    id=self.letta_message_id,
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    date=datetime.now(timezone.utc),
-                    tool_call=ToolCallDelta(
-                        name=name,
-                        arguments=arguments if arguments != "" else None,
-                        tool_call_id=call_id,
-                    ),
-                )
+                # cache for approval if/elses
+                self.tool_call_name = name
+                if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                    yield ApprovalRequestMessage(
+                        id=self.letta_message_id,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        date=datetime.now(timezone.utc),
+                        tool_call=ToolCallDelta(
+                            name=name,
+                            arguments=arguments if arguments != "" else None,
+                            tool_call_id=call_id,
+                        ),
+                    )
+                else:
+                    yield ToolCallMessage(
+                        id=self.letta_message_id,
+                        otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                        date=datetime.now(timezone.utc),
+                        tool_call=ToolCallDelta(
+                            name=name,
+                            arguments=arguments if arguments != "" else None,
+                            tool_call_id=call_id,
+                        ),
+                    )
 
             elif isinstance(new_event_item, ResponseOutputMessage):
                 # Look for content (may be empty list []), or contain ResponseOutputText
@@ -999,16 +1014,29 @@ class SimpleOpenAIResponsesStreamingInterface:
         elif isinstance(event, ResponseFunctionCallArgumentsDeltaEvent):
             # only includes delta on args
             delta = event.delta
-            yield ToolCallMessage(
-                id=self.letta_message_id,
-                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                date=datetime.now(timezone.utc),
-                tool_call=ToolCallDelta(
-                    name=None,
-                    arguments=delta,
-                    tool_call_id=None,
-                ),
-            )
+
+            if self.tool_call_name and self.tool_call_name in self.requires_approval_tools:
+                yield ApprovalRequestMessage(
+                    id=self.letta_message_id,
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    date=datetime.now(timezone.utc),
+                    tool_call=ToolCallDelta(
+                        name=None,
+                        arguments=delta,
+                        tool_call_id=None,
+                    ),
+                )
+            else:
+                yield ToolCallMessage(
+                    id=self.letta_message_id,
+                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                    date=datetime.now(timezone.utc),
+                    tool_call=ToolCallDelta(
+                        name=None,
+                        arguments=delta,
+                        tool_call_id=None,
+                    ),
+                )
 
         # Function calls
         elif isinstance(event, ResponseFunctionCallArgumentsDoneEvent):
@@ -1025,10 +1053,13 @@ class SimpleOpenAIResponsesStreamingInterface:
         elif isinstance(event, ResponseCompletedEvent):
             # NOTE we can "rebuild" the final state of the stream using the values in here, instead of relying on the accumulators
             self.final_response = event.response
+            self.model = event.response.model
+            self.input_tokens = event.response.usage.input_tokens
+            self.output_tokens = event.response.usage.output_tokens
             return
 
         else:
-            logger.deubg(f"Unhandled event: {event}")
+            logger.debug(f"Unhandled event: {event}")
             return
 
 

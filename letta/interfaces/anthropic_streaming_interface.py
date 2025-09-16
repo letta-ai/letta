@@ -679,7 +679,7 @@ class SimpleAnthropicStreamingInterface:
                                 if prev_message_type != None:
                                     message_index += 1
                                 prev_message_type = new_message_type
-                            print(f"Yielding message: {message}")
+                            # print(f"Yielding message: {message}")
                             yield message
                     except asyncio.CancelledError as e:
                         import traceback

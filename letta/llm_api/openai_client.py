@@ -248,6 +248,8 @@ class OpenAIClient(LLMClientBase):
                     }
                     for t in typed_tools
                 ]
+        else:
+            responses_tools = None
 
         # Prepare the request payload
         data = ResponsesRequest(
@@ -301,7 +303,7 @@ class OpenAIClient(LLMClientBase):
             data.model = "memgpt-openai"
 
         request_data = data.model_dump(exclude_unset=True)
-        print("responses request data", request_data)
+        # print("responses request data", request_data)
         return request_data
 
     @trace_method
