@@ -1196,6 +1196,7 @@ async def send_message(
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
+        result = None
         if agent_eligible and model_compatible:
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
             result = await agent_loop.step(
@@ -1233,7 +1234,11 @@ async def send_message(
         raise
     finally:
         if settings.track_agent_run:
-            stop_reason = result.stop_reason.stop_reason
+            if result:
+                stop_reason = result.stop_reason
+            else:
+                # NOTE: we could also consider this an error?
+                stop_reason = None
             await server.job_manager.safe_update_job_status_async(
                 job_id=run.id,
                 new_status=job_status,
