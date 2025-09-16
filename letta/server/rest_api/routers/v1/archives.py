@@ -28,9 +28,6 @@ async def create_archive(
 ):
     """
     Create a new archive.
-
-    The vector DB provider and organization are determined internally and cannot
-    be set by the client.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
