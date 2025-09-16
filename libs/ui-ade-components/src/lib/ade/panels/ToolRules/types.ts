@@ -44,6 +44,7 @@ export type SupportedToolRuleNameTypes =
   | 'max_count_per_step'
   | 'required_before_exit'
   | 'run_first'
+  | 'requires_approval';
 
 // Control node types
 export type ControlNodeType = 'agent' | 'done';
@@ -270,6 +271,7 @@ export const COLORS = {
     MAX_COUNT: 'var(--rule-icon-max-count)',
     CONTINUE: 'var(--rule-icon-continue)',
     EXIT: 'var(--rule-icon-exit)',
+    REQUIRES_APPROVAL: 'var(--rule-icon-requires-approval)',
     REQUIRED_BEFORE_EXIT: 'var(--rule-icon-required-before-exit)',
   },
 } as const;

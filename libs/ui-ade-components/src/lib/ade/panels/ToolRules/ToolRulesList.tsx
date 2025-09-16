@@ -31,6 +31,7 @@ import {
   EndIcon,
   ConstrainChildToolsIcon,
   ContinueLoopIcon,
+  ApprovalDelegationIcon,
   MaxCountPerStepIcon,
 } from '@letta-cloud/ui-component-library';
 
@@ -172,10 +173,22 @@ function NewToolRuleButtonForTool({
         description: t('toolTypes.constrainChildTools.description'),
       },
       {
+        value: 'conditional',
+        icon: ApprovalDelegationIcon,
+        title: t('toolTypes.conditional.title'),
+        description: t('toolTypes.conditional.description'),
+      },
+      {
         value: 'continue_loop',
         icon: ContinueLoopIcon,
         title: t('toolTypes.continueLoop.title'),
         description: t('toolTypes.continueLoop.description'),
+      },
+      {
+        value: 'requires_approval',
+        icon: ApprovalDelegationIcon,
+        title: t('toolTypes.requiresApproval.title'),
+        description: t('toolTypes.requiresApproval.description'),
       },
       {
         value: 'max_count_per_step',
@@ -243,6 +256,7 @@ export function ToolRulesList(props: ToolRulesListProps) {
     | 'constrain_child_tools'
     | 'continue_loop'
     | 'exit_loop'
+    | 'requires_approval'
     | 'max_count_per_step'
     | 'required_before_exit'
     | 'run_first'
@@ -306,6 +320,7 @@ export function ToolRulesList(props: ToolRulesListProps) {
             'conditional',
             'max_count_per_step',
             'required_before_exit',
+            'requires_approval',
           ].includes(rule.type)
         );
       },
@@ -362,7 +377,11 @@ export function ToolRulesList(props: ToolRulesListProps) {
     } else {
       // Original rules-based grouping logic
       const grouped = supportedRules.reduce((acc, rule, index) => {
-        if (rule.type === 'continue_loop' || rule.type === 'exit_loop') {
+        if (
+          rule.type === 'continue_loop' ||
+          rule.type === 'exit_loop' ||
+          rule.type === 'requires_approval'
+        ) {
           // For these types, always show as grouped - only keep the first occurrence in the UI
           if (!acc.find((item) => item.rule.type === rule.type)) {
             acc.push({ rule, index, isGrouped: true });
@@ -404,6 +423,7 @@ export function ToolRulesList(props: ToolRulesListProps) {
         tool_name: '',
         children: [],
       },
+      requires_approval: { type: 'requires_approval', tool_name: '' },
       run_first: { type: 'run_first', tool_name: '' },
       exit_loop: { type: 'exit_loop', tool_name: '' },
       continue_loop: { type: 'continue_loop', tool_name: '' },
@@ -465,7 +485,8 @@ export function ToolRulesList(props: ToolRulesListProps) {
       // For continue_loop and exit_loop, remove all rules of the same type
       if (
         ruleToRemove.type === 'continue_loop' ||
-        ruleToRemove.type === 'exit_loop'
+        ruleToRemove.type === 'exit_loop' ||
+        ruleToRemove.type === 'requires_approval'
       ) {
         return prev.filter((rule) => rule.type !== ruleToRemove.type);
       }

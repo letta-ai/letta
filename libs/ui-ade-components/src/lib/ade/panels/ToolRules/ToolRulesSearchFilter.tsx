@@ -18,6 +18,7 @@ import {
   ContinueLoopIcon,
   MaxCountPerStepIcon,
   Typography,
+  ApprovalDelegationIcon,
 } from '@letta-cloud/ui-component-library';
 import type { SupportedToolRuleNameTypes } from './types';
 
@@ -25,6 +26,10 @@ import type { SupportedToolRuleNameTypes } from './types';
 const FILTER_OPTIONS = [
   { value: 'all', translationKey: 'toolTypes.allRules.title' },
   { value: 'continue_loop', translationKey: 'toolTypes.continueLoop.title' },
+  {
+    value: 'requires_approval',
+    translationKey: 'toolTypes.requiresApproval.title',
+  },
   {
     value: 'constrain_child_tools',
     translationKey: 'toolTypes.constrainChildTools.title',
@@ -52,6 +57,11 @@ const RULE_OPTIONS = [
     value: 'exit_loop' as const,
     icon: EndIcon,
     translationKey: 'toolTypes.exitLoop',
+  },
+  {
+    value: 'requires_approval' as const,
+    icon: ApprovalDelegationIcon,
+    translationKey: 'toolTypes.requiresApproval',
   },
   {
     value: 'required_before_exit' as const,

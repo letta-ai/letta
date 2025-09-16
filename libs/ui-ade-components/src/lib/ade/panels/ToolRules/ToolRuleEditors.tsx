@@ -33,6 +33,7 @@ import type {
   ConditionalToolRule,
   InitToolRule,
   TerminalToolRule,
+  RequiresApprovalToolRule,
   RequiredBeforeExitToolRule,
 } from '@letta-cloud/sdk-core';
 import { z } from 'zod';
@@ -50,6 +51,8 @@ export function useToolTitleFromType(type: SupportedToolRuleNameTypes) {
 
   return useMemo(() => {
     switch (type) {
+      case 'requires_approval':
+        return t('toolTypes.requiresApproval.title');
       case 'constrain_child_tools':
         return t('toolTypes.constrainChildTools.title');
       case 'run_first':
@@ -968,6 +971,102 @@ export function MaxCountPerStepToolRuleEditor(
   );
 }
 
+const requiresApprovalSchema = z.object({
+  toolNames: z.array(z.string()),
+  type: z.literal('requires_approval'),
+});
+
+type RequiresApprovalFormData = z.infer<typeof requiresApprovalSchema>;
+
+interface RequiresApprovalEditorProps extends ToolEditorDefaultProps {
+  toolNames: string[];
+}
+
+export function RequiresApprovalEditor(props: RequiresApprovalEditorProps) {
+  const { onRemove, onSubmit, toolNames = [] } = props;
+
+  const form = useForm<RequiresApprovalFormData>({
+    resolver: zodResolver(requiresApprovalSchema),
+    defaultValues: {
+      toolNames: toolNames.filter((name) => name !== ''), // Only include non-empty tool names
+      type: 'requires_approval',
+    },
+  });
+  const { tools } = useCurrentAgent();
+  const t = useTranslations('ADE/ToolRules');
+
+  const handleSubmit = useCallback(
+    (data: RequiresApprovalFormData) => {
+      // Create multiple rules, one for each selected tool
+      // If no tools selected, create a single empty rule
+      const rules =
+        data.toolNames.length > 0
+          ? data.toolNames.map((toolName) => ({
+              tool_name: toolName,
+              type: 'requires_approval' as const,
+            }))
+          : [{ tool_name: '', type: 'requires_approval' as const }];
+
+      // Submit all rules at once
+      onSubmit(rules);
+      form.reset({
+        toolNames: data.toolNames,
+        type: 'requires_approval',
+      });
+    },
+    [form, onSubmit],
+  );
+
+  return (
+    <>
+      <FormProvider {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <ToolRuleItemWrapper
+            isValid={form.formState.isValid}
+            isDirty={form.formState.isDirty}
+            type="requires_approval"
+            onRemove={onRemove}
+          >
+            <FormField
+              name="toolNames"
+              render={({ field }) => (
+                <HStack align="center">
+                  {t.rich('RequiresApprovalEditor.sentence', {
+                    tool: () => (
+                      <Select
+                        label={t('RequiresApprovalEditor.toolName')}
+                        value={(field.value as string[]).map((toolName) => ({
+                          value: toolName,
+                          label: toolName,
+                        }))}
+                        isMulti
+                        inline
+                        hideLabel
+                        placeholder={t('RequiresApprovalEditor.toolName')}
+                        options={(tools || []).map((tool) => ({
+                          value: tool.name || '',
+                          label: tool.name || '',
+                        }))}
+                        onSelect={(value) => {
+                          if (isMultiValue(value)) {
+                            field.onChange(value.map((v) => v.value));
+                            return;
+                          }
+                          return;
+                        }}
+                      />
+                    ),
+                  })}
+                </HStack>
+              )}
+            />
+          </ToolRuleItemWrapper>
+        </form>
+      </FormProvider>
+    </>
+  );
+}
+
 // Add the schema for RequiredBeforeExitToolRule
 const requiredBeforeExitToolRuleSchema = z.object({
   toolName: z.string(),
@@ -1153,6 +1252,23 @@ export function ToolRuleEditor({
         onSubmit={onSubmit}
         defaultRule={rule}
         viewMode={viewMode}
+      />
+    );
+  }
+
+  if (rule.type === 'requires_approval') {
+    const toolNames = toolRules
+      ?.filter(
+        (r): r is RequiresApprovalToolRule => r.type === 'requires_approval',
+      )
+      .map((r) => r.tool_name);
+
+    return (
+      <RequiresApprovalEditor
+        onRemove={onRemove}
+        key={`requires_approval_${index}`}
+        onSubmit={onSubmit}
+        toolNames={toolNames}
       />
     );
   }

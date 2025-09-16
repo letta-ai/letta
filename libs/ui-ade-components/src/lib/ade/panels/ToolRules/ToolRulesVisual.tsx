@@ -25,6 +25,7 @@ import {
   LoadingEmptyStatusComponent,
   CaretDownIcon,
   CaretRightIcon,
+  ApprovalDelegationIcon,
 } from '@letta-cloud/ui-component-library';
 
 // Import types from consolidated types file
@@ -122,6 +123,11 @@ function getRuleTypeIcons(
       type: 'required_before_exit',
       icon: <EndIcon size="small" color="inherit" />,
       color: COLORS.RULE_ICONS.REQUIRED_BEFORE_EXIT,
+    },
+    {
+      type: 'requires_approval',
+      icon: <ApprovalDelegationIcon size="small" color="inherit" />,
+      color: COLORS.RULE_ICONS.REQUIRES_APPROVAL,
     },
   ];
 
@@ -561,6 +567,12 @@ function Legend({
                 <EndIcon size="small" color="inherit" />
               </div>
               <span>{t('RequiredBeforeExit')}</span>
+            </div>
+            <div className="tool-rules-legend__item">
+              <div style={{ color: COLORS.RULE_ICONS.REQUIRES_APPROVAL }}>
+                <ApprovalDelegationIcon size="small" color="inherit" />
+              </div>
+              <span>{t('RequiresApproval')}</span>
             </div>
           </div>
         </div>

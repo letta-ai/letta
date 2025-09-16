@@ -112,6 +112,7 @@
     "requiredBeforeExit": "Agent will always run this tool before exiting",
     "runFirst": "Agent will run this tool first",
     "constrainChildTools": "Constrain child tools",
+    "requiresApproval": "Require human approval",
     "conditional": "Conditional execution",
     "maxCountPerStep": "Limit executions per step",
     "viewTool": "View / edit {toolName} tool"
@@ -151,6 +152,12 @@
       "toolName": "Tool name",
       "save": "Save",
       "description": "Agent loop will not stop at this tool."
+    },
+    "RequiresApprovalEditor": {
+      "sentence": "<tool></tool> will require human approval before running",
+      "toolName": "Tool name",
+      "save": "Save",
+      "description": "Tool will require human approval"
     },
     "RequiredBeforeExitToolEditor": {
       "sentence": "<tool></tool> must be called before the agent exits the loop",
@@ -207,6 +214,10 @@
         "title": "Constrain Child Tools",
         "description": "Require one tool to follow another tool"
       },
+      "requiresApproval": {
+        "title": "Requires human approval",
+        "description": "Requires human to approve tool before running"
+      },
       "conditional": {
         "title": "Conditional",
         "description": "Run a tool based on a condition from another tool"
@@ -237,7 +248,8 @@
     "maxCount": "Max Count",
     "continueLoop": "Continue Loop",
     "exitLoop": "Exit Loop",
-    "RequiredBeforeExit": "Required Before Exit"
+    "RequiredBeforeExit": "Required Before Exit",
+    "RequiresApproval": "Requires human approval"
   },
   "ADE/AgentVariablesModal": {
     "noVariablesInDeployedAgent": "No variables in this agent",

@@ -110,6 +110,10 @@ export function ModifyToolBehaviorPopover({
         tool_name: '',
         children: [],
       },
+      requires_approval: {
+        type: 'requires_approval',
+        tool_name: '',
+      },
       run_first: { type: 'run_first', tool_name: '' },
       exit_loop: { type: 'exit_loop', tool_name: '' },
       continue_loop: { type: 'continue_loop', tool_name: '' },
