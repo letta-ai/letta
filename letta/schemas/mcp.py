@@ -75,41 +75,26 @@ class MCPServer(BaseMCPServer):
 
     def model_dump(self, to_orm: bool = False, **kwargs):
         """Override model_dump to handle encryption when saving to database."""
-        import os
-
-        # Check environment variable directly to handle test patching
-        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY")
-        if not encryption_key:
-            from letta.settings import settings
-
-            encryption_key = settings.encryption_key
+        from letta.settings import settings
 
         data = super().model_dump(to_orm=to_orm, **kwargs)
 
-        if to_orm and encryption_key:
-            # Temporarily set the encryption key for Secret/SecretDict
-            from letta.settings import settings
+        if to_orm and settings.encryption_key:
+            # Encrypt token if present
+            if self.token is not None:
+                token_secret = Secret.from_plaintext(self.token)
+                secret_dict = token_secret.to_dict()
+                data["token_enc"] = secret_dict["encrypted"]
+                # Keep plaintext for dual-write during migration
+                data["token"] = secret_dict["plaintext"]
 
-            original_key = settings.encryption_key
-            settings.encryption_key = encryption_key
-            try:
-                # Encrypt token if present
-                if self.token is not None:
-                    token_secret = Secret.from_plaintext(self.token)
-                    secret_dict = token_secret.to_dict()
-                    data["token_enc"] = secret_dict["encrypted"]
-                    # Keep plaintext for dual-write during migration
-                    data["token"] = secret_dict["plaintext"]
-
-                # Encrypt custom headers if present
-                if self.custom_headers is not None:
-                    headers_secret = SecretDict.from_plaintext(self.custom_headers)
-                    secret_dict = headers_secret.to_dict()
-                    data["custom_headers_enc"] = secret_dict["encrypted"]
-                    # Keep plaintext for dual-write during migration
-                    data["custom_headers"] = secret_dict["plaintext"]
-            finally:
-                settings.encryption_key = original_key
+            # Encrypt custom headers if present
+            if self.custom_headers is not None:
+                headers_secret = SecretDict.from_plaintext(self.custom_headers)
+                secret_dict = headers_secret.to_dict()
+                data["custom_headers_enc"] = secret_dict["encrypted"]
+                # Keep plaintext for dual-write during migration
+                data["custom_headers"] = secret_dict["plaintext"]
 
         return data
 
@@ -277,49 +262,34 @@ class MCPOAuthSession(BaseMCPOAuth):
 
     def model_dump(self, to_orm: bool = False, **kwargs):
         """Override model_dump to handle encryption when saving to database."""
-        import os
-
-        # Check environment variable directly to handle test patching
-        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY")
-        if not encryption_key:
-            from letta.settings import settings
-
-            encryption_key = settings.encryption_key
+        from letta.settings import settings
 
         data = super().model_dump(to_orm=to_orm, **kwargs)
 
-        if to_orm and encryption_key:
-            # Temporarily set the encryption key for Secret
-            from letta.settings import settings
+        if to_orm and settings.encryption_key:
+            # Encrypt access token if present
+            if self.access_token is not None:
+                token_secret = Secret.from_plaintext(self.access_token)
+                secret_dict = token_secret.to_dict()
+                data["access_token_enc"] = secret_dict["encrypted"]
+                # Keep plaintext for dual-write during migration
+                data["access_token"] = secret_dict["plaintext"]
 
-            original_key = settings.encryption_key
-            settings.encryption_key = encryption_key
-            try:
-                # Encrypt access token if present
-                if self.access_token is not None:
-                    token_secret = Secret.from_plaintext(self.access_token)
-                    secret_dict = token_secret.to_dict()
-                    data["access_token_enc"] = secret_dict["encrypted"]
-                    # Keep plaintext for dual-write during migration
-                    data["access_token"] = secret_dict["plaintext"]
+            # Encrypt refresh token if present
+            if self.refresh_token is not None:
+                token_secret = Secret.from_plaintext(self.refresh_token)
+                secret_dict = token_secret.to_dict()
+                data["refresh_token_enc"] = secret_dict["encrypted"]
+                # Keep plaintext for dual-write during migration
+                data["refresh_token"] = secret_dict["plaintext"]
 
-                # Encrypt refresh token if present
-                if self.refresh_token is not None:
-                    token_secret = Secret.from_plaintext(self.refresh_token)
-                    secret_dict = token_secret.to_dict()
-                    data["refresh_token_enc"] = secret_dict["encrypted"]
-                    # Keep plaintext for dual-write during migration
-                    data["refresh_token"] = secret_dict["plaintext"]
-
-                # Encrypt client secret if present
-                if self.client_secret is not None:
-                    secret = Secret.from_plaintext(self.client_secret)
-                    secret_dict = secret.to_dict()
-                    data["client_secret_enc"] = secret_dict["encrypted"]
-                    # Keep plaintext for dual-write during migration
-                    data["client_secret"] = secret_dict["plaintext"]
-            finally:
-                settings.encryption_key = original_key
+            # Encrypt client secret if present
+            if self.client_secret is not None:
+                secret = Secret.from_plaintext(self.client_secret)
+                secret_dict = secret.to_dict()
+                data["client_secret_enc"] = secret_dict["encrypted"]
+                # Keep plaintext for dual-write during migration
+                data["client_secret"] = secret_dict["plaintext"]
 
         return data
 

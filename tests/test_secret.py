@@ -1,4 +1,5 @@
 import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -219,6 +220,61 @@ class TestSecret:
         finally:
             settings.encryption_key = original_key
 
+    def test_plaintext_caching(self):
+        """Test that plaintext values are cached after first decryption."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext = "cached-value"
+            secret = Secret.from_plaintext(plaintext)
+
+            # First call should decrypt and cache
+            result1 = secret.get_plaintext()
+            assert result1 == plaintext
+            assert secret._plaintext_cache == plaintext
+
+            # Second call should use cache
+            result2 = secret.get_plaintext()
+            assert result2 == plaintext
+            assert result1 is result2  # Should be the same object reference
+        finally:
+            settings.encryption_key = original_key
+
+    def test_caching_only_decrypts_once(self):
+        """Test that decryption only happens once when caching is enabled."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext = "test-single-decrypt"
+            encrypted = CryptoUtils.encrypt(plaintext, self.MOCK_KEY)
+
+            # Create a Secret from encrypted value
+            secret = Secret.from_encrypted(encrypted)
+
+            # Mock the decrypt method to track calls
+            with patch.object(CryptoUtils, "decrypt", wraps=CryptoUtils.decrypt) as mock_decrypt:
+                # First call should decrypt
+                result1 = secret.get_plaintext()
+                assert result1 == plaintext
+                assert mock_decrypt.call_count == 1
+
+                # Second and third calls should use cache
+                result2 = secret.get_plaintext()
+                result3 = secret.get_plaintext()
+                assert result2 == plaintext
+                assert result3 == plaintext
+
+                # Decrypt should still have been called only once
+                assert mock_decrypt.call_count == 1
+        finally:
+            settings.encryption_key = original_key
+
 
 class TestSecretDict:
     """Test suite for SecretDict wrapper class."""
@@ -371,3 +427,71 @@ class TestSecretDict:
             assert secret_dict.get_plaintext() == new_dict
         finally:
             settings.encryption_key = original_key
+
+    def test_plaintext_dict_caching(self):
+        """Test that plaintext dictionary values are cached after first decryption."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext_dict = {"key1": "value1", "key2": "value2", "nested": {"inner": "value"}}
+            secret_dict = SecretDict.from_plaintext(plaintext_dict)
+
+            # First call should decrypt and cache
+            result1 = secret_dict.get_plaintext()
+            assert result1 == plaintext_dict
+            assert secret_dict._plaintext_cache == plaintext_dict
+
+            # Second call should use cache
+            result2 = secret_dict.get_plaintext()
+            assert result2 == plaintext_dict
+            assert result1 is result2  # Should be the same object reference
+        finally:
+            settings.encryption_key = original_key
+
+    def test_dict_caching_only_decrypts_once(self):
+        """Test that SecretDict decryption only happens once when caching is enabled."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = self.MOCK_KEY
+
+        try:
+            plaintext_dict = {"api_key": "sk-12345", "api_secret": "secret-value"}
+            encrypted = CryptoUtils.encrypt(json.dumps(plaintext_dict), self.MOCK_KEY)
+
+            # Create a SecretDict from encrypted value
+            secret_dict = SecretDict.from_encrypted(encrypted)
+
+            # Mock the decrypt method to track calls
+            with patch.object(CryptoUtils, "decrypt", wraps=CryptoUtils.decrypt) as mock_decrypt:
+                # First call should decrypt
+                result1 = secret_dict.get_plaintext()
+                assert result1 == plaintext_dict
+                assert mock_decrypt.call_count == 1
+
+                # Second and third calls should use cache
+                result2 = secret_dict.get_plaintext()
+                result3 = secret_dict.get_plaintext()
+                assert result2 == plaintext_dict
+                assert result3 == plaintext_dict
+
+                # Decrypt should still have been called only once
+                assert mock_decrypt.call_count == 1
+        finally:
+            settings.encryption_key = original_key
+
+    def test_cache_handles_none_values(self):
+        """Test that caching works correctly with None/empty values."""
+        # Test with None value
+        secret_dict = SecretDict.from_plaintext(None)
+
+        # First call
+        result1 = secret_dict.get_plaintext()
+        assert result1 is None
+
+        # Second call should also return None (not trying to decrypt)
+        result2 = secret_dict.get_plaintext()
+        assert result2 is None

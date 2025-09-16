@@ -118,8 +118,8 @@ class Secret(BaseModel):
         # Decrypt and cache
         try:
             plaintext = CryptoUtils.decrypt(self._encrypted_value)
-            # Note: We can't actually cache due to frozen=True, but in practice
-            # we'll create new instances rather than mutating
+            # Cache the decrypted value (PrivateAttr fields can be mutated even with frozen=True)
+            self._plaintext_cache = plaintext
             return plaintext
         except Exception:
             # If decryption fails and this wasn't originally encrypted,
@@ -224,9 +224,16 @@ class SecretDict(BaseModel):
         if self._encrypted_value is None:
             return None
 
+        # Use cached value if available
+        if self._plaintext_cache is not None:
+            return self._plaintext_cache
+
         try:
             decrypted_json = CryptoUtils.decrypt(self._encrypted_value)
-            return json.loads(decrypted_json)
+            plaintext_dict = json.loads(decrypted_json)
+            # Cache the decrypted value (PrivateAttr fields can be mutated even with frozen=True)
+            self._plaintext_cache = plaintext_dict
+            return plaintext_dict
         except Exception:
             if not self._was_encrypted:
                 return None
