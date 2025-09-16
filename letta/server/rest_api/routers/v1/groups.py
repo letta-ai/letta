@@ -233,13 +233,23 @@ async def modify_group_message(
 @router.get("/{group_id}/messages", response_model=GroupMessagesResponse, operation_id="list_group_messages")
 async def list_group_messages(
     group_id: str,
-    server: "SyncServer" = Depends(get_letta_server),
-    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
-    before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
-    limit: int = Query(10, description="Maximum number of messages to retrieve."),
+    before: Optional[str] = Query(
+        None,
+        description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(10, description="Maximum number of messages to retrieve"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     use_assistant_message: bool = Query(True, description="Whether to use assistant messages"),
     assistant_message_tool_name: str = Query(DEFAULT_MESSAGE_TOOL, description="The name of the designated message tool."),
     assistant_message_tool_kwarg: str = Query(DEFAULT_MESSAGE_TOOL_KWARG, description="The name of the message argument."),
+    server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
@@ -255,7 +265,7 @@ async def list_group_messages(
             before=before,
             limit=limit,
             group_id=group_id,
-            reverse=True,
+            reverse=(order == "desc"),
             return_message_object=False,
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
@@ -267,6 +277,7 @@ async def list_group_messages(
             after=after,
             before=before,
             limit=limit,
+            ascending=(order == "asc"),
             actor=actor,
             use_assistant_message=use_assistant_message,
             assistant_message_tool_name=assistant_message_tool_name,
