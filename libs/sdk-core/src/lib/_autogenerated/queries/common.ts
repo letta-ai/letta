@@ -35,6 +35,7 @@ import {
   ProviderCategory,
   ProviderType,
   SandboxType,
+  StopReasonType,
 } from '../requests/types.gen';
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.retrieveTool>
@@ -2415,6 +2416,7 @@ export const UseRunsServiceListRunsKeyFn = (
     background,
     before,
     limit,
+    stopReason,
     userAgent,
     userId,
     xProjectId,
@@ -2425,6 +2427,7 @@ export const UseRunsServiceListRunsKeyFn = (
     background?: boolean;
     before?: string;
     limit?: number;
+    stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -2440,6 +2443,7 @@ export const UseRunsServiceListRunsKeyFn = (
       background,
       before,
       limit,
+      stopReason,
       userAgent,
       userId,
       xProjectId,

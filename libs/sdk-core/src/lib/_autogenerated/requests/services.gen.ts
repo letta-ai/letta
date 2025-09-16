@@ -5318,6 +5318,7 @@ export class RunsService {
    * @param data The data for the request.
    * @param data.agentIds The unique identifier of the agent associated with the run.
    * @param data.background If True, filters for runs that were created in background mode.
+   * @param data.stopReason Filter runs by stop reason.
    * @param data.after Cursor for pagination
    * @param data.before Cursor for pagination
    * @param data.limit Maximum number of runs to return
@@ -5338,6 +5339,7 @@ export class RunsService {
       query: {
         agent_ids: data.agentIds,
         background: data.background,
+        stop_reason: data.stopReason,
         after: data.after,
         before: data.before,
         limit: data.limit,

@@ -33,6 +33,7 @@ import {
   ProviderCategory,
   ProviderType,
   SandboxType,
+  StopReasonType,
 } from '../requests/types.gen';
 import * as Common from './common';
 /**
@@ -3871,6 +3872,7 @@ export const useProvidersServiceRetrieveProviderSuspense = <
  * @param data The data for the request.
  * @param data.agentIds The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
+ * @param data.stopReason Filter runs by stop reason.
  * @param data.after Cursor for pagination
  * @param data.before Cursor for pagination
  * @param data.limit Maximum number of runs to return
@@ -3893,6 +3895,7 @@ export const useRunsServiceListRunsSuspense = <
     background,
     before,
     limit,
+    stopReason,
     userAgent,
     userId,
     xProjectId,
@@ -3903,6 +3906,7 @@ export const useRunsServiceListRunsSuspense = <
     background?: boolean;
     before?: string;
     limit?: number;
+    stopReason?: StopReasonType;
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -3919,6 +3923,7 @@ export const useRunsServiceListRunsSuspense = <
         background,
         before,
         limit,
+        stopReason,
         userAgent,
         userId,
         xProjectId,
@@ -3933,6 +3938,7 @@ export const useRunsServiceListRunsSuspense = <
         background,
         before,
         limit,
+        stopReason,
         userAgent,
         userId,
         xProjectId,

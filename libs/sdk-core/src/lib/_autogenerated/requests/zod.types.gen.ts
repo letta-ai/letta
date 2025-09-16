@@ -3150,6 +3150,20 @@ export const JobStatus = z.union([
   z.literal('expired'),
 ]);
 
+export type StopReasonType = z.infer<typeof StopReasonType>;
+export const StopReasonType = z.union([
+  z.literal('end_turn'),
+  z.literal('error'),
+  z.literal('llm_api_error'),
+  z.literal('invalid_llm_response'),
+  z.literal('invalid_tool_call'),
+  z.literal('max_steps'),
+  z.literal('no_tool_call'),
+  z.literal('tool_rule'),
+  z.literal('cancelled'),
+  z.literal('requires_approval'),
+]);
+
 export type JobType = z.infer<typeof JobType>;
 export const JobType = z.union([
   z.literal('job'),
@@ -3172,6 +3186,13 @@ export const BatchJob = z.object({
   status: JobStatus.optional(),
   completed_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  stop_reason: z
+    .union([
+      StopReasonType,
+      z.null(),
+      z.array(z.union([StopReasonType, z.null()])),
+    ])
     .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
@@ -6777,6 +6798,13 @@ export const Job = z.object({
   completed_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
     .optional(),
+  stop_reason: z
+    .union([
+      StopReasonType,
+      z.null(),
+      z.array(z.union([StopReasonType, z.null()])),
+    ])
+    .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
@@ -7260,20 +7288,6 @@ export const LettaMessageUnion = z.union([
   AssistantMessage,
   ApprovalRequestMessage,
   ApprovalResponseMessage,
-]);
-
-export type StopReasonType = z.infer<typeof StopReasonType>;
-export const StopReasonType = z.union([
-  z.literal('end_turn'),
-  z.literal('error'),
-  z.literal('llm_api_error'),
-  z.literal('invalid_llm_response'),
-  z.literal('invalid_tool_call'),
-  z.literal('max_steps'),
-  z.literal('no_tool_call'),
-  z.literal('tool_rule'),
-  z.literal('cancelled'),
-  z.literal('requires_approval'),
 ]);
 
 export type LettaStopReason = z.infer<typeof LettaStopReason>;
@@ -7981,6 +7995,13 @@ export const Run = z.object({
   status: JobStatus.optional(),
   completed_at: z
     .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  stop_reason: z
+    .union([
+      StopReasonType,
+      z.null(),
+      z.array(z.union([StopReasonType, z.null()])),
+    ])
     .optional(),
   metadata: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
@@ -13337,6 +13358,13 @@ export const get_List_runs = {
           z.boolean(),
           z.null(),
           z.array(z.union([z.boolean(), z.null()])),
+        ])
+        .optional(),
+      stop_reason: z
+        .union([
+          StopReasonType,
+          z.null(),
+          z.array(z.union([StopReasonType, z.null()])),
         ])
         .optional(),
       after: z

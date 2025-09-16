@@ -1909,6 +1909,17 @@ export const $BatchJob = {
       title: 'Completed At',
       description: 'The unix timestamp of when the job was completed.',
     },
+    stop_reason: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StopReasonType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The reason why the job was stopped.',
+    },
     metadata: {
       anyOf: [
         {
@@ -9066,6 +9077,17 @@ export const $Job = {
       title: 'Completed At',
       description: 'The unix timestamp of when the job was completed.',
     },
+    stop_reason: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StopReasonType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The reason why the job was stopped.',
+    },
     metadata: {
       anyOf: [
         {
@@ -12561,6 +12583,17 @@ export const $Run = {
       ],
       title: 'Completed At',
       description: 'The unix timestamp of when the job was completed.',
+    },
+    stop_reason: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/StopReasonType',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      description: 'The reason why the run was stopped.',
     },
     metadata: {
       anyOf: [

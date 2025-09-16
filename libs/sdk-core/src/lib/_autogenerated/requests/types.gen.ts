@@ -665,6 +665,10 @@ export type BatchJob = {
    */
   completed_at?: string | null;
   /**
+   * The reason why the job was stopped.
+   */
+  stop_reason?: StopReasonType | null;
+  /**
    * The metadata of the job.
    */
   metadata?: {
@@ -3183,6 +3187,10 @@ export type Job = {
    */
   completed_at?: string | null;
   /**
+   * The reason why the job was stopped.
+   */
+  stop_reason?: StopReasonType | null;
+  /**
    * The metadata of the job.
    */
   metadata?: {
@@ -4674,6 +4682,10 @@ export type Run = {
    * The unix timestamp of when the job was completed.
    */
   completed_at?: string | null;
+  /**
+   * The reason why the run was stopped.
+   */
+  stop_reason?: StopReasonType | null;
   /**
    * The metadata of the job.
    */
@@ -8953,6 +8965,10 @@ export type ListRunsData = {
    * Maximum number of runs to return
    */
   limit?: number | null;
+  /**
+   * Filter runs by stop reason.
+   */
+  stopReason?: StopReasonType | null;
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
