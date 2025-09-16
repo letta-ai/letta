@@ -530,6 +530,9 @@ navigation:
               - GET /v1/messages/batches/{batch_id}
               - POST /v1/messages/batches
               - PATCH /v1/messages/batches/{batch_id}/cancel
+              - section: Messages
+                contents:
+                  - GET /v1/messages/batches/{batch_id}/messages
           - voice
           - health
           - projects
