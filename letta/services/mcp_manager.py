@@ -755,21 +755,58 @@ class MCPManager:
         """
         Convert OAuth ORM model to Pydantic model, handling decryption of sensitive fields.
         """
+        # Check for encryption key from env or settings
+        import os
+
+        from letta.settings import settings
+
+        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
         # Get decrypted values using the dual-read approach
         access_token = None
         if oauth_session.access_token_enc or oauth_session.access_token:
-            secret = Secret.from_db(oauth_session.access_token_enc, oauth_session.access_token)
-            access_token = secret.get_plaintext()
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.access_token_enc, oauth_session.access_token)
+                    access_token = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                access_token = oauth_session.access_token
 
         refresh_token = None
         if oauth_session.refresh_token_enc or oauth_session.refresh_token:
-            secret = Secret.from_db(oauth_session.refresh_token_enc, oauth_session.refresh_token)
-            refresh_token = secret.get_plaintext()
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.refresh_token_enc, oauth_session.refresh_token)
+                    refresh_token = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                refresh_token = oauth_session.refresh_token
 
         client_secret = None
         if oauth_session.client_secret_enc or oauth_session.client_secret:
-            secret = Secret.from_db(oauth_session.client_secret_enc, oauth_session.client_secret)
-            client_secret = secret.get_plaintext()
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.client_secret_enc, oauth_session.client_secret)
+                    client_secret = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                client_secret = oauth_session.client_secret
 
         return MCPOAuthSession(
             id=oauth_session.id,
@@ -863,19 +900,55 @@ class MCPManager:
 
             # Handle encryption for access_token
             if session_update.access_token is not None:
-                token_secret = Secret.from_plaintext(session_update.access_token)
-                secret_dict = token_secret.to_dict()
-                oauth_session.access_token_enc = secret_dict["encrypted"]
-                # During migration phase, also update plaintext
-                oauth_session.access_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        token_secret = Secret.from_plaintext(session_update.access_token)
+                        secret_dict = token_secret.to_dict()
+                        oauth_session.access_token_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.access_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.access_token = session_update.access_token
+                    oauth_session.access_token_enc = None
 
             # Handle encryption for refresh_token
             if session_update.refresh_token is not None:
-                token_secret = Secret.from_plaintext(session_update.refresh_token)
-                secret_dict = token_secret.to_dict()
-                oauth_session.refresh_token_enc = secret_dict["encrypted"]
-                # During migration phase, also update plaintext
-                oauth_session.refresh_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        token_secret = Secret.from_plaintext(session_update.refresh_token)
+                        secret_dict = token_secret.to_dict()
+                        oauth_session.refresh_token_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.refresh_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.refresh_token = session_update.refresh_token
+                    oauth_session.refresh_token_enc = None
 
             if session_update.token_type is not None:
                 oauth_session.token_type = session_update.token_type
@@ -888,11 +961,29 @@ class MCPManager:
 
             # Handle encryption for client_secret
             if session_update.client_secret is not None:
-                secret_secret = Secret.from_plaintext(session_update.client_secret)
-                secret_dict = secret_secret.to_dict()
-                oauth_session.client_secret_enc = secret_dict["encrypted"]
-                # During migration phase, also update plaintext
-                oauth_session.client_secret = secret_dict["plaintext"] if not secret_secret._was_encrypted else None
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        secret_secret = Secret.from_plaintext(session_update.client_secret)
+                        secret_dict = secret_secret.to_dict()
+                        oauth_session.client_secret_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.client_secret = secret_dict["plaintext"] if not secret_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.client_secret = session_update.client_secret
+                    oauth_session.client_secret_enc = None
 
             if session_update.redirect_uri is not None:
                 oauth_session.redirect_uri = session_update.redirect_uri

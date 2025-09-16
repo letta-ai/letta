@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from letta.helpers.crypto_utils import CryptoUtils
 
@@ -12,20 +12,22 @@ class Secret(BaseModel):
 
     This class ensures that sensitive data remains encrypted as much as possible
     while passing through the codebase, only decrypting when absolutely necessary.
+
+    TODO: Once we deprecate plaintext columns in the database:
+    - Remove the dual-write logic in to_dict()
+    - Remove the from_db() method's plaintext_value parameter
+    - Remove the _was_encrypted flag (no longer needed for migration)
+    - Simplify get_plaintext() to only handle encrypted values
     """
 
     # Store the encrypted value
-    _encrypted_value: Optional[str] = None
+    _encrypted_value: Optional[str] = PrivateAttr(default=None)
     # Cache the decrypted value to avoid repeated decryption
-    _plaintext_cache: Optional[str] = None
+    _plaintext_cache: Optional[str] = PrivateAttr(default=None)
     # Flag to indicate if the value was originally encrypted
-    _was_encrypted: bool = False
+    _was_encrypted: bool = PrivateAttr(default=False)
 
-    class Config:
-        # Allow private attributes
-        underscore_attrs_are_private = True
-        # Make the class hashable
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
     @classmethod
     def from_plaintext(cls, value: Optional[str]) -> "Secret":
@@ -39,10 +41,16 @@ class Secret(BaseModel):
             A Secret instance with the encrypted value
         """
         if value is None:
-            return cls(_encrypted_value=None, _was_encrypted=False)
+            instance = cls()
+            instance._encrypted_value = None
+            instance._was_encrypted = False
+            return instance
 
         encrypted = CryptoUtils.encrypt(value)
-        return cls(_encrypted_value=encrypted, _was_encrypted=False)
+        instance = cls()
+        instance._encrypted_value = encrypted
+        instance._was_encrypted = False
+        return instance
 
     @classmethod
     def from_encrypted(cls, encrypted_value: Optional[str]) -> "Secret":
@@ -55,7 +63,10 @@ class Secret(BaseModel):
         Returns:
             A Secret instance
         """
-        return cls(_encrypted_value=encrypted_value, _was_encrypted=True)
+        instance = cls()
+        instance._encrypted_value = encrypted_value
+        instance._was_encrypted = True
+        return instance
 
     @classmethod
     def from_db(cls, encrypted_value: Optional[str], plaintext_value: Optional[str]) -> "Secret":
@@ -155,31 +166,44 @@ class SecretDict(BaseModel):
     A wrapper for dictionaries containing sensitive key-value pairs.
 
     Used for custom headers and other key-value configurations.
+
+    TODO: Once we deprecate plaintext columns in the database:
+    - Remove the dual-write logic in to_dict()
+    - Remove the from_db() method's plaintext_value parameter
+    - Remove the _was_encrypted flag (no longer needed for migration)
+    - Simplify get_plaintext() to only handle encrypted JSON values
     """
 
-    _encrypted_value: Optional[str] = None
-    _plaintext_cache: Optional[Dict[str, str]] = None
-    _was_encrypted: bool = False
+    _encrypted_value: Optional[str] = PrivateAttr(default=None)
+    _plaintext_cache: Optional[Dict[str, str]] = PrivateAttr(default=None)
+    _was_encrypted: bool = PrivateAttr(default=False)
 
-    class Config:
-        underscore_attrs_are_private = True
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
     @classmethod
     def from_plaintext(cls, value: Optional[Dict[str, str]]) -> "SecretDict":
         """Create a SecretDict from a plaintext dictionary."""
         if value is None:
-            return cls(_encrypted_value=None, _was_encrypted=False)
+            instance = cls()
+            instance._encrypted_value = None
+            instance._was_encrypted = False
+            return instance
 
         # Serialize to JSON then encrypt
         json_str = json.dumps(value)
         encrypted = CryptoUtils.encrypt(json_str)
-        return cls(_encrypted_value=encrypted, _was_encrypted=False)
+        instance = cls()
+        instance._encrypted_value = encrypted
+        instance._was_encrypted = False
+        return instance
 
     @classmethod
     def from_encrypted(cls, encrypted_value: Optional[str]) -> "SecretDict":
         """Create a SecretDict from an encrypted value."""
-        return cls(_encrypted_value=encrypted_value, _was_encrypted=True)
+        instance = cls()
+        instance._encrypted_value = encrypted_value
+        instance._was_encrypted = True
+        return instance
 
     @classmethod
     def from_db(cls, encrypted_value: Optional[str], plaintext_value: Optional[Dict[str, str]]) -> "SecretDict":

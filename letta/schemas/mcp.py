@@ -30,8 +30,8 @@ class MCPServer(BaseMCPServer):
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for authentication)")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
-    token_enc: Optional[str] = Field(None, exclude=True, description="Encrypted token")
-    custom_headers_enc: Optional[str] = Field(None, exclude=True, description="Encrypted custom headers")
+    token_enc: Optional[str] = Field(None, description="Encrypted token")
+    custom_headers_enc: Optional[str] = Field(None, description="Encrypted custom headers")
 
     # stdio config
     stdio_config: Optional[StdioServerConfig] = Field(
@@ -72,6 +72,46 @@ class MCPServer(BaseMCPServer):
             self.custom_headers = secret_dict["plaintext"]
         else:
             self.custom_headers = None
+
+    def model_dump(self, to_orm: bool = False, **kwargs):
+        """Override model_dump to handle encryption when saving to database."""
+        import os
+
+        # Check environment variable directly to handle test patching
+        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY")
+        if not encryption_key:
+            from letta.settings import settings
+
+            encryption_key = settings.encryption_key
+
+        data = super().model_dump(to_orm=to_orm, **kwargs)
+
+        if to_orm and encryption_key:
+            # Temporarily set the encryption key for Secret/SecretDict
+            from letta.settings import settings
+
+            original_key = settings.encryption_key
+            settings.encryption_key = encryption_key
+            try:
+                # Encrypt token if present
+                if self.token is not None:
+                    token_secret = Secret.from_plaintext(self.token)
+                    secret_dict = token_secret.to_dict()
+                    data["token_enc"] = secret_dict["encrypted"]
+                    # Keep plaintext for dual-write during migration
+                    data["token"] = secret_dict["plaintext"]
+
+                # Encrypt custom headers if present
+                if self.custom_headers is not None:
+                    headers_secret = SecretDict.from_plaintext(self.custom_headers)
+                    secret_dict = headers_secret.to_dict()
+                    data["custom_headers_enc"] = secret_dict["encrypted"]
+                    # Keep plaintext for dual-write during migration
+                    data["custom_headers"] = secret_dict["plaintext"]
+            finally:
+                settings.encryption_key = original_key
+
+        return data
 
     def to_config(
         self,
@@ -178,8 +218,8 @@ class MCPOAuthSession(BaseMCPOAuth):
     scope: Optional[str] = Field(None, description="OAuth scope")
 
     # Encrypted token fields (for internal use)
-    access_token_enc: Optional[str] = Field(None, exclude=True, description="Encrypted OAuth access token")
-    refresh_token_enc: Optional[str] = Field(None, exclude=True, description="Encrypted OAuth refresh token")
+    access_token_enc: Optional[str] = Field(None, description="Encrypted OAuth access token")
+    refresh_token_enc: Optional[str] = Field(None, description="Encrypted OAuth refresh token")
 
     # Client configuration
     client_id: Optional[str] = Field(None, description="OAuth client ID")
@@ -187,7 +227,7 @@ class MCPOAuthSession(BaseMCPOAuth):
     redirect_uri: Optional[str] = Field(None, description="OAuth redirect URI")
 
     # Encrypted client secret (for internal use)
-    client_secret_enc: Optional[str] = Field(None, exclude=True, description="Encrypted OAuth client secret")
+    client_secret_enc: Optional[str] = Field(None, description="Encrypted OAuth client secret")
 
     # Session state
     status: OAuthSessionStatus = Field(default=OAuthSessionStatus.PENDING, description="Session status")
@@ -234,6 +274,54 @@ class MCPOAuthSession(BaseMCPOAuth):
             self.client_secret = secret_dict["plaintext"]
         else:
             self.client_secret = None
+
+    def model_dump(self, to_orm: bool = False, **kwargs):
+        """Override model_dump to handle encryption when saving to database."""
+        import os
+
+        # Check environment variable directly to handle test patching
+        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY")
+        if not encryption_key:
+            from letta.settings import settings
+
+            encryption_key = settings.encryption_key
+
+        data = super().model_dump(to_orm=to_orm, **kwargs)
+
+        if to_orm and encryption_key:
+            # Temporarily set the encryption key for Secret
+            from letta.settings import settings
+
+            original_key = settings.encryption_key
+            settings.encryption_key = encryption_key
+            try:
+                # Encrypt access token if present
+                if self.access_token is not None:
+                    token_secret = Secret.from_plaintext(self.access_token)
+                    secret_dict = token_secret.to_dict()
+                    data["access_token_enc"] = secret_dict["encrypted"]
+                    # Keep plaintext for dual-write during migration
+                    data["access_token"] = secret_dict["plaintext"]
+
+                # Encrypt refresh token if present
+                if self.refresh_token is not None:
+                    token_secret = Secret.from_plaintext(self.refresh_token)
+                    secret_dict = token_secret.to_dict()
+                    data["refresh_token_enc"] = secret_dict["encrypted"]
+                    # Keep plaintext for dual-write during migration
+                    data["refresh_token"] = secret_dict["plaintext"]
+
+                # Encrypt client secret if present
+                if self.client_secret is not None:
+                    secret = Secret.from_plaintext(self.client_secret)
+                    secret_dict = secret.to_dict()
+                    data["client_secret_enc"] = secret_dict["encrypted"]
+                    # Keep plaintext for dual-write during migration
+                    data["client_secret"] = secret_dict["plaintext"]
+            finally:
+                settings.encryption_key = original_key
+
+        return data
 
 
 class MCPOAuthSessionCreate(BaseMCPOAuth):
