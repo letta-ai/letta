@@ -19,9 +19,6 @@ from sqlalchemy import JSON, String, Text
 from sqlalchemy.sql import column, table
 
 from alembic import op
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from letta.helpers.crypto_utils import CryptoUtils
 
 # revision identifiers, used by Alembic.
@@ -43,7 +40,7 @@ def upgrade() -> None:
     encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY")
     if not encryption_key:
         print("WARNING: LETTA_ENCRYPTION_KEY not set. Skipping data encryption migration.")
-        print("         You can run a separate migration script later to encrypt existing data.")
+        print("You can run a separate migration script later to encrypt existing data.")
         return
 
     # Get database connection
