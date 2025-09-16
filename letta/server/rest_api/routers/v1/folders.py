@@ -342,8 +342,8 @@ async def upload_file_to_folder(
     return file_metadata
 
 
-@router.get("/{folder_id}/agents", response_model=List[str], operation_id="get_agents_for_folder")
-async def get_agents_for_folder(
+@router.get("/{folder_id}/agents", response_model=List[str], operation_id="list_agents_for_folder")
+async def list_agents_for_folder(
     folder_id: str,
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

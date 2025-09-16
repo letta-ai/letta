@@ -214,6 +214,12 @@ paths:
         - folders
         - files
       x-fern-sdk-method-name: delete
+  /v1/folders/{folder_id}/agents:
+    get:
+      x-fern-sdk-group-name:
+        - folders
+        - agents
+      x-fern-sdk-method-name: list
   /v1/agents/:
     get:
       x-fern-sdk-group-name:
@@ -955,6 +961,18 @@ paths:
         - identities
         - properties
       x-fern-sdk-method-name: upsert
+  /v1/identities/{identity_id}/agents:
+    get:
+      x-fern-sdk-group-name:
+        - identities
+        - agents
+      x-fern-sdk-method-name: list
+  /v1/identities/{identity_id}/blocks:
+    get:
+      x-fern-sdk-group-name:
+        - identities
+        - blocks
+      x-fern-sdk-method-name: list
   /v1/groups/:
     get:
       x-fern-sdk-group-name:
