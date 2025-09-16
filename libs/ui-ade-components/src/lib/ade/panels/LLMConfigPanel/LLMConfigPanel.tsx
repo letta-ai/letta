@@ -26,6 +26,14 @@ export function LLMConfigPanel() {
       return null;
     }
 
+    const handleMatch = modelsList?.find(
+      (val) => val.handle === currentAgent.llm_config?.handle,
+    );
+
+    if (handleMatch) {
+      return handleMatch;
+    }
+
     return modelsList?.find(
       (val) => val.model === currentAgent.llm_config?.model,
     );
@@ -51,6 +59,7 @@ export function LLMConfigPanel() {
         />
         {currentBaseModel && (
           <ContextWindowSlider
+            key={currentBaseModel.context_window}
             maxContextWindow={currentBaseModel.context_window}
             defaultContextWindow={
               currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
@@ -74,7 +83,9 @@ export function LLMConfigPanel() {
               currentAgent.llm_config.context_window || MIN_CONTEXT_WINDOW
             }
             defaultMaxTokens={
-              currentAgent.llm_config.max_tokens || currentBaseModel?.max_tokens || 4096
+              currentAgent.llm_config.max_tokens ||
+              currentBaseModel?.max_tokens ||
+              4096
             }
           />
         </div>
