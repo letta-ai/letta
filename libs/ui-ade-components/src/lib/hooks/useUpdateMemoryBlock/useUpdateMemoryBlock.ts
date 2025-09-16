@@ -82,7 +82,7 @@ export function useUpdateAgentMemoryBlock(
               preserve_on_migration: values.preserveOnMigration,
             }
           : {}),
-        ...(values.value
+        ...(typeof values.value === 'string'
           ? {
               value: values.value,
             }
