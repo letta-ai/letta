@@ -903,7 +903,7 @@ export const prefetchUseFoldersServiceRetrieveFolder = (
 /**
  * @deprecated
  * Get Folder By Name
- * **Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.
+ * **Deprecated**: Please use the list endpoint `GET /v1/folders?name=` instead.
  *
  *
  * Get a folder by name.

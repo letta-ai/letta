@@ -4332,6 +4332,217 @@
                               {}
                             ]
                           },
+                          "secrets": {
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "created_by_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "last_updated_by_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "created_at": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "updated_at": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "organization_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "agent_id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["key", "value", "agent_id"]
+                                }
+                              },
+                              {}
+                            ]
+                          },
                           "project_id": {
                             "oneOf": [
                               {
@@ -9927,6 +10138,217 @@
                             }
                           },
                           "tool_exec_environment_variables": {
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "created_by_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "last_updated_by_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "created_at": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "updated_at": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {}
+                                      ]
+                                    },
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "organization_id": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "format": "null",
+                                          "nullable": true
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "format": "null",
+                                                "nullable": true
+                                              }
+                                            ],
+                                            "nullable": true
+                                          }
+                                        },
+                                        {}
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "agent_id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["key", "value", "agent_id"]
+                                }
+                              },
+                              {}
+                            ]
+                          },
+                          "secrets": {
                             "oneOf": [
                               {
                                 "type": "array",

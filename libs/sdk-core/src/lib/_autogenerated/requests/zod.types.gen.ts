@@ -1279,6 +1279,14 @@ export const letta__schemas__agent_file__AgentSchema = z.object({
       z.undefined(),
     ])
     .optional(),
+  secrets: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   memory_variables: z
     .union([
       z.unknown(),
@@ -2537,6 +2545,9 @@ export const AgentState = z.object({
   sources: z.array(Source),
   tags: z.array(z.string()),
   tool_exec_environment_variables: z
+    .union([z.array(AgentEnvironmentVariable), z.undefined()])
+    .optional(),
+  secrets: z
     .union([z.array(AgentEnvironmentVariable), z.undefined()])
     .optional(),
   project_id: z
@@ -5467,6 +5478,9 @@ export const CreateAgentRequest = z.object({
   tool_exec_environment_variables: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
+  secrets: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
   memory_variables: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
@@ -6543,6 +6557,14 @@ export const InternalTemplateAgentCreate = z.object({
     ])
     .optional(),
   tool_exec_environment_variables: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  secrets: z
     .union([
       z.unknown(),
       z.null(),
@@ -7891,7 +7913,6 @@ export const ProviderTrace = z.object({
       z.undefined(),
     ])
     .optional(),
-  organization_id: z.string(),
 });
 
 export type ProviderUpdate = z.infer<typeof ProviderUpdate>;
@@ -8854,6 +8875,9 @@ export const UpdateAgent = z.object({
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   tool_exec_environment_variables: z
+    .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
+    .optional(),
+  secrets: z
     .union([z.unknown(), z.null(), z.array(z.union([z.unknown(), z.null()]))])
     .optional(),
   project_id: z

@@ -186,6 +186,7 @@ describe('mapAllAgentTemplatePropertiesToUpdateAgent', () => {
       description: null,
       metadata: null,
       tool_exec_environment_variables: null,
+      secrets: null,
       project_id: null,
       template_id: null,
       base_template_id: null,

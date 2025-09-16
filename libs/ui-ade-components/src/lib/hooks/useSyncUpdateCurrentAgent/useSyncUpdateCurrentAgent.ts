@@ -63,6 +63,14 @@ export function useSyncUpdateCurrentAgent(options?: {
                           ),
                         )
                       : undefined,
+                  secrets:
+                    updateAgentData.secrets
+                      ? Object.fromEntries(
+                          updateAgentData.secrets.map(
+                            (item) => [item.key, item.value],
+                          ),
+                        )
+                      : undefined,
                 },
               },
               {

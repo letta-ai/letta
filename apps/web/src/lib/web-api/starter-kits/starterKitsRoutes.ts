@@ -362,6 +362,7 @@ async function createTemplateFromStarterKit(
         blocks: starterKit.agentState.memory_blocks || [],
       },
       tool_exec_environment_variables: [],
+      secrets: [],
       // Build tool rules similar to what the backend does
       tool_rules: (() => {
         const rules: Array<{type: 'exit_loop' | 'continue_loop', tool_name: string}> = [];

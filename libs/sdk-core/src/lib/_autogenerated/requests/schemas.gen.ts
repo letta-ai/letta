@@ -725,6 +725,15 @@ export const $AgentState = {
       },
       type: 'array',
       title: 'Tool Exec Environment Variables',
+      description: 'Deprecated: use `secrets` field instead.',
+      deprecated: true,
+    },
+    secrets: {
+      items: {
+        $ref: '#/components/schemas/AgentEnvironmentVariable',
+      },
+      type: 'array',
+      title: 'Secrets',
       description:
         'The environment variables for tool execution specific to this agent.',
     },
@@ -5039,6 +5048,21 @@ export const $CreateAgentRequest = {
         },
       ],
       title: 'Tool Exec Environment Variables',
+      description: 'Deprecated: use `secrets` field instead.',
+    },
+    secrets: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Secrets',
       description:
         'The environment variables for tool execution specific to this agent.',
     },
@@ -8512,6 +8536,21 @@ export const $InternalTemplateAgentCreate = {
         },
       ],
       title: 'Tool Exec Environment Variables',
+      description: 'Deprecated: use `secrets` field instead.',
+    },
+    secrets: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Secrets',
       description:
         'The environment variables for tool execution specific to this agent.',
     },
@@ -11946,15 +11985,10 @@ export const $ProviderTrace = {
       title: 'Step Id',
       description: 'ID of the step that this trace is associated with',
     },
-    organization_id: {
-      type: 'string',
-      title: 'Organization Id',
-      description: 'The unique identifier of the organization.',
-    },
   },
   additionalProperties: false,
   type: 'object',
-  required: ['request_json', 'response_json', 'organization_id'],
+  required: ['request_json', 'response_json'],
   title: 'ProviderTrace',
   description: `Letta's internal representation of a provider trace.
 
@@ -15823,6 +15857,21 @@ export const $UpdateAgent = {
         },
       ],
       title: 'Tool Exec Environment Variables',
+      description: 'Deprecated: use `secrets` field instead',
+    },
+    secrets: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Secrets',
       description:
         'The environment variables for tool execution specific to this agent.',
     },
@@ -17235,6 +17284,21 @@ export const $letta__schemas__agent_file__AgentSchema = {
         },
       ],
       title: 'Tool Exec Environment Variables',
+      description: 'Deprecated: use `secrets` field instead.',
+    },
+    secrets: {
+      anyOf: [
+        {
+          additionalProperties: {
+            type: 'string',
+          },
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Secrets',
       description:
         'The environment variables for tool execution specific to this agent.',
     },

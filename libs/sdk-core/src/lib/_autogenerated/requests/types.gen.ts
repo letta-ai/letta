@@ -285,9 +285,14 @@ export type AgentState = {
    */
   tags: Array<string>;
   /**
-   * The environment variables for tool execution specific to this agent.
+   * Deprecated: use `secrets` field instead.
+   * @deprecated
    */
   tool_exec_environment_variables?: Array<AgentEnvironmentVariable>;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  secrets?: Array<AgentEnvironmentVariable>;
   /**
    * The id of the project the agent belongs to.
    */
@@ -1694,9 +1699,15 @@ export type CreateAgentRequest = {
    */
   project?: string | null;
   /**
-   * The environment variables for tool execution specific to this agent.
+   * Deprecated: use `secrets` field instead.
    */
   tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  secrets?: {
     [key: string]: string;
   } | null;
   /**
@@ -2952,9 +2963,15 @@ export type InternalTemplateAgentCreate = {
    */
   project?: string | null;
   /**
-   * The environment variables for tool execution specific to this agent.
+   * Deprecated: use `secrets` field instead.
    */
   tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  secrets?: {
     [key: string]: string;
   } | null;
   /**
@@ -4442,10 +4459,6 @@ export type ProviderTrace = {
    * ID of the step that this trace is associated with
    */
   step_id?: string | null;
-  /**
-   * The unique identifier of the organization.
-   */
-  organization_id: string;
 };
 
 export type ProviderType =
@@ -5865,9 +5878,15 @@ export type UpdateAgent = {
     [key: string]: unknown;
   } | null;
   /**
-   * The environment variables for tool execution specific to this agent.
+   * Deprecated: use `secrets` field instead
    */
   tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  secrets?: {
     [key: string]: string;
   } | null;
   /**
@@ -6334,9 +6353,15 @@ export type letta__schemas__agent_file__AgentSchema = {
    */
   project?: string | null;
   /**
-   * The environment variables for tool execution specific to this agent.
+   * Deprecated: use `secrets` field instead.
    */
   tool_exec_environment_variables?: {
+    [key: string]: string;
+  } | null;
+  /**
+   * The environment variables for tool execution specific to this agent.
+   */
+  secrets?: {
     [key: string]: string;
   } | null;
   /**
