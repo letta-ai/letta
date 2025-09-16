@@ -118,7 +118,7 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
 
 def supports_content_none(llm_config: LLMConfig) -> bool:
     """Certain providers don't support the content None."""
-    if llm_config.model and "gpt-oss" in llm_config.model:
+    if "gpt-oss" in llm_config.model:
         return False
     return True
 
