@@ -963,12 +963,14 @@ paths:
       x-fern-sdk-method-name: upsert
   /v1/identities/{identity_id}/agents:
     get:
+      summary: List Agents For Identity
       x-fern-sdk-group-name:
         - identities
         - agents
       x-fern-sdk-method-name: list
   /v1/identities/{identity_id}/blocks:
     get:
+      summary: List Blocks For Identity
       x-fern-sdk-group-name:
         - identities
         - blocks
