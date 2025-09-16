@@ -91,7 +91,7 @@ def supports_parallel_tool_calling(model: str) -> bool:
         return False
     else:
         return True
-    
+
 
 # TODO move into LLMConfig as a field?
 def supports_structured_output(llm_config: LLMConfig) -> bool:
@@ -217,7 +217,6 @@ class OpenAIClient(LLMClientBase):
                 tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
             
         if not supports_content_none(llm_config):
-            # map None to empty string
             for message in openai_message_list:
                 if message.content is None:
                     message.content = ""
