@@ -39,7 +39,7 @@ function ADEAccordionItem(props: ADEAccordionItemProps) {
         'flex flex-col  ade-accordion-item border-r',
         open ? 'open' : 'close min-h-[32px]',
         // this is a hack because of some weird css deeper in the core memories panel, this allows the panel to flex properly
-        open && id === 'core-memories' ? 'zero-height-open' : '',
+        open && id === 'core-memories' ? 'zero-height-open flex-1' : '',
       )}
       data-id={id}
       data-testid={id}

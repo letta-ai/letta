@@ -22,9 +22,7 @@ import {
   VStack,
   Popover,
 } from '@letta-cloud/ui-component-library';
-import {
-  AgentSettingsPanel,
-} from '../ade/panels/AgentSettingsPanel/AgentSettingsPanel';
+import { AgentSettingsPanel } from '../ade/panels/AgentSettingsPanel/AgentSettingsPanel';
 import { useTranslations } from '@letta-cloud/translations';
 import { useAgentBaseTypeName } from '../hooks';
 import {
@@ -182,26 +180,30 @@ function DesktopLayout() {
           <VStack gap={false} fullWidth fullHeight>
             <ADEAccordionGroup
               panels={[
-                ...isTemplate ? [{
-                  id: 'template-settings',
-                  defaultOpen: false,
-                  label: t('templateSettings'),
-                  content: <TemplateSettingsPanel />,
-                  minHeight: 150,
-                },
-                  {
-                    id: 'settings',
-                    label: t('agentTemplateSettings'),
-                    content: <AgentTemplateSettingsPanel />,
-                    minHeight: 150,
-                  }] : [
-                  {
-                    id: 'settings',
-                    label: t('agentSettings'),
-                    content:  <AgentSettingsPanel />,
-                    minHeight: 150,
-                  }
-                ],
+                ...(isTemplate
+                  ? [
+                      {
+                        id: 'template-settings',
+                        defaultOpen: false,
+                        label: t('templateSettings'),
+                        content: <TemplateSettingsPanel />,
+                        minHeight: 150,
+                      },
+                      {
+                        id: 'settings',
+                        label: t('agentTemplateSettings'),
+                        content: <AgentTemplateSettingsPanel />,
+                        minHeight: 150,
+                      },
+                    ]
+                  : [
+                      {
+                        id: 'settings',
+                        label: t('agentSettings'),
+                        content: <AgentSettingsPanel />,
+                        minHeight: 150,
+                      },
+                    ]),
                 {
                   id: 'tools',
                   label: toolsTitle,
@@ -290,13 +292,11 @@ function DesktopLayout() {
                   id: 'core-memories',
                   label: editCoreMemoriesTitle,
                   content: <EditMemory />,
-                  minHeight: 300,
                 },
                 {
                   id: 'archival-memories',
                   label: archivalMemoriesTitle,
                   content: <ArchivalMemoriesPanel />,
-                  minHeight: 300,
                   defaultOpen: false,
                 },
               ]}
@@ -371,7 +371,14 @@ function useAppPanels(): Record<string, AppPanel> {
         content: <ArchivalMemoriesPanel />,
       },
     }),
-    [t, baseName, toolsTitle, isTemplate, editCoreMemoriesTitle, archivalMemoriesTitle],
+    [
+      t,
+      baseName,
+      toolsTitle,
+      isTemplate,
+      editCoreMemoriesTitle,
+      archivalMemoriesTitle,
+    ],
   );
 }
 
