@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import JSON, String, UniqueConstraint
+from sqlalchemy import JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from letta.functions.mcp_client.types import StdioServerConfig
@@ -39,8 +39,14 @@ class MCPServer(SqlalchemyBase, OrganizationMixin):
     # access token / api key for MCP servers that require authentication
     token: Mapped[Optional[str]] = mapped_column(String, nullable=True, doc="The access token or api key for the MCP server")
 
+    # Encrypted version of token (for migration phase)
+    token_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted access token or api key for the MCP server")
+
     # custom headers for authentication (key-value pairs)
     custom_headers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, doc="Custom authentication headers as key-value pairs")
+
+    # Encrypted version of custom headers (for migration phase)
+    custom_headers_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted custom authentication headers")
 
     # stdio server
     stdio_config: Mapped[Optional[StdioServerConfig]] = mapped_column(
