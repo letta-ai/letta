@@ -116,6 +116,7 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
         return True
     return False
 
+
 def supports_content_none(llm_config: LLMConfig) -> bool:
     """Certain providers don't support the content None."""
     if "gpt-oss" in llm_config.model:
@@ -215,7 +216,7 @@ class OpenAIClient(LLMClientBase):
 
             if force_tool_call is not None:
                 tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
-            
+
         if not supports_content_none(llm_config):
             for message in openai_message_list:
                 if message.content is None:
