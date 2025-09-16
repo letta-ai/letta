@@ -925,21 +925,25 @@ class SimpleOpenAIResponsesStreamingInterface:
                 return
 
         # Reasoning summary is streaming in
+        # TODO / FIXME return a SummaryReasoning type
         elif isinstance(event, ResponseReasoningSummaryPartAddedEvent):
             # This means the part got added, but likely no content yet (likely empty string)
             summary_index = event.summary_index
             part = event.part
-            if part.text != "":
-                # TODO / FIXME return a SummaryReasoning type
-                yield ReasoningMessage(
-                    id=self.letta_message_id,
-                    date=datetime.now(timezone.utc).isoformat(),
-                    otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
-                    source="reasoner_model",
-                    reasoning="\n\n" + part.text,
-                )
+
+            # If this is a follow-up summary part, we need to add leading newlines
+            if summary_index > 1:
+                summary_text = "\n\n" + part.text
             else:
-                return
+                summary_text = part.text
+
+            yield ReasoningMessage(
+                id=self.letta_message_id,
+                date=datetime.now(timezone.utc).isoformat(),
+                otid=Message.generate_otid_from_id(self.letta_message_id, message_index),
+                source="reasoner_model",
+                reasoning=summary_text,
+            )
 
         # Reasoning summary streaming
         elif isinstance(event, ResponseReasoningSummaryTextDeltaEvent):

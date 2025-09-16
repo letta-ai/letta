@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
@@ -14,6 +14,7 @@ from letta.llm_api.openai_client import use_responses_api
 from letta.schemas.agent import AgentType
 from letta.schemas.enums import ProviderType
 from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_message_content import SummarizedReasoningContent, TextContent
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.provider_trace import ProviderTraceCreate
 from letta.schemas.usage import LettaUsageStatistics
@@ -260,7 +261,7 @@ class SimpleLettaLLMStreamAdapter(LettaLLMStreamAdapter):
         # self.reasoning_content = self.interface.get_reasoning_content()
 
         # Extract non-reasoning content (eg text)
-        self.content = self.interface.get_content()
+        self.content: List[TextContent | SummarizedReasoningContent] = self.interface.get_content()
 
         # Extract usage statistics
         # Some providers don't provide usage in streaming, use fallback if needed

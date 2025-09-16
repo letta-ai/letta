@@ -255,6 +255,12 @@ class SummarizedReasoningContent(MessageContent):
     # TODO consider expanding ReasoningContent to support this superset?
     # Or alternatively, rename `ReasoningContent` to `AnthropicReasoningContent`,
     # and rename this one to `OpenAIReasoningContent`?
+
+    # NOTE: I think the argument for putting thie in ReasoningContent as an additional "summary" field is that it keeps the
+    # rendering and GET / listing code a lot simpler, you just need to know how to render "TextContent" and "ReasoningContent"
+    # vs breaking out into having to know how to render additional types
+    # NOTE: I think the main issue is that we need to track provenance of which provider the reasoning came from
+    # so that we don't attempt eg to put Anthropic encrypted reasoning into a GPT-5 responses payload
     type: Literal[MessageContentType.summarized_reasoning] = Field(
         default=MessageContentType.summarized_reasoning, description="Indicates this is a summarized reasoning step."
     )

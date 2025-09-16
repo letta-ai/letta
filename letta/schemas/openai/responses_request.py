@@ -1,4 +1,4 @@
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Any, Dict, Iterable, List, Literal, Optional, Union
 
 from openai import NOT_GIVEN
 from openai.types import Metadata, Reasoning, ResponsesModel
@@ -50,3 +50,15 @@ class ResponsesRequest(BaseModel):
     # extra_query: Query | None = (None,)
     # extra_body: Body | None = (None,)
     # timeout: float | httpx.Timeout | None | NotGiven = (NOT_GIVEN,)
+
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        """Custom model_dump that properly serializes complex OpenAI types for JSON compatibility."""
+        # Force JSON mode to ensure full serialization of complex OpenAI types
+        # This prevents SerializationIterator objects from being created
+        kwargs["mode"] = "json"
+
+        # Get the JSON-serialized dump
+        data = super().model_dump(**kwargs)
+
+        # The API expects dicts, which JSON mode provides
+        return data

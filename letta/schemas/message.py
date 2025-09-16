@@ -335,17 +335,18 @@ class Message(BaseMessage):
         text_is_assistant_message: bool = False,  # For v3 loop, set to True
     ) -> List[LettaMessage]:
         messages = []
-        # Check for ReACT-style COT inside of TextContent
-        if len(self.content) == 1 and isinstance(self.content[0], TextContent):
+
+        for content_part in self.content:
             otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
-            if text_is_assistant_message:
-                # Safeguard against empty text messages
-                if self.content[0].text != "":
+
+            if isinstance(content_part, TextContent):
+                if text_is_assistant_message:
+                    # .content is assistant message
                     messages.append(
                         AssistantMessage(
                             id=self.id,
                             date=self.created_at,
-                            content=self.content[0].text,
+                            content=content_part.text,
                             name=self.name,
                             otid=otid,
                             sender_id=self.sender_id,
@@ -353,13 +354,62 @@ class Message(BaseMessage):
                             is_err=self.is_err,
                         )
                     )
-            else:
-                # Treating .content as COT
+                else:
+                    # .content is COT
+                    messages.append(
+                        ReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            reasoning=content_part.text,
+                            name=self.name,
+                            otid=otid,
+                            sender_id=self.sender_id,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
+                    )
+
+            elif isinstance(content_part, ReasoningContent):
+                # "native" COT
                 messages.append(
                     ReasoningMessage(
                         id=self.id,
                         date=self.created_at,
-                        reasoning=self.content[0].text,
+                        reasoning=content_part.reasoning,
+                        source="reasoner_model",  # TODO do we want to tag like this?
+                        signature=content_part.signature,
+                        name=self.name,
+                        otid=otid,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
+                )
+
+            elif isinstance(content_part, SummarizedReasoningContent):
+                # TODO remove the cast and just return the native type
+                casted_content_part = content_part.to_reasoning_content()
+                messages.append(
+                    ReasoningMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        reasoning=casted_content_part.reasoning,
+                        source="reasoner_model",  # TODO do we want to tag like this?
+                        signature=casted_content_part.signature,
+                        name=self.name,
+                        otid=otid,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
+                    )
+                )
+
+            elif isinstance(content_part, RedactedReasoningContent):
+                # "native" redacted/hidden COT
+                messages.append(
+                    HiddenReasoningMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        state="redacted",
+                        hidden_reasoning=content_part.data,
                         name=self.name,
                         otid=otid,
                         sender_id=self.sender_id,
@@ -367,102 +417,25 @@ class Message(BaseMessage):
                         is_err=self.is_err,
                     )
                 )
-        # Otherwise, we may have a list of multiple types
-        else:
-            # TODO we can probably collapse these two cases into a single loop
-            for content_part in self.content:
-                otid = Message.generate_otid_from_id(self.id, current_message_count + len(messages))
-                if isinstance(content_part, TextContent):
-                    if text_is_assistant_message:
-                        # .content is assistant message
-                        messages.append(
-                            AssistantMessage(
-                                id=self.id,
-                                date=self.created_at,
-                                content=content_part.text,
-                                name=self.name,
-                                otid=otid,
-                                sender_id=self.sender_id,
-                                step_id=self.step_id,
-                                is_err=self.is_err,
-                            )
-                        )
-                    else:
-                        # .content is COT
-                        messages.append(
-                            ReasoningMessage(
-                                id=self.id,
-                                date=self.created_at,
-                                reasoning=content_part.text,
-                                name=self.name,
-                                otid=otid,
-                                sender_id=self.sender_id,
-                                step_id=self.step_id,
-                                is_err=self.is_err,
-                            )
-                        )
-                elif isinstance(content_part, ReasoningContent):
-                    # "native" COT
-                    messages.append(
-                        ReasoningMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            reasoning=content_part.reasoning,
-                            source="reasoner_model",  # TODO do we want to tag like this?
-                            signature=content_part.signature,
-                            name=self.name,
-                            otid=otid,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
-                        )
+
+            elif isinstance(content_part, OmittedReasoningContent):
+                # Special case for "hidden reasoning" models like o1/o3
+                # NOTE: we also have to think about how to return this during streaming
+                messages.append(
+                    HiddenReasoningMessage(
+                        id=self.id,
+                        date=self.created_at,
+                        state="omitted",
+                        name=self.name,
+                        otid=otid,
+                        step_id=self.step_id,
+                        is_err=self.is_err,
                     )
-                elif isinstance(content_part, SummarizedReasoningContent):
-                    # TODO remove the cast and just return the native type
-                    casted_content_part = content_part.to_reasoning_content()
-                    messages.append(
-                        ReasoningMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            reasoning=casted_content_part.reasoning,
-                            source="reasoner_model",  # TODO do we want to tag like this?
-                            signature=casted_content_part.signature,
-                            name=self.name,
-                            otid=otid,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
-                        )
-                    )
-                elif isinstance(content_part, RedactedReasoningContent):
-                    # "native" redacted/hidden COT
-                    messages.append(
-                        HiddenReasoningMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            state="redacted",
-                            hidden_reasoning=content_part.data,
-                            name=self.name,
-                            otid=otid,
-                            sender_id=self.sender_id,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
-                        )
-                    )
-                elif isinstance(content_part, OmittedReasoningContent):
-                    # Special case for "hidden reasoning" models like o1/o3
-                    # NOTE: we also have to think about how to return this during streaming
-                    messages.append(
-                        HiddenReasoningMessage(
-                            id=self.id,
-                            date=self.created_at,
-                            state="omitted",
-                            name=self.name,
-                            otid=otid,
-                            step_id=self.step_id,
-                            is_err=self.is_err,
-                        )
-                    )
-                else:
-                    warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
+                )
+
+            else:
+                warnings.warn(f"Unrecognized content part in assistant message: {content_part}")
+
         return messages
 
     def _convert_assistant_message(
