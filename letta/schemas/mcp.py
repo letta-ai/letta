@@ -14,6 +14,7 @@ from letta.functions.mcp_client.types import (
 from letta.orm.mcp_oauth import OAuthSessionStatus
 from letta.schemas.letta_base import LettaBase
 from letta.schemas.secret import Secret, SecretDict
+from letta.settings import settings
 
 
 class BaseMCPServer(LettaBase):
@@ -75,8 +76,6 @@ class MCPServer(BaseMCPServer):
 
     def model_dump(self, to_orm: bool = False, **kwargs):
         """Override model_dump to handle encryption when saving to database."""
-        from letta.settings import settings
-
         data = super().model_dump(to_orm=to_orm, **kwargs)
 
         if to_orm and settings.encryption_key:
@@ -262,8 +261,6 @@ class MCPOAuthSession(BaseMCPOAuth):
 
     def model_dump(self, to_orm: bool = False, **kwargs):
         """Override model_dump to handle encryption when saving to database."""
-        from letta.settings import settings
-
         data = super().model_dump(to_orm=to_orm, **kwargs)
 
         if to_orm and settings.encryption_key:
