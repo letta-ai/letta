@@ -212,6 +212,7 @@ class AgentSerializationManager:
         agent_secrets = agent_schema.secrets or agent_schema.tool_exec_environment_variables
         if agent_secrets:
             agent_schema.tool_exec_environment_variables = {key: "" for key in agent_secrets}
+            agent_schema.secrets = {key: "" for key in agent_secrets}
 
         if agent_schema.messages:
             for message in agent_schema.messages:
@@ -640,7 +641,7 @@ class AgentSerializationManager:
                     agent_schema.embedding = override_embedding_config.handle
 
                 # Convert AgentSchema back to CreateAgent, remapping tool/block IDs
-                agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages", "secrets"})
+                agent_data = agent_schema.model_dump(exclude={"id", "in_context_message_ids", "messages"})
                 if append_copy_suffix:
                     agent_data["name"] = agent_data.get("name") + "_copy"
 
@@ -656,8 +657,13 @@ class AgentSerializationManager:
                 if agent_data.get("source_ids"):
                     agent_data["source_ids"] = [file_to_db_ids[file_id] for file_id in agent_data["source_ids"]]
 
-                if env_vars and agent_data.get("tool_exec_environment_variables"):
+                if env_vars and agent_data.get("secrets"):
                     # update environment variable values from the provided env_vars dict
+                    for key in agent_data["secrets"]:
+                        agent_data["secrets"][key] = env_vars.get(key, "")
+                        agent_data["tool_exec_environment_variables"][key] = env_vars.get(key, "")
+                elif env_vars and agent_data.get("tool_exec_environment_variables"):
+                    # also handle tool_exec_environment_variables for backwards compatibility
                     for key in agent_data["tool_exec_environment_variables"]:
                         agent_data["tool_exec_environment_variables"][key] = env_vars.get(key, "")
                         agent_data["secrets"][key] = env_vars.get(key, "")

@@ -1549,6 +1549,8 @@ class AgentManager:
             if env_vars:
                 for var in agent.tool_exec_environment_variables:
                     var.value = env_vars.get(var.key, "")
+                for var in agent.secrets:
+                    var.value = env_vars.get(var.key, "")
 
             agent = agent.create(session, actor=actor)
 
