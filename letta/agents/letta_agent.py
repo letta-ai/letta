@@ -405,7 +405,6 @@ class LettaAgent(BaseAgent):
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -751,7 +750,6 @@ class LettaAgent(BaseAgent):
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1173,7 +1171,6 @@ class LettaAgent(BaseAgent):
                                     },
                                 },
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
