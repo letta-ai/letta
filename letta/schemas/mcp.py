@@ -30,7 +30,6 @@ class MCPServer(BaseMCPServer):
     token: Optional[str] = Field(None, description="The access token or API key for the MCP server (used for authentication)")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom authentication headers as key-value pairs")
 
-    # Encrypted fields (for internal use, not exposed in API)
     token_enc: Optional[str] = Field(None, exclude=True, description="Encrypted token")
     custom_headers_enc: Optional[str] = Field(None, exclude=True, description="Encrypted custom headers")
 
