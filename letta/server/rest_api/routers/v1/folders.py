@@ -92,8 +92,8 @@ async def get_folder_id_by_name(
     return folder.id
 
 
-@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_folders_metadata")
-async def get_folders_metadata(
+@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="retrieve_metadata")
+async def retrieve_metadata(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     include_detailed_per_source_metadata: bool = False,
