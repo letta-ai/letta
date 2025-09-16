@@ -86,6 +86,11 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
+        default_factory=list,
+        description="Deprecated: use `secrets` field instead.",
+        deprecated=True,
+    )
+    secrets: List[AgentEnvironmentVariable] = Field(
         default_factory=list, description="The environment variables for tool execution specific to this agent."
     )
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
@@ -133,7 +138,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
-        for agent_env_var_obj in self.tool_exec_environment_variables:
+        for agent_env_var_obj in self.secrets:
             per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
         return per_agent_env_vars
 
@@ -222,9 +227,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         deprecated=True,
         description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
     )
-    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
-        None, description="The environment variables for tool execution specific to this agent."
-    )
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(None, description="Deprecated: use `secrets` field instead.")
+    secrets: Optional[Dict[str, str]] = Field(None, description="The environment variables for tool execution specific to this agent.")
     memory_variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
@@ -328,9 +332,8 @@ class UpdateAgent(BaseModel):
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
-    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
-        None, description="The environment variables for tool execution specific to this agent."
-    )
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(None, description="Deprecated: use `secrets` field instead")
+    secrets: Optional[Dict[str, str]] = Field(None, description="The environment variables for tool execution specific to this agent.")
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")

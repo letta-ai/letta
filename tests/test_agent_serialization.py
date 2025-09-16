@@ -298,7 +298,7 @@ def _compare_agent_state_model_dump(d1: Dict[str, Any], d2: Dict[str, Any], log:
             if not isinstance(v1, list) or not isinstance(v2, list) or len(v1) != len(v2):
                 _log_mismatch(key, v1, v2, log)
                 return False
-        elif key == "tool_exec_environment_variables":
+        elif key == "tool_exec_environment_variables" or key == "secrets":
             if not isinstance(v1, list) or not isinstance(v2, list) or len(v1) != len(v2):
                 _log_mismatch(key, v1, v2, log)
                 return False

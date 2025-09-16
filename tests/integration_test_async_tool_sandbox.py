@@ -589,7 +589,7 @@ async def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, ag
     manager.create_sandbox_env_var(SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user)
 
     correct_val = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
     sandbox = AsyncToolSandboxLocal(get_env_tool.name, {}, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
@@ -812,7 +812,7 @@ async def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, age
         actor=test_user,
     )
 
-    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
     sandbox = AsyncToolSandboxE2B(get_env_tool.name, {}, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
@@ -1116,7 +1116,7 @@ async def test_local_sandbox_async_per_agent_env(disable_e2b_api_key, async_get_
     manager.create_sandbox_env_var(SandboxEnvironmentVariableCreate(key=key, value=wrong_val), sandbox_config_id=config.id, actor=test_user)
 
     correct_val = "correct_async_local_value"
-    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
     sandbox = AsyncToolSandboxLocal(async_get_env_tool.name, {}, user=test_user)
     result = await sandbox.run(agent_state=agent_state)
@@ -1141,7 +1141,7 @@ async def test_e2b_sandbox_async_per_agent_env(check_e2b_key_is_set, async_get_e
         actor=test_user,
     )
 
-    agent_state.tool_exec_environment_variables = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_val, agent_id=agent_state.id)]
 
     sandbox = AsyncToolSandboxE2B(async_get_env_tool.name, {}, user=test_user)
     result = await sandbox.run(agent_state=agent_state)

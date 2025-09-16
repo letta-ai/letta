@@ -1106,7 +1106,7 @@ class LettaAgentV2(BaseAgentV2):
             start_time = get_utc_timestamp_ns()
             agent_step_span.add_event(name="tool_execution_started")
 
-        sandbox_env_vars = {var.key: var.value for var in agent_state.tool_exec_environment_variables}
+        sandbox_env_vars = {var.key: var.value for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,
@@ -1226,6 +1226,7 @@ class LettaAgentV2(BaseAgentV2):
                     new_status=JobStatus.failed if is_error else JobStatus.completed,
                     actor=self.actor,
                     metadata=job_update_metadata,
+                    stop_reason=self.stop_reason.stop_reason if self.stop_reason else StopReasonType.error,
                 )
         if request_span:
             request_span.end()

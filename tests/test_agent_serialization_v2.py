@@ -503,7 +503,7 @@ def _compare_agents(orig: AgentSchema, imp: AgentSchema, index: int) -> List[str
         errors.append(f"Agent {index}: tool_rules mismatch")
 
     # Environment variables
-    if orig.tool_exec_environment_variables != imp.tool_exec_environment_variables:
+    if orig.secrets != imp.secrets:
         errors.append(f"Agent {index}: tool_exec_environment_variables mismatch")
 
     # Messages
@@ -1084,16 +1084,16 @@ class TestAgentFileExport:
         exported_agent = agent_file.agents[0]
 
         # verify environment variables exist but values are scrubbed (empty strings)
-        assert exported_agent.tool_exec_environment_variables is not None
-        assert len(exported_agent.tool_exec_environment_variables) == 3
-        assert "API_KEY" in exported_agent.tool_exec_environment_variables
-        assert "DATABASE_PASSWORD" in exported_agent.tool_exec_environment_variables
-        assert "TOKEN" in exported_agent.tool_exec_environment_variables
+        assert exported_agent.secrets is not None
+        assert len(exported_agent.secrets) == 3
+        assert "API_KEY" in exported_agent.secrets
+        assert "DATABASE_PASSWORD" in exported_agent.secrets
+        assert "TOKEN" in exported_agent.secrets
 
         # most importantly: verify all secret values have been wiped
-        assert exported_agent.tool_exec_environment_variables["API_KEY"] == ""
-        assert exported_agent.tool_exec_environment_variables["DATABASE_PASSWORD"] == ""
-        assert exported_agent.tool_exec_environment_variables["TOKEN"] == ""
+        assert exported_agent.secrets["API_KEY"] == ""
+        assert exported_agent.secrets["DATABASE_PASSWORD"] == ""
+        assert exported_agent.secrets["TOKEN"] == ""
 
         # verify no secret values appear anywhere in the exported data
         assert "super-secret-api-key-12345" not in str(agent_file)
@@ -1287,9 +1287,9 @@ class TestAgentFileImport:
 
         # verify values are scrubbed in export
         exported_agent = agent_file.agents[0]
-        assert exported_agent.tool_exec_environment_variables["API_KEY"] == ""
-        assert exported_agent.tool_exec_environment_variables["DATABASE_URL"] == ""
-        assert exported_agent.tool_exec_environment_variables["SECRET_TOKEN"] == ""
+        assert exported_agent.secrets["API_KEY"] == ""
+        assert exported_agent.secrets["DATABASE_URL"] == ""
+        assert exported_agent.secrets["SECRET_TOKEN"] == ""
 
         # import with new environment variable values
         new_env_vars = {

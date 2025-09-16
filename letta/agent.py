@@ -1628,7 +1628,7 @@ class Agent(BaseAgent):
                 action_name = generate_composio_action_from_func_name(target_letta_tool.name)
                 # Get entity ID from the agent_state
                 entity_id = None
-                for env_var in self.agent_state.tool_exec_environment_variables:
+                for env_var in self.agent_state.secrets:
                     if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
                         entity_id = env_var.value
                 # Get composio_api_key

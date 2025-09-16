@@ -9011,6 +9011,25 @@ async def test_list_jobs_filter_by_type(server: SyncServer, default_user, defaul
     assert jobs[0].id == run.id
 
 
+@pytest.mark.asyncio
+async def test_list_jobs_by_stop_reason(server: SyncServer, sarah_agent, default_user):
+    """Test listing jobs by stop reason."""
+
+    run_pydantic = PydanticRun(
+        user_id=default_user.id,
+        status=JobStatus.pending,
+        job_type=JobType.RUN,
+        stop_reason=StopReasonType.requires_approval,
+    )
+    run = await server.job_manager.create_job_async(pydantic_job=run_pydantic, actor=default_user)
+    assert run.stop_reason == StopReasonType.requires_approval
+
+    # list jobs by stop reason
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, job_type=JobType.RUN, stop_reason=StopReasonType.requires_approval)
+    assert len(jobs) == 1
+    assert jobs[0].id == run.id
+
+
 async def test_e2e_job_callback(monkeypatch, server: SyncServer, default_user):
     """Test that job callbacks are properly dispatched when a job is completed."""
     captured = {}
