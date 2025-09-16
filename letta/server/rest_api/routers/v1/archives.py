@@ -13,8 +13,7 @@ router = APIRouter(prefix="/archives", tags=["archives"])
 class ArchiveCreateRequest(BaseModel):
     """Request model for creating an archive.
 
-    Intentionally excludes organization_id and vector_db_provider. These are
-    derived internally (organization from the actor; vector DB provider from env).
+    Intentionally excludes vector_db_provider. These are derived internally (vector DB provider from env).
     """
 
     name: str
