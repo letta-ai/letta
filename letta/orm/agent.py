@@ -22,6 +22,7 @@ from letta.schemas.tool_rule import ToolRule
 from letta.utils import calculate_file_defaults_based_on_context_window
 
 if TYPE_CHECKING:
+    from letta.orm.agents_runs import AgentsRuns
     from letta.orm.agents_tags import AgentsTags
     from letta.orm.archives_agents import ArchivesAgents
     from letta.orm.files_agents import FileAgent
@@ -130,6 +131,13 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         cascade="all, delete-orphan",
         lazy="selectin",
         doc="Tags associated with the agent.",
+    )
+    runs: Mapped[List["AgentsRuns"]] = relationship(
+        "AgentsRuns",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        doc="Runs associated with the agent.",
     )
     identities: Mapped[List["Identity"]] = relationship(
         "Identity",

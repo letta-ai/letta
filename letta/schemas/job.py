@@ -24,6 +24,10 @@ class JobBase(OrmMetadataBase):
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="The metadata of the job.")
     job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
 
+    # Run-specific fields
+    background: Optional[bool] = Field(None, description="Whether the job was created in background mode.")
+    agent_id: Optional[str] = Field(None, description="The agent associated with this job/run.")
+
     callback_url: Optional[str] = Field(None, description="If set, POST to this URL when the job completes.")
     callback_sent_at: Optional[datetime] = Field(None, description="Timestamp when the callback was last attempted.")
     callback_status_code: Optional[int] = Field(None, description="HTTP status code returned by the callback endpoint.")
