@@ -397,8 +397,19 @@ async def list_folder_passages(
 @router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_folder_files")
 async def list_folder_files(
     folder_id: str,
-    limit: int = Query(1000, description="Number of files to return"),
-    after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    before: Optional[str] = Query(
+        None,
+        description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="File ID cursor for pagination. Returns files that come after this file ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(1000, description="Maximum number of files to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -409,8 +420,10 @@ async def list_folder_files(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.list_files(
         source_id=folder_id,
-        limit=limit,
+        before=before,
         after=after,
+        limit=limit,
+        ascending=(order == "asc"),
         actor=actor,
         include_content=include_content,
         strip_directory_prefix=True,  # TODO: Reconsider this. This is purely for aesthetics.
