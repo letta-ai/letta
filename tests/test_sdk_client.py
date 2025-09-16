@@ -1277,48 +1277,61 @@ def test_preview_payload(client: LettaSDKClient):
                 ],
             ),
         )
-
+        # Basic payload shape
         assert isinstance(payload, dict)
-        assert "model" in payload
-        assert "messages" in payload
-        assert "tools" in payload
-        assert "frequency_penalty" in payload
-        assert "max_completion_tokens" in payload
-        assert "temperature" in payload
-        assert "user" in payload
-        assert "parallel_tool_calls" in payload
-        assert "tool_choice" in payload
+        assert payload.get("model") == "gpt-4o-mini"
+        assert "messages" in payload and isinstance(payload["messages"], list)
+        assert payload.get("frequency_penalty") == 1.0
+        assert payload.get("max_completion_tokens") is None
+        assert payload.get("temperature") == 0.7
+        assert isinstance(payload.get("user"), str) and payload["user"].startswith("user-")
 
-        assert payload["model"] == "gpt-4o-mini"
+        # Tools-related fields: when no tools are attached, these are None/omitted
+        assert "tools" in payload and payload["tools"] is None
+        assert payload.get("tool_choice") is None
+        assert "parallel_tool_calls" not in payload  # only present when tools are provided
 
-        assert isinstance(payload["messages"], list)
-        assert len(payload["messages"]) >= 3
+        # Messages content and ordering
+        messages = payload["messages"]
+        assert len(messages) >= 4  # system, assistant tool call, tool result, user events
 
-        system_message = payload["messages"][0]
-        assert system_message["role"] == "system"
-        assert "base_instructions" in system_message["content"]
-        assert "memory_blocks" in system_message["content"]
-        assert "Letta" in system_message["content"]
+        # System message: contains base instructions and metadata
+        system_msg = messages[0]
+        assert system_msg.get("role") == "system"
+        assert isinstance(system_msg.get("content"), str)
+        assert "<base_instructions>" in system_msg["content"]
+        assert "Base instructions finished." in system_msg["content"]
+        assert "<memory_blocks>" in system_msg["content"]
+        assert "Letta" in system_msg["content"]
 
-        assert isinstance(payload["tools"], list)
-        assert len(payload["tools"]) > 0
+        # Assistant tool call: send_message greeting
+        assistant_tool_msg = next((m for m in messages if m.get("role") == "assistant" and m.get("tool_calls")), None)
+        assert assistant_tool_msg is not None, f"No assistant tool call found in messages: {messages}"
+        assert isinstance(assistant_tool_msg.get("tool_calls"), list) and len(assistant_tool_msg["tool_calls"]) == 1
+        tool_call = assistant_tool_msg["tool_calls"][0]
+        assert tool_call.get("type") == "function"
+        assert tool_call.get("function", {}).get("name") == "send_message"
+        assert isinstance(tool_call.get("id"), str) and len(tool_call["id"]) > 0
+        # Arguments are JSON-encoded
+        args_raw = tool_call.get("function", {}).get("arguments")
+        args = json.loads(args_raw)
+        assert "message" in args and args["message"] == "More human than human is our motto."
+        assert "thinking" in args and "Persona activated" in args["thinking"]
 
-        for tool in payload["tools"]:
-            assert tool["type"] == "function"
-            assert "function" in tool
-            assert "name" in tool["function"]
-            assert "description" in tool["function"]
-            assert "parameters" in tool["function"]
-            assert tool["function"]["strict"] is True
+        # Tool result corresponding to the tool call
+        tool_result_msg = next((m for m in messages if m.get("role") == "tool" and m.get("tool_call_id") == tool_call["id"]), None)
+        assert tool_result_msg is not None, "No tool result found matching the assistant tool call id"
+        tool_content = json.loads(tool_result_msg.get("content", "{}"))
+        assert tool_content.get("status") == "OK"
 
-        assert payload["frequency_penalty"] == 1.0
-        assert payload["max_completion_tokens"] is None
-        assert payload["temperature"] == 0.7
-        assert payload["parallel_tool_calls"] is False
-        assert payload["tool_choice"] == "required"
-        assert payload["user"].startswith("user-")
-
-        print(payload)
+        # User events: login then user text
+        user_login_msg = next(
+            (m for m in messages if m.get("role") == "user" and isinstance(m.get("content"), str) and '"type": "login"' in m["content"]),
+            None,
+        )
+        assert user_login_msg is not None, "Expected a user login event in messages"
+        user_text_msg = next((m for m in messages if m.get("role") == "user" and m.get("content") == "text"), None)
+        assert user_text_msg is not None, "Expected a user text message with content 'text'"
     finally:
         # Clean up the agent
         client.agents.delete(agent_id=temp_agent.id)
