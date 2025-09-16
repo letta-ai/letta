@@ -8,6 +8,7 @@ from letta.orm.mixins import UserMixin
 from letta.orm.sqlalchemy_base import SqlalchemyBase
 from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.job import Job as PydanticJob, LettaRequestConfig
+from letta.schemas.letta_stop_reason import StopReasonType
 
 if TYPE_CHECKING:
     from letta.orm.job_messages import JobMessage
@@ -28,6 +29,7 @@ class Job(SqlalchemyBase, UserMixin):
 
     status: Mapped[JobStatus] = mapped_column(String, default=JobStatus.created, doc="The current status of the job.")
     completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True, doc="The unix timestamp of when the job was completed.")
+    stop_reason: Mapped[Optional[StopReasonType]] = mapped_column(String, nullable=True, doc="The reason why the job was stopped.")
     metadata_: Mapped[Optional[dict]] = mapped_column(JSON, doc="The metadata of the job.")
     job_type: Mapped[JobType] = mapped_column(
         String,

@@ -18,6 +18,7 @@ from letta.otel.tracing import log_event, trace_method
 from letta.schemas.enums import JobStatus, JobType, MessageRole
 from letta.schemas.job import BatchJob as PydanticBatchJob, Job as PydanticJob, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessage
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.run import Run as PydanticRun
 from letta.schemas.step import Step as PydanticStep
@@ -207,7 +208,7 @@ class JobManager:
     @enforce_types
     @trace_method
     async def safe_update_job_status_async(
-        self, job_id: str, new_status: JobStatus, actor: PydanticUser, metadata: Optional[dict] = None
+        self, job_id: str, new_status: JobStatus, actor: PydanticUser, stop_reason: StopReasonType, metadata: Optional[dict] = None
     ) -> bool:
         """
         Safely update job status with state transition guards.
@@ -217,7 +218,7 @@ class JobManager:
             True if update was successful, False if update was skipped due to invalid transition
         """
         try:
-            job_update_builder = partial(JobUpdate, status=new_status)
+            job_update_builder = partial(JobUpdate, status=new_status, stop_reason=stop_reason)
 
             # If metadata is provided, merge it with existing metadata
             if metadata:
@@ -268,6 +269,7 @@ class JobManager:
         statuses: Optional[List[JobStatus]] = None,
         job_type: JobType = JobType.JOB,
         ascending: bool = True,
+        stop_reason: Optional[StopReasonType] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
         with db_registry.session() as session:
@@ -276,6 +278,10 @@ class JobManager:
             # Add status filter if provided
             if statuses:
                 filter_kwargs["status"] = statuses
+
+            # Add stop_reason filter if provided
+            if stop_reason is not None:
+                filter_kwargs["stop_reason"] = stop_reason
 
             jobs = JobModel.list(
                 db_session=session,

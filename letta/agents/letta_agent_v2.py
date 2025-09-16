@@ -1225,6 +1225,7 @@ class LettaAgentV2(BaseAgentV2):
                     job_id=run_id,
                     new_status=JobStatus.failed if is_error else JobStatus.completed,
                     actor=self.actor,
+                    stop_reason=self.stop_reason.stop_reason if self.stop_reason else StopReasonType.error,
                     metadata=job_update_metadata,
                 )
         if request_span:
