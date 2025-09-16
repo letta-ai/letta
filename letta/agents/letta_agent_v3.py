@@ -17,6 +17,7 @@ from letta.constants import DEFAULT_MAX_STEPS, NON_USER_MSG_PREFIX, REQUEST_HEAR
 from letta.errors import ContextWindowExceededError, LLMError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_timestamp_ns
+from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
@@ -30,6 +31,7 @@ from letta.schemas.step import StepProgression
 from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
+from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 from letta.settings import settings, summarizer_settings
 from letta.system import package_function_response
 from letta.utils import log_telemetry, validate_function_response
@@ -790,3 +792,21 @@ class LettaAgentV3(LettaAgentV2):
                         stop_reason = None  # reset – we’re still going
 
                 return continue_stepping, continuation_reason, stop_reason
+
+    @trace_method
+    async def _get_valid_tools(self):
+        tools = self.agent_state.tools
+        valid_tool_names = self.tool_rules_solver.get_allowed_tool_names(
+            available_tools=set([t.name for t in tools]),
+            last_function_response=self.last_function_response,
+            error_on_empty=False,  # Return empty list instead of raising error
+        ) or list(set(t.name for t in tools))
+        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        terminal_tool_names = {rule.tool_name for rule in self.tool_rules_solver.terminal_tool_rules}
+        allowed_tools = runtime_override_tool_json_schema(
+            tool_list=allowed_tools,
+            response_format=self.agent_state.response_format,
+            request_heartbeat=False,  # NOTE: difference for v3 (don't add request heartbeat)
+            terminal_tools=terminal_tool_names,
+        )
+        return allowed_tools
