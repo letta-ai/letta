@@ -31,9 +31,10 @@ def upgrade() -> None:
         "agents_runs",
         sa.Column("agent_id", sa.String(), sa.ForeignKey("agents.id"), primary_key=True),
         sa.Column("run_id", sa.String(), sa.ForeignKey("jobs.id"), primary_key=True),
+        sa.UniqueConstraint("agent_id", "run_id", name="unique_agent_run"),
     )
 
-    # Add indexes (skip unique constraint since we have composite primary key)
+    # Add indexes
     op.create_index("ix_agents_runs_agent_id_run_id", "agents_runs", ["agent_id", "run_id"])
     op.create_index("ix_agents_runs_run_id_agent_id", "agents_runs", ["run_id", "agent_id"])
 
@@ -83,7 +84,7 @@ def downgrade() -> None:
     # Drop indexes and table
     op.drop_index("ix_agents_runs_run_id_agent_id", "agents_runs")
     op.drop_index("ix_agents_runs_agent_id_run_id", "agents_runs")
-    # No need to drop unique constraint since we didn't create one
+    # Note: Unique constraint will be dropped automatically with the table
     op.drop_table("agents_runs")
 
     # Drop columns from jobs table
