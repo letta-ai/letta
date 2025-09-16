@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
+from letta.orm.errors import NoResultFound
 from letta.schemas.archive import Archive as PydanticArchive
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 from letta.server.server import SyncServer
@@ -17,6 +18,16 @@ class ArchiveCreateRequest(BaseModel):
     """
 
     name: str
+    description: Optional[str] = None
+
+
+class ArchiveUpdateRequest(BaseModel):
+    """Request model for updating an archive (partial).
+
+    Supports updating only name and description.
+    """
+
+    name: Optional[str] = None
     description: Optional[str] = None
 
 
@@ -36,5 +47,29 @@ async def create_archive(
             description=archive.description,
             actor=actor,
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{archive_id}", response_model=PydanticArchive, operation_id="modify_archive")
+async def modify_archive(
+    archive_id: str,
+    archive: ArchiveUpdateRequest = Body(...),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Update an existing archive's name and/or description.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        return await server.archive_manager.update_archive_async(
+            archive_id=archive_id,
+            name=archive.name,
+            description=archive.description,
+            actor=actor,
+        )
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -89,6 +89,32 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    async def update_archive_async(
+        self,
+        archive_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actor: PydanticUser = None,
+    ) -> PydanticArchive:
+        """Update archive name and/or description."""
+        async with db_registry.async_session() as session:
+            archive = await ArchiveModel.read_async(
+                db_session=session,
+                identifier=archive_id,
+                actor=actor,
+                check_is_deleted=True,
+            )
+
+            if name is not None:
+                archive.name = name
+            if description is not None:
+                archive.description = description
+
+            await archive.update_async(session, actor=actor)
+            return archive.to_pydantic()
+
+    @enforce_types
+    @trace_method
     def attach_agent_to_archive(
         self,
         agent_id: str,
