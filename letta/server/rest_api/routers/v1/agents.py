@@ -1235,7 +1235,7 @@ async def send_message(
     finally:
         if settings.track_agent_run:
             if result:
-                stop_reason = result.stop_reason
+                stop_reason = result.stop_reason.stop_reason
             else:
                 # NOTE: we could also consider this an error?
                 stop_reason = None
