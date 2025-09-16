@@ -29,7 +29,6 @@ from letta.orm.errors import NoResultFound
 from letta.orm.identity import Identity
 from letta.orm.passage import ArchivalPassage, SourcePassage
 from letta.orm.sources_agents import SourcesAgents
-from letta.orm.sqlite_functions import adapt_array
 from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
 from letta.prompts.prompt_generator import PromptGenerator
@@ -921,6 +920,8 @@ async def build_passage_query(
             main_query = main_query.order_by(combined_query.c.embedding.cosine_distance(embedded_text).asc())
         else:
             # SQLite with custom vector type
+            from letta.orm.sqlite_functions import adapt_array
+
             query_embedding_binary = adapt_array(embedded_text)
             main_query = main_query.order_by(
                 func.cosine_distance(combined_query.c.embedding, query_embedding_binary).asc(),
@@ -1054,6 +1055,8 @@ async def build_source_passage_query(
             query = query.order_by(SourcePassage.embedding.cosine_distance(embedded_text).asc())
         else:
             # SQLite with custom vector type
+            from letta.orm.sqlite_functions import adapt_array
+
             query_embedding_binary = adapt_array(embedded_text)
             query = query.order_by(
                 func.cosine_distance(SourcePassage.embedding, query_embedding_binary).asc(),
@@ -1151,6 +1154,8 @@ async def build_agent_passage_query(
             query = query.order_by(ArchivalPassage.embedding.cosine_distance(embedded_text).asc())
         else:
             # SQLite with custom vector type
+            from letta.orm.sqlite_functions import adapt_array
+
             query_embedding_binary = adapt_array(embedded_text)
             query = query.order_by(
                 func.cosine_distance(ArchivalPassage.embedding, query_embedding_binary).asc(),
