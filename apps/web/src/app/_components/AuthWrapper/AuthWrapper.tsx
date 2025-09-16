@@ -1,5 +1,5 @@
 import { HStack, LettaLoader, VStack } from '@letta-cloud/ui-component-library';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import type { Ref } from 'react';
 import './AuthWrapper.scss';
 
@@ -27,22 +27,6 @@ export function AuthWrapper(props: AuthWrapperProps) {
     footer,
     bottomCard,
   } = props;
-
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDarkMode(mediaQuery.matches);
-
-    function listener(e: MediaQueryListEvent) {
-      setIsDarkMode(e.matches);
-    }
-    mediaQuery.addEventListener('change', listener);
-
-    return () => {
-      mediaQuery.removeEventListener('change', listener);
-    };
-  }, []);
 
   return (
     <HStack
@@ -84,11 +68,7 @@ export function AuthWrapper(props: AuthWrapperProps) {
                     className="relative  lottie-non-interactive w-[36px] h-[36px] min-h-[36px] min-w-[36px]"
                     ref={logoRef}
                   >
-                    <LettaLoader
-                      variant="spinner3d"
-                      size="big"
-                      isDarkMode={isDarkMode}
-                    />
+                    <LettaLoader variant="spinner3d" size="big" />
                   </div>
                 )}
                 {headerContent}

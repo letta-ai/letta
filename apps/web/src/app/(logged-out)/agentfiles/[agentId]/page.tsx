@@ -148,7 +148,7 @@ function AgentfileViewer() {
           </VStack>
         </HStack>
 
-        <div className="text-left bg-white border-x border-b">
+        <div className="text-left bg-background border-x border-b">
           <div className="border-t">
             <Accordion
               id="multi-0"

@@ -73,7 +73,6 @@ interface LettaLoaderBaseProps extends VariantProps<typeof loaderVariants> {
   color?: LogoBaseProps['color'];
   stopAnimation?: boolean;
   id?: string;
-  isDarkMode?: boolean;
   fillColor?: string;
 }
 
@@ -104,12 +103,11 @@ function LettaSpinLoader(props: LettaLoaderBaseProps) {
 }
 
 function LettaSpinLoader3d(props: LettaLoaderBaseProps) {
-  const { id, size, isDarkMode } = props;
+  const { id, size } = props;
 
   const logoOptions = {
     loop: true,
     autoplay: true,
-    animationData: isDarkMode ? lightLogo : darkLogo,
     rendererSettings: {
       preserveAspectRatio: 'xMidYMid slice',
     },
@@ -117,7 +115,24 @@ function LettaSpinLoader3d(props: LettaLoaderBaseProps) {
 
   return (
     <div id={id} className={loaderVariants({ size })}>
-      <Lottie options={logoOptions} isClickToPauseDisabled={true} />
+      <div className="visible-on-dark">
+        <Lottie
+          options={{
+            ...logoOptions,
+            animationData: darkLogo,
+          }}
+          isClickToPauseDisabled={true}
+        />
+      </div>
+      <div className="invisible-on-dark">
+        <Lottie
+          options={{
+            ...logoOptions,
+            animationData: lightLogo,
+          }}
+          isClickToPauseDisabled={true}
+        />
+      </div>
     </div>
   );
 }

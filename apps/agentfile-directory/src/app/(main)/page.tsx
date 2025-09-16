@@ -144,7 +144,7 @@ export default function Index() {
         >
           <HStack gap="xlarge" align="center" fullHeight>
             <div className="flex items-center justify-center aspect-square">
-              <LettaLoader variant="spinner3d" size="large" isDarkMode={true} />
+              <LettaLoader variant="spinner3d" size="large" />
             </div>
             <VStack>
               <Typography variant="heading1" align="center">
