@@ -874,3 +874,21 @@ afd:
 
 pull:
   git pull origin main --recurse-submodules
+
+# Sync apps/core submodule to the version specified in origin/main
+sync-submodules:
+    #!/usr/bin/env bash
+    echo "🔄 Syncing apps/core submodule to match origin/main..."
+    # Get the commit hash that origin/main expects for apps/core
+    TARGET_COMMIT=$(git ls-tree origin/main apps/core | cut -f3 -d' ' | cut -f1)
+    echo "Target commit: $TARGET_COMMIT"
+
+    # Update the submodule to the target commit
+    cd apps/core
+    git fetch origin
+    git checkout $TARGET_COMMIT
+    cd ../..
+
+    # Add the change to the staging area
+    git add apps/core
+    echo "✅ apps/core submodule synced to commit $TARGET_COMMIT from origin/main"
