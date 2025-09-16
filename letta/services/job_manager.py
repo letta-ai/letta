@@ -39,29 +39,13 @@ class JobManager:
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
-        from letta.orm.agents_runs import AgentsRuns
-
         with db_registry.session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
-
-            # Get agent_id if present
-            agent_id = getattr(pydantic_job, "agent_id", None)
-
             job_data = pydantic_job.model_dump(to_orm=True)
-            # Remove agent_id from job_data as it's not a field in the Job ORM model
-            # The relationship is handled through the AgentsRuns association table
-            job_data.pop("agent_id", None)
             job = JobModel(**job_data)
             job.organization_id = actor.organization_id
             job.create(session, actor=actor)  # Save job in the database
-
-            # If this is a Run with an agent_id, create the agents_runs association
-            if agent_id and isinstance(pydantic_job, PydanticRun):
-                agents_run = AgentsRuns(agent_id=agent_id, run_id=job.id)
-                session.add(agents_run)
-                session.commit()
-
         return job.to_pydantic()
 
     @enforce_types
@@ -70,37 +54,15 @@ class JobManager:
         self, pydantic_job: Union[PydanticJob, PydanticRun, PydanticBatchJob], actor: PydanticUser
     ) -> Union[PydanticJob, PydanticRun, PydanticBatchJob]:
         """Create a new job based on the JobCreate schema."""
-        from letta.orm.agents_runs import AgentsRuns
-
         async with db_registry.async_session() as session:
             # Associate the job with the user
             pydantic_job.user_id = actor.id
-
-            # Get agent_id if present
-            agent_id = getattr(pydantic_job, "agent_id", None)
-
             job_data = pydantic_job.model_dump(to_orm=True)
-            # Remove agent_id from job_data as it's not a field in the Job ORM model
-            # The relationship is handled through the AgentsRuns association table
-            job_data.pop("agent_id", None)
             job = JobModel(**job_data)
             job.organization_id = actor.organization_id
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
-
-            # If this is a Run with an agent_id, create the agents_runs association
-            if agent_id and isinstance(pydantic_job, PydanticRun):
-                agents_run = AgentsRuns(agent_id=agent_id, run_id=job.id)
-                session.add(agents_run)
-
+            result = job.to_pydantic()
             await session.commit()
-
-            # Convert to pydantic first, then add agent_id if needed
-            result = super(JobModel, job).to_pydantic()
-
-            # Add back the agent_id field to the result if it was present
-            if agent_id and isinstance(pydantic_job, PydanticRun):
-                result.agent_id = agent_id
-
             return result
 
     @enforce_types
@@ -308,14 +270,8 @@ class JobManager:
         job_type: JobType = JobType.JOB,
         ascending: bool = True,
         stop_reason: Optional[StopReasonType] = None,
-        agent_ids: Optional[List[str]] = None,
-        background: Optional[bool] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
-        from sqlalchemy import and_, select
-
-        from letta.orm.agents_runs import AgentsRuns
-
         with db_registry.session() as session:
             filter_kwargs = {"user_id": actor.id, "job_type": job_type}
 
@@ -327,66 +283,14 @@ class JobManager:
             if stop_reason is not None:
                 filter_kwargs["stop_reason"] = stop_reason
 
-            # Add background filter if provided
-            if background is not None:
-                filter_kwargs["background"] = background
-
-            # Build query
-            query = select(JobModel)
-
-            # Apply basic filters
-            for key, value in filter_kwargs.items():
-                if isinstance(value, list):
-                    query = query.where(getattr(JobModel, key).in_(value))
-                else:
-                    query = query.where(getattr(JobModel, key) == value)
-
-            # If agent_ids filter is provided, join with agents_runs table
-            if agent_ids:
-                query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
-                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
-
-            # Apply pagination and ordering
-            if ascending:
-                query = query.order_by(JobModel.created_at.asc(), JobModel.id.asc())
-            else:
-                query = query.order_by(JobModel.created_at.desc(), JobModel.id.desc())
-
-            # Apply cursor-based pagination
-            if before:
-                before_job = session.get(JobModel, before)
-                if before_job:
-                    if ascending:
-                        query = query.where(
-                            (JobModel.created_at < before_job.created_at)
-                            | ((JobModel.created_at == before_job.created_at) & (JobModel.id < before_job.id))
-                        )
-                    else:
-                        query = query.where(
-                            (JobModel.created_at > before_job.created_at)
-                            | ((JobModel.created_at == before_job.created_at) & (JobModel.id > before_job.id))
-                        )
-
-            if after:
-                after_job = session.get(JobModel, after)
-                if after_job:
-                    if ascending:
-                        query = query.where(
-                            (JobModel.created_at > after_job.created_at)
-                            | ((JobModel.created_at == after_job.created_at) & (JobModel.id > after_job.id))
-                        )
-                    else:
-                        query = query.where(
-                            (JobModel.created_at < after_job.created_at)
-                            | ((JobModel.created_at == after_job.created_at) & (JobModel.id < after_job.id))
-                        )
-
-            # Apply limit
-            if limit:
-                query = query.limit(limit)
-
-            # Execute query
-            jobs = session.execute(query).scalars().all()
+            jobs = JobModel.list(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                **filter_kwargs,
+            )
             return [job.to_pydantic() for job in jobs]
 
     @enforce_types
@@ -402,13 +306,9 @@ class JobManager:
         ascending: bool = True,
         source_id: Optional[str] = None,
         stop_reason: Optional[StopReasonType] = None,
-        agent_ids: Optional[List[str]] = None,
-        background: Optional[bool] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
         from sqlalchemy import and_, or_, select
-
-        from letta.orm.agents_runs import AgentsRuns
 
         async with db_registry.async_session() as session:
             # build base query
@@ -418,24 +318,15 @@ class JobManager:
             if statuses:
                 query = query.where(JobModel.status.in_(statuses))
 
-            # add stop_reason filter if provided
-            if stop_reason is not None:
-                query = query.where(JobModel.stop_reason == stop_reason)
-
-            # add background filter if provided
-            if background is not None:
-                query = query.where(JobModel.background == background)
-
             # add source_id filter if provided
             if source_id:
                 column = getattr(JobModel, "metadata_")
                 column = column.op("->>")("source_id")
                 query = query.where(column == source_id)
 
-            # If agent_ids filter is provided, join with agents_runs table
-            if agent_ids:
-                query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
-                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
+            # add stop_reason filter if provided
+            if stop_reason is not None:
+                query = query.where(JobModel.stop_reason == stop_reason)
 
             # handle cursor-based pagination
             if before or after:

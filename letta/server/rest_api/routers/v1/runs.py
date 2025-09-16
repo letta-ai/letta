@@ -57,10 +57,12 @@ def list_runs(
             after=after,
             ascending=False,
             stop_reason=stop_reason,
-            agent_ids=agent_ids,
-            background=background,
         )
     ]
+    if agent_ids:
+        runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
+    if background is not None:
+        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"] == background]
     return runs
 
 
@@ -76,10 +78,14 @@ def list_active_runs(
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
-    active_runs = server.job_manager.list_jobs(
-        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=agent_ids, background=background
-    )
+    active_runs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN)
     active_runs = [Run.from_job(job) for job in active_runs]
+
+    if agent_ids:
+        active_runs = [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
+
+    if background is not None:
+        active_runs = [run for run in active_runs if "background" in run.metadata and run.metadata["background"] == background]
 
     return active_runs
 
@@ -274,7 +280,7 @@ async def retrieve_stream(
 
     run = Run.from_job(job)
 
-    if not run.background:
+    if "background" not in run.metadata or not run.metadata["background"]:
         raise HTTPException(status_code=400, detail="Run was not created in background mode, so it cannot be retrieved.")
 
     if run.created_at < get_utc_time() - timedelta(hours=3):
