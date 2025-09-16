@@ -1233,11 +1233,7 @@ async def send_message(
         raise
     finally:
         if settings.track_agent_run:
-            if result.stop_reason.stop_reason:
-                stop_reason = result.stop_reason.stop_reason
-            else:
-                # default to error if no stop reason
-                stop_reason = StopReasonType.error
+            stop_reason = result.stop_reason.stop_reason
             await server.job_manager.safe_update_job_status_async(
                 job_id=run.id,
                 new_status=job_status,
