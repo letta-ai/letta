@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -9,9 +9,13 @@ class MessageContentType(str, Enum):
     image = "image"
     tool_call = "tool_call"
     tool_return = "tool_return"
+    # For Anthropic extended thinking
     reasoning = "reasoning"
     redacted_reasoning = "redacted_reasoning"
+    # Generic "hidden" (unsavailable) reasoning
     omitted_reasoning = "omitted_reasoning"
+    # For OpenAI Responses API
+    summarized_reasoning = "summarized_reasoning"
 
 
 class MessageContent(BaseModel):
@@ -207,6 +211,8 @@ class ToolReturnContent(MessageContent):
 
 
 class ReasoningContent(MessageContent):
+    """Sent via the Anthropic Messages API"""
+
     type: Literal[MessageContentType.reasoning] = Field(
         default=MessageContentType.reasoning, description="Indicates this is a reasoning/intermediate step."
     )
@@ -220,6 +226,8 @@ class ReasoningContent(MessageContent):
 
 
 class RedactedReasoningContent(MessageContent):
+    """Sent via the Anthropic Messages API"""
+
     type: Literal[MessageContentType.redacted_reasoning] = Field(
         default=MessageContentType.redacted_reasoning, description="Indicates this is a redacted thinking step."
     )
@@ -227,6 +235,8 @@ class RedactedReasoningContent(MessageContent):
 
 
 class OmittedReasoningContent(MessageContent):
+    """A placeholder for reasoning content we know is present, but isn't returned by the provider (e.g. OpenAI GPT-5 on ChatCompletions)"""
+
     type: Literal[MessageContentType.omitted_reasoning] = Field(
         default=MessageContentType.omitted_reasoning, description="Indicates this is an omitted reasoning step."
     )
@@ -234,9 +244,40 @@ class OmittedReasoningContent(MessageContent):
     # tokens: int = Field(..., description="The reasoning token count for intermediate reasoning content.")
 
 
+class SummarizedReasoningContentPart(BaseModel):
+    index: int = Field(..., description="The index of the summary part.")
+    text: str = Field(..., description="The text of the summary part.")
+
+
+class SummarizedReasoningContent(MessageContent):
+    """The style of reasoning content returned by the OpenAI Responses API"""
+
+    # TODO consider expanding ReasoningContent to support this superset?
+    # Or alternatively, rename `ReasoningContent` to `AnthropicReasoningContent`,
+    # and rename this one to `OpenAIReasoningContent`?
+    type: Literal[MessageContentType.summarized_reasoning] = Field(
+        default=MessageContentType.summarized_reasoning, description="Indicates this is a summarized reasoning step."
+    )
+
+    # OpenAI requires holding a string
+    # id: str = Field(..., description="The unique identifier for this reasoning step.")  # NOTE: I don't think this is actually needed?
+    # OpenAI returns a list of summary objects, each a string
+    # Straying a bit from the OpenAI schema so that we can enforce ordering on the deltas that come out
+    # summary: List[str] = Field(..., description="Summaries of the reasoning content.")
+    summary: List[SummarizedReasoningContentPart] = Field(..., description="Summaries of the reasoning content.")
+    encrypted_content: str = Field(default=None, description="The encrypted reasoning content.")
+
+
 LettaMessageContentUnion = Annotated[
     Union[
-        TextContent, ImageContent, ToolCallContent, ToolReturnContent, ReasoningContent, RedactedReasoningContent, OmittedReasoningContent
+        TextContent,
+        ImageContent,
+        ToolCallContent,
+        ToolReturnContent,
+        ReasoningContent,
+        RedactedReasoningContent,
+        OmittedReasoningContent,
+        SummarizedReasoningContent,
     ],
     Field(discriminator="type"),
 ]

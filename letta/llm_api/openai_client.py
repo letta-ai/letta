@@ -3,9 +3,11 @@ import os
 from typing import List, Optional
 
 import openai
+from httpx import stream
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from openai.types.responses.response_stream_event import ResponseStreamEvent
 
 from letta.constants import LETTA_MODEL_ENDPOINT, REQUEST_HEARTBEAT_PARAM
 from letta.errors import (
@@ -40,6 +42,7 @@ from letta.schemas.openai.chat_completion_request import (
     cast_message_to_subtype,
 )
 from letta.schemas.openai.chat_completion_response import ChatCompletionResponse
+from letta.schemas.openai.responses_request import ResponsesRequest
 from letta.settings import model_settings
 
 logger = get_logger(__name__)
@@ -118,6 +121,11 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     return False
 
 
+def use_responses_api(llm_config: LLMConfig) -> bool:
+    # TODO can opt in all reasoner models to use the Responses API
+    return is_openai_5_model(llm_config.model)
+
+
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
@@ -155,6 +163,148 @@ class OpenAIClient(LLMClientBase):
         return supports_structured_output(llm_config)
 
     @trace_method
+    def build_request_data_responses(
+        self,
+        agent_type: AgentType,  # if react, use native content + strip heartbeats
+        messages: List[PydanticMessage],
+        llm_config: LLMConfig,
+        tools: Optional[List[dict]] = None,  # Keep as dict for now as per base class
+        force_tool_call: Optional[str] = None,
+    ) -> dict:
+        """
+        Constructs a request object in the expected data format for the OpenAI Responses API.
+        """
+        if llm_config.put_inner_thoughts_in_kwargs:
+            raise ValueError("Inner thoughts in kwargs are not supported for the OpenAI Responses API")
+
+        openai_messages_list = PydanticMessage.to_openai_responses_dicts_from_list(messages)
+        # TODO support multi-modal swapping properly
+        # messages=fill_image_content_in_messages(openai_message_list, messages),
+
+        if llm_config.model:
+            model = llm_config.model
+        else:
+            logger.warning(f"Model type not set in llm_config: {llm_config.model_dump_json(indent=4)}")
+            model = None
+
+        # Default to auto, unless there's a forced tool call coming from above
+        tool_choice = None
+        if tools:  # only set tool_choice if tools exist
+            tool_choice = (
+                "auto"
+                if force_tool_call is None
+                else ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+            )
+
+        # Convert the tools from the ChatCompletions style to the Responses style
+        if tools:
+            # Get proper typing
+            typed_tools: List[OpenAITool] = [OpenAITool(type="function", function=f) for f in tools]
+
+            # Strip request heartbeat
+            # TODO relax this?
+            if agent_type == AgentType.react_agent:
+                new_tools = []
+                for tool in typed_tools:
+                    # Remove request_heartbeat from the properties if it exists
+                    if tool.function.parameters and "properties" in tool.function.parameters:
+                        tool.function.parameters["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                        # Also remove from required list if present
+                        if "required" in tool.function.parameters and REQUEST_HEARTBEAT_PARAM in tool.function.parameters["required"]:
+                            tool.function.parameters["required"].remove(REQUEST_HEARTBEAT_PARAM)
+                    new_tools.append(tool.model_copy(deep=True))
+                typed_tools = new_tools
+
+            # Convert to strict mode
+            if supports_structured_output(llm_config):
+                for tool in typed_tools:
+                    try:
+                        structured_output_version = convert_to_structured_output(tool.function.model_dump())
+                        tool.function = FunctionSchema(**structured_output_version)
+                    except ValueError as e:
+                        logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
+
+                # Finally convert to a Responses-friendly dict
+                responses_tools = [
+                    {
+                        "type": "function",
+                        "name": t.function.name,
+                        "description": t.function.description,
+                        "parameters": t.function.parameters,
+                        "strict": True,
+                    }
+                    for t in typed_tools
+                ]
+
+            else:
+                # Finally convert to a Responses-friendly dict
+                responses_tools = [
+                    {
+                        "type": "function",
+                        "name": t.function.name,
+                        "description": t.function.description,
+                        "parameters": t.function.parameters,
+                        # "strict": True,
+                    }
+                    for t in typed_tools
+                ]
+
+        # Prepare the request payload
+        data = ResponsesRequest(
+            # Responses specific
+            store=False,
+            include=["reasoning.encrypted_content"],
+            # More or less generic to ChatCompletions API
+            model=model,
+            input=openai_messages_list,
+            tools=responses_tools,
+            tool_choice=tool_choice,
+            max_output_tokens=llm_config.max_tokens,
+            temperature=llm_config.temperature if supports_temperature_param(model) else None,
+        )
+
+        # Add verbosity control for GPT-5 models
+        if supports_verbosity_control(model) and llm_config.verbosity:
+            # data.verbosity = llm_config.verbosity
+            # https://cookbook.openai.com/examples/gpt-5/gpt-5_new_params_and_tools
+            data.text = {"verbosity": llm_config.verbosity}
+
+        # Add reasoning effort control for reasoning models
+        if is_openai_reasoning_model(model) and llm_config.reasoning_effort:
+            # data.reasoning_effort = llm_config.reasoning_effort
+            data.reasoning = {
+                "effort": llm_config.reasoning_effort,
+                # NOTE: hardcoding summary level, could put in llm_config?
+                "summary": "detailed",
+            }
+
+        # TODO I don't see this in Responses?
+        # Add frequency penalty
+        # if llm_config.frequency_penalty is not None:
+        # data.frequency_penalty = llm_config.frequency_penalty
+
+        # Add parallel tool calling
+        if tools and supports_parallel_tool_calling(model):
+            data.parallel_tool_calls = False
+
+        # always set user id for openai requests
+        if self.actor:
+            data.user = self.actor.id
+
+        if llm_config.model_endpoint == LETTA_MODEL_ENDPOINT:
+            if not self.actor:
+                # override user id for inference.letta.com
+                import uuid
+
+                data.user = str(uuid.UUID(int=0))
+
+            data.model = "memgpt-openai"
+
+        request_data = data.model_dump(exclude_unset=True)
+        print("responses request data", request_data)
+        return request_data
+
+    @trace_method
     def build_request_data(
         self,
         agent_type: AgentType,  # if react, use native content + strip heartbeats
@@ -166,6 +316,16 @@ class OpenAIClient(LLMClientBase):
         """
         Constructs a request object in the expected data format for the OpenAI API.
         """
+        # Shortcut for GPT-5 to use Responses API
+        if use_responses_api(llm_config):
+            return self.build_request_data_responses(
+                agent_type=agent_type,
+                messages=messages,
+                llm_config=llm_config,
+                tools=tools,
+                force_tool_call=force_tool_call,
+            )
+
         if agent_type == AgentType.react_agent:
             # Safety hard override in case it got set somewhere by accident
             llm_config.put_inner_thoughts_in_kwargs = False
@@ -330,15 +490,35 @@ class OpenAIClient(LLMClientBase):
         return chat_completion_response
 
     @trace_method
-    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk]:
+    async def stream_async(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ChatCompletionChunk | ResponseStreamEvent]:
         """
         Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
         """
         kwargs = await self._prepare_client_kwargs_async(llm_config)
         client = AsyncOpenAI(**kwargs)
-        response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
-            **request_data, stream=True, stream_options={"include_usage": True}
-        )
+
+        if use_responses_api(llm_config):
+            response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(
+                **request_data,
+                stream=True,
+                # stream_options={"include_usage": True},
+            )
+        else:
+            response_stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
+                **request_data,
+                stream=True,
+                stream_options={"include_usage": True},
+            )
+        return response_stream
+
+    @trace_method
+    async def stream_async_responses(self, request_data: dict, llm_config: LLMConfig) -> AsyncStream[ResponseStreamEvent]:
+        """
+        Performs underlying asynchronous streaming request to OpenAI and returns the async stream iterator.
+        """
+        kwargs = await self._prepare_client_kwargs_async(llm_config)
+        client = AsyncOpenAI(**kwargs)
+        response_stream: AsyncStream[ResponseStreamEvent] = await client.responses.create(**request_data, stream=True)
         return response_stream
 
     @trace_method

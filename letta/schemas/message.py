@@ -38,6 +38,7 @@ from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
     ReasoningContent,
     RedactedReasoningContent,
+    SummarizedReasoningContent,
     TextContent,
     ToolReturnContent,
     get_letta_message_content_union_str_json_schema,
@@ -937,6 +938,109 @@ class Message(BaseMessage):
             for m in messages
         ]
         result = [m for m in result if m is not None]
+        return result
+
+    def to_openai_responses_dicts(
+        self,
+        max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+    ) -> List[dict]:
+        """Go from Message class to ChatCompletion message object"""
+
+        if self.role == "approval" and self.tool_calls is None:
+            return None
+
+        message_dicts = []
+
+        if self.role == "system":
+            assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+            message_dicts.append(
+                {
+                    "role": "developer",
+                    "content": self.content[0].text,
+                }
+            )
+
+        elif self.role == "user":
+            # TODO do we need to do a swap to placeholder text here for images?
+            assert all([isinstance(c, TextContent) or isinstance(c, ImageContent) for c in self.content]), vars(self)
+
+            user_dict = {
+                "role": self.role,
+                # TODO support multi-modal
+                "content": self.content[0].text,
+            }
+
+            # Optional field, do not include if null or invalid
+            if self.name is not None:
+                if bool(re.match(r"^[^\s<|\\/>]+$", self.name)):
+                    user_dict["name"] = self.name
+                else:
+                    warnings.warn(f"Using OpenAI with invalid 'name' field (name={self.name} role={self.role}).")
+
+            message_dicts.append(user_dict)
+
+        elif self.role == "assistant" or self.role == "approval":
+            assert self.tool_calls is not None or (self.content is not None and len(self.content) > 0)
+
+            # A few things may be in here, firstly reasoning content, secondly assistant messages, thirdly tool calls
+            # TODO check if OpenAI Responses is capable of R->A->T like Anthropic?
+
+            if self.content is not None:
+                for content_part in self.content:
+                    if isinstance(content_part, SummarizedReasoningContent):
+                        message_dicts.append(
+                            {
+                                "type": "reasoning",
+                                # "id": content_part.id,
+                                "summary": content_part.summary,
+                                "encrypted_content": content_part.encrypted_content,
+                            }
+                        )
+                    elif isinstance(content_part, TextContent):
+                        message_dicts.append(
+                            {
+                                "role": "assistant",
+                                "content": content_part.text,
+                            }
+                        )
+                    # else skip
+
+            if self.tool_calls is not None:
+                for tool_call in self.tool_calls:
+                    message_dicts.append(
+                        {
+                            "type": "function_call",
+                            "call_id": tool_call.id[:max_tool_id_length] if max_tool_id_length else tool_call.id,
+                            "name": tool_call.name,
+                            "arguments": tool_call.arguments,
+                            "status": "completed",  # TODO check if needed?
+                        }
+                    )
+
+        elif self.role == "tool":
+            assert self.tool_call_id is not None, vars(self)
+            assert len(self.content) == 1 and isinstance(self.content[0], TextContent), vars(self)
+            message_dicts.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
+                    "output": self.content[0].text,
+                }
+            )
+
+        else:
+            raise ValueError(self.role)
+
+        return message_dicts
+
+    @staticmethod
+    def to_openai_responses_dicts_from_list(
+        messages: List[Message],
+        max_tool_id_length: int = TOOL_CALL_ID_MAX_LEN,
+    ) -> List[dict]:
+        result = []
+        for message in messages:
+            result.extend(message.to_openai_responses_dicts(max_tool_id_length=max_tool_id_length))
         return result
 
     def to_anthropic_dict(
