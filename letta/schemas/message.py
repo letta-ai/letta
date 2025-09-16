@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall as OpenAIToolCall, Function as OpenAIFunction
+from openai.types.responses import ResponseReasoningItem
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REQUEST_HEARTBEAT_PARAM, TOOL_CALL_ID_MAX_LEN
@@ -979,8 +980,8 @@ class Message(BaseMessage):
                         message_dicts.append(
                             {
                                 "type": "reasoning",
-                                # "id": content_part.id,
-                                "summary": content_part.summary,
+                                "id": content_part.id,
+                                "summary": [{"type": "summary_text", "text": s.text} for s in content_part.summary],
                                 "encrypted_content": content_part.encrypted_content,
                             }
                         )

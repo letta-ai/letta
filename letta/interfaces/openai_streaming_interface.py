@@ -740,6 +740,7 @@ class SimpleOpenAIResponsesStreamingInterface:
                 letta_summary = [SummarizedReasoningContentPart(index=i, text=part.text) for i, part in enumerate(response.summary)]
                 content.append(
                     SummarizedReasoningContent(
+                        id=response.id,
                         summary=letta_summary,
                         encrypted_content=response.encrypted_content,
                     )

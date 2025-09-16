@@ -16,6 +16,7 @@ from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
     ReasoningContent,
     RedactedReasoningContent,
+    SummarizedReasoningContent,
     TextContent,
     ToolCallContent,
     ToolReturnContent,
@@ -264,6 +265,8 @@ def deserialize_message_content(data: Optional[List[Dict]]) -> List[MessageConte
             content = RedactedReasoningContent(**item)
         elif content_type == MessageContentType.omitted_reasoning:
             content = OmittedReasoningContent(**item)
+        elif content_type == MessageContentType.summarized_reasoning:
+            content = SummarizedReasoningContent(**item)
         else:
             # Skip invalid content
             continue

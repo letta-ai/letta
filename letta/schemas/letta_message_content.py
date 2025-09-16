@@ -266,7 +266,7 @@ class SummarizedReasoningContent(MessageContent):
     )
 
     # OpenAI requires holding a string
-    # id: str = Field(..., description="The unique identifier for this reasoning step.")  # NOTE: I don't think this is actually needed?
+    id: str = Field(..., description="The unique identifier for this reasoning step.")  # NOTE: I don't think this is actually needed?
     # OpenAI returns a list of summary objects, each a string
     # Straying a bit from the OpenAI schema so that we can enforce ordering on the deltas that come out
     # summary: List[str] = Field(..., description="Summaries of the reasoning content.")
