@@ -213,6 +213,8 @@ class LettaAgentV3(LettaAgentV2):
                 self.response_messages,
                 use_assistant_message=False,  # NOTE: set to false
                 reverse=False,
+                # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
+                text_is_assistant_message=True,
             )
             result = LettaResponse(messages=letta_messages, stop_reason=self.stop_reason, usage=self.usage)
             if self.job_update_metadata is None:
@@ -392,6 +394,8 @@ class LettaAgentV3(LettaAgentV2):
                     filter_user_messages,
                     use_assistant_message=False,  # NOTE: set to false
                     reverse=False,
+                    # text_is_assistant_message=(self.agent_state.agent_type == AgentType.react_agent),
+                    text_is_assistant_message=True,
                 )
                 for message in letta_messages:
                     if include_return_message_types is None or message.message_type in include_return_message_types:

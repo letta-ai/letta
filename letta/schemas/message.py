@@ -240,6 +240,7 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
         reverse: bool = True,
         include_err: Optional[bool] = None,
+        text_is_assistant_message: bool = False,
     ) -> List[LettaMessage]:
         if use_assistant_message:
             message_ids_to_remove = []
@@ -271,6 +272,7 @@ class Message(BaseMessage):
                 assistant_message_tool_kwarg=assistant_message_tool_kwarg,
                 reverse=reverse,
                 include_err=include_err,
+                text_is_assistant_message=text_is_assistant_message,
             )
         ]
 
@@ -281,19 +283,14 @@ class Message(BaseMessage):
         assistant_message_tool_kwarg: str = DEFAULT_MESSAGE_TOOL_KWARG,
         reverse: bool = True,
         include_err: Optional[bool] = None,
-        # if true, then treat the content field as AssistantMessage
-        native_content: bool = False,
+        text_is_assistant_message: bool = False,
     ) -> List[LettaMessage]:
         """Convert message object (in DB format) to the style used by the original Letta API"""
-        assert not (use_assistant_message and native_content), "use_assistant_message and native_content cannot both be true"
 
         messages = []
         if self.role == MessageRole.assistant:
             if self.content:
-                if native_content:
-                    messages.append(self._convert_assistant_message())
-                else:
-                    messages.extend(self._convert_reasoning_messages())
+                messages.extend(self._convert_reasoning_messages(text_is_assistant_message=text_is_assistant_message))
             if self.tool_calls is not None:
                 messages.extend(
                     self._convert_tool_call_messages(
@@ -311,7 +308,7 @@ class Message(BaseMessage):
             messages.append(self._convert_system_message())
         elif self.role == MessageRole.approval:
             if self.content:
-                messages.extend(self._convert_reasoning_messages())
+                messages.extend(self._convert_reasoning_messages(text_is_assistant_message=text_is_assistant_message))
             if self.tool_calls is not None:
                 tool_calls = self._convert_tool_call_messages()
                 assert len(tool_calls) == 1
@@ -335,7 +332,7 @@ class Message(BaseMessage):
     def _convert_reasoning_messages(
         self,
         current_message_count: int = 0,
-        text_is_assistant_message: bool = True,  # TODO default false, set to true for react agents
+        text_is_assistant_message: bool = False,  # For v3 loop, set to True
     ) -> List[LettaMessage]:
         messages = []
         # Check for ReACT-style COT inside of TextContent
