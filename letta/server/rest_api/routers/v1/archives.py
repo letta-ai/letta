@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from letta.orm.errors import NoResultFound
@@ -47,6 +47,44 @@ async def create_archive(
             description=archive.description,
             actor=actor,
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/", response_model=List[PydanticArchive], operation_id="list_archives")
+async def list_archives(
+    before: Optional[str] = Query(
+        None,
+        description="Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of archives to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    name: Optional[str] = Query(None, description="Filter by archive name (exact match)"),
+    agent_id: Optional[str] = Query(None, description="Only archives attached to this agent ID"),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get a list of all archives for the current organization with optional filters and pagination.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        archives = await server.archive_manager.list_archives_async(
+            actor=actor,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+            name=name,
+            agent_id=agent_id,
+        )
+        return archives
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
