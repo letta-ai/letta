@@ -518,9 +518,9 @@ navigation:
               - DELETE /v1/groups/{group_id}
               - GET /v1/groups/count
           - providers:
-              - GET /v1/providers
+              - GET /v1/providers/
               - GET /v1/providers/{provider_id}
-              - POST /v1/providers
+              - POST /v1/providers/
               - PATCH /v1/providers/{provider_id}
               - DELETE /v1/providers/{provider_id}
               - POST /v1/providers/check
@@ -535,8 +535,27 @@ navigation:
           - projects
           - templates
           - client side access tokens
-          - telemetry
-          - sources
+          - section: telemetry
+            icon: ban
+            contents:
+              - GET /v1/telemetry/{step_id}
+          - section: sources
+            icon: ban
+            contents:
+              - GET /v1/sources/
+              - GET /v1/sources/{source_id}
+              - POST /v1/sources/
+              - PATCH /v1/sources/{source_id}
+              - DELETE /v1/sources/{source_id}
+              - GET /v1/sources/count
+              - GET /v1/sources/name/{source_name}
+              - GET /v1/sources/metadata
+              - GET /v1/sources/{source_id}/agents
+              - GET /v1/sources/{source_id}/files/{file_id}
+              - POST /v1/sources/{source_id}/upload
+              - GET /v1/sources/{source_id}/files
+              - DELETE /v1/sources/{source_id}/{file_id}
+              - GET /v1/sources/{source_id}/passages
 
   - tab: showcase
     layout:
