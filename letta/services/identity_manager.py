@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 
 from fastapi import HTTPException
@@ -298,16 +299,15 @@ class IdentityManager:
                 raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
 
             # Get agents associated with this identity with pagination
-            filters = {"identity_ids": [identity_id]}
             agents = await AgentModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
                 limit=limit,
                 ascending=ascending,
-                **filters,
+                identity_id=identity.id,
             )
-            return [agent.to_pydantic() for agent in agents]
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents])
 
     @enforce_types
     @trace_method
@@ -330,13 +330,12 @@ class IdentityManager:
                 raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
 
             # Get blocks associated with this identity with pagination
-            filters = {"identity_ids": [identity_id]}
             blocks = await BlockModel.list_async(
                 db_session=session,
                 before=before,
                 after=after,
                 limit=limit,
                 ascending=ascending,
-                **filters,
+                identity_id=identity.id,
             )
             return [block.to_pydantic() for block in blocks]
