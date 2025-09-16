@@ -491,8 +491,6 @@ navigation:
               - PATCH /v1/blocks/{block_id}
               - DELETE /v1/blocks/{block_id}
               - GET /v1/blocks/count
-              - agents:
-                  - GET /v1/blocks/{block_id}/agents
           - identities:
               - GET /v1/identities
               - GET /v1/identities/{identity_id}
