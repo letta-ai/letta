@@ -7,7 +7,10 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+from letta.log import get_logger
 from letta.settings import settings
+
+logger = get_logger(__name__)
 
 
 class CryptoUtils:
@@ -39,15 +42,17 @@ class CryptoUtils:
 
         Returns:
             Base64 encoded string containing: salt + iv + ciphertext + tag
-
-        Raises:
-            ValueError: If no encryption key is configured
+            If no encryption key is available, returns the plaintext with a warning.
         """
         if master_key is None:
             master_key = settings.encryption_key
 
         if not master_key:
-            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
+            logger.warning(
+                "No encryption key configured. Storing value in plaintext. "
+                "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+            )
+            return plaintext
 
         # Generate random salt and IV
         salt = os.urandom(cls.SALT_SIZE)
@@ -83,15 +88,20 @@ class CryptoUtils:
 
         Returns:
             The decrypted plaintext string
+            If no encryption key is available, assumes the value is plaintext and returns it.
 
         Raises:
-            ValueError: If no encryption key is configured or decryption fails
+            ValueError: If decryption fails
         """
         if master_key is None:
             master_key = settings.encryption_key
 
         if not master_key:
-            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
+            logger.warning(
+                "No encryption key configured. Assuming value is plaintext. "
+                "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+            )
+            return encrypted
 
         try:
             # Decode from base64
@@ -132,3 +142,13 @@ class CryptoUtils:
             return len(decoded) >= cls.SALT_SIZE + cls.IV_SIZE + cls.TAG_SIZE + 1
         except Exception:
             return False
+
+    @classmethod
+    def is_encryption_available(cls) -> bool:
+        """
+        Check if encryption is available (encryption key is configured).
+
+        Returns:
+            True if encryption key is configured, False otherwise
+        """
+        return bool(settings.encryption_key)

@@ -36,7 +36,7 @@ class TestSecret:
             settings.encryption_key = original_key
 
     def test_from_plaintext_without_key(self):
-        """Test creating a Secret from plaintext without encryption key."""
+        """Test creating a Secret from plaintext without encryption key (fallback behavior)."""
         from letta.settings import settings
 
         # Clear encryption key
@@ -46,9 +46,13 @@ class TestSecret:
         try:
             plaintext = "my-plaintext-value"
 
-            # Should raise error when trying to encrypt without key
-            with pytest.raises(ValueError):
-                Secret.from_plaintext(plaintext)
+            # Should now handle gracefully and store as plaintext
+            secret = Secret.from_plaintext(plaintext)
+
+            # Should store the plaintext value
+            assert secret._encrypted_value == plaintext
+            assert secret.get_plaintext() == plaintext
+            assert not secret._was_encrypted
         finally:
             settings.encryption_key = original_key
 
@@ -495,3 +499,23 @@ class TestSecretDict:
         # Second call should also return None (not trying to decrypt)
         result2 = secret_dict.get_plaintext()
         assert result2 is None
+
+    def test_from_plaintext_dict_without_key(self):
+        """Test creating a SecretDict from plaintext dictionary without encryption key (fallback)."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+        settings.encryption_key = None
+
+        try:
+            plaintext_dict = {"key1": "value1", "key2": "value2"}
+
+            # Should handle gracefully and store as JSON plaintext
+            secret_dict = SecretDict.from_plaintext(plaintext_dict)
+
+            # Should store the JSON string
+            assert secret_dict._encrypted_value == json.dumps(plaintext_dict)
+            assert secret_dict.get_plaintext() == plaintext_dict
+            assert not secret_dict._was_encrypted
+        finally:
+            settings.encryption_key = original_key
