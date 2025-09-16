@@ -14,7 +14,7 @@ import { useTranslations } from '@letta-cloud/translations';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Messages } from '../Messages/Messages';
-import { chatroomRenderModeAtom } from './atoms';
+import { chatroomRenderModeAtom, isSendingMessageAtom } from './atoms';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
@@ -118,6 +118,7 @@ export function AgentSimulator() {
 
   const { id: agentId } = useCurrentAgent();
 
+  const [isPending] = useAtom(isSendingMessageAtom);
 
 
 
@@ -131,7 +132,7 @@ export function AgentSimulator() {
               <VStack collapseHeight position="relative">
                 <ErrorBoundary fallback={<InvalidMessages />}>
                   <Messages
-                    isSendingMessage={false}
+                    isSendingMessage={isPending}
                     renderAgentsLink
                     injectSpaceForHeader
                     mode={renderMode}
