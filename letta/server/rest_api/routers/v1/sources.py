@@ -44,7 +44,7 @@ register_mime_types()
 router = APIRouter(prefix="/sources", tags=["sources"])
 
 
-@router.get("/count", response_model=int, operation_id="count_sources")
+@router.get("/count", response_model=int, operation_id="count_sources", deprecated=True)
 async def count_sources(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -56,7 +56,7 @@ async def count_sources(
     return await server.source_manager.size_async(actor=actor)
 
 
-@router.get("/{source_id}", response_model=Source, operation_id="retrieve_source")
+@router.get("/{source_id}", response_model=Source, operation_id="retrieve_source", deprecated=True)
 async def retrieve_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -73,7 +73,7 @@ async def retrieve_source(
     return source
 
 
-@router.get("/name/{source_name}", response_model=str, operation_id="get_source_id_by_name")
+@router.get("/name/{source_name}", response_model=str, operation_id="get_source_id_by_name", deprecated=True)
 async def get_source_id_by_name(
     source_name: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -90,7 +90,7 @@ async def get_source_id_by_name(
     return source.id
 
 
-@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_sources_metadata")
+@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_sources_metadata", deprecated=True)
 async def get_sources_metadata(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -111,7 +111,7 @@ async def get_sources_metadata(
     )
 
 
-@router.get("/", response_model=List[Source], operation_id="list_sources")
+@router.get("/", response_model=List[Source], operation_id="list_sources", deprecated=True)
 async def list_sources(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -123,7 +123,7 @@ async def list_sources(
     return await server.source_manager.list_sources(actor=actor)
 
 
-@router.post("/", response_model=Source, operation_id="create_source")
+@router.post("/", response_model=Source, operation_id="create_source", deprecated=True)
 async def create_source(
     source_create: SourceCreate,
     server: "SyncServer" = Depends(get_letta_server),
@@ -157,7 +157,7 @@ async def create_source(
     return await server.source_manager.create_source(source=source, actor=actor)
 
 
-@router.patch("/{source_id}", response_model=Source, operation_id="modify_source")
+@router.patch("/{source_id}", response_model=Source, operation_id="modify_source", deprecated=True)
 async def modify_source(
     source_id: str,
     source: SourceUpdate,
@@ -174,7 +174,7 @@ async def modify_source(
     return await server.source_manager.update_source(source_id=source_id, source_update=source, actor=actor)
 
 
-@router.delete("/{source_id}", response_model=None, operation_id="delete_source")
+@router.delete("/{source_id}", response_model=None, operation_id="delete_source", deprecated=True)
 async def delete_source(
     source_id: str,
     server: "SyncServer" = Depends(get_letta_server),
@@ -211,7 +211,7 @@ async def delete_source(
     await server.delete_source(source_id=source_id, actor=actor)
 
 
-@router.post("/{source_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_source")
+@router.post("/{source_id}/upload", response_model=FileMetadata, operation_id="upload_file_to_source", deprecated=True)
 async def upload_file_to_source(
     file: UploadFile,
     source_id: str,
@@ -329,7 +329,7 @@ async def upload_file_to_source(
     return file_metadata
 
 
-@router.get("/{source_id}/agents", response_model=List[str], operation_id="get_agents_for_source")
+@router.get("/{source_id}/agents", response_model=List[str], operation_id="get_agents_for_source", deprecated=True)
 async def get_agents_for_source(
     source_id: str,
     server: SyncServer = Depends(get_letta_server),
@@ -342,7 +342,7 @@ async def get_agents_for_source(
     return await server.source_manager.get_agents_for_source_id(source_id=source_id, actor=actor)
 
 
-@router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages")
+@router.get("/{source_id}/passages", response_model=List[Passage], operation_id="list_source_passages", deprecated=True)
 async def list_source_passages(
     source_id: str,
     after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
@@ -364,7 +364,7 @@ async def list_source_passages(
     )
 
 
-@router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_source_files")
+@router.get("/{source_id}/files", response_model=List[FileMetadata], operation_id="list_source_files", deprecated=True)
 async def list_source_files(
     source_id: str,
     limit: int = Query(1000, description="Number of files to return"),
@@ -392,7 +392,7 @@ async def list_source_files(
     )
 
 
-@router.get("/{source_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata")
+@router.get("/{source_id}/files/{file_id}", response_model=FileMetadata, operation_id="get_file_metadata", deprecated=True)
 async def get_file_metadata(
     source_id: str,
     file_id: str,
@@ -425,7 +425,7 @@ async def get_file_metadata(
 
 # it's redundant to include /delete in the URL path. The HTTP verb DELETE already implies that action.
 # it's still good practice to return a status indicating the success or failure of the deletion
-@router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source")
+@router.delete("/{source_id}/{file_id}", status_code=204, operation_id="delete_file_from_source", deprecated=True)
 async def delete_file_from_source(
     source_id: str,
     file_id: str,
