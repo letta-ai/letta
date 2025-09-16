@@ -1612,6 +1612,7 @@
     "subtitle": "Create, manage, and monitor your agents",
     "ProjectWelcomeCard": {
       "apiKey": "API Key",
+      "projectId": "Project ID",
       "clickToCopy": "Click to copy",
       "noApiKeysFound": "No API keys found",
       "accessRestricted": "Access restricted",

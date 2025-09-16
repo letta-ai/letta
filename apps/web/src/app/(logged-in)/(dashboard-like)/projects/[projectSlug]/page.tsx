@@ -15,7 +15,6 @@ import {
   HStack,
   LettaInvaderIcon,
   PlusIcon,
-  LinkIcon,
   ResponsesIcon,
   Skeleton,
   StarIcon,
@@ -1040,95 +1039,96 @@ function ProjectWelcomeCard() {
             )}
           </VStack>
         </HStack>
-        <HStack align="center" gap="small">
-          <ArrowCurveIcon size="xsmall" />
-          <Typography
-            className="font-mono text-xs truncate"
-            color="muted"
-            variant="body3"
-          >
-            {projectId || '--'}
-          </Typography>
-          <CopyButton
-            textToCopy={projectId || ''}
-            size="small"
-            hideLabel
-            color="tertiary"
-            iconColor="muted"
-          />
-        </HStack>
-        <HStack align="center" gap="small">
-          <LinkIcon size="xsmall" />
-          <Typography
-            className="font-mono text-xs truncate"
-            color="muted"
-            variant="body3"
-          >
-            {projectSlug || '--'}
-          </Typography>
-          <CopyButton
-            textToCopy={projectSlug || ''}
-            size="small"
-            hideLabel
-            color="tertiary"
-            iconColor="muted"
-          />
-        </HStack>
       </VStack>
 
       <VStack gap="small" fullWidth>
-        <Typography variant="body2" color="muted" align="left">
-          {t('ProjectWelcomeCard.apiKey')}
-        </Typography>
-        {mostRecentApiKey ? (
-          <Tooltip asChild content={t('ProjectWelcomeCard.clickToCopy')} placement="top">
-            <HStack
-              color="background-grey2"
-              border
-              paddingLeft="xsmall"
-              paddingY="xxsmall"
-              paddingRight="xsmall"
-              className="border-background-grey2-border dark:border-background-grey3-border hover:bg-background-grey3 transition-colors cursor-pointer"
-              fullWidth
-              onClick={(e) => {
-                e.stopPropagation();
-                copyApiKey();
-              }}
-            >
-              <div className="flex-1 overflow-x-auto whitespace-nowrap">
-                <Typography
-                  className="font-mono text-xs"
-                  color="lighter"
-                  variant="body3"
-                  overrideEl="span"
-                >
-                  {showApiKey
-                    ? (mostRecentApiKey.apiKey || '')
-                    : formatApiKeyForDisplay(mostRecentApiKey.apiKey || '')}
-                </Typography>
-              </div>
-              <div onClick={(e) => e.stopPropagation()}>
-                <Button
-                  color="tertiary"
-                  size="small"
-                  hideLabel
-                  _use_rarely_disableTooltip
-                  _use_rarely_className="hover:bg-transparent hover:text-current"
-                  preIcon={showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-                  onClick={() => setShowApiKey((prev) => !prev)}
-                />
-              </div>
-            </HStack>
-          </Tooltip>
-        ) : (
-          <Typography
-            className="font-mono text-xs"
-            color="muted"
-            variant="body3"
-          >
-            {canReadKeys ? t('ProjectWelcomeCard.noApiKeysFound') : t('ProjectWelcomeCard.accessRestricted')}
+        <VStack gap="small" fullWidth>
+          <Typography variant="body2" color="muted" align="left">
+            Project ID
           </Typography>
-        )}
+          <HStack
+            color="background-grey2"
+            border
+            paddingLeft="xsmall"
+            paddingY="xxsmall"
+            paddingRight="xsmall"
+            className="border-background-grey2-border dark:border-background-grey3-border"
+            fullWidth
+          >
+            <div className="flex-1 overflow-x-auto whitespace-nowrap">
+              <Typography
+                className="font-mono text-xs"
+                color="lighter"
+                variant="body3"
+                overrideEl="span"
+              >
+                {projectId || '--'}
+              </Typography>
+            </div>
+            <CopyButton
+              textToCopy={projectId || ''}
+              size="small"
+              hideLabel
+              color="tertiary"
+              iconColor="muted"
+            />
+          </HStack>
+        </VStack>
+
+        <VStack gap="small" fullWidth>
+          <Typography variant="body2" color="muted" align="left">
+            {t('ProjectWelcomeCard.apiKey')}
+          </Typography>
+          {mostRecentApiKey ? (
+            <Tooltip asChild content={t('ProjectWelcomeCard.clickToCopy')} placement="top">
+              <HStack
+                color="background-grey2"
+                border
+                paddingLeft="xsmall"
+                paddingY="xxsmall"
+                paddingRight="xsmall"
+                className="border-background-grey2-border dark:border-background-grey3-border hover:bg-background-grey3 transition-colors cursor-pointer"
+                fullWidth
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyApiKey();
+                }}
+              >
+                <div className="flex-1 overflow-x-auto whitespace-nowrap">
+                  <Typography
+                    className="font-mono text-xs"
+                    color="lighter"
+                    variant="body3"
+                    overrideEl="span"
+                  >
+                    {showApiKey
+                      ? (mostRecentApiKey.apiKey || '')
+                      : formatApiKeyForDisplay(mostRecentApiKey.apiKey || '')}
+                  </Typography>
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    color="tertiary"
+                    size="small"
+                    hideLabel
+                    _use_rarely_disableTooltip
+                    _use_rarely_className="hover:bg-transparent hover:text-current"
+                    preIcon={showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                    onClick={() => setShowApiKey((prev) => !prev)}
+                  />
+                </div>
+              </HStack>
+            </Tooltip>
+          ) : (
+            <Typography
+              className="font-mono text-xs"
+              color="muted"
+              variant="body3"
+            >
+              {canReadKeys ? t('ProjectWelcomeCard.noApiKeysFound') : t('ProjectWelcomeCard.accessRestricted')}
+            </Typography>
+          )}
+        </VStack>
       </VStack>
     </VStack>
   );
