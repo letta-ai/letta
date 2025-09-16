@@ -351,6 +351,19 @@ async def upload_file_to_folder(
 @router.get("/{folder_id}/agents", response_model=List[str], operation_id="list_agents_for_folder")
 async def list_agents_for_folder(
     folder_id: str,
+    before: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of agents to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -358,7 +371,14 @@ async def list_agents_for_folder(
     Get all agent IDs that have the specified folder attached.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.source_manager.get_agents_for_source_id(source_id=folder_id, actor=actor)
+    return await server.source_manager.get_agents_for_source_id(
+        source_id=folder_id,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        actor=actor,
+    )
 
 
 @router.get("/{folder_id}/passages", response_model=List[Passage], operation_id="list_folder_passages")
