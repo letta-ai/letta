@@ -455,7 +455,8 @@ class AgentManager:
                     [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
                 )
 
-                if agent_create.tool_exec_environment_variables:
+                agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
+                if agent_secrets:
                     env_rows = [
                         {
                             "agent_id": aid,
@@ -463,7 +464,7 @@ class AgentManager:
                             "value": val,
                             "organization_id": actor.organization_id,
                         }
-                        for key, val in agent_create.tool_exec_environment_variables.items()
+                        for key, val in agent_secrets.items()
                     ]
                     session.execute(insert(AgentEnvironmentVariable).values(env_rows))
 
@@ -674,7 +675,8 @@ class AgentManager:
                 )
 
                 env_rows = []
-                if agent_create.tool_exec_environment_variables:
+                agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
+                if agent_secrets:
                     env_rows = [
                         {
                             "agent_id": aid,
@@ -682,7 +684,7 @@ class AgentManager:
                             "value": val,
                             "organization_id": actor.organization_id,
                         }
-                        for key, val in agent_create.tool_exec_environment_variables.items()
+                        for key, val in agent_secrets.items()
                     ]
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
                     env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
@@ -701,8 +703,9 @@ class AgentManager:
 
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
-                if agent_create.tool_exec_environment_variables and env_rows:
+                if agent_secrets and env_rows:
                     result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
+                    result.secrets = [AgentEnvironmentVariable(**row) for row in env_rows]
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
@@ -894,7 +897,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            if agent_update.tool_exec_environment_variables is not None:
+            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            if agent_secrets is not None:
                 session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
                 env_rows = [
                     {
@@ -903,7 +907,7 @@ class AgentManager:
                         "value": v,
                         "organization_id": agent.organization_id,
                     }
-                    for k, v in agent_update.tool_exec_environment_variables.items()
+                    for k, v in agent_secrets.items()
                 ]
                 if env_rows:
                     self._bulk_insert_pivot(session, AgentEnvironmentVariable.__table__, env_rows)
@@ -1019,7 +1023,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            if agent_update.tool_exec_environment_variables is not None:
+            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            if agent_secrets is not None:
                 await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
                 env_rows = [
                     {
@@ -1028,7 +1033,7 @@ class AgentManager:
                         "value": v,
                         "organization_id": agent.organization_id,
                     }
-                    for k, v in agent_update.tool_exec_environment_variables.items()
+                    for k, v in agent_secrets.items()
                 ]
                 if env_rows:
                     await self._bulk_insert_pivot_async(session, AgentEnvironmentVariable.__table__, env_rows)
@@ -1626,7 +1631,7 @@ class AgentManager:
 
             # Remove stale variables
             stale_keys = set(existing_vars) - set(env_vars)
-            agent.tool_exec_environment_variables = [var for var in updated_vars if var.key not in stale_keys]
+            agent.secrets = [var for var in updated_vars if var.key not in stale_keys]
 
             # Update the agent in the database
             agent.update(session, actor=actor)

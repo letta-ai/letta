@@ -253,6 +253,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
+            "secrets": lambda: self.tool_exec_environment_variables,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
@@ -368,5 +369,6 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         state["identity_ids"] = [i.id for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["tool_exec_environment_variables"] = tool_exec_environment_variables
+        state["secrets"] = tool_exec_environment_variables
 
         return self.__pydantic_model__(**state)

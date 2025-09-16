@@ -51,7 +51,7 @@ class ExternalComposioToolExecutor(ToolExecutor):
 
     def _get_entity_id(self, agent_state: AgentState) -> Optional[str]:
         """Extract the entity ID from environment variables."""
-        for env_var in agent_state.tool_exec_environment_variables:
+        for env_var in agent_state.secrets:
             if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
                 return env_var.value
         return None
