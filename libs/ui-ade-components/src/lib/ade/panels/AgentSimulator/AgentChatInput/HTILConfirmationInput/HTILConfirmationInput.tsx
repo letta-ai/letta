@@ -8,6 +8,7 @@ import {
   Frame,
   HStack,
   InfoIcon,
+  JSONViewer,
   Typography,
   useCopyToClipboard,
   VStack,
@@ -29,10 +30,10 @@ export function HTILConfirmationInput(props: HTILConfirmationInputProps) {
   const t = useTranslations('ADE/AgentSimulator.HTILConfirmationInput');
   const { isLocal, agentId, isTemplate } = useCurrentAgentMetaData();
 
-  const { onApprove, onDeny, mostRecentMessageId } = props;
+  const { onApprove, onDeny, message, mostRecentMessageId } = props;
   const toolName = useMemo(() => {
-    return props.message.tool_call.name || '';
-  }, [props.message.tool_call.name]);
+    return message.tool_call.name || '';
+  }, [message.tool_call.name]);
 
   const hostConfig = useCurrentAPIHostConfig({
     isLocal,
@@ -48,11 +49,13 @@ export function HTILConfirmationInput(props: HTILConfirmationInputProps) {
         Accept: 'text/event-stream',
       },
       body: {
-        messages: [{
-          type: 'approval',
-          approve: true,
-          approval_request_id:mostRecentMessageId,
-        }]
+        messages: [
+          {
+            type: 'approval',
+            approve: true,
+            approval_request_id: mostRecentMessageId,
+          },
+        ],
       },
       method: 'POST',
     });
@@ -67,12 +70,14 @@ export function HTILConfirmationInput(props: HTILConfirmationInputProps) {
         Accept: 'text/event-stream',
       },
       body: {
-        "messages": [{
-          "type": "approval",
-          "approve": false,
-          "approval_request_id": mostRecentMessageId,
-          "reason": "Cancelled by user"
-        }]
+        messages: [
+          {
+            type: 'approval',
+            approve: false,
+            approval_request_id: mostRecentMessageId,
+            reason: 'Cancelled by user',
+          },
+        ],
       },
       method: 'POST',
     });
@@ -122,6 +127,17 @@ export function HTILConfirmationInput(props: HTILConfirmationInputProps) {
           <Typography variant="body2">
             {t('description', { toolName })}
           </Typography>
+          {message.tool_call.arguments && (
+            <VStack
+              border
+              className="max-h-[150px]"
+              overflow="auto"
+              padding="small"
+            >
+              <JSONViewer data={message.tool_call.arguments} />
+            </VStack>
+          )}
+
           <HStack>
             <Button
               size="small"

@@ -1427,6 +1427,7 @@
   },
   "ADE/AgentSimulator": {
     "HTILConfirmationInput": {
+      "arguments": "Tool arguments",
       "badge": "Tool Confirmation",
       "description": "Are you sure you want to run {toolName}?",
       "approve": "Allow tool",
