@@ -114,10 +114,7 @@ async def list_agents(
     ),
 ):
     """
-    List all agents associated with a given user.
-
-    This endpoint retrieves a list of all agents and their configurations
-    associated with the specified user ID.
+    Get a list of all agents.
     """
 
     # Retrieve the actor (user) details
@@ -155,7 +152,7 @@ async def count_agents(
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the count of all agents associated with a given user.
+    Get the total number of agents.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.size_async(actor=actor)
@@ -436,7 +433,7 @@ async def create_agent(
     ),  # Only handled by next js middleware
 ):
     """
-    Create a new agent with the specified configuration.
+    Create an agent.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
@@ -453,7 +450,7 @@ async def modify_agent(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    """Update an existing agent"""
+    """Update an existing agent."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
