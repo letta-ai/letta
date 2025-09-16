@@ -137,8 +137,8 @@ class TestCryptoUtils:
             # Restore original key
             settings.encryption_key = original_key
 
-    def test_encrypt_without_key_fallback(self):
-        """Test that encryption without any key falls back to plaintext with warning."""
+    def test_encrypt_without_key_raises_error(self):
+        """Test that encryption without any key raises an error."""
         from letta.settings import settings
 
         # Mock settings to have no encryption key
@@ -146,15 +146,11 @@ class TestCryptoUtils:
         settings.encryption_key = None
 
         try:
-            plaintext = "test data"
+            with pytest.raises(ValueError, match="No encryption key configured"):
+                CryptoUtils.encrypt("test data")
 
-            # Should return plaintext when no key is available
-            result = CryptoUtils.encrypt(plaintext)
-            assert result == plaintext
-
-            # Decrypt should also return the plaintext
-            decrypted = CryptoUtils.decrypt(result)
-            assert decrypted == plaintext
+            with pytest.raises(ValueError, match="No encryption key configured"):
+                CryptoUtils.decrypt("test data")
         finally:
             # Restore original key
             settings.encryption_key = original_key

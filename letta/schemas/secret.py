@@ -49,19 +49,26 @@ class Secret(BaseModel):
             instance._was_encrypted = False
             return instance
 
-        # Try to encrypt, but CryptoUtils will fall back to plaintext if no key
-        result = CryptoUtils.encrypt(value)
-        instance = cls()
-        instance._encrypted_value = result
-        instance._was_encrypted = False
-
-        # Check if encryption actually happened
-        if not CryptoUtils.is_encryption_available():
-            # Store the plaintext in cache for consistency
-            instance._plaintext_cache = value
-            logger.debug("Stored Secret value as plaintext due to missing encryption key")
-
-        return instance
+        # Try to encrypt, but fall back to plaintext if no encryption key
+        try:
+            encrypted = CryptoUtils.encrypt(value)
+            instance = cls()
+            instance._encrypted_value = encrypted
+            instance._was_encrypted = False
+            return instance
+        except ValueError as e:
+            # No encryption key available, store as plaintext
+            if "No encryption key configured" in str(e):
+                logger.warning(
+                    "No encryption key configured. Storing Secret value as plaintext. "
+                    "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+                )
+                instance = cls()
+                instance._encrypted_value = value  # Store plaintext
+                instance._plaintext_cache = value  # Cache it
+                instance._was_encrypted = False
+                return instance
+            raise  # Re-raise if it's a different error
 
     @classmethod
     def from_encrypted(cls, encrypted_value: Optional[str]) -> "Secret":
@@ -132,16 +139,20 @@ class Secret(BaseModel):
             # Cache the decrypted value (PrivateAttr fields can be mutated even with frozen=True)
             self._plaintext_cache = plaintext
             return plaintext
-        except Exception:
-            # If decryption fails and this wasn't originally encrypted,
-            # it might be that the value is actually plaintext (during migration)
-            if not self._was_encrypted:
-                # Try returning the encrypted value as plaintext (fallback for no encryption key)
+        except ValueError as e:
+            # Handle missing encryption key or decryption failure
+            if "No encryption key configured" in str(e):
+                # Assume the value is plaintext (stored without encryption)
+                logger.debug("Assuming Secret value is plaintext due to missing encryption key")
+                self._plaintext_cache = self._encrypted_value
+                return self._encrypted_value
+            elif not self._was_encrypted:
+                # Migration case: value might be plaintext
                 if self._encrypted_value and not CryptoUtils.is_encrypted(self._encrypted_value):
                     self._plaintext_cache = self._encrypted_value
                     return self._encrypted_value
                 return None
-            raise
+            raise  # Re-raise if it's a different error
 
     def is_empty(self) -> bool:
         """Check if the secret is empty/None."""
@@ -204,20 +215,27 @@ class SecretDict(BaseModel):
             instance._was_encrypted = False
             return instance
 
-        # Serialize to JSON then encrypt (or store as JSON if no encryption key)
+        # Serialize to JSON then try to encrypt
         json_str = json.dumps(value)
-        result = CryptoUtils.encrypt(json_str)
-        instance = cls()
-        instance._encrypted_value = result
-        instance._was_encrypted = False
-
-        # Check if encryption actually happened
-        if not CryptoUtils.is_encryption_available():
-            # Store the plaintext dict in cache for consistency
-            instance._plaintext_cache = value
-            logger.debug("Stored SecretDict value as plaintext JSON due to missing encryption key")
-
-        return instance
+        try:
+            encrypted = CryptoUtils.encrypt(json_str)
+            instance = cls()
+            instance._encrypted_value = encrypted
+            instance._was_encrypted = False
+            return instance
+        except ValueError as e:
+            # No encryption key available, store as plaintext JSON
+            if "No encryption key configured" in str(e):
+                logger.warning(
+                    "No encryption key configured. Storing SecretDict value as plaintext JSON. "
+                    "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
+                )
+                instance = cls()
+                instance._encrypted_value = json_str  # Store JSON string
+                instance._plaintext_cache = value  # Cache the dict
+                instance._was_encrypted = False
+                return instance
+            raise  # Re-raise if it's a different error
 
     @classmethod
     def from_encrypted(cls, encrypted_value: Optional[str]) -> "SecretDict":
@@ -256,9 +274,19 @@ class SecretDict(BaseModel):
             # Cache the decrypted value (PrivateAttr fields can be mutated even with frozen=True)
             self._plaintext_cache = plaintext_dict
             return plaintext_dict
-        except Exception:
-            if not self._was_encrypted:
-                # Try parsing as JSON if it's plaintext (fallback for no encryption key)
+        except ValueError as e:
+            # Handle missing encryption key
+            if "No encryption key configured" in str(e):
+                # Assume the value is plaintext JSON (stored without encryption)
+                logger.debug("Assuming SecretDict value is plaintext JSON due to missing encryption key")
+                try:
+                    plaintext_dict = json.loads(self._encrypted_value)
+                    self._plaintext_cache = plaintext_dict
+                    return plaintext_dict
+                except json.JSONDecodeError:
+                    return None
+            elif not self._was_encrypted:
+                # Migration case: try parsing as JSON
                 if self._encrypted_value:
                     try:
                         plaintext_dict = json.loads(self._encrypted_value)
@@ -267,7 +295,7 @@ class SecretDict(BaseModel):
                     except json.JSONDecodeError:
                         pass
                 return None
-            raise
+            raise  # Re-raise if it's a different error
 
     def is_empty(self) -> bool:
         """Check if the secret dict is empty/None."""

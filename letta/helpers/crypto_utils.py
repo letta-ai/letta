@@ -7,10 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from letta.log import get_logger
 from letta.settings import settings
-
-logger = get_logger(__name__)
 
 
 class CryptoUtils:
@@ -42,17 +39,15 @@ class CryptoUtils:
 
         Returns:
             Base64 encoded string containing: salt + iv + ciphertext + tag
-            If no encryption key is available, returns the plaintext with a warning.
+
+        Raises:
+            ValueError: If no encryption key is configured
         """
         if master_key is None:
             master_key = settings.encryption_key
 
         if not master_key:
-            logger.warning(
-                "No encryption key configured. Storing value in plaintext. "
-                "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
-            )
-            return plaintext
+            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
 
         # Generate random salt and IV
         salt = os.urandom(cls.SALT_SIZE)
@@ -88,20 +83,15 @@ class CryptoUtils:
 
         Returns:
             The decrypted plaintext string
-            If no encryption key is available, assumes the value is plaintext and returns it.
 
         Raises:
-            ValueError: If decryption fails
+            ValueError: If no encryption key is configured or decryption fails
         """
         if master_key is None:
             master_key = settings.encryption_key
 
         if not master_key:
-            logger.warning(
-                "No encryption key configured. Assuming value is plaintext. "
-                "Set LETTA_ENCRYPTION_KEY environment variable to enable encryption."
-            )
-            return encrypted
+            raise ValueError("No encryption key configured. Set LETTA_ENCRYPTION_KEY environment variable.")
 
         try:
             # Decode from base64
