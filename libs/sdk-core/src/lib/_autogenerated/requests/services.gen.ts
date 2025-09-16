@@ -4,6 +4,12 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 import type {
+  CreateArchiveData,
+  CreateArchiveResponse,
+  ListArchivesData,
+  ListArchivesResponse,
+  ModifyArchiveData,
+  ModifyArchiveResponse,
   DeleteToolData,
   DeleteToolResponse,
   RetrieveToolData,
@@ -378,6 +384,104 @@ import type {
   AuthenticateUserV1AuthPostData,
   AuthenticateUserV1AuthPostResponse,
 } from './types.gen';
+
+export class ArchivesService {
+  /**
+   * Create Archive
+   * Create a new archive.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns Archive Successful Response
+   * @throws ApiError
+   */
+  public static createArchive(
+    data: CreateArchiveData,
+    headers?: { user_id: string },
+  ): CancelablePromise<CreateArchiveResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/v1/archives/',
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Archives
+   * Get a list of all archives for the current organization with optional filters and pagination.
+   * @param data The data for the request.
+   * @param data.before Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order
+   * @param data.after Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order
+   * @param data.limit Maximum number of archives to return
+   * @param data.order Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.name Filter by archive name (exact match)
+   * @param data.agentId Only archives attached to this agent ID
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns Archive Successful Response
+   * @throws ApiError
+   */
+  public static listArchives(
+    data: ListArchivesData = {},
+    headers?: { user_id: string },
+  ): CancelablePromise<ListArchivesResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/archives/',
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        name: data.name,
+        agent_id: data.agentId,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * Modify Archive
+   * Update an existing archive's name and/or description.
+   * @param data The data for the request.
+   * @param data.archiveId
+   * @param data.requestBody
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns Archive Successful Response
+   * @throws ApiError
+   */
+  public static modifyArchive(
+    data: ModifyArchiveData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ModifyArchiveResponse> {
+    return __request(OpenAPI, {
+      method: 'PATCH',
+      url: '/v1/archives/{archive_id}',
+      path: {
+        archive_id: data.archiveId,
+      },
+      body: data.requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+}
 
 export class ToolsService {
   /**

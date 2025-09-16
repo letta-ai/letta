@@ -551,6 +551,82 @@ export type ArchivalMemorySearchResult = {
 };
 
 /**
+ * Representation of an archive - a collection of archival passages that can be shared between agents.
+ *
+ * Parameters:
+ * id (str): The unique identifier of the archive.
+ * name (str): The name of the archive.
+ * description (str): A description of the archive.
+ * organization_id (str): The organization this archive belongs to.
+ * created_at (datetime): The creation date of the archive.
+ * metadata (dict): Additional metadata for the archive.
+ */
+export type Archive = {
+  /**
+   * The id of the user that made this object.
+   */
+  created_by_id?: string | null;
+  /**
+   * The id of the user that made this object.
+   */
+  last_updated_by_id?: string | null;
+  /**
+   * The creation date of the archive
+   */
+  created_at: string;
+  /**
+   * The timestamp when the object was last updated.
+   */
+  updated_at?: string | null;
+  /**
+   * The name of the archive
+   */
+  name: string;
+  /**
+   * A description of the archive
+   */
+  description?: string | null;
+  /**
+   * The organization this archive belongs to
+   */
+  organization_id: string;
+  /**
+   * The vector database provider used for this archive's passages
+   */
+  vector_db_provider?: VectorDBProvider;
+  /**
+   * Additional metadata
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * The human-friendly ID of the Archive
+   */
+  id?: string;
+};
+
+/**
+ * Request model for creating an archive.
+ *
+ * Intentionally excludes vector_db_provider. These are derived internally (vector DB provider from env).
+ */
+export type ArchiveCreateRequest = {
+  name: string;
+  description?: string | null;
+};
+
+/**
+ * Request model for updating an archive (partial).
+ *
+ * Supports updating only name and description.
+ */
+export type ArchiveUpdateRequest = {
+  name?: string | null;
+  description?: string | null;
+};
+
+/**
  * A message sent by the LLM in response to user input. Used in the LLM context.
  *
  * Args:
@@ -6730,6 +6806,57 @@ export type LettaPing = {
   message_type: 'ping';
 };
 
+export type CreateArchiveData = {
+  requestBody: ArchiveCreateRequest;
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type CreateArchiveResponse = Archive;
+
+export type ListArchivesData = {
+  /**
+   * Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Only archives attached to this agent ID
+   */
+  agentId?: string | null;
+  /**
+   * Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of archives to return
+   */
+  limit?: number | null;
+  /**
+   * Filter by archive name (exact match)
+   */
+  name?: string | null;
+  /**
+   * Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type ListArchivesResponse = Array<Archive>;
+
+export type ModifyArchiveData = {
+  archiveId: string;
+  requestBody: ArchiveUpdateRequest;
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type ModifyArchiveResponse = Archive;
+
 export type DeleteToolData = {
   toolId: string;
   userAgent?: string | null;
@@ -9416,6 +9543,49 @@ export type AuthenticateUserV1AuthPostData = {
 export type AuthenticateUserV1AuthPostResponse = AuthResponse;
 
 export type $OpenApiTs = {
+  '/v1/archives/': {
+    post: {
+      req: CreateArchiveData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Archive;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+    get: {
+      req: ListArchivesData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Archive>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/archives/{archive_id}': {
+    patch: {
+      req: ModifyArchiveData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Archive;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
   '/v1/tools/{tool_id}': {
     delete: {
       req: DeleteToolData;

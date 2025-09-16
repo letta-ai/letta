@@ -1554,6 +1554,173 @@ export const $ArchivalMemorySearchResult = {
   title: 'ArchivalMemorySearchResult',
 } as const;
 
+export const $Archive = {
+  properties: {
+    created_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Created By Id',
+      description: 'The id of the user that made this object.',
+    },
+    last_updated_by_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Last Updated By Id',
+      description: 'The id of the user that made this object.',
+    },
+    created_at: {
+      type: 'string',
+      format: 'date-time',
+      title: 'Created At',
+      description: 'The creation date of the archive',
+    },
+    updated_at: {
+      anyOf: [
+        {
+          type: 'string',
+          format: 'date-time',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Updated At',
+      description: 'The timestamp when the object was last updated.',
+    },
+    name: {
+      type: 'string',
+      title: 'Name',
+      description: 'The name of the archive',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+      description: 'A description of the archive',
+    },
+    organization_id: {
+      type: 'string',
+      title: 'Organization Id',
+      description: 'The organization this archive belongs to',
+    },
+    vector_db_provider: {
+      $ref: '#/components/schemas/VectorDBProvider',
+      description:
+        "The vector database provider used for this archive's passages",
+      default: 'native',
+    },
+    metadata: {
+      anyOf: [
+        {
+          additionalProperties: true,
+          type: 'object',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Metadata',
+      description: 'Additional metadata',
+    },
+    id: {
+      type: 'string',
+      pattern: '^archive-[a-fA-F0-9]{8}',
+      title: 'Id',
+      description: 'The human-friendly ID of the Archive',
+      examples: ['archive-123e4567-e89b-12d3-a456-426614174000'],
+    },
+  },
+  additionalProperties: false,
+  type: 'object',
+  required: ['created_at', 'name', 'organization_id'],
+  title: 'Archive',
+  description: `Representation of an archive - a collection of archival passages that can be shared between agents.
+
+Parameters:
+    id (str): The unique identifier of the archive.
+    name (str): The name of the archive.
+    description (str): A description of the archive.
+    organization_id (str): The organization this archive belongs to.
+    created_at (datetime): The creation date of the archive.
+    metadata (dict): Additional metadata for the archive.`,
+} as const;
+
+export const $ArchiveCreateRequest = {
+  properties: {
+    name: {
+      type: 'string',
+      title: 'Name',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  required: ['name'],
+  title: 'ArchiveCreateRequest',
+  description: `Request model for creating an archive.
+
+Intentionally excludes vector_db_provider. These are derived internally (vector DB provider from env).`,
+} as const;
+
+export const $ArchiveUpdateRequest = {
+  properties: {
+    name: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Name',
+    },
+    description: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Description',
+    },
+  },
+  type: 'object',
+  title: 'ArchiveUpdateRequest',
+  description: `Request model for updating an archive (partial).
+
+Supports updating only name and description.`,
+} as const;
+
 export const $AssistantMessage = {
   properties: {
     id: {

@@ -4,6 +4,7 @@ import { UseQueryResult } from '@tanstack/react-query';
 import {
   AdminService,
   AgentsService,
+  ArchivesService,
   AuthService,
   BlocksService,
   EmbeddingsService,
@@ -37,6 +38,53 @@ import {
   SandboxType,
   StopReasonType,
 } from '../requests/types.gen';
+export type ArchivesServiceListArchivesDefaultResponse = Awaited<
+  ReturnType<typeof ArchivesService.listArchives>
+>;
+export type ArchivesServiceListArchivesQueryResult<
+  TData = ArchivesServiceListArchivesDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useArchivesServiceListArchivesKey = 'ArchivesServiceListArchives';
+export const UseArchivesServiceListArchivesKeyFn = (
+  {
+    after,
+    agentId,
+    before,
+    limit,
+    name,
+    order,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    agentId?: string;
+    before?: string;
+    limit?: number;
+    name?: string;
+    order?: 'asc' | 'desc';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  } = {},
+  queryKey?: Array<unknown>,
+) => [
+  useArchivesServiceListArchivesKey,
+  ...(queryKey ?? [
+    {
+      after,
+      agentId,
+      before,
+      limit,
+      name,
+      order,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
+];
 export type ToolsServiceRetrieveToolDefaultResponse = Awaited<
   ReturnType<typeof ToolsService.retrieveTool>
 >;
@@ -3084,6 +3132,9 @@ export const UseOrganizationServiceListOrgsKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [useOrganizationServiceListOrgsKey, ...(queryKey ?? [{ after, limit }])];
+export type ArchivesServiceCreateArchiveMutationResult = Awaited<
+  ReturnType<typeof ArchivesService.createArchive>
+>;
 export type ToolsServiceCreateToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.createTool>
 >;
@@ -3269,6 +3320,9 @@ export type AdminServiceUpdateUserMutationResult = Awaited<
 >;
 export type UsersServiceUpdateUserMutationResult = Awaited<
   ReturnType<typeof UsersService.updateUser>
+>;
+export type ArchivesServiceModifyArchiveMutationResult = Awaited<
+  ReturnType<typeof ArchivesService.modifyArchive>
 >;
 export type ToolsServiceModifyToolMutationResult = Awaited<
   ReturnType<typeof ToolsService.modifyTool>

@@ -3034,6 +3034,78 @@ export const ArchivalMemorySearchResponse = z.object({
   count: z.number(),
 });
 
+export type Archive = z.infer<typeof Archive>;
+export const Archive = z.object({
+  created_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  last_updated_by_id: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  created_at: z.string(),
+  updated_at: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  organization_id: z.string(),
+  vector_db_provider: z.union([VectorDBProvider, z.undefined()]).optional(),
+  metadata: z
+    .union([
+      z.unknown(),
+      z.null(),
+      z.array(z.union([z.unknown(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+  id: z.union([z.string(), z.undefined()]).optional(),
+});
+
+export type ArchiveCreateRequest = z.infer<typeof ArchiveCreateRequest>;
+export const ArchiveCreateRequest = z.object({
+  name: z.string(),
+  description: z
+    .union([
+      z.string(),
+      z.null(),
+      z.array(z.union([z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
+});
+
+export type ArchiveUpdateRequest = z.infer<typeof ArchiveUpdateRequest>;
+export const ArchiveUpdateRequest = z.object({
+  name: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+  description: z
+    .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+    .optional(),
+});
+
 export type LettaAssistantMessageContentUnion = z.infer<
   typeof LettaAssistantMessageContentUnion
 >;
@@ -9140,6 +9212,92 @@ export const LettaPing = z.object({
   message_type: z.string(),
 });
 
+export type post_Create_archive = typeof post_Create_archive;
+export const post_Create_archive = {
+  method: z.literal('POST'),
+  path: z.literal('/v1/archives/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ArchiveCreateRequest,
+  }),
+  response: Archive,
+};
+
+export type get_List_archives = typeof get_List_archives;
+export const get_List_archives = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/archives/'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      agent_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Archive),
+};
+
+export type patch_Modify_archive = typeof patch_Modify_archive;
+export const patch_Modify_archive = {
+  method: z.literal('PATCH'),
+  path: z.literal('/v1/archives/{archive_id}'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    path: z.object({
+      archive_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+    body: ArchiveUpdateRequest,
+  }),
+  response: Archive,
+};
+
 export type delete_Delete_tool = typeof delete_Delete_tool;
 export const delete_Delete_tool = {
   method: z.literal('DELETE'),
@@ -14169,29 +14327,66 @@ export const post_Authenticate_user_v1_auth_post = {
 
 // <EndpointByMethod>
 export const EndpointByMethod = {
-  delete: {
-    '/v1/tools/{tool_id}': delete_Delete_tool,
-    '/v1/tools/mcp/servers/{mcp_server_name}': delete_Delete_mcp_server,
-    '/v1/folders/{folder_id}': delete_Delete_folder,
-    '/v1/folders/{folder_id}/{file_id}': delete_Delete_file_from_folder,
-    '/v1/agents/{agent_id}': delete_Delete_agent,
-    '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
-    '/v1/groups/{group_id}': delete_Delete_group,
-    '/v1/identities/{identity_id}': delete_Delete_identity,
-    '/v1/_internal_templates/deployment/{deployment_id}':
-      delete_Delete_deployment,
-    '/v1/blocks/{block_id}': delete_Delete_block,
-    '/v1/jobs/{job_id}': delete_Delete_job,
-    '/v1/sandbox-config/{sandbox_config_id}':
-      delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete,
-    '/v1/sandbox-config/environment-variable/{env_var_id}':
-      delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete,
-    '/v1/providers/{provider_id}': delete_Delete_provider,
-    '/v1/runs/{run_id}': delete_Delete_run,
-    '/v1/admin/users/': delete_Delete_user,
-    '/v1/admin/orgs/': delete_Delete_organization_by_id,
+  post: {
+    '/v1/archives/': post_Create_archive,
+    '/v1/tools/': post_Create_tool,
+    '/v1/tools/add-base-tools': post_Add_base_tools,
+    '/v1/tools/run': post_Run_tool_from_source,
+    '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}/resync':
+      post_Resync_mcp_server_tools,
+    '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
+      post_Add_mcp_tool,
+    '/v1/tools/mcp/servers/test': post_Test_mcp_server,
+    '/v1/tools/mcp/servers/connect': post_Connect_mcp_server,
+    '/v1/tools/generate-schema': post_Generate_json_schema,
+    '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute':
+      post_Execute_mcp_tool,
+    '/v1/tools/generate-tool': post_Generate_tool,
+    '/v1/folders/': post_Create_folder,
+    '/v1/folders/{folder_id}/upload': post_Upload_file_to_folder,
+    '/v1/agents/': post_Create_agent,
+    '/v1/agents/import': post_Import_agent,
+    '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
+    '/v1/agents/{agent_id}/messages': post_Send_message,
+    '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
+    '/v1/agents/{agent_id}/messages/cancel': post_Cancel_agent_run,
+    '/v1/agents/messages/search': post_Search_messages,
+    '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
+    '/v1/agents/{agent_id}/messages/preview-raw-payload':
+      post_Preview_raw_payload,
+    '/v1/agents/{agent_id}/summarize': post_Summarize_agent_conversation,
+    '/v1/groups/': post_Create_group,
+    '/v1/groups/{group_id}/messages': post_Send_group_message,
+    '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
+    '/v1/identities/': post_Create_identity,
+    '/v1/_internal_templates/groups': post_Create_internal_template_group,
+    '/v1/_internal_templates/agents': post_Create_internal_template_agent,
+    '/v1/_internal_templates/blocks': post_Create_internal_template_block,
+    '/v1/blocks/': post_Create_block,
+    '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
+    '/v1/sandbox-config/e2b/default':
+      post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post,
+    '/v1/sandbox-config/local/default':
+      post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post,
+    '/v1/sandbox-config/local':
+      post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post,
+    '/v1/sandbox-config/local/recreate-venv':
+      post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post,
+    '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
+      post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
+    '/v1/providers/': post_Create_provider,
+    '/v1/providers/check': post_Check_provider,
+    '/v1/runs/{run_id}/stream': post_Retrieve_stream,
+    '/v1/messages/batches': post_Create_batch,
+    '/v1/voice-beta/{agent_id}/chat/completions':
+      post_Create_voice_chat_completions,
+    '/v1/admin/users/': post_Create_user,
+    '/v1/admin/orgs/': post_Create_organization,
+    '/v1/auth': post_Authenticate_user_v1_auth_post,
   },
   get: {
+    '/v1/archives/': get_List_archives,
     '/v1/tools/{tool_id}': get_Retrieve_tool,
     '/v1/tools/count': get_Count_tools,
     '/v1/tools/': get_List_tools,
@@ -14271,6 +14466,7 @@ export const EndpointByMethod = {
     '/v1/admin/orgs/': get_List_orgs,
   },
   patch: {
+    '/v1/archives/{archive_id}': patch_Modify_archive,
     '/v1/tools/{tool_id}': patch_Modify_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}': patch_Update_mcp_server,
     '/v1/folders/{folder_id}': patch_Modify_folder,
@@ -14314,62 +14510,27 @@ export const EndpointByMethod = {
     '/v1/messages/batches/{batch_id}/cancel': patch_Cancel_batch,
     '/v1/admin/orgs/': patch_Update_organization,
   },
-  post: {
-    '/v1/tools/': post_Create_tool,
-    '/v1/tools/add-base-tools': post_Add_base_tools,
-    '/v1/tools/run': post_Run_tool_from_source,
-    '/v1/tools/composio/{composio_action_name}': post_Add_composio_tool,
-    '/v1/tools/mcp/servers/{mcp_server_name}/resync':
-      post_Resync_mcp_server_tools,
-    '/v1/tools/mcp/servers/{mcp_server_name}/{mcp_tool_name}':
-      post_Add_mcp_tool,
-    '/v1/tools/mcp/servers/test': post_Test_mcp_server,
-    '/v1/tools/mcp/servers/connect': post_Connect_mcp_server,
-    '/v1/tools/generate-schema': post_Generate_json_schema,
-    '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute':
-      post_Execute_mcp_tool,
-    '/v1/tools/generate-tool': post_Generate_tool,
-    '/v1/folders/': post_Create_folder,
-    '/v1/folders/{folder_id}/upload': post_Upload_file_to_folder,
-    '/v1/agents/': post_Create_agent,
-    '/v1/agents/import': post_Import_agent,
-    '/v1/agents/{agent_id}/archival-memory': post_Create_passage,
-    '/v1/agents/{agent_id}/messages': post_Send_message,
-    '/v1/agents/{agent_id}/messages/stream': post_Create_agent_message_stream,
-    '/v1/agents/{agent_id}/messages/cancel': post_Cancel_agent_run,
-    '/v1/agents/messages/search': post_Search_messages,
-    '/v1/agents/{agent_id}/messages/async': post_Create_agent_message_async,
-    '/v1/agents/{agent_id}/messages/preview-raw-payload':
-      post_Preview_raw_payload,
-    '/v1/agents/{agent_id}/summarize': post_Summarize_agent_conversation,
-    '/v1/groups/': post_Create_group,
-    '/v1/groups/{group_id}/messages': post_Send_group_message,
-    '/v1/groups/{group_id}/messages/stream': post_Send_group_message_streaming,
-    '/v1/identities/': post_Create_identity,
-    '/v1/_internal_templates/groups': post_Create_internal_template_group,
-    '/v1/_internal_templates/agents': post_Create_internal_template_agent,
-    '/v1/_internal_templates/blocks': post_Create_internal_template_block,
-    '/v1/blocks/': post_Create_block,
-    '/v1/sandbox-config/': post_Create_sandbox_config_v1_sandbox_config__post,
-    '/v1/sandbox-config/e2b/default':
-      post_Create_default_e2b_sandbox_config_v1_sandbox_config_e2b_default_post,
-    '/v1/sandbox-config/local/default':
-      post_Create_default_local_sandbox_config_v1_sandbox_config_local_default_post,
-    '/v1/sandbox-config/local':
-      post_Create_custom_local_sandbox_config_v1_sandbox_config_local_post,
-    '/v1/sandbox-config/local/recreate-venv':
-      post_Force_recreate_local_sandbox_venv_v1_sandbox_config_local_recreate_venv_post,
-    '/v1/sandbox-config/{sandbox_config_id}/environment-variable':
-      post_Create_sandbox_env_var_v1_sandbox_config__sandbox_config_id__environment_variable_post,
-    '/v1/providers/': post_Create_provider,
-    '/v1/providers/check': post_Check_provider,
-    '/v1/runs/{run_id}/stream': post_Retrieve_stream,
-    '/v1/messages/batches': post_Create_batch,
-    '/v1/voice-beta/{agent_id}/chat/completions':
-      post_Create_voice_chat_completions,
-    '/v1/admin/users/': post_Create_user,
-    '/v1/admin/orgs/': post_Create_organization,
-    '/v1/auth': post_Authenticate_user_v1_auth_post,
+  delete: {
+    '/v1/tools/{tool_id}': delete_Delete_tool,
+    '/v1/tools/mcp/servers/{mcp_server_name}': delete_Delete_mcp_server,
+    '/v1/folders/{folder_id}': delete_Delete_folder,
+    '/v1/folders/{folder_id}/{file_id}': delete_Delete_file_from_folder,
+    '/v1/agents/{agent_id}': delete_Delete_agent,
+    '/v1/agents/{agent_id}/archival-memory/{memory_id}': delete_Delete_passage,
+    '/v1/groups/{group_id}': delete_Delete_group,
+    '/v1/identities/{identity_id}': delete_Delete_identity,
+    '/v1/_internal_templates/deployment/{deployment_id}':
+      delete_Delete_deployment,
+    '/v1/blocks/{block_id}': delete_Delete_block,
+    '/v1/jobs/{job_id}': delete_Delete_job,
+    '/v1/sandbox-config/{sandbox_config_id}':
+      delete_Delete_sandbox_config_v1_sandbox_config__sandbox_config_id__delete,
+    '/v1/sandbox-config/environment-variable/{env_var_id}':
+      delete_Delete_sandbox_env_var_v1_sandbox_config_environment_variable__env_var_id__delete,
+    '/v1/providers/{provider_id}': delete_Delete_provider,
+    '/v1/runs/{run_id}': delete_Delete_run,
+    '/v1/admin/users/': delete_Delete_user,
+    '/v1/admin/orgs/': delete_Delete_organization_by_id,
   },
   put: {
     '/v1/tools/': put_Upsert_tool,
@@ -14383,10 +14544,10 @@ export type EndpointByMethod = typeof EndpointByMethod;
 // </EndpointByMethod>
 
 // <EndpointByMethod.Shorthands>
-export type DeleteEndpoints = EndpointByMethod['delete'];
+export type PostEndpoints = EndpointByMethod['post'];
 export type GetEndpoints = EndpointByMethod['get'];
 export type PatchEndpoints = EndpointByMethod['patch'];
-export type PostEndpoints = EndpointByMethod['post'];
+export type DeleteEndpoints = EndpointByMethod['delete'];
 export type PutEndpoints = EndpointByMethod['put'];
 export type AllEndpoints = EndpointByMethod[keyof EndpointByMethod];
 // </EndpointByMethod.Shorthands>
@@ -14449,19 +14610,16 @@ export class ApiClient {
     return this;
   }
 
-  // <ApiClient.delete>
-  delete<
-    Path extends keyof DeleteEndpoints,
-    TEndpoint extends DeleteEndpoints[Path],
-  >(
+  // <ApiClient.post>
+  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
     path: Path,
     ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
   ): Promise<z.infer<TEndpoint['response']>> {
-    return this.fetcher('delete', this.baseUrl + path, params[0]) as Promise<
+    return this.fetcher('post', this.baseUrl + path, params[0]) as Promise<
       z.infer<TEndpoint['response']>
     >;
   }
-  // </ApiClient.delete>
+  // </ApiClient.post>
 
   // <ApiClient.get>
   get<Path extends keyof GetEndpoints, TEndpoint extends GetEndpoints[Path]>(
@@ -14488,16 +14646,19 @@ export class ApiClient {
   }
   // </ApiClient.patch>
 
-  // <ApiClient.post>
-  post<Path extends keyof PostEndpoints, TEndpoint extends PostEndpoints[Path]>(
+  // <ApiClient.delete>
+  delete<
+    Path extends keyof DeleteEndpoints,
+    TEndpoint extends DeleteEndpoints[Path],
+  >(
     path: Path,
     ...params: MaybeOptionalArg<z.infer<TEndpoint['parameters']>>
   ): Promise<z.infer<TEndpoint['response']>> {
-    return this.fetcher('post', this.baseUrl + path, params[0]) as Promise<
+    return this.fetcher('delete', this.baseUrl + path, params[0]) as Promise<
       z.infer<TEndpoint['response']>
     >;
   }
-  // </ApiClient.post>
+  // </ApiClient.delete>
 
   // <ApiClient.put>
   put<Path extends keyof PutEndpoints, TEndpoint extends PutEndpoints[Path]>(

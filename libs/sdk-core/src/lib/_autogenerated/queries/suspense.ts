@@ -4,6 +4,7 @@ import { UseQueryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import {
   AdminService,
   AgentsService,
+  ArchivesService,
   BlocksService,
   EmbeddingsService,
   FoldersService,
@@ -36,6 +37,80 @@ import {
   StopReasonType,
 } from '../requests/types.gen';
 import * as Common from './common';
+/**
+ * List Archives
+ * Get a list of all archives for the current organization with optional filters and pagination.
+ * @param data The data for the request.
+ * @param data.before Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order
+ * @param data.after Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order
+ * @param data.limit Maximum number of archives to return
+ * @param data.order Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.name Filter by archive name (exact match)
+ * @param data.agentId Only archives attached to this agent ID
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Archive Successful Response
+ * @throws ApiError
+ */
+export const useArchivesServiceListArchivesSuspense = <
+  TData = Common.ArchivesServiceListArchivesDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    agentId,
+    before,
+    limit,
+    name,
+    order,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    agentId?: string;
+    before?: string;
+    limit?: number;
+    name?: string;
+    order?: 'asc' | 'desc';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  } = {},
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseArchivesServiceListArchivesKeyFn(
+      {
+        after,
+        agentId,
+        before,
+        limit,
+        name,
+        order,
+        userAgent,
+        userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      ArchivesService.listArchives({
+        after,
+        agentId,
+        before,
+        limit,
+        name,
+        order,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
 /**
  * Retrieve Tool
  * Get a tool by ID
