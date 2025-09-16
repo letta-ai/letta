@@ -1631,6 +1631,7 @@ class AgentManager:
 
             # Remove stale variables
             stale_keys = set(existing_vars) - set(env_vars)
+            agent.tool_exec_environment_variables = [var for var in updated_vars if var.key not in stale_keys]
             agent.secrets = [var for var in updated_vars if var.key not in stale_keys]
 
             # Update the agent in the database

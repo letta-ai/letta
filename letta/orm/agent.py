@@ -233,6 +233,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
+            "secrets": [],
         }
 
         # Optional fields: only included if requested
@@ -325,6 +326,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
+            "secrets": [],
         }
 
         # Initialize include_relationships to an empty set if it's None
@@ -345,7 +347,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         multi_agent_group = self.awaitable_attrs.multi_agent_group if "multi_agent_group" in include_relationships else none_async()
         tool_exec_environment_variables = (
             self.awaitable_attrs.tool_exec_environment_variables
-            if "tool_exec_environment_variables" in include_relationships
+            if "tool_exec_environment_variables" in include_relationships or "secrets" in include_relationships
             else empty_list_async()
         )
         file_agents = self.awaitable_attrs.file_agents if "memory" in include_relationships else empty_list_async()
