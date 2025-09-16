@@ -9,12 +9,15 @@ import {
   Skeleton,
   InfoTooltip,
   Tooltip,
+  makeFormattedTooltip,
 } from '@letta-cloud/ui-component-library';
 import { cn } from '@letta-cloud/ui-styles';
 import { ArrowUpIcon } from '@letta-cloud/ui-component-library';
 import { useTranslations } from '@letta-cloud/translations';
 import { useViewportSize, useDebouncedValue } from '@mantine/hooks';
 import type { EChartsOption } from 'echarts';
+import { useFormatters } from '@letta-cloud/utils-client';
+import { useObservabilityContext } from '$web/client/hooks/useObservabilityContext/useObservabilityContext';
 
 interface MetricCardProps {
   title: string;
@@ -48,6 +51,8 @@ export function MetricCard(props: MetricCardProps) {
   } = props;
 
   const t = useTranslations('projects/(projectSlug)/page.MiniObservabilityDashboard.MetricCard');
+  const { formatDate } = useFormatters();
+  const { granularity } = useObservabilityContext();
 
   const { width = 0 } = useViewportSize();
   const [debouncedWidth] = useDebouncedValue(width, 100);
@@ -88,56 +93,54 @@ export function MetricCard(props: MetricCardProps) {
       },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(17, 24, 39, 0.92)',
-        borderColor: 'transparent',
-        padding: 8,
-        extraCssText:
-          'box-shadow: 0 4px 16px rgba(0,0,0,0.25); border-radius: 8px;',
-        textStyle: {
-          color: '#fff',
-          fontSize: 12,
-          lineHeight: 18,
-        },
-        axisPointer: { type: 'line' },
         formatter: hasRealData ? (params: any) => {
           const p = Array.isArray(params) ? params[0] : params;
+          const rawDate = p?.axisValueLabel ?? p?.name ?? '';
 
-          const rawLabel = p?.axisValueLabel ?? p?.name ?? '';
-          let xLabel = rawLabel;
-          try {
-            const d = new Date(rawLabel);
-            if (!isNaN(d.getTime())) {
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
-              const h = d.getHours();
-              const hh = h % 12 || 12;
-              const mi = String(d.getMinutes()).padStart(2, '0');
-              const ampm = h >= 12 ? 'PM' : 'AM';
-              xLabel = `${mm}/${dd}, ${hh}:${mi} ${ampm}`;
+          let formattedDate = rawDate;
+          if (rawDate) {
+            try {
+              let date: Date;
+              if (rawDate.includes(':')) {
+                date = new Date(rawDate.endsWith('Z') ? rawDate : rawDate + 'Z');
+              } else {
+                date = new Date(rawDate + 'T00:00:00.000Z');
+              }
+
+              if (!isNaN(date.getTime())) {
+                const formatOptions =
+                  granularity.displayFormat === 'HH:mm'
+                    ? {
+                        hour: '2-digit' as const,
+                        minute: '2-digit' as const,
+                        timeZoneName: 'short' as const,
+                      }
+                    : {
+                        month: 'short' as const,
+                        day: 'numeric' as const,
+                        timeZoneName: 'short' as const,
+                      };
+                formattedDate = formatDate(date, formatOptions);
+              }
+            } catch {
             }
-          } catch {
-            // default
           }
 
           const valueRaw = Array.isArray(p?.value) ? p.value[1] : p?.value;
-          const num =
-            typeof valueRaw === 'number'
-              ? valueRaw.toLocaleString()
-              : String(valueRaw ?? '');
+          const value = typeof valueRaw === 'number'
+            ? valueRaw.toLocaleString()
+            : String(valueRaw ?? '');
+          const label = p?.seriesName || title || t('value');
 
-          const name = p?.seriesName || title || t('value');
-
-          return `
-            <div style="min-width:120px">
-              <div style="font-weight:600;margin-bottom:4px;opacity:.9;">${xLabel}</div>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p?.color};"></span>
-                <span style="opacity:.85;">${name}</span>
-                <span style="margin-left:auto;font-weight:600;">${num}</span>
-              </div>
-            </div>
-          `;
-        } : () => t('noDataAvailable'),
+          return makeFormattedTooltip({
+            date: formattedDate,
+            value,
+            label,
+            color: p?.color,
+          });
+        } : () => makeFormattedTooltip({
+          label: t('noDataAvailable'),
+        }),
       },
       xAxis: {
         type: 'category' as const,
@@ -176,7 +179,7 @@ export function MetricCard(props: MetricCardProps) {
         },
       ],
     };
-  }, [chartData, trend, isInverted, title, t]);
+  }, [chartData, trend, isInverted, title, t, granularity, formatDate]);
 
   return (
     <Card
