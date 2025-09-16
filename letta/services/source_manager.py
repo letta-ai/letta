@@ -248,7 +248,7 @@ class SourceManager:
                 limit=limit,
                 ascending=ascending,
                 organization_id=actor.organization_id,
-                name=name,
+                query_text=name,
                 **kwargs,
             )
             return [source.to_pydantic() for source in sources]
