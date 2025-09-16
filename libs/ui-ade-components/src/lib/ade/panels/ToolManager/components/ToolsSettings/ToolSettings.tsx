@@ -1,6 +1,6 @@
 import { useStagedCode } from '../../hooks/useStagedCode/useStagedCode';
 import { useTranslations } from '@letta-cloud/translations';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   Alert,
   Button,
@@ -16,6 +16,7 @@ import {
   UseToolsServiceRetrieveToolKeyFn,
 } from '@letta-cloud/sdk-core';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@letta-cloud/ui-component-library';
 
 interface ToolSettingsProps {
   showDelete?: boolean;
@@ -40,7 +41,7 @@ export function ToolSettings(props: ToolSettingsProps) {
     [setStagedTool],
   );
 
-  const { isPending, mutate, isError } = useToolsServiceModifyTool({
+  const { isPending, mutate, isError, isSuccess } = useToolsServiceModifyTool({
     onSuccess: (response) => {
       queryClient.setQueriesData<Tool[] | undefined>(
         {
@@ -74,7 +75,7 @@ export function ToolSettings(props: ToolSettingsProps) {
   });
 
   const handleSaveTool = useCallback(() => {
-    if (!showSave || !stagedTool.id) {
+    if (!stagedTool.id) {
       return;
     }
 
@@ -84,11 +85,22 @@ export function ToolSettings(props: ToolSettingsProps) {
         return_char_limit: Number(stagedTool.return_char_limit),
       },
     });
-  }, [showSave, stagedTool.id, stagedTool.return_char_limit, mutate]);
+  }, [stagedTool.id, stagedTool.return_char_limit, mutate]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(t('returnCharacterLimit.update'));
+    }
+  }, [isSuccess, t]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent the tool manager window from closing when the user taps 'enter'
+    handleSaveTool();
+  };
 
   return (
     <VStack padding fullWidth fullHeight gap="large">
-      <Form variant="dashboard">
+      <Form variant="dashboard" onSubmit={handleSubmit}>
         <RawInput
           label={t('returnCharLimit.label')}
           value={stagedTool.return_char_limit}
@@ -100,7 +112,11 @@ export function ToolSettings(props: ToolSettingsProps) {
         />
         {showSave && (
           <div>
-            <Button label={t('save')} busy={isPending} onClick={handleSaveTool} />
+            <Button
+              label={t('save')}
+              busy={isPending}
+              onClick={handleSaveTool}
+            />
           </div>
         )}
         {isError && <Alert title={t('error')} variant="destructive" />}

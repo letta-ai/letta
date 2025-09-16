@@ -1968,6 +1968,9 @@
     "returnCharLimit": {
       "label": "Return character limit"
     },
+    "returnCharacterLimit": {
+      "update": "Updated return character limit"
+    },
     "save": "Save",
     "error": "There was an error updating the tool settings, please try again or contact support."
   },
