@@ -36,7 +36,17 @@ COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-dev --all-extras --python 3.11
+RUN uv sync --frozen --no-default-groups --python 3.12 \
+    --extra postgres \
+    --extra redis \
+    --extra pinecone \
+    --extra experimental \
+    --extra bedrock \
+    --extra google \
+    --extra external-tools \
+    --extra cloud-tool-sandbox \
+    --extra modal \
+    --extra server
 
 # Runtime stage
 FROM ankane/pgvector:v0.5.1 AS runtime

@@ -13,8 +13,6 @@ dependencies = [
     "questionary>=2.0.1",
     "pytz>=2023.3.post1",
     "tqdm>=4.66.1",
-    "black[jupyter]>=24.2.0",
-    "setuptools>=70",
     "prettytable>=3.9.0",
     "docstring-parser>=0.16,<0.17",
     "httpx>=0.28.0",
@@ -67,7 +65,6 @@ dependencies = [
     "certifi>=2025.6.15",
     "markitdown[docx,pdf,pptx]>=0.1.2",
     "orjson>=3.11.1",
-    "ruff[dev]>=0.12.10",
     "trafilatura",
     "readability-lxml",
 ]
@@ -144,6 +141,23 @@ desktop = [
     "async-lru>=2.0.5",
     "magika>=0.6.2",
     #"pgserver>=0.1.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio>=0.24.0",
+    "pytest-order>=1.2.0",
+    "pytest-mock>=3.14.0",
+    "pytest-json-report>=1.5.0",
+    "pexpect>=4.9.0",
+    "pre-commit>=3.5.0",
+    "pyright>=1.1.347",
+    "ipykernel>=6.29.5",
+    "ipdb>=0.13.13",
+    "black[jupyter]>=24.2.0",
+    "ruff>=0.12.10",
+    "setuptools>=70",
 ]
 
 [build-system]
