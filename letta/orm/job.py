@@ -63,7 +63,7 @@ class Job(SqlalchemyBase, UserMixin):
     steps: Mapped[List["Step"]] = relationship("Step", back_populates="job", cascade="save-update")
     # organization relationship (nullable for backward compatibility)
     organization: Mapped[Optional["Organization"]] = relationship("Organization", back_populates="jobs")
-    agents: Mapped[List["AgentsRuns"]] = relationship("AgentsRuns", back_populates="run", cascade="all, delete-orphan")
+    agent: Mapped[List["AgentsRuns"]] = relationship("AgentsRuns", back_populates="run", cascade="all, delete-orphan")
 
     @property
     def messages(self) -> List["Message"]:

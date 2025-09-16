@@ -22,7 +22,6 @@ from letta.schemas.tool_rule import ToolRule
 from letta.utils import calculate_file_defaults_based_on_context_window
 
 if TYPE_CHECKING:
-    from letta.orm.agents_runs import AgentsRuns
     from letta.orm.agents_tags import AgentsTags
     from letta.orm.archives_agents import ArchivesAgents
     from letta.orm.files_agents import FileAgent

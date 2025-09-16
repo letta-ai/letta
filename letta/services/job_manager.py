@@ -49,6 +49,9 @@ class JobManager:
             agent_id = getattr(pydantic_job, "agent_id", None)
 
             job_data = pydantic_job.model_dump(to_orm=True)
+            # Remove agent_id from job_data as it's not a field in the Job ORM model
+            # The relationship is handled through the AgentsRuns association table
+            job_data.pop("agent_id", None)
             job = JobModel(**job_data)
             job.organization_id = actor.organization_id
             job.create(session, actor=actor)  # Save job in the database
@@ -77,6 +80,9 @@ class JobManager:
             agent_id = getattr(pydantic_job, "agent_id", None)
 
             job_data = pydantic_job.model_dump(to_orm=True)
+            # Remove agent_id from job_data as it's not a field in the Job ORM model
+            # The relationship is handled through the AgentsRuns association table
+            job_data.pop("agent_id", None)
             job = JobModel(**job_data)
             job.organization_id = actor.organization_id
             job = await job.create_async(session, actor=actor, no_commit=True, no_refresh=True)  # Save job in the database
@@ -86,8 +92,15 @@ class JobManager:
                 agents_run = AgentsRuns(agent_id=agent_id, run_id=job.id)
                 session.add(agents_run)
 
-            result = job.to_pydantic()
             await session.commit()
+
+            # Convert to pydantic first, then add agent_id if needed
+            result = super(JobModel, job).to_pydantic()
+
+            # Add back the agent_id field to the result if it was present
+            if agent_id and isinstance(pydantic_job, PydanticRun):
+                result.agent_id = agent_id
+
             return result
 
     @enforce_types
@@ -332,7 +345,6 @@ class JobManager:
             if agent_ids:
                 query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
                 query = query.where(AgentsRuns.agent_id.in_(agent_ids))
-                query = query.distinct()  # Avoid duplicates if a run has multiple agents
 
             # Apply pagination and ordering
             if ascending:
@@ -389,9 +401,14 @@ class JobManager:
         job_type: JobType = JobType.JOB,
         ascending: bool = True,
         source_id: Optional[str] = None,
+        stop_reason: Optional[StopReasonType] = None,
+        agent_ids: Optional[List[str]] = None,
+        background: Optional[bool] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
         from sqlalchemy import and_, or_, select
+
+        from letta.orm.agents_runs import AgentsRuns
 
         async with db_registry.async_session() as session:
             # build base query
@@ -401,11 +418,24 @@ class JobManager:
             if statuses:
                 query = query.where(JobModel.status.in_(statuses))
 
+            # add stop_reason filter if provided
+            if stop_reason is not None:
+                query = query.where(JobModel.stop_reason == stop_reason)
+
+            # add background filter if provided
+            if background is not None:
+                query = query.where(JobModel.background == background)
+
             # add source_id filter if provided
             if source_id:
                 column = getattr(JobModel, "metadata_")
                 column = column.op("->>")("source_id")
                 query = query.where(column == source_id)
+
+            # If agent_ids filter is provided, join with agents_runs table
+            if agent_ids:
+                query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
+                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
 
             # handle cursor-based pagination
             if before or after:
