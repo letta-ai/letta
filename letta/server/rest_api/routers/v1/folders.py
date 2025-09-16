@@ -358,9 +358,19 @@ async def list_agents_for_folder(
 @router.get("/{folder_id}/passages", response_model=List[Passage], operation_id="list_folder_passages")
 async def list_folder_passages(
     folder_id: str,
-    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
-    before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
-    limit: int = Query(100, description="Maximum number of messages to retrieve."),
+    before: Optional[str] = Query(
+        None,
+        description="Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of passages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -374,6 +384,7 @@ async def list_folder_passages(
         after=after,
         before=before,
         limit=limit,
+        ascending=(order == "asc"),
     )
 
 
