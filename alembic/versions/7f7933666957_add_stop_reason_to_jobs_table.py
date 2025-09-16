@@ -1,8 +1,8 @@
-"""add stop_reason and background columns to jobs table, create agents_runs association table
+"""add stop_reason to jobs table
 
-Revision ID: 5bfb45a0b781
-Revises: 5d27a719b24d
-Create Date: 2025-09-15 16:55:11.291915
+Revision ID: 7f7933666957
+Revises: d06594144ef3
+Create Date: 2025-09-16 13:20:42.368007
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "5bfb45a0b781"
-down_revision: Union[str, None] = "5d27a719b24d"
+revision: str = "7f7933666957"
+down_revision: Union[str, None] = "d06594144ef3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
