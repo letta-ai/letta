@@ -9,6 +9,7 @@ import {
   FormProvider,
   HR,
   Input,
+  RawInput,
   LoadingEmptyStatusComponent,
   Section,
   useForm,
@@ -35,11 +36,12 @@ type EditOrganizationSettingsFormType = z.infer<
 
 interface EditOrganizationSettingsProps {
   name: string;
+  organizationId: string;
 }
 
 function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
   const t = useTranslations('organization/settings');
-  const { name: defaultName } = props;
+  const { name: defaultName, organizationId } = props;
   const queryClient = useQueryClient();
   const { mutate, isError, isPending } =
     webApi.organizations.updateOrganization.useMutation({
@@ -107,6 +109,17 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
             }}
             name="name"
           />
+          <RawInput
+            fullWidth
+            size="large"
+            autoComplete="false"
+            disabled
+            description={t(
+              'EditOrganizationSettings.organizationId.description',
+            )}
+            label={t('EditOrganizationSettings.organizationId.label')}
+            value={organizationId}
+          />
           <FormActions
             align="start"
             errorMessage={
@@ -168,7 +181,10 @@ function OrganizationSettingsPage() {
         ) : (
           <DashboardPageSection width="capped">
             <VStack gap="xlarge">
-              <EditOrganizationSettings name={organization.name} />
+              <EditOrganizationSettings
+                organizationId={organization.id}
+                name={organization.name}
+              />
               <HR />
               <CurrentPlan />
 

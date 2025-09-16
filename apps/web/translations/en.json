@@ -1238,6 +1238,10 @@
     },
     "EditOrganizationSettings": {
       "title": "Profile",
+      "organizationId": {
+        "label": "Organization ID",
+        "description": "We may ask you for your organization id to help with debugging"
+      },
       "name": {
         "label": "Name"
       },
