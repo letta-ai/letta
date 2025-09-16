@@ -166,6 +166,19 @@ async def retrieve_block(
 @router.get("/{block_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_block")
 async def list_agents_for_block(
     block_id: str,
+    before: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of agents to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     include_relationships: list[str] | None = Query(
         None,
         description=(
@@ -184,7 +197,13 @@ async def list_agents_for_block(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     try:
         agents = await server.block_manager.get_agents_for_block_async(
-            block_id=block_id, include_relationships=include_relationships, actor=actor
+            block_id=block_id,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+            include_relationships=include_relationships,
+            actor=actor,
         )
         return agents
     except NoResultFound:

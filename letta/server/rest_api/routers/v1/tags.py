@@ -24,7 +24,10 @@ async def list_tags(
         "asc", description="Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order"
     ),
     order_by: Literal["name"] = Query("name", description="Field to sort by"),
-    query_text: Optional[str] = Query(None, description="Filter tags by text search"),
+    query_text: Optional[str] = Query(
+        None, description="Filter tags by text search. Deprecated, please use name field instead", deprecated=True
+    ),
+    name: Optional[str] = Query(None, description="Filter tags by name"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -32,7 +35,8 @@ async def list_tags(
     Get the list of all agent tags that have been created.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    text_filter = name or query_text
     tags = await server.agent_manager.list_tags_async(
-        actor=actor, before=before, after=after, limit=limit, query_text=query_text, ascending=(order == "asc")
+        actor=actor, before=before, after=after, limit=limit, query_text=text_filter, ascending=(order == "asc")
     )
     return tags

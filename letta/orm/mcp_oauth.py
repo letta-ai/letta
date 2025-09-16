@@ -38,7 +38,11 @@ class MCPOAuth(SqlalchemyBase, OrganizationMixin, UserMixin):
 
     # Token data
     access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth access token")
+    access_token_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted OAuth access token")
+
     refresh_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth refresh token")
+    refresh_token_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted OAuth refresh token")
+
     token_type: Mapped[str] = mapped_column(String(50), default="Bearer", doc="Token type")
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, doc="Token expiry time")
     scope: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth scope")
@@ -46,6 +50,8 @@ class MCPOAuth(SqlalchemyBase, OrganizationMixin, UserMixin):
     # Client configuration
     client_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth client ID")
     client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth client secret")
+    client_secret_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="Encrypted OAuth client secret")
+
     redirect_uri: Mapped[Optional[str]] = mapped_column(Text, nullable=True, doc="OAuth redirect URI")
 
     # Session state

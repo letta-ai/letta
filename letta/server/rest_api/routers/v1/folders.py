@@ -75,14 +75,17 @@ async def retrieve_folder(
     return folder
 
 
-@router.get("/name/{folder_name}", response_model=str, operation_id="get_folder_id_by_name")
-async def get_folder_id_by_name(
+@router.get("/name/{folder_name}", response_model=str, operation_id="get_folder_by_name", deprecated=True)
+async def get_folder_by_name(
     folder_name: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get a folder by name
+    **Deprecated**: Please use the list endpoint `GET /v1/folders?name=` instead.
+
+
+    Get a folder by name.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
@@ -92,8 +95,8 @@ async def get_folder_id_by_name(
     return folder.id
 
 
-@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="get_folders_metadata")
-async def get_folders_metadata(
+@router.get("/metadata", response_model=OrganizationSourcesStats, operation_id="retrieve_metadata")
+async def retrieve_metadata(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
     include_detailed_per_source_metadata: bool = False,
@@ -126,6 +129,7 @@ async def list_folders(
         "asc", description="Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    name: Optional[str] = Query(None, description="Folder name to filter by"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -133,7 +137,9 @@ async def list_folders(
     List all data folders created by a user.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.source_manager.list_sources(actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"))
+    return await server.source_manager.list_sources(
+        actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"), name=name
+    )
 
 
 @router.post("/", response_model=Folder, operation_id="create_folder")
@@ -342,9 +348,22 @@ async def upload_file_to_folder(
     return file_metadata
 
 
-@router.get("/{folder_id}/agents", response_model=List[str], operation_id="get_agents_for_folder")
-async def get_agents_for_folder(
+@router.get("/{folder_id}/agents", response_model=List[str], operation_id="list_agents_for_folder")
+async def list_agents_for_folder(
     folder_id: str,
+    before: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of agents to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -352,15 +371,32 @@ async def get_agents_for_folder(
     Get all agent IDs that have the specified folder attached.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.source_manager.get_agents_for_source_id(source_id=folder_id, actor=actor)
+    return await server.source_manager.get_agents_for_source_id(
+        source_id=folder_id,
+        before=before,
+        after=after,
+        limit=limit,
+        ascending=(order == "asc"),
+        actor=actor,
+    )
 
 
 @router.get("/{folder_id}/passages", response_model=List[Passage], operation_id="list_folder_passages")
 async def list_folder_passages(
     folder_id: str,
-    after: Optional[str] = Query(None, description="Message after which to retrieve the returned messages."),
-    before: Optional[str] = Query(None, description="Message before which to retrieve the returned messages."),
-    limit: int = Query(100, description="Maximum number of messages to retrieve."),
+    before: Optional[str] = Query(
+        None,
+        description="Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of passages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     server: SyncServer = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -374,14 +410,26 @@ async def list_folder_passages(
         after=after,
         before=before,
         limit=limit,
+        ascending=(order == "asc"),
     )
 
 
 @router.get("/{folder_id}/files", response_model=List[FileMetadata], operation_id="list_folder_files")
 async def list_folder_files(
     folder_id: str,
-    limit: int = Query(1000, description="Number of files to return"),
-    after: Optional[str] = Query(None, description="Pagination cursor to fetch the next set of results"),
+    before: Optional[str] = Query(
+        None,
+        description="File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="File ID cursor for pagination. Returns files that come after this file ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(1000, description="Maximum number of files to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
     include_content: bool = Query(False, description="Whether to include full file content"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
@@ -392,8 +440,10 @@ async def list_folder_files(
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.file_manager.list_files(
         source_id=folder_id,
-        limit=limit,
+        before=before,
         after=after,
+        limit=limit,
+        ascending=(order == "asc"),
         actor=actor,
         include_content=include_content,
         strip_directory_prefix=True,  # TODO: Reconsider this. This is purely for aesthetics.

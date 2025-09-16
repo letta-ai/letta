@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 
 from fastapi import HTTPException
@@ -9,6 +10,8 @@ from letta.orm.block import Block as BlockModel
 from letta.orm.errors import UniqueConstraintViolationError
 from letta.orm.identity import Identity as IdentityModel
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentState
+from letta.schemas.block import Block
 from letta.schemas.identity import (
     Identity as PydanticIdentity,
     IdentityCreate,
@@ -274,3 +277,65 @@ class IdentityManager:
             current_ids = {item.id for item in current_relationship}
             new_items = [item for item in found_items if item.id not in current_ids]
             current_relationship.extend(new_items)
+
+    @enforce_types
+    @trace_method
+    async def list_agents_for_identity_async(
+        self,
+        identity_id: str,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = False,
+        actor: PydanticUser = None,
+    ) -> List[AgentState]:
+        """
+        Get all agents associated with the specified identity.
+        """
+        async with db_registry.async_session() as session:
+            # First verify the identity exists and belongs to the user
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+            if identity is None:
+                raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
+
+            # Get agents associated with this identity with pagination
+            agents = await AgentModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                identity_id=identity.id,
+            )
+            return await asyncio.gather(*[agent.to_pydantic_async() for agent in agents])
+
+    @enforce_types
+    @trace_method
+    async def list_blocks_for_identity_async(
+        self,
+        identity_id: str,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = False,
+        actor: PydanticUser = None,
+    ) -> List[Block]:
+        """
+        Get all blocks associated with the specified identity.
+        """
+        async with db_registry.async_session() as session:
+            # First verify the identity exists and belongs to the user
+            identity = await IdentityModel.read_async(db_session=session, identifier=identity_id, actor=actor)
+            if identity is None:
+                raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
+
+            # Get blocks associated with this identity with pagination
+            blocks = await BlockModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                identity_id=identity.id,
+            )
+            return [block.to_pydantic() for block in blocks]

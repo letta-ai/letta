@@ -236,6 +236,7 @@ class SourceManager:
         after: Optional[str] = None,
         limit: Optional[int] = 50,
         ascending: bool = True,
+        name: Optional[str] = None,
         **kwargs,
     ) -> List[PydanticSource]:
         """List all sources with optional pagination."""
@@ -247,6 +248,7 @@ class SourceManager:
                 limit=limit,
                 ascending=ascending,
                 organization_id=actor.organization_id,
+                query_text=name,
                 **kwargs,
             )
             return [source.to_pydantic() for source in sources]

@@ -728,35 +728,16 @@ async def add_mcp_server_to_config(
             return await server.add_mcp_server_to_config(server_config=request, allow_upsert=True)
         else:
             # log to DB
-            from letta.schemas.mcp import MCPServer
-
-            if isinstance(request, StdioServerConfig):
-                mapped_request = MCPServer(server_name=request.server_name, server_type=request.type, stdio_config=request)
-                # don't allow stdio servers
-                if tool_settings.mcp_disable_stdio:  # protected server
-                    raise HTTPException(
-                        status_code=400,
-                        detail="stdio is not supported in the current environment, please use a self-hosted Letta server in order to add a stdio MCP server",
-                    )
-            elif isinstance(request, SSEServerConfig):
-                mapped_request = MCPServer(
-                    server_name=request.server_name,
-                    server_type=request.type,
-                    server_url=request.server_url,
-                    token=request.resolve_token(),
-                    custom_headers=request.custom_headers,
-                )
-            elif isinstance(request, StreamableHTTPServerConfig):
-                mapped_request = MCPServer(
-                    server_name=request.server_name,
-                    server_type=request.type,
-                    server_url=request.server_url,
-                    token=request.resolve_token(),
-                    custom_headers=request.custom_headers,
+            # Check if stdio servers are disabled
+            if isinstance(request, StdioServerConfig) and tool_settings.mcp_disable_stdio:
+                raise HTTPException(
+                    status_code=400,
+                    detail="stdio is not supported in the current environment, please use a self-hosted Letta server in order to add a stdio MCP server",
                 )
 
             # Create MCP server and optimistically sync tools
-            await server.mcp_manager.create_mcp_server_with_tools(mapped_request, actor=actor)
+            # The mcp_manager will handle encryption of sensitive fields
+            await server.mcp_manager.create_mcp_server_from_config_with_tools(request, actor=actor)
 
             # TODO: don't do this in the future (just return MCPServer)
             all_servers = await server.mcp_manager.list_mcp_servers(actor=actor)

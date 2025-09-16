@@ -35,6 +35,7 @@ from letta.schemas.mcp import (
     UpdateStdioMCPServer,
     UpdateStreamableHTTPMCPServer,
 )
+from letta.schemas.secret import Secret, SecretDict
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
@@ -355,6 +356,69 @@ class MCPManager:
                 raise
 
     @enforce_types
+    async def create_mcp_server_from_config(
+        self, server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig], actor: PydanticUser
+    ) -> MCPServer:
+        """
+        Create an MCP server from a config object, handling encryption of sensitive fields.
+
+        This method converts the server config to an MCPServer model and encrypts
+        sensitive fields like tokens and custom headers.
+        """
+        # Create base MCPServer object
+        if isinstance(server_config, StdioServerConfig):
+            mcp_server = MCPServer(server_name=server_config.server_name, server_type=server_config.type, stdio_config=server_config)
+        elif isinstance(server_config, SSEServerConfig):
+            mcp_server = MCPServer(
+                server_name=server_config.server_name,
+                server_type=server_config.type,
+                server_url=server_config.server_url,
+            )
+            # Encrypt sensitive fields
+            token = server_config.resolve_token()
+            if token:
+                token_secret = Secret.from_plaintext(token)
+                mcp_server.set_token_secret(token_secret)
+            if server_config.custom_headers:
+                headers_secret = SecretDict.from_plaintext(server_config.custom_headers)
+                mcp_server.set_custom_headers_secret(headers_secret)
+
+        elif isinstance(server_config, StreamableHTTPServerConfig):
+            mcp_server = MCPServer(
+                server_name=server_config.server_name,
+                server_type=server_config.type,
+                server_url=server_config.server_url,
+            )
+            # Encrypt sensitive fields
+            token = server_config.resolve_token()
+            if token:
+                token_secret = Secret.from_plaintext(token)
+                mcp_server.set_token_secret(token_secret)
+            if server_config.custom_headers:
+                headers_secret = SecretDict.from_plaintext(server_config.custom_headers)
+                mcp_server.set_custom_headers_secret(headers_secret)
+        else:
+            raise ValueError(f"Unsupported server config type: {type(server_config)}")
+
+        return mcp_server
+
+    @enforce_types
+    async def create_mcp_server_from_config_with_tools(
+        self, server_config: Union[StdioServerConfig, SSEServerConfig, StreamableHTTPServerConfig], actor: PydanticUser
+    ) -> MCPServer:
+        """
+        Create an MCP server from a config object and optimistically sync its tools.
+
+        This method handles encryption of sensitive fields and then creates the server
+        with automatic tool synchronization.
+        """
+        # Convert config to MCPServer with encryption
+        mcp_server = await self.create_mcp_server_from_config(server_config, actor)
+
+        # Create the server with tools
+        return await self.create_mcp_server_with_tools(mcp_server, actor)
+
+    @enforce_types
     async def create_mcp_server_with_tools(self, pydantic_mcp_server: MCPServer, actor: PydanticUser) -> MCPServer:
         """
         Create a new MCP server and optimistically sync its tools.
@@ -420,10 +484,33 @@ class MCPManager:
             # Update tool attributes with only the fields that were explicitly set
             update_data = mcp_server_update.model_dump(to_orm=True, exclude_unset=True)
 
-            # Ensure custom_headers None is stored as SQL NULL, not JSON null
-            if update_data.get("custom_headers") is None:
-                update_data.pop("custom_headers", None)
-                setattr(mcp_server, "custom_headers", null())
+            # Handle encryption for token if provided
+            if "token" in update_data and update_data["token"] is not None:
+                token_secret = Secret.from_plaintext(update_data["token"])
+                secret_dict = token_secret.to_dict()
+                update_data["token_enc"] = secret_dict["encrypted"]
+                # During migration phase, also update plaintext
+                if not token_secret._was_encrypted:
+                    update_data["token"] = secret_dict["plaintext"]
+                else:
+                    update_data["token"] = None
+
+            # Handle encryption for custom_headers if provided
+            if "custom_headers" in update_data:
+                if update_data["custom_headers"] is not None:
+                    headers_secret = SecretDict.from_plaintext(update_data["custom_headers"])
+                    secret_dict = headers_secret.to_dict()
+                    update_data["custom_headers_enc"] = secret_dict["encrypted"]
+                    # During migration phase, also update plaintext
+                    if not headers_secret._was_encrypted:
+                        update_data["custom_headers"] = secret_dict["plaintext"]
+                    else:
+                        update_data["custom_headers"] = None
+                else:
+                    # Ensure custom_headers None is stored as SQL NULL, not JSON null
+                    update_data.pop("custom_headers", None)
+                    setattr(mcp_server, "custom_headers", null())
+                    setattr(mcp_server, "custom_headers_enc", None)
 
             for key, value in update_data.items():
                 setattr(mcp_server, key, value)
@@ -664,6 +751,86 @@ class MCPManager:
             raise ValueError(f"Unsupported server config type: {type(server_config)}")
 
     # OAuth-related methods
+    def _oauth_orm_to_pydantic(self, oauth_session: MCPOAuth) -> MCPOAuthSession:
+        """
+        Convert OAuth ORM model to Pydantic model, handling decryption of sensitive fields.
+        """
+        # Check for encryption key from env or settings
+        import os
+
+        from letta.settings import settings
+
+        encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+        # Get decrypted values using the dual-read approach
+        access_token = None
+        if oauth_session.access_token_enc or oauth_session.access_token:
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.access_token_enc, oauth_session.access_token)
+                    access_token = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                access_token = oauth_session.access_token
+
+        refresh_token = None
+        if oauth_session.refresh_token_enc or oauth_session.refresh_token:
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.refresh_token_enc, oauth_session.refresh_token)
+                    refresh_token = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                refresh_token = oauth_session.refresh_token
+
+        client_secret = None
+        if oauth_session.client_secret_enc or oauth_session.client_secret:
+            if encryption_key:
+                # Temporarily set the key for Secret
+                original_key = settings.encryption_key
+                settings.encryption_key = encryption_key
+                try:
+                    secret = Secret.from_db(oauth_session.client_secret_enc, oauth_session.client_secret)
+                    client_secret = secret.get_plaintext()
+                finally:
+                    settings.encryption_key = original_key
+            else:
+                # No encryption key, use plaintext if available
+                client_secret = oauth_session.client_secret
+
+        return MCPOAuthSession(
+            id=oauth_session.id,
+            state=oauth_session.state,
+            server_id=oauth_session.server_id,
+            server_url=oauth_session.server_url,
+            server_name=oauth_session.server_name,
+            user_id=oauth_session.user_id,
+            organization_id=oauth_session.organization_id,
+            authorization_url=oauth_session.authorization_url,
+            authorization_code=oauth_session.authorization_code,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type=oauth_session.token_type,
+            expires_at=oauth_session.expires_at,
+            scope=oauth_session.scope,
+            client_id=oauth_session.client_id,
+            client_secret=client_secret,
+            redirect_uri=oauth_session.redirect_uri,
+            status=oauth_session.status,
+            created_at=oauth_session.created_at,
+            updated_at=oauth_session.updated_at,
+        )
+
     @enforce_types
     async def create_oauth_session(self, session_create: MCPOAuthSessionCreate, actor: PydanticUser) -> MCPOAuthSession:
         """Create a new OAuth session for MCP server authentication."""
@@ -682,18 +849,8 @@ class MCPManager:
             )
             oauth_session = await oauth_session.create_async(session, actor=actor)
 
-            # Convert to Pydantic model
-            return MCPOAuthSession(
-                id=oauth_session.id,
-                state=oauth_session.state,
-                server_url=oauth_session.server_url,
-                server_name=oauth_session.server_name,
-                user_id=oauth_session.user_id,
-                organization_id=oauth_session.organization_id,
-                status=oauth_session.status,
-                created_at=oauth_session.created_at,
-                updated_at=oauth_session.updated_at,
-            )
+            # Convert to Pydantic model - note: new sessions won't have tokens yet
+            return self._oauth_orm_to_pydantic(oauth_session)
 
     @enforce_types
     async def get_oauth_session_by_id(self, session_id: str, actor: PydanticUser) -> Optional[MCPOAuthSession]:
@@ -701,27 +858,7 @@ class MCPManager:
         async with db_registry.async_session() as session:
             try:
                 oauth_session = await MCPOAuth.read_async(db_session=session, identifier=session_id, actor=actor)
-                return MCPOAuthSession(
-                    id=oauth_session.id,
-                    state=oauth_session.state,
-                    server_url=oauth_session.server_url,
-                    server_name=oauth_session.server_name,
-                    user_id=oauth_session.user_id,
-                    organization_id=oauth_session.organization_id,
-                    authorization_url=oauth_session.authorization_url,
-                    authorization_code=oauth_session.authorization_code,
-                    access_token=oauth_session.access_token,
-                    refresh_token=oauth_session.refresh_token,
-                    token_type=oauth_session.token_type,
-                    expires_at=oauth_session.expires_at,
-                    scope=oauth_session.scope,
-                    client_id=oauth_session.client_id,
-                    client_secret=oauth_session.client_secret,
-                    redirect_uri=oauth_session.redirect_uri,
-                    status=oauth_session.status,
-                    created_at=oauth_session.created_at,
-                    updated_at=oauth_session.updated_at,
-                )
+                return self._oauth_orm_to_pydantic(oauth_session)
             except NoResultFound:
                 return None
 
@@ -747,27 +884,7 @@ class MCPManager:
             if not oauth_session:
                 return None
 
-            return MCPOAuthSession(
-                id=oauth_session.id,
-                state=oauth_session.state,
-                server_url=oauth_session.server_url,
-                server_name=oauth_session.server_name,
-                user_id=oauth_session.user_id,
-                organization_id=oauth_session.organization_id,
-                authorization_url=oauth_session.authorization_url,
-                authorization_code=oauth_session.authorization_code,
-                access_token=oauth_session.access_token,
-                refresh_token=oauth_session.refresh_token,
-                token_type=oauth_session.token_type,
-                expires_at=oauth_session.expires_at,
-                scope=oauth_session.scope,
-                client_id=oauth_session.client_id,
-                client_secret=oauth_session.client_secret,
-                redirect_uri=oauth_session.redirect_uri,
-                status=oauth_session.status,
-                created_at=oauth_session.created_at,
-                updated_at=oauth_session.updated_at,
-            )
+            return self._oauth_orm_to_pydantic(oauth_session)
 
     @enforce_types
     async def update_oauth_session(self, session_id: str, session_update: MCPOAuthSessionUpdate, actor: PydanticUser) -> MCPOAuthSession:
@@ -780,10 +897,59 @@ class MCPManager:
                 oauth_session.authorization_url = session_update.authorization_url
             if session_update.authorization_code is not None:
                 oauth_session.authorization_code = session_update.authorization_code
+
+            # Handle encryption for access_token
             if session_update.access_token is not None:
-                oauth_session.access_token = session_update.access_token
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        token_secret = Secret.from_plaintext(session_update.access_token)
+                        secret_dict = token_secret.to_dict()
+                        oauth_session.access_token_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.access_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.access_token = session_update.access_token
+                    oauth_session.access_token_enc = None
+
+            # Handle encryption for refresh_token
             if session_update.refresh_token is not None:
-                oauth_session.refresh_token = session_update.refresh_token
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        token_secret = Secret.from_plaintext(session_update.refresh_token)
+                        secret_dict = token_secret.to_dict()
+                        oauth_session.refresh_token_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.refresh_token = secret_dict["plaintext"] if not token_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.refresh_token = session_update.refresh_token
+                    oauth_session.refresh_token_enc = None
+
             if session_update.token_type is not None:
                 oauth_session.token_type = session_update.token_type
             if session_update.expires_at is not None:
@@ -792,8 +958,33 @@ class MCPManager:
                 oauth_session.scope = session_update.scope
             if session_update.client_id is not None:
                 oauth_session.client_id = session_update.client_id
+
+            # Handle encryption for client_secret
             if session_update.client_secret is not None:
-                oauth_session.client_secret = session_update.client_secret
+                # Check for encryption key from env or settings
+                import os
+
+                from letta.settings import settings
+
+                encryption_key = os.environ.get("LETTA_ENCRYPTION_KEY") or settings.encryption_key
+
+                if encryption_key:
+                    # Temporarily set the key for Secret
+                    original_key = settings.encryption_key
+                    settings.encryption_key = encryption_key
+                    try:
+                        secret_secret = Secret.from_plaintext(session_update.client_secret)
+                        secret_dict = secret_secret.to_dict()
+                        oauth_session.client_secret_enc = secret_dict["encrypted"]
+                        # During migration phase, also update plaintext
+                        oauth_session.client_secret = secret_dict["plaintext"] if not secret_secret._was_encrypted else None
+                    finally:
+                        settings.encryption_key = original_key
+                else:
+                    # No encryption, store plaintext
+                    oauth_session.client_secret = session_update.client_secret
+                    oauth_session.client_secret_enc = None
+
             if session_update.redirect_uri is not None:
                 oauth_session.redirect_uri = session_update.redirect_uri
             if session_update.status is not None:
@@ -804,27 +995,7 @@ class MCPManager:
 
             oauth_session = await oauth_session.update_async(db_session=session, actor=actor)
 
-            return MCPOAuthSession(
-                id=oauth_session.id,
-                state=oauth_session.state,
-                server_url=oauth_session.server_url,
-                server_name=oauth_session.server_name,
-                user_id=oauth_session.user_id,
-                organization_id=oauth_session.organization_id,
-                authorization_url=oauth_session.authorization_url,
-                authorization_code=oauth_session.authorization_code,
-                access_token=oauth_session.access_token,
-                refresh_token=oauth_session.refresh_token,
-                token_type=oauth_session.token_type,
-                expires_at=oauth_session.expires_at,
-                scope=oauth_session.scope,
-                client_id=oauth_session.client_id,
-                client_secret=oauth_session.client_secret,
-                redirect_uri=oauth_session.redirect_uri,
-                status=oauth_session.status,
-                created_at=oauth_session.created_at,
-                updated_at=oauth_session.updated_at,
-            )
+            return self._oauth_orm_to_pydantic(oauth_session)
 
     @enforce_types
     async def delete_oauth_session(self, session_id: str, actor: PydanticUser) -> None:
