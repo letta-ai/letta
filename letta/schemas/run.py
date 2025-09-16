@@ -59,5 +59,4 @@ class Run(RunBase):
             A new Job instance with the same data but 'job-' prefix in ID
         """
         run_data = self.model_dump(exclude_none=True)
-        del run_data["stop_reason"]  # not part of jobs
         return Job(**run_data)
