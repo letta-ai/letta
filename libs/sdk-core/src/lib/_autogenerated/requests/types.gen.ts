@@ -7230,23 +7230,23 @@ export type DeleteFolderData = {
 
 export type DeleteFolderResponse = unknown;
 
-export type GetFolderIdByNameData = {
+export type GetFolderByNameData = {
   folderName: string;
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
 };
 
-export type GetFolderIdByNameResponse = string;
+export type GetFolderByNameResponse = string;
 
-export type GetFoldersMetadataData = {
+export type RetrieveMetadataData = {
   includeDetailedPerSourceMetadata?: boolean;
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
 };
 
-export type GetFoldersMetadataResponse = OrganizationSourcesStats;
+export type RetrieveMetadataResponse = OrganizationSourcesStats;
 
 export type ListFoldersData = {
   /**
@@ -7261,6 +7261,10 @@ export type ListFoldersData = {
    * Maximum number of folders to return
    */
   limit?: number | null;
+  /**
+   * Folder name to filter by
+   */
+  name?: string | null;
   /**
    * Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
    */
@@ -7303,29 +7307,57 @@ export type UploadFileToFolderData = {
 
 export type UploadFileToFolderResponse = FileMetadata;
 
-export type GetAgentsForFolderData = {
+export type ListAgentsForFolderData = {
+  /**
+   * Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   */
+  before?: string | null;
   folderId: string;
+  /**
+   * Maximum number of agents to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
 };
 
-export type GetAgentsForFolderResponse = Array<string>;
+export type ListAgentsForFolderResponse = Array<string>;
 
 export type ListFolderPassagesData = {
   /**
-   * Message after which to retrieve the returned messages.
+   * Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order
    */
   after?: string | null;
   /**
-   * Message before which to retrieve the returned messages.
+   * Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order
    */
   before?: string | null;
   folderId: string;
   /**
-   * Maximum number of messages to retrieve.
+   * Maximum number of passages to return
    */
-  limit?: number;
+  limit?: number | null;
+  /**
+   * Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
@@ -7335,18 +7367,30 @@ export type ListFolderPassagesResponse = Array<Passage>;
 
 export type ListFolderFilesData = {
   /**
-   * Pagination cursor to fetch the next set of results
+   * File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
    */
   after?: string | null;
+  /**
+   * File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+   */
+  before?: string | null;
   folderId: string;
   /**
    * Whether to include full file content
    */
   includeContent?: boolean;
   /**
-   * Number of files to return
+   * Maximum number of files to return
    */
-  limit?: number;
+  limit?: number | null;
+  /**
+   * Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
@@ -8086,7 +8130,7 @@ export type SendGroupMessageResponse = LettaResponse;
 
 export type ListGroupMessagesData = {
   /**
-   * Message after which to retrieve the returned messages.
+   * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
    */
   after?: string | null;
   /**
@@ -8098,14 +8142,22 @@ export type ListGroupMessagesData = {
    */
   assistantMessageToolName?: string;
   /**
-   * Message before which to retrieve the returned messages.
+   * Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
    */
   before?: string | null;
   groupId: string;
   /**
-   * Maximum number of messages to retrieve.
+   * Maximum number of messages to retrieve
    */
-  limit?: number;
+  limit?: number | null;
+  /**
+   * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   /**
    * Whether to use assistant messages
    */
@@ -8263,6 +8315,64 @@ export type UpsertIdentityPropertiesData = {
 };
 
 export type UpsertIdentityPropertiesResponse = unknown;
+
+export type ListAgentsForIdentityData = {
+  /**
+   * Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   */
+  before?: string | null;
+  identityId: string;
+  /**
+   * Maximum number of agents to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type ListAgentsForIdentityResponse = Array<AgentState>;
+
+export type ListBlocksForIdentityData = {
+  /**
+   * Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+   */
+  before?: string | null;
+  identityId: string;
+  /**
+   * Maximum number of blocks to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type ListBlocksForIdentityResponse = Array<Block>;
 
 export type CreateInternalTemplateGroupData = {
   requestBody: InternalTemplateGroupCreate;
@@ -8454,11 +8564,31 @@ export type RetrieveBlockData = {
 export type RetrieveBlockResponse = Block;
 
 export type ListAgentsForBlockData = {
+  /**
+   * Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   */
+  before?: string | null;
   blockId: string;
   /**
    * Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    */
   includeRelationships?: Array<string> | null;
+  /**
+   * Maximum number of agents to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Field to sort by
+   */
+  orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
   xProjectId?: string | null;
@@ -9037,6 +9167,10 @@ export type ListTagsData = {
    */
   limit?: number | null;
   /**
+   * Filter tags by name
+   */
+  name?: string | null;
+  /**
    * Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
    */
   order?: 'asc' | 'desc';
@@ -9045,7 +9179,8 @@ export type ListTagsData = {
    */
   orderBy?: 'name';
   /**
-   * Filter tags by text search
+   * Filter tags by text search. Deprecated, please use name field instead
+   * @deprecated
    */
   queryText?: string | null;
   userAgent?: string | null;
@@ -9876,7 +10011,7 @@ export type $OpenApiTs = {
   };
   '/v1/folders/name/{folder_name}': {
     get: {
-      req: GetFolderIdByNameData;
+      req: GetFolderByNameData;
       res: {
         /**
          * Successful Response
@@ -9891,7 +10026,7 @@ export type $OpenApiTs = {
   };
   '/v1/folders/metadata': {
     get: {
-      req: GetFoldersMetadataData;
+      req: RetrieveMetadataData;
       res: {
         /**
          * Successful Response
@@ -9949,7 +10084,7 @@ export type $OpenApiTs = {
   };
   '/v1/folders/{folder_id}/agents': {
     get: {
-      req: GetAgentsForFolderData;
+      req: ListAgentsForFolderData;
       res: {
         /**
          * Successful Response
@@ -10939,6 +11074,36 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: unknown;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/{identity_id}/agents': {
+    get: {
+      req: ListAgentsForIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<AgentState>;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/identities/{identity_id}/blocks': {
+    get: {
+      req: ListBlocksForIdentityData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<Block>;
         /**
          * Validation Error
          */

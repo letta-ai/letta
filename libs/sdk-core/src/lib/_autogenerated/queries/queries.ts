@@ -540,6 +540,7 @@ export const useToolsServiceMcpOauthCallback = <
     ...options,
   });
 /**
+ * @deprecated
  * Count Sources
  * Count all data sources created by a user.
  * @param data The data for the request.
@@ -576,6 +577,7 @@ export const useSourcesServiceCountSources = <
     ...options,
   });
 /**
+ * @deprecated
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.
@@ -620,6 +622,7 @@ export const useSourcesServiceRetrieveSource = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Source Id By Name
  * Get a source by name
  * @param data The data for the request.
@@ -664,6 +667,7 @@ export const useSourcesServiceGetSourceIdByName = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Sources Metadata
  * Get aggregated metadata for all sources in an organization.
  *
@@ -714,6 +718,7 @@ export const useSourcesServiceGetSourcesMetadata = <
     ...options,
   });
 /**
+ * @deprecated
  * List Sources
  * List all data sources created by a user.
  * @param data The data for the request.
@@ -750,6 +755,7 @@ export const useSourcesServiceListSources = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Agents For Source
  * Get all agent IDs that have the specified source attached.
  * @param data The data for the request.
@@ -794,6 +800,7 @@ export const useSourcesServiceGetAgentsForSource = <
     ...options,
   });
 /**
+ * @deprecated
  * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
@@ -850,6 +857,7 @@ export const useSourcesServiceListSourcePassages = <
     ...options,
   });
 /**
+ * @deprecated
  * List Source Files
  * List paginated files associated with a data source.
  * @param data The data for the request.
@@ -919,6 +927,7 @@ export const useSourcesServiceListSourceFiles = <
     ...options,
   });
 /**
+ * @deprecated
  * Get File Metadata
  * Retrieve metadata for a specific file by its ID.
  * @param data The data for the request.
@@ -1051,8 +1060,12 @@ export const useFoldersServiceRetrieveFolder = <
     ...options,
   });
 /**
- * Get Folder Id By Name
- * Get a folder by name
+ * @deprecated
+ * Get Folder By Name
+ * **Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.
+ *
+ *
+ * Get a folder by name.
  * @param data The data for the request.
  * @param data.folderName
  * @param data.userId
@@ -1061,8 +1074,8 @@ export const useFoldersServiceRetrieveFolder = <
  * @returns string Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetFolderIdByName = <
-  TData = Common.FoldersServiceGetFolderIdByNameDefaultResponse,
+export const useFoldersServiceGetFolderByName = <
+  TData = Common.FoldersServiceGetFolderByNameDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1081,12 +1094,12 @@ export const useFoldersServiceGetFolderIdByName = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn(
+    queryKey: Common.UseFoldersServiceGetFolderByNameKeyFn(
       { folderName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFolderIdByName({
+      FoldersService.getFolderByName({
         folderName,
         userAgent,
         userId,
@@ -1095,7 +1108,7 @@ export const useFoldersServiceGetFolderIdByName = <
     ...options,
   });
 /**
- * Get Folders Metadata
+ * Retrieve Metadata
  * Get aggregated metadata for all folders in an organization.
  *
  * Returns structured metadata including:
@@ -1111,8 +1124,8 @@ export const useFoldersServiceGetFolderIdByName = <
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetFoldersMetadata = <
-  TData = Common.FoldersServiceGetFoldersMetadataDefaultResponse,
+export const useFoldersServiceRetrieveMetadata = <
+  TData = Common.FoldersServiceRetrieveMetadataDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1131,12 +1144,12 @@ export const useFoldersServiceGetFoldersMetadata = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn(
+    queryKey: Common.UseFoldersServiceRetrieveMetadataKeyFn(
       { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFoldersMetadata({
+      FoldersService.retrieveMetadata({
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
@@ -1153,6 +1166,7 @@ export const useFoldersServiceGetFoldersMetadata = <
  * @param data.limit Maximum number of folders to return
  * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
+ * @param data.name Folder name to filter by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1168,6 +1182,7 @@ export const useFoldersServiceListFolders = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     userAgent,
@@ -1177,6 +1192,7 @@ export const useFoldersServiceListFolders = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     userAgent?: string;
@@ -1188,7 +1204,17 @@ export const useFoldersServiceListFolders = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFoldersKeyFn(
-      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        limit,
+        name,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1196,6 +1222,7 @@ export const useFoldersServiceListFolders = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         userAgent,
@@ -1205,28 +1232,43 @@ export const useFoldersServiceListFolders = <
     ...options,
   });
 /**
- * Get Agents For Folder
+ * List Agents For Folder
  * Get all agent IDs that have the specified folder attached.
  * @param data The data for the request.
  * @param data.folderId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetAgentsForFolder = <
-  TData = Common.FoldersServiceGetAgentsForFolderDefaultResponse,
+export const useFoldersServiceListAgentsForFolder = <
+  TData = Common.FoldersServiceListAgentsForFolderDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
     folderId,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     folderId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1235,13 +1277,28 @@ export const useFoldersServiceGetAgentsForFolder = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn(
-      { folderId, userAgent, userId, xProjectId },
+    queryKey: Common.UseFoldersServiceListAgentsForFolderKeyFn(
+      {
+        after,
+        before,
+        folderId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getAgentsForFolder({
+      FoldersService.listAgentsForFolder({
+        after,
+        before,
         folderId,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1253,9 +1310,11 @@ export const useFoldersServiceGetAgentsForFolder = <
  * List all passages associated with a data folder.
  * @param data The data for the request.
  * @param data.folderId
- * @param data.after Message after which to retrieve the returned messages.
- * @param data.before Message before which to retrieve the returned messages.
- * @param data.limit Maximum number of messages to retrieve.
+ * @param data.before Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order
+ * @param data.after Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order
+ * @param data.limit Maximum number of passages to return
+ * @param data.order Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1272,6 +1331,8 @@ export const useFoldersServiceListFolderPassages = <
     before,
     folderId,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
@@ -1280,6 +1341,8 @@ export const useFoldersServiceListFolderPassages = <
     before?: string;
     folderId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1289,7 +1352,17 @@ export const useFoldersServiceListFolderPassages = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn(
-      { after, before, folderId, limit, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        folderId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1298,6 +1371,8 @@ export const useFoldersServiceListFolderPassages = <
         before,
         folderId,
         limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1309,8 +1384,11 @@ export const useFoldersServiceListFolderPassages = <
  * List paginated files associated with a data folder.
  * @param data The data for the request.
  * @param data.folderId
- * @param data.limit Number of files to return
- * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.before File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+ * @param data.after File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
+ * @param data.limit Maximum number of files to return
+ * @param data.order Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.includeContent Whether to include full file content
  * @param data.userId
  * @param data.userAgent
@@ -1325,17 +1403,23 @@ export const useFoldersServiceListFolderFiles = <
 >(
   {
     after,
+    before,
     folderId,
     includeContent,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
     after?: string;
+    before?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1345,15 +1429,29 @@ export const useFoldersServiceListFolderFiles = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderFilesKeyFn(
-      { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        folderId,
+        includeContent,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       FoldersService.listFolderFiles({
         after,
+        before,
         folderId,
         includeContent,
         limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1362,10 +1460,7 @@ export const useFoldersServiceListFolderFiles = <
   });
 /**
  * List Agents
- * List all agents associated with a given user.
- *
- * This endpoint retrieves a list of all agents and their configurations
- * associated with the specified user ID.
+ * Get a list of all agents.
  * @param data The data for the request.
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
@@ -1494,7 +1589,7 @@ export const useAgentsServiceListAgents = <
   });
 /**
  * Count Agents
- * Get the count of all agents associated with a given user.
+ * Get the total number of agents.
  * @param data The data for the request.
  * @param data.userId
  * @param data.userAgent
@@ -2471,9 +2566,11 @@ export const useGroupsServiceRetrieveGroup = <
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.groupId
- * @param data.after Message after which to retrieve the returned messages.
- * @param data.before Message before which to retrieve the returned messages.
- * @param data.limit Maximum number of messages to retrieve.
+ * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+ * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+ * @param data.limit Maximum number of messages to retrieve
+ * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -2495,6 +2592,8 @@ export const useGroupsServiceListGroupMessages = <
     before,
     groupId,
     limit,
+    order,
+    orderBy,
     useAssistantMessage,
     userAgent,
     userId,
@@ -2506,6 +2605,8 @@ export const useGroupsServiceListGroupMessages = <
     before?: string;
     groupId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
@@ -2523,6 +2624,8 @@ export const useGroupsServiceListGroupMessages = <
         before,
         groupId,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,
@@ -2538,6 +2641,8 @@ export const useGroupsServiceListGroupMessages = <
         before,
         groupId,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,
@@ -2711,6 +2816,154 @@ export const useIdentitiesServiceRetrieveIdentity = <
     queryFn: () =>
       IdentitiesService.retrieveIdentity({
         identityId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Agents For Identity
+ * Get all agents associated with the specified identity.
+ * @param data The data for the request.
+ * @param data.identityId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListAgentsForIdentity = <
+  TData = Common.IdentitiesServiceListAgentsForIdentityDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListAgentsForIdentityKeyFn(
+      {
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listAgentsForIdentity({
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Blocks For Identity
+ * Get all blocks associated with the specified identity.
+ * @param data The data for the request.
+ * @param data.identityId
+ * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+ * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+ * @param data.limit Maximum number of blocks to return
+ * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Block Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListBlocksForIdentity = <
+  TData = Common.IdentitiesServiceListBlocksForIdentityDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListBlocksForIdentityKeyFn(
+      {
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listBlocksForIdentity({
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -3177,6 +3430,11 @@ export const useBlocksServiceRetrieveBlock = <
  * Raises a 404 if the block does not exist.
  * @param data The data for the request.
  * @param data.blockId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @param data.userAgent
@@ -3190,14 +3448,24 @@ export const useBlocksServiceListAgentsForBlock = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
     blockId,
     includeRelationships,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     blockId: string;
     includeRelationships?: string[];
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -3207,13 +3475,29 @@ export const useBlocksServiceListAgentsForBlock = <
 ) =>
   useQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
-      { blockId, includeRelationships, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        blockId,
+        includeRelationships,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.listAgentsForBlock({
+        after,
+        before,
         blockId,
         includeRelationships,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -4243,7 +4527,8 @@ export const useStepsServiceRetrieveTraceForStep = <
  * @param data.limit Maximum number of tags to return
  * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
  * @param data.orderBy Field to sort by
- * @param data.queryText Filter tags by text search
+ * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+ * @param data.name Filter tags by name
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -4259,6 +4544,7 @@ export const useTagServiceListTags = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -4269,6 +4555,7 @@ export const useTagServiceListTags = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -4285,6 +4572,7 @@ export const useTagServiceListTags = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4299,6 +4587,7 @@ export const useTagServiceListTags = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4317,7 +4606,8 @@ export const useTagServiceListTags = <
  * @param data.limit Maximum number of tags to return
  * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
  * @param data.orderBy Field to sort by
- * @param data.queryText Filter tags by text search
+ * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+ * @param data.name Filter tags by name
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -4333,6 +4623,7 @@ export const useAdminServiceListTags = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -4343,6 +4634,7 @@ export const useAdminServiceListTags = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -4359,6 +4651,7 @@ export const useAdminServiceListTags = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4373,6 +4666,7 @@ export const useAdminServiceListTags = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -5384,6 +5678,7 @@ export const useToolsServiceGenerateTool = <
     ...options,
   });
 /**
+ * @deprecated
  * Create Source
  * Create a new data source.
  * @param data The data for the request.
@@ -5435,6 +5730,7 @@ export const useSourcesServiceCreateSource = <
     ...options,
   });
 /**
+ * @deprecated
  * Upload File To Source
  * Upload a file to a data source.
  * @param data The data for the request.
@@ -5629,7 +5925,7 @@ export const useFoldersServiceUploadFileToFolder = <
   });
 /**
  * Create Agent
- * Create a new agent with the specified configuration.
+ * Create an agent.
  * @param data The data for the request.
  * @param data.requestBody
  * @param data.xProject The project slug to associate with the agent (cloud only).
@@ -7780,6 +8076,7 @@ export const useToolsServiceUpdateMcpServer = <
     ...options,
   });
 /**
+ * @deprecated
  * Modify Source
  * Update the name or documentation of an existing data source.
  * @param data The data for the request.
@@ -7891,7 +8188,7 @@ export const useFoldersServiceModifyFolder = <
   });
 /**
  * Modify Agent
- * Update an existing agent
+ * Update an existing agent.
  * @param data The data for the request.
  * @param data.agentId
  * @param data.requestBody
@@ -9686,6 +9983,7 @@ export const useToolsServiceDeleteMcpServer = <
     ...options,
   });
 /**
+ * @deprecated
  * Delete Source
  * Delete a data source.
  * @param data The data for the request.
@@ -9737,6 +10035,7 @@ export const useSourcesServiceDeleteSource = <
     ...options,
   });
 /**
+ * @deprecated
  * Delete File From Source
  * Delete a data source.
  * @param data The data for the request.

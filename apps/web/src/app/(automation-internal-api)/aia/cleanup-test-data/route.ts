@@ -27,15 +27,14 @@ async function deleteDataSource(name: string) {
   }
   const { lettaAgentsId } = user;
 
-  const folderId = await FoldersService.getFolderIdByName({
-    folderName: name,
+  const folders = await FoldersService.listFolders({
+    name: name,
   }, {
     user_id: lettaAgentsId,
   }).catch((_) => {
     return null;
   });
-
-
+  const folderId = folders?.[0]?.id;
 
   if (folderId) {
     await FoldersService.deleteFolder({

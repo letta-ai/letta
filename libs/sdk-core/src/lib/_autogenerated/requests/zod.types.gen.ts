@@ -9861,372 +9861,6 @@ export const post_Generate_tool = {
   response: GenerateToolOutput,
 };
 
-export type get_Count_sources = typeof get_Count_sources;
-export const get_Count_sources = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/count'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.number(),
-};
-
-export type get_Retrieve_source = typeof get_Retrieve_source;
-export const get_Retrieve_source = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/{source_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: Source,
-};
-
-export type patch_Modify_source = typeof patch_Modify_source;
-export const patch_Modify_source = {
-  method: z.literal('PATCH'),
-  path: z.literal('/v1/sources/{source_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: SourceUpdate,
-  }),
-  response: Source,
-};
-
-export type delete_Delete_source = typeof delete_Delete_source;
-export const delete_Delete_source = {
-  method: z.literal('DELETE'),
-  path: z.literal('/v1/sources/{source_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.unknown(),
-};
-
-export type get_Get_source_id_by_name = typeof get_Get_source_id_by_name;
-export const get_Get_source_id_by_name = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/name/{source_name}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_name: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.string(),
-};
-
-export type get_Get_sources_metadata = typeof get_Get_sources_metadata;
-export const get_Get_sources_metadata = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/metadata'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      include_detailed_per_source_metadata: z.boolean().optional(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: OrganizationSourcesStats,
-};
-
-export type get_List_sources = typeof get_List_sources;
-export const get_List_sources = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(Source),
-};
-
-export type post_Create_source = typeof post_Create_source;
-export const post_Create_source = {
-  method: z.literal('POST'),
-  path: z.literal('/v1/sources/'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: SourceCreate,
-  }),
-  response: Source,
-};
-
-export type post_Upload_file_to_source = typeof post_Upload_file_to_source;
-export const post_Upload_file_to_source = {
-  method: z.literal('POST'),
-  path: z.literal('/v1/sources/{source_id}/upload'),
-  requestFormat: z.literal('form-data'),
-  parameters: z.object({
-    query: z.object({
-      duplicate_handling: z
-        .union([
-          z.literal('skip'),
-          z.literal('error'),
-          z.literal('suffix'),
-          z.literal('replace'),
-        ])
-        .optional(),
-      name: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-    body: Body_upload_file_to_source,
-  }),
-  response: FileMetadata,
-};
-
-export type get_Get_agents_for_source = typeof get_Get_agents_for_source;
-export const get_Get_agents_for_source = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/{source_id}/agents'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(z.string()),
-};
-
-export type get_List_source_passages = typeof get_List_source_passages;
-export const get_List_source_passages = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/{source_id}/passages'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      before: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      limit: z.number().optional(),
-    }),
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(Passage),
-};
-
-export type get_List_source_files = typeof get_List_source_files;
-export const get_List_source_files = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/{source_id}/files'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      limit: z.number().optional(),
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      include_content: z.boolean().optional(),
-      check_status_updates: z.boolean().optional(),
-    }),
-    path: z.object({
-      source_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(FileMetadata),
-};
-
-export type get_Get_file_metadata = typeof get_Get_file_metadata;
-export const get_Get_file_metadata = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/sources/{source_id}/files/{file_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      include_content: z.boolean().optional(),
-    }),
-    path: z.object({
-      source_id: z.string(),
-      file_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: FileMetadata,
-};
-
-export type delete_Delete_file_from_source =
-  typeof delete_Delete_file_from_source;
-export const delete_Delete_file_from_source = {
-  method: z.literal('DELETE'),
-  path: z.literal('/v1/sources/{source_id}/{file_id}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      source_id: z.string(),
-      file_id: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.unknown(),
-};
-
 export type get_Count_folders = typeof get_Count_folders;
 export const get_Count_folders = {
   method: z.literal('GET'),
@@ -10321,32 +9955,8 @@ export const delete_Delete_folder = {
   response: z.unknown(),
 };
 
-export type get_Get_folder_id_by_name = typeof get_Get_folder_id_by_name;
-export const get_Get_folder_id_by_name = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/folders/name/{folder_name}'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    path: z.object({
-      folder_name: z.string(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.string(),
-};
-
-export type get_Get_folders_metadata = typeof get_Get_folders_metadata;
-export const get_Get_folders_metadata = {
+export type get_Retrieve_metadata = typeof get_Retrieve_metadata;
+export const get_Retrieve_metadata = {
   method: z.literal('GET'),
   path: z.literal('/v1/folders/metadata'),
   requestFormat: z.literal('json'),
@@ -10387,6 +9997,9 @@ export const get_List_folders = {
         .optional(),
       order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
       order_by: z.string().optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z
@@ -10463,12 +10076,25 @@ export const post_Upload_file_to_folder = {
   response: FileMetadata,
 };
 
-export type get_Get_agents_for_folder = typeof get_Get_agents_for_folder;
-export const get_Get_agents_for_folder = {
+export type get_List_agents_for_folder = typeof get_List_agents_for_folder;
+export const get_List_agents_for_folder = {
   method: z.literal('GET'),
   path: z.literal('/v1/folders/{folder_id}/agents'),
   requestFormat: z.literal('json'),
   parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
     path: z.object({
       folder_id: z.string(),
     }),
@@ -10494,13 +10120,17 @@ export const get_List_folder_passages = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
       before: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      limit: z.number().optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
     }),
     path: z.object({
       folder_id: z.string(),
@@ -10527,10 +10157,17 @@ export const get_List_folder_files = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
-      limit: z.number().optional(),
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
       after: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       include_content: z.boolean().optional(),
     }),
     path: z.object({
@@ -12061,13 +11698,17 @@ export const get_List_group_messages = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
       before: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
-      limit: z.number().optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       use_assistant_message: z.boolean().optional(),
       assistant_message_tool_name: z.string().optional(),
       assistant_message_tool_kwarg: z.string().optional(),
@@ -12407,6 +12048,80 @@ export const put_Upsert_identity_properties = {
     body: z.array(IdentityProperty),
   }),
   response: z.unknown(),
+};
+
+export type get_List_agents_for_identity = typeof get_List_agents_for_identity;
+export const get_List_agents_for_identity = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/identities/{identity_id}/agents'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
+    path: z.object({
+      identity_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(AgentState),
+};
+
+export type get_List_blocks_for_identity = typeof get_List_blocks_for_identity;
+export const get_List_blocks_for_identity = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/identities/{identity_id}/blocks'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
+    path: z.object({
+      identity_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(Block),
 };
 
 export type post_Create_internal_template_group =
@@ -12795,6 +12510,17 @@ export const get_List_agents_for_block = {
   requestFormat: z.literal('json'),
   parameters: z.object({
     query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
       include_relationships: z
         .union([
           z.array(z.string()),
@@ -14054,6 +13780,9 @@ export const get_List_tags = {
       query_text: z
         .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
         .optional(),
+      name: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
     }),
     header: z.object({
       user_id: z
@@ -14391,8 +14120,6 @@ export const EndpointByMethod = {
   delete: {
     '/v1/tools/{tool_id}': delete_Delete_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}': delete_Delete_mcp_server,
-    '/v1/sources/{source_id}': delete_Delete_source,
-    '/v1/sources/{source_id}/{file_id}': delete_Delete_file_from_source,
     '/v1/folders/{folder_id}': delete_Delete_folder,
     '/v1/folders/{folder_id}/{file_id}': delete_Delete_file_from_folder,
     '/v1/agents/{agent_id}': delete_Delete_agent,
@@ -14423,21 +14150,11 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/{mcp_server_name}/tools':
       get_List_mcp_tools_by_server,
     '/v1/tools/mcp/oauth/callback/{session_id}': get_Mcp_oauth_callback,
-    '/v1/sources/count': get_Count_sources,
-    '/v1/sources/{source_id}': get_Retrieve_source,
-    '/v1/sources/name/{source_name}': get_Get_source_id_by_name,
-    '/v1/sources/metadata': get_Get_sources_metadata,
-    '/v1/sources/': get_List_sources,
-    '/v1/sources/{source_id}/agents': get_Get_agents_for_source,
-    '/v1/sources/{source_id}/passages': get_List_source_passages,
-    '/v1/sources/{source_id}/files': get_List_source_files,
-    '/v1/sources/{source_id}/files/{file_id}': get_Get_file_metadata,
     '/v1/folders/count': get_Count_folders,
     '/v1/folders/{folder_id}': get_Retrieve_folder,
-    '/v1/folders/name/{folder_name}': get_Get_folder_id_by_name,
-    '/v1/folders/metadata': get_Get_folders_metadata,
+    '/v1/folders/metadata': get_Retrieve_metadata,
     '/v1/folders/': get_List_folders,
-    '/v1/folders/{folder_id}/agents': get_Get_agents_for_folder,
+    '/v1/folders/{folder_id}/agents': get_List_agents_for_folder,
     '/v1/folders/{folder_id}/passages': get_List_folder_passages,
     '/v1/folders/{folder_id}/files': get_List_folder_files,
     '/v1/agents/': get_List_agents,
@@ -14464,6 +14181,8 @@ export const EndpointByMethod = {
     '/v1/identities/': get_List_identities,
     '/v1/identities/count': get_Count_identities,
     '/v1/identities/{identity_id}': get_Retrieve_identity,
+    '/v1/identities/{identity_id}/agents': get_List_agents_for_identity,
+    '/v1/identities/{identity_id}/blocks': get_List_blocks_for_identity,
     '/v1/_internal_templates/deployment/{deployment_id}':
       get_List_deployment_entities,
     '/v1/models/': get_List_models,
@@ -14502,7 +14221,6 @@ export const EndpointByMethod = {
   patch: {
     '/v1/tools/{tool_id}': patch_Modify_tool,
     '/v1/tools/mcp/servers/{mcp_server_name}': patch_Update_mcp_server,
-    '/v1/sources/{source_id}': patch_Modify_source,
     '/v1/folders/{folder_id}': patch_Modify_folder,
     '/v1/agents/{agent_id}': patch_Modify_agent,
     '/v1/agents/{agent_id}/tools/attach/{tool_id}': patch_Attach_tool,
@@ -14559,8 +14277,6 @@ export const EndpointByMethod = {
     '/v1/tools/mcp/servers/{mcp_server_name}/tools/{tool_name}/execute':
       post_Execute_mcp_tool,
     '/v1/tools/generate-tool': post_Generate_tool,
-    '/v1/sources/': post_Create_source,
-    '/v1/sources/{source_id}/upload': post_Upload_file_to_source,
     '/v1/folders/': post_Create_folder,
     '/v1/folders/{folder_id}/upload': post_Upload_file_to_folder,
     '/v1/agents/': post_Create_agent,

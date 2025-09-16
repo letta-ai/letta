@@ -90,18 +90,18 @@ import type {
   ModifyFolderResponse,
   DeleteFolderData,
   DeleteFolderResponse,
-  GetFolderIdByNameData,
-  GetFolderIdByNameResponse,
-  GetFoldersMetadataData,
-  GetFoldersMetadataResponse,
+  GetFolderByNameData,
+  GetFolderByNameResponse,
+  RetrieveMetadataData,
+  RetrieveMetadataResponse,
   ListFoldersData,
   ListFoldersResponse,
   CreateFolderData,
   CreateFolderResponse,
   UploadFileToFolderData,
   UploadFileToFolderResponse,
-  GetAgentsForFolderData,
-  GetAgentsForFolderResponse,
+  ListAgentsForFolderData,
+  ListAgentsForFolderResponse,
   ListFolderPassagesData,
   ListFolderPassagesResponse,
   ListFolderFilesData,
@@ -234,6 +234,10 @@ import type {
   DeleteIdentityResponse,
   UpsertIdentityPropertiesData,
   UpsertIdentityPropertiesResponse,
+  ListAgentsForIdentityData,
+  ListAgentsForIdentityResponse,
+  ListBlocksForIdentityData,
+  ListBlocksForIdentityResponse,
   CreateInternalTemplateGroupData,
   CreateInternalTemplateGroupResponse,
   CreateInternalTemplateAgentData,
@@ -1129,6 +1133,7 @@ export class ToolsService {
 
 export class SourcesService {
   /**
+   * @deprecated
    * Count Sources
    * Count all data sources created by a user.
    * @param data The data for the request.
@@ -1153,6 +1158,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Retrieve Source
    * Get all sources
    * @param data The data for the request.
@@ -1181,6 +1187,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Modify Source
    * Update the name or documentation of an existing data source.
    * @param data The data for the request.
@@ -1212,6 +1219,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Delete Source
    * Delete a data source.
    * @param data The data for the request.
@@ -1240,6 +1248,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Get Source Id By Name
    * Get a source by name
    * @param data The data for the request.
@@ -1268,6 +1277,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Get Sources Metadata
    * Get aggregated metadata for all sources in an organization.
    *
@@ -1303,6 +1313,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * List Sources
    * List all data sources created by a user.
    * @param data The data for the request.
@@ -1327,6 +1338,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Create Source
    * Create a new data source.
    * @param data The data for the request.
@@ -1354,6 +1366,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Upload File To Source
    * Upload a file to a data source.
    * @param data The data for the request.
@@ -1391,6 +1404,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Get Agents For Source
    * Get all agent IDs that have the specified source attached.
    * @param data The data for the request.
@@ -1419,6 +1433,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * List Source Passages
    * List all passages associated with a data source.
    * @param data The data for the request.
@@ -1455,6 +1470,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * List Source Files
    * List paginated files associated with a data source.
    * @param data The data for the request.
@@ -1493,6 +1509,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Get File Metadata
    * Retrieve metadata for a specific file by its ID.
    * @param data The data for the request.
@@ -1527,6 +1544,7 @@ export class SourcesService {
   }
 
   /**
+   * @deprecated
    * Delete File From Source
    * Delete a data source.
    * @param data The data for the request.
@@ -1670,8 +1688,12 @@ export class FoldersService {
   }
 
   /**
-   * Get Folder Id By Name
-   * Get a folder by name
+   * @deprecated
+   * Get Folder By Name
+   * **Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.
+   *
+   *
+   * Get a folder by name.
    * @param data The data for the request.
    * @param data.folderName
    * @param data.userId
@@ -1680,10 +1702,10 @@ export class FoldersService {
    * @returns string Successful Response
    * @throws ApiError
    */
-  public static getFolderIdByName(
-    data: GetFolderIdByNameData,
+  public static getFolderByName(
+    data: GetFolderByNameData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetFolderIdByNameResponse> {
+  ): CancelablePromise<GetFolderByNameResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/folders/name/{folder_name}',
@@ -1698,7 +1720,7 @@ export class FoldersService {
   }
 
   /**
-   * Get Folders Metadata
+   * Retrieve Metadata
    * Get aggregated metadata for all folders in an organization.
    *
    * Returns structured metadata including:
@@ -1714,10 +1736,10 @@ export class FoldersService {
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
-  public static getFoldersMetadata(
-    data: GetFoldersMetadataData = {},
+  public static retrieveMetadata(
+    data: RetrieveMetadataData = {},
     headers?: { user_id: string },
-  ): CancelablePromise<GetFoldersMetadataResponse> {
+  ): CancelablePromise<RetrieveMetadataResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/folders/metadata',
@@ -1741,6 +1763,7 @@ export class FoldersService {
    * @param data.limit Maximum number of folders to return
    * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
    * @param data.orderBy Field to sort by
+   * @param data.name Folder name to filter by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -1760,6 +1783,7 @@ export class FoldersService {
         limit: data.limit,
         order: data.order,
         order_by: data.orderBy,
+        name: data.name,
       },
       errors: {
         422: 'Validation Error',
@@ -1833,25 +1857,37 @@ export class FoldersService {
   }
 
   /**
-   * Get Agents For Folder
+   * List Agents For Folder
    * Get all agent IDs that have the specified folder attached.
    * @param data The data for the request.
    * @param data.folderId
+   * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   * @param data.limit Maximum number of agents to return
+   * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
    * @returns string Successful Response
    * @throws ApiError
    */
-  public static getAgentsForFolder(
-    data: GetAgentsForFolderData,
+  public static listAgentsForFolder(
+    data: ListAgentsForFolderData,
     headers?: { user_id: string },
-  ): CancelablePromise<GetAgentsForFolderResponse> {
+  ): CancelablePromise<ListAgentsForFolderResponse> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/v1/folders/{folder_id}/agents',
       path: {
         folder_id: data.folderId,
+      },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',
@@ -1865,9 +1901,11 @@ export class FoldersService {
    * List all passages associated with a data folder.
    * @param data The data for the request.
    * @param data.folderId
-   * @param data.after Message after which to retrieve the returned messages.
-   * @param data.before Message before which to retrieve the returned messages.
-   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.before Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order
+   * @param data.after Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order
+   * @param data.limit Maximum number of passages to return
+   * @param data.order Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -1885,9 +1923,11 @@ export class FoldersService {
         folder_id: data.folderId,
       },
       query: {
-        after: data.after,
         before: data.before,
+        after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
       },
       errors: {
         422: 'Validation Error',
@@ -1901,8 +1941,11 @@ export class FoldersService {
    * List paginated files associated with a data folder.
    * @param data The data for the request.
    * @param data.folderId
-   * @param data.limit Number of files to return
-   * @param data.after Pagination cursor to fetch the next set of results
+   * @param data.before File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+   * @param data.after File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
+   * @param data.limit Maximum number of files to return
+   * @param data.order Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.includeContent Whether to include full file content
    * @param data.userId
    * @param data.userAgent
@@ -1921,8 +1964,11 @@ export class FoldersService {
         folder_id: data.folderId,
       },
       query: {
-        limit: data.limit,
+        before: data.before,
         after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         include_content: data.includeContent,
       },
       errors: {
@@ -1966,10 +2012,7 @@ export class FoldersService {
 export class AgentsService {
   /**
    * List Agents
-   * List all agents associated with a given user.
-   *
-   * This endpoint retrieves a list of all agents and their configurations
-   * associated with the specified user ID.
+   * Get a list of all agents.
    * @param data The data for the request.
    * @param data.name Name of the agent
    * @param data.tags List of tags to filter agents by
@@ -2029,7 +2072,7 @@ export class AgentsService {
 
   /**
    * Create Agent
-   * Create a new agent with the specified configuration.
+   * Create an agent.
    * @param data The data for the request.
    * @param data.requestBody
    * @param data.xProject The project slug to associate with the agent (cloud only).
@@ -2057,7 +2100,7 @@ export class AgentsService {
 
   /**
    * Count Agents
-   * Get the count of all agents associated with a given user.
+   * Get the total number of agents.
    * @param data The data for the request.
    * @param data.userId
    * @param data.userAgent
@@ -2179,7 +2222,7 @@ export class AgentsService {
 
   /**
    * Modify Agent
-   * Update an existing agent
+   * Update an existing agent.
    * @param data The data for the request.
    * @param data.agentId
    * @param data.requestBody
@@ -3621,9 +3664,11 @@ export class GroupsService {
    * Retrieve message history for an agent.
    * @param data The data for the request.
    * @param data.groupId
-   * @param data.after Message after which to retrieve the returned messages.
-   * @param data.before Message before which to retrieve the returned messages.
-   * @param data.limit Maximum number of messages to retrieve.
+   * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+   * @param data.limit Maximum number of messages to retrieve
+   * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.useAssistantMessage Whether to use assistant messages
    * @param data.assistantMessageToolName The name of the designated message tool.
    * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -3644,9 +3689,11 @@ export class GroupsService {
         group_id: data.groupId,
       },
       query: {
-        after: data.after,
         before: data.before,
+        after: data.after,
         limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         use_assistant_message: data.useAssistantMessage,
         assistant_message_tool_name: data.assistantMessageToolName,
         assistant_message_tool_kwarg: data.assistantMessageToolKwarg,
@@ -3984,6 +4031,86 @@ export class IdentitiesService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Agents For Identity
+   * Get all agents associated with the specified identity.
+   * @param data The data for the request.
+   * @param data.identityId
+   * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   * @param data.limit Maximum number of agents to return
+   * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns AgentState Successful Response
+   * @throws ApiError
+   */
+  public static listAgentsForIdentity(
+    data: ListAgentsForIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListAgentsForIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/identities/{identity_id}/agents',
+      path: {
+        identity_id: data.identityId,
+      },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Blocks For Identity
+   * Get all blocks associated with the specified identity.
+   * @param data The data for the request.
+   * @param data.identityId
+   * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+   * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+   * @param data.limit Maximum number of blocks to return
+   * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns Block Successful Response
+   * @throws ApiError
+   */
+  public static listBlocksForIdentity(
+    data: ListBlocksForIdentityData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListBlocksForIdentityResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/identities/{identity_id}/blocks',
+      path: {
+        identity_id: data.identityId,
+      },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
       errors: {
         422: 'Validation Error',
       },
@@ -4453,6 +4580,11 @@ export class BlocksService {
    * Raises a 404 if the block does not exist.
    * @param data The data for the request.
    * @param data.blockId
+   * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+   * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+   * @param data.limit Maximum number of agents to return
+   * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Field to sort by
    * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
    * @param data.userId
    * @param data.userAgent
@@ -4471,6 +4603,11 @@ export class BlocksService {
         block_id: data.blockId,
       },
       query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
         include_relationships: data.includeRelationships,
       },
       errors: {
@@ -5655,7 +5792,8 @@ export class TagService {
    * @param data.limit Maximum number of tags to return
    * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
    * @param data.orderBy Field to sort by
-   * @param data.queryText Filter tags by text search
+   * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+   * @param data.name Filter tags by name
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -5676,6 +5814,7 @@ export class TagService {
         order: data.order,
         order_by: data.orderBy,
         query_text: data.queryText,
+        name: data.name,
       },
       errors: {
         422: 'Validation Error',
@@ -5695,7 +5834,8 @@ export class AdminService {
    * @param data.limit Maximum number of tags to return
    * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
    * @param data.orderBy Field to sort by
-   * @param data.queryText Filter tags by text search
+   * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+   * @param data.name Filter tags by name
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
@@ -5716,6 +5856,7 @@ export class AdminService {
         order: data.order,
         order_by: data.orderBy,
         query_text: data.queryText,
+        name: data.name,
       },
       errors: {
         422: 'Validation Error',

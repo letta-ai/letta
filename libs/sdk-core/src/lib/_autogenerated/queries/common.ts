@@ -618,16 +618,16 @@ export const UseFoldersServiceRetrieveFolderKeyFn = (
   useFoldersServiceRetrieveFolderKey,
   ...(queryKey ?? [{ folderId, userAgent, userId, xProjectId }]),
 ];
-export type FoldersServiceGetFolderIdByNameDefaultResponse = Awaited<
-  ReturnType<typeof FoldersService.getFolderIdByName>
+export type FoldersServiceGetFolderByNameDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.getFolderByName>
 >;
-export type FoldersServiceGetFolderIdByNameQueryResult<
-  TData = FoldersServiceGetFolderIdByNameDefaultResponse,
+export type FoldersServiceGetFolderByNameQueryResult<
+  TData = FoldersServiceGetFolderByNameDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useFoldersServiceGetFolderIdByNameKey =
-  'FoldersServiceGetFolderIdByName';
-export const UseFoldersServiceGetFolderIdByNameKeyFn = (
+export const useFoldersServiceGetFolderByNameKey =
+  'FoldersServiceGetFolderByName';
+export const UseFoldersServiceGetFolderByNameKeyFn = (
   {
     folderName,
     userAgent,
@@ -641,19 +641,19 @@ export const UseFoldersServiceGetFolderIdByNameKeyFn = (
   },
   queryKey?: Array<unknown>,
 ) => [
-  useFoldersServiceGetFolderIdByNameKey,
+  useFoldersServiceGetFolderByNameKey,
   ...(queryKey ?? [{ folderName, userAgent, userId, xProjectId }]),
 ];
-export type FoldersServiceGetFoldersMetadataDefaultResponse = Awaited<
-  ReturnType<typeof FoldersService.getFoldersMetadata>
+export type FoldersServiceRetrieveMetadataDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.retrieveMetadata>
 >;
-export type FoldersServiceGetFoldersMetadataQueryResult<
-  TData = FoldersServiceGetFoldersMetadataDefaultResponse,
+export type FoldersServiceRetrieveMetadataQueryResult<
+  TData = FoldersServiceRetrieveMetadataDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useFoldersServiceGetFoldersMetadataKey =
-  'FoldersServiceGetFoldersMetadata';
-export const UseFoldersServiceGetFoldersMetadataKeyFn = (
+export const useFoldersServiceRetrieveMetadataKey =
+  'FoldersServiceRetrieveMetadata';
+export const UseFoldersServiceRetrieveMetadataKeyFn = (
   {
     includeDetailedPerSourceMetadata,
     userAgent,
@@ -667,7 +667,7 @@ export const UseFoldersServiceGetFoldersMetadataKeyFn = (
   } = {},
   queryKey?: Array<unknown>,
 ) => [
-  useFoldersServiceGetFoldersMetadataKey,
+  useFoldersServiceRetrieveMetadataKey,
   ...(queryKey ?? [
     { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
   ]),
@@ -685,6 +685,7 @@ export const UseFoldersServiceListFoldersKeyFn = (
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     userAgent,
@@ -694,6 +695,7 @@ export const UseFoldersServiceListFoldersKeyFn = (
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     userAgent?: string;
@@ -704,34 +706,66 @@ export const UseFoldersServiceListFoldersKeyFn = (
 ) => [
   useFoldersServiceListFoldersKey,
   ...(queryKey ?? [
-    { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
+    {
+      after,
+      before,
+      limit,
+      name,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
-export type FoldersServiceGetAgentsForFolderDefaultResponse = Awaited<
-  ReturnType<typeof FoldersService.getAgentsForFolder>
+export type FoldersServiceListAgentsForFolderDefaultResponse = Awaited<
+  ReturnType<typeof FoldersService.listAgentsForFolder>
 >;
-export type FoldersServiceGetAgentsForFolderQueryResult<
-  TData = FoldersServiceGetAgentsForFolderDefaultResponse,
+export type FoldersServiceListAgentsForFolderQueryResult<
+  TData = FoldersServiceListAgentsForFolderDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
-export const useFoldersServiceGetAgentsForFolderKey =
-  'FoldersServiceGetAgentsForFolder';
-export const UseFoldersServiceGetAgentsForFolderKeyFn = (
+export const useFoldersServiceListAgentsForFolderKey =
+  'FoldersServiceListAgentsForFolder';
+export const UseFoldersServiceListAgentsForFolderKeyFn = (
   {
+    after,
+    before,
     folderId,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     folderId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
   },
   queryKey?: Array<unknown>,
 ) => [
-  useFoldersServiceGetAgentsForFolderKey,
-  ...(queryKey ?? [{ folderId, userAgent, userId, xProjectId }]),
+  useFoldersServiceListAgentsForFolderKey,
+  ...(queryKey ?? [
+    {
+      after,
+      before,
+      folderId,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type FoldersServiceListFolderPassagesDefaultResponse = Awaited<
   ReturnType<typeof FoldersService.listFolderPassages>
@@ -748,6 +782,8 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
     before,
     folderId,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
@@ -756,6 +792,8 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
     before?: string;
     folderId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -764,7 +802,17 @@ export const UseFoldersServiceListFolderPassagesKeyFn = (
 ) => [
   useFoldersServiceListFolderPassagesKey,
   ...(queryKey ?? [
-    { after, before, folderId, limit, userAgent, userId, xProjectId },
+    {
+      after,
+      before,
+      folderId,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type FoldersServiceListFolderFilesDefaultResponse = Awaited<
@@ -779,17 +827,23 @@ export const useFoldersServiceListFolderFilesKey =
 export const UseFoldersServiceListFolderFilesKeyFn = (
   {
     after,
+    before,
     folderId,
     includeContent,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
     after?: string;
+    before?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -798,7 +852,18 @@ export const UseFoldersServiceListFolderFilesKeyFn = (
 ) => [
   useFoldersServiceListFolderFilesKey,
   ...(queryKey ?? [
-    { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
+    {
+      after,
+      before,
+      folderId,
+      includeContent,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type AgentsServiceListAgentsDefaultResponse = Awaited<
@@ -1487,6 +1552,8 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     before,
     groupId,
     limit,
+    order,
+    orderBy,
     useAssistantMessage,
     userAgent,
     userId,
@@ -1498,6 +1565,8 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
     before?: string;
     groupId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
@@ -1514,6 +1583,8 @@ export const UseGroupsServiceListGroupMessagesKeyFn = (
       before,
       groupId,
       limit,
+      order,
+      orderBy,
       useAssistantMessage,
       userAgent,
       userId,
@@ -1627,6 +1698,102 @@ export const UseIdentitiesServiceRetrieveIdentityKeyFn = (
 ) => [
   useIdentitiesServiceRetrieveIdentityKey,
   ...(queryKey ?? [{ identityId, userAgent, userId, xProjectId }]),
+];
+export type IdentitiesServiceListAgentsForIdentityDefaultResponse = Awaited<
+  ReturnType<typeof IdentitiesService.listAgentsForIdentity>
+>;
+export type IdentitiesServiceListAgentsForIdentityQueryResult<
+  TData = IdentitiesServiceListAgentsForIdentityDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useIdentitiesServiceListAgentsForIdentityKey =
+  'IdentitiesServiceListAgentsForIdentity';
+export const UseIdentitiesServiceListAgentsForIdentityKeyFn = (
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useIdentitiesServiceListAgentsForIdentityKey,
+  ...(queryKey ?? [
+    {
+      after,
+      before,
+      identityId,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
+];
+export type IdentitiesServiceListBlocksForIdentityDefaultResponse = Awaited<
+  ReturnType<typeof IdentitiesService.listBlocksForIdentity>
+>;
+export type IdentitiesServiceListBlocksForIdentityQueryResult<
+  TData = IdentitiesServiceListBlocksForIdentityDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useIdentitiesServiceListBlocksForIdentityKey =
+  'IdentitiesServiceListBlocksForIdentity';
+export const UseIdentitiesServiceListBlocksForIdentityKeyFn = (
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useIdentitiesServiceListBlocksForIdentityKey,
+  ...(queryKey ?? [
+    {
+      after,
+      before,
+      identityId,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
 ];
 export type InternalTemplatesServiceListDeploymentEntitiesDefaultResponse =
   Awaited<ReturnType<typeof InternalTemplatesService.listDeploymentEntities>>;
@@ -1920,14 +2087,24 @@ export const useBlocksServiceListAgentsForBlockKey =
   'BlocksServiceListAgentsForBlock';
 export const UseBlocksServiceListAgentsForBlockKeyFn = (
   {
+    after,
+    before,
     blockId,
     includeRelationships,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     blockId: string;
     includeRelationships?: string[];
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1936,7 +2113,18 @@ export const UseBlocksServiceListAgentsForBlockKeyFn = (
 ) => [
   useBlocksServiceListAgentsForBlockKey,
   ...(queryKey ?? [
-    { blockId, includeRelationships, userAgent, userId, xProjectId },
+    {
+      after,
+      before,
+      blockId,
+      includeRelationships,
+      limit,
+      order,
+      orderBy,
+      userAgent,
+      userId,
+      xProjectId,
+    },
   ]),
 ];
 export type JobsServiceListJobsDefaultResponse = Awaited<
@@ -2569,6 +2757,7 @@ export const UseTagServiceListTagsKeyFn = (
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -2579,6 +2768,7 @@ export const UseTagServiceListTagsKeyFn = (
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -2594,6 +2784,7 @@ export const UseTagServiceListTagsKeyFn = (
       after,
       before,
       limit,
+      name,
       order,
       orderBy,
       queryText,
@@ -2616,6 +2807,7 @@ export const UseAdminServiceListTagsKeyFn = (
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -2626,6 +2818,7 @@ export const UseAdminServiceListTagsKeyFn = (
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -2641,6 +2834,7 @@ export const UseAdminServiceListTagsKeyFn = (
       after,
       before,
       limit,
+      name,
       order,
       orderBy,
       queryText,

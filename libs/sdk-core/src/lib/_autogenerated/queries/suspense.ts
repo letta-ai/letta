@@ -476,6 +476,7 @@ export const useToolsServiceMcpOauthCallbackSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Count Sources
  * Count all data sources created by a user.
  * @param data The data for the request.
@@ -512,6 +513,7 @@ export const useSourcesServiceCountSourcesSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Retrieve Source
  * Get all sources
  * @param data The data for the request.
@@ -556,6 +558,7 @@ export const useSourcesServiceRetrieveSourceSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Source Id By Name
  * Get a source by name
  * @param data The data for the request.
@@ -600,6 +603,7 @@ export const useSourcesServiceGetSourceIdByNameSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Sources Metadata
  * Get aggregated metadata for all sources in an organization.
  *
@@ -650,6 +654,7 @@ export const useSourcesServiceGetSourcesMetadataSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * List Sources
  * List all data sources created by a user.
  * @param data The data for the request.
@@ -686,6 +691,7 @@ export const useSourcesServiceListSourcesSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Get Agents For Source
  * Get all agent IDs that have the specified source attached.
  * @param data The data for the request.
@@ -730,6 +736,7 @@ export const useSourcesServiceGetAgentsForSourceSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * List Source Passages
  * List all passages associated with a data source.
  * @param data The data for the request.
@@ -786,6 +793,7 @@ export const useSourcesServiceListSourcePassagesSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * List Source Files
  * List paginated files associated with a data source.
  * @param data The data for the request.
@@ -855,6 +863,7 @@ export const useSourcesServiceListSourceFilesSuspense = <
     ...options,
   });
 /**
+ * @deprecated
  * Get File Metadata
  * Retrieve metadata for a specific file by its ID.
  * @param data The data for the request.
@@ -987,8 +996,12 @@ export const useFoldersServiceRetrieveFolderSuspense = <
     ...options,
   });
 /**
- * Get Folder Id By Name
- * Get a folder by name
+ * @deprecated
+ * Get Folder By Name
+ * **Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.
+ *
+ *
+ * Get a folder by name.
  * @param data The data for the request.
  * @param data.folderName
  * @param data.userId
@@ -997,8 +1010,8 @@ export const useFoldersServiceRetrieveFolderSuspense = <
  * @returns string Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetFolderIdByNameSuspense = <
-  TData = Common.FoldersServiceGetFolderIdByNameDefaultResponse,
+export const useFoldersServiceGetFolderByNameSuspense = <
+  TData = Common.FoldersServiceGetFolderByNameDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1017,12 +1030,12 @@ export const useFoldersServiceGetFolderIdByNameSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetFolderIdByNameKeyFn(
+    queryKey: Common.UseFoldersServiceGetFolderByNameKeyFn(
       { folderName, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFolderIdByName({
+      FoldersService.getFolderByName({
         folderName,
         userAgent,
         userId,
@@ -1031,7 +1044,7 @@ export const useFoldersServiceGetFolderIdByNameSuspense = <
     ...options,
   });
 /**
- * Get Folders Metadata
+ * Retrieve Metadata
  * Get aggregated metadata for all folders in an organization.
  *
  * Returns structured metadata including:
@@ -1047,8 +1060,8 @@ export const useFoldersServiceGetFolderIdByNameSuspense = <
  * @returns OrganizationSourcesStats Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetFoldersMetadataSuspense = <
-  TData = Common.FoldersServiceGetFoldersMetadataDefaultResponse,
+export const useFoldersServiceRetrieveMetadataSuspense = <
+  TData = Common.FoldersServiceRetrieveMetadataDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -1067,12 +1080,12 @@ export const useFoldersServiceGetFoldersMetadataSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetFoldersMetadataKeyFn(
+    queryKey: Common.UseFoldersServiceRetrieveMetadataKeyFn(
       { includeDetailedPerSourceMetadata, userAgent, userId, xProjectId },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getFoldersMetadata({
+      FoldersService.retrieveMetadata({
         includeDetailedPerSourceMetadata,
         userAgent,
         userId,
@@ -1089,6 +1102,7 @@ export const useFoldersServiceGetFoldersMetadataSuspense = <
  * @param data.limit Maximum number of folders to return
  * @param data.order Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first
  * @param data.orderBy Field to sort by
+ * @param data.name Folder name to filter by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1104,6 +1118,7 @@ export const useFoldersServiceListFoldersSuspense = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     userAgent,
@@ -1113,6 +1128,7 @@ export const useFoldersServiceListFoldersSuspense = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'created_at';
     userAgent?: string;
@@ -1124,7 +1140,17 @@ export const useFoldersServiceListFoldersSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFoldersKeyFn(
-      { after, before, limit, order, orderBy, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        limit,
+        name,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1132,6 +1158,7 @@ export const useFoldersServiceListFoldersSuspense = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         userAgent,
@@ -1141,28 +1168,43 @@ export const useFoldersServiceListFoldersSuspense = <
     ...options,
   });
 /**
- * Get Agents For Folder
+ * List Agents For Folder
  * Get all agent IDs that have the specified folder attached.
  * @param data The data for the request.
  * @param data.folderId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
  * @returns string Successful Response
  * @throws ApiError
  */
-export const useFoldersServiceGetAgentsForFolderSuspense = <
-  TData = Common.FoldersServiceGetAgentsForFolderDefaultResponse,
+export const useFoldersServiceListAgentsForFolderSuspense = <
+  TData = Common.FoldersServiceListAgentsForFolderDefaultResponse,
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
     folderId,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     folderId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1171,13 +1213,28 @@ export const useFoldersServiceGetAgentsForFolderSuspense = <
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
 ) =>
   useSuspenseQuery<TData, TError>({
-    queryKey: Common.UseFoldersServiceGetAgentsForFolderKeyFn(
-      { folderId, userAgent, userId, xProjectId },
+    queryKey: Common.UseFoldersServiceListAgentsForFolderKeyFn(
+      {
+        after,
+        before,
+        folderId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
-      FoldersService.getAgentsForFolder({
+      FoldersService.listAgentsForFolder({
+        after,
+        before,
         folderId,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1189,9 +1246,11 @@ export const useFoldersServiceGetAgentsForFolderSuspense = <
  * List all passages associated with a data folder.
  * @param data The data for the request.
  * @param data.folderId
- * @param data.after Message after which to retrieve the returned messages.
- * @param data.before Message before which to retrieve the returned messages.
- * @param data.limit Maximum number of messages to retrieve.
+ * @param data.before Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order
+ * @param data.after Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order
+ * @param data.limit Maximum number of passages to return
+ * @param data.order Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -1208,6 +1267,8 @@ export const useFoldersServiceListFolderPassagesSuspense = <
     before,
     folderId,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
@@ -1216,6 +1277,8 @@ export const useFoldersServiceListFolderPassagesSuspense = <
     before?: string;
     folderId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1225,7 +1288,17 @@ export const useFoldersServiceListFolderPassagesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderPassagesKeyFn(
-      { after, before, folderId, limit, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        folderId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
@@ -1234,6 +1307,8 @@ export const useFoldersServiceListFolderPassagesSuspense = <
         before,
         folderId,
         limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1245,8 +1320,11 @@ export const useFoldersServiceListFolderPassagesSuspense = <
  * List paginated files associated with a data folder.
  * @param data The data for the request.
  * @param data.folderId
- * @param data.limit Number of files to return
- * @param data.after Pagination cursor to fetch the next set of results
+ * @param data.before File ID cursor for pagination. Returns files that come before this file ID in the specified sort order
+ * @param data.after File ID cursor for pagination. Returns files that come after this file ID in the specified sort order
+ * @param data.limit Maximum number of files to return
+ * @param data.order Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.includeContent Whether to include full file content
  * @param data.userId
  * @param data.userAgent
@@ -1261,17 +1339,23 @@ export const useFoldersServiceListFolderFilesSuspense = <
 >(
   {
     after,
+    before,
     folderId,
     includeContent,
     limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
     after?: string;
+    before?: string;
     folderId: string;
     includeContent?: boolean;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -1281,15 +1365,29 @@ export const useFoldersServiceListFolderFilesSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFoldersServiceListFolderFilesKeyFn(
-      { after, folderId, includeContent, limit, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        folderId,
+        includeContent,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       FoldersService.listFolderFiles({
         after,
+        before,
         folderId,
         includeContent,
         limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -1298,10 +1396,7 @@ export const useFoldersServiceListFolderFilesSuspense = <
   });
 /**
  * List Agents
- * List all agents associated with a given user.
- *
- * This endpoint retrieves a list of all agents and their configurations
- * associated with the specified user ID.
+ * Get a list of all agents.
  * @param data The data for the request.
  * @param data.name Name of the agent
  * @param data.tags List of tags to filter agents by
@@ -1430,7 +1525,7 @@ export const useAgentsServiceListAgentsSuspense = <
   });
 /**
  * Count Agents
- * Get the count of all agents associated with a given user.
+ * Get the total number of agents.
  * @param data The data for the request.
  * @param data.userId
  * @param data.userAgent
@@ -2407,9 +2502,11 @@ export const useGroupsServiceRetrieveGroupSuspense = <
  * Retrieve message history for an agent.
  * @param data The data for the request.
  * @param data.groupId
- * @param data.after Message after which to retrieve the returned messages.
- * @param data.before Message before which to retrieve the returned messages.
- * @param data.limit Maximum number of messages to retrieve.
+ * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+ * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+ * @param data.limit Maximum number of messages to retrieve
+ * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.useAssistantMessage Whether to use assistant messages
  * @param data.assistantMessageToolName The name of the designated message tool.
  * @param data.assistantMessageToolKwarg The name of the message argument.
@@ -2431,6 +2528,8 @@ export const useGroupsServiceListGroupMessagesSuspense = <
     before,
     groupId,
     limit,
+    order,
+    orderBy,
     useAssistantMessage,
     userAgent,
     userId,
@@ -2442,6 +2541,8 @@ export const useGroupsServiceListGroupMessagesSuspense = <
     before?: string;
     groupId: string;
     limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     useAssistantMessage?: boolean;
     userAgent?: string;
     userId?: string;
@@ -2459,6 +2560,8 @@ export const useGroupsServiceListGroupMessagesSuspense = <
         before,
         groupId,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,
@@ -2474,6 +2577,8 @@ export const useGroupsServiceListGroupMessagesSuspense = <
         before,
         groupId,
         limit,
+        order,
+        orderBy,
         useAssistantMessage,
         userAgent,
         userId,
@@ -2647,6 +2752,154 @@ export const useIdentitiesServiceRetrieveIdentitySuspense = <
     queryFn: () =>
       IdentitiesService.retrieveIdentity({
         identityId,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Agents For Identity
+ * Get all agents associated with the specified identity.
+ * @param data The data for the request.
+ * @param data.identityId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns AgentState Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListAgentsForIdentitySuspense = <
+  TData = Common.IdentitiesServiceListAgentsForIdentityDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListAgentsForIdentityKeyFn(
+      {
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listAgentsForIdentity({
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      }) as TData,
+    ...options,
+  });
+/**
+ * List Blocks For Identity
+ * Get all blocks associated with the specified identity.
+ * @param data The data for the request.
+ * @param data.identityId
+ * @param data.before Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order
+ * @param data.after Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order
+ * @param data.limit Maximum number of blocks to return
+ * @param data.order Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns Block Successful Response
+ * @throws ApiError
+ */
+export const useIdentitiesServiceListBlocksForIdentitySuspense = <
+  TData = Common.IdentitiesServiceListBlocksForIdentityDefaultResponse,
+  TError = unknown,
+  TQueryKey extends Array<unknown> = unknown[],
+>(
+  {
+    after,
+    before,
+    identityId,
+    limit,
+    order,
+    orderBy,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    identityId: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: TQueryKey,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>,
+) =>
+  useSuspenseQuery<TData, TError>({
+    queryKey: Common.UseIdentitiesServiceListBlocksForIdentityKeyFn(
+      {
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
+      queryKey,
+    ),
+    queryFn: () =>
+      IdentitiesService.listBlocksForIdentity({
+        after,
+        before,
+        identityId,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -3113,6 +3366,11 @@ export const useBlocksServiceRetrieveBlockSuspense = <
  * Raises a 404 if the block does not exist.
  * @param data The data for the request.
  * @param data.blockId
+ * @param data.before Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order
+ * @param data.after Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order
+ * @param data.limit Maximum number of agents to return
+ * @param data.order Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Field to sort by
  * @param data.includeRelationships Specify which relational fields (e.g., 'tools', 'sources', 'memory') to include in the response. If not provided, all relationships are loaded by default. Using this can optimize performance by reducing unnecessary joins.
  * @param data.userId
  * @param data.userAgent
@@ -3126,14 +3384,24 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    after,
+    before,
     blockId,
     includeRelationships,
+    limit,
+    order,
+    orderBy,
     userAgent,
     userId,
     xProjectId,
   }: {
+    after?: string;
+    before?: string;
     blockId: string;
     includeRelationships?: string[];
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
     userAgent?: string;
     userId?: string;
     xProjectId?: string;
@@ -3143,13 +3411,29 @@ export const useBlocksServiceListAgentsForBlockSuspense = <
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseBlocksServiceListAgentsForBlockKeyFn(
-      { blockId, includeRelationships, userAgent, userId, xProjectId },
+      {
+        after,
+        before,
+        blockId,
+        includeRelationships,
+        limit,
+        order,
+        orderBy,
+        userAgent,
+        userId,
+        xProjectId,
+      },
       queryKey,
     ),
     queryFn: () =>
       BlocksService.listAgentsForBlock({
+        after,
+        before,
         blockId,
         includeRelationships,
+        limit,
+        order,
+        orderBy,
         userAgent,
         userId,
         xProjectId,
@@ -4180,7 +4464,8 @@ export const useStepsServiceRetrieveTraceForStepSuspense = <
  * @param data.limit Maximum number of tags to return
  * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
  * @param data.orderBy Field to sort by
- * @param data.queryText Filter tags by text search
+ * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+ * @param data.name Filter tags by name
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -4196,6 +4481,7 @@ export const useTagServiceListTagsSuspense = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -4206,6 +4492,7 @@ export const useTagServiceListTagsSuspense = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -4222,6 +4509,7 @@ export const useTagServiceListTagsSuspense = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4236,6 +4524,7 @@ export const useTagServiceListTagsSuspense = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4254,7 +4543,8 @@ export const useTagServiceListTagsSuspense = <
  * @param data.limit Maximum number of tags to return
  * @param data.order Sort order for tags. 'asc' for alphabetical order, 'desc' for reverse alphabetical order
  * @param data.orderBy Field to sort by
- * @param data.queryText Filter tags by text search
+ * @param data.queryText Filter tags by text search. Deprecated, please use name field instead
+ * @param data.name Filter tags by name
  * @param data.userId
  * @param data.userAgent
  * @param data.xProjectId
@@ -4270,6 +4560,7 @@ export const useAdminServiceListTagsSuspense = <
     after,
     before,
     limit,
+    name,
     order,
     orderBy,
     queryText,
@@ -4280,6 +4571,7 @@ export const useAdminServiceListTagsSuspense = <
     after?: string;
     before?: string;
     limit?: number;
+    name?: string;
     order?: 'asc' | 'desc';
     orderBy?: 'name';
     queryText?: string;
@@ -4296,6 +4588,7 @@ export const useAdminServiceListTagsSuspense = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
@@ -4310,6 +4603,7 @@ export const useAdminServiceListTagsSuspense = <
         after,
         before,
         limit,
+        name,
         order,
         orderBy,
         queryText,
