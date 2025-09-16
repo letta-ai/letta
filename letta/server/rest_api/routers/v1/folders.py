@@ -75,14 +75,17 @@ async def retrieve_folder(
     return folder
 
 
-@router.get("/name/{folder_name}", response_model=str, operation_id="get_folder_id_by_name")
-async def get_folder_id_by_name(
+@router.get("/name/{folder_name}", response_model=str, operation_id="get_folder_by_name", deprecated=True)
+async def get_folder_by_name(
     folder_name: str,
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get a folder by name
+    **Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.
+
+
+    Get a folder by name.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
@@ -126,6 +129,7 @@ async def list_folders(
         "asc", description="Sort order for folders by creation time. 'asc' for oldest first, 'desc' for newest first"
     ),
     order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    name: Optional[str] = Query(None, description="Folder name to filter by"),
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -133,7 +137,9 @@ async def list_folders(
     List all data folders created by a user.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-    return await server.source_manager.list_sources(actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"))
+    return await server.source_manager.list_sources(
+        actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc"), name=name
+    )
 
 
 @router.post("/", response_model=Folder, operation_id="create_folder")
