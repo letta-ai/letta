@@ -2440,7 +2440,7 @@
       "get": {
         "tags": ["folders"],
         "summary": "Get Folder By Name",
-        "description": "**Deprecated**: Please use the list endpoint `/GET v1/folders?name=` instead.\n\n\nGet a folder by name.",
+        "description": "**Deprecated**: Please use the list endpoint `GET /v1/folders?name=` instead.\n\n\nGet a folder by name.",
         "operationId": "get_folder_by_name",
         "deprecated": true,
         "parameters": [
@@ -14240,6 +14240,15 @@
             },
             "type": "array",
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead.",
+            "deprecated": true
+          },
+          "secrets": {
+            "items": {
+              "$ref": "#/components/schemas/AgentEnvironmentVariable"
+            },
+            "type": "array",
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "project_id": {
@@ -18398,6 +18407,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {
@@ -21717,6 +21741,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {
@@ -24937,7 +24976,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["request_json", "response_json", "organization_id"],
+        "required": ["request_json", "response_json"],
         "title": "ProviderTrace",
         "description": "Letta's internal representation of a provider trace.\n\nAttributes:\n    id (str): The unique identifier of the provider trace.\n    request_json (Dict[str, Any]): JSON content of the provider request.\n    response_json (Dict[str, Any]): JSON content of the provider response.\n    step_id (str): ID of the step that this trace is associated with.\n    organization_id (str): The unique identifier of the organization.\n    created_at (datetime): The timestamp when the object was created."
       },
@@ -28543,6 +28582,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead"
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "project_id": {
@@ -29857,6 +29911,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {
