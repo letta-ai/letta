@@ -13,7 +13,6 @@ from letta.services.helpers.tool_execution_helper import add_imports_and_pydanti
 from letta.services.helpers.tool_parser_helper import convert_param_to_str_value, parse_function_arguments
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
-from letta.templates.template_helper import render_template
 from letta.types import JsonDict, JsonValue
 
 
