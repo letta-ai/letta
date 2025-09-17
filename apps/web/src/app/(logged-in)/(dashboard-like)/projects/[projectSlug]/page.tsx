@@ -684,10 +684,7 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
     textToCopy: template.id || '',
   });
 
-  const handleResponsesClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const responsesUrl = useMemo(() => {
     const query = {
       root: {
         combinator: 'AND',
@@ -708,9 +705,14 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
         ],
       },
     };
-    const responsesUrl = `/projects/${slug}/responses?query=${encodeURIComponent(JSON.stringify(query))}`;
+    return `/projects/${slug}/responses?query=${encodeURIComponent(JSON.stringify(query))}`;
+  }, [template.id, template.name, slug]);
+
+  const handleResponsesClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     router.push(responsesUrl);
-  }, [template.id, template.name, router, slug]);
+  }, [router, responsesUrl]);
 
   return (
     <VStack
