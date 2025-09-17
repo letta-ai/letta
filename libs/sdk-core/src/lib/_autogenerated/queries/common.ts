@@ -2802,6 +2802,54 @@ export const UseStepsServiceRetrieveTraceForStepKeyFn = (
   useStepsServiceRetrieveTraceForStepKey,
   ...(queryKey ?? [{ stepId, userAgent, userId, xProjectId }]),
 ];
+export type StepsServiceListMessagesForStepDefaultResponse = Awaited<
+  ReturnType<typeof StepsService.listMessagesForStep>
+>;
+export type StepsServiceListMessagesForStepQueryResult<
+  TData = StepsServiceListMessagesForStepDefaultResponse,
+  TError = unknown,
+> = UseQueryResult<TData, TError>;
+export const useStepsServiceListMessagesForStepKey =
+  'StepsServiceListMessagesForStep';
+export const UseStepsServiceListMessagesForStepKeyFn = (
+  {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
+    stepId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    stepId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+  queryKey?: Array<unknown>,
+) => [
+  useStepsServiceListMessagesForStepKey,
+  ...(queryKey ?? [
+    {
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      stepId,
+      userAgent,
+      userId,
+      xProjectId,
+    },
+  ]),
+];
 export type TagServiceListTagsDefaultResponse = Awaited<
   ReturnType<typeof TagService.listTags>
 >;

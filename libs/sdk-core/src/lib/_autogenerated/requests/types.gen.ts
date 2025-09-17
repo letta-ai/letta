@@ -5284,7 +5284,8 @@ export type Step = {
    */
   trace_id?: string | null;
   /**
-   * The messages generated during this step.
+   * The messages generated during this step. Deprecated: use `GET /v1/steps/{step_id}/messages` endpoint instead
+   * @deprecated
    */
   messages?: Array<Message>;
   /**
@@ -9323,6 +9324,45 @@ export type ModifyFeedbackForStepData = {
 
 export type ModifyFeedbackForStepResponse = Step;
 
+export type ListMessagesForStepData = {
+  /**
+   * Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+   */
+  after?: string | null;
+  /**
+   * Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   */
+  before?: string | null;
+  /**
+   * Maximum number of messages to return
+   */
+  limit?: number | null;
+  /**
+   * Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   */
+  order?: 'asc' | 'desc';
+  /**
+   * Sort by field
+   */
+  orderBy?: 'created_at';
+  stepId: string;
+  userAgent?: string | null;
+  userId?: string | null;
+  xProjectId?: string | null;
+};
+
+export type ListMessagesForStepResponse = Array<
+  | SystemMessage
+  | UserMessage
+  | ReasoningMessage
+  | HiddenReasoningMessage
+  | ToolCallMessage
+  | ToolReturnMessage
+  | AssistantMessage
+  | ApprovalRequestMessage
+  | ApprovalResponseMessage
+>;
+
 export type UpdateStepTransactionIdData = {
   stepId: string;
   transactionId: string;
@@ -12061,6 +12101,31 @@ export type $OpenApiTs = {
          * Successful Response
          */
         200: Step;
+        /**
+         * Validation Error
+         */
+        422: HTTPValidationError;
+      };
+    };
+  };
+  '/v1/steps/{step_id}/messages': {
+    get: {
+      req: ListMessagesForStepData;
+      res: {
+        /**
+         * Successful Response
+         */
+        200: Array<
+          | SystemMessage
+          | UserMessage
+          | ReasoningMessage
+          | HiddenReasoningMessage
+          | ToolCallMessage
+          | ToolReturnMessage
+          | AssistantMessage
+          | ApprovalRequestMessage
+          | ApprovalResponseMessage
+        >;
         /**
          * Validation Error
          */

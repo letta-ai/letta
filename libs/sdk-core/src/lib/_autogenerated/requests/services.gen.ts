@@ -345,6 +345,8 @@ import type {
   RetrieveTraceForStepResponse,
   ModifyFeedbackForStepData,
   ModifyFeedbackForStepResponse,
+  ListMessagesForStepData,
+  ListMessagesForStepResponse,
   UpdateStepTransactionIdData,
   UpdateStepTransactionIdResponse,
   ListTagsData,
@@ -5855,6 +5857,46 @@ export class StepsService {
       },
       body: data.requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: 'Validation Error',
+      },
+      headers,
+    });
+  }
+
+  /**
+   * List Messages For Step
+   * List messages for a given step.
+   * @param data The data for the request.
+   * @param data.stepId
+   * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+   * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+   * @param data.limit Maximum number of messages to return
+   * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+   * @param data.orderBy Sort by field
+   * @param data.userId
+   * @param data.userAgent
+   * @param data.xProjectId
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static listMessagesForStep(
+    data: ListMessagesForStepData,
+    headers?: { user_id: string },
+  ): CancelablePromise<ListMessagesForStepResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/v1/steps/{step_id}/messages',
+      path: {
+        step_id: data.stepId,
+      },
+      query: {
+        before: data.before,
+        after: data.after,
+        limit: data.limit,
+        order: data.order,
+        order_by: data.orderBy,
+      },
       errors: {
         422: 'Validation Error',
       },

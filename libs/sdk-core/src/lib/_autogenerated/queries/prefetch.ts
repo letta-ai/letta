@@ -4047,6 +4047,71 @@ export const prefetchUseStepsServiceRetrieveTraceForStep = (
       }),
   });
 /**
+ * List Messages For Step
+ * List messages for a given step.
+ * @param data The data for the request.
+ * @param data.stepId
+ * @param data.before Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order
+ * @param data.after Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order
+ * @param data.limit Maximum number of messages to return
+ * @param data.order Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first
+ * @param data.orderBy Sort by field
+ * @param data.userId
+ * @param data.userAgent
+ * @param data.xProjectId
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const prefetchUseStepsServiceListMessagesForStep = (
+  queryClient: QueryClient,
+  {
+    after,
+    before,
+    limit,
+    order,
+    orderBy,
+    stepId,
+    userAgent,
+    userId,
+    xProjectId,
+  }: {
+    after?: string;
+    before?: string;
+    limit?: number;
+    order?: 'asc' | 'desc';
+    orderBy?: 'created_at';
+    stepId: string;
+    userAgent?: string;
+    userId?: string;
+    xProjectId?: string;
+  },
+) =>
+  queryClient.prefetchQuery({
+    queryKey: Common.UseStepsServiceListMessagesForStepKeyFn({
+      after,
+      before,
+      limit,
+      order,
+      orderBy,
+      stepId,
+      userAgent,
+      userId,
+      xProjectId,
+    }),
+    queryFn: () =>
+      StepsService.listMessagesForStep({
+        after,
+        before,
+        limit,
+        order,
+        orderBy,
+        stepId,
+        userAgent,
+        userId,
+        xProjectId,
+      }),
+  });
+/**
  * List Tags
  * Get the list of all agent tags that have been created.
  * @param data The data for the request.

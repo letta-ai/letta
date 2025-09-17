@@ -14055,8 +14055,10 @@ export const $Step = {
       },
       type: 'array',
       title: 'Messages',
-      description: 'The messages generated during this step.',
+      description:
+        'The messages generated during this step. Deprecated: use `GET /v1/steps/{step_id}/messages` endpoint instead',
       default: [],
+      deprecated: true,
     },
     feedback: {
       anyOf: [

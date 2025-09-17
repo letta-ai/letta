@@ -13881,6 +13881,55 @@ export const patch_Modify_feedback_for_step = {
   response: Step,
 };
 
+export type get_List_messages_for_step = typeof get_List_messages_for_step;
+export const get_List_messages_for_step = {
+  method: z.literal('GET'),
+  path: z.literal('/v1/steps/{step_id}/messages'),
+  requestFormat: z.literal('json'),
+  parameters: z.object({
+    query: z.object({
+      before: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      after: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      limit: z
+        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
+        .optional(),
+      order: z.union([z.literal('asc'), z.literal('desc')]).optional(),
+      order_by: z.string().optional(),
+    }),
+    path: z.object({
+      step_id: z.string(),
+    }),
+    header: z.object({
+      user_id: z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'User-Agent': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+      'X-Project-Id': z
+        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
+        .optional(),
+    }),
+  }),
+  response: z.array(
+    z.union([
+      SystemMessage,
+      UserMessage,
+      ReasoningMessage,
+      HiddenReasoningMessage,
+      ToolCallMessage,
+      ToolReturnMessage,
+      AssistantMessage,
+      ApprovalRequestMessage,
+      ApprovalResponseMessage,
+    ]),
+  ),
+};
+
 export type patch_Update_step_transaction_id =
   typeof patch_Update_step_transaction_id;
 export const patch_Update_step_transaction_id = {
@@ -14393,6 +14442,7 @@ export const EndpointByMethod = {
     '/v1/steps/{step_id}': get_Retrieve_step,
     '/v1/steps/{step_id}/metrics': get_Retrieve_metrics_for_step,
     '/v1/steps/{step_id}/trace': get_Retrieve_trace_for_step,
+    '/v1/steps/{step_id}/messages': get_List_messages_for_step,
     '/v1/tags/': get_List_tags,
     '/v1/messages/batches': get_List_batches,
     '/v1/messages/batches/{batch_id}': get_Retrieve_batch,
