@@ -36,14 +36,6 @@ user_name = str(uuid.uuid5(namespace, "test-tool-execution-sandbox-user"))
 # Set environment variable immediately to prevent pooling issues
 os.environ["LETTA_DISABLE_SQLALCHEMY_POOLING"] = "true"
 
-# Recreate settings instance to pick up the environment variable
-import letta.settings
-
-# Force settings reload after setting environment variable
-from letta.settings import Settings
-
-letta.settings.settings = Settings()
-
 
 # Disable SQLAlchemy connection pooling for tests to prevent event loop issues
 @pytest.fixture(scope="session", autouse=True)

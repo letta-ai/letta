@@ -9,6 +9,7 @@ import pytest
 from letta.functions.mcp_client.types import MCPTool, MCPToolHealth
 from letta.functions.schema_generator import generate_tool_schema_for_mcp
 from letta.functions.schema_validator import SchemaHealth, validate_complete_json_schema
+from letta.server.rest_api.dependencies import HeaderParams
 
 
 @pytest.mark.asyncio
@@ -141,7 +142,8 @@ async def test_add_mcp_tool_accepts_non_strict_schemas():
             mock_get_server.return_value = mock_server
 
             # Should accept non-strict schema without raising an exception
-            result = await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, actor_id=None)
+            headers = HeaderParams(actor_id="test_user")
+            result = await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, headers=headers)
 
             # Verify the tool was added successfully
             assert result is not None
@@ -180,8 +182,9 @@ async def test_add_mcp_tool_rejects_invalid_schemas():
             mock_get_server.return_value = mock_server
 
             # Should raise HTTPException for invalid schema
+            headers = HeaderParams(actor_id="test_user")
             with pytest.raises(HTTPException) as exc_info:
-                await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, actor_id=None)
+                await add_mcp_tool(mcp_server_name="test_server", mcp_tool_name="test_tool", server=mock_server, headers=headers)
 
             assert exc_info.value.status_code == 400
             assert "invalid schema" in exc_info.value.detail["message"].lower()

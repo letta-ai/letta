@@ -14,7 +14,6 @@ from sqlalchemy.orm.interfaces import ORMOption
 from letta.log import get_logger
 from letta.orm.base import Base, CommonSqlalchemyMetaMixins
 from letta.orm.errors import DatabaseTimeoutError, ForeignKeyConstraintViolationError, NoResultFound, UniqueConstraintViolationError
-from letta.orm.sqlite_functions import adapt_array
 from letta.settings import DatabaseChoice
 
 if TYPE_CHECKING:
@@ -401,6 +400,8 @@ class SqlalchemyBase(CommonSqlalchemyMetaMixins, Base):
                 query = query.order_by(cls.embedding.cosine_distance(query_embedding).asc())
             else:
                 # SQLite with custom vector type
+                from letta.orm.sqlite_functions import adapt_array
+
                 query_embedding_binary = adapt_array(query_embedding)
                 query = query.order_by(
                     func.cosine_distance(cls.embedding, query_embedding_binary).asc(),

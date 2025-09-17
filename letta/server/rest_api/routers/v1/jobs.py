@@ -19,18 +19,23 @@ async def list_jobs(
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(50, description="Limit for pagination"),
+    active: bool = Query(False, description="Filter for active jobs."),
     ascending: bool = Query(True, description="Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)"),
     headers: HeaderParams = Depends(get_headers),
 ):
     """
     List all jobs.
-    TODO (cliandy): implementation for pagination
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+
+    statuses = None
+    if active:
+        statuses = [JobStatus.created, JobStatus.running]
 
     # TODO: add filtering by status
     return await server.job_manager.list_jobs_async(
         actor=actor,
+        statuses=statuses,
         source_id=source_id,
         before=before,
         after=after,
@@ -39,7 +44,7 @@ async def list_jobs(
     )
 
 
-@router.get("/active", response_model=List[Job], operation_id="list_active_jobs")
+@router.get("/active", response_model=List[Job], operation_id="list_active_jobs", deprecated=True)
 async def list_active_jobs(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),

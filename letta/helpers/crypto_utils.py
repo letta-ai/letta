@@ -132,3 +132,13 @@ class CryptoUtils:
             return len(decoded) >= cls.SALT_SIZE + cls.IV_SIZE + cls.TAG_SIZE + 1
         except Exception:
             return False
+
+    @classmethod
+    def is_encryption_available(cls) -> bool:
+        """
+        Check if encryption is available (encryption key is configured).
+
+        Returns:
+            True if encryption key is configured, False otherwise
+        """
+        return bool(settings.encryption_key)

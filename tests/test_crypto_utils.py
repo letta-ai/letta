@@ -148,6 +148,9 @@ class TestCryptoUtils:
         try:
             with pytest.raises(ValueError, match="No encryption key configured"):
                 CryptoUtils.encrypt("test data")
+
+            with pytest.raises(ValueError, match="No encryption key configured"):
+                CryptoUtils.decrypt("test data")
         finally:
             # Restore original key
             settings.encryption_key = original_key

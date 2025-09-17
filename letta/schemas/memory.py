@@ -104,6 +104,11 @@ class Memory(BaseModel, validate_assignment=True):
 
     @trace_method
     def _render_memory_blocks_standard(self, s: StringIO):
+        if len(self.blocks) == 0:
+            # s.write("<memory_blocks></memory_blocks>") # TODO: consider empty tags
+            s.write("")
+            return
+
         s.write("<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n")
         for idx, block in enumerate(self.blocks):
             label = block.label or "block"

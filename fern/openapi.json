@@ -20,6 +20,236 @@
     }
   ],
   "paths": {
+    "/v1/archives/": {
+      "post": {
+        "tags": ["archives"],
+        "summary": "Create Archive",
+        "description": "Create a new archive.",
+        "operationId": "create_archive",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["archives"],
+        "summary": "List Archives",
+        "description": "Get a list of all archives for the current organization with optional filters and pagination.",
+        "operationId": "list_archives",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of archives to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of archives to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by archive name (exact match)",
+              "title": "Name"
+            },
+            "description": "Filter by archive name (exact match)"
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only archives attached to this agent ID",
+              "title": "Agent Id"
+            },
+            "description": "Only archives attached to this agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Archive"
+                  },
+                  "title": "Response List Archives"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/archives/{archive_id}": {
+      "patch": {
+        "tags": ["archives"],
+        "summary": "Modify Archive",
+        "description": "Update an existing archive's name and/or description.",
+        "operationId": "modify_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Archive Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/{tool_id}": {
       "delete": {
         "tags": ["tools"],
@@ -8696,7 +8926,7 @@
       "get": {
         "tags": ["jobs"],
         "summary": "List Jobs",
-        "description": "List all jobs.\nTODO (cliandy): implementation for pagination",
+        "description": "List all jobs.",
         "operationId": "list_jobs",
         "parameters": [
           {
@@ -8773,6 +9003,18 @@
             "description": "Limit for pagination"
           },
           {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Filter for active jobs.",
+              "default": false,
+              "title": "Active"
+            },
+            "description": "Filter for active jobs."
+          },
+          {
             "name": "ascending",
             "in": "query",
             "required": false,
@@ -8819,6 +9061,7 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -9551,6 +9794,18 @@
             "description": "Maximum number of runs to return"
           },
           {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Filter for active runs.",
+              "default": false,
+              "title": "Active"
+            },
+            "description": "Filter for active runs."
+          },
+          {
             "name": "ascending",
             "in": "query",
             "required": false,
@@ -9597,6 +9852,7 @@
         "summary": "List Active Runs",
         "description": "List all active runs.",
         "operationId": "list_active_runs",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_ids",
@@ -15053,6 +15309,152 @@
         "type": "object",
         "required": ["timestamp", "content"],
         "title": "ArchivalMemorySearchResult"
+      },
+      "Archive": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the archive"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the archive"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A description of the archive"
+          },
+          "vector_db_provider": {
+            "$ref": "#/components/schemas/VectorDBProvider",
+            "description": "The vector database provider used for this archive's passages",
+            "default": "native"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Additional metadata"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^archive-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Archive",
+            "examples": ["archive-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["created_at", "name", "organization_id"],
+        "title": "Archive",
+        "description": "Representation of an archive - a collection of archival passages that can be shared between agents.\n\nParameters:\n    id (str): The unique identifier of the archive.\n    name (str): The name of the archive.\n    description (str): A description of the archive.\n    organization_id (str): The organization this archive belongs to.\n    created_at (datetime): The creation date of the archive.\n    metadata (dict): Additional metadata for the archive."
+      },
+      "ArchiveCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "ArchiveCreateRequest",
+        "description": "Request model for creating an archive.\n\nIntentionally excludes vector_db_provider. These are derived internally (vector DB provider from env)."
+      },
+      "ArchiveUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "ArchiveUpdateRequest",
+        "description": "Request model for updating an archive (partial).\n\nSupports updating only name and description."
       },
       "AssistantMessage": {
         "properties": {
