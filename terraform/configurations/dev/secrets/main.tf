@@ -98,6 +98,10 @@ locals {
     "dev_lettuce_TEMPORAL_LETTUCE_CA_KEY" = var.dev_lettuce_TEMPORAL_LETTUCE_CA_KEY
     # "dev_lettuce_RESEND_API_KEY" = var.dev_lettuce_RESEND_API_KEY
 
+    # lettuce-py secrets
+    "dev_lettuce-py_DATABASE_URL" = var.dev_lettuce_py_DATABASE_URL
+    "dev_lettuce-py_TEMPORAL_API_KEY" = var.dev_lettuce_py_TEMPORAL_API_KEY
+
     # memgpt-server secrets
     "dev_memgpt-server_LETTA_SERVER_PASS" = var.dev_memgpt_server_LETTA_SERVER_PASS
     "dev_memgpt-server_LETTA_PG_PASSWORD" = var.dev_memgpt_server_LETTA_PG_PASSWORD

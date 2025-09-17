@@ -11,20 +11,15 @@ repos:
 
   - repo: local
     hooks:
-      - id: autoflake
-        name: autoflake
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .'
+      - id: trufflehog
+        name: TruffleHog
+        entry: bash -c 'trufflehog git file://. --since-commit HEAD --results=verified,unknown --fail --no-update'
         language: system
-        types: [python]
-      - id: isort
-        name: isort
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run isort --profile black .'
-        language: system
-        types: [python]
-        exclude: ^docs/
-      - id: black
-        name: black
-        entry: bash -c '[ -d "apps/core" ] && cd apps/core; uv run black --line-length 140 --target-version py310 --target-version py311 .'
-        language: system
-        types: [python]
-        exclude: ^docs/
+        stages: ["pre-commit", "pre-push"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.11
+    hooks:
+      - id: ruff-check
+        args: [ --fix ]
+      - id: ruff-format

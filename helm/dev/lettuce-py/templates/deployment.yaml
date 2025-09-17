@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lettuce-py.fullname" . }}
+  labels:
+    {{- include "lettuce-py.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "lettuce-py.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "lettuce-py.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lettuce-py.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=1536"
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.secretsProvider.secrets }}
+            {{- range .Values.secretsProvider.secrets }}
+            {{/* this is the one place we must not use the k8s compatible variable name */}}
+            - name: {{ . }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+                  key: {{ include "lettuce-pyk8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+            {{- end }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.secretsProvider.secrets }}
+          {{- range .Values.secretsProvider.secrets }}
+            - name: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+              mountPath: "/var/secrets/{{ . }}"
+          {{- end }}
+          {{- end }}
+      volumes:
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.secretsProvider.secrets }}
+      {{- range .Values.secretsProvider.secrets }}
+        - name: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+          csi:
+            driver: secrets-store-gke.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}secrets
+      {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -602,9 +602,18 @@ build-lettuce:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/{{ BUILD_ARCH }} --target lettuce -t {{DOCKER_REGISTRY}}/lettuce:{{TAG}} . --load --file apps/lettuce/Dockerfile
 
+build-lettuce-py:
+    @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
+    docker buildx build --platform linux/{{ BUILD_ARCH }} --target lettuce-py -t {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}} . --load --file apps/lettuce-py/Dockerfile
+
+
 push-lettuce:
     @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
     docker push {{DOCKER_REGISTRY}}/lettuce:{{TAG}}
+
+push-lettuce-py:
+    @echo "🚀 Pushing Docker images to registry with tag: {{TAG}}..."
+    docker push {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}}
 
 start-temporal:
     @echo "🚧 Starting Temporal server..."
@@ -814,6 +823,14 @@ trigger-lettuce-deploy branch="" deploy_message="":
     echo "🚀 Triggering lettuce deployment workflow on branch: $BRANCH"
     gh workflow run "🕸️🚀 Deploy Lettuce" --ref $BRANCH
 
+@deploy-lettuce-py: push-lettuce-py
+    #!/usr/bin/env bash
+    @echo "🚧 Deploying lettuce-py Helm chart..."
+    npm run slack-bot-says "Deploying lettuce service with tag: {{TAG}}..."
+    helm upgrade --install lettuce-py {{HELM_CHARTS_DIR}}/lettuce-py \
+        --set image.tag={{TAG}} \
+        --set-string "podAnnotations.kubectl\.kubernetes\.io/restartedAt"="$(date -u +%Y-%m-%dT%H:%M:%SZ)";
+    npm run slack-bot-says "Successfully deployed lettuce-py service with tag: {{TAG}}."
 
 
 # Send an alert to Slack with optional mention of a GitHub user
