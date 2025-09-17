@@ -844,8 +844,7 @@ async def list_agent_files(
     return PaginatedAgentFiles(files=enriched_files, next_cursor=next_cursor, has_more=has_more)
 
 
-# TODO: remove? can also get with agent blocks
-@router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory")
+@router.get("/{agent_id}/core-memory", response_model=Memory, operation_id="retrieve_agent_memory", deprecated=True)
 async def retrieve_agent_memory(
     agent_id: str,
     server: "SyncServer" = Depends(get_letta_server),
