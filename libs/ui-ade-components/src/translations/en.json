@@ -2995,7 +2995,8 @@
       "duration": "Duration",
       "stopReason": "Stop Reason",
       "completedAt": "Completed At",
-      "createdAt": "Created At"
+      "createdAt": "Created At",
+      "actions": "Actions"
     },
     "table": {
       "loading": "Loading runs...",
@@ -3009,6 +3010,7 @@
       "cancel": "Cancel",
       "cancelling": "Cancelling..."
     },
+    "viewAgent": "View Agent",
     "query": "Filter runs",
     "useQueryDefinition": {
       "stopReason": {

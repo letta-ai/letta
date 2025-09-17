@@ -11,6 +11,7 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Badge,
+  Button,
   compileSearchTerms,
   DataTable,
   type FieldDefinitions,
@@ -24,6 +25,8 @@ import {
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useFormatters } from '@letta-cloud/utils-client';
+import { get } from 'lodash-es';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 
 const UseInfiniteRunsQueryFn = (params: Partial<ListRunsData>) => [
   'listRuns',
@@ -116,6 +119,38 @@ function DurationCell(props: DurationCellProps) {
   );
 }
 
+interface StopReasonCellProps {
+  stopReason?: string;
+}
+
+function StopReasonCell(props: StopReasonCellProps) {
+  const { stopReason } = props;
+
+  const getStopReasonVariant = (stopReason?: string) => {
+    switch (stopReason) {
+      case 'error':
+      case 'llm_api_error':
+      case 'invalid_llm_response':
+      case 'invalid_tool_call':
+      case 'max_steps':
+      case 'no_tool_call':
+        return 'destructive';
+      case 'requires_approval':
+        return 'warning';
+      default:
+        return 'info';
+    }
+  };
+
+  return (
+    <Badge
+      size="small"
+      content={stopReason || 'unknown'}
+      variant={getStopReasonVariant(stopReason)}
+    />
+  );
+}
+
 interface DateCellProps {
   date?: string | null;
 }
@@ -127,6 +162,31 @@ function DateCell(props: DateCellProps) {
   if (!date) return <Typography variant="body3">-</Typography>;
 
   return <Typography variant="body3">{formatDateAndTime(date)}</Typography>;
+}
+
+interface ViewAgentButtonProps {
+  run: Run;
+}
+
+function ViewAgentButton(props: ViewAgentButtonProps) {
+  const { slug } = useCurrentProject();
+  const { run } = props;
+  const t = useTranslations('ListRuns');
+
+  const agentId = get(run.metadata, 'agent_id', '');
+
+  if (!agentId) {
+    return null;
+  }
+
+  return (
+    <Button
+      size="small"
+      color="secondary"
+      label={t('viewAgent')}
+      href={`/projects/${slug}/agents/${agentId}`}
+    />
+  );
 }
 
 interface UseQueryDefinitionResponse {
@@ -421,11 +481,19 @@ export function ListRuns(props: ListRunsProps) {
         id: 'jobType',
         header: t('columns.jobType'),
         accessorFn: (row) => row.job_type,
-        cell: ({ row }) => (
-          <Typography variant="body3">
-            {row.original.job_type || '-'}
-          </Typography>
-        ),
+        cell: ({ row }) => {
+          const jobType = get(row.original.metadata, 'job_type', '-');
+
+          if (!jobType || typeof jobType !== 'string') {
+            return <Typography variant="body3">-</Typography>;
+          }
+
+          return (
+            <Typography variant="body3">
+              {jobType}
+            </Typography>
+          )
+        },
       },
       {
         id: 'duration',
@@ -440,9 +508,9 @@ export function ListRuns(props: ListRunsProps) {
         header: t('columns.stopReason'),
         accessorFn: (row) => row.stop_reason,
         cell: ({ row }) => (
-          <Typography variant="body3">
-            {row.original.stop_reason || '-'}
-          </Typography>
+          <HStack align="center">
+            {row.original.stop_reason && <StopReasonCell stopReason={row.original.stop_reason} />}
+          </HStack>
         ),
       },
       {
@@ -456,6 +524,15 @@ export function ListRuns(props: ListRunsProps) {
         header: t('columns.createdAt'),
         accessorFn: (row) => row.created_at,
         cell: ({ row }) => <DateCell date={row.original.created_at} />,
+      },
+      {
+        id: 'actions',
+        header: t('columns.actions'),
+        cell: ({ row }) => (
+          <HStack align="center">
+            <ViewAgentButton run={row.original} />
+          </HStack>
+        ),
       },
     ];
   }, [t]);
