@@ -68,6 +68,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-external-pr:
+        description: 'Whether this is an external PR that needs protection'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   changed-files:
@@ -300,7 +305,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           uv run alembic upgrade head
       - name: Inject env vars into environment
-        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+        if: inputs.is-external-pr != true
         working-directory: .
         run: |
           # Get secrets and mask them before adding to environment
@@ -320,7 +325,7 @@ jobs:
           chmod -R 755 /home/ci-runner/.letta/logs
 
       - name: Build and run docker dev server
-        if: inputs.use-docker && (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test'))
+        if: inputs.use-docker && inputs.is-external-pr != true
         env:
           LETTA_PG_DB: letta
           LETTA_PG_USER: letta
@@ -338,7 +343,7 @@ jobs:
           bash scripts/wait_for_service.sh localhost:8083 -- echo "Service is ready"
 
       - name: Run tests
-        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+        if: inputs.is-external-pr != true
         working-directory: ${{ steps.detect-core-dir.outputs.dir }}
         env:
           # Database configuration (shared, but values depend on Docker usage)
