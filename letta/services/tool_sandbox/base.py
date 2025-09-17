@@ -13,6 +13,7 @@ from letta.services.helpers.tool_execution_helper import add_imports_and_pydanti
 from letta.services.helpers.tool_parser_helper import convert_param_to_str_value, parse_function_arguments
 from letta.services.sandbox_config_manager import SandboxConfigManager
 from letta.services.tool_manager import ToolManager
+from letta.templates.template_helper import render_template
 from letta.types import JsonDict, JsonValue
 
 
@@ -80,8 +81,6 @@ class AsyncToolSandboxBase(ABC):
         Generate code to run inside of execution sandbox. Serialize the agent state and arguments, call the tool,
         then base64-encode/pickle the result. Runs a jinja2 template constructing the python file.
         """
-        from letta.templates.template_helper import render_template_in_thread
-
         # Select the appropriate template based on whether the function is async
         TEMPLATE_NAME = "sandbox_code_file_async.py.j2" if self.is_async_function else "sandbox_code_file.py.j2"
 
@@ -107,7 +106,7 @@ class AsyncToolSandboxBase(ABC):
 
         agent_state_pickle = pickle.dumps(agent_state) if self.inject_agent_state else None
 
-        return await render_template_in_thread(
+        return render_template(
             TEMPLATE_NAME,
             future_import=future_import,
             inject_agent_state=self.inject_agent_state,
