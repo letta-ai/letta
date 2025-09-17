@@ -48,7 +48,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
-                  key: {{ include "lettuce-pyk8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
+                  key: {{ include "lettuce-py.k8sEnvServicePrefix" $ }}{{ . | replace "_" "-" | lower }}
             {{- end }}
             {{- end }}
           resources:

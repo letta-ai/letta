@@ -85,19 +85,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
-      - name: Remove unnecessary files
-        run: |
-            sudo rm -rf /usr/share/dotnet
-            sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-            sudo rm -rf /usr/local/share/boost
-            sudo rm -rf /usr/share/swift
-            sudo rm -rf /usr/local/lib/android
-            sudo rm -rf /usr/local/share/chromium
-            sudo rm -rf /usr/local/share/powershell
-            sudo docker system prune -af --volumes
-            df -h
-
-
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
@@ -111,6 +98,8 @@ jobs:
 
       - name: Build
         run: just build-lettuce-py
+        env:
+          TAG: ${{ github.event.inputs.git_hash || github.sha }}
 
       - name: Update deployment status to in_progress
         uses: chrnorm/deployment-status@v2

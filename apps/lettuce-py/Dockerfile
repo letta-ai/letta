@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir temporalio
 
 # Copy application code
-COPY . .
+COPY worker.py .
 
 # Set Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1

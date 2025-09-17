@@ -604,7 +604,7 @@ build-lettuce:
 
 build-lettuce-py:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/{{ BUILD_ARCH }} --target lettuce-py -t {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}} . --load --file apps/lettuce-py/Dockerfile
+    docker buildx build --platform linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}} . --load --file apps/lettuce-py/Dockerfile
 
 
 push-lettuce:
