@@ -268,8 +268,8 @@ class Memory(BaseModel, validate_assignment=True):
         is_react = norm_type in ("react_agent", "workflow_agent")
         is_line_numbered = norm_type in ("sleeptime_agent", "memgpt_v2_agent")
 
-        # Memory blocks (not for react/workflow)
-        if not is_react and self.blocks:
+        # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
+        if not is_react:
             if is_line_numbered:
                 self._render_memory_blocks_line_numbered(s)
             else:
