@@ -20,9 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add stop_reason column to jobs table
-    op.add_column("jobs", sa.Column("stop_reason", sa.String(), nullable=True))
-
     # Add background column to jobs table
     op.add_column("jobs", sa.Column("background", sa.Boolean(), nullable=True, server_default=sa.false()))
 
@@ -89,4 +86,3 @@ def downgrade() -> None:
 
     # Drop columns from jobs table
     op.drop_column("jobs", "background")
-    op.drop_column("jobs", "stop_reason")
