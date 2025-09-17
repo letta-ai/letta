@@ -57,6 +57,13 @@ export function ToolVariables() {
             value: variable.value,
           };
         }),
+        secrets: stagedVariables.map((variable) => {
+          return {
+            agent_id: agentId,
+            key: variable.key,
+            value: variable.value,
+          };
+        }),
       };
     });
   }, [stagedVariables, syncUpdateCurrentAgent, agentId]);

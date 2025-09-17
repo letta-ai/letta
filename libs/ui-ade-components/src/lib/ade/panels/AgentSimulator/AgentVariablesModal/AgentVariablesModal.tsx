@@ -138,6 +138,7 @@ function ToolVariables() {
             ...oldData,
             tool_exec_environment_variables:
               data.tool_exec_environment_variables,
+            secrets: data.secrets,
           };
         },
       );
@@ -165,6 +166,7 @@ function ToolVariables() {
         agentId,
         requestBody: {
           tool_exec_environment_variables: Object.fromEntries(updatedVariables),
+          secrets: Object.fromEntries(updatedVariables),
         },
       });
     },

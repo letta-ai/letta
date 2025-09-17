@@ -64,9 +64,9 @@ export function useSyncUpdateCurrentAgent(options?: {
                         )
                       : undefined,
                   secrets:
-                    updateAgentData.secrets
+                    updateAgentData.tool_exec_environment_variables
                       ? Object.fromEntries(
-                          updateAgentData.secrets.map(
+                          updateAgentData.tool_exec_environment_variables.map(
                             (item) => [item.key, item.value],
                           ),
                         )

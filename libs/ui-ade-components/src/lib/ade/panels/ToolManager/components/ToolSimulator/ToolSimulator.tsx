@@ -182,6 +182,7 @@ function UpdateAgentEnvironmentValue(props: UpdateAgentEnvironmentValueProps) {
       return {
         ...oldData,
         tool_exec_environment_variables: toolVariables,
+        secrets: toolVariables,
       };
     });
   }, [key, syncUpdateCurrentAgent, agentId, value]);
