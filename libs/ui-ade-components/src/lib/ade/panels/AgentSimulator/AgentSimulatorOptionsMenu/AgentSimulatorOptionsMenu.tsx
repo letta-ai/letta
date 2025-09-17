@@ -28,7 +28,7 @@ import {
 import { useAtom } from 'jotai/index';
 import {
   adeKeyMap,
-  chatroomRenderModeAtom,
+  chatroomRenderModeAtom, showRunDebuggerAtom
 } from '@letta-cloud/ui-ade-components';
 import { useHotkeys } from '@mantine/hooks';
 
@@ -127,6 +127,7 @@ export function AgentSimulatorOptionsMenu() {
   const { isLocal, isTemplate } = useADEState();
 
   const [renderMode, setRenderMode] = useAtom(chatroomRenderModeAtom);
+  const [showRunDebugger, setShowRunDebugger] = useAtom(showRunDebuggerAtom)
 
   useHotkeys([
     [
@@ -140,6 +141,12 @@ export function AgentSimulatorOptionsMenu() {
           return RENDER_MODE.DEBUG;
         });
       },
+    ],
+    [
+      adeKeyMap.TOGGLE_RUN_DEBUGGER.command,
+      () => {
+        setShowRunDebugger((show) => !show)
+      }
     ],
     [
       adeKeyMap.HIDE_REASONING.command,
@@ -183,6 +190,17 @@ export function AgentSimulatorOptionsMenu() {
               ? RENDER_MODE.INTERACTIVE
               : RENDER_MODE.DEBUG,
           );
+        }}
+      />
+      <DropdownMenuItem
+        label={
+          showRunDebugger
+            ? t('options.runDebugger.hide')
+            : t('options.runDebugger.show')
+        }
+        endBadge={<HotKey command={adeKeyMap.TOGGLE_RUN_DEBUGGER.command} />}
+        onClick={() => {
+          setShowRunDebugger(!showRunDebugger)
         }}
       />
       {renderMode !== RENDER_MODE.DEBUG && (

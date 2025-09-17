@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@letta-cloud/ui-styles';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { TABLE_ROW_HEIGHT } from '../../../constants';
 
 const Table = React.forwardRef<
@@ -82,20 +83,39 @@ const TableHead = React.forwardRef<
 ));
 TableHead.displayName = 'TableHead';
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, style, ...props }, ref) => (
-  <td
-    ref={ref}
-    style={{ ...style, height: TABLE_ROW_HEIGHT }}
-    className={cn(
-      'px-4 whitespace-nowrap  align-middle [&:has([role=checkbox])]:pr-0',
-      className,
-    )}
-    {...props}
-  />
-));
+const tableCellVariants = cva(
+  'whitespace-nowrap align-middle [&:has([role=checkbox])]:pr-0',
+  {
+    variants: {
+      size: {
+        default: 'px-4',
+        compact: 'px-2 py-1',
+      },
+    },
+    defaultVariants: {
+      size: 'default',
+    },
+  }
+);
+
+interface TableCellProps
+  extends React.TdHTMLAttributes<HTMLTableCellElement>,
+    VariantProps<typeof tableCellVariants> {}
+
+const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
+  ({ className, style, size, ...props }, ref) => {
+    const height = size === 'compact' ? '24px' : TABLE_ROW_HEIGHT;
+
+    return (
+      <td
+        ref={ref}
+        style={{ ...style, height }}
+        className={cn(tableCellVariants({ size }), className)}
+        {...props}
+      />
+    );
+  }
+);
 TableCell.displayName = 'TableCell';
 
 const TableCaption = React.forwardRef<

@@ -14,12 +14,13 @@ import { useTranslations } from '@letta-cloud/translations';
 import { trackClientSideEvent } from '@letta-cloud/service-analytics/client';
 import { AnalyticsEvent } from '@letta-cloud/service-analytics';
 import { Messages } from '../Messages/Messages';
-import { chatroomRenderModeAtom, isSendingMessageAtom } from './atoms';
+import { chatroomRenderModeAtom, isSendingMessageAtom, showRunDebuggerAtom } from './atoms';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuickADETour } from '../../../hooks/useQuickADETour/useQuickADETour';
 import { AgentSimulatorHeader } from './AgentSimulatorHeader/AgentSimulatorHeader';
 import { useAtom } from 'jotai';
 import { AgentChatInput } from './AgentChatInput/AgentChatInput';
+import { RunDebugViewer } from './RunDebugViewer/RunDebugViewer';
 
 interface QuickAgentSimulatorOnboardingProps {
   children: React.ReactNode;
@@ -119,6 +120,7 @@ export function AgentSimulator() {
   const { id: agentId } = useCurrentAgent();
 
   const [isPending] = useAtom(isSendingMessageAtom);
+  const [showRunDebugger] = useAtom(showRunDebuggerAtom)
 
 
 
@@ -141,6 +143,9 @@ export function AgentSimulator() {
                   />
                 </ErrorBoundary>
               </VStack>
+              {showRunDebugger && (
+                <RunDebugViewer />
+              )}
               <QuickAgentSimulatorOnboarding>
                 <AgentChatInput />
               </QuickAgentSimulatorOnboarding>

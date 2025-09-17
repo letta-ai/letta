@@ -1540,6 +1540,10 @@
     "AgentSimulatorOptionsMenu": {
       "trigger": "Options",
       "options": {
+        "runDebugger": {
+          "show": "Show run debugger",
+          "hide": "Hide run debugger"
+        },
         "debugMode": {
           "enable": "Enable debug mode",
           "disable": "Disable debug mode"
@@ -2953,5 +2957,31 @@
     },
     "viewButton": "View",
     "returnButtonText": "Return to all folders"
+  },
+  "RunDebugViewer": {
+    "close": "Close",
+    "header": "Run Debugger",
+    "noAgent": "No agent selected",
+    "columns": {
+      "status": "Status",
+      "stopReason": "Stop Reason",
+      "duration": "Duration",
+      "completedAt": "Completed At",
+      "createdAt": "Created At",
+      "jobType": "Job Type",
+      "runId": "Run Id",
+      "actions": "Actions"
+    },
+    "table": {
+      "next": "Next",
+      "previous": "Previous",
+      "loading": "Loading runs...",
+      "noResults": "No runs found",
+      "error": "Failed to load runs"
+    },
+    "cancelRun": {
+      "cancel": "Cancel",
+      "cancelling": "Cancelling..."
+    }
   }
 }

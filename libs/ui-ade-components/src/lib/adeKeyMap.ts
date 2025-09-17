@@ -16,4 +16,7 @@ export const adeKeyMap = {
   SAVE_CUSTOM_TOOL: {
     command: 'mod+s',
   },
+  TOGGLE_RUN_DEBUGGER: {
+    command: 'shift+alt+d',
+  }
 };
