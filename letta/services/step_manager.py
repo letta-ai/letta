@@ -9,12 +9,14 @@ from sqlalchemy.orm import Session
 from letta.helpers.singleton import singleton
 from letta.orm.errors import NoResultFound
 from letta.orm.job import Job as JobModel
+from letta.orm.message import Message as MessageModel
 from letta.orm.sqlalchemy_base import AccessType
 from letta.orm.step import Step as StepModel
 from letta.orm.step_metrics import StepMetrics as StepMetricsModel
 from letta.otel.tracing import get_trace_id, trace_method
 from letta.schemas.enums import StepStatus
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
+from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.step import Step as PydanticStep
 from letta.schemas.step_metrics import StepMetrics as PydanticStepMetrics
@@ -236,6 +238,30 @@ class StepManager:
             step.tid = transaction_id
             await session.commit()
             return step.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def list_step_messages_async(
+        self,
+        step_id: str,
+        actor: PydanticUser,
+        before: str | None = None,
+        after: str | None = None,
+        limit: int = 100,
+        ascending: bool = False,
+    ) -> List[PydanticMessage]:
+        async with db_registry.async_session() as session:
+            messages = MessageModel.list(
+                db_session=session,
+                before=before,
+                after=after,
+                ascending=ascending,
+                limit=limit,
+                actor=actor,
+                join_model=StepModel,
+                join_conditions=[MessageModel.step.id == step_id],
+            )
+            return [message.to_pydantic() for message in messages]
 
     @enforce_types
     @trace_method
