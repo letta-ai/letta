@@ -1,0 +1,122 @@
+---
+title: Agent Architectures
+subtitle: Explore all available agent architectures and compare their capabilities
+slug: guides/agents/architectures
+no-image-zoom: true
+hide-toc: true
+layout: overview
+---
+
+<style>{`
+  .architecture-card {
+    margin: 0;
+    padding: 10px;
+    background-color: var(--card-background, var(--grayscale-surface));
+    border: 1px solid var(--border, var(--grayscale-a5));
+    box-shadow: 0 1px 2px var(--tw-shadow-color, var(--grayscale-a3));
+    cursor: pointer;
+  }
+
+  .architecture-card:hover {
+    border-color: var(--accent-a11) !important;
+  }
+
+  .architecture-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .architecture-image {
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+
+  .architecture-title {
+    margin-top: 15px;
+    padding: 0;
+    line-height: 1.2;
+  }
+
+  .architecture-description {
+    margin-top: 4px;
+    padding: 0;
+    line-height: 1.2;
+  }
+`}</style>
+
+<CardGroup cols={3}>
+
+<a href="/guides/agents/architectures/memgpt" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_memgpt_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_memgpt.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">MemGPT agents</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">Agents that can edit their own memory</div>
+</div>
+</a>
+
+<a href="/guides/agents/architectures/sleeptime" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_sleeptime_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_sleeptime.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">Sleep-time agents</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">Memory editing via subconscious agents</div>
+</div>
+</a>
+
+<a href="/guides/agents/architectures/low-latency" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_lowlatency_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_lowlatency.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">Low-latency (voice) agents</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">Agents optimized for low-latency settings</div>
+</div>
+</a>
+
+<a href="/guides/agents/architectures/react" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_react_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_react.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">ReAct agents</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">Tool-calling agents without memory</div>
+</div>
+</a>
+
+<a href="/guides/agents/architectures/workflows" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_workflow_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_workflow.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">Workflows</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">LLMs executing sequential tool calls</div>
+</div>
+</a>
+
+<a href="/guides/agents/architectures/stateful-workflows" className="architecture-link">
+<div className="architecture-card">
+<img className="dark architecture-image" src="/images/avatar_sworkflow_b.png" alt="Agent architecture card"/>
+<img className="light architecture-image" src="/images/avatar_sworkflow.png" alt="Agent architecture card"/>
+<div className="text-md font-semibold architecture-title">Stateful workflows</div>
+<div className="text-(color:--grayscale-a11) text-sm architecture-description">Workflows that can adapt over time</div>
+</div>
+</a>
+
+</CardGroup>
+
+## Comparing the architectures
+
+<Note>
+**Unsure of which architecture to use?**
+
+Consider starting with our default agent architecture (MemGPT), which is highly autonomous and has long-term self-editing memory.
+You can constrain the behavior to be more deterministic (ie more "workflow-like") by adding [tool rules](/guides/agents/tool-rules) to your agent.
+</Note>
+
+| Architecture | Reasoning Traces | Tool Calling | Tool Rules | Persistent Messages | Long-term Memory | Usecase |
+|--------------|------------------|--------------|------------|---------------------|------------------|---------|
+| [MemGPT agents](/guides/agents/architectures/memgpt) | ✓ | ✓ | ✓ | ✓ | ✓ | Long-running (perpetual) stateful agents |
+| [Sleep-time agents](/guides/agents/architectures/sleeptime) | ✓ | ✓ | ✓ | ✓ | ✓ | Async (subconscious) memory processing |
+| [Low-latency (voice) agents](/guides/agents/architectures/low-latency) | ✓ | ✓ | ✓ | ✓ | ✓ | Stateful agents with latency constraints |
+| [ReAct agents](/guides/agents/architectures/react) | ✓ | ✓ | ✓ | ✓ | - | Simple memory-less tool-calling agents |
+| [Workflows](/guides/agents/architectures/workflows) | ✓ | ✓ | ✓ | - | - | Predefined, sequential processes |
+| [Stateful workflows](/guides/agents/architectures/stateful-workflows) | ✓ | ✓ | ✓ | - | ✓ | Workflows that can adapt over time |

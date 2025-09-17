@@ -1,0 +1,94 @@
+{
+  "name": "core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/core",
+  "targets": {
+    "lock": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "uv lock --no-upgrade",
+        "cwd": "apps/core"
+      }
+    },
+    "add": {
+      "executor": "@nxlv/python:add",
+      "options": {}
+    },
+    "update": {
+      "executor": "@nxlv/python:update",
+      "options": {}
+    },
+    "remove": {
+      "executor": "@nxlv/python:remove",
+      "options": {}
+    },
+    "dev": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "commands": ["./otel/start-otel-collector.sh", "uv run letta server"],
+        "parallel": true,
+        "cwd": "apps/core"
+      }
+    },
+    "debug": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "commands": [
+          "./otel/start-otel-collector.sh",
+          "uv run letta server --debug --reload"
+        ],
+        "parallel": true,
+        "cwd": "apps/core"
+      }
+    },
+    "build": {
+      "executor": "@nxlv/python:build",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "outputPath": "apps/core/dist",
+        "publish": false,
+        "lockedVersions": true,
+        "bundleLocalDependencies": true
+      }
+    },
+    "install": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "uv sync --all-extras",
+        "cwd": "apps/core"
+      }
+    },
+    "lint": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "uv run isort --profile black . && uv run black . && uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .",
+        "cwd": "apps/core"
+      }
+    },
+    "database:migrate": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "uv run alembic upgrade head",
+        "cwd": "apps/core"
+      }
+    },
+    "test": {
+      "executor": "@nxlv/python:run-commands",
+      "outputs": [
+        "{workspaceRoot}/reports/apps/core/unittests",
+        "{workspaceRoot}/coverage/apps/core"
+      ],
+      "options": {
+        "command": "uv run pytest tests/",
+        "cwd": "apps/core"
+      }
+    }
+  },
+  "tags": [],
+  "release": {
+    "version": {
+      "generator": "@nxlv/python:release-version"
+    }
+  }
+}

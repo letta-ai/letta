@@ -80,7 +80,6 @@ jobs:
       with:
         ref: ${{ steps.pr.outputs.branch }}
         token: ${{ secrets.GITHUB_TOKEN }}
-        submodules: true
         fetch-depth: 0
 
     - name: Set up python 3.12
@@ -97,7 +96,7 @@ jobs:
 
     - name: Install dependencies
       run: uv sync --extra dev --extra postgres --extra external-tools
-      working-directory: ./apps/core
+      working-directory: .
 
 #    - name: Run ruff check with fixes
 #      run: uv run ruff check --fix .
@@ -107,7 +106,7 @@ jobs:
 
     - name: Run isort, black, autoflake
       run: uv run isort . --profile black && uv run black . && uv run autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive --ignore-init-module-imports .
-      working-directory: ./apps/core
+      working-directory: .
 
 
     - name: Check for changes

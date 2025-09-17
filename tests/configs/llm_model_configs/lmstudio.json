@@ -1,0 +1,8 @@
+{
+  "context_window": 8192,
+  "model": "qwen2.5-7b-instruct-1m",
+  "model_endpoint_type": "openai",
+  "model_endpoint": "http://127.0.0.1:1234/api/v0",
+  "model_wrapper": null,
+  "provider_name": "lmstudio_openai"
+}

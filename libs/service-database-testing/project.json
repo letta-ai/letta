@@ -1,8 +1,0 @@
-{
-  "name": "service-database-testing",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/service-database-testing/src",
-  "projectType": "library",
-  "tags": [],
-  "targets": {}
-}

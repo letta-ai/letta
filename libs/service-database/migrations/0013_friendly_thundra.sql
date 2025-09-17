@@ -1,1 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "active_organization_id" DROP NOT NULL;

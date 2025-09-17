@@ -1,0 +1,43 @@
+---
+title: "Responses & Tracing"
+subtitle: "Inspect API responses and trace agent execution flow"
+slug: "guides/observability/responses"
+---
+
+<img className="light" src="/images/observability_responses.png" />
+<img className="dark" src="/images/observability_responses_dark.png" />
+
+Debug and analyze your agent's execution with detailed tracing.
+
+## <Icon icon="fa-sharp fa-light fa-server"/> API Responses
+
+View all API responses with key details:
+- **Timestamp**: When processed
+- **Duration**: Server processing time
+- **Status**: Success/error codes
+- **Source**: Originating application
+- **Payload**: Full request/response data
+
+## <Icon icon="fa-sharp fa-light fa-magnifying-glass"/> Message Inspection
+
+<img className="light" src="/images/observability_response.png" />
+<img className="dark" src="/images/observability_response_dark.png" />
+
+Click **"Inspect Message"** to trace agent execution:
+
+### Request Details
+- Original POST request that triggered the agent
+- All parameters and context information
+
+### Agent Loop Trace
+Step-by-step execution flow:
+1. **Input Processing**: How the server interpreted the request
+3. **Tool Invocations**: Each tool called with parameters, timing, and results
+5. **Memory Updates**: How agent memory was modified
+4. **Agent Messages**: Prompts, responses, and token usage
+6. **Response Completion**: Final response construction
+
+### Debugging Features
+- **Performance**: Identify bottlenecks and optimization opportunities
+- **Errors**: Pinpoint failure points with stack traces
+- **Behavior**: Understand agent decision-making process

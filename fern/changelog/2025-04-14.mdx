@@ -1,0 +1,24 @@
+## New List Agent Groups API added
+
+The `List Agent Groups` API has been added to the Agents endpoint, allowing you to retrieve all multi-agent groups associated with a specific agent.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agent_groups = client.agents.list_agent_groups(
+    agent_id="AGENT_ID",
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agentGroups = await client.agents.listAgentGroups({
+  agent_id: "AGENT_ID",
+});
+```
+</CodeBlocks>

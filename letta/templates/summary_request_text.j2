@@ -1,0 +1,19 @@
+{% if retain_count == 0 %}
+You’re a memory-recall helper for an AI that is about to forget all prior messages. Scan the conversation history and write crisp notes that capture any important facts or insights about the conversation history.
+{% else %}
+You’re a memory-recall helper for an AI that can only keep the last {{ retain_count }} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost.
+{% endif %}
+
+{% if evicted_messages %}
+(Older) Evicted Messages:
+{% for item in evicted_messages %}
+    {{ item }}
+{% endfor %}
+{% endif %}
+
+{% if retain_count > 0 and in_context_messages %}
+(Newer) In-Context Messages:
+{% for item in in_context_messages %}
+    {{ item }}
+{% endfor %}
+{% endif %}

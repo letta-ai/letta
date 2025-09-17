@@ -1,235 +1,537 @@
-# Letta Monorepo
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/Letta-logo-RGB_GreyonTransparent_cropped_small.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/Letta-logo-RGB_OffBlackonTransparent_cropped_small.png">
+    <img alt="Letta logo" src="https://raw.githubusercontent.com/letta-ai/letta/refs/heads/main/assets/Letta-logo-RGB_GreyonOffBlack_cropped_small.png" width="500">
+  </picture>
+</p>
 
-This is the monorepo for all internal Letta web projects. It uses [Nx](https://nx.dev) to manage the workspace.
+# Letta (formerly MemGPT)
+
+Letta is the platform for building stateful agents: open AI with advanced memory that can learn and self-improve over time.
+
+### Quicklinks:
+* [**Developer Documentation**](https://docs.letta.com): Learn how create agents that learn using Python / TypeScript
+* [**Agent Development Environment (ADE)**](https://docs.letta.com/guides/ade/overview): A no-code UI for building stateful agents
+* [**Letta Desktop**](https://docs.letta.com/guides/ade/desktop): A fully-local version of the ADE, available on MacOS and Windows
+* [**Letta Cloud**](https://app.letta.com/): The fastest way to try Letta, with agents running in the cloud
 
 
-## Table of Contents
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Setup](#setup)
-- [Letta](#letta)
-  - [Running Letta Locally](#running-letta-locally)
-- [Docs Site](#docs-site)
-  - [Running the Docs Site Locally](#running-the-docs-site-locally)
-- [View the Component Library](#view-the-component-library)
-  - [Running the Component Library Locally](#running-the-component-library-locally)
-  - [Adding a new component](#adding-a-new-component)
+## Get started
 
-## Getting Started
+### [One-Shot ✨ Vibecoding ⚡️ Prompts](https://github.com/letta-ai/letta/blob/main/fern/pages/getting-started/prompts.mdx)
 
-### Prerequisites
+Or install the Letta SDK (available for both Python and TypeScript):
 
-For windows setup: [Windows Setup](docs/windows-setup.md)
-
-Install `Docker Desktop`: [linky](https://docs.docker.com/desktop/setup/install/mac-install/)
-
-Install the following with Homebrew:
-- `docker` - [linky](https://docs.docker.com/get-docker/)
-- `just` - [linky](https://github.com/casey/just)
-- `uv` - [linky](https://github.com/astral-sh/uv)
-- `1password-cli` - [linky](https://support.1password.com/command-line-getting-started/)
-- `node` (for npm) - [linky](https://nodejs.org/en/download)
-- `postgresql` (to build psycopg2) - [linky](https://formulae.brew.sh/formula/postgresql@14)
+### [Python SDK](https://github.com/letta-ai/letta-python)
 ```sh
-brew install docker just uv 1password-cli node postgresql trufflehog
+pip install letta-client
 ```
 
-- `nvm` - [linky](https://github.com/nvm-sh/nvm)
+### [TypeScript / Node.js SDK](https://github.com/letta-ai/letta-node)
 ```sh
-# Install nvm on mac
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+npm install @letta-ai/letta-client
 ```
 
-### Setup
-Then run the following commands to setup the environment:
+## Simple Hello World example
 
-```sh
-cd ~/Developer
+In the example below, we'll create a stateful agent with two memory blocks, one for itself (the `persona` block), and one for the human. We'll initialize the `human` memory block with incorrect information, and correct agent in our first message - which will trigger the agent to update its own memory with a tool call.
 
-git clone git@github.com:letta-ai/letta-cloud.git --branch main
+*To run the examples, you'll need to get a `LETTA_API_KEY` from [Letta Cloud](https://app.letta.com/api-keys), or run your own self-hosted server (see [our guide](https://docs.letta.com/guides/selfhosting))*
 
-# Start all supporting services
-# (Make sure docker daemon is running)
-cd letta-cloud
-just start-services
 
-# link 1pass CLI to your account
-op account add
+### Python
+```python
+from letta_client import Letta
 
-# sign into 1password
-eval $(op signin)
+client = Letta(token="LETTA_API_KEY")
+# client = Letta(base_url="http://localhost:8283")  # if self-hosting, set your base_url
 
-# Sets up the environment
-just setup
+agent_state = client.agents.create(
+    model="openai/gpt-4.1",
+    embedding="openai/text-embedding-3-small",
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Chad. They like vibe coding."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, a helpful assistant."
+        }
+    ],
+    tools=["web_search", "run_code"]
+)
+
+print(agent_state.id)
+# agent-d9be...0846
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Hey, nice to meet you, my name is Brad."
+        }
+    ]
+)
+
+# the agent will think, then edit its memory using a tool
+for message in response.messages:
+    print(message)
 ```
 
-### Starting the Development Environment
-#### Running letta core (OSS Backend)
-```sh
-# prepares local environment, cloud APIs, migrates your databases
-just ready
+### TypeScript / Node.js
+```typescript
+import { LettaClient } from '@letta-ai/letta-client'
 
-# starts the server
-just core
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+// const client = new LettaClient({ baseUrl: "http://localhost:8283" });  // if self-hosting, set your baseUrl
 
-# starts the server with hot-reload if you prefer
-just core-debug
+const agentState = await client.agents.create({
+    model: "openai/gpt-4.1",
+    embedding: "openai/text-embedding-3-small",
+    memoryBlocks: [
+        {
+          label: "human",
+          value: "The human's name is Chad. They like vibe coding."
+        },
+        {
+          label: "persona",
+          value: "My name is Sam, a helpful assistant."
+        }
+    ],
+    tools: ["web_search", "run_code"]
+});
+
+console.log(agentState.id);
+// agent-d9be...0846
+
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: "Hey, nice to meet you, my name is Brad."
+            }
+        ]
+    }
+);
+
+// the agent will think, then edit its memory using a tool
+for (const message of response.messages) {
+    console.log(message);
+}
 ```
 
-#### Running letta web
-```sh
-# prepares local environment, cloud APIs, migrates your databases
-just ready
+## Core concepts in Letta:
 
-# starts the cloud api server
-# NOTE: run in a different terminal from `just web` (you need core running)
-just cloud-api
+Letta is made by the creators of [MemGPT](https://arxiv.org/abs/2310.08560), a research paper that introduced the concept of the "LLM Operating System" for memory management. The core concepts in Letta for designing stateful agents follow the MemGPT LLM OS principles:
 
-# starts the cloud api server with hot-reload if you prefer
-just dev-cloud-api
+1. [**Memory Hierarchy**](https://docs.letta.com/guides/agents/memory): Agents have self-editing memory that is split between in-context memory and out-of-context memory
+2. [**Memory Blocks**](https://docs.letta.com/guides/agents/memory-blocks): The agent's in-context memory is composed of persistent editable **memory blocks**
+3. [**Agentic Context Engineering**](https://docs.letta.com/guides/agents/context-engineering): Agents control the context window by using tools to edit, delete, or search for memory
+4. [**Perpetual Self-Improving Agents**](https://docs.letta.com/guides/agents/overview): Every "agent" is a single entity that has a perpetual (infinite) message history
 
-# NOTE: run in a different terminal from `just core` to have it running
-just web
+## Multi-agent shared memory ([full guide](https://docs.letta.com/guides/agents/multi-agent-shared-memory))
+
+A single memory block can be attached to multiple agents, allowing to extremely powerful multi-agent shared memory setups.
+For example, you can create two agents that have their own independent memory blocks in addition to a shared memory block.
+
+### Python
+```python
+# create a shared memory block
+shared_block = client.blocks.create(
+    label="organization",
+    description="Shared information between all agents within the organization.",
+    value="Nothing here yet, we should update this over time."
+)
+
+# create a supervisor agent
+supervisor_agent = client.agents.create(
+    model="anthropic/claude-3-5-sonnet-20241022",
+    embedding="openai/text-embedding-3-small",
+    # blocks created for this agent
+    memory_blocks=[{"label": "persona", "value": "I am a supervisor"}],
+    # pre-existing shared block that is "attached" to this agent
+    block_ids=[shared_block.id],
+)
+
+# create a worker agent
+worker_agent = client.agents.create(
+    model="openai/gpt-4.1-mini",
+    embedding="openai/text-embedding-3-small",
+    # blocks created for this agent
+    memory_blocks=[{"label": "persona", "value": "I am a worker"}],
+    # pre-existing shared block that is "attached" to this agent
+    block_ids=[shared_block.id],
+)
 ```
 
+### TypeScript / Node.js
+```typescript
+// create a shared memory block
+const sharedBlock = await client.blocks.create({
+    label: "organization",
+    description: "Shared information between all agents within the organization.",
+    value: "Nothing here yet, we should update this over time."
+});
 
+// create a supervisor agent
+const supervisorAgent = await client.agents.create({
+    model: "anthropic/claude-3-5-sonnet-20241022",
+    embedding: "openai/text-embedding-3-small",
+    // blocks created for this agent
+    memoryBlocks: [{ label: "persona", value: "I am a supervisor" }],
+    // pre-existing shared block that is "attached" to this agent
+    blockIds: [sharedBlock.id]
+});
 
-Access the app at [http://localhost:3000](http://localhost:3000)
-
-#### Other useful commands
-- `docker logs -f letta-agents` - loads the logs of the letta-agents server
-
-## Docs Site
-For our docs and SDK, we use [fern](https://www.buildwithfern.com/)
-
-### Running the Docs Site Locally
-To run the docs site, use:
-
-```sh
-just preview-docs
+// create a worker agent
+const workerAgent = await client.agents.create({
+    model: "openai/gpt-4.1-mini",
+    embedding: "openai/text-embedding-3-small",
+    // blocks created for this agent
+    memoryBlocks: [{ label: "persona", value: "I am a worker" }],
+    // pre-existing shared block that is "attached" to this agent
+    blockIds: [sharedBlock.id]
+});
 ```
 
-Access the docs site at [http://localhost:3001](http://localhost:3001)
+## Sleep-time agents ([full guide](https://docs.letta.com/guides/agents/architectures/sleeptime))
 
-## View the Component Library
-### Running the Component Library Locally
-To run the component library, use:
+In Letta, you can create special **sleep-time agents** that share the memory of your primary agents, but run in the background (like an agent's "subconcious"). You can think of sleep-time agents as a special form of multi-agent architecture.
 
-```sh
-npm run cl
+To enable sleep-time agents for your agent, set the `enable_sleeptime` flag to true when creating your agent. This will automatically create a sleep-time agent in addition to your main agent which will handle the memory editing, instead of your primary agent.
+
+### Python
+```python
+agent_state = client.agents.create(
+    ...
+    enable_sleeptime=True,  # <- enable this flag to create a sleep-time agent
+)
 ```
 
-### Adding a new component
-To add a new component, run the following command:
-
-```sh
-npm run cl:new {component-name}
+### TypeScript / Node.js
+```typescript
+const agentState = await client.agents.create({
+    ...
+    enableSleeptime: true  // <- enable this flag to create a sleep-time agent
+});
 ```
 
-## Development Commands
+## Saving and sharing agents with Agent File (`.af`) ([full guide](https://docs.letta.com/guides/agents/agent-file))
 
-This project uses [Just](https://github.com/casey/just) as a command runner. Here are some useful commands:
+In Letta, all agent data is persisted to disk (Postgres or SQLite), and can be easily imported and exported using the open source [Agent File](https://github.com/letta-ai/agent-file) (`.af`) file format. You can use Agent File to checkpoint your agents, as well as move your agents (and their complete state/memories) between different Letta servers, e.g. between self-hosted Letta and Letta Cloud.
 
-### Authentication and Configuration
+<details>
+<summary>View code snippets</summary>
 
-- `gcloud` - [linky](https://github.com/gcloud/cli)
-```sh
-# Install gcloud CLI on mac
-brew install --cask google-cloud-sdk
+### Python
+```python
+# Import your .af file from any location
+agent_state = client.agents.import_agent_serialized(file=open("/path/to/agent/file.af", "rb"))
+
+print(f"Imported agent: {agent.id}")
+
+# Export your agent into a serialized schema object (which you can write to a file)
+schema = client.agents.export_agent_serialized(agent_id="<AGENT_ID>")
 ```
 
-- `just authenticate`: Authenticate with Google Cloud and configure Docker.
--  ` just configure-kubectl`: Configure kubectl for the Letta cluster.
+### TypeScript / Node.js
+```typescript
+import { readFileSync } from 'fs';
+import { Blob } from 'buffer';
 
-Prerequisites for `configure-kubectl`:
-```sh
-gcloud auth login
-gcloud components install kubectl
+// Import your .af file from any location
+const file = new Blob([readFileSync('/path/to/agent/file.af')])
+const agentState = await client.agents.importAgentSerialized(file, {})
+
+console.log(`Imported agent: ${agentState.id}`);
+
+// Export your agent into a serialized schema object (which you can write to a file)
+const schema = await client.agents.exportAgentSerialized("<AGENT_ID>");
+```
+</details>
+
+## Model Context Protocol (MCP) and custom tools ([full guide](https://docs.letta.com/guides/mcp/overview))
+
+Letta has rich support for MCP tools (Letta acts as an MCP client), as well as custom Python tools.
+MCP servers can be easily added within the Agent Development Environment (ADE) tool manager UI, as well as via the SDK:
+
+
+<details>
+<summary>View code snippets</summary>
+
+### Python
+```python
+# List tools from an MCP server
+tools = client.tools.list_mcp_tools_by_server(mcp_server_name="weather-server")
+
+# Add a specific tool from the MCP server
+tool = client.tools.add_mcp_tool(
+    mcp_server_name="weather-server",
+    mcp_tool_name="get_weather"
+)
+
+# Create agent with MCP tool attached
+agent_state = client.agents.create(
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_ids=[tool.id]
+)
+
+# Or attach tools to an existing agent
+client.agents.tool.attach(
+    agent_id=agent_state.id
+    tool_id=tool.id
+)
+
+# Use the agent with MCP tools
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Use the weather tool to check the forecast"
+        }
+    ]
+)
 ```
 
-### Building and Deploying
+### TypeScript / Node.js
+```typescript
+// List tools from an MCP server
+const tools = await client.tools.listMcpToolsByServer("weather-server");
 
-- `just build`: Build the multi-architecture Docker image.
-- `just push`: Push the Docker image to the registry.
-- `just deploy`: Deploy the Helm chart (includes pushing the image).
-Prerequisite for `just deploy` - [linky](https://helm.sh)
-```sh
-# Install Helm on mac
-brew install helm
+// Add a specific tool from the MCP server
+const tool = await client.tools.addMcpTool("weather-server", "get_weather");
+
+// Create agent with MCP tool
+const agentState = await client.agents.create({
+    model: "openai/gpt-4o-mini",
+    embedding: "openai/text-embedding-3-small",
+    toolIds: [tool.id]
+});
+
+// Use the agent with MCP tools
+const response = await client.agents.messages.create(agentState.id, {
+    messages: [
+        {
+            role: "user",
+            content: "Use the weather tool to check the forecast"
+        }
+    ]
+});
 ```
-- `just destroy`: Uninstall the Helm chart.
+</details>
 
-### Debugging and Monitoring
+## Filesystem ([full guide](https://docs.letta.com/guides/agents/filesystem))
 
-- `just show-env`: Show environment variables on the pod.
-- `just show-secret`: Display decoded secrets.
-- `just ssh`: SSH into the web service pod.
-- `just web-logs`: Get logs from the web service pod.
-- `just describe-web`: Describe the web service pod.
-- `just migration-logs`: Get logs from the migration job.
+Letta’s filesystem allow you to easily connect your agents to external files, for example: research papers, reports, medical records, or any other data in common text formats (`.pdf`, `.txt`, `.md`, `.json`, etc).
+Once you attach a folder to an agent, the agent will be able to use filesystem tools (`open_file`, `grep_file`, `search_file`) to browse the files to search for information.
 
-To see all available commands, run:
+<details>
+<summary>View code snippets</summary>
+  
+### Python
+```python
+# get an available embedding_config
+embedding_configs = client.embedding_models.list()
+embedding_config = embedding_configs[0]
 
-```sh
-just list
+# create the folder
+folder = client.folders.create(
+    name="my_folder",
+    embedding_config=embedding_config
+)
+
+# upload a file into the folder
+job = client.folders.files.upload(
+    folder_id=folder.id,
+    file=open("my_file.txt", "rb")
+)
+
+# wait until the job is completed
+while True:
+    job = client.jobs.retrieve(job.id)
+    if job.status == "completed":
+        break
+    elif job.status == "failed":
+        raise ValueError(f"Job failed: {job.metadata}")
+    print(f"Job status: {job.status}")
+    time.sleep(1)
+
+# once you attach a folder to an agent, the agent can see all files in it
+client.agents.folders.attach(agent_id=agent.id, folder_id=folder.id)
+
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "What data is inside of my_file.txt?"
+        }
+    ]
+)
+
+for message in response.messages:
+    print(message)
 ```
 
-Note: Make sure you have Just installed and properly configured before running these commands.
+### TypeScript / Node.js
+```typescript
+// get an available embedding_config
+const embeddingConfigs = await client.embeddingModels.list()
+const embeddingConfig = embeddingConfigs[0];
 
-## CI/CD
+// create the folder
+const folder = await client.folders.create({
+    name: "my_folder",
+    embeddingConfig: embeddingConfig
+});
 
-This project uses GitHub Actions for continuous integration and continuous deployment (CI/CD). The process is triggered automatically whenever there's a successful Cypress test run on the `main` branch, or manually via workflow dispatch.
+// upload a file into the folder
+const uploadJob = await client.folders.files.upload(
+    createReadStream("my_file.txt"),
+    folder.id,
+);
+console.log("file uploaded")
 
-### CI/CD Process
+// wait until the job is completed
+while (true) {
+    const job = await client.jobs.retrieve(uploadJob.id);
+    if (job.status === "completed") {
+        break;
+    } else if (job.status === "failed") {
+        throw new Error(`Job failed: ${job.metadata}`);
+    }
+    console.log(`Job status: ${job.status}`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+}
 
-1. The deployment workflow is triggered after successful completion of the Cypress Tests workflow on `main`.
-2. GitHub Actions executes the steps defined in `.github/workflows/deploy.yml`:
-   - Sets up the necessary tools (Node.js, Google Cloud SDK, kubectl, just, Helm)
-   - Configures authentication with Google Cloud Platform
-   - Builds Docker images using `just build-web-images`
-   - Deploys the application using `just deploy`
-3. The deployment process includes:
-   - Pushing Docker images to the GCP Container Registry
-   - Updating the Kubernetes deployment using Helm
+// list files in the folder
+const files = await client.folders.files.list(folder.id);
+console.log(`Files in folder: ${files}`);
 
-### Environment Variables
+// list passages in the folder
+const passages = await client.folders.passages.list(folder.id);
+console.log(`Passages in folder: ${passages}`);
 
-Environment variables are defined in GitHub Secrets and the workflow file. These variables are used throughout the build and deployment process. Key variables include:
+// once you attach a folder to an agent, the agent can see all files in it
+await client.agents.folders.attach(agent.id, folder.id);
 
-- Project configuration (PROJECT_ID, REGION, etc.)
-- Service endpoints and credentials
-- Database and Redis configuration
-- Authentication settings
-- Monitoring tokens (Sentry, PostHog, etc.)
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: "What data is inside of my_file.txt?"
+            }
+        ]
+    }
+);
 
-To modify these variables, update either:
-- GitHub repository secrets for sensitive values
-- Environment variables in `.github/workflows/deploy.yml` for non-sensitive values
+for (const message of response.messages) {
+    console.log(message);
+}
+```
+</details>
 
-# Letta Desktop
+## Long-running agents ([full guide](https://docs.letta.com/guides/agents/long-running))
 
-## Updating dependencies
+When agents need to execute multiple tool calls or perform complex operations (like deep research, data analysis, or multi-step workflows), processing time can vary significantly. Letta supports both a background mode (with resumable streaming) as well as an async mode (with polling) to enable robust long-running agent executions.
 
-If you add a dependency to the repo (`.toml`), make sure to update the section on `letta-desktop` in the `.toml` file, as well as add an import to the package in `letta_desktop/__init__.py`.
 
-Then, run:
-```sh
-just prepare-desktop
-just desktop
+<details>
+<summary>View code snippets</summary>
+  
+### Python
+```python
+stream = client.agents.messages.create_stream(
+    agent_id=agent_state.id,
+    messages=[
+      {
+        "role": "user",
+        "content": "Run comprehensive analysis on this dataset"
+      }
+    ],
+    stream_tokens=True,
+    background=True,
+)
+run_id = None
+last_seq_id = None
+for chunk in stream:
+    if hasattr(chunk, "run_id") and hasattr(chunk, "seq_id"):
+        run_id = chunk.run_id       # Save this to reconnect if your connection drops
+        last_seq_id = chunk.seq_id  # Save this as your resumption point for cursor-based pagination
+    print(chunk)
+
+# If disconnected, resume from last received seq_id:
+for chunk in client.runs.stream(run_id, starting_after=last_seq_id):
+    print(chunk)
 ```
 
-## Why is my letta desktop "letta" not updating?
+### TypeScript / Node.js
+```typescript
+const stream = await client.agents.messages.createStream({
+    agentId: agentState.id,
+    requestBody: {
+        messages: [
+            {
+                role: "user",
+                content: "Run comprehensive analysis on this dataset"
+            }
+        ],
+        streamTokens: true,
+        background: true,
+    }
+});
 
-There is a weird caching issue with letta, just edit the main.ts file in apps/electron, and it should work (even adding a new line)
+let runId = null;
+let lastSeqId = null;
+for await (const chunk of stream) {
+    if (chunk.run_id && chunk.seq_id) {
+        runId = chunk.run_id;      // Save this to reconnect if your connection drops
+        lastSeqId = chunk.seq_id; // Save this as your resumption point for cursor-based pagination
+    }
+    console.log(chunk);
+}
 
-# AgentFile.directory
-
-```sh
-# Run the necessary services in separate windows
-just core
-just web
-just cloud-api
-
-# Then run the directory site
-just afd
+// If disconnected, resume from last received seq_id
+for await (const chunk of client.runs.stream(runId, {startingAfter: lastSeqId})) {
+    console.log(chunk);
+}
 ```
+</details>
+
+## Using local models
+
+Letta is model agnostic and supports using local model providers such as [Ollama](https://docs.letta.com/guides/server/providers/ollama) and [LM Studio](https://docs.letta.com/guides/server/providers/lmstudio). You can also easily swap models inside an agent after the agent has been created, by modifying the agent state with the new model provider via the SDK or in the ADE.
+
+## Development (only needed if you need to modify the server code)
+
+*Note: this repostory contains the source code for the core Letta service (API server), not the client SDKs. The client SDKs can be found here: [Python](https://github.com/letta-ai/letta-python), [TypeScript](https://github.com/letta-ai/letta-node).*
+
+To install the Letta server from source, fork the repo, clone your fork, then use [uv](https://docs.astral.sh/uv/getting-started/installation/) to install from inside the main directory:
+```sh
+cd letta
+uv sync --all-extras
+```
+
+To run the Letta server from source, use `uv run`:
+```sh
+uv run letta server
+```
+
+## Contributing
+
+Letta is an open source project built by over a hundred contributors. There are many ways to get involved in the Letta OSS project!
+
+* [**Join the Discord**](https://discord.gg/letta): Chat with the Letta devs and other AI developers.
+* [**Chat on our forum**](https://forum.letta.com/): If you're not into Discord, check out our developer forum.
+* **Follow our socials**: [Twitter/X](https://twitter.com/Letta_AI), [LinkedIn](https://www.linkedin.com/in/letta), [YouTube](https://www.youtube.com/@letta-ai) 
+
+---
+
+***Legal notices**: By using Letta and related Letta services (such as the Letta endpoint or hosted service), you are agreeing to our [privacy policy](https://www.letta.com/privacy-policy) and [terms of service](https://www.letta.com/terms-of-service).*

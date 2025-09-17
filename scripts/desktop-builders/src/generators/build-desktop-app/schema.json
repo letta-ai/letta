@@ -1,9 +1,0 @@
-{
-  "$schema": "https://json-schema.org/schema",
-  "$id": "BuildDesktopApp",
-  "title": "",
-  "type": "object",
-  "properties": {
-  },
-  "required": []
-}

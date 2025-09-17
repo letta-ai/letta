@@ -1,0 +1,65 @@
+---
+title: Connecting Agents to Tools
+subtitle: Understand the different ways to use tools in Letta
+slug: guides/agents/tools
+---
+Tools allow agents to take actions that affect the real world.
+Letta agents can use tools to manage their own memory, send messages to users, search the web, and more.
+
+You can add custom tools to Letta by defining your own tools, and also customize the execution environment of the tools.
+You can import external tool libraries by connecting your Letta agents to MCP (Model Context Protocol) servers. MCP servers are a way to expose APIs to Letta agents.
+
+## Where to get tools for your agents
+
+There are three main ways to connect tools to your agents:
+- [**Pre-built tools**](/guides/agents/prebuilt-tools): connect to tools that are built into the Letta server, such as memory management tools and web search / code execution.
+- [**Custom tools**](/guides/agents/custom-tools): define your own tools in Letta using the SDK and the ADE.
+- [**MCP servers**](/guides/mcp/overview): connect your agent to tools that run on external MCP servers.
+
+Once a tool has been created (if it's a custom tool) or connected (if it's a pre-built tool or MCP server), you can add it to an agent by passing the tool name to the `tools` parameter in the agent creation:
+```python title="python" {9}
+# create a new agent
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tools=["my_custom_tool_name"]
+)
+```
+
+## Tool Execution
+You can customize the environment that your tool runs in (the Python package dependencies and environment variables) by setting a tool execution environment. See more [here](/guides/agents/tool-variables).
+
+## Tool Environment Variables
+You can set agent-scoped environment variables for your tools.
+These environment variables will be accessible in the sandboxed environment that any of the agent tools are run in.
+
+For example, if you define a custom tool that requires an API key to run (e.g. `EXAMPLE_TOOL_API_KEY`), you can set the variable at time of agent creation by using the `tool_exec_environment_variables` parameter:
+```python title="python" {9-11}
+# create an agent with no tools
+agent = client.agents.create(
+    memory_blocks=[
+        {"label": "human", "limit": 2000, "value": "Name: Bob"},
+        {"label": "persona", "limit": 2000, "value": "You are a friendly agent"}
+    ],
+    model="openai/gpt-4o-mini",
+    embedding="openai/text-embedding-3-small",
+    tool_exec_environment_variables={
+        "EXAMPLE_TOOL_API_KEY": "banana"
+    }
+)
+```
+
+## Tool Rules
+
+Tool rules allow you to define graph-like constrains on your tools, such as requiring that a tool terminate agent execution or be followed by another tool.
+
+Read more about tool rules [here](/guides/agents/tool-rules).
+
+## External Tool Libraries
+
+Letta supports connecting to external tool libraries via [MCP](/guides/mcp/overview).
+You can connect to MCP servers via the Letta SDK (Python and TypeScript/Node.js) as well as via simple point-and-click in the ADE.

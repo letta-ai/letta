@@ -1,1 +1,0 @@
-export { StepsMetricsChart } from './StepsMetricsChart';

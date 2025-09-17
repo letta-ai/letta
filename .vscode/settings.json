@@ -1,7 +1,0 @@
-{
-  "eslint.validate": ["json"],
-  "files.associations": {
-    "*.mdx": "markdown"
-  },
-  "python.languageServer": "None"
-}

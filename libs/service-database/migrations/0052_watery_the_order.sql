@@ -1,1 +1,0 @@
-ALTER TABLE "deployed_agent_variables" DROP CONSTRAINT "deployed_agent_variables_deployed_agent_id_deployed_agents_id_fk";

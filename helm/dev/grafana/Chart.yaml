@@ -1,8 +1,0 @@
-apiVersion: v2
-name: grafana
-description: Grafana helm chart for monitoring
-version: 0.1.0
-dependencies:
-  - name: grafana
-    version: 7.0.19
-    repository: https://grafana.github.io/helm-charts

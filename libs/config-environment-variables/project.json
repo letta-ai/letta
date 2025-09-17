@@ -1,9 +1,0 @@
-{
-  "name": "config-environment-variables",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/config-environment-variables/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project config-environment-variables --web",
-  "targets": {}
-}

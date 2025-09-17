@@ -1,0 +1,21 @@
+name: 🌿 Publish Docs
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run:
+    runs-on: [self-hosted, medium]
+    if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/heads/main') && github.run_number > 1 }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Publish Docs
+        working-directory: .
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: fern generate --docs --log-level debug

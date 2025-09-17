@@ -1,0 +1,29 @@
+services:
+  letta_server:
+    image: letta_server
+    hostname: letta-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+      args:
+        - MEMGPT_ENVIRONMENT=DEVELOPMENT
+    depends_on:
+      - letta_db
+    env_file:
+      - .env
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
+
+    volumes:
+      - ./letta:/letta
+      - ~/.letta/credentials:/root/.letta/credentials
+      - ./configs/server_config.yaml:/root/.letta/config
+      - ./CONTRIBUTING.md:/CONTRIBUTING.md
+      - ./tests/pytest_cache:/letta/.pytest_cache
+      - ./tests/pytest.ini:/letta/pytest.ini
+      - ./pyproject.toml:/pyproject.toml
+      - ./tests:/tests
+    ports:
+      - "8083:8083"
+      - "8283:8283"

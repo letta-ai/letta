@@ -1,0 +1,19 @@
+{
+  "name": "app",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Skeleton typescript app to support user-defined tool call function",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^24.1.0",
+    "typescript": "^5.8.3"
+  }
+}

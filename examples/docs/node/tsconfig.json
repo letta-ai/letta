@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "esnext",
+    "lib": ["es2017", "dom"],
+    "declaration": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "resolveJsonModule": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

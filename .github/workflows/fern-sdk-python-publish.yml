@@ -7,12 +7,12 @@ on:
         description: "The version of the Python SDK that you would like to release"
         required: true
         type: string
-  # workflow_run:
-  #   workflows: ["🌿 Preview Python SDK"]
-  #   types:
-  #     - completed
-  #   branches:
-  #     - main
+  workflow_run:
+    workflows: ["🌿 Preview Python SDK"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   release:
@@ -32,7 +32,7 @@ jobs:
         run: npm install -g fern-api
 
       - name: Generate Python SDK
-        working-directory: apps
+        working-directory: .
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Publish Docs
-        working-directory: apps
+        working-directory: .
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
         run: fern generate --docs

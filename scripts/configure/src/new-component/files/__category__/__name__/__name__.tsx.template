@@ -1,9 +1,0 @@
-import * as React from 'react';
-
-export function <%= name %>() {
-  return (
-    <div>
-      <h1><%= name %></h1>
-    </div>
-  );
-}

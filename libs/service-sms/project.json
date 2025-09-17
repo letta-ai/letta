@@ -1,9 +1,0 @@
-{
-  "name": "service-sms",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/service-sms/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project service-sms --web",
-  "targets": {}
-}

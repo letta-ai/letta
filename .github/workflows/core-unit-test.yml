@@ -21,8 +21,9 @@ jobs:
     with:
       test-type: 'unit'
       use-redis: true
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
-        apps/core/**
+        **
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/core-unit-test.yml
       install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google'
@@ -53,7 +54,10 @@ jobs:
               {"test_suite": "mcp_tests/", "use_experimental": true},
               {"test_suite": "test_timezone_formatting.py"},
               {"test_suite": "test_plugins.py"},
-              {"test_suite": "test_embeddings.py"}
+              {"test_suite": "test_embeddings.py"},
+              {"test_suite": "test_crypto_utils.py"},
+              {"test_suite": "test_mcp_encryption.py"},
+              {"test_suite": "test_secret.py"}
             ]
           }
         }

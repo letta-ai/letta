@@ -1,9 +1,0 @@
-{
-  "name": "service-clickhouse",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/service-clickhouse/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project service-clickhouse --web",
-  "targets": {}
-}

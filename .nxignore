@@ -1,3 +1,0 @@
-# Ignore the TypeScript server directory as it's a standalone resource
-# that gets copied into Modal containers, not part of the monorepo build
-apps/core/sandbox/resources/server

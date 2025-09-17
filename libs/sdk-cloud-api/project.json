@@ -1,9 +1,0 @@
-{
-  "name": "sdk-cloud-api",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/sdk-cloud-api/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project sdk-cloud-api --web",
-  "targets": {}
-}

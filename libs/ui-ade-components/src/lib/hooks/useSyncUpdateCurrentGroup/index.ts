@@ -1,1 +1,0 @@
-export { useSyncUpdateCurrentGroup } from './useSyncUpdateCurrentGroup';

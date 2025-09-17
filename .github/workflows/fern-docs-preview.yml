@@ -1,0 +1,45 @@
+name: Preview Docs
+
+on:
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  run:
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
+    runs-on: [self-hosted, small]
+    permissions: write-all
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+
+      - name: Generate preview URL
+        id: generate-docs
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+        working-directory: fern
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          OUTPUT=$(fern generate --docs --preview 2>&1) || true
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep -oP 'Published docs to \K.*(?= \()')
+          echo "Preview URL: $URL"
+          echo "🌿 Preview your docs: $URL" > preview_url.txt
+
+      - name: Comment URL in PR
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: fern/preview_url.txt

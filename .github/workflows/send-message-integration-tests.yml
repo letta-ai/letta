@@ -20,8 +20,9 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: 'send-message'
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
-        apps/core/**
+        **
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/send-message-integration-tests.yml
       install-args: '--extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google --extra redis'

@@ -1,0 +1,24 @@
+---
+title: Bring-Your-Own API Keys
+subtitle: Connect your own API keys for supported model providers (OpenAI, Anthropic, etc.)
+slug: guides/cloud/custom-keys
+---
+
+<Note>
+To generate a **Letta API key** (which you use to interact with your agents on Letta Cloud), visit your [account settings](https://app.letta.com/settings/profile) page.
+</Note>
+
+## Using Your Own API Keys
+
+Connect your own API keys for supported providers (OpenAI, Anthropic, Gemini) to Letta Cloud through the [models page](https://app.letta.com/models). When you have a custom API key (successfully) registered, you will see additional models listed in the ADE model dropdown.
+
+### Selecting Your Custom Provider
+
+After you connect your own OpenAI / Anthropic / Gemini API key, make sure to select your custom provider in the ADE under "Your models".
+For example, after connecting your own OpenAI API key, you will see multiple OpenAI models but with different providers ("Letta hosted" vs "Your models") - if you want to use your own OpenAI API key, you need to select the copy of the model associated with your custom provider.
+
+### Billing and Quotas
+
+Requests made using your custom API keys **do not count** towards your monthly request quotas or usage-based billing. Instead, you'll be billed directly by the provider (OpenAI, Anthropic, etc.) according to their pricing for your personal account.
+
+Note that direct provider pricing will likely differ from Letta Cloud rates, and requests through your own API key may cost more than those made through Letta Cloud's managed services.

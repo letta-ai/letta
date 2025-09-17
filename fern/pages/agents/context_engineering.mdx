@@ -1,0 +1,82 @@
+---
+title: Context Engineering
+subtitle: How Letta engineerings the context window of your agents
+slug: guides/agents/context-engineering
+---
+
+Context engineering (aka "memory management" or "context management") is the process of managing the context window of an agent to ensure it has access to the information it needs to perform its task.
+
+Letta and [MemGPT](https://arxiv.org/abs/2310.08560) introduced the concept of **agentic context engineering**, where the context window engineering is done by one or more AI agents. In Letta, agents are able to manage their own context window (and the context window of other agents!) using special memory management tools.
+
+## Memory management in regular agents
+By default, Letta agents are provided with tools to modify their own memory blocks. This allows agents to learn and form memories over time, as described in the MemGPT paper.
+
+The default tools are:
+* `memory_insert`: Insert content into a block
+* `memory_replace`: Replace content in a block
+
+If you do not want your agents to manage their memory, you should disable default tools with `include_base_tools=False` during the agent creation. You can also detach the memory editing tools post-agent creation - if you do so, remember to check the system instructions to make sure there are no references to tools that no longer exist.
+
+### Memory management with sleep-time compute
+If you want to enable memory management with sleep-time compute, you can set `enable_sleeptime=True` in the agent creation. For agents enabled with sleep-time, Letta will automatically create sleep-time agents which have the ability to update the blocks of the primary agent. Sleep-time agents will also include `memory_rethink` and `memory_finish_edits` tools.
+
+Memory management with sleep-time compute can reduce the latency of your main agent (since it is no longer responsible for managing its own memory), but can come at the cost of higher token usage. See our documentation on sleeptime agents for more details.
+
+## Enabling agents to modify their own memory blocks with tools
+You can enable agents to modify their own blocks with tools. By default, agents with type `memgpt_v2_agent` will have the tools `memory_insert` and `memory_replace` to allow them to manage values in their own blocks. The legacy tools `core_memory_replace` and `core_memory_append` are deprecated but still available for backwards compatibility for type `memgpt_agent`. You can also make custom modification to blocks by implementing your own custom tools that can access the agent's state by passing in the special `agent_state` parameter into your tools.
+
+Below is an example of a tool that re-writes the entire memory block of an agent with a new string:
+```python
+def rethink_memory(agent_state: "AgentState", new_memory: str, target_block_label: str) -> None:
+    """
+    Rewrite memory block for the main agent, new_memory should contain all current information from the block that is not outdated or inconsistent, integrating any new information, resulting in a new memory block that is organized, readable, and comprehensive.
+
+    Args:
+        new_memory (str): The new memory with information integrated from the memory block. If there is no new information, then this should be the same as the content in the source block.
+        target_block_label (str): The name of the block to write to.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+
+    if agent_state.memory.get_block(target_block_label) is None:
+        agent_state.memory.create_block(label=target_block_label, value=new_memory)
+
+    agent_state.memory.update_block_value(label=target_block_label, value=new_memory)
+    return None
+```
+
+## Modifying blocks via the API
+You can also [modify blocks via the API](/api-reference/agents/blocks/modify) to directly edit agents' context windows and memory. This can be useful in cases where you want to extract the contents of an agents memory some place in your application (for example, a dashboard or memory viewer), or when you want to programatically modify an agents memory state (for example, allowing an end-user to directly correct or modify their agent's memory).
+
+## Modifying blocks of other Letta agents via API tools
+
+<Tip>
+Importing the Letta Python client inside a tool is a powerful way to allow agents to interact with other agents, since you can use any of the API endpoints. For example, you could create a custom tool that allows an agent to create another Letta agent.
+</Tip>
+
+You can allow agents to modify the blocks of other agents by creating tools that import the Letta Python SDK, then using the block update endpoint:
+```python maxLines=50
+def update_supervisor_block(block_label: str, new_value: str) -> None:
+    """
+    Update the value of a block in the supervisor agent.
+
+    Args:
+        block_label (str): The label of the block to update.
+        new_value (str): The new value for the block.
+
+    Returns:
+        None: None is always returned as this function does not produce a response.
+    """
+    from letta_client import Letta
+
+    client = Letta(
+        base_url="http://localhost:8283"
+    )
+
+    client.agents.blocks.modify(
+        agent_id=agent_id,
+        block_label=block_label,
+        value=new_value
+    )
+```

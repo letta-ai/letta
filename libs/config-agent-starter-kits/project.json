@@ -1,9 +1,0 @@
-{
-  "name": "config-agent-starter-kits",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/config-agent-starter-kits/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project config-agent-starter-kits --web",
-  "targets": {}
-}

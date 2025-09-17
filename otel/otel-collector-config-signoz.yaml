@@ -1,0 +1,48 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1024
+    spike_limit_mib: 256
+  batch:
+    timeout: 10s
+    send_batch_size: 8192
+
+exporters:
+  otlp:
+    endpoint: ${SIGNOZ_ENDPOINT}
+    headers:
+      "signoz-ingestion-key": "${SIGNOZ_INGESTION_KEY}"
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  telemetry:
+    logs:
+      level: error
+    metrics:
+      address: 0.0.0.0:8888
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]

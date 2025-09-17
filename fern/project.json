@@ -1,0 +1,23 @@
+{
+  "name": "docs",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/fern",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/core/fern",
+        "command": "fern docs dev"
+      }
+    },
+    "generate-openapi": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/core/fern",
+        "command": "ts-node ./scripts/prepare-openapi.ts"
+      }
+    }
+  }
+}

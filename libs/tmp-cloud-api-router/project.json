@@ -1,9 +1,0 @@
-{
-  "name": "tmp-cloud-api-router",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/tmp-cloud-api-router/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project tmp-cloud-api-router --web",
-  "targets": {}
-}

@@ -1,8 +1,0 @@
-.app-header {
-  app-region: drag;
-
-}
-
-.disable-app-header {
-  app-region: no-drag;
-}

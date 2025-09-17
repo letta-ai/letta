@@ -1,0 +1,7 @@
+{
+  "embedding_endpoint": "https://embeddings.letta.com",
+  "embedding_model": "letta-free",
+  "embedding_dim": 1536,
+  "embedding_chunk_size": 300,
+  "embedding_endpoint_type": "openai"
+}

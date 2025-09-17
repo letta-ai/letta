@@ -1,1 +1,0 @@
-export { TemplateDescription } from './TemplateDescription';

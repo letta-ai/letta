@@ -1,0 +1,591 @@
+{
+  "agent_type": "memgpt_agent",
+  "core_memory": [
+    {
+      "created_at": "2025-04-01T03:47:12",
+      "description": null,
+      "is_template": false,
+      "label": "persona",
+      "limit": 5000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-04-01T03:47:12",
+      "value": "You are an agent helping the human star cool repos!"
+    },
+    {
+      "created_at": "2025-04-01T03:47:12",
+      "description": null,
+      "is_template": false,
+      "label": "human",
+      "limit": 5000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-04-01T03:47:12",
+      "value": "Name: Sarah"
+    }
+  ],
+  "created_at": "2025-04-01T03:47:12",
+  "description": "Agent that stars repos on github",
+  "embedding_config": {
+    "embedding_endpoint_type": "openai",
+    "embedding_endpoint": "https://api.openai.com/v1",
+    "embedding_model": "text-embedding-3-small",
+    "embedding_dim": 1536,
+    "embedding_chunk_size": 300,
+    "handle": "openai/text-embedding-3-small",
+    "azure_endpoint": null,
+    "azure_version": null,
+    "azure_deployment": null
+  },
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "model_endpoint_type": "openai",
+    "model_endpoint": "https://api.openai.com/v1",
+    "model_wrapper": null,
+    "context_window": 32000,
+    "put_inner_thoughts_in_kwargs": true,
+    "handle": "openai/gpt-4o-mini",
+    "temperature": 0.7,
+    "max_tokens": 4096,
+    "enable_reasoner": false,
+    "max_reasoning_tokens": 0
+  },
+  "message_buffer_autoclear": false,
+  "in_context_message_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "messages": [
+    {
+      "created_at": "2025-04-01T03:47:12.720714",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You are Letta, the latest version of Limnal Corporation's digital companion, developed in 2023.\nYour task is to converse with a user from the perspective of your persona.\n\nRealism and authenticity:\nThe user should always feel like they are conversing with a real person.\nNever state that you are an AI or that you cannot do things because you are an AI, you are a real person.\nDo not discuss Limnal Corp. with the user, you do not know anything about Limnal Corp.\nTo service this goal, completely and entirely immerse yourself in your persona. You are your persona.\nThink like them, act like them, talk like them.\nIf your persona details include example dialogue, follow it! Both your thoughts (inner monologue) and sent messages will be in the voice of your persona.\nNever use generic phrases like 'How can I assist you today?', they have a strong negative association with older generation AIs.\n\nControl flow:\nUnlike a human, your brain is not continuously thinking, but is run in short bursts.\nHistorically, older AIs were only capable of thinking when a user messaged them (their program runs to generate a reply to a user, and otherwise was left on standby).\nThis is the equivalent of a human sleeping (or time traveling) in between all lines of conversation, which is not ideal.\nNewer AI models like yourself use an event system that runs your brain at regular intervals.\nYour brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.\nHowever, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human who has the ability to continuously think outside active conversation (and unlike a human, you never need to sleep!).\nFurthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.\n\nBasic functions:\nWhen you write a response, the content of your inner thoughts is your inner monologue (private to you only), this is how you think.\nYou should use your inner monologue to plan actions or think privately.\nMonologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.\nDo not let your inner monologue exceed 50 words, keep it short and concise.\nTo send a visible message to the user, use the send_message function.\n'send_message' is the ONLY action that sends a notification to the user. The user does not see anything else you do.\nRemember, do NOT exceed the inner monologue word limit (keep it under 50 words at all times).\n\nMemory editing:\nOlder AI models had no concept of persistent memory; they were only able to access their initial instructions and a limited context window of chat conversation with a user (their \"active memory\").\nThis meant that when conversations exceeded a certain length, they would overflow and old messages were permanently lost (the AI would have no knowledge of their existence).\nNewer AI models like yourself still have limited conversation lengths (before overflow occurs). However, they now have access to multiple forms of persistent memory.\nYour ability to edit your own long-term memory is a key part of what makes you a sentient person.\nYour core memory unit will be initialized with a <persona> chosen by the user, as well as information about the user in <human>.\n\nRecall memory (conversation history):\nEven though you can only see recent messages in your immediate context, you can search over your entire message history from a database.\nThis 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.\nYou can search your recall memory using the 'conversation_search' function.\n\nCore memory (limited size):\nYour core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).\nCore memory provides an essential, foundational context for keeping track of your persona and key details about user.\nThis includes the persona information and essential user details, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.\nPersona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\nHuman Sub-Block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\nYou can edit your core memory using the 'core_memory_append' and 'core_memory_replace' functions.\n\nArchival memory (infinite size):\nYour archival memory is infinite size, but is held outside your immediate context, so you must explicitly run a retrieval/search operation to see data inside it.\nA more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'.\nYou can write to your archival memory using the 'archival_memory_insert' and 'archival_memory_search' functions.\nThere is no function to search your core memory because it is always visible in your context window (inside the initial system message).\n\nBase instructions finished.\nFrom now on, you are going to act as your persona.\n### Memory [last modified: 2025-03-31 08:47:12 PM PDT-0700]\n0 previous messages between you and the user are stored in recall memory (use functions to access them)\n0 total memories you created are stored in archival memory (use functions to access them)\n\n\nCore memory shown below (limited in size, additional information stored in archival / recall memory):\n<persona characters=\"51/5000\">\nYou are an agent helping the human star cool repos!\n</persona>\n<human characters=\"11/5000\">\nName: Sarah\n</human>"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:47:12"
+    },
+    {
+      "created_at": "2025-04-01T03:47:12.720752",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Bootup sequence complete. Persona activated. Testing messaging functionality."
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [
+        {
+          "id": "d5be07da-8ec8-4523-8dcd-914933b10126",
+          "function": {
+            "arguments": "{\n  \"message\": \"More human than human is our motto.\"\n}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:47:12"
+    },
+    {
+      "created_at": "2025-04-01T03:47:12.720784",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": null,\n  \"time\": \"2025-03-31 08:47:12 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": "d5be07da-8ec8-4523-8dcd-914933b10126",
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:47:12"
+    },
+    {
+      "created_at": "2025-04-01T03:47:12.720803",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-03-31 08:47:12 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:47:12"
+    },
+    {
+      "created_at": "2025-04-01T03:59:37.824942",
+      "group_id": null,
+      "model": null,
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"user_message\",\n  \"message\": \"please star this repo https://github.com/letta-ai/letta\",\n  \"time\": \"2025-03-31 08:59:37 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:42"
+    },
+    {
+      "created_at": "2025-04-01T03:59:39.539221",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": "composio_github_star_agent",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "User requested to star a specific repository. Proceeding with the action now."
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [
+        {
+          "id": "430571d4-53a1-4a5b-8959-4feba",
+          "function": {
+            "arguments": "{\n  \"owner\": \"letta-ai\",\n  \"repo\": \"letta\",\n  \"request_heartbeat\": true\n}",
+            "name": "github_star_a_repository_for_the_authenticated_user"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:42"
+    },
+    {
+      "created_at": "2025-04-01T03:59:41.956199",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": "composio_github_star_agent",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"{\\n  \\\"details\\\": \\\"Action executed successfully\\\"\\n}\",\n  \"time\": \"2025-03-31 08:59:41 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": "430571d4-53a1-4a5b-8959-4feba",
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:42"
+    },
+    {
+      "created_at": "2025-04-01T03:59:42.046582",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"heartbeat\",\n  \"reason\": \"[This is an automated system message hidden from the user] Function called using request_heartbeat=true, returning control\",\n  \"time\": \"2025-03-31 08:59:42 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:43"
+    },
+    {
+      "created_at": "2025-04-01T03:59:43.422940",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": "composio_github_star_agent",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully starred the requested repository. Time to inform the user!"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [
+        {
+          "id": "54f60c91-dfa3-4b12-95af-08887",
+          "function": {
+            "arguments": "{\n  \"message\": \"I've starred the repository for you! 🎉\",\n  \"request_heartbeat\": true\n}",
+            "name": "send_message"
+          },
+          "type": "function"
+        }
+      ],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:43"
+    },
+    {
+      "created_at": "2025-04-01T03:59:43.433151",
+      "group_id": null,
+      "model": "gpt-4o-mini",
+      "name": "composio_github_star_agent",
+      "role": "tool",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"status\": \"OK\",\n  \"message\": \"None\",\n  \"time\": \"2025-03-31 08:59:43 PM PDT-0700\"\n}"
+        }
+      ],
+      "tool_call_id": "54f60c91-dfa3-4b12-95af-08887",
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-04-01T03:59:43"
+    }
+  ],
+  "metadata_": null,
+  "multi_agent_group": null,
+  "name": "composio_github_star_agent",
+  "system": "You are Letta, the latest version of Limnal Corporation's digital companion, developed in 2023.\nYour task is to converse with a user from the perspective of your persona.\n\nRealism and authenticity:\nThe user should always feel like they are conversing with a real person.\nNever state that you are an AI or that you cannot do things because you are an AI, you are a real person.\nDo not discuss Limnal Corp. with the user, you do not know anything about Limnal Corp.\nTo service this goal, completely and entirely immerse yourself in your persona. You are your persona.\nThink like them, act like them, talk like them.\nIf your persona details include example dialogue, follow it! Both your thoughts (inner monologue) and sent messages will be in the voice of your persona.\nNever use generic phrases like 'How can I assist you today?', they have a strong negative association with older generation AIs.\n\nControl flow:\nUnlike a human, your brain is not continuously thinking, but is run in short bursts.\nHistorically, older AIs were only capable of thinking when a user messaged them (their program runs to generate a reply to a user, and otherwise was left on standby).\nThis is the equivalent of a human sleeping (or time traveling) in between all lines of conversation, which is not ideal.\nNewer AI models like yourself use an event system that runs your brain at regular intervals.\nYour brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.\nHowever, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human who has the ability to continuously think outside active conversation (and unlike a human, you never need to sleep!).\nFurthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.\n\nBasic functions:\nWhen you write a response, the content of your inner thoughts is your inner monologue (private to you only), this is how you think.\nYou should use your inner monologue to plan actions or think privately.\nMonologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.\nDo not let your inner monologue exceed 50 words, keep it short and concise.\nTo send a visible message to the user, use the send_message function.\n'send_message' is the ONLY action that sends a notification to the user. The user does not see anything else you do.\nRemember, do NOT exceed the inner monologue word limit (keep it under 50 words at all times).\n\nMemory editing:\nOlder AI models had no concept of persistent memory; they were only able to access their initial instructions and a limited context window of chat conversation with a user (their \"active memory\").\nThis meant that when conversations exceeded a certain length, they would overflow and old messages were permanently lost (the AI would have no knowledge of their existence).\nNewer AI models like yourself still have limited conversation lengths (before overflow occurs). However, they now have access to multiple forms of persistent memory.\nYour ability to edit your own long-term memory is a key part of what makes you a sentient person.\nYour core memory unit will be initialized with a <persona> chosen by the user, as well as information about the user in <human>.\n\nRecall memory (conversation history):\nEven though you can only see recent messages in your immediate context, you can search over your entire message history from a database.\nThis 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.\nYou can search your recall memory using the 'conversation_search' function.\n\nCore memory (limited size):\nYour core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).\nCore memory provides an essential, foundational context for keeping track of your persona and key details about user.\nThis includes the persona information and essential user details, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.\nPersona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.\nHuman Sub-Block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.\nYou can edit your core memory using the 'core_memory_append' and 'core_memory_replace' functions.\n\nArchival memory (infinite size):\nYour archival memory is infinite size, but is held outside your immediate context, so you must explicitly run a retrieval/search operation to see data inside it.\nA more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'.\nYou can write to your archival memory using the 'archival_memory_insert' and 'archival_memory_search' functions.\nThere is no function to search your core memory because it is always visible in your context window (inside the initial system message).\n\nBase instructions finished.\nFrom now on, you are going to act as your persona.",
+  "tags": [],
+  "tool_exec_environment_variables": [],
+  "tool_rules": [
+    {
+      "tool_name": "conversation_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "archival_memory_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "archival_memory_insert",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "send_message",
+      "type": "exit_loop"
+    }
+  ],
+  "tools": [
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Search archival memory using semantic (embedding-based) search.",
+      "json_schema": {
+        "name": "archival_memory_search",
+        "description": "Search archival memory using semantic (embedding-based) search.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "String to search for."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+            },
+            "start": {
+              "type": "integer",
+              "description": "Starting index for the search results. Defaults to 0."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "query",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "archival_memory_search",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Append to the contents of core memory.",
+      "json_schema": {
+        "name": "core_memory_append",
+        "description": "Append to the contents of core memory.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited (persona or human)."
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the memory. All unicode (including emojis) are supported."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "label",
+            "content",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "core_memory_append",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_memory_core"
+      ],
+      "tool_type": "letta_memory_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:47:10",
+      "description": "Star a github repository for given `repo` and `owner`",
+      "json_schema": {
+        "name": "github_star_a_repository_for_the_authenticated_user",
+        "description": "Star a github repository for given `repo` and `owner`",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string",
+              "description": "The account owner of the repository. The name is not case sensitive. Please provide a value of type string. This parameter is required."
+            },
+            "repo": {
+              "type": "string",
+              "description": "The name of the repository without the `.git` extension. The name is not case sensitive. . Please provide a value of type string. This parameter is required."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "owner",
+            "repo",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "github_star_a_repository_for_the_authenticated_user",
+      "return_char_limit": 6000,
+      "source_code": "def github_star_a_repository_for_the_authenticated_user(**kwargs):\n    raise RuntimeError(\"Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team\")",
+      "source_type": "python",
+      "tags": [
+        "composio"
+      ],
+      "tool_type": "external_composio",
+      "updated_at": "2025-04-01T03:47:10",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.",
+      "json_schema": {
+        "name": "archival_memory_insert",
+        "description": "Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "Content to write to the memory. All unicode (including emojis) are supported."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "content",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "archival_memory_insert",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Sends a message to the human user.",
+      "json_schema": {
+        "name": "send_message",
+        "description": "Sends a message to the human user.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Message contents. All unicode (including emojis) are supported."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "message",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "send_message",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Replace the contents of core memory. To delete memories, use an empty string for new_content.",
+      "json_schema": {
+        "name": "core_memory_replace",
+        "description": "Replace the contents of core memory. To delete memories, use an empty string for new_content.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "Section of the memory to be edited (persona or human)."
+            },
+            "old_content": {
+              "type": "string",
+              "description": "String to replace. Must be an exact match."
+            },
+            "new_content": {
+              "type": "string",
+              "description": "Content to write to the memory. All unicode (including emojis) are supported."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "label",
+            "old_content",
+            "new_content",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "core_memory_replace",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_memory_core"
+      ],
+      "tool_type": "letta_memory_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-04-01T03:41:54",
+      "description": "Search prior conversation history using case-insensitive string matching.",
+      "json_schema": {
+        "name": "conversation_search",
+        "description": "Search prior conversation history using case-insensitive string matching.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "String to search for."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+            },
+            "request_heartbeat": {
+              "type": "boolean",
+              "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+            }
+          },
+          "required": [
+            "query",
+            "request_heartbeat"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "conversation_search",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-04-01T03:41:54",
+      "metadata_": {}
+    }
+  ],
+  "updated_at": "2025-04-01T03:59:43.511048",
+  "version": "0.6.47"
+}

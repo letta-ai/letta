@@ -1,1 +1,0 @@
-ALTER TABLE "organization_invites" ADD CONSTRAINT "organization_invites_invite_code_unique" UNIQUE("invite_code");

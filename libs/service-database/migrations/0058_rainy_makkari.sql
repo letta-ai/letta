@@ -1,2 +1,0 @@
-ALTER TABLE "organization_credit_transactions" ADD COLUMN "step_id" text;--> statement-breakpoint
-ALTER TABLE "organization_credit_transactions" ADD CONSTRAINT "organization_credit_transactions_step_id_unique" UNIQUE("step_id");

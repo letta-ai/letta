@@ -1,8 +1,0 @@
-Lettuce Temporal worker has been deployed.
-
-To check the status of the worker:
-  kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "lettuce.name" . }},app.kubernetes.io/instance={{ .Release.Name }}"
-
-To view logs:
-  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "lettuce.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
-  kubectl logs --namespace {{ .Release.Namespace }} $POD_NAME

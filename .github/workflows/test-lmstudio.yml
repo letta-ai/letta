@@ -1,0 +1,48 @@
+name: Self-Hosted Provider Integration - LMStudio
+
+on:
+  workflow_dispatch:
+    # inputs:
+    #   ref:
+    #     description: 'Git ref to test'
+    #     required: false
+    #     type: string
+    #     default: ${{ github.sha || github.ref || github.event.pull_request.head.sha }}
+  pull_request:
+    paths:
+      - '**'
+      - '.github/workflows/test-lmstudio.yml'
+      - '.github/workflows/reusable-test-workflow.yml'
+  pull_request_target:
+    types: [labeled]
+    paths:
+      - '**'
+      - '.github/workflows/test-lmstudio.yml'
+      - '.github/workflows/reusable-test-workflow.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test-lmstudio:
+    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: "integration"
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
+      install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google"
+      test-command: "uv run pytest -svv tests/"
+      timeout-minutes: 60
+      runner: '["self-hosted", "gpu", "lmstudio"]'
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "test_suite": [
+              "integration_test_send_message.py"
+            ]
+          }
+        }
+    secrets: inherit

@@ -21,8 +21,9 @@ jobs:
     with:
       test-type: 'integration'
       use-redis: true
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
-        apps/core/**
+        **
         .github/workflows/reusable-test-workflow.yml
         .github/workflows/core-integration-tests.yml
       install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox'

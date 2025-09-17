@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       core-directory:
-        description: 'Working directory for commands. Auto-detects between apps/core (cloud) and . (OSS). Can be overridden.'
+        description: 'Working directory for commands. Uses . (root) by default.'
         required: false
         type: string
-        default: 'auto'
+        default: '.'
       install-args:
         description: 'uv sync arguments'
         required: true
@@ -46,7 +46,7 @@ on:
         required: false
         type: string
         default: |
-          apps/core/**
+          **
           .github/workflows/reusable-test-workflow.yml
       skip-fern-generation:
         description: 'Skip Fern SDK generation'
@@ -68,6 +68,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-external-pr:
+        description: 'Whether this is an external PR that needs protection'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   changed-files:
@@ -79,6 +84,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
@@ -96,21 +103,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Generate cache key
-        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
         id: cache-key
         run: |
-          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
 
       - name: Restore SDK cache
         # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
-        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
         id: cache
         uses: actions/cache/restore@v4
         with:
           path: |
-            apps/fern/.preview/fern-python-sdk/
+            fern/.preview/fern-python-sdk/
           key: ${{ steps.cache-key.outputs.key }}
           fail-on-cache-miss: false
 
@@ -131,7 +141,7 @@ jobs:
           echo "Event name: ${{ github.event_name }}"
 
       - name: Wait for Preview SDK workflow
-        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -218,80 +228,73 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
-      - name: Detect core directory
+      - name: Set core directory
         id: detect-core-dir
         run: |
-          if [ "${{ inputs.core-directory }}" = "auto" ]; then
-            if [ -d "apps/core" ]; then
-              echo "dir=apps/core" >> $GITHUB_OUTPUT
-              echo "detected=cloud" >> $GITHUB_OUTPUT
-            else
-              echo "dir=." >> $GITHUB_OUTPUT
-              echo "detected=oss" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "dir=${{ inputs.core-directory }}" >> $GITHUB_OUTPUT
-            echo "detected=manual" >> $GITHUB_OUTPUT
-          fi
+          echo "dir=${{ inputs.core-directory }}" >> $GITHUB_OUTPUT
+          echo "detected=manual" >> $GITHUB_OUTPUT
           echo "Using core directory: $(cat $GITHUB_OUTPUT | grep '^dir=' | cut -d'=' -f2)"
 
       - name: Generate cache key
-        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
         id: cache-key
         run: |
-          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
 
       - name: Restore SDK cache
         # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
-        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
         id: restore-sdk-cache
         uses: actions/cache/restore@v4
         with:
           path: |
-            apps/fern/.preview/fern-python-sdk/
+            fern/.preview/fern-python-sdk/
           key: ${{ steps.cache-key.outputs.key }}
           fail-on-cache-miss: false
 
       - name: Check SDK cache availability
-        if: (inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'apps/fern/openapi-overrides.yml'))) && steps.restore-sdk-cache.outputs.cache-hit != 'true'
+        if: (inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))) && steps.restore-sdk-cache.outputs.cache-hit != 'true'
         run: |
           echo "❌ Preview Python SDK cache expired or missing!"
           echo "📦 Cache key: ${{ steps.cache-key.outputs.key }}"
           echo "🔄 To fix: Re-run the 'preview-python-sdk' workflow job to regenerate the SDK"
           echo "💡 This can happen when:"
           echo "   - The cache entry has expired"
-          echo "   - Dependencies in apps/fern/* or apps/core/pyproject.toml have changed"
+          echo "   - Dependencies in fern/* or pyproject.toml have changed"
           echo "   - The preview-python-sdk job hasn't run successfully for this branch/commit"
           exit 1
 
       - name: Install dependencies with retry
         shell: bash
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           uv sync --no-install-project ${{ inputs.install-args }}
 
       - name: Install custom SDK
         if: inputs.skip-fern-generation != true
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         run: |
           echo "Fixing Fern SDK pyproject.toml for uv compatibility..."
-          SDK_PYPROJECT="../fern/.preview/fern-python-sdk/pyproject.toml"
+          SDK_PYPROJECT="fern/.preview/fern-python-sdk/pyproject.toml"
           VERSION=$(grep -A 10 '^\[tool\.poetry\]' "$SDK_PYPROJECT" | grep '^version' | head -1 | cut -d'"' -f2)
-          head -n 2 < ../fern/.preview/fern-python-sdk/pyproject.toml > ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          echo "version = \"$VERSION\"" >> ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          tail -n +3 ../fern/.preview/fern-python-sdk/pyproject.toml >> ../fern/.preview/fern-python-sdk/pyproject.toml.tmp
-          mv ../fern/.preview/fern-python-sdk/pyproject.toml.tmp ../fern/.preview/fern-python-sdk/pyproject.toml
+          head -n 2 < fern/.preview/fern-python-sdk/pyproject.toml > fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          echo "version = \"$VERSION\"" >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          tail -n +3 fern/.preview/fern-python-sdk/pyproject.toml >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          mv fern/.preview/fern-python-sdk/pyproject.toml.tmp fern/.preview/fern-python-sdk/pyproject.toml
 
-          uv pip install -e ../fern/.preview/fern-python-sdk/.
+          uv pip install -e fern/.preview/fern-python-sdk/.
       - name: Migrate database
         if: inputs.use-docker != true && inputs.test-type != 'sqlite'
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        working-directory: .
         env:
           LETTA_PG_PORT: 5432
           LETTA_PG_USER: postgres
@@ -302,7 +305,8 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           uv run alembic upgrade head
       - name: Inject env vars into environment
-        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        if: inputs.is-external-pr != true
+        working-directory: .
         run: |
           # Get secrets and mask them before adding to environment
           while IFS= read -r line || [[ -n "$line" ]]; do
@@ -321,7 +325,7 @@ jobs:
           chmod -R 755 /home/ci-runner/.letta/logs
 
       - name: Build and run docker dev server
-        if: inputs.use-docker
+        if: inputs.use-docker && inputs.is-external-pr != true
         env:
           LETTA_PG_DB: letta
           LETTA_PG_USER: letta
@@ -339,6 +343,7 @@ jobs:
           bash scripts/wait_for_service.sh localhost:8083 -- echo "Service is ready"
 
       - name: Run tests
+        if: inputs.is-external-pr != true
         working-directory: ${{ steps.detect-core-dir.outputs.dir }}
         env:
           # Database configuration (shared, but values depend on Docker usage)
@@ -365,14 +370,13 @@ jobs:
           COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
           E2B_API_KEY: ${{ env.E2B_API_KEY }}
           E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_HOST: ${{ secrets.PINECONE_INDEX_HOST }}
-          PINECONE_NAMESPACE: ${{ secrets.PINECONE_NAMESPACE }}
 
           # Turbopuffer flags
           LETTA_USE_TPUF: true
           LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
+
+          # Encryption key
+          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
 
           # Google Cloud (shared across all test types)
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
@@ -380,14 +384,16 @@ jobs:
 
           # Feature flags (shared across all test types)
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
-          LETTA_GEMINI_MAX_RETRIES: 10
+
+          # Gemini flags
+          GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
+          GEMINI_MAX_RETRIES: 10
 
           # Pinecone flags
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
-          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
+          LETTA_ENABLE_PINECONE: true
 
-          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+          EXA_API_KEY: ${{ env.EXA_API_KEY }}
 
           # Docker-specific environment variables
           PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}

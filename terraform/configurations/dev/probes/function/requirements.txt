@@ -1,5 +1,0 @@
-# function/requirements.txt
-clickhouse-connect==0.7.19
-google-cloud-secret-manager==2.18.1
-requests==2.31.0
-functions-framework==3.5.0

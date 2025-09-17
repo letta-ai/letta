@@ -1,0 +1,198 @@
+[project]
+name = "letta"
+version = "0.11.7"
+description = "Create LLM agents with long-term memory and custom tools"
+authors = [
+    {name = "Letta Team", email = "contact@letta.com"},
+]
+license = {text = "Apache License"}
+readme = "README.md"
+requires-python = "<3.14,>=3.11"
+dependencies = [
+    "typer>=0.15.2",
+    "questionary>=2.0.1",
+    "pytz>=2023.3.post1",
+    "tqdm>=4.66.1",
+    "black[jupyter]>=24.2.0",
+    "setuptools>=70",
+    "prettytable>=3.9.0",
+    "docstring-parser>=0.16,<0.17",
+    "httpx>=0.28.0",
+    "numpy>=2.1.0",
+    "demjson3>=3.0.6",
+    "pyyaml>=6.0.1",
+    "sqlalchemy-json>=0.7.0",
+    "pydantic>=2.10.6",
+    "html2text>=2020.1.16",
+    "sqlalchemy[asyncio]>=2.0.41",
+    "python-box>=7.1.1",
+    "sqlmodel>=0.0.16",
+    "python-multipart>=0.0.19",
+    "sqlalchemy-utils>=0.41.2",
+    "pydantic-settings>=2.2.1",
+    "httpx-sse>=0.4.0",
+    "nltk>=3.8.1",
+    "composio-core>=0.7.7",
+    "alembic>=1.13.3",
+    "pyhumps>=3.8.0",
+    "pathvalidate>=3.2.1",
+    "sentry-sdk[fastapi]==2.19.1",
+    "rich>=13.9.4",
+    "brotli>=1.1.0",
+    "grpcio>=1.68.1",
+    "grpcio-tools>=1.68.1",
+    "llama-index>=0.12.2",
+    "llama-index-embeddings-openai>=0.3.1",
+    "anthropic>=0.49.0",
+    "letta-client>=0.1.319",
+    "openai>=1.99.9",
+    "opentelemetry-api==1.30.0",
+    "opentelemetry-sdk==1.30.0",
+    "opentelemetry-instrumentation-requests==0.51b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.51b0",
+    "opentelemetry-exporter-otlp==1.30.0",
+    "faker>=36.1.0",
+    "colorama>=0.4.6",
+    "marshmallow-sqlalchemy>=1.4.1",
+    "datamodel-code-generator[http]>=0.25.0",
+    "mcp[cli]>=1.9.4",
+    "exa-py>=1.15.4",
+    "apscheduler>=3.11.0",
+    "aiomultiprocess>=0.9.1",
+    "matplotlib>=3.10.1",
+    "tavily-python>=0.7.2",
+    "temporalio>=1.8.0",
+    "mistralai>=1.8.1",
+    "structlog>=25.4.0",
+    "certifi>=2025.6.15",
+    "markitdown[docx,pdf,pptx]>=0.1.2",
+    "orjson>=3.11.1",
+    "ruff[dev]>=0.12.10",
+    "trafilatura",
+    "readability-lxml",
+]
+
+[project.scripts]
+letta = "letta.main:app"
+
+[project.optional-dependencies]
+# ====== Databases ======
+postgres = [
+    "pgvector>=0.2.3",
+    "pg8000>=1.30.3",
+    "psycopg2-binary>=2.9.10",
+    "psycopg2>=2.9.10",
+    "asyncpg>=0.30.0",
+]
+redis = ["redis>=6.2.0"]
+pinecone = ["pinecone[asyncio]>=7.3.0"]
+sqlite = ["aiosqlite>=0.21.0", "sqlite-vec>=0.1.7a2"]
+
+# ====== Server ======
+experimental = ["uvloop>=0.21.0", "granian[uvloop,reload]>=2.3.2", "google-cloud-profiler>=4.1.0"]
+server = [
+    "websockets",
+    "fastapi>=0.115.6",
+    "uvicorn==0.29.0",
+]
+
+# ====== LLM Providers ======
+bedrock = [
+    "boto3>=1.36.24",
+    "aioboto3>=14.3.0",
+]
+google = ["google-genai>=1.15.0"]
+
+# ====== Development ======
+dev = [
+    "pytest",
+    "pytest-asyncio>=0.24.0",
+    "pytest-order>=1.2.0",
+    "pytest-mock>=3.14.0",
+    "pytest-json-report>=1.5.0",
+    "pexpect>=4.9.0",
+    "pre-commit>=3.5.0",
+    "pyright>=1.1.347",
+    "ipykernel>=6.29.5",
+    "ipdb>=0.13.13",
+]
+
+# ====== Other ======
+cloud-tool-sandbox = ["e2b-code-interpreter>=1.0.3"]  # TODO: make this more explicitly e2b
+modal = ["modal>=1.1.0"]
+external-tools = [
+    "docker>=7.1.0",
+    "langchain>=0.3.7",
+    "wikipedia>=1.4.0",
+    "langchain-community>=0.3.7",
+    "exa-py>=1.15.4",
+    "turbopuffer>=0.5.17",
+]
+desktop = [
+    "websockets",
+    "fastapi>=0.115.6",
+    "uvicorn==0.29.0",
+    "docker>=7.1.0",
+    "langchain>=0.3.7",
+    "wikipedia>=1.4.0",
+    "langchain-community>=0.3.7",
+    "locust>=2.31.5",
+    "aiosqlite>=0.21.0",
+    "sqlite-vec>=0.1.7a2",
+    "pgvector>=0.2.3",
+    "tiktoken>=0.11.0",
+    "async-lru>=2.0.5",
+    "magika>=0.6.2",
+    #"pgserver>=0.1.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["letta"]
+
+
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+extend-exclude = [
+    "examples/*",
+    "tests/data/*",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E402",  # module import not at top of file
+    "E711",  # none-comparison
+    "E712",  # true-false-comparison
+    "E722",  # bare except
+    "E721",  # type comparison
+    "F401",  # unused import
+    "F821",  # undefined name
+    "F811",  # redefined while unused
+    "F841",  # local variable assigned but never used
+    "W293",  # blank line contains whitespace
+]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+combine-as-imports = true
+split-on-trailing-comma = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

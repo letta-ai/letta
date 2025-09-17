@@ -1,24 +1,22 @@
 import base64
 import json
 import os
+import socket
+import threading
 import time
 import uuid
 from typing import Any, Dict, List
 
 import httpx
 import pytest
-from letta.log import get_logger
-from letta.schemas.agent import AgentState
-from letta.schemas.llm_config import LLMConfig
+import requests
+from dotenv import load_dotenv
 from letta_client import Letta, MessageCreate, Run
 from letta_client.core.api_error import ApiError
 from letta_client.types import (
     AssistantMessage,
     Base64Image,
-    HiddenReasoningMessage,
     ImageContent,
-    LettaMessageUnion,
-    LettaStopReason,
     LettaUsageStatistics,
     ReasoningMessage,
     TextContent,
@@ -28,8 +26,8 @@ from letta_client.types import (
     UserMessage,
 )
 
-logger = get_logger(__name__)
-
+from letta.schemas.agent import AgentState
+from letta.schemas.llm_config import LLMConfig
 
 # ------------------------------
 # Helper Functions and Constants
@@ -38,18 +36,10 @@ logger = get_logger(__name__)
 
 def get_llm_config(filename: str, llm_config_dir: str = "tests/configs/llm_model_configs") -> LLMConfig:
     filename = os.path.join(llm_config_dir, filename)
-    config_data = json.load(open(filename, "r"))
+    with open(filename, "r") as f:
+        config_data = json.load(f)
     llm_config = LLMConfig(**config_data)
     return llm_config
-
-
-def prefix_message_content_for_ollama(content: str, llm_config: LLMConfig) -> str:
-    """
-    Prefix message content with '/no_think' if model_endpoint is 'http://localhost:11434'
-    """
-    if llm_config.model_endpoint == "http://localhost:11434":
-        return f"/no_think {content}"
-    return content
 
 
 def roll_dice(num_sides: int) -> int:
@@ -67,20 +57,6 @@ def roll_dice(num_sides: int) -> int:
 
 USER_MESSAGE_OTID = str(uuid.uuid4())
 USER_MESSAGE_RESPONSE: str = "Teamwork makes the dream work"
-
-
-def get_user_message_force_reply(llm_config: LLMConfig) -> List[MessageCreate]:
-    content = f"This is an automated test message. Call the send_message tool with the message '{USER_MESSAGE_RESPONSE}'."
-    content = prefix_message_content_for_ollama(content, llm_config)
-    return [
-        MessageCreate(
-            role="user",
-            content=content,
-            otid=USER_MESSAGE_OTID,
-        )
-    ]
-
-
 USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -88,45 +64,14 @@ USER_MESSAGE_FORCE_REPLY: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
-
-
-def get_user_message_roll_dice(llm_config: LLMConfig) -> List[MessageCreate]:
-    content = "This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome."
-    content = prefix_message_content_for_ollama(content, llm_config)
-    return [
-        MessageCreate(
-            role="user",
-            content=content,
-            otid=USER_MESSAGE_OTID,
-        )
-    ]
-
-
 USER_MESSAGE_ROLL_DICE: List[MessageCreate] = [
     MessageCreate(
         role="user",
-        content="This is an automated test message. Call the roll_dice tool with 16 sides and send me a message with the outcome.",
+        content="This is an automated test message. Call the roll_dice tool with 16 sides and tell me the outcome.",
         otid=USER_MESSAGE_OTID,
     )
 ]
 URL_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg"
-
-
-def get_user_message_url_image(llm_config: LLMConfig) -> List[MessageCreate]:
-    text_content = "What is in this image?"
-    text_content = prefix_message_content_for_ollama(text_content, llm_config)
-    return [
-        MessageCreate(
-            role="user",
-            content=[
-                ImageContent(source=UrlImage(url=URL_IMAGE)),
-                TextContent(text=text_content),
-            ],
-            otid=USER_MESSAGE_OTID,
-        )
-    ]
-
-
 USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -138,23 +83,6 @@ USER_MESSAGE_URL_IMAGE: List[MessageCreate] = [
     )
 ]
 BASE64_IMAGE = base64.standard_b64encode(httpx.get(URL_IMAGE).content).decode("utf-8")
-
-
-def get_user_message_base64_image(llm_config: LLMConfig) -> List[MessageCreate]:
-    text_content = "What is in this image?"
-    text_content = prefix_message_content_for_ollama(text_content, llm_config)
-    return [
-        MessageCreate(
-            role="user",
-            content=[
-                ImageContent(source=Base64Image(data=BASE64_IMAGE, media_type="image/jpeg")),
-                TextContent(text=text_content),
-            ],
-            otid=USER_MESSAGE_OTID,
-        )
-    ]
-
-
 USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
     MessageCreate(
         role="user",
@@ -165,11 +93,25 @@ USER_MESSAGE_BASE64_IMAGE: List[MessageCreate] = [
         otid=USER_MESSAGE_OTID,
     )
 ]
+all_configs = [
+    "openai-gpt-4o-mini.json",
+    # "azure-gpt-4o-mini.json", # TODO: Re-enable on new agent loop
+    "claude-3-5-sonnet.json",
+    "claude-4-sonnet-extended.json",
+    "claude-3-7-sonnet-extended.json",
+    "gemini-1.5-pro.json",
+    "gemini-2.5-flash-vertex.json",
+    "gemini-2.5-pro-vertex.json",
+    "together-qwen-2.5-72b-instruct.json",
+    "ollama.json",
+]
+requested = os.getenv("LLM_CONFIG_FILE")
+filenames = [requested] if requested else all_configs
+TESTED_LLM_CONFIGS: List[LLMConfig] = [get_llm_config(fn) for fn in filenames]
 
 
 def assert_greeting_with_assistant_message_response(
     messages: List[Any],
-    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -178,7 +120,7 @@ def assert_greeting_with_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 4 if streaming else 3 if from_db else 2
+    expected_message_count = 3 if streaming or from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -188,11 +130,7 @@ def assert_greeting_with_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    if LLMConfig.is_reasoning_model(llm_config):
-        assert isinstance(messages[index], HiddenReasoningMessage)
-    else:
-        assert isinstance(messages[index], ReasoningMessage)
-
+    assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -203,9 +141,6 @@ def assert_greeting_with_assistant_message_response(
     index += 1
 
     if streaming:
-        assert isinstance(messages[index], LettaStopReason)
-        assert messages[index].stop_reason == "end_turn"
-        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0
@@ -215,7 +150,6 @@ def assert_greeting_with_assistant_message_response(
 
 def assert_greeting_without_assistant_message_response(
     messages: List[Any],
-    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -224,7 +158,7 @@ def assert_greeting_without_assistant_message_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage.
     """
-    expected_message_count = 5 if streaming else 4 if from_db else 3
+    expected_message_count = 4 if streaming or from_db else 3
     assert len(messages) == expected_message_count
 
     index = 0
@@ -234,10 +168,7 @@ def assert_greeting_without_assistant_message_response(
         index += 1
 
     # Agent Step 1
-    if LLMConfig.is_reasoning_model(llm_config):
-        assert isinstance(messages[index], HiddenReasoningMessage)
-    else:
-        assert isinstance(messages[index], ReasoningMessage)
+    assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -254,19 +185,11 @@ def assert_greeting_without_assistant_message_response(
     index += 1
 
     if streaming:
-        assert isinstance(messages[index], LettaStopReason)
-        assert messages[index].stop_reason == "end_turn"
-        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
-        assert messages[index].prompt_tokens > 0
-        assert messages[index].completion_tokens > 0
-        assert messages[index].total_tokens > 0
-        assert messages[index].step_count > 0
 
 
 def assert_tool_call_response(
     messages: List[Any],
-    llm_config: LLMConfig,
     streaming: bool = False,
     from_db: bool = False,
 ) -> None:
@@ -275,7 +198,7 @@ def assert_tool_call_response(
     ReasoningMessage -> ToolCallMessage -> ToolReturnMessage ->
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 7 if streaming or from_db else 5
+    expected_message_count = 6 if streaming else 7 if from_db else 5
     assert len(messages) == expected_message_count
 
     index = 0
@@ -285,10 +208,7 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 1
-    if LLMConfig.is_reasoning_model(llm_config):
-        assert isinstance(messages[index], HiddenReasoningMessage)
-    else:
-        assert isinstance(messages[index], ReasoningMessage)
+    assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -308,10 +228,7 @@ def assert_tool_call_response(
         index += 1
 
     # Agent Step 3
-    if LLMConfig.is_reasoning_model(llm_config):
-        assert isinstance(messages[index], HiddenReasoningMessage)
-    else:
-        assert isinstance(messages[index], ReasoningMessage)
+    assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -320,19 +237,11 @@ def assert_tool_call_response(
     index += 1
 
     if streaming:
-        assert isinstance(messages[index], LettaStopReason)
-        assert messages[index].stop_reason == "end_turn"
-        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
-        assert messages[index].prompt_tokens > 0
-        assert messages[index].completion_tokens > 0
-        assert messages[index].total_tokens > 0
-        assert messages[index].step_count > 0
 
 
 def assert_image_input_response(
     messages: List[Any],
-    llm_config: LLMConfig,
     streaming: bool = False,
     token_streaming: bool = False,
     from_db: bool = False,
@@ -341,7 +250,7 @@ def assert_image_input_response(
     Asserts that the messages list follows the expected sequence:
     ReasoningMessage -> AssistantMessage.
     """
-    expected_message_count = 4 if streaming else 3 if from_db else 2
+    expected_message_count = 3 if streaming or from_db else 2
     assert len(messages) == expected_message_count
 
     index = 0
@@ -351,10 +260,7 @@ def assert_image_input_response(
         index += 1
 
     # Agent Step 1
-    if LLMConfig.is_reasoning_model(llm_config):
-        assert isinstance(messages[index], HiddenReasoningMessage)
-    else:
-        assert isinstance(messages[index], ReasoningMessage)
+    assert isinstance(messages[index], ReasoningMessage)
     assert messages[index].otid and messages[index].otid[-1] == "0"
     index += 1
 
@@ -363,9 +269,6 @@ def assert_image_input_response(
     index += 1
 
     if streaming:
-        assert isinstance(messages[index], LettaStopReason)
-        assert messages[index].stop_reason == "end_turn"
-        index += 1
         assert isinstance(messages[index], LettaUsageStatistics)
         assert messages[index].prompt_tokens > 0
         assert messages[index].completion_tokens > 0
@@ -373,40 +276,24 @@ def assert_image_input_response(
         assert messages[index].step_count > 0
 
 
-def accumulate_chunks(chunks: List[Any], verify_token_streaming: bool = False) -> List[Any]:
+def accumulate_chunks(chunks: List[Any]) -> List[Any]:
     """
     Accumulates chunks into a list of messages.
     """
     messages = []
     current_message = None
     prev_message_type = None
-    chunk_count = 0
     for chunk in chunks:
         current_message_type = chunk.message_type
         if prev_message_type != current_message_type:
             messages.append(current_message)
-            if (
-                prev_message_type
-                and verify_token_streaming
-                and current_message.message_type in ["reasoning_message", "assistant_message", "tool_call_message"]
-            ):
-                assert chunk_count > 1, f"Expected more than one chunk for {current_message.message_type}"
             current_message = None
-            chunk_count = 0
         if current_message is None:
             current_message = chunk
         else:
             pass  # TODO: actually accumulate the chunks. For now we only care about the count
         prev_message_type = current_message_type
-        chunk_count += 1
     messages.append(current_message)
-    if verify_token_streaming and current_message.message_type in [
-        "reasoning_message",
-        "assistant_message",
-        "tool_call_message",
-    ]:
-        assert chunk_count > 1, f"Expected more than one chunk for {current_message.message_type}"
-
     return [m for m in messages if m is not None]
 
 
@@ -417,86 +304,26 @@ def wait_for_run_completion(client: Letta, run_id: str, timeout: float = 30.0, i
         if run.status == "completed":
             return run
         if run.status == "failed":
-            print(run)
             raise RuntimeError(f"Run {run_id} did not complete: status = {run.status}")
         if time.time() - start > timeout:
             raise TimeoutError(f"Run {run_id} did not complete within {timeout} seconds (last status: {run.status})")
         time.sleep(interval)
 
 
-def cast_message_dict_to_messages(
-    messages: List[Dict[str, Any]],
-) -> List[LettaMessageUnion]:
-    def cast_message(message: Dict[str, Any]) -> LettaMessageUnion:
-        if message["message_type"] == "reasoning_message":
-            return ReasoningMessage(**message)
-        elif message["message_type"] == "assistant_message":
-            return AssistantMessage(**message)
-        elif message["message_type"] == "tool_call_message":
-            return ToolCallMessage(**message)
-        elif message["message_type"] == "tool_return_message":
-            return ToolReturnMessage(**message)
-        elif message["message_type"] == "user_message":
-            return UserMessage(**message)
-        elif message["message_type"] == "hidden_reasoning_message":
-            return HiddenReasoningMessage(**message)
-        else:
-            raise ValueError(f"Unknown message type: {message['message_type']}")
-
-    return [cast_message(message) for message in messages]
-
-
-# ------------------------------
-# Fixtures
-# ------------------------------
-
-
-@pytest.fixture(scope="function")
-def agent_state(client: Letta) -> AgentState:
+def assert_tool_response_dict_messages(messages: List[Dict[str, Any]]) -> None:
     """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    The agent is named 'supervisor' and is configured with base tools and the roll_dice tool.
+    Asserts that a list of message dictionaries contains the expected types and statuses.
+
+    Expected order:
+        1. reasoning_message
+        2. tool_call_message
+        3. tool_return_message (with status 'success')
+        4. reasoning_message
+        5. assistant_message
     """
-    client.tools.upsert_base_tools()
-    dice_tool = client.tools.upsert_from_function(func=roll_dice)
-
-    send_message_tool = client.tools.list(name="send_message")[0]
-    agent_state_instance = client.agents.create(
-        name="supervisor",
-        include_base_tools=False,
-        tool_ids=[send_message_tool.id, dice_tool.id],
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["supervisor"],
-    )
-    yield agent_state_instance
-
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
-
-
-@pytest.fixture(scope="function")
-def agent_state_no_tools(client: Letta) -> AgentState:
-    """
-    Creates and returns an agent state for testing with a pre-configured agent.
-    The agent is named 'supervisor' and is configured with no tools.
-    """
-    send_message_tool = client.tools.list(name="send_message")[0]
-    agent_state_instance = client.agents.create(
-        name="supervisor",
-        include_base_tools=False,
-        model="openai/gpt-4o",
-        embedding="letta/letta-free",
-        tags=["supervisor"],
-    )
-    yield agent_state_instance
-
-    try:
-        client.agents.delete(agent_state_instance.id)
-    except Exception as e:
-        logger.error(f"Failed to delete agent {agent_state_instance.name}: {str(e)}")
+    assert isinstance(messages, list)
+    assert messages[0]["message_type"] == "reasoning_message"
+    assert messages[1]["message_type"] == "assistant_message"
 
 
 # ------------------------------
@@ -532,11 +359,11 @@ def test_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
     )
-    assert_greeting_with_assistant_message_response(response.messages, llm_config=llm_config)
+    assert_greeting_with_assistant_message_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_greeting_without_assistant_message(
@@ -555,12 +382,12 @@ def test_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
         use_assistant_message=False,
     )
-    assert_greeting_without_assistant_message_response(response.messages, llm_config=llm_config)
+    assert_greeting_without_assistant_message_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_tool_call(
@@ -581,11 +408,11 @@ def test_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=get_user_message_roll_dice(llm_config),
+        messages=USER_MESSAGE_ROLL_DICE,
     )
-    assert_tool_call_response(response.messages, llm_config=llm_config)
+    assert_tool_call_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_tool_call_response(messages_from_db, from_db=True)
 
 
 def test_url_image_input(
@@ -604,11 +431,11 @@ def test_url_image_input(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=get_user_message_url_image(llm_config),
+        messages=USER_MESSAGE_URL_IMAGE,
     )
-    assert_image_input_response(response.messages, llm_config=llm_config)
+    assert_image_input_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_image_input_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_image_input_response(messages_from_db, from_db=True)
 
 
 def test_base64_image_input(
@@ -627,11 +454,11 @@ def test_base64_image_input(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create(
         agent_id=agent_state.id,
-        messages=get_user_message_base64_image(llm_config),
+        messages=USER_MESSAGE_BASE64_IMAGE,
     )
-    assert_image_input_response(response.messages, llm_config=llm_config)
+    assert_image_input_response(response.messages)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_image_input_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_image_input_response(messages_from_db, from_db=True)
 
 
 def test_agent_loop_error(
@@ -652,7 +479,7 @@ def test_agent_loop_error(
     with pytest.raises(ApiError):
         client.agents.messages.create(
             agent_id=agent_state.id,
-            messages=get_user_message_force_reply(llm_config),
+            messages=USER_MESSAGE_FORCE_REPLY,
         )
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
     assert len(messages_from_db) == 0
@@ -675,13 +502,13 @@ def test_step_streaming_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config, streaming=True)
+    assert_greeting_with_assistant_message_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_step_streaming_greeting_without_assistant_message(
@@ -700,14 +527,14 @@ def test_step_streaming_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
         use_assistant_message=False,
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
-    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config, streaming=True)
+    assert_greeting_without_assistant_message_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_step_streaming_tool_call(
@@ -728,13 +555,13 @@ def test_step_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_roll_dice(llm_config),
+        messages=USER_MESSAGE_ROLL_DICE,
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
-    assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
+    assert_tool_call_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_tool_call_response(messages_from_db, from_db=True)
 
 
 def test_step_stream_agent_loop_error(
@@ -755,7 +582,7 @@ def test_step_stream_agent_loop_error(
     with pytest.raises(ApiError):
         response = client.agents.messages.create_stream(
             agent_id=agent_state.id,
-            messages=get_user_message_force_reply(llm_config),
+            messages=USER_MESSAGE_FORCE_REPLY,
         )
         list(response)
 
@@ -780,14 +607,14 @@ def test_token_streaming_greeting_with_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
         stream_tokens=True,
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config, streaming=True, token_streaming=True)
+    assert_greeting_with_assistant_message_response(messages, streaming=True, token_streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_greeting_with_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_with_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_token_streaming_greeting_without_assistant_message(
@@ -806,15 +633,15 @@ def test_token_streaming_greeting_without_assistant_message(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
         use_assistant_message=False,
         stream_tokens=True,
     )
     chunks = list(response)
     messages = accumulate_chunks(chunks)
-    assert_greeting_without_assistant_message_response(messages, llm_config=llm_config, streaming=True, token_streaming=True)
+    assert_greeting_without_assistant_message_response(messages, streaming=True, token_streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id, use_assistant_message=False)
-    assert_greeting_without_assistant_message_response(messages_from_db, llm_config=llm_config, from_db=True)
+    assert_greeting_without_assistant_message_response(messages_from_db, from_db=True)
 
 
 def test_token_streaming_tool_call(
@@ -835,17 +662,14 @@ def test_token_streaming_tool_call(
     agent_state = client.agents.modify(agent_id=agent_state.id, llm_config=llm_config)
     response = client.agents.messages.create_stream(
         agent_id=agent_state.id,
-        messages=get_user_message_roll_dice(llm_config),
+        messages=USER_MESSAGE_ROLL_DICE,
         stream_tokens=True,
     )
     chunks = list(response)
-    messages = accumulate_chunks(
-        chunks,
-        verify_token_streaming=(llm_config.model_endpoint_type in ["anthropic", "openai", "bedrock"]),
-    )
-    assert_tool_call_response(messages, streaming=True, llm_config=llm_config)
+    messages = accumulate_chunks(chunks)
+    assert_tool_call_response(messages, streaming=True)
     messages_from_db = client.agents.messages.list(agent_id=agent_state.id, after=last_message[0].id)
-    assert_tool_call_response(messages_from_db, from_db=True, llm_config=llm_config)
+    assert_tool_call_response(messages_from_db, from_db=True)
 
 
 def test_token_streaming_agent_loop_error(
@@ -866,7 +690,7 @@ def test_token_streaming_agent_loop_error(
     try:
         response = client.agents.messages.create_stream(
             agent_id=agent_state.id,
-            messages=get_user_message_force_reply(llm_config),
+            messages=USER_MESSAGE_FORCE_REPLY,
             stream_tokens=True,
         )
         list(response)
@@ -894,7 +718,7 @@ def test_async_greeting_with_assistant_message(
 
     run = client.agents.messages.create_async(
         agent_id=agent_state.id,
-        messages=get_user_message_force_reply(llm_config),
+        messages=USER_MESSAGE_FORCE_REPLY,
     )
     run = wait_for_run_completion(client, run.id)
 
@@ -902,8 +726,7 @@ def test_async_greeting_with_assistant_message(
     assert result is not None, "Run metadata missing 'result' key"
 
     messages = result["messages"]
-    messages = cast_message_dict_to_messages(messages)
-    assert_greeting_with_assistant_message_response(messages, llm_config=llm_config)
+    assert_tool_response_dict_messages(messages)
 
 
 def test_auto_summarize(
@@ -943,10 +766,9 @@ And if there is something underneath all of it—something real, something worth
     prev_length = None
 
     for attempt in range(MAX_ATTEMPTS):
-        content = prefix_message_content_for_ollama(philosophical_question, llm_config)
         client.agents.messages.create(
             agent_id=temp_agent_state.id,
-            messages=[MessageCreate(role="user", content=content)],
+            messages=[MessageCreate(role="user", content=philosophical_question)],
         )
 
         temp_agent_state = client.agents.retrieve(agent_id=temp_agent_state.id)

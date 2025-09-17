@@ -1,0 +1,57 @@
+---
+title: DeepSeek
+slug: guides/server/providers/deepseek
+---
+
+
+<Tip>To use Letta with the DeepSeek API, set the environment variable `DEEPSEEK_API_KEY=...`</Tip>
+
+You can use Letta with [DeepSeek](https://api-docs.deepseek.com/) if you have a DeepSeek account and API key. Once you have set your `DEEPSEEK_API_KEY` in your environment variables, you can select what model and configure the context window size.
+<Warning>
+Please note that R1 doesn't natively support function calling in DeepSeek API and V3 function calling is unstable, which may result in unstable tool calling inside of Letta agents.
+</Warning>
+<Warning>
+The DeepSeek API for R1 is often down. Please make sure you can connect to DeepSeek API directly by running:
+```bash
+curl https://api.deepseek.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+  -d '{
+        "model": "deepseek-reasoner",
+        "messages": [
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": "Hello!"}
+        ],
+        "stream": false
+      }'
+```
+</Warning>
+
+## Enabling DeepSeek as a provider
+To enable the DeepSeek provider, you must set the `DEEPSEEK_API_KEY` environment variable. When this is set, Letta will use available LLM models running on DeepSeek.
+
+### Using the `docker run` server with DeepSeek
+To enable DeepSeek models, simply set your `DEEPSEEK_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e DEEPSEEK_API_KEY="your_deepseek_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with DeepSeek
+To chat with an agent, run:
+```bash
+export DEEPSEEK_API_KEY="..."
+letta run
+```
+To run the Letta server, run:
+```bash
+export DEEPSEEK_API_KEY="..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>
