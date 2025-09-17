@@ -519,3 +519,113 @@ class TestSecretDict:
             assert not secret_dict._was_encrypted
         finally:
             settings.encryption_key = original_key
+
+    def test_encryption_key_transition_no_key_to_has_key(self):
+        """Test transition from no encryption key to having one."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+
+        try:
+            # Start with no encryption key
+            settings.encryption_key = None
+
+            # Create secrets without encryption
+            plaintext = "test-value-123"
+            secret = Secret.from_plaintext(plaintext)
+
+            plaintext_dict = {"api_key": "sk-12345", "api_secret": "secret"}
+            secret_dict = SecretDict.from_plaintext(plaintext_dict)
+
+            # Verify they're stored as plaintext
+            assert secret._encrypted_value == plaintext
+            assert secret_dict._encrypted_value == json.dumps(plaintext_dict)
+
+            # Now add an encryption key
+            settings.encryption_key = self.MOCK_KEY
+
+            # Should still be able to read the plaintext values
+            assert secret.get_plaintext() == plaintext
+            assert secret_dict.get_plaintext() == plaintext_dict
+
+            # Create new secrets with encryption enabled
+            new_secret = Secret.from_plaintext("new-encrypted-value")
+            assert new_secret._encrypted_value != "new-encrypted-value"  # Should be encrypted
+
+        finally:
+            settings.encryption_key = original_key
+
+    def test_encryption_key_transition_has_key_to_no_key(self):
+        """Test transition from having encryption key to not having one."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+
+        try:
+            # Start with encryption key
+            settings.encryption_key = self.MOCK_KEY
+
+            # Create secrets with encryption
+            plaintext = "encrypted-test-value"
+            secret = Secret.from_plaintext(plaintext)
+
+            plaintext_dict = {"token": "bearer-xyz", "key": "value"}
+            secret_dict = SecretDict.from_plaintext(plaintext_dict)
+
+            # Verify they're encrypted
+            assert secret._encrypted_value != plaintext
+            assert secret_dict._encrypted_value != json.dumps(plaintext_dict)
+
+            # Remove encryption key
+            settings.encryption_key = None
+
+            # Should handle gracefully - return None for encrypted values
+            # (can't decrypt without key)
+            result = secret.get_plaintext()
+            assert result is None  # Can't decrypt without key
+
+            dict_result = secret_dict.get_plaintext()
+            assert dict_result is None  # Can't decrypt without key
+
+        finally:
+            settings.encryption_key = original_key
+
+    def test_round_trip_compatibility(self):
+        """Test that values can be read correctly regardless of when they were stored."""
+        from letta.settings import settings
+
+        original_key = settings.encryption_key
+
+        try:
+            # Create some values without encryption
+            settings.encryption_key = None
+            unencrypted_secret = Secret.from_plaintext("unencrypted")
+            unencrypted_dict = SecretDict.from_plaintext({"plain": "text"})
+
+            # Create some values with encryption
+            settings.encryption_key = self.MOCK_KEY
+            encrypted_secret = Secret.from_plaintext("encrypted")
+            encrypted_dict = SecretDict.from_plaintext({"secure": "data"})
+
+            # Mix them - can read unencrypted with key present
+            assert unencrypted_secret.get_plaintext() == "unencrypted"
+            assert unencrypted_dict.get_plaintext() == {"plain": "text"}
+            assert encrypted_secret.get_plaintext() == "encrypted"
+            assert encrypted_dict.get_plaintext() == {"secure": "data"}
+
+            # Remove key - can only read unencrypted
+            settings.encryption_key = None
+            assert unencrypted_secret.get_plaintext() == "unencrypted"
+            assert unencrypted_dict.get_plaintext() == {"plain": "text"}
+            assert encrypted_secret.get_plaintext() is None  # Can't decrypt
+            assert encrypted_dict.get_plaintext() is None  # Can't decrypt
+
+            # Restore key - can read all again
+            settings.encryption_key = self.MOCK_KEY
+            assert unencrypted_secret.get_plaintext() == "unencrypted"
+            assert unencrypted_dict.get_plaintext() == {"plain": "text"}
+            assert encrypted_secret.get_plaintext() == "encrypted"
+            assert encrypted_dict.get_plaintext() == {"secure": "data"}
+
+        finally:
+            settings.encryption_key = original_key

@@ -129,9 +129,15 @@ class Secret(BaseModel):
         if self._encrypted_value is None:
             return None
 
-        # Use cached value if available
+        # Use cached value if available, but only if it looks like plaintext
+        # or we're confident we can decrypt it
         if self._plaintext_cache is not None:
-            return self._plaintext_cache
+            # If we have a cache but the stored value looks encrypted and we have no key,
+            # we should not use the cache
+            if CryptoUtils.is_encrypted(self._encrypted_value) and not CryptoUtils.is_encryption_available():
+                self._plaintext_cache = None  # Clear invalid cache
+            else:
+                return self._plaintext_cache
 
         # Decrypt and cache
         try:
@@ -140,19 +146,46 @@ class Secret(BaseModel):
             self._plaintext_cache = plaintext
             return plaintext
         except ValueError as e:
-            # Handle missing encryption key or decryption failure
-            if "No encryption key configured" in str(e):
-                # Assume the value is plaintext (stored without encryption)
-                logger.debug("Assuming Secret value is plaintext due to missing encryption key")
-                self._plaintext_cache = self._encrypted_value
-                return self._encrypted_value
+            error_msg = str(e)
+
+            # Handle missing encryption key
+            if "No encryption key configured" in error_msg:
+                # Check if the value looks encrypted
+                if CryptoUtils.is_encrypted(self._encrypted_value):
+                    # Value was encrypted, but now we have no key - can't decrypt
+                    logger.warning(
+                        "Cannot decrypt Secret value - no encryption key configured. "
+                        "The value was encrypted and requires the original key to decrypt."
+                    )
+                    # Return None to indicate we can't get the plaintext
+                    return None
+                else:
+                    # Value is plaintext (stored when no key was available)
+                    logger.debug("Secret value is plaintext (stored without encryption)")
+                    self._plaintext_cache = self._encrypted_value
+                    return self._encrypted_value
+
+            # Handle decryption failure (might be plaintext stored as such)
+            elif "Failed to decrypt data" in error_msg:
+                # Check if it might be plaintext
+                if not CryptoUtils.is_encrypted(self._encrypted_value):
+                    # It's plaintext that was stored when no key was available
+                    logger.debug("Secret value appears to be plaintext (stored without encryption)")
+                    self._plaintext_cache = self._encrypted_value
+                    return self._encrypted_value
+                # Otherwise, it's corrupted or wrong key
+                logger.error("Failed to decrypt Secret value - data may be corrupted or wrong key")
+                raise
+
+            # Migration case: handle legacy plaintext
             elif not self._was_encrypted:
-                # Migration case: value might be plaintext
                 if self._encrypted_value and not CryptoUtils.is_encrypted(self._encrypted_value):
                     self._plaintext_cache = self._encrypted_value
                     return self._encrypted_value
                 return None
-            raise  # Re-raise if it's a different error
+
+            # Re-raise for other errors
+            raise
 
     def is_empty(self) -> bool:
         """Check if the secret is empty/None."""
@@ -264,9 +297,15 @@ class SecretDict(BaseModel):
         if self._encrypted_value is None:
             return None
 
-        # Use cached value if available
+        # Use cached value if available, but only if it looks like plaintext
+        # or we're confident we can decrypt it
         if self._plaintext_cache is not None:
-            return self._plaintext_cache
+            # If we have a cache but the stored value looks encrypted and we have no key,
+            # we should not use the cache
+            if CryptoUtils.is_encrypted(self._encrypted_value) and not CryptoUtils.is_encryption_available():
+                self._plaintext_cache = None  # Clear invalid cache
+            else:
+                return self._plaintext_cache
 
         try:
             decrypted_json = CryptoUtils.decrypt(self._encrypted_value)
@@ -275,18 +314,49 @@ class SecretDict(BaseModel):
             self._plaintext_cache = plaintext_dict
             return plaintext_dict
         except ValueError as e:
+            error_msg = str(e)
+
             # Handle missing encryption key
-            if "No encryption key configured" in str(e):
-                # Assume the value is plaintext JSON (stored without encryption)
-                logger.debug("Assuming SecretDict value is plaintext JSON due to missing encryption key")
-                try:
-                    plaintext_dict = json.loads(self._encrypted_value)
-                    self._plaintext_cache = plaintext_dict
-                    return plaintext_dict
-                except json.JSONDecodeError:
+            if "No encryption key configured" in error_msg:
+                # Check if the value looks encrypted
+                if CryptoUtils.is_encrypted(self._encrypted_value):
+                    # Value was encrypted, but now we have no key - can't decrypt
+                    logger.warning(
+                        "Cannot decrypt SecretDict value - no encryption key configured. "
+                        "The value was encrypted and requires the original key to decrypt."
+                    )
+                    # Return None to indicate we can't get the plaintext
                     return None
+                else:
+                    # Value is plaintext JSON (stored when no key was available)
+                    logger.debug("SecretDict value is plaintext JSON (stored without encryption)")
+                    try:
+                        plaintext_dict = json.loads(self._encrypted_value)
+                        self._plaintext_cache = plaintext_dict
+                        return plaintext_dict
+                    except json.JSONDecodeError:
+                        logger.error("Failed to parse SecretDict plaintext as JSON")
+                        return None
+
+            # Handle decryption failure (might be plaintext JSON)
+            elif "Failed to decrypt data" in error_msg:
+                # Check if it might be plaintext JSON
+                if not CryptoUtils.is_encrypted(self._encrypted_value):
+                    # It's plaintext JSON that was stored when no key was available
+                    logger.debug("SecretDict value appears to be plaintext JSON (stored without encryption)")
+                    try:
+                        plaintext_dict = json.loads(self._encrypted_value)
+                        self._plaintext_cache = plaintext_dict
+                        return plaintext_dict
+                    except json.JSONDecodeError:
+                        logger.error("Failed to parse SecretDict plaintext as JSON")
+                        return None
+                # Otherwise, it's corrupted or wrong key
+                logger.error("Failed to decrypt SecretDict value - data may be corrupted or wrong key")
+                raise
+
+            # Migration case: handle legacy plaintext
             elif not self._was_encrypted:
-                # Migration case: try parsing as JSON
                 if self._encrypted_value:
                     try:
                         plaintext_dict = json.loads(self._encrypted_value)
@@ -295,7 +365,9 @@ class SecretDict(BaseModel):
                     except json.JSONDecodeError:
                         pass
                 return None
-            raise  # Re-raise if it's a different error
+
+            # Re-raise for other errors
+            raise
 
     def is_empty(self) -> bool:
         """Check if the secret dict is empty/None."""
