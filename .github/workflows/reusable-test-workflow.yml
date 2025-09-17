@@ -79,6 +79,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
@@ -96,6 +98,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Generate cache key
         if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
@@ -218,6 +223,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -292,6 +300,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
           uv run alembic upgrade head
       - name: Inject env vars into environment
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
         working-directory: .
         run: |
           # Get secrets and mask them before adding to environment
@@ -311,7 +320,7 @@ jobs:
           chmod -R 755 /home/ci-runner/.letta/logs
 
       - name: Build and run docker dev server
-        if: inputs.use-docker
+        if: inputs.use-docker && (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test'))
         env:
           LETTA_PG_DB: letta
           LETTA_PG_USER: letta
@@ -329,6 +338,7 @@ jobs:
           bash scripts/wait_for_service.sh localhost:8083 -- echo "Service is ready"
 
       - name: Run tests
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
         working-directory: ${{ steps.detect-core-dir.outputs.dir }}
         env:
           # Database configuration (shared, but values depend on Docker usage)
