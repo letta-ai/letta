@@ -117,6 +117,13 @@ def requires_auto_tool_choice(llm_config: LLMConfig) -> bool:
     return False
 
 
+def supports_content_none(llm_config: LLMConfig) -> bool:
+    """Certain providers don't support the content None."""
+    if "gpt-oss" in llm_config.model:
+        return False
+    return True
+
+
 class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
@@ -209,6 +216,11 @@ class OpenAIClient(LLMClientBase):
 
             if force_tool_call is not None:
                 tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
+
+        if not supports_content_none(llm_config):
+            for message in openai_message_list:
+                if message.content is None:
+                    message.content = ""
 
         data = ChatCompletionRequest(
             model=model,
