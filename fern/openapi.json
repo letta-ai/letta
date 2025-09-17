@@ -10843,6 +10843,174 @@
         }
       }
     },
+    "/v1/steps/{step_id}/messages": {
+      "get": {
+        "tags": ["steps"],
+        "summary": "List Messages For Step",
+        "description": "List messages for a given step.",
+        "operationId": "list_messages_for_step",
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Step Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of messages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Sort by field",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Sort by field"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/SystemMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/UserMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/HiddenReasoningMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolCallMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ToolReturnMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/AssistantMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalRequestMessage"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ApprovalResponseMessage"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "message_type",
+                      "mapping": {
+                        "system_message": "#/components/schemas/SystemMessage",
+                        "user_message": "#/components/schemas/UserMessage",
+                        "reasoning_message": "#/components/schemas/ReasoningMessage",
+                        "hidden_reasoning_message": "#/components/schemas/HiddenReasoningMessage",
+                        "tool_call_message": "#/components/schemas/ToolCallMessage",
+                        "tool_return_message": "#/components/schemas/ToolReturnMessage",
+                        "assistant_message": "#/components/schemas/AssistantMessage",
+                        "approval_request_message": "#/components/schemas/ApprovalRequestMessage",
+                        "approval_response_message": "#/components/schemas/ApprovalResponseMessage"
+                      }
+                    }
+                  },
+                  "title": "Response List Messages For Step"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tags/": {
       "get": {
         "tags": ["tag", "admin", "admin"],
@@ -17135,8 +17303,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "children": {
             "items": {
@@ -18118,8 +18285,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "default_child": {
             "anyOf": [
@@ -18350,8 +18516,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
@@ -21743,7 +21908,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes."
+            "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
           }
         },
         "additionalProperties": false,
@@ -23881,8 +24046,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "max_count_limit": {
             "type": "integer",
@@ -23917,6 +24081,21 @@
       },
       "Memory": {
         "properties": {
+          "agent_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentType"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Type",
+            "description": "Agent type controlling prompt rendering."
+          },
           "blocks": {
             "items": {
               "$ref": "#/components/schemas/Block"
@@ -23936,8 +24115,8 @@
           "prompt_template": {
             "type": "string",
             "title": "Prompt Template",
-            "description": "Jinja2 template for compiling memory blocks into a prompt string",
-            "default": "{% for block in blocks %}<{{ block.label }}>\n<metadata>read_only=\"{{ block.read_only}}\" chars_current=\"{{ block.value|length }}\" chars_limit=\"{{ block.limit }}\"</metadata><value>{{ block.value }}\n</value></{{ block.label }}>\n{% if not loop.last %}\n{% endif %}{% endfor %}"
+            "description": "Deprecated. Ignored for performance.",
+            "default": ""
           }
         },
         "type": "object",
@@ -24878,8 +25057,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "children": {
             "items": {
@@ -25706,8 +25884,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
@@ -25739,7 +25916,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes."
+            "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
           }
         },
         "additionalProperties": false,
@@ -27154,8 +27331,9 @@
             },
             "type": "array",
             "title": "Messages",
-            "description": "The messages generated during this step.",
-            "default": []
+            "description": "The messages generated during this step. Deprecated: use `GET /v1/steps/{step_id}/messages` endpoint instead",
+            "default": [],
+            "deprecated": true
           },
           "feedback": {
             "anyOf": [
@@ -27638,8 +27816,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
