@@ -9073,6 +9073,10 @@ export type CheckProviderResponse = unknown;
 
 export type ListRunsData = {
   /**
+   * Filter for active runs.
+   */
+  active?: boolean;
+  /**
    * Cursor for pagination
    */
   after?: string | null;

@@ -13499,44 +13499,8 @@ export const get_List_runs = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
+      active: z.boolean().optional(),
       ascending: z.boolean().optional(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(Run),
-};
-
-export type get_List_active_runs = typeof get_List_active_runs;
-export const get_List_active_runs = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/runs/active'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      agent_ids: z
-        .union([
-          z.array(z.string()),
-          z.null(),
-          z.array(z.union([z.array(z.string()), z.null()])),
-        ])
-        .optional(),
-      background: z
-        .union([
-          z.boolean(),
-          z.null(),
-          z.array(z.union([z.boolean(), z.null()])),
-        ])
-        .optional(),
     }),
     header: z.object({
       user_id: z
@@ -14412,7 +14376,6 @@ export const EndpointByMethod = {
     '/v1/providers/': get_List_providers,
     '/v1/providers/{provider_id}': get_Retrieve_provider,
     '/v1/runs/': get_List_runs,
-    '/v1/runs/active': get_List_active_runs,
     '/v1/runs/{run_id}': get_Retrieve_run,
     '/v1/runs/{run_id}/messages': get_List_run_messages,
     '/v1/runs/{run_id}/usage': get_Retrieve_run_usage,

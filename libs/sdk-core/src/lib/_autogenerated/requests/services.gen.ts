@@ -5428,6 +5428,7 @@ export class RunsService {
    * @param data.after Cursor for pagination
    * @param data.before Cursor for pagination
    * @param data.limit Maximum number of runs to return
+   * @param data.active Filter for active runs.
    * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
    * @param data.userId
    * @param data.userAgent
@@ -5449,6 +5450,7 @@ export class RunsService {
         after: data.after,
         before: data.before,
         limit: data.limit,
+        active: data.active,
         ascending: data.ascending,
       },
       errors: {
@@ -5459,6 +5461,7 @@ export class RunsService {
   }
 
   /**
+   * @deprecated
    * List Active Runs
    * List all active runs.
    * @param data The data for the request.

@@ -2461,6 +2461,7 @@ export type RunsServiceListRunsQueryResult<
 export const useRunsServiceListRunsKey = 'RunsServiceListRuns';
 export const UseRunsServiceListRunsKeyFn = (
   {
+    active,
     after,
     agentIds,
     ascending,
@@ -2472,6 +2473,7 @@ export const UseRunsServiceListRunsKeyFn = (
     userId,
     xProjectId,
   }: {
+    active?: boolean;
     after?: string;
     agentIds?: string[];
     ascending?: boolean;
@@ -2488,6 +2490,7 @@ export const UseRunsServiceListRunsKeyFn = (
   useRunsServiceListRunsKey,
   ...(queryKey ?? [
     {
+      active,
       after,
       agentIds,
       ascending,

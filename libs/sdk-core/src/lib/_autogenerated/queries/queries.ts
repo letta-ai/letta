@@ -4021,6 +4021,7 @@ export const useProvidersServiceRetrieveProvider = <
  * @param data.after Cursor for pagination
  * @param data.before Cursor for pagination
  * @param data.limit Maximum number of runs to return
+ * @param data.active Filter for active runs.
  * @param data.ascending Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
  * @param data.userId
  * @param data.userAgent
@@ -4034,6 +4035,7 @@ export const useRunsServiceListRuns = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    active,
     after,
     agentIds,
     ascending,
@@ -4045,6 +4047,7 @@ export const useRunsServiceListRuns = <
     userId,
     xProjectId,
   }: {
+    active?: boolean;
     after?: string;
     agentIds?: string[];
     ascending?: boolean;
@@ -4062,6 +4065,7 @@ export const useRunsServiceListRuns = <
   useQuery<TData, TError>({
     queryKey: Common.UseRunsServiceListRunsKeyFn(
       {
+        active,
         after,
         agentIds,
         ascending,
@@ -4077,6 +4081,7 @@ export const useRunsServiceListRuns = <
     ),
     queryFn: () =>
       RunsService.listRuns({
+        active,
         after,
         agentIds,
         ascending,
@@ -4091,6 +4096,7 @@ export const useRunsServiceListRuns = <
     ...options,
   });
 /**
+ * @deprecated
  * List Active Runs
  * List all active runs.
  * @param data The data for the request.
