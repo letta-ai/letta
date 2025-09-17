@@ -1,0 +1,97 @@
+---
+title:  Plans & Pricing
+subtitle: Guide to pricing and model usage for Free, Pro, and Enterprise plans
+slug: guides/cloud/plans
+---
+
+<Note>
+Upgrade your plan and view your usage on [your account page](https://app.letta.com/settings/organization/billing)
+</Note>
+
+## Available Plans
+
+<CardGroup>
+  <Card
+    title="Free"
+  >
+    - **50** premium requests
+    - **500** standard requests
+    - **100** active agents
+    - **2** agent templates
+    - **1 GB** of storage
+  </Card>
+  <Card
+    title="Pro ($20 / month)"
+  >
+    - **500** premium requests
+    - **5,000** standard requests
+    - **10,000** active agents
+    - **20** agent templates
+    - **10 GB** of storage
+  </Card>
+</CardGroup>
+<CardGroup>
+  <Card
+    title="Scale ($750 / month)"
+  >
+    - **5,000** premium requests
+    - **50,000** standard requests
+    - **10 million** active agents
+    - **100** agent templates
+    - **100 GB** of storage
+  </Card>
+  <Card
+    title="Enterprise ([contact us](https://forms.letta.com/request-demo))"
+  >
+    - Unlimited agents & storage
+    - Custom model deployments
+    - SAML/OIDC SSO authentication
+    - Role-based access control
+    - BYOC deployment options
+  </Card>
+</CardGroup>
+Once the request quota is reached, additional requests will be charged by usage-based pricing depending on the model type and context size (>100k tokens is "max mode").
+* **Standard models** (gpt-4o-mini, gemini-flash, etc.): `$0.001` per request (`$0.005` with max mode)
+* **Premium models** (gpt-4.1, claude-sonnet, etc.): `$0.02` per request (`$0.10` with max mode)
+
+To see a full list of models and their pricing, visit the [models page](https://app.letta.com/settings/organization/models).
+
+## Understanding Agents vs Templates
+
+In Letta Cloud, you can use agent **templates** to define a common starting point for new **agents**. For example, you might create a customer service agent template that has access a common set of tools, but has a custom memory block with specific account information for each individual user. Read our [templates guide](/guides/templates/overview) to learn more.
+
+## Understanding Requests
+
+<Info>
+Model requests do not count towards your request quota if you [bring your own LLM API key](/guides/cloud/custom-keys) and select your custom provider in the ADE model dropdown.
+</Info>
+
+Your Letta agents use large language models (LLMs) to reason and take actions. These model requests are what we count toward your monthly requests quota.
+
+### Standard vs Premium Model Requests
+
+**Standard models** (`GPT-4o mini`, `Gemini Flash`, etc.) are faster and more economical. They're ideal for simple tool calling and basic chat interactions.
+
+**Premium models** (`GPT-4.1`, `Claude Sonnet`, etc.) offer enhanced capabilities for complex agentic tasks. They excel at multi-step tool sequences and tasks requiring advanced reasoning.
+
+Some high-powered models (like `o1` and `o3`) are available exclusively through usage-based pricing.
+
+### How Requests Are Counted
+
+Each agent "step" or "action" counts as one model request. Complex tasks (such as [deep research](https://github.com/letta-ai/agent-file/tree/main/deep_research_agent)) may require multiple requests to complete. You can control request usage via [tool rules](/guides/agents/tool-rules) that force the agent to stop on certain conditions.
+
+### Quota Refresh
+
+Request quotas refresh every month.
+Free plan quotas refresh on the 1st of each month. Pro plan quotas refresh at the start of your billing cycle. Unused requests do not roll over to the next month.
+
+## Usage-based Pricing
+
+If you are on the Pro plan, you can enable usage-based pricing to allow you to continue to make model requests after you've exceeded your request quota. Unused credits purchased roll over on each billing cycle.
+
+Usage-based billing can be enabled by adding credits to your account under your [account settings](https://app.letta.com/settings/organization/billing) page. See a full model list and pricing [here](https://app.letta.com/models).
+
+## Enterprise Plans
+
+For organizations with higher volume needs, our Enterprise plan offers increased quotas, dedicated support, role-based access control (RBAC), SSO (SAML, OIDC), and private model deployment options.
+[Contact our team](https://forms.letta.com/request-demo) to learn more.

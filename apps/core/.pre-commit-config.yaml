@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+        exclude: 'docs/.*|tests/data/.*|configs/.*|helm/.*'
+      - id: end-of-file-fixer
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*|.*/.*\.(scss|css|html)'
+      - id: trailing-whitespace
+        exclude: 'docs/.*|tests/data/.*|letta/server/static_files/.*'
+
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: TruffleHog
+        entry: bash -c 'trufflehog git file://. --since-commit HEAD --results=verified,unknown --fail --no-update'
+        language: system
+        stages: ["pre-commit", "pre-push"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.11
+    hooks:
+      - id: ruff-check
+        args: [ --fix ]
+      - id: ruff-format

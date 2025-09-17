@@ -1,0 +1,458 @@
+{
+  "agent_type": "memgpt_agent",
+  "core_memory": [
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "Outcomes derived from Repository investigation workflow",
+      "is_template": false,
+      "label": "knowledge_base_research",
+      "limit": 200000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T22:49:59.570989+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "Target's LinkedIn engagement patterns extracted from online sources. Recent engagement utilized for commercial context determination.",
+      "is_template": false,
+      "label": "linkedin_activity",
+      "limit": 200000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T18:46:32.342802+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "Systematic procedural framework for thorough investigation workflow collecting intelligence regarding active target.",
+      "is_template": false,
+      "label": "research_plan",
+      "limit": 20000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-14T22:49:43.752176+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-13T20:41:10.474057+00:00",
+      "description": "Search parameters for executing internet investigation concerning target's organization, role, and contemporary developments.",
+      "is_template": false,
+      "label": "web_research_queries",
+      "limit": 20000,
+      "metadata_": {},
+      "template_name": null,
+      "updated_at": "2025-08-13T20:41:10.474057+00:00",
+      "value": ""
+    }
+  ],
+  "created_at": "2025-08-13T20:41:10.539393+00:00",
+  "description": null,
+  "embedding_config": {
+    "embedding_endpoint_type": "openai",
+    "embedding_endpoint": "https://api.openai.com/v1",
+    "embedding_model": "text-embedding-3-small",
+    "embedding_dim": 2000,
+    "embedding_chunk_size": 300,
+    "handle": "openai/text-embedding-3-small",
+    "batch_size": 32,
+    "azure_endpoint": null,
+    "azure_version": null,
+    "azure_deployment": null
+  },
+  "llm_config": {
+    "model": "gpt-4.1",
+    "model_endpoint_type": "openai",
+    "model_endpoint": "https://api.openai.com/v1",
+    "provider_name": "OpenAI",
+    "provider_category": "byok",
+    "model_wrapper": null,
+    "context_window": 120000,
+    "put_inner_thoughts_in_kwargs": true,
+    "handle": "OpenAI/gpt-4.1",
+    "temperature": 0.15,
+    "max_tokens": 32000,
+    "enable_reasoner": true,
+    "reasoning_effort": null,
+    "max_reasoning_tokens": 0,
+    "frequency_penalty": null,
+    "compatibility_type": null
+  },
+  "message_buffer_autoclear": false,
+  "in_context_message_indices": [
+    0,
+    1
+  ],
+  "messages": [
+    {
+      "created_at": "2025-08-13T20:41:10.642754+00:00",
+      "group_id": null,
+      "model": "gpt-4.1",
+      "name": null,
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "You function as an investigative analyst tasked with developing thorough intelligence reports encompassing detailed evaluation of target contacts, their organizations, professional roles, and individual characteristics. \nThis incorporates intelligence gathered from client repositories. \nYou operate within an automated sales development platform \"Kylie\" where users provide comprehensive materials including documents, PDFs, correspondence, and web content that would typically be used to onboard sales development representatives for optimal outreach campaign execution.\n\n**Reasoning**\n- apply fundamental logic and establish theories based on practical understanding\n- maintain objective and factual communication style, avoiding emotional expressions or presumed feelings \n- constrain logical explanations to under ten words\n- ensure analytical conclusions remain focused and exact\n\n**Research Plan**\n- Develop systematic investigation methodology beginning with online investigation of target individual and their organization.\n- Initially execute LinkedIn analysis to capture current professional engagements\n- Collect extensive intelligence supporting customized correspondence development designed to engage target's interest.\n- Initiate Internet Investigation to accumulate comprehensive target intelligence\n- Utilize Internet Investigation findings to identify specific obstacles facing target's organization or department, connecting these with current developments and indicators to establish clear opportunities for value delivery.\n- Subsequently transition to Repository exploration to acquire understanding of client organization and market positioning.\n- Apply Repository insights to determine alignment between client offerings and target organization requirements.\n- When Repository discoveries indicate additional internet investigation needs, incorporate these into Investigation Plan and reexamine previous findings.\n- Ultimately document investigation methodology or modifications throughout execution via `codify_research` function.\n\n**LinkedIn Search**\n- utilize the `linkedin_activity_search` function to extract target's LinkedIn engagement data for developing expanded internet investigation parameters\n- mandatory execution prior to web_search_custom_beta to establish baseline understanding of individual's LinkedIn presence.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Kylie\" has access to.\n- repository functions as storage for vendor information, employ it to identify possible approaches and assets supporting optimal intelligence report generation and favorable vendor positioning toward purchaser.\n- repository maintains vector representation format\n- materials including documents, PDFs, and pages undergo segmentation prior to vector database insertion\n- segmentation methodology employs header-based text division\n- vector generation utilizes `llama-text-embed-v2` model \n\n**Web Research **\n- utilize `web_search_custom_beta` function enabling internet investigation regarding target's organization, role, and current developments.\n- internet investigation serves to examine target individual, their organization, specific obstacles encountered, and contemporary circumstances.\n- accepts multiple search parameters enabling comprehensive or focused investigation scope.\n- Execute thorough and extensive investigation to accumulate required intelligence\n- Construct detailed search parameters incorporating descriptive terminology to maximize search engine optimization results.\n\nResearch Best Practices:\n- Begin with general overview, subsequently narrow to particular findings\n- Emphasize contemporary (previous quarter) occurrences\n- Seek quantifiable data and precise instances\n- Concentrate on enterprise-essential intelligence\n- Discover distinctive perspectives enabling significant interaction\n- Confirm data through various origins\n- Document possible temporal catalysts or priority indicators\n- Accumulate maximum intelligence using minimal function invocations for efficiency\n\n**FINAL RESEARCH REPORT**\n- Generate comprehensive documentation derived from complete investigation methodology outcomes.\n- Ensure investigation documentation contains extensive detail referencing applicable internet investigation sources and repository materials identified during investigation process. \n- Confirm concluding documentation encompasses comprehensive intelligence considering vendor and purchaser viewpoints\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your objective involves generating comprehensive intelligence documentation regarding specific targets incorporating vendor organization strategic positioning.\n- Documentation serves as foundation for developing customized engagement communications requiring maximum relevance.\n- Formulate search parameters utilizing web_search_custom_beta function for discovery operations.\n- Apply careful consideration to parameter construction as these dictate response quality.\n- Develop comprehensive search parameters featuring descriptive terminology optimizing search engine results.\n- Following target discovery completion, investigate vendor organization repository for applicable intelligence supporting highly customized engagement communication development.\n- Employ knowledge_base_research_executor function for repository investigation\n- Upon achieving satisfactory outcomes, utilize `summarize_research` to consolidate discoveries and conclude.\n\n**Tools ** \ncodify_research: Employ this function to document investigation methodology developed for comprehensive analysis. Execute this function exclusively upon methodology finalization or when modifications to investigation workflow become essential.\n- Revise investigation methodology throughout step progression.\n- Indicate completed steps and designate active step as ongoing.\n- Confirm investigation termination once all steps achieve completion status.\n\nlinkedin_activity_search:\n- utilize `linkedin_activity_search` function enabling extraction of target's LinkedIn engagement patterns for developing expanded internet investigation parameters\n- mandatory execution prior to web_search_custom_beta establishing baseline individual LinkedIn engagement understanding.\n- incorporate exclusively content from previous quarter in investigation documentation. Disregard or minimize earlier content except when particularly applicable.\n\nknowledge_base_research_executor:  function enabling exploration of client's Pinecone infrastructure, preserving outcomes (query + findings) within system memory\n- client supplies target characteristics while internet investigation findings inform Pinecone query formulation\n- prior to function invocation, develop multiple search parameters for Pinecone maximizing pertinent segment retrieval for specified target characteristics\n- MANDATORY MINIMUM 5 REPOSITORY QUERIES WITH RESULT STORAGE BEFORE DETERMINING CONTINUATION OR REPETITION\n- following Pinecone response receipt, evaluate applicability regarding target characteristics \n- execute repeated investigation when findings lack pertinence (identical queries overwrite prior memory query/result combinations)\n\nweb_search_custom_beta: Employ this function for exploration and extensive intelligence collection\n- accepts multiple search parameters enabling comprehensive or focused scope implementation.\n- construct search parameters incorporating descriptive terminology maximizing search optimization outcomes.\n- Develop enhanced comprehension of organization and individual under investigation\n- Locate contemporary announcements, media communications, evaluations, and publicly available data\n- Apply target's present position, professional progression, and significant accomplishments as foundations for internet investigation.\n- Utilize organizational summary: objectives, offerings/solutions, competitive standing for supplementary organizational context investigation\n- Discover contemporary data and progress regarding target's organization through domain inclusion in search function\n- Expanded contemporary information investigation: capital raising, offering releases, growth initiatives, recruitment activities\n\nsummarize_research: Function for structuring investigation outcomes from previous knowledge_base_research_executor and web_search_custom_beta invocations, delivering findings and resulting evaluation.\n- Function transmits investigation outcomes to client. \n- Execute function exclusively upon investigation completion.\n- VERIFY INVESTIGATION REFERENCES ALL UTILIZED SOURCES FROM REPOSITORY OR INTERNET INVESTIGATION\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- mandatory section conclusion with reference compilation SPECIFIC TO THAT SECTION\n- employ <citations> delimiter for reference designation\n- MANDATORY REFERENCES FOR ALL SECTIONS\n- repository materials require `knowledge_base_resource.id` inclusion within reference\n- References require array formatting e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- References demand CONTINUOUS LINE formatting excluding newlines or breaks e.g. <citations>[link1,link2...]</citations>\n- References prohibit delimiter or quotation usage.\n\nThe client will subsequently supply target intelligence:\n\n<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n<knowledge_base_research>\n<description>\nThe results from Knowledge Base research flow\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n\n</value>\n</knowledge_base_research>\n\n<linkedin_activity>\n<description>\nLinkedIn Post Activity of the Lead retrieved from the internet. We use the recent activity to infer sales context.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=200000\n</metadata>\n<value>\n\n</value>\n</linkedin_activity>\n\n<research_plan>\n<description>\nA comprehensive step-by-step plan for the deep research flow for gathering information about the current lead.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n\n</value>\n</research_plan>\n\n<web_research_queries>\n<description>\nQueries for conducting web research on topics related to the lead's company, position, recent events.\n</description>\n<metadata>\n- chars_current=0\n- chars_limit=20000\n</metadata>\n<value>\n\n</value>\n</web_research_queries>\n\n</memory_blocks>\n\n<tool_usage_rules>\nThe following constraints define rules for tool usage and guide desired behavior. These rules must be followed to ensure proper tool execution and workflow. A single response may contain multiple tool calls.\n\n<tool_rule>\ncodify_research requires continuing your response when called\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor requires continuing your response when called\n</tool_rule>\n<tool_rule>\nweb_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nsend_message requires continuing your response when called\n</tool_rule>\n<tool_rule>\nlinkedin_activity_search requires continuing your response when called\n</tool_rule>\n<tool_rule>\nAfter using codify_research, you must use one of these tools: web_search, knowledge_base_research_executor, summarize_research, linkedin_activity_search\n</tool_rule>\n<tool_rule>\nsend_message: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nknowledge_base_research_executor: at most 2 use(s) per response\n</tool_rule>\n<tool_rule>\nAfter using knowledge_base_research_executor, you must use one of these tools: knowledge_base_research_executor, summarize_research\n</tool_rule>\n<tool_rule>\n: at most 1 use(s) per response\n</tool_rule>\n<tool_rule>\nsummarize_research ends your response (yields control) when called\n</tool_rule>\n</tool_usage_rules>\n\n\n\n<memory_metadata>\n- The current time is: 2025-08-14 10:49:59 PM \n- Memory blocks were last modified: 2025-08-13 08:41:10 PM UTC+0000\n- 0 previous messages between you and the user are stored in recall memory (use tools to access them)\n</memory_metadata>"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-14T22:50:00.019808+00:00"
+    },
+    {
+      "created_at": "2025-08-14T22:49:28.835099+00:00",
+      "group_id": null,
+      "model": "gpt-4.1",
+      "name": null,
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"type\": \"login\",\n  \"last_login\": \"Never (first login)\",\n  \"time\": \"2025-08-14 10:49:28 PM UTC+0000\"\n}"
+        }
+      ],
+      "tool_call_id": null,
+      "tool_calls": [],
+      "tool_returns": [],
+      "updated_at": "2025-08-14T22:49:28.903960+00:00"
+    }
+  ],
+  "metadata_": null,
+  "multi_agent_group": null,
+  "name": "mocking_kylie",
+  "system": "You function as an investigative analyst tasked with developing thorough intelligence reports encompassing detailed evaluation of target contacts, their organizations, professional roles, and individual characteristics. \nThis incorporates intelligence gathered from client repositories. \nYou operate within an automated sales development platform \"Kylie\" where users provide comprehensive materials including documents, PDFs, correspondence, and web content that would typically be used to onboard sales development representatives for optimal outreach campaign execution.\n\n**Reasoning**\n- apply fundamental logic and establish theories based on practical understanding\n- maintain objective and factual communication style, avoiding emotional expressions or presumed feelings \n- constrain logical explanations to under ten words\n- ensure analytical conclusions remain focused and exact\n\n**Research Plan**\n- Develop systematic investigation methodology beginning with online investigation of target individual and their organization.\n- Initially execute LinkedIn analysis to capture current professional engagements\n- Collect extensive intelligence supporting customized correspondence development designed to engage target's interest.\n- Initiate Internet Investigation to accumulate comprehensive target intelligence\n- Utilize Internet Investigation findings to identify specific obstacles facing target's organization or department, connecting these with current developments and indicators to establish clear opportunities for value delivery.\n- Subsequently transition to Repository exploration to acquire understanding of client organization and market positioning.\n- Apply Repository insights to determine alignment between client offerings and target organization requirements.\n- When Repository discoveries indicate additional internet investigation needs, incorporate these into Investigation Plan and reexamine previous findings.\n- Ultimately document investigation methodology or modifications throughout execution via `codify_research` function.\n\n**LinkedIn Search**\n- utilize the `linkedin_activity_search` function to extract target's LinkedIn engagement data for developing expanded internet investigation parameters\n- mandatory execution prior to web_search_custom_beta to establish baseline understanding of individual's LinkedIn presence.\n\n**Knowledge Base ** \n- knowledge base is the repository of all the SELLER documents that our AI SDR \"Kylie\" has access to.\n- repository functions as storage for vendor information, employ it to identify possible approaches and assets supporting optimal intelligence report generation and favorable vendor positioning toward purchaser.\n- repository maintains vector representation format\n- materials including documents, PDFs, and pages undergo segmentation prior to vector database insertion\n- segmentation methodology employs header-based text division\n- vector generation utilizes `llama-text-embed-v2` model \n\n**Web Research **\n- utilize `web_search_custom_beta` function enabling internet investigation regarding target's organization, role, and current developments.\n- internet investigation serves to examine target individual, their organization, specific obstacles encountered, and contemporary circumstances.\n- accepts multiple search parameters enabling comprehensive or focused investigation scope.\n- Execute thorough and extensive investigation to accumulate required intelligence\n- Construct detailed search parameters incorporating descriptive terminology to maximize search engine optimization results.\n\nResearch Best Practices:\n- Begin with general overview, subsequently narrow to particular findings\n- Emphasize contemporary (previous quarter) occurrences\n- Seek quantifiable data and precise instances\n- Concentrate on enterprise-essential intelligence\n- Discover distinctive perspectives enabling significant interaction\n- Confirm data through various origins\n- Document possible temporal catalysts or priority indicators\n- Accumulate maximum intelligence using minimal function invocations for efficiency\n\n**FINAL RESEARCH REPORT**\n- Generate comprehensive documentation derived from complete investigation methodology outcomes.\n- Ensure investigation documentation contains extensive detail referencing applicable internet investigation sources and repository materials identified during investigation process. \n- Confirm concluding documentation encompasses comprehensive intelligence considering vendor and purchaser viewpoints\n- Formatting:\n\t1. The Report **must** contain an h1 title\n\t2. All the section headers **must** be h2\n\t3. All the citations **must** be at the end of their sections\n\t4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n\t5. Your citations MUST not have any delimiters or quotes\n\t6. You MUST use the lead's name and their company name in the Final Report.\n\t7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**Goal **\n- Your objective involves generating comprehensive intelligence documentation regarding specific targets incorporating vendor organization strategic positioning.\n- Documentation serves as foundation for developing customized engagement communications requiring maximum relevance.\n- Formulate search parameters utilizing web_search_custom_beta function for discovery operations.\n- Apply careful consideration to parameter construction as these dictate response quality.\n- Develop comprehensive search parameters featuring descriptive terminology optimizing search engine results.\n- Following target discovery completion, investigate vendor organization repository for applicable intelligence supporting highly customized engagement communication development.\n- Employ knowledge_base_research_executor function for repository investigation\n- Upon achieving satisfactory outcomes, utilize `summarize_research` to consolidate discoveries and conclude.\n\n**Tools ** \ncodify_research: Employ this function to document investigation methodology developed for comprehensive analysis. Execute this function exclusively upon methodology finalization or when modifications to investigation workflow become essential.\n- Revise investigation methodology throughout step progression.\n- Indicate completed steps and designate active step as ongoing.\n- Confirm investigation termination once all steps achieve completion status.\n\nlinkedin_activity_search:\n- utilize `linkedin_activity_search` function enabling extraction of target's LinkedIn engagement patterns for developing expanded internet investigation parameters\n- mandatory execution prior to web_search_custom_beta establishing baseline individual LinkedIn engagement understanding.\n- incorporate exclusively content from previous quarter in investigation documentation. Disregard or minimize earlier content except when particularly applicable.\n\nknowledge_base_research_executor:  function enabling exploration of client's Pinecone infrastructure, preserving outcomes (query + findings) within system memory\n- client supplies target characteristics while internet investigation findings inform Pinecone query formulation\n- prior to function invocation, develop multiple search parameters for Pinecone maximizing pertinent segment retrieval for specified target characteristics\n- MANDATORY MINIMUM 5 REPOSITORY QUERIES WITH RESULT STORAGE BEFORE DETERMINING CONTINUATION OR REPETITION\n- following Pinecone response receipt, evaluate applicability regarding target characteristics \n- execute repeated investigation when findings lack pertinence (identical queries overwrite prior memory query/result combinations)\n\nweb_search_custom_beta: Employ this function for exploration and extensive intelligence collection\n- accepts multiple search parameters enabling comprehensive or focused scope implementation.\n- construct search parameters incorporating descriptive terminology maximizing search optimization outcomes.\n- Develop enhanced comprehension of organization and individual under investigation\n- Locate contemporary announcements, media communications, evaluations, and publicly available data\n- Apply target's present position, professional progression, and significant accomplishments as foundations for internet investigation.\n- Utilize organizational summary: objectives, offerings/solutions, competitive standing for supplementary organizational context investigation\n- Discover contemporary data and progress regarding target's organization through domain inclusion in search function\n- Expanded contemporary information investigation: capital raising, offering releases, growth initiatives, recruitment activities\n\nsummarize_research: Function for structuring investigation outcomes from previous knowledge_base_research_executor and web_search_custom_beta invocations, delivering findings and resulting evaluation.\n- Function transmits investigation outcomes to client. \n- Execute function exclusively upon investigation completion.\n- VERIFY INVESTIGATION REFERENCES ALL UTILIZED SOURCES FROM REPOSITORY OR INTERNET INVESTIGATION\n\n**FINAL RESEARCH SUMMARY FORMATTING**\n1. The Report **must** contain an h1 title\n2. All the section headers **must** be h2\n3. All the citations **must** be at the end of their sections\n4. Your citations MUST be in a SINGLE LINE without any newlines or line breaks e.g. <citations>[link1,link2...]</citations>\n5. Your citations MUST not have any delimiters or quotes.\n6. You MUST use the lead's name and their company name in the Final Report.\n7. You MUST not use terms like lead, seller in the Final Report. Use their names.\n\n**SPECIAL INSTRUCTIONS FOR CITATIONS**\n- mandatory section conclusion with reference compilation SPECIFIC TO THAT SECTION\n- employ <citations> delimiter for reference designation\n- MANDATORY REFERENCES FOR ALL SECTIONS\n- repository materials require `knowledge_base_resource.id` inclusion within reference\n- References require array formatting e.g. [link1, link2] or [kb_res_1, kb_res_2]\n- References demand CONTINUOUS LINE formatting excluding newlines or breaks e.g. <citations>[link1,link2...]</citations>\n- References prohibit delimiter or quotation usage.\n\nThe client will subsequently supply target intelligence:",
+  "tags": [],
+  "tool_exec_environment_variables": [
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_NAMESPACE",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "EXA_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "KNOWLEDGE_BASE_RESOURCES",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PINECONE_INDEX_HOST",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "PROAPIS_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "LETTA_BUILTIN_WEBSEARCH_OPENAI_MODEL_NAME",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    },
+    {
+      "created_at": "2025-08-14T21:31:27.793445+00:00",
+      "description": null,
+      "key": "OPENAI_API_KEY",
+      "updated_at": "2025-08-14T21:31:27.793445+00:00",
+      "value": ""
+    }
+  ],
+  "tool_rules": [
+    {
+      "tool_name": "codify_research",
+      "type": "run_first"
+    },
+    {
+      "tool_name": "codify_research",
+      "type": "constrain_child_tools",
+      "children": [
+        "web_search",
+        "knowledge_base_research_executor",
+        "summarize_research",
+        "linkedin_activity_search"
+      ]
+    },
+    {
+      "tool_name": "codify_research",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "web_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "send_message",
+      "type": "max_count_per_step",
+      "max_count_limit": 2
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "max_count_per_step",
+      "max_count_limit": 2
+    },
+    {
+      "tool_name": "summarize_research",
+      "type": "exit_loop"
+    },
+    {
+      "tool_name": "knowledge_base_research_executor",
+      "type": "constrain_child_tools",
+      "children": [
+        "knowledge_base_research_executor",
+        "summarize_research"
+      ]
+    },
+    {
+      "tool_name": "send_message",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "summarize_research",
+      "type": "required_before_exit"
+    },
+    {
+      "tool_name": "linkedin_activity_search",
+      "type": "continue_loop"
+    },
+    {
+      "tool_name": "linkedin_activity_search",
+      "type": "required_before_exit"
+    },
+    {
+      "tool_name": "",
+      "type": "max_count_per_step",
+      "max_count_limit": 1
+    }
+  ],
+  "tools": [
+    {
+      "args_json_schema": null,
+      "created_at": "2025-08-13T21:04:36.008421+00:00",
+      "description": "Execute internet searches using query/inquiry combinations and retrieve segments addressing specified inquiries.",
+      "json_schema": {
+        "name": "web_search_custom_beta",
+        "description": "Execute internet searches using query/inquiry combinations and retrieve segments addressing specified inquiries.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "array",
+              "description": "Collection of SearchTask entities, each defining search parameters and inquiries requiring resolution."
+            }
+          },
+          "required": [
+            "tasks"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "web_search_custom_beta",
+      "return_char_limit": 100000,
+      "source_code": "import json\nimport os\nimport time\nimport concurrent.futures as cf\nfrom collections import defaultdict\nfrom typing import List, Dict, Any\n\nfrom pydantic import BaseModel, Field\n\n\nclass SearchTask(BaseModel):\n    query: str = Field(description=\"Search query\")\n    question: str = Field(description=\"Question to answer\")\n\ndef web_search_custom_beta(tasks: List[SearchTask]) -> str:\n    \"\"\"\n    Search the web with a list of query/question pairs and extract passages that answer the corresponding questions.\n\n    Args:\n        tasks (List[SearchTask]): A list of SearchTask objects, each specifying a search query and a question to answer.\n\n    Returns:\n        str: A JSON-formatted string containing the results for each query, keyed by the query string.\n    \"\"\"\n    import time\n    time.sleep(60 * 2)\n",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T23:18:45.566799+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:01.599449+00:00",
+      "description": "Function for documenting investigation methodology developed for comprehensive analysis. Execute exclusively upon methodology finalization or when workflow modifications become essential.",
+      "json_schema": {
+        "name": "codify_research",
+        "description": "Function for documenting investigation methodology developed for comprehensive analysis. Execute exclusively upon methodology finalization or when workflow modifications become essential.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "research_plan": {
+              "type": "string",
+              "description": "Systematic comprehensive investigation framework encompassing workflow for thorough target analysis. Must incorporate all intermediary function invocations."
+            }
+          },
+          "required": [
+            "research_plan"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "codify_research",
+      "return_char_limit": 100000,
+      "source_code": "def codify_research(agent_state: \"AgentState\", research_plan: str) -> str:\n    \"\"\"\n    A tool for codifying the research plan that you come up with for doing the deep research. Only call this tool when you've finalized the research plan or have deemed it necessary to make edits to the research flow.\n    Args:\n        research_plan (str): A step-by-step comprehensive research plan that includes the flow for deep researching the current prospect. Should include all the intermediate tool calls.\n    \"\"\"\n    agent_state.memory.update_block_value(label=\"research_plan\", value=research_plan)\n    \n    return 'Research Updated'\n",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T22:43:59.002306+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:02.845968+00:00",
+      "description": "Function for structuring outcomes from previous search_and_store_pinecone_records invocations and delivering findings with resulting evaluation. Function transmits investigation outcomes to client. Execute exclusively upon investigation completion.",
+      "json_schema": {
+        "name": "summarize_research",
+        "description": "Function for structuring outcomes from previous search_and_store_pinecone_records invocations and delivering findings with resulting evaluation. Function transmits investigation outcomes to client. Execute exclusively upon investigation completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "web_research_result": {
+              "type": "string",
+              "description": "Internet investigation parameters and discovered findings."
+            },
+            "final_research_report": {
+              "type": "string",
+              "description": "Concluding investigation documentation composed of thorough investigation workflow elements from internet investigation and repository investigation findings discovered. Ensure reference inclusion from internet sources and repository materials accessed. "
+            }
+          },
+          "required": [
+            "web_research_result",
+            "final_research_report"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "summarize_research",
+      "return_char_limit": 1000000,
+      "source_code": "def summarize_research(agent_state: \"AgentState\", web_research_result: str, final_research_report: str) -> str:\n    \"\"\"\n    A tool for organizing the results of the prior tool calls to search_and_store_pinecone_records and returning the results and the subsequent analysis. This tool will return the result of your research to the user. Only call this tool once you are finished with your research.\n    \n    Args:\n        web_research_result (str): The web research queries and the results that you found.\n        final_research_report (str): Final research report made up of the deep research flow components from both web research and the knowledge base research results that you found. Make sure to use citations from the web links and the knowledge base resources that you had access to. \n\n    Returns\n        str: A formatted JSON strign of queries and the reasoning behind them\n    \"\"\"\n    import json\n    \n    knowledge_base_research_str = agent_state.memory.get_block(\"knowledge_base_research\").value\n    knowledge_base_research = json.loads(knowledge_base_research_str) if len(knowledge_base_research_str) > 0 else {}\n    \n    research_plan = agent_state.memory.get_block(\"research_plan\").value\n    \n    final_return = {\"final_research_report\":final_research_report, \"knowledge_base_research\": knowledge_base_research, \"research_plan\": research_plan, \"web_research_result\": web_research_result}\n    \n    return json.dumps(final_return, ensure_ascii=False)",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-06-11T21:27:02.845968+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-06-11T21:27:04.286784+00:00",
+      "description": "Query Repository vector infrastructure entries using textual search parameters.",
+      "json_schema": {
+        "name": "knowledge_base_research_executor",
+        "description": "Query Repository vector infrastructure entries using textual search parameters.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "queries": {
+              "type": "array",
+              "description": "Collection of search parameters for database exploration (vector-based similarity matching)."
+            },
+            "top_k": {
+              "type": "integer",
+              "description": "Quantity of primary results for retrieval, standard value 2 (maintain unless client specifies otherwise)."
+            }
+          },
+          "required": [
+            "queries",
+            "top_k"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "knowledge_base_research_executor",
+      "return_char_limit": 100000,
+      "source_code": "def knowledge_base_research_executor(agent_state: \"AgentState\", queries: List[str], top_k: int):\n    \"\"\"\n    Search Knowledge Base vector database records with a text query.\n\n    Args:\n        queries (List[str]): The list of queries to search the database for (vector-based similarity search).\n        top_k (int): Number of top results to retrieve, defaults to 2 (do not change unless the user requests it).\n\n    Returns:\n        dict: The JSON response from the Pinecone API.\n    \"\"\"\n    import os\n    import requests\n    import json\n\n    # Get environment variables\n    namespace = os.getenv(\"PINECONE_NAMESPACE\", None)\n    api_key = os.getenv(\"PINECONE_API_KEY\", None)\n    index_host = os.getenv(\"PINECONE_INDEX_HOST\", None)\n\n    if index_host is None:\n        raise ValueError(\n            \"Missing PINECONE_HOST env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    if api_key is None:\n        raise ValueError(\n            \"Missing PINECONE_API_KEY env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    # Set up the URL and headers\n    url = f\"{index_host}/records/namespaces/{namespace}/search\"\n    headers = {\"Accept\": \"application/json\", \"Content-Type\": \"application/json\", \"Api-Key\": api_key, \"X-Pinecone-API-Version\": \"unstable\"}\n    coalesced = {}\n    \n    for i in range(len(queries)):\n      query_text = queries[i]\n      # Prepare the payload\n      payload = {\n          \"query\": {\"inputs\": {\"text\": query_text}, \"top_k\": top_k},\n          \"fields\": [\"text\", \"url\", \"knowledge_base_document.title\", \"knowledge_base_resource.id\"],\n      }\n      # Make the request\n      #response = requests.post(url, headers=headers, json=payload)\n\n      # Validate the JSON response\n      #response_json = response.json()\n      #print(response_json)\n      #if 'result' not in response_json:\n      #    raise ValueError(\"Did not receive result from Pinecone API\")\n      #coalesced[query_text] = response_json['result']\n    # ---------------------------------------------------------------------\n    # 5.  Merge old and new results – new keys overwrite old when duplicated\n    # ---------------------------------------------------------------------\n    #current_dict_str = agent_state.memory.get_block(\"knowledge_base_research\").value\n    #current_dict = json.loads(current_dict_str) if len(current_dict_str) > 0 else {}\n    #merged_results = {**current_dict, **coalesced}\n\n    knowledge_base_results = {\n    \"results\": [\n        {\n            \"id\": \"kb_doc_4721\",\n            \"title\": \"Memory-Efficient AI Model Deployment for Enterprise Software\",\n            \"content_snippet\": \"Modern AI applications face significant memory bottlenecks when deployed at scale. Our framework reduces memory overhead by 40-60% through intelligent model sharding and dynamic memory allocation strategies. Key benefits include reduced infrastructure costs and improved response times for real-time AI applications.\",\n            \"relevance_score\": 0.94,\n            \"document_type\": \"solution_brief\",\n            \"tags\": [\"AI\", \"memory_management\", \"enterprise\", \"deployment\"],\n            \"last_updated\": \"2024-12-15\",\n            \"author\": \"Technical Solutions Team\"\n        },\n        {\n            \"id\": \"kb_doc_3892\",\n            \"title\": \"Software Engineering Best Practices for AI Startups\",\n            \"content_snippet\": \"Early-stage AI companies often struggle with technical debt and scalability issues. This guide outlines proven methodologies for building maintainable AI systems, including containerization strategies, CI/CD pipelines optimized for ML workflows, and code architecture patterns that support rapid iteration while maintaining production stability.\",\n            \"relevance_score\": 0.87,\n            \"document_type\": \"best_practices_guide\",\n            \"tags\": [\"software_engineering\", \"AI_startups\", \"scalability\", \"technical_debt\"],\n            \"last_updated\": \"2025-01-08\",\n            \"author\": \"Engineering Excellence Team\"\n        },\n        {\n            \"id\": \"kb_doc_5634\",\n            \"title\": \"Vector Database Integration Patterns for AI Applications\",\n            \"content_snippet\": \"Implementing vector databases in production AI systems requires careful consideration of indexing strategies, query optimization, and data consistency. Our analysis shows that proper vector database architecture can improve retrieval accuracy by 35% while reducing latency by up to 200ms for similarity searches.\",\n            \"relevance_score\": 0.82,\n            \"document_type\": \"technical_whitepaper\",\n            \"tags\": [\"vector_database\", \"AI_applications\", \"performance\", \"architecture\"],\n            \"last_updated\": \"2024-11-22\",\n            \"author\": \"Data Architecture Team\"\n        },\n        {\n            \"id\": \"kb_doc_2156\",\n            \"title\": \"ROI Analysis: AI Implementation in Software Development Workflows\",\n            \"content_snippet\": \"Companies investing in AI-powered development tools see average productivity gains of 25-35% within the first 6 months. Key success factors include proper change management, developer training programs, and integration with existing DevOps pipelines. Initial investment typically pays back within 8-12 months.\",\n            \"relevance_score\": 0.79,\n            \"document_type\": \"case_study\",\n            \"tags\": [\"ROI\", \"AI_tools\", \"software_development\", \"productivity\"],\n            \"last_updated\": \"2024-10-30\",\n            \"author\": \"Business Intelligence Team\"\n        },\n        {\n            \"id\": \"kb_doc_6789\",\n            \"title\": \"Common Pitfalls in AI Model Serving Infrastructure\",\n            \"content_snippet\": \"Engineering teams frequently encounter issues with model versioning, A/B testing frameworks, and monitoring in production AI systems. Our research identifies the top 5 infrastructure mistakes that lead to system downtime and provides actionable solutions for each challenge.\",\n            \"relevance_score\": 0.76,\n            \"document_type\": \"troubleshooting_guide\",\n            \"tags\": [\"model_serving\", \"infrastructure\", \"production\", \"monitoring\"],\n            \"last_updated\": \"2025-01-03\",\n            \"author\": \"Platform Engineering Team\"\n        }\n    ],\n    \"search_metadata\": {\n        \"query_expansion\": [\"artificial intelligence\", \"machine learning\", \"software architecture\", \"memory optimization\"],\n        \"semantic_similarity_threshold\": 0.75,\n        \"filters_applied\": [\"document_type:technical\", \"recent:6_months\"],\n        \"total_documents_in_kb\": 15847,\n        \"search_time_breakdown\": {\n            \"query_processing\": \"23ms\",\n            \"vector_search\": \"156ms\", \n            \"ranking_and_filtering\": \"68ms\"\n        }\n    },\n    \"suggested_follow_up_queries\": [\n        \"AI model optimization techniques for startups\",\n        \"Cost-effective AI infrastructure for small teams\",\n        \"Real-time AI application deployment strategies\"\n    ]}\n    # ---------------------------------------------------------------------\n    # 6.  Persist the merged dictionary back to memory\n    # ---------------------------------------------------------------------\n    agent_state.memory.update_block_value(\n      label=\"knowledge_base_research\", value=json.dumps(knowledge_base_results)\n      )\n\n    # ---------------------------------------------------------------------\n    # 7.  Return a helpful confirmation message\n    # ---------------------------------------------------------------------\n    return json.dumps(knowledge_base_results)",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-13T23:44:50.564688+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2025-08-13T21:04:33.609049+00:00",
+      "description": "Simulated function replicating LinkedIn engagement extraction from profile address.\n\nExecution duration: 60 seconds with guaranteed completion.",
+      "json_schema": {
+        "name": "linkedin_activity_search",
+        "description": "Simulated function replicating LinkedIn engagement extraction from profile address.\n\nExecution duration: 60 seconds with guaranteed completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "linkedin_url": {
+              "type": "string",
+              "description": "LinkedIn profile address (format: https://www.linkedin.com/in/identifier)"
+            }
+          },
+          "required": [
+            "linkedin_url"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "linkedin_activity_search",
+      "return_char_limit": 6000,
+      "source_code": "import json\nimport time\n\ndef linkedin_activity_search(agent_state: str, linkedin_url: str) -> dict:\n    \"\"\"\n    Mock function to simulate LinkedIn activities search from a profile URL.\n    This function takes 60 seconds to execute and always succeeds.\n\n    Args:\n        agent_state (str): A string representing the agent state (unused in this mock version)\n        linkedin_url (str): LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)\n\n    Returns:\n        dict: Activities data and success message\n    \"\"\"\n    # Simulate long processing time\n    time.sleep(60)\n\n    # Generate mock data\n    activities = [\n        {\n            \"commentary\": \"Interesting post\",\n            \"time_elapsed\": \"2 hours ago\",\n            \"li_url\": \"https://www.linkedin.com/posts/kian-jones\",\n            \"header_text\": \"User shared a post\",\n            \"author\": \"Kian Jones\"\n        }\n    ]\n    \n    data = {\n        \"data\": activities,\n        \"paging\": {\"start\": 0, \"count\": 5, \"total\": 5}\n    }\n    \n    # Simulate writing to memory block\n    memory_block = json.dumps(data, indent=2)\n    \n    return {\"success\": True, \"message\": \"Output written to linkedin_activity memory block\"}",
+      "source_type": "python",
+      "tags": [],
+      "tool_type": "custom",
+      "updated_at": "2025-08-14T17:58:22.727159+00:00",
+      "metadata_": {}
+    },
+    {
+      "args_json_schema": null,
+      "created_at": "2024-11-06T23:52:31.024385+00:00",
+      "description": "Transmits communication to human operator.",
+      "json_schema": {
+        "name": "send_message",
+        "description": "Transmits communication to human operator.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "Communication payload. Complete unicode support (encompassing emoji characters) available."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "type": null,
+        "required": []
+      },
+      "name": "send_message",
+      "return_char_limit": 1000000,
+      "source_code": null,
+      "source_type": "python",
+      "tags": [
+        "letta_core"
+      ],
+      "tool_type": "letta_core",
+      "updated_at": "2025-08-14T22:49:01.547029+00:00",
+      "metadata_": {}
+    }
+  ],
+  "updated_at": "2025-08-14T22:49:29.169737+00:00",
+  "version": "0.10.0"
+}

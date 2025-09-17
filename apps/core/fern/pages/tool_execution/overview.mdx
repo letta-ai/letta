@@ -1,0 +1,16 @@
+---
+title: Tool Execution
+slug: guides/agents/local-tool-execution
+---
+
+When the agent wants to call a tool, the tool must be executed. The service that handles the execution of the tool depends on where the tool is from:
+* Letta tools are executed in the same environment as the agent
+* Custom tools are executed in a configurable environment, either locally or in a sandbox (for Letta Cloud)
+* Tools defined by an MCP server will be executed by the MCP server.
+* Composio tools will be executed by Composio.
+
+## Local Tool Execution
+When you run Letta with Docker, the tools are by default executed in the same environment as the running Letta server. If you code needs to access additional files, you can mount the files (e.g. your repository) into the Docker container to be accessible. See more in the [Local Tool Execution](/guides/tool-execution/local) guide.
+
+## Cloud Tool Execution
+Cloud tool execution is run in an E2B sandbox. Currently, the sandbox is not configurable and has a limited number of packages installed. We will be adding additional configurability to cloud tool execution in the future.

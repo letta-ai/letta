@@ -1,0 +1,31 @@
+---
+slug: python-reference/DirectoryConnector
+---
+
+<a id="letta.data_sources.connectors.DirectoryConnector"></a>
+
+## DirectoryConnector
+
+```python
+class DirectoryConnector(DataConnector)
+```
+
+<a id="letta.data_sources.connectors.DirectoryConnector.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(input_files: List[str] = None,
+             input_directory: str = None,
+             recursive: bool = False,
+             extensions: List[str] = None)
+```
+
+Connector for reading text data from a directory of files.
+
+**Arguments**:
+
+- `input_files` _List[str], optional_ - List of file paths to read. Defaults to None.
+- `input_directory` _str, optional_ - Directory to read files from. Defaults to None.
+- `recursive` _bool, optional_ - Whether to read files recursively from the input directory. Defaults to False.
+- `extensions` _List[str], optional_ - List of file extensions to read. Defaults to None.

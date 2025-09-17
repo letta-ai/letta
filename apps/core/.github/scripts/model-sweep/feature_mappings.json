@@ -1,0 +1,21 @@
+{
+  "Basic": [
+    "test_greeting_with_assistant_message",
+    "test_greeting_without_assistant_message",
+    "test_async_greeting_with_assistant_message",
+    "test_agent_loop_error",
+    "test_step_stream_agent_loop_error",
+    "test_step_streaming_greeting_with_assistant_message",
+    "test_step_streaming_greeting_without_assistant_message",
+    "test_step_streaming_tool_call",
+    "test_tool_call",
+    "test_auto_summarize"
+  ],
+  "Token Streaming": [
+    "test_token_streaming_greeting_with_assistant_message",
+    "test_token_streaming_greeting_without_assistant_message",
+    "test_token_streaming_agent_loop_error",
+    "test_token_streaming_tool_call"
+  ],
+  "Multimodal": ["test_base64_image_input", "test_url_image_input"]
+}

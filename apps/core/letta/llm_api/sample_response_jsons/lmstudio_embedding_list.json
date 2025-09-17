@@ -1,0 +1,16 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "text-embedding-nomic-embed-text-v1.5",
+      "object": "model",
+      "type": "embeddings",
+      "publisher": "nomic-ai",
+      "arch": "nomic-bert",
+      "compatibility_type": "gguf",
+      "quantization": "Q4_0",
+      "state": "not-loaded",
+      "max_context_length": 2048
+    }
+  ]
+}

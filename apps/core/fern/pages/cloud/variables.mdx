@@ -1,0 +1,54 @@
+---
+title: Memory Variables
+slug: guides/templates/variables
+---
+
+<Note>
+Memory variables are a feature in [agent templates](/guides/templates) (part of [Letta Cloud](/guides/cloud)).
+To use memory variables, you must be using an agent template, not an agent.
+</Note>
+
+Memory variables allow you to dynamically define parts of your agent memory at the time of agent creation (when a [template](/guides/templates) is used to create a new agent).
+
+## Defining variables in memory blocks
+
+To use memory variables in your agent templates, you can define variables in your memory blocks by wrapping them in `{{ }}`.
+For example, if you have an agent template called `customer-service-template` designed to handle customer support issues, you might have a block of memory that stores information about the user:
+```handlebars
+The user is contacting me to resolve a customer support issue.
+Their name is {{name}} and the ticket number for this request is {{ticket}}.
+```
+
+Once variables have been defined inside of your memory block, they will dynamically appear at variables in the **ADE variables window** (click the "\{\} Variables" button at the top of the chat window to expand the dropdown).
+
+## Simulating variable values in the ADE
+
+<Tip>
+Reset the state of the simulated agent by clicking the "Flush Simulation" 🔄 button.
+</Tip>
+
+While designing agent templates in the ADE, you can interact with a simulated agent.
+The ADE variables window allows you to specify the values of the variables for the simulated agent.
+
+You can see the current state of the simulated agent's memory by clicking the "Simulated" tab in the "Core Memory" panel in the ADE.
+If you're using memory variables and do not specify values for the variables in the ADE variables window, the simulated agent will use empty values.
+
+In this prior example, the `name` and `ticket` variables are memory variables that we will specify when we create a new agent - information that we expect to have available at that time.
+While designing the agent template, we will likely want to experiment with different values for these variables to make sure that the agent is behaving as expected.
+For example, if we change the name of the user from "Alice" to "Bob", the simulated agent should respond accordingly.
+
+## Defining variables during agent creation
+
+When we're ready to create an agent from our template, we can specify the values for the variables using the `variables` parameter in the [create agents from template endpoint](/api-reference/templates/agents/create):
+```sh
+curl -X POST https://app.letta.com/v1/templates/{project_slug}/{template_name}:{template_version} \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "from_template": customer-service-template:latest",
+    "variables": {
+      "name": "Bob",
+      "ticket": "TX-123"
+    }
+  }'
+```

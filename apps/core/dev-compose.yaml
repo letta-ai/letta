@@ -1,0 +1,47 @@
+services:
+  letta_db:
+    image: ankane/pgvector:v0.5.1
+    networks:
+      default:
+        aliases:
+          - pgvector_db
+          - letta-db
+    environment:
+      - POSTGRES_USER=${LETTA_PG_USER:-letta}
+      - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
+      - POSTGRES_DB=${LETTA_PG_DB:-letta}
+    volumes:
+      - ./.persist/pgdata-test:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+  letta_server:
+    image: letta/letta:latest
+    hostname: letta
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    depends_on:
+      - letta_db
+    ports:
+      - "8083:8083"
+      - "8283:8283"
+    environment:
+      - LETTA_PG_DB=${LETTA_PG_DB:-letta}
+      - LETTA_PG_USER=${LETTA_PG_USER:-letta}
+      - LETTA_PG_PASSWORD=${LETTA_PG_PASSWORD:-letta}
+      - LETTA_PG_HOST=pgvector_db
+      - LETTA_PG_PORT=5432
+      - LETTA_DEBUG=True
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - AZURE_API_KEY=${AZURE_API_KEY}
+      - AZURE_BASE_URL=${AZURE_BASE_URL}
+      - AZURE_API_VERSION=${AZURE_API_VERSION}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - VLLM_API_BASE=${VLLM_API_BASE}
+      - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
+      - OPENLLM_API_KEY=${OPENLLM_API_KEY}

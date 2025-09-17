@@ -1,0 +1,113 @@
+---
+title: Connecting with Livekit Agents
+slug: guides/voice/livekit
+---
+You can build an end-to-end stateful voice agent using Letta and Livekit. You can see a full example in the [letta-voice](https://github.com/letta-ai/letta-voice) repository.
+
+For this example, you will need accounts with the following providers:
+* [Livekit](https://livekit.io/) for handling the voice connection
+* [Deepgram](https://deepgram.com/) for speech-to-text
+* [Cartesia](https://cartesia.io/) for text-to-speech
+
+You will also need to set up the following environment variables (or create a `.env` file):
+```sh
+LETTA_API_KEY=... # Letta Cloud API key (if using cloud)
+
+LIVEKIT_URL=wss://<YOUR-ROOM>.livekit.cloud # Livekit URL
+LIVEKIT_API_KEY=... # Livekit API key
+LIVEKIT_API_SECRET=... # Livekit API secret
+
+DEEPGRAM_API_KEY=... # Deepgram API key
+CARTESIA_API_KEY=... # Cartesia API key
+```
+
+## Connecting to Letta Cloud
+To connect to LiveKit, you can use the Letta connector `openai.LLM.with_letta` and pass in the `agent_id` of your voice agent.
+
+Below is an example defining an entrypoint for a Livekit agent with Letta:
+```python
+import os
+from dotenv import load_dotenv
+from livekit import agents
+from livekit.agents import AgentSession, Agent, AutoSubscribe
+from livekit.plugins import (
+    openai,
+    cartesia,
+    deepgram,
+)
+load_dotenv()
+
+async def entrypoint(ctx: agents.JobContext):
+    agent_id = os.environ.get('LETTA_AGENT_ID')
+    print(f"Agent id: {agent_id}")
+    session = AgentSession(
+        llm=openai.LLM.with_letta(
+            agent_id=agent_id,
+        ),
+        stt=deepgram.STT(),
+        tts=cartesia.TTS(),
+    )
+
+    await session.start(
+        room=ctx.room,
+        agent=Agent(instructions=""), # instructions should be set in the Letta agent
+    )
+
+    session.say("Hi, what's your name?")
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+```
+You can see the full script [here](https://github.com/letta-ai/letta-voice/blob/main/main.py).
+
+## Connecting to a self-hosted Letta server
+You can also connect to a self-hosted server by specifying a `base_url`. To use LiveKit, your Letta sever needs to run with HTTPs. The easiest way to do this is by connecting ngrok to your Letta server.
+
+### Setting up `ngrok`
+If you are self-hosting the Letta server locally (at `localhost`), you will need to use `ngrok` to expose your Letta server to the internet:
+1. Create an account on [ngrok](https://ngrok.com/)
+2. Create an auth token and add it into your CLI
+```
+ngrok config add-authtoken <YOUR_AUTH_TOKEN>
+```
+3. Point your ngrok server to your Letta server:
+```
+ngrok http http://localhost:8283
+```
+Now, you should have a forwarding URL like `https://<YOUR_FORWARDING_URL>.ngrok.app`.
+
+### Connecting LiveKit to a self-hosted Letta server
+To connect a LiveKit agent to a self-hosted Letta server, you can use the same code as above, but with the `base_url` parameter set to the forwarding URL you got from ngrok (or whatever HTTPS URL the Letta server is running on).
+
+```python
+import os
+from dotenv import load_dotenv
+from livekit import agents
+from livekit.agents import AgentSession, Agent, AutoSubscribe
+from livekit.plugins import (
+    openai,
+    cartesia,
+    deepgram,
+)
+load_dotenv()
+
+async def entrypoint(ctx: agents.JobContext):
+    agent_id = os.environ.get('LETTA_AGENT_ID')
+    print(f"Agent id: {agent_id}")
+    session = AgentSession(
+        llm=openai.LLM.with_letta(
+            agent_id=agent_id,
+            base_url="https://<YOUR_FORWARDING_URL>.ngrok.app", # point to your Letta server
+        ),
+        stt=deepgram.STT(),
+        tts=cartesia.TTS(),
+    )
+
+    await session.start(
+        room=ctx.room,
+        agent=Agent(instructions=""), # instructions should be set in the Letta agent
+    )
+
+    session.say("Hi, what's your name?")
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
+```
+You can see the full script [here](https://github.com/letta-ai/letta-voice/blob/main/main.py).
+`

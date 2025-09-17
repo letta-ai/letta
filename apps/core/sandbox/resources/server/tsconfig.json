@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "ESNext",
+      "moduleResolution": "Node",
+      "strict": true,
+      "outDir": "build",
+      "types": ["node"],
+    },
+    "include": ["entrypoint.ts", "server.ts", "user-function.ts"]
+}
+  

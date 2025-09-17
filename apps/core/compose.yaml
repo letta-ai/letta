@@ -1,0 +1,65 @@
+services:
+  letta_db:
+    image: ankane/pgvector:v0.5.1
+    networks:
+      default:
+        aliases:
+          - pgvector_db
+          - letta-db
+    environment:
+      - POSTGRES_USER=${LETTA_PG_USER:-letta}
+      - POSTGRES_PASSWORD=${LETTA_PG_PASSWORD:-letta}
+      - POSTGRES_DB=${LETTA_PG_DB:-letta}
+    volumes:
+      - ./.persist/pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${LETTA_PG_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U letta"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  letta_server:
+    image: letta/letta:latest
+    hostname: letta-server
+    depends_on:
+      letta_db:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+      - "8283:8283"
+    env_file:
+      - .env
+    environment:
+      - LETTA_PG_URI=${LETTA_PG_URI:-postgresql://${LETTA_PG_USER:-letta}:${LETTA_PG_PASSWORD:-letta}@${LETTA_DB_HOST:-letta-db}:${LETTA_PG_PORT:-5432}/${LETTA_PG_DB:-letta}}
+      - LETTA_DEBUG=True
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - AZURE_API_KEY=${AZURE_API_KEY}
+      - AZURE_BASE_URL=${AZURE_BASE_URL}
+      - AZURE_API_VERSION=${AZURE_API_VERSION}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - VLLM_API_BASE=${VLLM_API_BASE}
+      - OPENLLM_AUTH_TYPE=${OPENLLM_AUTH_TYPE}
+      - OPENLLM_API_KEY=${OPENLLM_API_KEY}
+      - LETTA_OTEL_EXPORTER_OTLP_ENDPOINT=${LETTA_OTEL_EXPORTER_OTLP_ENDPOINT}
+      - CLICKHOUSE_ENDPOINT=${CLICKHOUSE_ENDPOINT}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    # volumes:
+    # - ./configs/server_config.yaml:/root/.letta/config # config file
+    # - ~/.letta/credentials:/root/.letta/credentials # credentials file
+    # Uncomment this line to mount a local directory for tool execution, and specify the mount path
+    # before running docker compose: `export LETTA_SANDBOX_MOUNT_PATH=$PWD/directory`
+    # - ${LETTA_SANDBOX_MOUNT_PATH:?}:/root/.letta/tool_execution_dir # mounted volume for tool execution
+  letta_nginx:
+    hostname: letta-nginx
+    image: nginx:stable-alpine3.17-slim
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"

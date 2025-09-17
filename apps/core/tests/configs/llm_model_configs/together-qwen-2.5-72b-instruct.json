@@ -1,0 +1,7 @@
+{
+  "context_window": 16000,
+  "model": "Qwen/Qwen2.5-72B-Instruct-Turbo",
+  "model_endpoint_type": "together",
+  "model_endpoint": "https://api.together.ai/v1",
+  "model_wrapper": "chatml"
+}

@@ -1,0 +1,8 @@
+{
+  "context_window": 8192,
+  "model_endpoint_type": "openai",
+  "provider_name": "vllm",
+  "model_endpoint": "http://127.0.0.1:8000/v1",
+  "model": "Qwen/Qwen3-32B-AWQ",
+  "put_inner_thoughts_in_kwargs": true
+}
