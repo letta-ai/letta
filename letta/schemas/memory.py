@@ -10,8 +10,6 @@ from pydantic import BaseModel, Field, field_validator
 from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, CORE_MEMORY_LINE_NUMBER_WARNING
 from letta.otel.tracing import trace_method
 from letta.schemas.block import Block, FileBlock
-
-# Forward referencing to avoid circular import with Agent -> Memory -> Agent
 from letta.schemas.enums import AgentType
 from letta.schemas.file import FileStatus
 from letta.schemas.message import Message
@@ -22,12 +20,9 @@ class ContextWindowOverview(BaseModel):
     Overview of the context window, including the number of messages and tokens.
     """
 
-    # top-level information
     context_window_size_max: int = Field(..., description="The maximum amount of tokens the context window can hold.")
     context_window_size_current: int = Field(..., description="The current number of tokens in the context window.")
 
-    # context window breakdown (in messages)
-    # (technically not in the context window, but useful to know)
     num_messages: int = Field(..., description="The number of messages in the context window.")
     num_archival_memory: int = Field(..., description="The number of messages in the archival memory.")
     num_recall_memory: int = Field(..., description="The number of messages in the recall memory.")
@@ -37,9 +32,6 @@ class ContextWindowOverview(BaseModel):
     external_memory_summary: str = Field(
         ..., description="The metadata summary of the external memory sources (archival + recall metadata)."
     )
-
-    # context window breakdown (in tokens)
-    # this should all add up to context_window_size_current
 
     num_tokens_system: int = Field(..., description="The number of tokens in the system prompt.")
     system_prompt: str = Field(..., description="The content of the system prompt.")
@@ -54,8 +46,6 @@ class ContextWindowOverview(BaseModel):
     functions_definitions: Optional[List[OpenAITool]] = Field(..., description="The content of the functions definitions.")
 
     num_tokens_messages: int = Field(..., description="The number of tokens in the messages list.")
-    # TODO make list of messages?
-    # messages: List[dict] = Field(..., description="The messages in the context window.")
     messages: List[Message] = Field(..., description="The messages in the context window.")
 
 
@@ -66,10 +56,7 @@ class Memory(BaseModel, validate_assignment=True):
 
     """
 
-    # Agent behavior controls how rendering is performed
     agent_type: Optional[Union["AgentType", str]] = Field(None, description="Agent type controlling prompt rendering.")
-
-    # Memory.block contains the list of memory blocks in the core memory
     blocks: List[Block] = Field(..., description="Memory blocks contained in the agent's in-context memory")
     file_blocks: List[FileBlock] = Field(
         default_factory=list, description="Special blocks representing the agent's in-context memory of an attached file"
@@ -99,7 +86,6 @@ class Memory(BaseModel, validate_assignment=True):
 
         return unique_blocks
 
-    # Deprecated: Template strings are no longer used. Rendering is done with fast Python string building.
     prompt_template: str = Field(default="", description="Deprecated. Ignored for performance.")
 
     def get_prompt_template(self) -> str:
@@ -318,7 +304,6 @@ class Memory(BaseModel, validate_assignment=True):
     @trace_method
     async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
         """Deprecated: use compile() instead."""
-        # TODO: Remove this completely when we confirm new compile is not CPU intensive
         import warnings
 
         warnings.warn("compile_in_thread_async is deprecated; use compile()", DeprecationWarning, stacklevel=2)
@@ -326,7 +311,6 @@ class Memory(BaseModel, validate_assignment=True):
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""
-        # return list(self.memory.keys())
         return [block.label for block in self.blocks]
 
     def get_block(self, label: str) -> Block:
@@ -340,7 +324,6 @@ class Memory(BaseModel, validate_assignment=True):
 
     def get_blocks(self) -> List[Block]:
         """Return a list of the blocks held inside the memory object"""
-        # return list(self.memory.values())
         return self.blocks
 
     def set_block(self, block: Block):
@@ -363,7 +346,6 @@ class Memory(BaseModel, validate_assignment=True):
         raise ValueError(f"Block with label {label} does not exist")
 
 
-# TODO: ideally this is refactored into ChatMemory and the subclasses are given more specific names.
 class BasicBlockMemory(Memory):
     """
     BasicBlockMemory is a basic implemention of the Memory class, which takes in a list of blocks and links them to the memory object. These are editable by the agent via the core memory functions.
@@ -435,7 +417,6 @@ class ChatMemory(BasicBlockMemory):
             human (str): The starter value for the human block.
             limit (int): The character limit for each block.
         """
-        # TODO: Should these be CreateBlocks?
         super().__init__(blocks=[Block(value=persona, limit=limit, label="persona"), Block(value=human, limit=limit, label="human")])
 
 
