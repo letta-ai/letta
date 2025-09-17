@@ -17,6 +17,7 @@ class StopReasonType(str, Enum):
     tool_rule = "tool_rule"
     cancelled = "cancelled"
     requires_approval = "requires_approval"
+    incomplete_run = "incomplete_run"
 
     @property
     def run_status(self) -> JobStatus:
@@ -33,6 +34,7 @@ class StopReasonType(str, Enum):
             StopReasonType.no_tool_call,
             StopReasonType.invalid_llm_response,
             StopReasonType.llm_api_error,
+            StopReasonType.incomplete_run,
         ):
             return JobStatus.failed
         elif self == StopReasonType.cancelled:

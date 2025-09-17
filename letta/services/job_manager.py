@@ -223,7 +223,10 @@ class JobManager:
             True if update was successful, False if update was skipped due to invalid transition
         """
         try:
-            job_update_builder = partial(JobUpdate, status=new_status, stop_reason=stop_reason)
+            job_update_builder = partial(JobUpdate, status=new_status)
+
+            if stop_reason:
+                job_update_builder = partial(job_update_builder, stop_reason=stop_reason)
 
             # If metadata is provided, merge it with existing metadata
             if metadata:
