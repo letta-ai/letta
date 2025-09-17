@@ -1,20 +1,17 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
-
-from jinja2 import Template, TemplateSyntaxError
-from pydantic import BaseModel, Field, field_validator
-
-# Forward referencing to avoid circular import with Agent -> Memory -> Agent
-if TYPE_CHECKING:
-    pass
+from io import StringIO
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from openai.types.beta.function_tool import FunctionTool as OpenAITool
+from pydantic import BaseModel, Field, field_validator
 
-from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT
+from letta.constants import CORE_MEMORY_BLOCK_CHAR_LIMIT, CORE_MEMORY_LINE_NUMBER_WARNING
 from letta.otel.tracing import trace_method
 from letta.schemas.block import Block, FileBlock
+from letta.schemas.enums import AgentType
+from letta.schemas.file import FileStatus
 from letta.schemas.message import Message
 
 
@@ -23,12 +20,9 @@ class ContextWindowOverview(BaseModel):
     Overview of the context window, including the number of messages and tokens.
     """
 
-    # top-level information
     context_window_size_max: int = Field(..., description="The maximum amount of tokens the context window can hold.")
     context_window_size_current: int = Field(..., description="The current number of tokens in the context window.")
 
-    # context window breakdown (in messages)
-    # (technically not in the context window, but useful to know)
     num_messages: int = Field(..., description="The number of messages in the context window.")
     num_archival_memory: int = Field(..., description="The number of messages in the archival memory.")
     num_recall_memory: int = Field(..., description="The number of messages in the recall memory.")
@@ -38,9 +32,6 @@ class ContextWindowOverview(BaseModel):
     external_memory_summary: str = Field(
         ..., description="The metadata summary of the external memory sources (archival + recall metadata)."
     )
-
-    # context window breakdown (in tokens)
-    # this should all add up to context_window_size_current
 
     num_tokens_system: int = Field(..., description="The number of tokens in the system prompt.")
     system_prompt: str = Field(..., description="The content of the system prompt.")
@@ -55,8 +46,6 @@ class ContextWindowOverview(BaseModel):
     functions_definitions: Optional[List[OpenAITool]] = Field(..., description="The content of the functions definitions.")
 
     num_tokens_messages: int = Field(..., description="The number of tokens in the messages list.")
-    # TODO make list of messages?
-    # messages: List[dict] = Field(..., description="The messages in the context window.")
     messages: List[Message] = Field(..., description="The messages in the context window.")
 
 
@@ -67,7 +56,7 @@ class Memory(BaseModel, validate_assignment=True):
 
     """
 
-    # Memory.block contains the list of memory blocks in the core memory
+    agent_type: Optional[Union["AgentType", str]] = Field(None, description="Agent type controlling prompt rendering.")
     blocks: List[Block] = Field(..., description="Memory blocks contained in the agent's in-context memory")
     file_blocks: List[FileBlock] = Field(
         default_factory=list, description="Special blocks representing the agent's in-context memory of an attached file"
@@ -97,111 +86,238 @@ class Memory(BaseModel, validate_assignment=True):
 
         return unique_blocks
 
-    # Memory.template is a Jinja2 template for compiling memory module into a prompt string.
-    prompt_template: str = Field(
-        default="{% for block in blocks %}"
-        "<{{ block.label }}>\n"
-        "<metadata>"
-        'read_only="{{ block.read_only}}" chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"'
-        "</metadata>"
-        "<value>"
-        "{{ block.value }}\n"
-        "</value>"
-        "</{{ block.label }}>\n"
-        "{% if not loop.last %}\n{% endif %}"
-        "{% endfor %}",
-        description="Jinja2 template for compiling memory blocks into a prompt string",
-    )
+    prompt_template: str = Field(default="", description="Deprecated. Ignored for performance.")
 
     def get_prompt_template(self) -> str:
-        """Return the current Jinja2 template string."""
+        """Return the stored (deprecated) prompt template string."""
         return str(self.prompt_template)
 
     @trace_method
     def set_prompt_template(self, prompt_template: str):
-        """
-        Set a new Jinja2 template string.
-        Validates the template syntax and compatibility with current memory structure.
-        """
-        try:
-            # Validate Jinja2 syntax
-            Template(prompt_template)
-
-            # Validate compatibility with current memory structure
-            Template(prompt_template).render(blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
-
-            # If we get here, the template is valid and compatible
-            self.prompt_template = prompt_template
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
+        """Deprecated. Stores the provided string but is not used for rendering."""
+        self.prompt_template = prompt_template
 
     @trace_method
     async def set_prompt_template_async(self, prompt_template: str):
-        """
-        Async version of set_prompt_template that doesn't block the event loop.
-        """
-        try:
-            # Validate Jinja2 syntax with async enabled
-            Template(prompt_template)
-
-            # Validate compatibility with current memory structure - use async rendering
-            template = Template(prompt_template)
-            await asyncio.to_thread(template.render, blocks=self.blocks, file_blocks=self.file_blocks, sources=[], max_files_open=None)
-
-            # If we get here, the template is valid and compatible
-            self.prompt_template = prompt_template
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
+        """Deprecated. Async setter that stores the string but does not validate or use it."""
+        self.prompt_template = prompt_template
 
     @trace_method
+    def _render_memory_blocks_standard(self, s: StringIO):
+        if len(self.blocks) == 0:
+            # s.write("<memory_blocks></memory_blocks>") # TODO: consider empty tags
+            s.write("")
+            return
+
+        s.write("<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n")
+        for idx, block in enumerate(self.blocks):
+            label = block.label or "block"
+            value = block.value or ""
+            desc = block.description or ""
+            chars_current = len(value)
+            limit = block.limit if block.limit is not None else 0
+
+            s.write(f"<{label}>\n")
+            s.write("<description>\n")
+            s.write(f"{desc}\n")
+            s.write("</description>\n")
+            s.write("<metadata>")
+            if getattr(block, "read_only", False):
+                s.write("\n- read_only=true")
+            s.write(f"\n- chars_current={chars_current}")
+            s.write(f"\n- chars_limit={limit}\n")
+            s.write("</metadata>\n")
+            s.write("<value>\n")
+            s.write(f"{value}\n")
+            s.write("</value>\n")
+            s.write(f"</{label}>\n")
+            if idx != len(self.blocks) - 1:
+                s.write("\n")
+        s.write("\n</memory_blocks>")
+
+    def _render_memory_blocks_line_numbered(self, s: StringIO):
+        s.write("<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n")
+        for idx, block in enumerate(self.blocks):
+            label = block.label or "block"
+            value = block.value or ""
+            desc = block.description or ""
+            limit = block.limit if block.limit is not None else 0
+
+            s.write(f"<{label}>\n")
+            s.write("<description>\n")
+            s.write(f"{desc}\n")
+            s.write("</description>\n")
+            s.write("<metadata>")
+            if getattr(block, "read_only", False):
+                s.write("\n- read_only=true")
+            s.write(f"\n- chars_current={len(value)}")
+            s.write(f"\n- chars_limit={limit}\n")
+            s.write("</metadata>\n")
+            s.write("<value>\n")
+            s.write(f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n")
+            if value:
+                for i, line in enumerate(value.split("\n"), start=1):
+                    s.write(f"Line {i}: {line}\n")
+            s.write("</value>\n")
+            s.write(f"</{label}>\n")
+            if idx != len(self.blocks) - 1:
+                s.write("\n")
+        s.write("\n</memory_blocks>")
+
+    def _render_directories_common(self, s: StringIO, sources, max_files_open):
+        s.write("\n\n<directories>\n")
+        if max_files_open is not None:
+            current_open = sum(1 for b in self.file_blocks if getattr(b, "value", None))
+            s.write("<file_limits>\n")
+            s.write(f"- current_files_open={current_open}\n")
+            s.write(f"- max_files_open={max_files_open}\n")
+            s.write("</file_limits>\n")
+
+        for source in sources:
+            source_name = getattr(source, "name", "")
+            source_desc = getattr(source, "description", None)
+            source_instr = getattr(source, "instructions", None)
+            source_id = getattr(source, "id", None)
+
+            s.write(f'<directory name="{source_name}">\n')
+            if source_desc:
+                s.write(f"<description>{source_desc}</description>\n")
+            if source_instr:
+                s.write(f"<instructions>{source_instr}</instructions>\n")
+
+            if self.file_blocks:
+                for fb in self.file_blocks:
+                    if source_id is not None and getattr(fb, "source_id", None) == source_id:
+                        status = FileStatus.open.value if getattr(fb, "value", None) else FileStatus.closed.value
+                        label = fb.label or "file"
+                        desc = fb.description or ""
+                        chars_current = len(fb.value or "")
+                        limit = fb.limit if fb.limit is not None else 0
+
+                        s.write(f'<file status="{status}" name="{label}">\n')
+                        if desc:
+                            s.write("<description>\n")
+                            s.write(f"{desc}\n")
+                            s.write("</description>\n")
+                        s.write("<metadata>")
+                        if getattr(fb, "read_only", False):
+                            s.write("\n- read_only=true")
+                        s.write(f"\n- chars_current={chars_current}\n")
+                        s.write(f"- chars_limit={limit}\n")
+                        s.write("</metadata>\n")
+                        if getattr(fb, "value", None):
+                            s.write("<value>\n")
+                            s.write(f"{fb.value}\n")
+                            s.write("</value>\n")
+                        s.write("</file>\n")
+
+            s.write("</directory>\n")
+        s.write("</directories>")
+
+    def _render_directories_react(self, s: StringIO, sources, max_files_open):
+        s.write("\n\n<directories>\n")
+        if max_files_open is not None:
+            current_open = sum(1 for b in self.file_blocks if getattr(b, "value", None))
+            s.write("<file_limits>\n")
+            s.write(f"- current_files_open={current_open}\n")
+            s.write(f"- max_files_open={max_files_open}\n")
+            s.write("</file_limits>\n")
+
+        for source in sources:
+            source_name = getattr(source, "name", "")
+            source_desc = getattr(source, "description", None)
+            source_instr = getattr(source, "instructions", None)
+            source_id = getattr(source, "id", None)
+
+            s.write(f'<directory name="{source_name}">\n')
+            if source_desc:
+                s.write(f"<description>{source_desc}</description>\n")
+            if source_instr:
+                s.write(f"<instructions>{source_instr}</instructions>\n")
+
+            if self.file_blocks:
+                for fb in self.file_blocks:
+                    if source_id is not None and getattr(fb, "source_id", None) == source_id:
+                        status = FileStatus.open.value if getattr(fb, "value", None) else FileStatus.closed.value
+                        label = fb.label or "file"
+                        desc = fb.description or ""
+                        chars_current = len(fb.value or "")
+                        limit = fb.limit if fb.limit is not None else 0
+
+                        s.write(f'<file status="{status}">\n')
+                        s.write(f"<{label}>\n")
+                        s.write("<description>\n")
+                        s.write(f"{desc}\n")
+                        s.write("</description>\n")
+                        s.write("<metadata>")
+                        if getattr(fb, "read_only", False):
+                            s.write("\n- read_only=true")
+                        s.write(f"\n- chars_current={chars_current}\n")
+                        s.write(f"- chars_limit={limit}\n")
+                        s.write("</metadata>\n")
+                        s.write("<value>\n")
+                        s.write(f"{fb.value or ''}\n")
+                        s.write("</value>\n")
+                        s.write(f"</{label}>\n")
+                        s.write("</file>\n")
+
+            s.write("</directory>\n")
+        s.write("</directories>")
+
     def compile(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
-        """Generate a string representation of the memory in-context using the Jinja2 template"""
-        try:
-            template = Template(self.prompt_template)
-            return template.render(
-                blocks=self.blocks,
-                file_blocks=self.file_blocks,
-                tool_usage_rules=tool_usage_rules,
-                sources=sources,
-                max_files_open=max_files_open,
-            )
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
+        """Efficiently render memory, tool rules, and sources into a prompt string."""
+        s = StringIO()
+
+        raw_type = self.agent_type.value if hasattr(self.agent_type, "value") else (self.agent_type or "")
+        norm_type = raw_type.lower()
+        is_react = norm_type in ("react_agent", "workflow_agent")
+        is_line_numbered = norm_type in ("sleeptime_agent", "memgpt_v2_agent")
+
+        # Memory blocks (not for react/workflow). Always include wrapper for preview/tests.
+        if not is_react:
+            if is_line_numbered:
+                self._render_memory_blocks_line_numbered(s)
+            else:
+                self._render_memory_blocks_standard(s)
+
+        if tool_usage_rules is not None:
+            desc = getattr(tool_usage_rules, "description", None) or ""
+            val = getattr(tool_usage_rules, "value", None) or ""
+            s.write("\n\n<tool_usage_rules>\n")
+            s.write(f"{desc}\n\n")
+            s.write(f"{val}\n")
+            s.write("</tool_usage_rules>")
+
+        if sources:
+            if is_react:
+                self._render_directories_react(s, sources, max_files_open)
+            else:
+                self._render_directories_common(s, sources, max_files_open)
+
+        return s.getvalue()
 
     @trace_method
     async def compile_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
-        """Async version of compile that doesn't block the event loop"""
-        try:
-            template = Template(self.prompt_template, enable_async=True)
-            return await template.render_async(
-                blocks=self.blocks,
-                file_blocks=self.file_blocks,
-                tool_usage_rules=tool_usage_rules,
-                sources=sources,
-                max_files_open=max_files_open,
-            )
-        except TemplateSyntaxError as e:
-            raise ValueError(f"Invalid Jinja2 template syntax: {str(e)}")
-        except Exception as e:
-            raise ValueError(f"Prompt template is not compatible with current memory structure: {str(e)}")
+        """Async version that offloads to a thread for CPU-bound string building."""
+        return await asyncio.to_thread(
+            self.compile,
+            tool_usage_rules=tool_usage_rules,
+            sources=sources,
+            max_files_open=max_files_open,
+        )
 
     @trace_method
     async def compile_in_thread_async(self, tool_usage_rules=None, sources=None, max_files_open=None) -> str:
-        """Compile the memory in a thread"""
-        return await asyncio.to_thread(self.compile, tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open)
+        """Deprecated: use compile() instead."""
+        import warnings
+
+        warnings.warn("compile_in_thread_async is deprecated; use compile()", DeprecationWarning, stacklevel=2)
+        return self.compile(tool_usage_rules=tool_usage_rules, sources=sources, max_files_open=max_files_open)
 
     def list_block_labels(self) -> List[str]:
         """Return a list of the block names held inside the memory object"""
-        # return list(self.memory.keys())
         return [block.label for block in self.blocks]
 
-    # TODO: these should actually be label, not name
     def get_block(self, label: str) -> Block:
         """Correct way to index into the memory.memory field, returns a Block"""
         keys = []
@@ -213,7 +329,6 @@ class Memory(BaseModel, validate_assignment=True):
 
     def get_blocks(self) -> List[Block]:
         """Return a list of the blocks held inside the memory object"""
-        # return list(self.memory.values())
         return self.blocks
 
     def set_block(self, block: Block):
@@ -236,7 +351,6 @@ class Memory(BaseModel, validate_assignment=True):
         raise ValueError(f"Block with label {label} does not exist")
 
 
-# TODO: ideally this is refactored into ChatMemory and the subclasses are given more specific names.
 class BasicBlockMemory(Memory):
     """
     BasicBlockMemory is a basic implemention of the Memory class, which takes in a list of blocks and links them to the memory object. These are editable by the agent via the core memory functions.
@@ -308,7 +422,6 @@ class ChatMemory(BasicBlockMemory):
             human (str): The starter value for the human block.
             limit (int): The character limit for each block.
         """
-        # TODO: Should these be CreateBlocks?
         super().__init__(blocks=[Block(value=persona, limit=limit, label="persona"), Block(value=human, limit=limit, label="human")])
 
 

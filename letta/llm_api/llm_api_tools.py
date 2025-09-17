@@ -235,7 +235,6 @@ def create(
                 request_json=prepare_openai_payload(data),
                 response_json=response.model_json_schema(),
                 step_id=step_id,
-                organization_id=actor.organization_id,
             ),
         )
 

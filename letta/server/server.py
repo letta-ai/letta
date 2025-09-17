@@ -38,12 +38,12 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.tracing import log_event, trace_method
 from letta.prompts.gpt_system import get_system_text
-from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
 from letta.schemas.block import Block, BlockUpdate, CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
 
 # openai schemas
-from letta.schemas.enums import JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType, ToolSourceType
+from letta.schemas.enums import AgentType, JobStatus, MessageStreamStatus, ProviderCategory, ProviderType, SandboxType, ToolSourceType
 from letta.schemas.environment_variables import SandboxEnvironmentVariableCreate
 from letta.schemas.group import GroupCreate, ManagerType, SleeptimeManager, VoiceSleeptimeManager
 from letta.schemas.job import Job, JobUpdate

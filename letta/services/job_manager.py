@@ -246,7 +246,12 @@ class JobManager:
     @enforce_types
     @trace_method
     async def safe_update_job_status_async(
-        self, job_id: str, new_status: JobStatus, actor: PydanticUser, stop_reason: StopReasonType, metadata: Optional[dict] = None
+        self,
+        job_id: str,
+        new_status: JobStatus,
+        actor: PydanticUser,
+        stop_reason: Optional[StopReasonType] = None,
+        metadata: Optional[dict] = None,
     ) -> bool:
         """
         Safely update job status with state transition guards.

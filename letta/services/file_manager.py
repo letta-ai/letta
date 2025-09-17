@@ -404,8 +404,10 @@ class FileManager:
         self,
         source_id: str,
         actor: PydanticUser,
+        before: Optional[str] = None,
         after: Optional[str] = None,
         limit: Optional[int] = 50,
+        ascending: Optional[bool] = True,
         include_content: bool = False,
         strip_directory_prefix: bool = False,
         check_status_updates: bool = False,
@@ -415,8 +417,10 @@ class FileManager:
         Args:
             source_id: Source to list files from
             actor: User performing the request
+            before: Before filter
             after: Pagination cursor
             limit: Maximum number of files to return
+            ascending: Sort by ascending or descending order
             include_content: Whether to include file content
             strip_directory_prefix: Whether to strip directory prefix from filenames
             check_status_updates: Whether to check and update status for timeout and embedding completion
@@ -429,8 +433,10 @@ class FileManager:
 
             files = await FileMetadataModel.list_async(
                 db_session=session,
+                before=before,
                 after=after,
                 limit=limit,
+                ascending=ascending,
                 organization_id=actor.organization_id,
                 source_id=source_id,
                 query_options=options,

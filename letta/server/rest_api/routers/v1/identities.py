@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, List, Literal, Optional
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 
 from letta.orm.errors import NoResultFound, UniqueConstraintViolationError
+from letta.schemas.agent import AgentState
+from letta.schemas.block import Block
 from letta.schemas.identity import Identity, IdentityCreate, IdentityProperty, IdentityType, IdentityUpdate, IdentityUpsert
 from letta.server.rest_api.dependencies import HeaderParams, get_headers, get_letta_server
 
@@ -190,5 +192,81 @@ async def delete_identity(
         raise
     except NoResultFound as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
+
+
+@router.get("/{identity_id}/agents", response_model=List[AgentState], operation_id="list_agents_for_identity")
+async def list_agents_for_identity(
+    identity_id: str,
+    before: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of agents to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get all agents associated with the specified identity.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        return await server.identity_manager.list_agents_for_identity_async(
+            identity_id=identity_id,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+            actor=actor,
+        )
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
+
+
+@router.get("/{identity_id}/blocks", response_model=List[Block], operation_id="list_blocks_for_identity")
+async def list_blocks_for_identity(
+    identity_id: str,
+    before: Optional[str] = Query(
+        None,
+        description="Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
+    ),
+    after: Optional[str] = Query(
+        None,
+        description="Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
+    ),
+    limit: Optional[int] = Query(50, description="Maximum number of blocks to return"),
+    order: Literal["asc", "desc"] = Query(
+        "desc", description="Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Field to sort by"),
+    server: "SyncServer" = Depends(get_letta_server),
+    headers: HeaderParams = Depends(get_headers),
+):
+    """
+    Get all blocks associated with the specified identity.
+    """
+    try:
+        actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+        return await server.identity_manager.list_blocks_for_identity_async(
+            identity_id=identity_id,
+            before=before,
+            after=after,
+            limit=limit,
+            ascending=(order == "asc"),
+            actor=actor,
+        )
+    except NoResultFound as e:
+        raise HTTPException(status_code=404, detail=f"Identity with id={identity_id} not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")

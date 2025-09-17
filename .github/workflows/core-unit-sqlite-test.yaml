@@ -53,7 +53,10 @@ jobs:
               {"test_suite": "mcp_tests/", "use_experimental": true},
               {"test_suite": "test_timezone_formatting.py"},
               {"test_suite": "test_plugins.py"},
-              {"test_suite": "test_embeddings.py"}
+              {"test_suite": "test_embeddings.py"},
+              {"test_suite": "test_crypto_utils.py"},
+              {"test_suite": "test_mcp_encryption.py"},
+              {"test_suite": "test_secret.py"}
             ]
           }
         }

@@ -11,10 +11,10 @@ from letta.agents.voice_sleeptime_agent import VoiceSleeptimeAgent
 from letta.config import LettaConfig
 from letta.constants import DEFAULT_MAX_MESSAGE_BUFFER_LENGTH, DEFAULT_MIN_MESSAGE_BUFFER_LENGTH
 from letta.orm.errors import NoResultFound
-from letta.schemas.agent import AgentType, CreateAgent
+from letta.schemas.agent import CreateAgent
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole, MessageStreamStatus
+from letta.schemas.enums import AgentType, MessageRole, MessageStreamStatus
 from letta.schemas.group import GroupUpdate, ManagerType, VoiceSleeptimeManagerUpdate
 from letta.schemas.letta_message import AssistantMessage, ReasoningMessage, ToolCallMessage
 from letta.schemas.letta_message_content import TextContent

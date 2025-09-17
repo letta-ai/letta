@@ -38,6 +38,7 @@ from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
     ArchivalMemorySearchResult,
@@ -114,10 +115,7 @@ async def list_agents(
     ),
 ):
     """
-    List all agents associated with a given user.
-
-    This endpoint retrieves a list of all agents and their configurations
-    associated with the specified user ID.
+    Get a list of all agents.
     """
 
     # Retrieve the actor (user) details
@@ -155,7 +153,7 @@ async def count_agents(
     headers: HeaderParams = Depends(get_headers),
 ):
     """
-    Get the count of all agents associated with a given user.
+    Get the total number of agents.
     """
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.agent_manager.size_async(actor=actor)
@@ -436,7 +434,7 @@ async def create_agent(
     ),  # Only handled by next js middleware
 ):
     """
-    Create a new agent with the specified configuration.
+    Create an agent.
     """
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
@@ -453,7 +451,7 @@ async def modify_agent(
     server: "SyncServer" = Depends(get_letta_server),
     headers: HeaderParams = Depends(get_headers),
 ):
-    """Update an existing agent"""
+    """Update an existing agent."""
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     return await server.update_agent_async(agent_id=agent_id, request=update_agent, actor=actor)
 
@@ -1196,6 +1194,7 @@ async def send_message(
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
+        result = None
         if agent_eligible and model_compatible:
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
             result = await agent_loop.step(
@@ -1233,11 +1232,17 @@ async def send_message(
         raise
     finally:
         if settings.track_agent_run:
+            if result:
+                stop_reason = result.stop_reason.stop_reason
+            else:
+                # NOTE: we could also consider this an error?
+                stop_reason = None
             await server.job_manager.safe_update_job_status_async(
                 job_id=run.id,
                 new_status=job_status,
                 actor=actor,
                 metadata=job_update_metadata,
+                stop_reason=stop_reason,
             )
 
 
@@ -1444,10 +1449,7 @@ async def send_message_streaming(
     finally:
         if settings.track_agent_run:
             await server.job_manager.safe_update_job_status_async(
-                job_id=run.id,
-                new_status=job_status,
-                actor=actor,
-                metadata=job_update_metadata,
+                job_id=run.id, new_status=job_status, actor=actor, metadata=job_update_metadata
             )
 
 

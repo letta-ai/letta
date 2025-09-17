@@ -405,7 +405,6 @@ class LettaAgent(BaseAgent):
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -751,7 +750,6 @@ class LettaAgent(BaseAgent):
                                 request_json=request_data,
                                 response_json=response_data,
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1173,7 +1171,6 @@ class LettaAgent(BaseAgent):
                                     },
                                 },
                                 step_id=step_id,  # Use original step_id for telemetry
-                                organization_id=self.actor.organization_id,
                             ),
                         )
                         step_progression = StepProgression.LOGGED_TRACE
@@ -1877,7 +1874,7 @@ class LettaAgent(BaseAgent):
             start_time = get_utc_timestamp_ns()
             agent_step_span.add_event(name="tool_execution_started")
 
-        sandbox_env_vars = {var.key: var.value for var in agent_state.tool_exec_environment_variables}
+        sandbox_env_vars = {var.key: var.value for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

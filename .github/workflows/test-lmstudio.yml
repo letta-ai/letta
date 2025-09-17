@@ -31,6 +31,7 @@ jobs:
     uses: ./.github/workflows/reusable-test-workflow.yml
     with:
       test-type: "integration"
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       install-args: "--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox --extra google"
       test-command: "uv run pytest -svv tests/"
       timeout-minutes: 60

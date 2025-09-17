@@ -1,0 +1,19 @@
+{
+  "name": "letta-streaming-examples",
+  "version": "1.0.0",
+  "description": "Examples demonstrating Letta's streaming API in Python and TypeScript",
+  "scripts": {
+    "demo:python": "python streaming_demo.py",
+    "demo:typescript": "tsx streaming_demo.ts",
+    "demo": "npm run demo:typescript"
+  },
+  "keywords": ["letta", "streaming", "ai", "agents"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@letta-ai/letta-client": "^0.0.68646",
+    "@types/node": "^24.4.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

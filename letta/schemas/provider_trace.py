@@ -19,7 +19,6 @@ class ProviderTraceCreate(BaseModel):
     request_json: dict[str, Any] = Field(..., description="JSON content of the provider request")
     response_json: dict[str, Any] = Field(..., description="JSON content of the provider response")
     step_id: str = Field(None, description="ID of the step that this trace is associated with")
-    organization_id: str = Field(..., description="The unique identifier of the organization.")
 
 
 class ProviderTrace(BaseProviderTrace):
@@ -39,5 +38,4 @@ class ProviderTrace(BaseProviderTrace):
     request_json: Dict[str, Any] = Field(..., description="JSON content of the provider request")
     response_json: Dict[str, Any] = Field(..., description="JSON content of the provider response")
     step_id: Optional[str] = Field(None, description="ID of the step that this trace is associated with")
-    organization_id: str = Field(..., description="The unique identifier of the organization.")
     created_at: datetime = Field(default_factory=get_utc_time, description="The timestamp when the object was created.")

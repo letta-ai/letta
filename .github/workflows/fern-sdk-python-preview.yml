@@ -31,6 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           submodules: true
           fetch-depth: 0
       - name: Get changed files
@@ -67,6 +69,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           submodules: true
 
       - name: Generate cache key
@@ -83,6 +87,7 @@ jobs:
           key: ${{ steps.cache-key.outputs.key }}
 
       - name: Inject env vars into environment
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
         working-directory: .
         run: |
           while IFS= read -r line || [[ -n "$line" ]]; do
@@ -129,6 +134,7 @@ jobs:
           uv run alembic upgrade head
 
       - name: Run letta server
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
         working-directory: .
         env:
           LETTA_PG_DB: postgres
@@ -145,7 +151,7 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
 
       - name: Generate Python SDK Preview
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')) && steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: .
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}

@@ -20,6 +20,236 @@
     }
   ],
   "paths": {
+    "/v1/archives/": {
+      "post": {
+        "tags": ["archives"],
+        "summary": "Create Archive",
+        "description": "Create a new archive.",
+        "operationId": "create_archive",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["archives"],
+        "summary": "List Archives",
+        "description": "Get a list of all archives for the current organization with optional filters and pagination.",
+        "operationId": "list_archives",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Archive ID cursor for pagination. Returns archives that come before this archive ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Archive ID cursor for pagination. Returns archives that come after this archive ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of archives to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of archives to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for archives by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by archive name (exact match)",
+              "title": "Name"
+            },
+            "description": "Filter by archive name (exact match)"
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only archives attached to this agent ID",
+              "title": "Agent Id"
+            },
+            "description": "Only archives attached to this agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Archive"
+                  },
+                  "title": "Response List Archives"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/archives/{archive_id}": {
+      "patch": {
+        "tags": ["archives"],
+        "summary": "Modify Archive",
+        "description": "Update an existing archive's name and/or description.",
+        "operationId": "modify_archive",
+        "parameters": [
+          {
+            "name": "archive_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Archive Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Archive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tools/{tool_id}": {
       "delete": {
         "tags": ["tools"],
@@ -1530,6 +1760,7 @@
         "summary": "Count Sources",
         "description": "Count all data sources created by a user.",
         "operationId": "count_sources",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "200": {
@@ -1562,6 +1793,7 @@
         "summary": "Retrieve Source",
         "description": "Get all sources",
         "operationId": "retrieve_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -1601,6 +1833,7 @@
         "summary": "Modify Source",
         "description": "Update the name or documentation of an existing data source.",
         "operationId": "modify_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -1650,6 +1883,7 @@
         "summary": "Delete Source",
         "description": "Delete a data source.",
         "operationId": "delete_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -1689,6 +1923,7 @@
         "summary": "Get Source Id By Name",
         "description": "Get a source by name",
         "operationId": "get_source_id_by_name",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_name",
@@ -1731,6 +1966,7 @@
         "summary": "Get Sources Metadata",
         "description": "Get aggregated metadata for all sources in an organization.\n\nReturns structured metadata including:\n- Total number of sources\n- Total number of files across all sources\n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True",
         "operationId": "get_sources_metadata",
+        "deprecated": true,
         "parameters": [
           {
             "name": "include_detailed_per_source_metadata",
@@ -1773,6 +2009,7 @@
         "summary": "List Sources",
         "description": "List all data sources created by a user.",
         "operationId": "list_sources",
+        "deprecated": true,
         "parameters": [],
         "responses": {
           "200": {
@@ -1806,6 +2043,7 @@
         "summary": "Create Source",
         "description": "Create a new data source.",
         "operationId": "create_source",
+        "deprecated": true,
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1847,6 +2085,7 @@
         "summary": "Upload File To Source",
         "description": "Upload a file to a data source.",
         "operationId": "upload_file_to_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -1927,6 +2166,7 @@
         "summary": "Get Agents For Source",
         "description": "Get all agent IDs that have the specified source attached.",
         "operationId": "get_agents_for_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -1972,6 +2212,7 @@
         "summary": "List Source Passages",
         "description": "List all passages associated with a data source.",
         "operationId": "list_source_passages",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -2065,6 +2306,7 @@
         "summary": "List Source Files",
         "description": "List paginated files associated with a data source.",
         "operationId": "list_source_files",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -2164,6 +2406,7 @@
         "summary": "Get File Metadata",
         "description": "Retrieve metadata for a specific file by its ID.",
         "operationId": "get_file_metadata",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -2226,6 +2469,7 @@
         "summary": "Delete File From Source",
         "description": "Delete a data source.",
         "operationId": "delete_file_from_source",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -2425,9 +2669,10 @@
     "/v1/folders/name/{folder_name}": {
       "get": {
         "tags": ["folders"],
-        "summary": "Get Folder Id By Name",
-        "description": "Get a folder by name",
-        "operationId": "get_folder_id_by_name",
+        "summary": "Get Folder By Name",
+        "description": "**Deprecated**: Please use the list endpoint `GET /v1/folders?name=` instead.\n\n\nGet a folder by name.",
+        "operationId": "get_folder_by_name",
+        "deprecated": true,
         "parameters": [
           {
             "name": "folder_name",
@@ -2446,7 +2691,7 @@
               "application/json": {
                 "schema": {
                   "type": "string",
-                  "title": "Response Get Folder Id By Name"
+                  "title": "Response Get Folder By Name"
                 }
               }
             }
@@ -2467,9 +2712,9 @@
     "/v1/folders/metadata": {
       "get": {
         "tags": ["folders"],
-        "summary": "Get Folders Metadata",
+        "summary": "Retrieve Metadata",
         "description": "Get aggregated metadata for all folders in an organization.\n\nReturns structured metadata including:\n- Total number of folders\n- Total number of files across all folders\n- Total size of all files\n- Per-source breakdown with file details (file_name, file_size per file) if include_detailed_per_source_metadata is True",
-        "operationId": "get_folders_metadata",
+        "operationId": "retrieve_metadata",
         "parameters": [
           {
             "name": "include_detailed_per_source_metadata",
@@ -2593,6 +2838,24 @@
               "title": "Order By"
             },
             "description": "Field to sort by"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Folder name to filter by",
+              "title": "Name"
+            },
+            "description": "Folder name to filter by"
           }
         ],
         "responses": {
@@ -2745,9 +3008,9 @@
     "/v1/folders/{folder_id}/agents": {
       "get": {
         "tags": ["folders"],
-        "summary": "Get Agents For Folder",
+        "summary": "List Agents For Folder",
         "description": "Get all agent IDs that have the specified folder attached.",
-        "operationId": "get_agents_for_folder",
+        "operationId": "list_agents_for_folder",
         "parameters": [
           {
             "name": "folder_id",
@@ -2757,6 +3020,87 @@
               "type": "string",
               "title": "Folder Id"
             }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           }
         ],
         "responses": {
@@ -2769,7 +3113,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "title": "Response Get Agents For Folder"
+                  "title": "Response List Agents For Folder"
                 }
               }
             }
@@ -2804,24 +3148,6 @@
             }
           },
           {
-            "name": "after",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Message after which to retrieve the returned messages.",
-              "title": "After"
-            },
-            "description": "Message after which to retrieve the returned messages."
-          },
-          {
             "name": "before",
             "in": "query",
             "required": false,
@@ -2834,22 +3160,73 @@
                   "type": "null"
                 }
               ],
-              "description": "Message before which to retrieve the returned messages.",
+              "description": "Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Message before which to retrieve the returned messages."
+            "description": "Passage ID cursor for pagination. Returns passages that come before this passage ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Passage ID cursor for pagination. Returns passages that come after this passage ID in the specified sort order"
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "description": "Maximum number of messages to retrieve.",
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of passages to return",
               "default": 100,
               "title": "Limit"
             },
-            "description": "Maximum number of messages to retrieve."
+            "description": "Maximum number of passages to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for passages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           }
         ],
         "responses": {
@@ -2897,16 +3274,22 @@
             }
           },
           {
-            "name": "limit",
+            "name": "before",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "description": "Number of files to return",
-              "default": 1000,
-              "title": "Limit"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "File ID cursor for pagination. Returns files that come before this file ID in the specified sort order",
+              "title": "Before"
             },
-            "description": "Number of files to return"
+            "description": "File ID cursor for pagination. Returns files that come before this file ID in the specified sort order"
           },
           {
             "name": "after",
@@ -2921,10 +3304,55 @@
                   "type": "null"
                 }
               ],
-              "description": "Pagination cursor to fetch the next set of results",
+              "description": "File ID cursor for pagination. Returns files that come after this file ID in the specified sort order",
               "title": "After"
             },
-            "description": "Pagination cursor to fetch the next set of results"
+            "description": "File ID cursor for pagination. Returns files that come after this file ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of files to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of files to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for files by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "include_content",
@@ -3014,7 +3442,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "List Agents",
-        "description": "List all agents associated with a given user.\n\nThis endpoint retrieves a list of all agents and their configurations\nassociated with the specified user ID.",
+        "description": "Get a list of all agents.",
         "operationId": "list_agents",
         "parameters": [
           {
@@ -3347,7 +3775,7 @@
       "post": {
         "tags": ["agents"],
         "summary": "Create Agent",
-        "description": "Create a new agent with the specified configuration.",
+        "description": "Create an agent.",
         "operationId": "create_agent",
         "parameters": [
           {
@@ -3407,7 +3835,7 @@
       "get": {
         "tags": ["agents"],
         "summary": "Count Agents",
-        "description": "Get the count of all agents associated with a given user.",
+        "description": "Get the total number of agents.",
         "operationId": "count_agents",
         "parameters": [],
         "responses": {
@@ -3610,7 +4038,7 @@
       "patch": {
         "tags": ["agents"],
         "summary": "Modify Agent",
-        "description": "Update an existing agent",
+        "description": "Update an existing agent.",
         "operationId": "modify_agent",
         "parameters": [
           {
@@ -6366,24 +6794,6 @@
             }
           },
           {
-            "name": "after",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Message after which to retrieve the returned messages.",
-              "title": "After"
-            },
-            "description": "Message after which to retrieve the returned messages."
-          },
-          {
             "name": "before",
             "in": "query",
             "required": false,
@@ -6396,22 +6806,73 @@
                   "type": "null"
                 }
               ],
-              "description": "Message before which to retrieve the returned messages.",
+              "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order",
               "title": "Before"
             },
-            "description": "Message before which to retrieve the returned messages."
+            "description": "Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "description": "Maximum number of messages to retrieve.",
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of messages to retrieve",
               "default": 10,
               "title": "Limit"
             },
-            "description": "Maximum number of messages to retrieve."
+            "description": "Maximum number of messages to retrieve"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
           },
           {
             "name": "use_assistant_message",
@@ -7174,6 +7635,258 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{identity_id}/agents": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "List Agents For Identity",
+        "description": "Get all agents associated with the specified identity.",
+        "operationId": "list_agents_for_identity",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  "title": "Response List Agents For Identity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/{identity_id}/blocks": {
+      "get": {
+        "tags": ["identities"],
+        "summary": "List Blocks For Identity",
+        "description": "Get all blocks associated with the specified identity.",
+        "operationId": "list_blocks_for_identity",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Block ID cursor for pagination. Returns blocks that come before this block ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Block ID cursor for pagination. Returns blocks that come after this block ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of blocks to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of blocks to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for blocks by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Block"
+                  },
+                  "title": "Response List Blocks For Identity"
+                }
               }
             }
           },
@@ -8079,6 +8792,87 @@
             }
           },
           {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order",
+              "title": "Before"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come before this agent ID in the specified sort order"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order",
+              "title": "After"
+            },
+            "description": "Agent ID cursor for pagination. Returns agents that come after this agent ID in the specified sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of agents to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of agents to return"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "type": "string",
+              "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first",
+              "default": "desc",
+              "title": "Order"
+            },
+            "description": "Sort order for agents by creation time. 'asc' for oldest first, 'desc' for newest first"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "created_at",
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "created_at",
+              "title": "Order By"
+            },
+            "description": "Field to sort by"
+          },
+          {
             "name": "include_relationships",
             "in": "query",
             "required": false,
@@ -8132,7 +8926,7 @@
       "get": {
         "tags": ["jobs"],
         "summary": "List Jobs",
-        "description": "List all jobs.\nTODO (cliandy): implementation for pagination",
+        "description": "List all jobs.",
         "operationId": "list_jobs",
         "parameters": [
           {
@@ -8209,6 +9003,18 @@
             "description": "Limit for pagination"
           },
           {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Filter for active jobs.",
+              "default": false,
+              "title": "Active"
+            },
+            "description": "Filter for active jobs."
+          },
+          {
             "name": "ascending",
             "in": "query",
             "required": false,
@@ -8255,6 +9061,7 @@
         "summary": "List Active Jobs",
         "description": "List all active jobs.",
         "operationId": "list_active_jobs",
+        "deprecated": true,
         "parameters": [
           {
             "name": "source_id",
@@ -8987,6 +9794,18 @@
             "description": "Maximum number of runs to return"
           },
           {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Filter for active runs.",
+              "default": false,
+              "title": "Active"
+            },
+            "description": "Filter for active runs."
+          },
+          {
             "name": "ascending",
             "in": "query",
             "required": false,
@@ -9033,6 +9852,7 @@
         "summary": "List Active Runs",
         "description": "List all active runs.",
         "operationId": "list_active_runs",
+        "deprecated": true,
         "parameters": [
           {
             "name": "agent_ids",
@@ -10124,10 +10944,30 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter tags by text search",
+              "description": "Filter tags by text search. Deprecated, please use name field instead",
+              "deprecated": true,
               "title": "Query Text"
             },
-            "description": "Filter tags by text search"
+            "description": "Filter tags by text search. Deprecated, please use name field instead",
+            "deprecated": true
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter tags by name",
+              "title": "Name"
+            },
+            "description": "Filter tags by name"
           }
         ],
         "responses": {
@@ -13674,6 +14514,15 @@
             },
             "type": "array",
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead.",
+            "deprecated": true
+          },
+          "secrets": {
+            "items": {
+              "$ref": "#/components/schemas/AgentEnvironmentVariable"
+            },
+            "type": "array",
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "project_id": {
@@ -14460,6 +15309,152 @@
         "type": "object",
         "required": ["timestamp", "content"],
         "title": "ArchivalMemorySearchResult"
+      },
+      "Archive": {
+        "properties": {
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id",
+            "description": "The id of the user that made this object."
+          },
+          "last_updated_by_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated By Id",
+            "description": "The id of the user that made this object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "The creation date of the archive"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "The timestamp when the object was last updated."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the archive"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A description of the archive"
+          },
+          "vector_db_provider": {
+            "$ref": "#/components/schemas/VectorDBProvider",
+            "description": "The vector database provider used for this archive's passages",
+            "default": "native"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Additional metadata"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^archive-[a-fA-F0-9]{8}",
+            "title": "Id",
+            "description": "The human-friendly ID of the Archive",
+            "examples": ["archive-123e4567-e89b-12d3-a456-426614174000"]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["created_at", "name", "organization_id"],
+        "title": "Archive",
+        "description": "Representation of an archive - a collection of archival passages that can be shared between agents.\n\nParameters:\n    id (str): The unique identifier of the archive.\n    name (str): The name of the archive.\n    description (str): A description of the archive.\n    organization_id (str): The organization this archive belongs to.\n    created_at (datetime): The creation date of the archive.\n    metadata (dict): Additional metadata for the archive."
+      },
+      "ArchiveCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "ArchiveCreateRequest",
+        "description": "Request model for creating an archive.\n\nIntentionally excludes vector_db_provider. These are derived internally (vector DB provider from env)."
+      },
+      "ArchiveUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "ArchiveUpdateRequest",
+        "description": "Request model for updating an archive (partial).\n\nSupports updating only name and description."
       },
       "AssistantMessage": {
         "properties": {
@@ -17843,6 +18838,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {
@@ -21162,6 +22172,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {
@@ -24393,7 +25418,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["request_json", "response_json", "organization_id"],
+        "required": ["request_json", "response_json"],
         "title": "ProviderTrace",
         "description": "Letta's internal representation of a provider trace.\n\nAttributes:\n    id (str): The unique identifier of the provider trace.\n    request_json (Dict[str, Any]): JSON content of the provider request.\n    response_json (Dict[str, Any]): JSON content of the provider response.\n    step_id (str): ID of the step that this trace is associated with.\n    organization_id (str): The unique identifier of the organization.\n    created_at (datetime): The timestamp when the object was created."
       },
@@ -28010,6 +29035,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead"
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "project_id": {
@@ -29324,6 +30364,21 @@
               }
             ],
             "title": "Tool Exec Environment Variables",
+            "description": "Deprecated: use `secrets` field instead."
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secrets",
             "description": "The environment variables for tool execution specific to this agent."
           },
           "memory_variables": {

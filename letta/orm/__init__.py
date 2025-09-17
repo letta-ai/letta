@@ -19,6 +19,7 @@ from letta.orm.job import Job
 from letta.orm.job_messages import JobMessage
 from letta.orm.llm_batch_items import LLMBatchItem
 from letta.orm.llm_batch_job import LLMBatchJob
+from letta.orm.mcp_oauth import MCPOAuth
 from letta.orm.mcp_server import MCPServer
 from letta.orm.message import Message
 from letta.orm.organization import Organization

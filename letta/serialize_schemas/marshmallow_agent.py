@@ -40,6 +40,7 @@ class MarshmallowAgentSchema(BaseSchema):
     core_memory = fields.List(fields.Nested(SerializedBlockSchema))
     tools = fields.List(fields.Nested(SerializedToolSchema))
     tool_exec_environment_variables = fields.List(fields.Nested(SerializedAgentEnvironmentVariableSchema))
+    secrets = fields.List(fields.Nested(SerializedAgentEnvironmentVariableSchema))
     tags = fields.List(fields.Nested(SerializedAgentTagSchema))
 
     def __init__(self, *args, session: sessionmaker, actor: User, max_steps: Optional[int] = None, **kwargs):
@@ -212,6 +213,9 @@ class MarshmallowAgentSchema(BaseSchema):
         """Hide the value of tool_exec_environment_variables"""
 
         for env_var in data.get("tool_exec_environment_variables", []):
+            # need to be re-set at load time
+            env_var["value"] = ""
+        for env_var in data.get("secrets", []):
             # need to be re-set at load time
             env_var["value"] = ""
         return data

@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.letta_agent_v2 import LettaAgentV2
 from letta.groups.sleeptime_multi_agent_v3 import SleeptimeMultiAgentV3
-from letta.schemas.agent import AgentState, AgentType
+from letta.schemas.agent import AgentState
+from letta.schemas.enums import AgentType
 
 if TYPE_CHECKING:
     from letta.orm import User
