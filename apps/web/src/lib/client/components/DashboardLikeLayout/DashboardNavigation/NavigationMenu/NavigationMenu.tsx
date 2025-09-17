@@ -23,7 +23,7 @@ import {
   PlusIcon,
   McpIcon,
   BarChartIcon,
-  PersonIcon,
+  PersonIcon, EyeOpenIcon
 } from '@letta-cloud/ui-component-library';
 import { DashboardNavigationButton } from '$web/client/components/DashboardLikeLayout/DashboardNavigation/DashboardNavigationButton/DashboardNavigationButton';
 import { useTranslations } from '@letta-cloud/translations';
@@ -39,6 +39,7 @@ import {
 import { usePathname } from 'next/navigation';
 import { useLastActiveProject } from './hooks/useLastActiveProject/useLastActiveProject';
 import { cn } from '@letta-cloud/ui-styles';
+import { useFeatureFlag } from '@letta-cloud/sdk-web';
 
 interface NavigationMenuSection {
   children: React.ReactNode;
@@ -102,6 +103,8 @@ function ProjectSpecificNavigation() {
 
   const t = useTranslations('DashboardNavigation.ProjectSpecificNavigation');
 
+
+  const { data: isRunsPageEnabled } = useFeatureFlag('RUNS_PAGE')
   const [canCRDProjects] = useUserHasPermission(
     ApplicationServices.CREATE_UPDATE_DELETE_PROJECTS,
   );
@@ -155,6 +158,14 @@ function ProjectSpecificNavigation() {
         label={t('observability')}
         icon={<MonitoringIcon />}
       />
+      {isRunsPageEnabled && (
+        <DashboardNavigationButton
+          href={`${baseUrl}/runs`}
+          id="project-runs"
+          label={t('runs')}
+          icon={<EyeOpenIcon />}
+        />
+      )}
       <DashboardNavigationButton
         href={`${baseUrl}/responses`}
         id="project-responses"

@@ -93,6 +93,7 @@
       "identities": "Identities",
       "memoryBlocks": "Memory blocks",
       "settings": "Configuration",
+      "runs": "Runs",
       "monitoring": "Monitoring",
       "observability": "Observability",
       "responses": "Responses"
@@ -2023,6 +2024,9 @@
   },
   "dashboard/blocks": {
     "title": "Memory blocks"
+  },
+  "dashboard/runs": {
+    "title": "Runs"
   },
   "projects/ab-tests/test": {
     "root": "A/B Tests",

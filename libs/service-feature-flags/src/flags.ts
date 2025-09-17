@@ -117,6 +117,11 @@ export const featureFlags = {
     expiryDate: '2025-12-31',
     flagValue: z.boolean(),
   },
+  RUNS_PAGE: {
+    description: 'Enable runs page',
+    expiryDate: '2025-12-31',
+    flagValue: z.boolean(),
+  },
   BYOK_AZURE: {
     description: 'Enable BYOK for Azure',
     expiryDate: '2025-12-31',

@@ -2983,5 +2983,59 @@
       "cancel": "Cancel",
       "cancelling": "Cancelling..."
     }
+  },
+  "ListRuns": {
+    "title": "Runs",
+    "description": "View and manage all runs in your project",
+    "columns": {
+      "status": "Status",
+      "runId": "Run ID",
+      "agentId": "Agent ID",
+      "jobType": "Job Type",
+      "duration": "Duration",
+      "stopReason": "Stop Reason",
+      "completedAt": "Completed At",
+      "createdAt": "Created At"
+    },
+    "table": {
+      "loading": "Loading runs...",
+      "noResults": "No runs found",
+      "error": "Failed to load runs"
+    },
+    "searchInput": {
+      "placeholder": "Search runs..."
+    },
+    "cancelRun": {
+      "cancel": "Cancel",
+      "cancelling": "Cancelling..."
+    },
+    "query": "Filter runs",
+    "useQueryDefinition": {
+      "stopReason": {
+        "name": "Stop Reason",
+        "operator": {
+          "label": "Operator",
+          "operators": {
+            "equals": "Equals"
+          }
+        },
+        "value": {
+          "label": "Value",
+          "options": {
+            "any": "Any",
+            "end_turn": "End Turn",
+            "error": "Error",
+            "llm_api_error": "LLM API Error",
+            "invalid_llm_response": "Invalid LLM Response",
+            "invalid_tool_call": "Invalid Tool Call",
+            "max_steps": "Max Steps",
+            "no_tool_call": "No Tool Call",
+            "tool_rule": "Tool Rule",
+            "cancelled": "Cancelled",
+            "requires_approval": "Requires Approval"
+          }
+        }
+      }
+    }
   }
 }
