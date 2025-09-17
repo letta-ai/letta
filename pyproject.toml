@@ -61,6 +61,7 @@ dependencies = [
     "aiomultiprocess>=0.9.1",
     "matplotlib>=3.10.1",
     "tavily-python>=0.7.2",
+    "temporalio>=1.8.0",
     "mistralai>=1.8.1",
     "structlog>=25.4.0",
     "certifi>=2025.6.15",
