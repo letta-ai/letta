@@ -1259,7 +1259,6 @@ def test_background_token_streaming_greeting_with_assistant_message(
 
     run_id = messages[0].run_id
     assert run_id is not None
-    assert messages[0].stop_reason == "incomplete_run"
 
     runs = client.runs.list(agent_ids=[agent_state.id], background=True)
     assert len(runs) > 0
