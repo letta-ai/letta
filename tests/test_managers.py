@@ -9039,7 +9039,7 @@ async def test_list_jobs_by_stop_reason(server: SyncServer, sarah_agent, default
     assert jobs[0].id == run.id
 
     # list jobs by agent_id
-    jobs = await server.job_manager.list_jobs_async(actor=default_user, job_type=JobType.RUN, agent_ids=[sarah_agent.id])
+    jobs = await server.job_manager.list_jobs_async(actor=default_user, job_type=JobType.RUN, agent_id=sarah_agent.id)
     assert len(jobs) == 1
     assert jobs[0].id == run.id
 

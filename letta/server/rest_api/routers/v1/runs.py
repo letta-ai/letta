@@ -30,7 +30,7 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 @router.get("/", response_model=List[Run], operation_id="list_runs")
 def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
-    agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
@@ -62,7 +62,7 @@ def list_runs(
             after=after,
             ascending=False,
             stop_reason=stop_reason,
-            agent_ids=agent_ids,
+            agent_id=agent_id,
             background=background,
         )
     ]
@@ -72,7 +72,7 @@ def list_runs(
 @router.get("/active", response_model=List[Run], operation_id="list_active_runs", deprecated=True)
 def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
-    agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -82,7 +82,7 @@ def list_active_runs(
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
     active_runs = server.job_manager.list_jobs(
-        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=agent_ids, background=background
+        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_id=agent_id, background=background
     )
     active_runs = [Run.from_job(job) for job in active_runs]
 

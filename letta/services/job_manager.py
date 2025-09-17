@@ -313,7 +313,7 @@ class JobManager:
         job_type: JobType = JobType.JOB,
         ascending: bool = True,
         stop_reason: Optional[StopReasonType] = None,
-        agent_ids: Optional[List[str]] = None,
+        agent_id: Optional[str] = None,
         background: Optional[bool] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
@@ -346,10 +346,10 @@ class JobManager:
                 else:
                     query = query.where(getattr(JobModel, key) == value)
 
-            # If agent_ids filter is provided, join with agents_runs table
-            if agent_ids:
+            # If agent_id filter is provided, join with agents_runs table
+            if agent_id:
                 query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
-                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
+                query = query.where(AgentsRuns.agent_id == agent_id)
 
             # Apply pagination and ordering
             if ascending:
@@ -407,7 +407,7 @@ class JobManager:
         ascending: bool = True,
         source_id: Optional[str] = None,
         stop_reason: Optional[StopReasonType] = None,
-        agent_ids: Optional[List[str]] = None,
+        agent_id: Optional[str] = None,
         background: Optional[bool] = None,
     ) -> List[PydanticJob]:
         """List all jobs with optional pagination and status filter."""
@@ -437,10 +437,10 @@ class JobManager:
                 column = column.op("->>")("source_id")
                 query = query.where(column == source_id)
 
-            # If agent_ids filter is provided, join with agents_runs table
-            if agent_ids:
+            # If agent_id filter is provided, join with agents_runs table
+            if agent_id:
                 query = query.join(AgentsRuns, JobModel.id == AgentsRuns.run_id)
-                query = query.where(AgentsRuns.agent_id.in_(agent_ids))
+                query = query.where(AgentsRuns.agent_id == agent_id)
 
             # handle cursor-based pagination
             if before or after:
