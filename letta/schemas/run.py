@@ -30,7 +30,7 @@ class Run(RunBase):
     id: str = RunBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the run.")
     request_config: Optional[LettaRequestConfig] = Field(None, description="The request configuration for the run.")
-    stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the run was stopped.")
+    stop_reason: Optional[StopReasonType] = Field(StopReasonType.incomplete_run, description="The reason why the run was stopped.")
 
     @classmethod
     def from_job(cls, job: Job) -> "Run":

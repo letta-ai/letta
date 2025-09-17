@@ -1259,9 +1259,11 @@ def test_background_token_streaming_greeting_with_assistant_message(
 
     run_id = messages[0].run_id
     assert run_id is not None
+    assert messages[0].stop_reason == "incomplete_run"
 
     runs = client.runs.list(agent_ids=[agent_state.id], background=True)
     assert len(runs) > 0
+    assert runs[0].stop_reason == "end_turn"
     assert runs[0].id == run_id
 
     response = client.runs.stream(run_id=run_id, starting_after=0)
@@ -1405,7 +1407,9 @@ def test_async_greeting_with_assistant_message(
         agent_id=agent_state.id,
         messages=USER_MESSAGE_FORCE_REPLY,
     )
+    assert run.stop_reason == "incomplete_run"
     run = wait_for_run_completion(client, run.id)
+    assert run.stop_reason == "end_turn"
 
     result = run.metadata.get("result")
     assert result is not None, "Run metadata missing 'result' key"
