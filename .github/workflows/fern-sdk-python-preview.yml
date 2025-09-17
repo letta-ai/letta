@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
-      - 'apps/fern/openapi.json'
-      - 'apps/fern/openapi-overrides.yml'
+      - 'apps/core/fern/openapi.json'
+      - 'apps/core/fern/openapi-overrides.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,8 +31,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/fern/openapi.json
-            apps/fern/openapi-overrides.yml
+            apps/core/fern/openapi.json
+            apps/core/fern/openapi-overrides.yml
 
   preview-python-sdk:
     needs: [changed-files]
@@ -63,14 +63,14 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('apps/core/fern/*', 'apps/core/pyproject.toml') }}" >> $GITHUB_OUTPUT
 
       - name: Try to restore SDK cache
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
           path: |
-            apps/fern/.preview/fern-python-sdk/
+            apps/core/fern/.preview/fern-python-sdk/
           key: ${{ steps.cache-key.outputs.key }}
 
       - name: Inject env vars into environment
@@ -137,7 +137,7 @@ jobs:
 
       - name: Generate Python SDK Preview
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        working-directory: apps
+        working-directory: apps/core
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
         run: |
@@ -154,5 +154,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            apps/fern/.preview/fern-python-sdk/
+            apps/core/fern/.preview/fern-python-sdk/
           key: ${{ steps.cache-key.outputs.key }}

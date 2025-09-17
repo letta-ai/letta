@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Publish Docs
-        working-directory: apps
+        working-directory: apps/core
         env:
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
         run: fern generate --docs --log-level debug

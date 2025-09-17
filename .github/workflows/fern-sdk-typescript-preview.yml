@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
-      - 'apps/fern/openapi.json'
-      - 'apps/fern/openapi-overrides.yml'
+      - 'apps/core/fern/openapi.json'
+      - 'apps/core/fern/openapi-overrides.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -31,8 +31,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/fern/openapi.json
-            apps/fern/openapi-overrides.yml
+            apps/core/fern/openapi.json
+            apps/core/fern/openapi-overrides.yml
   preview-typescript-sdk:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
     needs: [changed-files]
@@ -102,7 +102,7 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
 
       - name: Generate TypeScript SDK Preview
-        working-directory: apps
+        working-directory: apps/core
         env:
           LETTA_ENV: localhost
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
