@@ -3585,12 +3585,12 @@ export const useBlocksServiceListAgentsForBlock = <
 /**
  * List Jobs
  * List all jobs.
- * TODO (cliandy): implementation for pagination
  * @param data The data for the request.
  * @param data.sourceId Only list jobs associated with the source.
  * @param data.before Cursor for pagination
  * @param data.after Cursor for pagination
  * @param data.limit Limit for pagination
+ * @param data.active Filter for active jobs.
  * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
  * @param data.userId
  * @param data.userAgent
@@ -3604,6 +3604,7 @@ export const useJobsServiceListJobs = <
   TQueryKey extends Array<unknown> = unknown[],
 >(
   {
+    active,
     after,
     ascending,
     before,
@@ -3613,6 +3614,7 @@ export const useJobsServiceListJobs = <
     userId,
     xProjectId,
   }: {
+    active?: boolean;
     after?: string;
     ascending?: boolean;
     before?: string;
@@ -3628,6 +3630,7 @@ export const useJobsServiceListJobs = <
   useQuery<TData, TError>({
     queryKey: Common.UseJobsServiceListJobsKeyFn(
       {
+        active,
         after,
         ascending,
         before,
@@ -3641,6 +3644,7 @@ export const useJobsServiceListJobs = <
     ),
     queryFn: () =>
       JobsService.listJobs({
+        active,
         after,
         ascending,
         before,
@@ -3653,6 +3657,7 @@ export const useJobsServiceListJobs = <
     ...options,
   });
 /**
+ * @deprecated
  * List Active Jobs
  * List all active jobs.
  * @param data The data for the request.

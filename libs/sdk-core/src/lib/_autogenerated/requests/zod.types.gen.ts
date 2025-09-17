@@ -12769,42 +12769,7 @@ export const get_List_jobs = {
       limit: z
         .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
         .optional(),
-      ascending: z.boolean().optional(),
-    }),
-    header: z.object({
-      user_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'User-Agent': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      'X-Project-Id': z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-    }),
-  }),
-  response: z.array(Job),
-};
-
-export type get_List_active_jobs = typeof get_List_active_jobs;
-export const get_List_active_jobs = {
-  method: z.literal('GET'),
-  path: z.literal('/v1/jobs/active'),
-  requestFormat: z.literal('json'),
-  parameters: z.object({
-    query: z.object({
-      source_id: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      before: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      after: z
-        .union([z.string(), z.null(), z.array(z.union([z.string(), z.null()]))])
-        .optional(),
-      limit: z
-        .union([z.number(), z.null(), z.array(z.union([z.number(), z.null()]))])
-        .optional(),
+      active: z.boolean().optional(),
       ascending: z.boolean().optional(),
     }),
     header: z.object({
@@ -14439,7 +14404,6 @@ export const EndpointByMethod = {
     '/v1/blocks/{block_id}': get_Retrieve_block,
     '/v1/blocks/{block_id}/agents': get_List_agents_for_block,
     '/v1/jobs/': get_List_jobs,
-    '/v1/jobs/active': get_List_active_jobs,
     '/v1/jobs/{job_id}': get_Retrieve_job,
     '/v1/health/': get_Check_health,
     '/v1/sandbox-config/': get_List_sandbox_configs_v1_sandbox_config__get,

@@ -8762,6 +8762,10 @@ export type ListAgentsForBlockResponse = Array<AgentState>;
 
 export type ListJobsData = {
   /**
+   * Filter for active jobs.
+   */
+  active?: boolean;
+  /**
    * Cursor for pagination
    */
   after?: string | null;

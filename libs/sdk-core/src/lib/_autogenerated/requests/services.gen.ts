@@ -4726,12 +4726,12 @@ export class JobsService {
   /**
    * List Jobs
    * List all jobs.
-   * TODO (cliandy): implementation for pagination
    * @param data The data for the request.
    * @param data.sourceId Only list jobs associated with the source.
    * @param data.before Cursor for pagination
    * @param data.after Cursor for pagination
    * @param data.limit Limit for pagination
+   * @param data.active Filter for active jobs.
    * @param data.ascending Whether to sort jobs oldest to newest (True, default) or newest to oldest (False)
    * @param data.userId
    * @param data.userAgent
@@ -4751,6 +4751,7 @@ export class JobsService {
         before: data.before,
         after: data.after,
         limit: data.limit,
+        active: data.active,
         ascending: data.ascending,
       },
       errors: {
@@ -4761,6 +4762,7 @@ export class JobsService {
   }
 
   /**
+   * @deprecated
    * List Active Jobs
    * List all active jobs.
    * @param data The data for the request.

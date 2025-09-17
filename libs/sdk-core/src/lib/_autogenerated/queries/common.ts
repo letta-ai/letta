@@ -2186,6 +2186,7 @@ export type JobsServiceListJobsQueryResult<
 export const useJobsServiceListJobsKey = 'JobsServiceListJobs';
 export const UseJobsServiceListJobsKeyFn = (
   {
+    active,
     after,
     ascending,
     before,
@@ -2195,6 +2196,7 @@ export const UseJobsServiceListJobsKeyFn = (
     userId,
     xProjectId,
   }: {
+    active?: boolean;
     after?: string;
     ascending?: boolean;
     before?: string;
@@ -2209,6 +2211,7 @@ export const UseJobsServiceListJobsKeyFn = (
   useJobsServiceListJobsKey,
   ...(queryKey ?? [
     {
+      active,
       after,
       ascending,
       before,
