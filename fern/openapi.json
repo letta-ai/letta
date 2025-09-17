@@ -9682,23 +9682,20 @@
         "operationId": "list_runs",
         "parameters": [
           {
-            "name": "agent_ids",
+            "name": "agent_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "The unique identifier of the agent associated with the run.",
-              "title": "Agent Ids"
+              "title": "Agent Id"
             },
             "description": "The unique identifier of the agent associated with the run."
           },
@@ -9855,23 +9852,20 @@
         "deprecated": true,
         "parameters": [
           {
-            "name": "agent_ids",
+            "name": "agent_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "The unique identifier of the agent associated with the run.",
-              "title": "Agent Ids"
+              "title": "Agent Id"
             },
             "description": "The unique identifier of the agent associated with the run."
           },
@@ -15824,6 +15818,30 @@
             "$ref": "#/components/schemas/JobType",
             "default": "batch"
           },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
+          },
           "callback_url": {
             "anyOf": [
               {
@@ -17135,8 +17153,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "children": {
             "items": {
@@ -18118,8 +18135,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "default_child": {
             "anyOf": [
@@ -18350,8 +18366,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
@@ -21743,7 +21758,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes."
+            "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
           }
         },
         "additionalProperties": false,
@@ -22726,6 +22741,30 @@
             "$ref": "#/components/schemas/JobType",
             "description": "The type of the job.",
             "default": "job"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
           },
           "callback_url": {
             "anyOf": [
@@ -23881,8 +23920,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "max_count_limit": {
             "type": "integer",
@@ -23917,6 +23955,21 @@
       },
       "Memory": {
         "properties": {
+          "agent_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentType"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Type",
+            "description": "Agent type controlling prompt rendering."
+          },
           "blocks": {
             "items": {
               "$ref": "#/components/schemas/Block"
@@ -23936,8 +23989,8 @@
           "prompt_template": {
             "type": "string",
             "title": "Prompt Template",
-            "description": "Jinja2 template for compiling memory blocks into a prompt string",
-            "default": "{% for block in blocks %}<{{ block.label }}>\n<metadata>read_only=\"{{ block.read_only}}\" chars_current=\"{{ block.value|length }}\" chars_limit=\"{{ block.limit }}\"</metadata><value>{{ block.value }}\n</value></{{ block.label }}>\n{% if not loop.last %}\n{% endif %}{% endfor %}"
+            "description": "Deprecated. Ignored for performance.",
+            "default": ""
           }
         },
         "type": "object",
@@ -24878,8 +24931,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           },
           "children": {
             "items": {
@@ -25706,8 +25758,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
@@ -25739,7 +25790,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes."
+            "description": "Optional template string (ignored). Rendering uses fast built-in formatting for performance."
           }
         },
         "additionalProperties": false,
@@ -25978,6 +26029,30 @@
           "job_type": {
             "$ref": "#/components/schemas/JobType",
             "default": "run"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
           },
           "callback_url": {
             "anyOf": [
@@ -27638,8 +27713,7 @@
               }
             ],
             "title": "Prompt Template",
-            "description": "Optional Jinja2 template for generating agent prompt about this tool rule.",
-            "default": "<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>"
+            "description": "Optional template string (ignored)."
           }
         },
         "additionalProperties": false,
