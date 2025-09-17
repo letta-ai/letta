@@ -2163,6 +2163,15 @@ export const FileBlock = z.object({
 
 export type Memory = z.infer<typeof Memory>;
 export const Memory = z.object({
+  agent_type: z
+    .union([
+      AgentType,
+      z.string(),
+      z.null(),
+      z.array(z.union([AgentType, z.string(), z.null()])),
+      z.undefined(),
+    ])
+    .optional(),
   blocks: z.array(Block),
   file_blocks: z.union([z.array(FileBlock), z.undefined()]).optional(),
   prompt_template: z.union([z.string(), z.undefined()]).optional(),

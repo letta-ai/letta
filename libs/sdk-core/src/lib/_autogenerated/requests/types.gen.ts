@@ -1229,7 +1229,7 @@ export type ChildToolRule = {
   tool_name: string;
   type?: 'constrain_child_tools';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
   /**
@@ -1509,7 +1509,7 @@ export type ConditionalToolRule = {
   tool_name: string;
   type?: 'conditional';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
   /**
@@ -1622,7 +1622,7 @@ export type ContinueToolRule = {
   tool_name: string;
   type?: 'continue_loop';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
 };
@@ -2893,7 +2893,7 @@ export type InitToolRule = {
   tool_name: string;
   type?: 'run_first';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   * Optional template string (ignored). Rendering uses fast built-in formatting for performance.
    */
   prompt_template?: string | null;
 };
@@ -3851,7 +3851,7 @@ export type MaxCountPerStepToolRule = {
   tool_name: string;
   type?: 'max_count_per_step';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
   /**
@@ -3871,6 +3871,10 @@ export type MaxCountPerStepToolRuleSchema = {
  */
 export type Memory = {
   /**
+   * Agent type controlling prompt rendering.
+   */
+  agent_type?: AgentType | string | null;
+  /**
    * Memory blocks contained in the agent's in-context memory
    */
   blocks: Array<Block>;
@@ -3879,7 +3883,7 @@ export type Memory = {
    */
   file_blocks?: Array<FileBlock>;
   /**
-   * Jinja2 template for compiling memory blocks into a prompt string
+   * Deprecated. Ignored for performance.
    */
   prompt_template?: string;
 };
@@ -4286,7 +4290,7 @@ export type ParentToolRule = {
   tool_name: string;
   type?: 'parent_last_tool';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
   /**
@@ -4660,7 +4664,7 @@ export type RequiredBeforeExitToolRule = {
   tool_name: string;
   type?: 'required_before_exit';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
 };
@@ -4675,7 +4679,7 @@ export type RequiresApprovalToolRule = {
   tool_name: string;
   type?: 'requires_approval';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.
+   * Optional template string (ignored). Rendering uses fast built-in formatting for performance.
    */
   prompt_template?: string | null;
 };
@@ -5468,7 +5472,7 @@ export type TerminalToolRule = {
   tool_name: string;
   type?: 'exit_loop';
   /**
-   * Optional Jinja2 template for generating agent prompt about this tool rule.
+   * Optional template string (ignored).
    */
   prompt_template?: string | null;
 };

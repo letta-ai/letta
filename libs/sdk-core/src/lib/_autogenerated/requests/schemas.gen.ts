@@ -3481,11 +3481,7 @@ export const $ChildToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-After using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
     children: {
       items: {
@@ -4473,11 +4469,7 @@ export const $ConditionalToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-{{ tool_name }} will determine which tool to use next based on its output
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
     default_child: {
       anyOf: [
@@ -4718,11 +4710,7 @@ export const $ContinueToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-{{ tool_name }} requires continuing your response when called
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
   },
   additionalProperties: false,
@@ -8269,7 +8257,7 @@ export const $InitToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional template string (ignored). Rendering uses fast built-in formatting for performance.',
     },
   },
   additionalProperties: false,
@@ -10527,11 +10515,7 @@ export const $MaxCountPerStepToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-{{ tool_name }}: at most {{ max_count_limit }} use(s) per response
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
     max_count_limit: {
       type: 'integer',
@@ -10570,6 +10554,21 @@ export const $MaxCountPerStepToolRuleSchema = {
 
 export const $Memory = {
   properties: {
+    agent_type: {
+      anyOf: [
+        {
+          $ref: '#/components/schemas/AgentType',
+        },
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Type',
+      description: 'Agent type controlling prompt rendering.',
+    },
     blocks: {
       items: {
         $ref: '#/components/schemas/Block',
@@ -10590,13 +10589,8 @@ export const $Memory = {
     prompt_template: {
       type: 'string',
       title: 'Prompt Template',
-      description:
-        'Jinja2 template for compiling memory blocks into a prompt string',
-      default: `{% for block in blocks %}<{{ block.label }}>
-<metadata>read_only="{{ block.read_only}}" chars_current="{{ block.value|length }}" chars_limit="{{ block.limit }}"</metadata><value>{{ block.value }}
-</value></{{ block.label }}>
-{% if not loop.last %}
-{% endif %}{% endfor %}`,
+      description: 'Deprecated. Ignored for performance.',
+      default: '',
     },
   },
   type: 'object',
@@ -11587,11 +11581,7 @@ export const $ParentToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-{{ children | join(', ') }} can only be used after {{ tool_name }}
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
     children: {
       items: {
@@ -12490,10 +12480,7 @@ export const $RequiredBeforeExitToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default:
-        '<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>',
+      description: 'Optional template string (ignored).',
     },
   },
   additionalProperties: false,
@@ -12529,7 +12516,7 @@ export const $RequiresApprovalToolRule = {
       ],
       title: 'Prompt Template',
       description:
-        "Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        'Optional template string (ignored). Rendering uses fast built-in formatting for performance.',
     },
   },
   additionalProperties: false,
@@ -14596,11 +14583,7 @@ export const $TerminalToolRule = {
         },
       ],
       title: 'Prompt Template',
-      description:
-        'Optional Jinja2 template for generating agent prompt about this tool rule.',
-      default: `<tool_rule>
-{{ tool_name }} ends your response (yields control) when called
-</tool_rule>`,
+      description: 'Optional template string (ignored).',
     },
   },
   additionalProperties: false,
