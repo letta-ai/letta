@@ -36,7 +36,7 @@ COPY pyproject.toml uv.lock ./
 # Then copy the rest of the application code
 COPY . .
 
-RUN uv sync --frozen --no-default-groups --python 3.12 \
+RUN uv sync --frozen --python 3.12 \
     --extra postgres \
     --extra redis \
     --extra pinecone \
