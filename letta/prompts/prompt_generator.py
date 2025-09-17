@@ -94,7 +94,7 @@ class PromptGenerator:
         timezone: str,
         user_defined_variables: Optional[dict] = None,
         append_icm_if_missing: bool = True,
-        template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+        template_format: Literal["f-string", "mustache"] = "f-string",
         previous_message_count: int = 0,
         archival_memory_size: int = 0,
         archive_tags: Optional[List[str]] = None,
@@ -150,7 +150,7 @@ class PromptGenerator:
                 raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
 
         else:
-            # TODO support for mustache and jinja2
+            # TODO support for mustache
             raise NotImplementedError(template_format)
 
         return formatted_prompt
@@ -164,7 +164,7 @@ class PromptGenerator:
         timezone: str,
         user_defined_variables: Optional[dict] = None,
         append_icm_if_missing: bool = True,
-        template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+        template_format: Literal["f-string", "mustache"] = "f-string",
         previous_message_count: int = 0,
         archival_memory_size: int = 0,
         tool_rules_solver: Optional[ToolRulesSolver] = None,
@@ -181,7 +181,7 @@ class PromptGenerator:
         else:
             pass
 
-        memory_with_sources = await in_context_memory.compile_in_thread_async(
+        memory_with_sources = in_context_memory.compile(
             tool_usage_rules=tool_constraint_block, sources=sources, max_files_open=max_files_open
         )
 

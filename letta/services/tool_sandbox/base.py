@@ -78,13 +78,8 @@ class AsyncToolSandboxBase(ABC):
     async def generate_execution_script(self, agent_state: Optional[AgentState], wrap_print_with_markers: bool = False) -> str:
         """
         Generate code to run inside of execution sandbox. Serialize the agent state and arguments, call the tool,
-        then base64-encode/pickle the result. Runs a jinja2 template constructing the python file.
+        then base64-encode/pickle the result. Constructs the python file.
         """
-        from letta.templates.template_helper import render_template_in_thread
-
-        # Select the appropriate template based on whether the function is async
-        TEMPLATE_NAME = "sandbox_code_file_async.py.j2" if self.is_async_function else "sandbox_code_file.py.j2"
-
         future_import = False
         schema_code = None
 
@@ -107,11 +102,10 @@ class AsyncToolSandboxBase(ABC):
 
         agent_state_pickle = pickle.dumps(agent_state) if self.inject_agent_state else None
 
-        return await render_template_in_thread(
-            TEMPLATE_NAME,
+        code = self._render_sandbox_code(
             future_import=future_import,
             inject_agent_state=self.inject_agent_state,
-            schema_imports=schema_code,
+            schema_imports=schema_code or "",
             agent_state_pickle=agent_state_pickle,
             tool_args=tool_args,
             tool_source_code=self.tool.source_code,
@@ -121,6 +115,138 @@ class AsyncToolSandboxBase(ABC):
             start_marker=self.LOCAL_SANDBOX_RESULT_START_MARKER,
             use_top_level_await=self.use_top_level_await(),
         )
+        return code
+
+    def _render_sandbox_code(
+        self,
+        *,
+        future_import: bool,
+        inject_agent_state: bool,
+        schema_imports: str,
+        agent_state_pickle: bytes | None,
+        tool_args: str,
+        tool_source_code: str,
+        local_sandbox_result_var_name: str,
+        invoke_function_call: str,
+        wrap_print_with_markers: bool,
+        start_marker: bytes,
+        use_top_level_await: bool,
+    ) -> str:
+        lines: list[str] = []
+        if future_import:
+            lines.append("from __future__ import annotations")
+        lines.extend(
+            [
+                "from typing import *",
+                "import pickle",
+                "import sys",
+                "import base64",
+                "import struct",
+                "import hashlib",
+            ]
+        )
+        if self.is_async_function:
+            lines.append("import asyncio")
+
+        if inject_agent_state:
+            lines.extend(["import letta", "from letta import *"])  # noqa: F401
+
+        if schema_imports:
+            lines.append(schema_imports.rstrip())
+
+        if agent_state_pickle is not None:
+            lines.append(f"agent_state = pickle.loads({repr(agent_state_pickle)})")
+        else:
+            lines.append("agent_state = None")
+
+        if tool_args:
+            lines.append(tool_args.rstrip())
+
+        if tool_source_code:
+            lines.append(tool_source_code.rstrip())
+
+        if not self.is_async_function:
+            # sync variant
+            lines.append(f"_function_result = {invoke_function_call}")
+            lines.extend(
+                [
+                    "try:",
+                    "    from pydantic import BaseModel, ConfigDict",
+                    "    from typing import Any",
+                    "",
+                    "    class _TempResultWrapper(BaseModel):",
+                    "        model_config = ConfigDict(arbitrary_types_allowed=True)",
+                    "        result: Any",
+                    "",
+                    "    _wrapped = _TempResultWrapper(result=_function_result)",
+                    "    _serialized_result = _wrapped.model_dump()['result']",
+                    "except ImportError:",
+                    '    print("Pydantic not available in sandbox environment, falling back to string conversion")',
+                    "    _serialized_result = str(_function_result)",
+                    "except Exception as e:",
+                    '    print(f"Failed to serialize result with Pydantic wrapper: {e}")',
+                    "    _serialized_result = str(_function_result)",
+                    "",
+                    f"{local_sandbox_result_var_name} = {{",
+                    '    "results": _serialized_result,',
+                    '    "agent_state": agent_state',
+                    "}",
+                    f"{local_sandbox_result_var_name}_pkl = pickle.dumps({local_sandbox_result_var_name})",
+                ]
+            )
+        else:
+            # async variant
+            lines.extend(
+                [
+                    "async def _async_wrapper():",
+                    f"    _function_result = await {invoke_function_call}",
+                    "    try:",
+                    "        from pydantic import BaseModel, ConfigDict",
+                    "        from typing import Any",
+                    "",
+                    "        class _TempResultWrapper(BaseModel):",
+                    "            model_config = ConfigDict(arbitrary_types_allowed=True)",
+                    "            result: Any",
+                    "",
+                    "        _wrapped = _TempResultWrapper(result=_function_result)",
+                    "        _serialized_result = _wrapped.model_dump()['result']",
+                    "    except ImportError:",
+                    '        print("Pydantic not available in sandbox environment, falling back to string conversion")',
+                    "        _serialized_result = str(_function_result)",
+                    "    except Exception as e:",
+                    '        print(f"Failed to serialize result with Pydantic wrapper: {e}")',
+                    "        _serialized_result = str(_function_result)",
+                    "",
+                    "    return {",
+                    '        "results": _serialized_result,',
+                    '        "agent_state": agent_state',
+                    "    }",
+                ]
+            )
+            if use_top_level_await:
+                lines.append(f"{local_sandbox_result_var_name} = await _async_wrapper()")
+            else:
+                lines.append(f"{local_sandbox_result_var_name} = asyncio.run(_async_wrapper())")
+            lines.append(f"{local_sandbox_result_var_name}_pkl = pickle.dumps({local_sandbox_result_var_name})")
+
+        if wrap_print_with_markers:
+            lines.extend(
+                [
+                    f"data_checksum = hashlib.md5({local_sandbox_result_var_name}_pkl).hexdigest().encode('ascii')",
+                    f"{local_sandbox_result_var_name}_msg = (",
+                    f"  {repr(start_marker)} +",
+                    f"  struct.pack('>I', len({local_sandbox_result_var_name}_pkl)) +",
+                    "  data_checksum +",
+                    f"  {local_sandbox_result_var_name}_pkl",
+                    ")",
+                    f"sys.stdout.buffer.write({local_sandbox_result_var_name}_msg)",
+                    "sys.stdout.buffer.flush()",
+                ]
+            )
+        else:
+            lines.append(f"base64.b64encode({local_sandbox_result_var_name}_pkl).decode('utf-8')")
+
+        return "\n".join(lines) + "\n"
 
     def initialize_param(self, name: str, raw_value: JsonValue) -> str:
         """

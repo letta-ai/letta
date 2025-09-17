@@ -33,9 +33,9 @@ from letta.orm.sqlite_functions import adapt_array
 from letta.otel.tracing import trace_method
 from letta.prompts import gpt_system
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState, AgentType
+from letta.schemas.agent import AgentState
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import MessageRole
+from letta.schemas.enums import AgentType, MessageRole
 from letta.schemas.letta_message_content import TextContent
 from letta.schemas.memory import Memory
 from letta.schemas.message import Message, MessageCreate
@@ -246,7 +246,7 @@ def compile_system_message(
     timezone: str,
     user_defined_variables: Optional[dict] = None,
     append_icm_if_missing: bool = True,
-    template_format: Literal["f-string", "mustache", "jinja2"] = "f-string",
+    template_format: Literal["f-string", "mustache"] = "f-string",
     previous_message_count: int = 0,
     archival_memory_size: int | None = 0,
     tool_rules_solver: Optional[ToolRulesSolver] = None,
@@ -312,7 +312,7 @@ def compile_system_message(
             raise ValueError(f"Failed to format system prompt - {str(e)}. System prompt value:\n{system_prompt}")
 
     else:
-        # TODO support for mustache and jinja2
+        # TODO support for mustache
         raise NotImplementedError(template_format)
 
     return formatted_prompt

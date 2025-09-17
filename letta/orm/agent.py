@@ -13,8 +13,9 @@ from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.agent import AgentState as PydanticAgentState, AgentType, get_prompt_template_for_agent_type
+from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.response_format import ResponseFormatUnion
@@ -249,7 +250,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                     if (block := b.to_pydantic_block(per_file_view_window_char_limit=self._get_per_file_view_window_char_limit()))
                     is not None
                 ],
-                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+                agent_type=self.agent_type,
             ),
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
@@ -366,7 +367,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                 for b in file_agents
                 if (block := b.to_pydantic_block(per_file_view_window_char_limit=self._get_per_file_view_window_char_limit())) is not None
             ],
-            prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+            agent_type=self.agent_type,
         )
         state["identity_ids"] = [i.id for i in identities]
         state["multi_agent_group"] = multi_agent_group

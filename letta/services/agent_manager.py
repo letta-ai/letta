@@ -50,15 +50,13 @@ from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import (
     AgentState as PydanticAgentState,
-    AgentType,
     CreateAgent,
     InternalTemplateAgentCreate,
     UpdateAgent,
-    get_prompt_template_for_agent_type,
 )
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.enums import AgentType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.llm_config import LLMConfig
@@ -1794,7 +1792,7 @@ class AgentManager:
 
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = await agent_state.memory.compile_in_thread_async(
+        curr_memory_str = agent_state.memory.compile(
             sources=agent_state.sources,
             tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -1984,7 +1982,7 @@ class AgentManager:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor, include_relationships=["memory", "sources"])
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
-        new_memory_str = await new_memory.compile_in_thread_async(
+        new_memory_str = new_memory.compile(
             sources=agent_state.sources,
             tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -2008,7 +2006,7 @@ class AgentManager:
             agent_state.memory = Memory(
                 blocks=blocks,
                 file_blocks=agent_state.memory.file_blocks,
-                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
+                agent_type=agent_state.agent_type,
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step

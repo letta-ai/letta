@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -7,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from letta.constants import CORE_MEMORY_LINE_NUMBER_WARNING, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.schemas.block import CreateBlock
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import AgentType
 from letta.schemas.environment_variables import AgentEnvironmentVariable
 from letta.schemas.file import FileStatus
 from letta.schemas.group import Group
@@ -20,21 +20,6 @@ from letta.schemas.source import Source
 from letta.schemas.tool import Tool
 from letta.schemas.tool_rule import ToolRule
 from letta.utils import calculate_file_defaults_based_on_context_window, create_random_username
-
-
-class AgentType(str, Enum):
-    """
-    Enum to represent the type of agent.
-    """
-
-    memgpt_agent = "memgpt_agent"  # the OG set of memgpt tools
-    memgpt_v2_agent = "memgpt_v2_agent"  # memgpt style tools, but refreshed
-    react_agent = "react_agent"  # basic react agent, no memory tools
-    workflow_agent = "workflow_agent"  # workflow with auto-clearing message buffer
-    split_thread_agent = "split_thread_agent"
-    sleeptime_agent = "sleeptime_agent"
-    voice_convo_agent = "voice_convo_agent"
-    voice_sleeptime_agent = "voice_sleeptime_agent"
 
 
 class AgentState(OrmMetadataBase, validate_assignment=True):
@@ -383,196 +368,5 @@ class AgentStepResponse(BaseModel):
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
-    # Workflow agents and ReAct agents don't use memory blocks
-    # However, they still allow files to be injected into the context
-    if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
-        return (
-            "{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
-
-    # Sleeptime agents use the MemGPT v2 memory tools (line numbers)
-    # MemGPT v2 tools use line-number, so core memory blocks should have line numbers
-    elif agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
-        return (
-            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
-            "{% for block in blocks %}"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n"
-            "{% for line in block.value.split('\\n') %}"
-            "Line {{ loop.index }}: {{ line }}\n"
-            "{% endfor %}"
-            "</value>\n"
-            "</{{ block.label }}>\n"
-            "{% if not loop.last %}\n{% endif %}"
-            "{% endfor %}"
-            "\n</memory_blocks>"
-            "\n\n{% if tool_usage_rules %}"
-            "<tool_usage_rules>\n"
-            "{{ tool_usage_rules.description }}\n\n"
-            "{{ tool_usage_rules.value }}\n"
-            "</tool_usage_rules>"
-            "{% endif %}"
-            "\n\n{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
-            "{% if block.description %}"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "{% endif %}"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "{% if block.value %}"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "{% endif %}"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
-
-    # All other agent types use memory blocks
-    else:
-        return (
-            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
-            "{% for block in blocks %}"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "</{{ block.label }}>\n"
-            "{% if not loop.last %}\n{% endif %}"
-            "{% endfor %}"
-            "\n</memory_blocks>"
-            "\n\n{% if tool_usage_rules %}"
-            "<tool_usage_rules>\n"
-            "{{ tool_usage_rules.description }}\n\n"
-            "{{ tool_usage_rules.value }}\n"
-            "</tool_usage_rules>"
-            "{% endif %}"
-            "\n\n{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
-            "{% if block.description %}"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "{% endif %}"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "{% if block.value %}"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "{% endif %}"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
+    """Deprecated. Templates are not used anymore; fast renderer handles formatting."""
+    return ""
