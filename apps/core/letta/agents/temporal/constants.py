@@ -46,10 +46,6 @@ SUMMARIZE_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=10)
 TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
 TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
 
-# create_messages (formats tool responses into Letta messages)
-CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=5)
-CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=1)
-
-# persist_messages (saves messages to database)
-PERSIST_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=10)
-PERSIST_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=2)
+# create_messages (saves messages to agent state)
+CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
+CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)

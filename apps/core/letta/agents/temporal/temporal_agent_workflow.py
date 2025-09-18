@@ -10,8 +10,6 @@ from letta.agents.temporal.constants import (
     LLM_ACTIVITY_RETRY_POLICY,
     LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-    PERSIST_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-    PERSIST_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     PREPARE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     PREPARE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
@@ -44,10 +42,9 @@ from letta.services.helpers.tool_parser_helper import runtime_override_tool_json
 with workflow.unsafe.imports_passed_through():
     from letta.agents.helpers import _build_rule_violation_result, _load_last_function_response, _pop_heartbeat, _safe_load_tool_call_str
     from letta.agents.temporal.activities import (
-        create_messages_activity,
-        execute_tool_activity,
+        create_messages,
+        execute_tool,
         llm_request,
-        persist_messages_activity,
         prepare_messages,
         refresh_context_and_system_message,
         summarize_conversation_history,
@@ -60,7 +57,6 @@ with workflow.unsafe.imports_passed_through():
         InnerStepResult,
         LLMCallResult,
         LLMRequestParams,
-        PersistMessagesParams,
         PreparedMessages,
         RefreshContextParams,
         SummarizeParams,
@@ -268,15 +264,15 @@ class TemporalAgentWorkflow:
                 raise ValueError("No tool calls found in response")
 
             # Handle the AI response (execute tool, create messages, determine continuation)
-            persisted_messages, should_continue, ai_response_stop_reason = await self._handle_ai_response(
-                tool_call=tool_call,  # TODO: LLMAdapter fallback?
+            persisted_messages, should_continue, stop_reason, last_function_response = await self._handle_ai_response(
+                tool_call=tool_call,
                 valid_tool_names=[t["name"] for t in allowed_tools],
                 agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
                 actor=actor,
                 step_id=step_id,
-                reasoning_content=call_result.reasoning_content,  # TODO: LLMAdapter fallback?
-                pre_computed_assistant_message_id=call_result.assistant_message_id,  # TODO: derived from LLMAdapter
+                reasoning_content=call_result.reasoning_content,
+                pre_computed_assistant_message_id=call_result.assistant_message_id,
                 initial_messages=input_messages_to_persist,
                 is_approval=approval_response.approve if approval_response is not None else False,
                 is_denial=(approval_response.approve == False) if approval_response is not None else False,
@@ -284,10 +280,6 @@ class TemporalAgentWorkflow:
                 is_final_step=(remaining_turns == 0),
                 # TODO: skipping these args for now: usage, agent_step_span, run_id, step_metrics
             )
-
-            # Update stop reason if set by AI response handler
-            if ai_response_stop_reason:
-                stop_reason = ai_response_stop_reason
 
             # TODO: process response messages for streaming/non-streaming
             # - extend response_messages with persisted_messages
@@ -384,7 +376,7 @@ class TemporalAgentWorkflow:
             tool_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
         else:
             execution: ExecuteToolResult = await workflow.execute_activity(
-                execute_tool_activity,
+                execute_tool,
                 ExecuteToolParams(
                     tool_name=tool_call_name,
                     tool_args=tool_args,
@@ -449,33 +441,45 @@ class TemporalAgentWorkflow:
                 heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [{', '.join(uncalled)}] to be called still."
                 stop_reason = None
 
-        # Create messages from the tool call and response
-        created_messages = await workflow.execute_activity(
-            create_messages_activity,
+        # Create Letta messages from the tool response
+        tool_call_messages = create_letta_messages_from_llm_response(
+            agent_id=agent_state.id,
+            model=agent_state.llm_config.model,
+            function_name=tool_call_name,
+            function_arguments=tool_args,
+            tool_execution_result=tool_result,
+            tool_call_id=tool_call_id,
+            function_call_success=tool_result.success_flag,
+            function_response=function_response_string,
+            timezone=agent_state.timezone,
+            actor=actor,
+            continue_stepping=continue_stepping,
+            heartbeat_reason=heartbeat_reason,
+            reasoning_content=reasoning_content,
+            pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+            step_id=step_id,
+            is_approval_response=is_approval or is_denial,
+        )
+
+        # Combine with initial messages
+        messages_to_persist = initial_messages + tool_call_messages
+
+        # Persist messages to database
+        persisted_messages_result = await workflow.execute_activity(
+            create_messages,
             CreateMessagesParams(
-                agent_id=agent_state.id,
-                model=agent_state.llm_config.model,
-                tool_name=tool_call_name,
-                tool_args=tool_args,
-                tool_execution_result=tool_result,
-                tool_call_id=tool_call_id,
-                function_response_string=function_response_string,
-                timezone=agent_state.timezone,
+                messages=messages_to_persist,
                 actor=actor,
-                continue_stepping=continue_stepping,
-                heartbeat_reason=heartbeat_reason,
-                reasoning_content=reasoning_content,
-                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                step_id=step_id,
-                is_approval=False,
-                is_denial=False,
-                initial_messages=initial_messages,
+                project_id=agent_state.project_id,
+                template_id=agent_state.template_id,
             ),
             start_to_close_timeout=CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
             schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
         )
 
-        return created_messages.messages, continue_stepping, stop_reason
+        # TODO: save messages to job? e.g. add_messages_to_job_async
+
+        return persisted_messages_result.messages, continue_stepping, stop_reason, last_function_response
 
     async def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):
         tools = agent_state.tools
