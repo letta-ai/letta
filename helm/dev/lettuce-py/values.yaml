@@ -53,7 +53,7 @@ env:
 
 secretsProvider:
   secrets:
-    - DATABASE_URL
+    - LETTA_PG_URI
     - LETTA_TEMPORAL_API_KEY
 
 resources:

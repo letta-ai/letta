@@ -344,13 +344,13 @@ variable "dev_letta_web_COMPOSIO_API_KEY" {
 }
 
 # lettuce-py secrets
-variable "dev_lettuce_py_DATABASE_URL" {
-  description = "Database URL for lettuce-py service"
+variable "dev_lettuce_py_LETTA_PG_URI" {
+  description = "Database URI for lettuce-py service"
   type        = string
   sensitive   = true
 }
 
-variable "dev_lettuce_py_TEMPORAL_API_KEY" {
+variable "dev_lettuce_py_LETTA_TEMPORAL_API_KEY" {
    description = "Temporal API key for lettuce-py service"
    type        = string
    sensitive   = true
