@@ -79,6 +79,7 @@ class LLMRequestParams:
     - requires_approval_tools: Optional list of tool names that require approval
     - actor: Requesting user (for audit/tenant context)
     - step_id: Current step id for tracing/telemetry correlation
+    - use_assistant_message: Whether to use assistant message format for responses
     """
 
     agent_state: AgentState
@@ -88,6 +89,7 @@ class LLMRequestParams:
     requires_approval_tools: Optional[List[str]] = None
     actor: Optional[User] = None
     step_id: Optional[str] = None
+    use_assistant_message: bool = True
 
 
 @dataclass
