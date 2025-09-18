@@ -1,0 +1,1 @@
+ALTER TABLE "deployment" ADD COLUMN "base_template_id" text NOT NULL;

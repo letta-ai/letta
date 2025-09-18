@@ -12,7 +12,6 @@ import { and, count, eq, ilike } from 'drizzle-orm';
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { getCustomerSubscription } from '@letta-cloud/service-payments';
 import { getUsageLimits } from '@letta-cloud/utils-shared';
-import { createSimulatedAgent } from '@letta-cloud/utils-server';
 import { AgentsService } from '@letta-cloud/sdk-core';
 import * as Sentry from '@sentry/nextjs';
 
@@ -422,11 +421,10 @@ export async function attachAbTestTemplate(
   req: AttachAbTestTemplateRequest,
 ): Promise<AttachAbTestTemplateResponse> {
   const { abTestId } = req.params;
-  const { memoryVariables, templateName } = req.body;
+  const {  templateName } = req.body;
 
   const {
     activeOrganizationId: organizationId,
-    lettaAgentsId,
     permissions,
   } = await getUserWithActiveOrganizationIdOrThrow();
 
@@ -502,47 +500,35 @@ export async function attachAbTestTemplate(
     };
   }
 
-  const simulatedAgent = await createSimulatedAgent({
-    projectId: existingAbTest.projectId,
-    organizationId,
-    lettaAgentsId,
-    lettaTemplateId: '',
-    isDefault: false,
-    memoryVariables: memoryVariables || {},
-    agentTemplateId: agentTemplate.id,
-  });
-
-  if (!simulatedAgent.agent) {
-    return {
-      status: 500,
-      body: {
-        message: 'Failed to create simulated agent',
-      },
-    };
-  }
-
-  // Attach the template
-  const [attachedTemplate] = await db
-    .insert(abTestAgentTemplates)
-    .values({
-      abTestId,
-      agentTemplateId: agentTemplate.id,
-      projectId: existingAbTest.projectId,
-      deployedAgentTemplateId: isLatest ? null : deployedAgentTemplate.id,
-      organizationId,
-      simulatedAgentId: simulatedAgent.simulatedAgentRecord.id,
-    })
-    .returning();
-
   return {
-    status: 200,
+    status: 500,
     body: {
-      id: attachedTemplate.id,
-      simulatedAgentId: attachedTemplate.simulatedAgentId,
-      coreAgentId: simulatedAgent.agent.id,
-      templateName,
+      message: 'Failed to create simulated agent',
     },
   };
+
+  // // Attach the template
+  // const [attachedTemplate] = await db
+  //   .insert(abTestAgentTemplates)
+  //   .values({
+  //     abTestId,
+  //     agentTemplateId: agentTemplate.id,
+  //     projectId: existingAbTest.projectId,
+  //     deployedAgentTemplateId: isLatest ? null : deployedAgentTemplate.id,
+  //     organizationId,
+  //     simulatedAgentId: simulatedAgent.simulatedAgentRecord.id,
+  //   })
+  //   .returning();
+  //
+  // return {
+  //   status: 200,
+  //   body: {
+  //     id: attachedTemplate.id,
+  //     simulatedAgentId: attachedTemplate.simulatedAgentId,
+  //     coreAgentId: simulatedAgent.agent.id,
+  //     templateName,
+  //   },
+  // };
 }
 
 type DetachAbTestTemplateRequest = ServerInferRequest<

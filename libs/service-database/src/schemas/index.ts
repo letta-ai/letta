@@ -527,6 +527,7 @@ export const lettaTemplatesRelations = relations(
     }),
     agentTemplates: many(agentTemplateV2),
     blockTemplates: many(blockTemplate),
+    agentTemplateBlockTemplates: many(agentTemplateBlockTemplates),
   }),
 );
 
@@ -814,6 +815,7 @@ export const deployedAgentVariables = pgTable('deployed_agent_variables', {
     .notNull()
     .primaryKey()
     .references(() => deployedAgentMetadata.agentId, { onDelete: 'cascade' }),
+  deploymentId: text('deployment_id'),
   organizationId: text('organization_id').notNull(),
   value: json('value').notNull().$type<Record<string, string>>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -868,6 +870,50 @@ export const simulatedAgentDeprecated = pgTable(
   }),
 );
 
+export const simulatedGroup = pgTable('simulated_group', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  groupId: text('group_id').unique().notNull(),
+  organizationId: text('organization_id')
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, {
+      onDelete: 'cascade',
+    }),
+  isDefault: boolean('is_default').notNull().default(false),
+  lettaTemplateId: text('letta_template_id')
+    .references(() => lettaTemplates.id, { onDelete: 'cascade' })
+    .notNull(),
+  deploymentId: text('deployment_id'),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$onUpdate(() => new Date()),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (self) => ({
+  uniqueDefault: uniqueIndex('unique_default_simulated_group').on(
+    self.lettaTemplateId,
+    self.isDefault,
+  ),
+}));
+
+export const simulatedGroupRelations = relations(simulatedGroup, ({ one }) => ({
+  project: one(projects, {
+    fields: [simulatedGroup.projectId],
+    references: [projects.id],
+  }),
+  organization: one(organizations, {
+    fields: [simulatedGroup.organizationId],
+    references: [organizations.id],
+  }),
+  lettaTemplate: one(lettaTemplates, {
+    fields: [simulatedGroup.lettaTemplateId],
+    references: [lettaTemplates.id],
+  }),
+}));
+
 export const simulatedAgent = pgTable(
   'simulated_agent_v2',
   {
@@ -884,11 +930,15 @@ export const simulatedAgent = pgTable(
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
     isDefault: boolean('is_default').notNull().default(false),
+    lettaTemplateId: text('letta_template_id')
+      .references(() => lettaTemplates.id, { onDelete: 'cascade' })
+      .notNull(),
     agentTemplateId: text('agent_template_v2_id')
       .references(() => agentTemplateV2.id, {
         onDelete: 'cascade',
       })
       .notNull(),
+    deploymentId: text('deployment_id'),
     memoryVariables:
       json('memory_variables').$type<VariableStoreVersionOneType>(),
     updatedAt: timestamp('updated_at')
@@ -1531,6 +1581,7 @@ export const launchLinkConfigurationsRelations = relations(
 
 export const deployedAgentMetadata = pgTable('deployed_agent_metadata', {
   agentId: text('agent_id').primaryKey(),
+  deploymentId: text('deployment_id'),
   organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
@@ -1864,3 +1915,51 @@ export const abTestAgentTemplatesRelations = relations(
     }),
   }),
 );
+
+export const deploymentStatusEnum = pgEnum('deployment_status_enum', [
+  'initiated',
+  'failed',
+  'ready',
+  'migrating'
+]);
+
+export const deployment = pgTable('deployment', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, {
+      onDelete: 'cascade',
+    }),
+  organizationId: text('organization_id')
+    .references(() => organizations.id, { onDelete: 'cascade' })
+    .notNull(),
+  baseTemplateId: text('base_template_id')
+    .notNull(),
+  lettaTemplateId: text('letta_template_id')
+    .notNull(),
+  status: deploymentStatusEnum('status').notNull().default('initiated'),
+  statusMessage: text('status_message'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().$onUpdate(() => new Date()),
+});
+
+export const deploymentRelations = relations(deployment, ({ one }) => ({
+  project: one(projects, {
+    fields: [deployment.projectId],
+    references: [projects.id],
+  }),
+  organization: one(organizations, {
+    fields: [deployment.organizationId],
+    references: [organizations.id],
+  }),
+  lettaTemplate: one(lettaTemplates, {
+    fields: [deployment.lettaTemplateId],
+    references: [lettaTemplates.id],
+  }),
+  baseTemplate: one(lettaTemplates, {
+    fields: [deployment.baseTemplateId],
+    references: [lettaTemplates.id],
+  }),
+}));

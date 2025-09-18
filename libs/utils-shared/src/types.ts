@@ -15,6 +15,7 @@ import {
 // Agent Template Schema Types
 export const BlockTemplateSchema = z.object({
   id: z.string(),
+  entityId: z.string(),
   label: z.string(),
   value: z.string(),
   limit: z.number(),
@@ -121,6 +122,12 @@ export const TemplateSnapshotSchema = z.object({
       id: true,
       createdAt: true,
       updatedAt: true,
+    }),
+  ),
+  relationships: z.array(
+    z.object({
+      agentEntityId: z.string(),
+      blockEntityId: z.string(),
     }),
   ),
   configuration: GroupConfigurationSchema,

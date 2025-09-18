@@ -49,6 +49,27 @@ export interface UpdateAgentFromAgentTemplateIdPayload {
   templateId: string;
 }
 
+export interface MigrateDeploymentEntitiesPayload {
+  deploymentId: string;
+  templateId: string;
+  preserveToolVariables?: boolean;
+  preserveCoreMemories?: boolean;
+  organizationId: string;
+  lettaAgentsId: string;
+  baseTemplateId?: string;
+  memoryVariables?: Record<string, string>;
+}
+
+export interface MigrateAllDeploymentsByBaseTemplateIdPayload {
+  baseTemplateId: string;
+  organizationId: string;
+  lettaAgentsId: string;
+  preserveToolVariables?: boolean;
+  preserveCoreMemories?: boolean;
+  memoryVariables?: Record<string, string>;
+  batchSize?: number;
+}
+
 export interface DeleteExpiredTokensAndUsersResult {
   expiredTokens: number;
   deletedTokens: number;

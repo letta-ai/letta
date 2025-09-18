@@ -3,7 +3,7 @@ import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import { type ListModelsResponse, ModelsService } from '@letta-cloud/sdk-core';
 import { db, inferenceModelsMetadata } from '@letta-cloud/service-database';
 import { isNull } from 'drizzle-orm';
-import { DEFAULT_EMBEDDING_MODEL } from '@letta-cloud/types';
+import { DEFAULT_EMBEDDING_CONFIG } from '@letta-cloud/types';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import type { SDKContext } from '../types';
 import { camelCaseKeys } from '@letta-cloud/utils-shared';
@@ -127,20 +127,7 @@ type ListEmbeddingModelsResponse = ServerInferResponses<
 
 async function listEmbeddingModels(): Promise<ListEmbeddingModelsResponse> {
   return {
-    body: [
-      {
-        embedding_endpoint_type: 'openai',
-        embedding_endpoint: 'https://api.openai.com/v1',
-        embedding_model: 'text-embedding-3-small',
-        embedding_dim: 2000,
-        embedding_chunk_size: 300,
-        handle: DEFAULT_EMBEDDING_MODEL,
-        batch_size: 1024,
-        azure_endpoint: null,
-        azure_version: null,
-        azure_deployment: null,
-      },
-    ],
+    body: [DEFAULT_EMBEDDING_CONFIG],
     status: 200,
   };
 }

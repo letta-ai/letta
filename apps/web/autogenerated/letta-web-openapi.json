@@ -11958,9 +11958,449 @@
                           "tags"
                         ]
                       }
+                    },
+                    "group": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "manager_type": {
+                          "type": "string",
+                          "enum": [
+                            "round_robin",
+                            "supervisor",
+                            "dynamic",
+                            "sleeptime",
+                            "voice_sleeptime",
+                            "swarm"
+                          ]
+                        },
+                        "agent_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "project_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "template_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "base_template_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "deployment_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "shared_block_ids": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {}
+                          ]
+                        },
+                        "manager_agent_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "termination_token": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "max_turns": {
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "sleeptime_agent_frequency": {
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "turns_counter": {
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "last_processed_message_id": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "max_message_buffer_length": {
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "min_message_buffer_length": {
+                          "oneOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        },
+                        "hidden": {
+                          "oneOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "string",
+                              "format": "null",
+                              "nullable": true
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "format": "null",
+                                    "nullable": true
+                                  }
+                                ],
+                                "nullable": true
+                              }
+                            },
+                            {}
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "manager_type",
+                        "agent_ids",
+                        "description"
+                      ],
+                      "nullable": true
+                    },
+                    "deployment_id": {
+                      "type": "string",
+                      "description": "The deployment ID of the created agents, group and blocks, can be used to identify from a specific invokation"
                     }
                   },
-                  "required": ["agents"]
+                  "required": ["agents", "deployment_id"]
                 }
               }
             }
@@ -12764,6 +13204,9 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "entityId": {
+                            "type": "string"
+                          },
                           "label": {
                             "type": "string"
                           },
@@ -12785,6 +13228,7 @@
                           }
                         },
                         "required": [
+                          "entityId",
                           "label",
                           "value",
                           "limit",
@@ -12792,6 +13236,21 @@
                           "preserveOnMigration",
                           "readOnly"
                         ]
+                      }
+                    },
+                    "relationships": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "agentEntityId": {
+                            "type": "string"
+                          },
+                          "blockEntityId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["agentEntityId", "blockEntityId"]
                       }
                     },
                     "configuration": {
@@ -12839,10 +13298,117 @@
                   "required": [
                     "agents",
                     "blocks",
+                    "relationships",
                     "configuration",
                     "type",
                     "version"
                   ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Updates the current working version of a template from a snapshot",
+        "summary": "Set current template from snapshot (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name with :current version (e.g., my-template:current)"
+          }
+        ],
+        "operationId": "templates.setCurrentTemplateFromSnapshot",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "nullable": true,
+                "description": "The template snapshot to set as the current version"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
                 }
               }
             }
@@ -13409,6 +13975,144 @@
           },
           "404": {
             "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/{project}/{template_name}/deployments/{deployment_id}/migrate": {
+      "post": {
+        "description": "Migrates a deployment to a specific template version",
+        "summary": "Migrate deployment to template version (Cloud-only)",
+        "tags": ["templates"],
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The project slug"
+          },
+          {
+            "name": "template_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The template name (without version)"
+          },
+          {
+            "name": "deployment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The deployment ID to migrate"
+          }
+        ],
+        "operationId": "templates.migrateDeployment",
+        "requestBody": {
+          "description": "Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "description": "The target template version to migrate to"
+                  },
+                  "preserve_tool_variables": {
+                    "type": "boolean",
+                    "description": "Whether to preserve existing tool variables during migration"
+                  },
+                  "preserve_core_memories": {
+                    "type": "boolean",
+                    "description": "Whether to preserve existing core memories during migration"
+                  },
+                  "memory_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Additional memory variables to apply during migration"
+                  }
+                },
+                "required": ["version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
             "content": {
               "application/json": {
                 "schema": {

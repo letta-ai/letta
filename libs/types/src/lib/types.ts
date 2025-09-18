@@ -9,6 +9,7 @@ import type {
   MaxCountPerStepToolRule,
   ParentToolRule,
   RequiresApprovalToolRule,
+  EmbeddingConfig,
 } from '@letta-cloud/sdk-core';
 
 export const ComposioProviderConfiguration = z.object({
@@ -74,11 +75,13 @@ export type MemoryVariableVersionOneType = z.infer<
 
 export const VariableStoreVersionOne = z.object({
   version: z.string(),
-  data: z.object({
-    key: z.string(),
-    defaultValue: z.string().nullish(),
-    type: z.string(),
-  }).array()
+  data: z
+    .object({
+      key: z.string(),
+      defaultValue: z.string().nullish(),
+      type: z.string(),
+    })
+    .array(),
 });
 
 export type VariableStoreVersionOneType = z.infer<
@@ -247,6 +250,18 @@ export const AgentFileAccessLevels = z.enum([
 ]);
 
 export const DEFAULT_EMBEDDING_MODEL = 'openai/text-embedding-3-small';
+export const DEFAULT_EMBEDDING_CONFIG: EmbeddingConfig = {
+  embedding_endpoint_type: 'openai' as const,
+  embedding_endpoint: 'https://api.openai.com/v1',
+  embedding_model: 'text-embedding-3-small',
+  embedding_dim: 2000,
+  embedding_chunk_size: 300,
+  handle: DEFAULT_EMBEDDING_MODEL,
+  batch_size: 1024,
+  azure_endpoint: null,
+  azure_version: null,
+  azure_deployment: null,
+} satisfies EmbeddingConfig;
 export const DEFAULT_LLM_MODEL = 'openai/gpt-4o-mini';
 
 export const DEFAULT_SYSTEM_PROMPT = `<base_instructions>
@@ -320,7 +335,7 @@ Maintain only those files relevant to the user’s current interaction.
 </files_and_directories>
 
 Base instructions finished.
-</base_instructions>`
+</base_instructions>`;
 // Tool rule schemas - manually created to match exact SDK types
 export const ChildToolRuleSchema = z.object({
   tool_name: z.string(),
@@ -400,6 +415,14 @@ export const ToolRulesSchema = z.array(ToolRuleSchema).nullable();
 
 // Tool Rule Types - use SDK types directly for type compatibility
 export type ToolRule =
-  ChildToolRule | ConditionalToolRule | ContinueToolRule | InitToolRule | MaxCountPerStepToolRule | ParentToolRule | RequiresApprovalToolRule | RequiredBeforeExitToolRule | TerminalToolRule;
+  | ChildToolRule
+  | ConditionalToolRule
+  | ContinueToolRule
+  | InitToolRule
+  | MaxCountPerStepToolRule
+  | ParentToolRule
+  | RequiresApprovalToolRule
+  | RequiredBeforeExitToolRule
+  | TerminalToolRule;
 
 export type ToolRulesArray = ToolRule[] | null;
