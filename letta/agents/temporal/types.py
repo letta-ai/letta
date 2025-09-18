@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
+from letta.helpers import ToolRulesSolver
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
@@ -49,6 +50,7 @@ class RefreshContextParams:
 
     agent_state: AgentState
     in_context_messages: List[Message]
+    tool_rules_solver: ToolRulesSolver
     actor: User
 
 
