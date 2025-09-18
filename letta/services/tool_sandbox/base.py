@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from letta.functions.helpers import generate_model_from_args_json_schema
+from letta.otel.tracing import trace_method
 from letta.schemas.agent import AgentState
 from letta.schemas.sandbox_config import SandboxConfig
 from letta.schemas.tool import Tool
@@ -75,6 +76,7 @@ class AsyncToolSandboxBase(ABC):
         """
         raise NotImplementedError
 
+    @trace_method
     async def generate_execution_script(self, agent_state: Optional[AgentState], wrap_print_with_markers: bool = False) -> str:
         """
         Generate code to run inside of execution sandbox. Serialize the agent state and arguments, call the tool,
