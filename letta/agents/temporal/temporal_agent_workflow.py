@@ -48,6 +48,7 @@ with workflow.unsafe.imports_passed_through():
         prepare_messages,
         refresh_context_and_system_message,
         summarize_conversation_history,
+        update_message_ids,
     )
     from letta.agents.temporal.types import (
         CreateMessagesParams,
@@ -60,6 +61,8 @@ with workflow.unsafe.imports_passed_through():
         PreparedMessages,
         RefreshContextParams,
         SummarizeParams,
+        UpdateMessageIdsParams,
+        UpdateMessageIdsResult,
         WorkflowInputParams,
     )
     from letta.constants import NON_USER_MSG_PREFIX
@@ -293,9 +296,33 @@ class TemporalAgentWorkflow:
                 # TODO: skipping these args for now: usage, agent_step_span, run_id, step_metrics
             )
 
+            # persist approval responses immediately to prevent agent from getting into a bad state
+            if (
+                len(input_messages_to_persist) == 1
+                and input_messages_to_persist[0].role == "approval"
+                and persisted_messages[0].role == "approval"
+                and persisted_messages[1].role == "tool"
+            ):
+                # update message ids immediately for approval persistence
+                message_ids = agent_state.message_ids + [m.id for m in persisted_messages[:2]]
+
+                # call activity to persist the updated message ids
+                await workflow.execute_activity(
+                    update_message_ids,
+                    UpdateMessageIdsParams(
+                        agent_id=agent_state.id,
+                        message_ids=message_ids,
+                        actor=actor,
+                    ),
+                    start_to_close_timeout=CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+                    schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+                )
+
+                # update local agent state
+                agent_state.message_ids = message_ids
+
             # TODO: process response messages for streaming/non-streaming
             # - yield appropriate messages based on include_return_message_types
-            # - handle approval persistence if needed
 
             # TODO: step checkpoint finish
 
