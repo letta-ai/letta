@@ -1,4 +1,3 @@
-import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -13,6 +12,7 @@ from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _create_letta_response,
+    _load_last_function_response,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
@@ -34,7 +34,7 @@ from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import JobStatus, MessageRole, ProviderType, StepStatus, ToolType
+from letta.schemas.enums import JobStatus, ProviderType, StepStatus, ToolType
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -48,7 +48,10 @@ from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
+from letta.server.rest_api.utils import (
+    create_approval_request_message_from_llm_response,
+    create_letta_messages_from_llm_response,
+)
 from letta.services.agent_manager import AgentManager
 from letta.services.block_manager import BlockManager
 from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
@@ -1907,17 +1910,3 @@ class LettaAgent(BaseAgent):
             )
         log_event(name=f"finish_{tool_name}_execution", attributes=tool_execution_result.model_dump())
         return tool_execution_result
-
-    @trace_method
-    def _load_last_function_response(self, in_context_messages: list[Message]):
-        """Load the last function response from message history"""
-        for msg in reversed(in_context_messages):
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
-                text_content = msg.content[0].text
-                try:
-                    response_json = json.loads(text_content)
-                    if response_json.get("message"):
-                        return response_json["message"]
-                except (json.JSONDecodeError, KeyError):
-                    raise ValueError(f"Invalid JSON format in message: {text_content}")
-        return None

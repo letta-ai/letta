@@ -1,5 +1,4 @@
 import asyncio
-import json
 import uuid
 from datetime import datetime
 from typing import AsyncGenerator, Tuple
@@ -31,7 +30,7 @@ from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import AgentState, UpdateAgent
-from letta.schemas.enums import AgentType, JobStatus, MessageRole, MessageStreamStatus, StepStatus
+from letta.schemas.enums import AgentType, JobStatus, MessageStreamStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -43,7 +42,10 @@ from letta.schemas.step_metrics import StepMetrics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
-from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, create_letta_messages_from_llm_response
+from letta.server.rest_api.utils import (
+    create_approval_request_message_from_llm_response,
+    create_letta_messages_from_llm_response,
+)
 from letta.services.agent_manager import AgentManager
 from letta.services.archive_manager import ArchiveManager
 from letta.services.block_manager import BlockManager
