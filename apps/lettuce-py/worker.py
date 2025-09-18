@@ -4,8 +4,17 @@ import os
 from temporalio.worker import Worker
 from temporalio.client import Client
 
-from workflows import your_workflow
-from activities import your_first_activity, your_second_activity, your_third_activity
+from letta.agents.temporal.temporal_agent_workflow import TemporalAgentWorkflow
+from letta.agents.temporal.activities import (
+    example_activity,
+    llm_request,
+    create_messages_activity,
+    persist_messages_activity,
+    prepare_messages,
+    refresh_context_and_system_message,
+    summarize_conversation_history,
+    execute_tool_activity,
+)
 
 TEMPORAL_ADDRESS = os.environ.get("TEMPORAL_ADDRESS", "localhost:7233")
 TEMPORAL_NAMESPACE = os.environ.get("TEMPORAL_NAMESPACE", "default")
@@ -28,8 +37,17 @@ async def main():
     worker = Worker(
         client,
         task_queue=TEMPORAL_TASK_QUEUE,
-        workflows=[your_workflow],
-        activities=[your_first_activity, your_second_activity, your_third_activity],
+        workflows=[TemporalAgentWorkflow],
+        activities=[
+            prepare_messages,
+            refresh_context_and_system_message,
+            llm_request,
+            summarize_conversation_history,
+            example_activity,
+            execute_tool_activity,
+            create_messages_activity,
+            persist_messages_activity,
+        ],
     )
 
     print("Starting worker... Waiting for tasks.")
