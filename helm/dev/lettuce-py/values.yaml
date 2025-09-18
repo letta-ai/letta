@@ -47,8 +47,8 @@ env:
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   PORT: "8080"
-  TEMPORAL_LETTUCE_NAMESPACE: "lettuce-py.tmhou"
-  TEMPORAL_API_HOST: "us-central1.gcp.api.temporal.io:7233"
+  TEMPORAL_NAMESPACE: "lettuce-py.tmhou"
+  TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
 
 secretsProvider:
   secrets:
