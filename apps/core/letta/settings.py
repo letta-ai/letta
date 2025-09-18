@@ -238,6 +238,10 @@ class Settings(BaseSettings):
     redis_host: Optional[str] = Field(default=None, description="Host for Redis instance")
     redis_port: Optional[int] = Field(default=6379, description="Port for Redis instance")
 
+    temporal_api_key: Optional[str] = Field(default=None, description="API key for Temporal instance")
+    temporal_namespace: Optional[str] = Field(default=None, description="Namespace for Temporal instance")
+    temporal_endpoint: Optional[str] = Field(default=None, description="Endpoint for Temporal instance")
+
     plugin_register: Optional[str] = None
 
     # multi agent settings
