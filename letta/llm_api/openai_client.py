@@ -3,7 +3,6 @@ import os
 from typing import List, Optional
 
 import openai
-from httpx import stream
 from openai import AsyncOpenAI, AsyncStream, OpenAI
 from openai.types import Reasoning
 from openai.types.chat.chat_completion import ChatCompletion
@@ -442,6 +441,14 @@ class OpenAIClient(LLMClientBase):
                     except ValueError as e:
                         logger.warning(f"Failed to convert tool function to structured output, tool={tool}, error={e}")
         request_data = data.model_dump(exclude_unset=True)
+
+        # If Ollama
+        # if llm_config.handle.startswith("ollama/") and llm_config.enable_reasoner:
+        # Sadly, reasoning via the OpenAI proxy on Ollama only works for Harmony/gpt-oss
+        # Ollama's OpenAI layer simply looks for the presence of 'reasoining' or 'reasoning_effort'
+        # If set, then in the backend "medium" thinking is turned on
+        # request_data["reasoning_effort"] = "medium"
+
         return request_data
 
     @trace_method

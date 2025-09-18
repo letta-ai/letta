@@ -127,8 +127,8 @@ class OllamaProvider(OpenAIProvider):
                     handle=self.get_handle(model_name),
                     provider_name=self.name,
                     provider_category=self.provider_category,
-                    # TODO remove with next loop
-                    put_inner_thoughts_in_kwargs=True,
+                    # put_inner_thoughts_in_kwargs=True,
+                    # enable_reasoner=supports_thinking,
                 )
             )
         return configs
