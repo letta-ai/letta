@@ -9682,23 +9682,20 @@
         "operationId": "list_runs",
         "parameters": [
           {
-            "name": "agent_ids",
+            "name": "agent_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "The unique identifier of the agent associated with the run.",
-              "title": "Agent Ids"
+              "title": "Agent Id"
             },
             "description": "The unique identifier of the agent associated with the run."
           },
@@ -9855,23 +9852,20 @@
         "deprecated": true,
         "parameters": [
           {
-            "name": "agent_ids",
+            "name": "agent_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
               "description": "The unique identifier of the agent associated with the run.",
-              "title": "Agent Ids"
+              "title": "Agent Id"
             },
             "description": "The unique identifier of the agent associated with the run."
           },
@@ -15991,6 +15985,30 @@
           "job_type": {
             "$ref": "#/components/schemas/JobType",
             "default": "batch"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
           },
           "callback_url": {
             "anyOf": [
@@ -22892,6 +22910,30 @@
             "description": "The type of the job.",
             "default": "job"
           },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
+          },
           "callback_url": {
             "anyOf": [
               {
@@ -26155,6 +26197,30 @@
           "job_type": {
             "$ref": "#/components/schemas/JobType",
             "default": "run"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background",
+            "description": "Whether the job was created in background mode."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent associated with this job/run."
           },
           "callback_url": {
             "anyOf": [
