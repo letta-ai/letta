@@ -241,6 +241,7 @@ class Settings(BaseSettings):
     temporal_api_key: Optional[str] = Field(default=None, description="API key for Temporal instance")
     temporal_namespace: Optional[str] = Field(default=None, description="Namespace for Temporal instance")
     temporal_endpoint: Optional[str] = Field(default=None, description="Endpoint for Temporal instance")
+    temporal_task_queue: Optional[str] = Field(default="agent_loop_async_task_queue", description="Task queue for Temporal instance")
 
     plugin_register: Optional[str] = None
 

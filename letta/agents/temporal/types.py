@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from letta.helpers import ToolRulesSolver
 from letta.schemas.agent import AgentState
-from letta.schemas.letta_message import MessageType
+from letta.schemas.letta_message import LettaMessageUnion, MessageType
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
     ReasoningContent,

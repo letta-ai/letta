@@ -3,6 +3,7 @@ from typing import Annotated, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from pydantic import Field
+from temporalio.client import Client
 
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.helpers.datetime_helpers import get_utc_time
@@ -110,9 +111,9 @@ async def retrieve_run(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
                 api_key=settings.temporal_api_key,
-                tls=True,
+                tls=True,  # This should be false for local runs
             )
-            handle = client.get_workflow_handle(workflow_id)
+            handle = client.get_workflow_handle(run_id)
 
             # Fetch the workflow description
             desc = await handle.describe()
