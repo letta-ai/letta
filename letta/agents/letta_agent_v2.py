@@ -13,6 +13,7 @@ from letta.agents.base_agent_v2 import BaseAgentV2
 from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
+    _load_last_function_response,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
@@ -374,7 +375,7 @@ class LettaAgentV2(BaseAgentV2):
             None,
         )
         try:
-            self.last_function_response = self._load_last_function_response(messages)
+            self.last_function_response = _load_last_function_response(messages)
             valid_tools = await self._get_valid_tools()
             approval_request, approval_response = await self._maybe_get_approval_messages(messages)
             if approval_request and approval_response:
@@ -739,20 +740,6 @@ class LettaAgentV2(BaseAgentV2):
             terminal_tools=terminal_tool_names,
         )
         return allowed_tools
-
-    @trace_method
-    def _load_last_function_response(self, in_context_messages: list[Message]):
-        """Load the last function response from message history"""
-        for msg in reversed(in_context_messages):
-            if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
-                text_content = msg.content[0].text
-                try:
-                    response_json = json.loads(text_content)
-                    if response_json.get("message"):
-                        return response_json["message"]
-                except (json.JSONDecodeError, KeyError):
-                    raise ValueError(f"Invalid JSON format in message: {text_content}")
-        return None
 
     @trace_method
     def _request_checkpoint_start(self, request_start_timestamp_ns: int | None) -> Span | None:
