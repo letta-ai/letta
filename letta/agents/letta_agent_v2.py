@@ -188,6 +188,8 @@ class LettaAgentV2(BaseAgentV2):
         in_context_messages = in_context_messages + input_messages_to_persist
         response_letta_messages = []
         for i in range(max_steps):
+            remaining_turns = max_steps - i - 1
+
             response = self._step(
                 messages=in_context_messages + self.response_messages,
                 input_messages_to_persist=input_messages_to_persist,
@@ -196,6 +198,7 @@ class LettaAgentV2(BaseAgentV2):
                 use_assistant_message=use_assistant_message,
                 include_return_message_types=include_return_message_types,
                 request_start_timestamp_ns=request_start_timestamp_ns,
+                remaining_turns=remaining_turns,
             )
 
             async for chunk in response:
