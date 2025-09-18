@@ -1,9 +1,5 @@
 'use client';
-import type { Job, JobStatus } from '@letta-cloud/sdk-core';
-import {
-  useRunsServiceListActiveRuns,
-  UseRunsServiceListActiveRunsKeyFn,
-} from '@letta-cloud/sdk-core';
+import { type Job, type JobStatus, useRunsServiceListRuns, UseRunsServiceListRunsKeyFn } from '@letta-cloud/sdk-core';
 import { useCurrentAgentMetaData } from '../useCurrentAgentMetaData/useCurrentAgentMetaData';
 import { useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,9 +8,10 @@ export function useCurrentAgentActiveRuns() {
   const { agentId } = useCurrentAgentMetaData();
   const queryClient = useQueryClient();
 
-  const { data: activeRuns } = useRunsServiceListActiveRuns(
+  const { data: activeRuns } = useRunsServiceListRuns(
     {
-      agentIds: agentId ? [agentId] : undefined,
+      agentId,
+      active: true,
     },
     undefined,
     {
@@ -34,8 +31,9 @@ export function useCurrentAgentActiveRuns() {
     (runId?: string) => {
       if (!agentId) return;
 
-      const queryKey = UseRunsServiceListActiveRunsKeyFn({
-        agentIds: [agentId],
+      const queryKey = UseRunsServiceListRunsKeyFn({
+        agentId,
+        active: true,
       });
 
       queryClient.setQueryData<Job[]>(queryKey, (old: Job[] | undefined) => {
@@ -55,10 +53,10 @@ export function useCurrentAgentActiveRuns() {
   const clearOptimisticActiveRuns = useCallback(() => {
     if (!agentId) return;
 
-    const queryKey = UseRunsServiceListActiveRunsKeyFn({
-      agentIds: [agentId],
+    const queryKey = UseRunsServiceListRunsKeyFn({
+      agentId,
+      active: true,
     });
-
     void queryClient.invalidateQueries({ queryKey });
   }, [agentId, queryClient]);
 

@@ -27,7 +27,6 @@ jobs:
           files: |
             apps/core/**
             apps/web/**
-            apps/fern/**
             libs/sdk-core/**
             libs/sdk-web/**
             libs/sdk-cloud-api/**

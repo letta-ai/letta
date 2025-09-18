@@ -1,4 +1,5 @@
 from letta.orm.agent import Agent
+from letta.orm.agents_runs import AgentsRuns
 from letta.orm.agents_tags import AgentsTags
 from letta.orm.archive import Archive
 from letta.orm.archives_agents import ArchivesAgents

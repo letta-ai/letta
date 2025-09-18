@@ -30,7 +30,8 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 @router.get("/", response_model=List[Run], operation_id="list_runs")
 def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
-    agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
+    agent_ids: Optional[List[str]] = Query(None, description="(DEPRECATED) The unique identifiers of the agents associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
@@ -62,19 +63,18 @@ def list_runs(
             after=after,
             ascending=False,
             stop_reason=stop_reason,
+            # agent_id=agent_id,
+            agent_ids=agent_ids if agent_ids else [agent_id],
+            background=background,
         )
     ]
-    if agent_ids:
-        runs = [run for run in runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
-    if background is not None:
-        runs = [run for run in runs if "background" in run.metadata and run.metadata["background"] == background]
     return runs
 
 
 @router.get("/active", response_model=List[Run], operation_id="list_active_runs", deprecated=True)
 def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
-    agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
+    agent_id: Optional[str] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
     headers: HeaderParams = Depends(get_headers),
 ):
@@ -83,14 +83,10 @@ def list_active_runs(
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
-    active_runs = server.job_manager.list_jobs(actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN)
+    active_runs = server.job_manager.list_jobs(
+        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=[agent_id], background=background
+    )
     active_runs = [Run.from_job(job) for job in active_runs]
-
-    if agent_ids:
-        active_runs = [run for run in active_runs if "agent_id" in run.metadata and run.metadata["agent_id"] in agent_ids]
-
-    if background is not None:
-        active_runs = [run for run in active_runs if "background" in run.metadata and run.metadata["background"] == background]
 
     return active_runs
 
@@ -104,7 +100,7 @@ async def retrieve_run(
     """
     Get the status of a run.
     """
-    actor = await server.user_manager.get_actor_or_default_async(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
 
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
@@ -317,7 +313,7 @@ async def retrieve_stream(
 
     run = Run.from_job(job)
 
-    if "background" not in run.metadata or not run.metadata["background"]:
+    if not run.background:
         raise HTTPException(status_code=400, detail="Run was not created in background mode, so it cannot be retrieved.")
 
     if run.created_at < get_utc_time() - timedelta(hours=3):

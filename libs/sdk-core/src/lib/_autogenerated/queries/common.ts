@@ -2463,6 +2463,7 @@ export const UseRunsServiceListRunsKeyFn = (
   {
     active,
     after,
+    agentId,
     agentIds,
     ascending,
     background,
@@ -2475,6 +2476,7 @@ export const UseRunsServiceListRunsKeyFn = (
   }: {
     active?: boolean;
     after?: string;
+    agentId?: string;
     agentIds?: string[];
     ascending?: boolean;
     background?: boolean;
@@ -2492,6 +2494,7 @@ export const UseRunsServiceListRunsKeyFn = (
     {
       active,
       after,
+      agentId,
       agentIds,
       ascending,
       background,
@@ -2514,13 +2517,13 @@ export type RunsServiceListActiveRunsQueryResult<
 export const useRunsServiceListActiveRunsKey = 'RunsServiceListActiveRuns';
 export const UseRunsServiceListActiveRunsKeyFn = (
   {
-    agentIds,
+    agentId,
     background,
     userAgent,
     userId,
     xProjectId,
   }: {
-    agentIds?: string[];
+    agentId?: string;
     background?: boolean;
     userAgent?: string;
     userId?: string;
@@ -2529,7 +2532,7 @@ export const UseRunsServiceListActiveRunsKeyFn = (
   queryKey?: Array<unknown>,
 ) => [
   useRunsServiceListActiveRunsKey,
-  ...(queryKey ?? [{ agentIds, background, userAgent, userId, xProjectId }]),
+  ...(queryKey ?? [{ agentId, background, userAgent, userId, xProjectId }]),
 ];
 export type RunsServiceRetrieveRunDefaultResponse = Awaited<
   ReturnType<typeof RunsService.retrieveRun>

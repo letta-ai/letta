@@ -1,7 +1,7 @@
 {
   "name": "docs",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/fern",
+  "sourceRoot": "apps/core/fern",
   "projectType": "application",
   "tags": [],
   "targets": {

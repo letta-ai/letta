@@ -125,8 +125,8 @@ jobs:
           uv run python ../../.github/scripts/model-sweep/generate_model_sweep_markdown.py \
             global_models_config_detailed.json \
             supported-models.mdx
-          cp ../../.github/scripts/model-sweep/supported-models.mdx ../fern/pages/selfhosting/supported-models.mdx
-          echo "Model sweep report saved to apps/fern/pages/selfhosting/supported-models.mdx"
+          cp ../../.github/scripts/model-sweep/supported-models.mdx fern/pages/selfhosting/supported-models.mdx
+          echo "Model sweep report saved to apps/core/fern/pages/selfhosting/supported-models.mdx"
 
 
       - name: Upload artifacts
@@ -195,7 +195,7 @@ jobs:
           # Stage all changes
           git add .github/scripts/model-sweep/global_models_config_compact.json
           git add .github/scripts/model-sweep/global_models_config_detailed.json
-          git add apps/fern/pages/selfhosting/supported-models.mdx
+          git add apps/core/fern/pages/selfhosting/supported-models.mdx
 
           # Create commit
           git commit -m "chore: update model sweep results

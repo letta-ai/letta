@@ -5424,7 +5424,8 @@ export class RunsService {
    * List Runs
    * List all runs.
    * @param data The data for the request.
-   * @param data.agentIds The unique identifier of the agent associated with the run.
+   * @param data.agentId The unique identifier of the agent associated with the run.
+   * @param data.agentIds (DEPRECATED) The unique identifiers of the agents associated with the run.
    * @param data.background If True, filters for runs that were created in background mode.
    * @param data.stopReason Filter runs by stop reason.
    * @param data.after Cursor for pagination
@@ -5446,6 +5447,7 @@ export class RunsService {
       method: 'GET',
       url: '/v1/runs/',
       query: {
+        agent_id: data.agentId,
         agent_ids: data.agentIds,
         background: data.background,
         stop_reason: data.stopReason,
@@ -5467,7 +5469,7 @@ export class RunsService {
    * List Active Runs
    * List all active runs.
    * @param data The data for the request.
-   * @param data.agentIds The unique identifier of the agent associated with the run.
+   * @param data.agentId The unique identifier of the agent associated with the run.
    * @param data.background If True, filters for runs that were created in background mode.
    * @param data.userId
    * @param data.userAgent
@@ -5483,7 +5485,7 @@ export class RunsService {
       method: 'GET',
       url: '/v1/runs/active',
       query: {
-        agent_ids: data.agentIds,
+        agent_id: data.agentId,
         background: data.background,
       },
       errors: {

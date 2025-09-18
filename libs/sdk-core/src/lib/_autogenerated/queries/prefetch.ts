@@ -3505,7 +3505,8 @@ export const prefetchUseProvidersServiceRetrieveProvider = (
  * List Runs
  * List all runs.
  * @param data The data for the request.
- * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.agentId The unique identifier of the agent associated with the run.
+ * @param data.agentIds (DEPRECATED) The unique identifiers of the agents associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.stopReason Filter runs by stop reason.
  * @param data.after Cursor for pagination
@@ -3524,6 +3525,7 @@ export const prefetchUseRunsServiceListRuns = (
   {
     active,
     after,
+    agentId,
     agentIds,
     ascending,
     background,
@@ -3536,6 +3538,7 @@ export const prefetchUseRunsServiceListRuns = (
   }: {
     active?: boolean;
     after?: string;
+    agentId?: string;
     agentIds?: string[];
     ascending?: boolean;
     background?: boolean;
@@ -3551,6 +3554,7 @@ export const prefetchUseRunsServiceListRuns = (
     queryKey: Common.UseRunsServiceListRunsKeyFn({
       active,
       after,
+      agentId,
       agentIds,
       ascending,
       background,
@@ -3565,6 +3569,7 @@ export const prefetchUseRunsServiceListRuns = (
       RunsService.listRuns({
         active,
         after,
+        agentId,
         agentIds,
         ascending,
         background,
@@ -3581,7 +3586,7 @@ export const prefetchUseRunsServiceListRuns = (
  * List Active Runs
  * List all active runs.
  * @param data The data for the request.
- * @param data.agentIds The unique identifier of the agent associated with the run.
+ * @param data.agentId The unique identifier of the agent associated with the run.
  * @param data.background If True, filters for runs that were created in background mode.
  * @param data.userId
  * @param data.userAgent
@@ -3592,13 +3597,13 @@ export const prefetchUseRunsServiceListRuns = (
 export const prefetchUseRunsServiceListActiveRuns = (
   queryClient: QueryClient,
   {
-    agentIds,
+    agentId,
     background,
     userAgent,
     userId,
     xProjectId,
   }: {
-    agentIds?: string[];
+    agentId?: string;
     background?: boolean;
     userAgent?: string;
     userId?: string;
@@ -3607,7 +3612,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseRunsServiceListActiveRunsKeyFn({
-      agentIds,
+      agentId,
       background,
       userAgent,
       userId,
@@ -3615,7 +3620,7 @@ export const prefetchUseRunsServiceListActiveRuns = (
     }),
     queryFn: () =>
       RunsService.listActiveRuns({
-        agentIds,
+        agentId,
         background,
         userAgent,
         userId,
