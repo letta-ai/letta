@@ -116,7 +116,7 @@ wait_for_memgpt_server
 echo "Memgpt server is ready!"
 
 echo "Starting Lettuce-py Temporal Worker..."
-uv run worker.py &
+uv run python3 worker.py
 WORKER_PID=$!
 
 # Wait for both processes
