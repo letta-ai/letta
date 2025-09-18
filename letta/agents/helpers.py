@@ -282,3 +282,11 @@ def _load_last_function_response(in_context_messages: list[Message]):
             except (json.JSONDecodeError, KeyError):
                 raise ValueError(f"Invalid JSON format in message: {text_content}")
     return None
+
+
+def _maybe_get_approval_messages(messages: list[Message]) -> Tuple[Message | None, Message | None]:
+    if len(messages) >= 2:
+        maybe_approval_request, maybe_approval_response = messages[-2], messages[-1]
+        if maybe_approval_request.role == "approval" and maybe_approval_response.role == "approval":
+            return maybe_approval_request, maybe_approval_response
+    return None, None
