@@ -11,6 +11,7 @@ from letta.agents.temporal.constants import (
     REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT,
 )
+from letta.helpers import ToolRulesSolver
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.usage import LettaUsageStatistics
 
@@ -38,6 +39,8 @@ with workflow.unsafe.imports_passed_through():
 class TemporalAgentWorkflow:
     @workflow.run
     async def run(self, params: WorkflowInputParams) -> FinalResult:
+        tool_rules_solver = ToolRulesSolver(tool_rules=params.agent_state.tool_rules)
+
         # 1) Prepare messages (context + new input), no persistence
         prepared: PreparedMessages = await workflow.execute_activity(
             prepare_messages,
@@ -56,6 +59,7 @@ class TemporalAgentWorkflow:
             RefreshContextParams(
                 agent_state=params.agent_state,
                 in_context_messages=combined_messages,
+                tool_rules_solver=tool_rules_solver,
                 actor=params.actor,
             ),
             start_to_close_timeout=REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT,
