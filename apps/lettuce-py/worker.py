@@ -8,12 +8,12 @@ from letta.agents.temporal.temporal_agent_workflow import TemporalAgentWorkflow
 from letta.agents.temporal.activities import (
     example_activity,
     llm_request,
-    create_messages_activity,
-    persist_messages_activity,
+    create_messages,
     prepare_messages,
     refresh_context_and_system_message,
     summarize_conversation_history,
-    execute_tool_activity,
+    execute_tool,
+    update_message_ids,
 )
 
 TEMPORAL_ENDPOINT = os.environ.get("LETTA_TEMPORAL_ENDPOINT", "localhost:7233")
@@ -46,9 +46,9 @@ async def main():
             llm_request,
             summarize_conversation_history,
             example_activity,
-            execute_tool_activity,
-            create_messages_activity,
-            persist_messages_activity,
+            execute_tool,
+            create_messages,
+            update_message_ids,
         ],
     )
 
