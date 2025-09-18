@@ -1489,6 +1489,15 @@ async def cancel_agent_run(
 
     results = {}
     for run_id in run_ids:
+        run = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
+        if run.metadata.get("temporal") and settings.temporal_endpoint:
+            client = await Client.connect(
+                settings.temporal_endpoint,
+                namespace=settings.temporal_namespace,
+                api_key=settings.temporal_api_key,
+                tls=True,
+            )
+            await client.cancel_workflow(run_id)
         success = await server.job_manager.safe_update_job_status_async(
             job_id=run_id,
             new_status=JobStatus.cancelled,
@@ -1645,6 +1654,7 @@ async def send_message_async(
         metadata={
             "job_type": "send_message_async",
             "agent_id": agent_id,
+            "temporal": settings.temporal_endpoint != None,
         },
         request_config=LettaRequestConfig(
             use_assistant_message=request.use_assistant_message,
@@ -1654,6 +1664,17 @@ async def send_message_async(
         ),
     )
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
+
+    if settings.temporal_endpoint:
+        temporal_agent = TemporalAgent(agent_state=agent_state, actor=actor)
+        await temporal_agent.step(
+            input_messages=request.messages,
+            max_steps=request.max_steps,
+            run_id=run.id,
+            use_assistant_message=request.use_assistant_message,
+            include_return_message_types=request.include_return_message_types,
+        )
+        return run
 
     # Create asyncio task for background processing (shielded to prevent cancellation)
     task = safe_create_shielded_task(
