@@ -279,7 +279,7 @@ class TemporalAgentWorkflow:
                 )
 
             # Handle the AI response (execute tool, create messages, determine continuation)
-            persisted_messages, should_continue, stop_reason, last_function_response = await self._handle_ai_response(
+            persisted_messages, should_continue, stop_reason, recent_last_function_response = await self._handle_ai_response(
                 tool_call=tool_call,
                 valid_tool_names=[t["name"] for t in allowed_tools],
                 agent_state=agent_state,
@@ -295,6 +295,10 @@ class TemporalAgentWorkflow:
                 is_final_step=(remaining_turns == 0),
                 # TODO: skipping these args for now: usage, agent_step_span, run_id, step_metrics
             )
+
+            if recent_last_function_response:
+                # TODO: This doesn't get used, so we can skip parsing this in the above function
+                last_function_response = recent_last_function_response
 
             # persist approval responses immediately to prevent agent from getting into a bad state
             if (
@@ -346,7 +350,7 @@ class TemporalAgentWorkflow:
         is_denial: bool = False,
         denial_reason: str | None = None,
         is_final_step: bool = False,
-    ) -> tuple[list[Message], bool, LettaStopReason | None]:
+    ) -> tuple[list[Message], bool, LettaStopReason | None, str | None]:
         """
         Handle the AI response by executing the tool call, creating messages,
         and determining whether to continue stepping.
@@ -387,7 +391,7 @@ class TemporalAgentWorkflow:
                 is_approval_response=True,
             )
             messages_to_persist = initial_messages + tool_call_messages
-            return messages_to_persist, continue_stepping, stop_reason
+            return messages_to_persist, continue_stepping, stop_reason, None
 
         # Handle approval request flow
         if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
@@ -406,7 +410,7 @@ class TemporalAgentWorkflow:
             messages_to_persist = initial_messages + [approval_message]
             continue_stepping = False
             stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
-            return messages_to_persist, continue_stepping, stop_reason
+            return messages_to_persist, continue_stepping, stop_reason, None
 
         # Execute tool if tool rules allow
         tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
