@@ -229,219 +229,229 @@ class TemporalAgentWorkflow:
             usage.total_tokens += call_result.usage.total_tokens
 
             # Validate tool call exists
+            tool_call = call_result.tool_call
             if tool_call is None:
                 stop_reason = StopReasonType.no_tool_call
                 # TODO: proper error handling
                 raise ValueError("No tool calls found in response")
 
-            # FIX THIS: stubbing these variables all for now to flag dependencies on above logic - not sure yet which ones are critical to new loop
-            last_function_response = load_last_function_response_from_messages(messages)
-            is_approval = None
-            is_denial = None
-            requires_approval = None
-            stop_reason = None
-            denial_reason = None
-            messages_to_persist = []
-            initial_messages = []
-            reasoning_content = []
-            pre_computed_assistant_message_id = None
-            valid_tool_names = []
-            timezone = agent_state.timezone
-            step_index = None
-            max_steps = None
+            valid_tool_names = [t["name"] for t in allowed_tools]
 
-            # Unpack params
-            agent_state = agent_state
-            actor = actor
-            tool_call = call_result.tool_call
+            # Handle the AI response (execute tool, create messages, determine continuation)
+            persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
+                tool_call=tool_call,
+                agent_state=agent_state,
+                tool_rules_solver=tool_rules_solver,
+                actor=actor,
+                step_id=step_id,
+                reasoning_content=call_result.reasoning_content,
+                pre_computed_assistant_message_id=call_result.assistant_message_id,
+                initial_messages=None,  # TODO: populate if needed
+                is_approval=False,  # TODO: detect from approval pair
+                is_denial=False,  # TODO: detect from denial response
+                denial_reason=None,  # TODO: extract from denial message
+                valid_tool_names=valid_tool_names,
+                remaining_turns=remaining_turns,
+                # TOOD: skipping these args for now
+                # usage: UsageStatistics,
+                # agent_step_span: Span,
+                # is_final_step: bool,
+                # run_id: str,
+                # step_metrics: StepMetrics,
+            )
 
-            # Parse and validate the tool-call envelope
-            tool_call_id = call_result.tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
-            tool_call_name = call_result.tool_call.function.name
-            tool_args = _safe_load_tool_call_str(call_result.tool_call.function.arguments)
-            request_heartbeat = _pop_heartbeat(tool_args)
-            tool_args.pop(INNER_THOUGHTS_KWARG, None)
+            # TODO: process response messages for streaming/non-streaming
+            # - extend response_messages with persisted_messages
+            # - yield appropriate messages based on include_return_message_types
+            # - handle approval persistence if needed
 
-            # Handle denial flow
-            if is_denial:
-                continue_stepping = True
-                stop_reason = None
-                tool_call_messages = create_letta_messages_from_llm_response(
-                    agent_id=agent_state.id,
-                    model=agent_state.llm_config.model,
-                    function_name=tool_call.function.name,
-                    function_arguments={},
-                    tool_execution_result=ToolExecutionResult(status="error"),
-                    tool_call_id=tool_call_id,
-                    function_call_success=False,
-                    function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
-                    timezone=agent_state.timezone,
-                    actor=actor,
-                    continue_stepping=continue_stepping,
-                    heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
-                    reasoning_content=reasoning_content,
-                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                    step_id=step_id,
-                    is_approval_response=True,
-                )
-                # TODO: handle persisting messages
-                messages_to_persist = (initial_messages or []) + tool_call_messages
-                # persisted_messages = await self.message_manager.create_many_messages_async(
-                #     messages_to_persist,
-                #     actor=actor,
-                #     project_id=agent_state.project_id,
-                #     template_id=agent_state.template_id,
-                # )
-                # return persisted_messages, continue_stepping, stop_reason
+            # TODO: step checkpoint finish
 
-            # Handle approval request flow
-            if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
-                approval_message = create_approval_request_message_from_llm_response(
-                    agent_id=agent_state.id,
-                    model=agent_state.llm_config.model,
-                    function_name=tool_call_name,
-                    function_arguments=tool_args,
-                    tool_call_id=tool_call_id,
-                    actor=actor,
-                    continue_stepping=request_heartbeat,
-                    reasoning_content=reasoning_content,
-                    pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                    step_id=step_id,
-                )
-                # TODO: handle persisting messages
-                messages_to_persist = (initial_messages or []) + [approval_message]
-                continue_stepping = False
-                stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
-            else:
-                # Execute tool if tool rules allow
-                tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
-                if tool_rule_violated:
-                    tool_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
-                else:
-                    execution: ExecuteToolResult = await workflow.execute_activity(
-                        execute_tool_activity,
-                        ExecuteToolParams(
-                            tool_name=tool_call_name,
-                            tool_args=tool_args,
-                            agent_state=agent_state,
-                            actor=actor,
-                            step_id=step_id,
-                        ),
-                        start_to_close_timeout=TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-                        schedule_to_close_timeout=TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-                    )
-                    tool_result = execution.tool_execution_result
-                    # TODO: store tool execution time?
-
-                # Prepare the function-response payload
-                truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
-                return_char_limit = next(
-                    (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
-                    None,
-                )
-                function_response_string = validate_function_response(
-                    tool_result.func_return,
-                    return_char_limit=return_char_limit,
-                    truncate=truncate,
-                )
-                last_function_response = package_function_response(
-                    was_success=tool_result.success_flag,
-                    response_string=function_response_string,
-                    timezone=timezone,
-                )
-
-                # Decide whether to continue stepping
-                continue_stepping = request_heartbeat
-                heartbeat_reason = None
-
-                # TODO: fix this, handle tool rule solver mutation
-                if tool_rule_violated:
-                    continue_stepping = True
-                    heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: tool rule violation."
-                else:
-                    tool_rules_solver.register_tool_call(tool_call_name)
-
-                    if tool_rules_solver.is_terminal_tool(tool_call_name):
-                        if continue_stepping:
-                            stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
-                        continue_stepping = False
-                    elif tool_rules_solver.has_children_tools(tool_call_name):
-                        continue_stepping = True
-                        heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: child tool rule."
-                    elif tool_rules_solver.is_continue_tool(tool_call_name):
-                        continue_stepping = True
-                        heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: continue tool rule."
-
-                is_final_step = step_index == max_steps - 1  # TODO: fix this
-
-                if is_final_step and continue_stepping:
-                    continue_stepping = False
-                    stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
-                else:
-                    uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
-                    if not continue_stepping and uncalled:
-                        continue_stepping = True
-                        heartbeat_reason = (
-                            f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [{', '.join(uncalled)}] to be called still."
-                        )
-                        stop_reason = None
-
-                # Persist messages to the agent
-                created_messages = await workflow.execute_activity(
-                    create_messages_activity,
-                    CreateMessagesParams(
-                        agent_id=agent_state.id,
-                        model=agent_state.llm_config.model,
-                        tool_name=tool_call_name,
-                        tool_args=tool_args,
-                        tool_execution_result=tool_result,
-                        tool_call_id=tool_call_id,
-                        function_response_string=function_response_string,
-                        timezone=agent_state.timezone,
-                        actor=actor,
-                        continue_stepping=continue_stepping,
-                        heartbeat_reason=heartbeat_reason,
-                        reasoning_content=reasoning_content,
-                        pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                        step_id=step_id,
-                        is_approval=False,
-                        is_denial=False,
-                        initial_messages=initial_messages,
-                    ),
-                    start_to_close_timeout=CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-                    schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-                )
-
-                # Persist messages to job
-                # _ = await workflow.execute_activity(
-                #     persist_messages_activity,
-                #     PersistMessagesParams(
-                #         messages=created_messages.messages,
-                #         actor=actor,
-                #         project_id=agent_state.project_id,
-                #         template_id=agent_state.template_id,
-                #         run_id=run_id,
-                #     ),
-                #     start_to_close_timeout=PERSIST_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
-                #     schedule_to_close_timeout=PERSIST_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
-                # )
-
-                should_continue = continue_stepping
-                persisted_messages = created_messages.messages
-
-                # TODO: process response messages for streaming/non-streaming
-                # - extend response_messages
-                # - yield appropriate messages based on include_return_message_types
-                # - handle approval persistence if needed
-
-                # TODO: step checkpoint finish
-
-                # TODO: determine should_continue based on stop_reason and remaining_turns
-                response_messages = []  # Placeholder - should be populated from handle_ai_response
+            # Update response messages with the persisted messages
+            response_messages = persisted_messages
 
         return InnerStepResult(stop_reason=stop_reason, usage=usage, should_continue=should_continue, response_messages=response_messages)
 
-    def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):
+    async def _handle_ai_response(
+        self,
+        tool_call,
+        agent_state: AgentState,
+        tool_rules_solver: ToolRulesSolver,
+        actor: User,
+        step_id: str,
+        reasoning_content=None,
+        pre_computed_assistant_message_id=None,
+        initial_messages=None,
+        is_approval=False,
+        is_denial=False,
+        denial_reason=None,
+        valid_tool_names=None,
+        remaining_turns: int = -1,
+    ):
+        """
+        Handle the AI response by executing the tool call, creating messages,
+        and determining whether to continue stepping.
+
+        Returns:
+            tuple: (persisted_messages, should_continue, stop_reason)
+        """
+        # Initialize defaults
+        valid_tool_names = valid_tool_names or []
+        reasoning_content = reasoning_content or []
+        initial_messages = initial_messages or []
+
+        # Parse and validate the tool-call envelope
+        tool_call_id = tool_call.id or f"call_{uuid.uuid4().hex[:8]}"
+        tool_call_name = tool_call.function.name
+        tool_args = _safe_load_tool_call_str(tool_call.function.arguments)
+        request_heartbeat = _pop_heartbeat(tool_args)
+        tool_args.pop(INNER_THOUGHTS_KWARG, None)
+
+        # Handle denial flow
+        if is_denial:
+            continue_stepping = True
+            stop_reason = None
+            tool_call_messages = create_letta_messages_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=tool_call.function.name,
+                function_arguments={},
+                tool_execution_result=ToolExecutionResult(status="error"),
+                tool_call_id=tool_call_id,
+                function_call_success=False,
+                function_response=f"Error: request to call tool denied. User reason: {denial_reason}",
+                timezone=agent_state.timezone,
+                actor=actor,
+                continue_stepping=continue_stepping,
+                heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+                is_approval_response=True,
+            )
+            messages_to_persist = initial_messages + tool_call_messages
+            return messages_to_persist, continue_stepping, stop_reason
+
+        # Handle approval request flow
+        if not is_approval and tool_rules_solver.is_requires_approval_tool(tool_call_name):
+            approval_message = create_approval_request_message_from_llm_response(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                function_name=tool_call_name,
+                function_arguments=tool_args,
+                tool_call_id=tool_call_id,
+                actor=actor,
+                continue_stepping=request_heartbeat,
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+            )
+            messages_to_persist = initial_messages + [approval_message]
+            continue_stepping = False
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.requires_approval.value)
+            return messages_to_persist, continue_stepping, stop_reason
+
+        # Execute tool if tool rules allow
+        tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
+        if tool_rule_violated:
+            tool_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
+        else:
+            execution: ExecuteToolResult = await workflow.execute_activity(
+                execute_tool_activity,
+                ExecuteToolParams(
+                    tool_name=tool_call_name,
+                    tool_args=tool_args,
+                    agent_state=agent_state,
+                    actor=actor,
+                    step_id=step_id,
+                ),
+                start_to_close_timeout=TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+                schedule_to_close_timeout=TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+            )
+            tool_result = execution.tool_execution_result
+
+        # Prepare the function-response payload
+        truncate = tool_call_name not in {"conversation_search", "conversation_search_date", "archival_memory_search"}
+        return_char_limit = next(
+            (t.return_char_limit for t in agent_state.tools if t.name == tool_call_name),
+            None,
+        )
+        function_response_string = validate_function_response(
+            tool_result.func_return,
+            return_char_limit=return_char_limit,
+            truncate=truncate,
+        )
+
+        # Package the function response (for last_function_response tracking)
+        last_function_response = package_function_response(
+            was_success=tool_result.success_flag,
+            response_string=function_response_string,
+            timezone=agent_state.timezone,
+        )
+
+        # Decide whether to continue stepping
+        continue_stepping = request_heartbeat
+        heartbeat_reason = None
+        stop_reason = None
+
+        if tool_rule_violated:
+            continue_stepping = True
+            heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: tool rule violation."
+        else:
+            tool_rules_solver.register_tool_call(tool_call_name)
+
+            if tool_rules_solver.is_terminal_tool(tool_call_name):
+                if continue_stepping:
+                    stop_reason = LettaStopReason(stop_reason=StopReasonType.tool_rule.value)
+                continue_stepping = False
+            elif tool_rules_solver.has_children_tools(tool_call_name):
+                continue_stepping = True
+                heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: child tool rule."
+            elif tool_rules_solver.is_continue_tool(tool_call_name):
+                continue_stepping = True
+                heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: continue tool rule."
+
+        # Check if we're at max steps
+        is_final_step = remaining_turns == 0
+        if is_final_step and continue_stepping:
+            continue_stepping = False
+            stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
+        else:
+            uncalled = tool_rules_solver.get_uncalled_required_tools(available_tools=set([t.name for t in agent_state.tools]))
+            if not continue_stepping and uncalled:
+                continue_stepping = True
+                heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing, user expects these tools: [{', '.join(uncalled)}] to be called still."
+                stop_reason = None
+
+        # Create messages from the tool call and response
+        created_messages = await workflow.execute_activity(
+            create_messages_activity,
+            CreateMessagesParams(
+                agent_id=agent_state.id,
+                model=agent_state.llm_config.model,
+                tool_name=tool_call_name,
+                tool_args=tool_args,
+                tool_execution_result=tool_result,
+                tool_call_id=tool_call_id,
+                function_response_string=function_response_string,
+                timezone=agent_state.timezone,
+                actor=actor,
+                continue_stepping=continue_stepping,
+                heartbeat_reason=heartbeat_reason,
+                reasoning_content=reasoning_content,
+                pre_computed_assistant_message_id=pre_computed_assistant_message_id,
+                step_id=step_id,
+                is_approval=False,
+                is_denial=False,
+                initial_messages=initial_messages,
+            ),
+            start_to_close_timeout=CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+            schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+        )
+
+        return created_messages.messages, continue_stepping, stop_reason
+
+    async def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):
         tools = agent_state.tools
         valid_tool_names = tool_rules_solver.get_allowed_tool_names(
             available_tools=set([t.name for t in tools]),
