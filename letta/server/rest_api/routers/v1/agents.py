@@ -1171,9 +1171,10 @@ async def send_message(
             pydantic_job=Run(
                 user_id=actor.id,
                 status=job_status,
+                agent_id=agent_id,
+                background=False,
                 metadata={
                     "job_type": "send_message",
-                    "agent_id": agent_id,
                 },
                 request_config=LettaRequestConfig(
                     use_assistant_message=request.use_assistant_message,
@@ -1305,10 +1306,10 @@ async def send_message_streaming(
             pydantic_job=Run(
                 user_id=actor.id,
                 status=job_status,
+                agent_id=agent_id,
+                background=request.background or False,
                 metadata={
                     "job_type": "send_message_streaming",
-                    "agent_id": agent_id,
-                    "background": request.background or False,
                 },
                 request_config=LettaRequestConfig(
                     use_assistant_message=request.use_assistant_message,
@@ -1482,6 +1483,7 @@ async def cancel_agent_run(
                 statuses=[JobStatus.created, JobStatus.running],
                 job_type=JobType.RUN,
                 ascending=False,
+                agent_ids=[agent_id],
             )
             run_ids = [Run.from_job(job).id for job in job_ids]
         else:
@@ -1651,6 +1653,8 @@ async def send_message_async(
         user_id=actor.id,
         status=JobStatus.created,
         callback_url=request.callback_url,
+        agent_id=agent_id,
+        background=True,  # Async endpoints are always background
         metadata={
             "job_type": "send_message_async",
             "agent_id": agent_id,
