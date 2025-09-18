@@ -1,11 +1,13 @@
 import uuid
 
 from temporalio import workflow
+from temporalio.exceptions import ActivityError, ApplicationError
 
 from letta.agents.helpers import _load_last_function_response, generate_step_id
 from letta.agents.temporal.constants import (
     CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+    LLM_ACTIVITY_RETRY_POLICY,
     LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     PERSIST_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
@@ -14,6 +16,8 @@ from letta.agents.temporal.constants import (
     PREPARE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+    SUMMARIZE_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+    SUMMARIZE_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
 )
@@ -46,6 +50,7 @@ with workflow.unsafe.imports_passed_through():
         persist_messages_activity,
         prepare_messages,
         refresh_context_and_system_message,
+        summarize_conversation_history,
     )
     from letta.agents.temporal.types import (
         CreateMessagesParams,
@@ -58,12 +63,14 @@ with workflow.unsafe.imports_passed_through():
         PersistMessagesParams,
         PreparedMessages,
         RefreshContextParams,
+        SummarizeParams,
         WorkflowInputParams,
     )
     from letta.constants import NON_USER_MSG_PREFIX
     from letta.local_llm.constants import INNER_THOUGHTS_KWARG
     from letta.log import get_logger
     from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, load_last_function_response_from_messages
+    from letta.settings import summarizer_settings
     from letta.system import package_function_response
     from letta.utils import validate_function_response
 
@@ -166,7 +173,6 @@ class TemporalAgentWorkflow:
 
             # TODO: step checkpoint start (logging/telemetry)
 
-            # Refresh context + system prompt, scrub inner thoughts (I/O)
             refreshed_messages = await workflow.execute_activity(
                 refresh_context_and_system_message,
                 RefreshContextParams(
@@ -179,22 +185,20 @@ class TemporalAgentWorkflow:
                 schedule_to_close_timeout=REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
             )
 
-            # Decide force_tool_call if exactly one tool allowed
             force_tool_call = allowed_tools[0]["name"] if len(allowed_tools) == 1 else None
-
-            # Get requires_approval_tools from solver
             requires_approval_tools = (
                 tool_rules_solver.get_requires_approval_tools(set([t["name"] for t in allowed_tools])) if allowed_tools else None
             )
 
-            # LLM request with retry loop for summarization on context window overflow
-            for llm_request_attempt in range(3):  # TODO: use max_summarizer_retries setting
+            # LLM request with Temporal native retries; on context window overflow,
+            # perform workflow-level summarization before retrying with updated input.
+            max_sum_retries = getattr(summarizer_settings, "max_summarizer_retries", 0) or 0
+            call_result: LLMCallResult | None = None
+            for summarize_attempt in range(max_sum_retries + 1):
                 try:
-                    # TODO: build request data (pure)
-
                     # TODO: step checkpoint for LLM request start
 
-                    call_result: LLMCallResult = await workflow.execute_activity(
+                    call_result = await workflow.execute_activity(
                         llm_request,
                         LLMRequestParams(
                             agent_state=agent_state,
@@ -208,20 +212,49 @@ class TemporalAgentWorkflow:
                         ),
                         start_to_close_timeout=LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
                         schedule_to_close_timeout=LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+                        retry_policy=LLM_ACTIVITY_RETRY_POLICY,
                     )
 
-                    # If successful, break out of retry loop
+                    # If successful, break out of summarization retry loop
                     break
 
-                except Exception as e:
-                    # TODO: check if ContextWindowExceededError and attempt < max_retries
-                    # if so, call summarize_conversation_history activity then retry
-                    # refreshed_messages = await workflow.execute_activity(
-                    #     summarize_conversation_history,
-                    #     SummarizeParams(...),
-                    #     ...
-                    # )
-                    raise e
+                except ApplicationError as e:
+                    error_type = e.type
+
+                    # If context window exceeded, summarize then retry (up to max)
+                    if error_type and "ContextWindowExceededError" in error_type and summarize_attempt < max_sum_retries:
+                        refreshed_messages = await workflow.execute_activity(
+                            summarize_conversation_history,
+                            SummarizeParams(
+                                agent_state=agent_state,
+                                in_context_messages=refreshed_messages,
+                                new_letta_messages=[],
+                                actor=actor,
+                                force=True,
+                            ),
+                            start_to_close_timeout=SUMMARIZE_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+                            schedule_to_close_timeout=SUMMARIZE_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+                        )
+                        continue
+
+                    # Map error to stop reasons similar to non‑Temporal implementation
+                    if error_type in ("ValueError", "LLMJSONParsingError"):
+                        stop_reason = StopReasonType.invalid_llm_response
+                    else:
+                        stop_reason = StopReasonType.llm_api_error
+                    # Exit summarization loop and finish step with stop_reason
+                    break
+
+            # If LLM call ultimately failed, finish step early with mapped stop_reason
+            if call_result is None:
+                response_messages = []
+                should_continue = False
+                return InnerStepResult(
+                    stop_reason=stop_reason,
+                    usage=usage,
+                    should_continue=should_continue,
+                    response_messages=response_messages,
+                )
 
             # TODO: step checkpoint for LLM request finish
 
