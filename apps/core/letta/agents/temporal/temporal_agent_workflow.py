@@ -1,10 +1,7 @@
 import uuid
 
-from colorama import init
 from temporalio import workflow
 
-from letta.adapters.letta_llm_adapter import LettaLLMAdapter
-from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
 from letta.agents.helpers import _load_last_function_response, generate_step_id
 from letta.agents.temporal.constants import (
     CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
@@ -22,11 +19,17 @@ from letta.agents.temporal.constants import (
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
-from letta.llm_api.llm_client import LLMClient
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
+from letta.schemas.letta_message_content import (
+    OmittedReasoningContent,
+    ReasoningContent,
+    RedactedReasoningContent,
+    TextContent,
+)
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message
+from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -235,30 +238,27 @@ class TemporalAgentWorkflow:
                 # TODO: proper error handling
                 raise ValueError("No tool calls found in response")
 
-            valid_tool_names = [t["name"] for t in allowed_tools]
-
             # Handle the AI response (execute tool, create messages, determine continuation)
-            persisted_messages, should_continue, stop_reason = await self._handle_ai_response(
-                tool_call=tool_call,
+            persisted_messages, should_continue, ai_response_stop_reason = await self._handle_ai_response(
+                tool_call=tool_call,  # TODO: LLMAdapter fallback?
+                valid_tool_names=[t["name"] for t in allowed_tools],
                 agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
                 actor=actor,
                 step_id=step_id,
-                reasoning_content=call_result.reasoning_content,
-                pre_computed_assistant_message_id=call_result.assistant_message_id,
-                initial_messages=None,  # TODO: populate if needed
-                is_approval=False,  # TODO: detect from approval pair
-                is_denial=False,  # TODO: detect from denial response
-                denial_reason=None,  # TODO: extract from denial message
-                valid_tool_names=valid_tool_names,
-                remaining_turns=remaining_turns,
-                # TOOD: skipping these args for now
-                # usage: UsageStatistics,
-                # agent_step_span: Span,
-                # is_final_step: bool,
-                # run_id: str,
-                # step_metrics: StepMetrics,
+                reasoning_content=call_result.reasoning_content,  # TODO: LLMAdapter fallback?
+                pre_computed_assistant_message_id=call_result.assistant_message_id,  # TODO: derived from LLMAdapter
+                initial_messages=input_messages_to_persist,
+                is_approval=approval_response.approve if approval_response is not None else False,
+                is_denial=(approval_response.approve == False) if approval_response is not None else False,
+                denial_reason=approval_response.denial_reason if approval_response is not None else None,
+                is_final_step=(remaining_turns == 0),
+                # TODO: skipping these args for now: usage, agent_step_span, run_id, step_metrics
             )
+
+            # Update stop reason if set by AI response handler
+            if ai_response_stop_reason:
+                stop_reason = ai_response_stop_reason
 
             # TODO: process response messages for streaming/non-streaming
             # - extend response_messages with persisted_messages
@@ -274,30 +274,28 @@ class TemporalAgentWorkflow:
 
     async def _handle_ai_response(
         self,
-        tool_call,
+        tool_call: ToolCall,
+        valid_tool_names: list[str],
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
         actor: User,
-        step_id: str,
-        reasoning_content=None,
-        pre_computed_assistant_message_id=None,
-        initial_messages=None,
-        is_approval=False,
-        is_denial=False,
-        denial_reason=None,
-        valid_tool_names=None,
-        remaining_turns: int = -1,
-    ):
+        step_id: str | None = None,
+        reasoning_content: list[TextContent | ReasoningContent | RedactedReasoningContent | OmittedReasoningContent] | None = None,
+        pre_computed_assistant_message_id: str | None = None,
+        initial_messages: list[Message] | None = None,
+        is_approval: bool = False,
+        is_denial: bool = False,
+        denial_reason: str | None = None,
+        is_final_step: bool = False,
+    ) -> tuple[list[Message], bool, LettaStopReason | None]:
         """
         Handle the AI response by executing the tool call, creating messages,
         and determining whether to continue stepping.
 
         Returns:
-            tuple: (persisted_messages, should_continue, stop_reason)
+            tuple[list[Message], bool, LettaStopReason | None]: (persisted_messages, should_continue, stop_reason)
         """
-        # Initialize defaults
-        valid_tool_names = valid_tool_names or []
-        reasoning_content = reasoning_content or []
+        # Initialize default
         initial_messages = initial_messages or []
 
         # Parse and validate the tool-call envelope
@@ -412,7 +410,6 @@ class TemporalAgentWorkflow:
                 heartbeat_reason = f"{NON_USER_MSG_PREFIX}Continuing: continue tool rule."
 
         # Check if we're at max steps
-        is_final_step = remaining_turns == 0
         if is_final_step and continue_stepping:
             continue_stepping = False
             stop_reason = LettaStopReason(stop_reason=StopReasonType.max_steps.value)
