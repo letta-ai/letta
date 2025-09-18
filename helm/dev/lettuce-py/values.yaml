@@ -49,6 +49,7 @@ env:
   PORT: "8080"
   TEMPORAL_NAMESPACE: "lettuce-py.tmhou"
   TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
+  TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
 
 secretsProvider:
   secrets:

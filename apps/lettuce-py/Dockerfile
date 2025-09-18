@@ -1,22 +1,22 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim
+# Use re-tagged memgpt-server image built locally as a required dependency
+FROM memgpt-server-local:latest AS runtime
 
-# Set working directory
-WORKDIR /app
+# Set working directory for lettuce-py
+WORKDIR /app/lettuce-py
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# The base image already has Python 3.11 and virtual environment set up
+# We just need to install temporalio in the existing virtual environment
+RUN . /app/.venv/bin/activate && pip install --no-cache-dir temporalio
 
-# Install the Temporal Python SDK dependency
-RUN pip install --no-cache-dir temporalio
+# Copy application code and startup script
+COPY worker.py ./
+COPY startup.sh .
 
-# Copy application code
-COPY worker.py .
+# Make startup script executable
+RUN chmod +x startup.sh
 
 # Set Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1
 
-# Run the worker
-CMD ["python", "worker.py"]
+# Use the startup script as entrypoint, default to running both services
+ENTRYPOINT ["/app/lettuce-py/startup.sh"]
