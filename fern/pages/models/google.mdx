@@ -1,0 +1,62 @@
+---
+title: Google AI (Gemini)
+slug: guides/server/providers/google
+---
+
+
+<Tip>To enable Google AI models with Letta, set `GEMINI_API_KEY` in your environment variables. </Tip>
+
+You can use Letta with Google AI if you have a Google API account and API key. Once you have set your `GEMINI_API_KEY` in your environment variables, you can select what model and configure the context window size.
+
+## Enabling Google AI as a provider
+To enable the Google AI provider, you must set the `GEMINI_API_KEY` environment variable. When this is set, Letta will use available LLM models running on Google AI.
+
+### Using the `docker run` server with Google AI
+To enable Google Gemini models, simply set your `GEMINI_API_KEY` as an environment variable:
+```bash
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e GEMINI_API_KEY="your_gemini_api_key" \
+  letta/letta:latest
+```
+
+<Accordion icon="square-terminal" title="CLI (pypi only)">
+### Using `letta run` and `letta server` with Google AI
+To chat with an agent, run:
+```bash
+export GEMINI_API_KEY="..."
+letta run
+```
+This will prompt you to select a model:
+```bash
+? Select LLM model: (Use arrow keys)
+ » letta-free [type=openai] [ip=https://inference.letta.com]
+   gemini-1.0-pro-latest [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.0-pro [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-pro [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.0-pro-001 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.0-pro-vision-latest [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-pro-vision [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro-latest [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro-001 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro-002 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro-exp-0801 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   gemini-1.5-pro-exp-0827 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+```
+as we as an embedding model:
+```
+? Select embedding model: (Use arrow keys)
+ » letta-free [type=hugging-face] [ip=https://embeddings.letta.com]
+   embedding-001 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+   text-embedding-004 [type=google_ai] [ip=https://generativelanguage.googleapis.com]
+```
+To run the Letta server, run:
+```bash
+export GEMINI_API_KEY="..."
+letta server
+```
+To select the model used by the server, use the dropdown in the ADE or specify a `LLMConfig` object in the Python SDK.
+</Accordion>

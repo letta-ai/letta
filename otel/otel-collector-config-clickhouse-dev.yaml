@@ -1,0 +1,53 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  file/traces:
+    path: ${HOME}/.letta/logs/traces.json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
+  file/metrics:
+    path: ${HOME}/.letta/logs/metrics.json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
+  clickhouse:
+    endpoint: ${CLICKHOUSE_ENDPOINT}
+    database: ${CLICKHOUSE_DATABASE}
+    username: ${CLICKHOUSE_USERNAME}
+    password: ${CLICKHOUSE_PASSWORD}
+    timeout: 5s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  telemetry:
+    logs:
+      level: error
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/traces, clickhouse]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/metrics, clickhouse]

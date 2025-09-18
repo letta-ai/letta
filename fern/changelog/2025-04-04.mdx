@@ -1,0 +1,41 @@
+## Add new `otid` field to Message API
+
+The `Message` object returned by our Messages endpoints now includes an offline threading id field, a unique identifier set at creation time, which can be used by the client to deduplicate messages.
+
+### Before:
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta, MessageCreate
+import uuid
+client = Letta(
+    token="YOUR_API_KEY",
+)
+messages = client.agents.messages.create(
+    agent_id="AGENT_ID",
+    messages=[
+        MessageCreate(
+            role="user",
+            content="Hello, how are you?"
+            otid=uuid.uuid4(),
+        )
+    ]
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+import { v4 as uuid } from 'uuid';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const messages = await client.agents.messages.create({
+  agent_id: "AGENT_ID",
+  messages: [
+    {
+      role: "user",
+      content: "Hello, how are you?",
+      otid: uuid.v4(),
+    },
+  ],
+});
+```
+</CodeBlocks>

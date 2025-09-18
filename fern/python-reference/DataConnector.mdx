@@ -1,0 +1,48 @@
+---
+slug: python-reference/DataConnector
+---
+
+<a id="letta.data_sources.connectors.DataConnector"></a>
+
+## DataConnector
+
+```python
+class DataConnector()
+```
+
+Base class for data connectors that can be extended to generate documents and passages from a custom data source.
+
+<a id="letta.data_sources.connectors.DataConnector.generate_documents"></a>
+
+#### generate\_documents
+
+```python
+def generate_documents() -> Iterator[Tuple[str, Dict]]
+```
+
+Generate document text and metadata from a data source.
+
+**Returns**:
+
+- `documents` _Iterator[Tuple[str, Dict]]_ - Generate a tuple of string text and metadata dictionary for each document.
+
+<a id="letta.data_sources.connectors.DataConnector.generate_passages"></a>
+
+#### generate\_passages
+
+```python
+def generate_passages(documents: List[Document],
+                      chunk_size: int = 1024) -> Iterator[Tuple[str, Dict]]
+```
+
+Generate passage text and metadata from a list of documents.
+
+**Arguments**:
+
+- `documents` _List[Document]_ - List of documents to generate passages from.
+- `chunk_size` _int, optional_ - Chunk size for splitting passages. Defaults to 1024.
+
+
+**Returns**:
+
+- `passages` _Iterator[Tuple[str, Dict]]_ - Generate a tuple of string text and metadata dictionary for each passage.

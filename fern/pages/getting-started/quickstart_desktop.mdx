@@ -1,0 +1,246 @@
+---
+title: Developer quickstart (Desktop)
+subtitle: Create your first Letta agent and view it in the ADE
+slug: quickstart/desktop
+---
+
+This quickstart will get guide you through creating your first Letta agent.
+If you're interested in learning about Letta and how it works, [read more here](/letta-platform).
+
+<Note>
+Letta Desktop is in **beta**. View known issues [here](/guides/desktop/troubleshooting).<br />
+For bug reports and feature requests, please [join our Discord](https://discord.gg/letta).
+</Note>
+
+## Install Letta Desktop
+You can install Letta Desktop for MacOS (M series), Windows (x64), or Linux (x64) on [our install page](/install).
+<img className="w-300" src="/images/letta_desktop_screenshot.png" />
+
+If Desktop is not available for your platform you can still use [Letta via Docker](/quickstart/docker) or [pip](/guides/server/pip).
+
+## Run Letta Desktop
+**Letta agents** live inside a **Letta server**, which persists them to a database.
+You can interact with the Letta agents inside your Letta server with the [ADE](/agent-development-environment) (a visual interface), and connect your agents to external application via the [REST API](https://docs.letta.com/api-reference) and Python & TypeScript SDKs.
+
+Letta Desktop bundles together the Letta server and the Agent Development Environment (ADE) into a single application.
+
+<img className="block w-300" src="/images/letta_desktop_connecting.png" />
+
+When you launch Letta Desktop, you'll be prompted to wait while the Letta server starts up.
+You can monitor the server startup process by opening the server logs (clicking the <Icon icon="rectangle-terminal" /> icon).
+
+## Creating an agent with the Letta API
+Let's create an agent via the Letta API, which we can then view in the ADE (you can also use the ADE to create agents).
+
+To create an agent we'll send a POST request to the Letta Server ([API docs](/api-reference/agents/create)).
+In this example, we'll use `gpt-4o-mini` as the base LLM model, and `text-embedding-3-small` as the embedding model (this requires having configured both `OPENAI_API_KEY` on our Letta Server).
+
+We'll also artificially set the context window limit to 16k, instead of the 128k default for `gpt-4o-mini` (this can improve stability and performance):
+<CodeGroup>
+```curl curl
+curl -X POST http://localhost:8283/v1/agents/ \
+     -H "Content-Type: application/json" \
+     -d '{
+  "memory_blocks": [
+    {
+      "value": "The human'\''s name is Bob the Builder.",
+      "label": "human"
+    },
+    {
+      "value": "My name is Sam, the all-knowing sentient AI.",
+      "label": "persona"
+    }
+  ],
+  "model": "openai/gpt-4o-mini",
+  "context_window_limit": 16000,
+  "embedding": "openai/text-embedding-3-small"
+}'
+```
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create a client to connect to your local Letta Server
+client = Letta(
+  base_url="http://localhost:8283"
+)
+
+# create an agent with two basic self-editing memory blocks
+agent_state = client.agents.create(
+    memory_blocks=[
+        {
+          "label": "human",
+          "value": "The human's name is Bob the Builder."
+        },
+        {
+          "label": "persona",
+          "value": "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    model="openai/gpt-4o-mini",
+    context_window_limit=16000,
+    embedding="openai/text-embedding-3-small"
+)
+
+# the AgentState object contains all the information about the agent
+print(agent_state)
+```
+```typescript maxLines=50 title="node.js"
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// create a client to connect to your local Letta Server
+const client = new LettaClient({
+  baseUrl: "http://localhost:8283"
+});
+
+// create an agent with two basic self-editing memory blocks
+const agentState = await client.agents.create({
+    memoryBlocks: [
+        {
+          label: "human",
+          value: "The human's name is Bob the Builder."
+        },
+        {
+          label: "persona",
+          value: "My name is Sam, the all-knowing sentient AI."
+        }
+    ],
+    model: "openai/gpt-4o-mini",
+    contextWindowLimit: 16000,
+    embedding: "openai/text-embedding-3-small"
+});
+
+// the AgentState object contains all the information about the agent
+console.log(agentState);
+```
+</CodeGroup>
+
+The response will include information about the agent, including its `id`:
+```json
+{
+  "id": "agent-43f8e098-1021-4545-9395-446f788d7389",
+  "name": "GracefulFirefly",
+  ...
+}
+```
+
+## Send a message to the agent with the Letta API
+<Tip>
+The Letta API supports streaming both agent *steps* and streaming *tokens*.
+For more information on streaming, see [our guide on streaming](/guides/agents/streaming).
+</Tip>
+Let's try sending a message to the new agent! Replace `AGENT_ID` with the actual agent ID we received in the agent state ([route documentation](https://docs.letta.com/api-reference/agents/send-message)):
+<CodeGroup>
+```curl curl
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hows it going????"
+    }
+  ]
+}'
+```
+```python title="python" maxLines=50
+# send a message to the agent
+response = client.agents.messages.create(
+    agent_id=agent_state.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "hows it going????"
+        }
+    ]
+)
+
+# the response object contains the messages and usage statistics
+print(response)
+
+# if we want to print the usage stats
+print(response.usage)
+
+# if we want to print the messages
+for message in response.messages:
+    print(message)
+```
+```typescript maxLines=50 title="node.js"
+// send a message to the agent
+const response = await client.agents.messages.create(
+    agentState.id, {
+        messages: [
+            {
+                role: "user",
+                content: "hows it going????"
+            }
+        ]
+    }
+);
+
+// the response object contains the messages and usage statistics
+console.log(response);
+
+// if we want to print the usage stats
+console.log(response.usage)
+
+// if we want to print the messages
+for (const message of response.messages) {
+    console.log(message);
+}
+```
+</CodeGroup>
+
+The response contains the agent's full response to the message, which includes reasoning steps (inner thoughts / chain-of-thought), tool calls, tool responses, and agent messages (directed at the user):
+```json maxLines=50
+{
+  "messages": [
+    {
+      "id": "message-29d8d17e-7c50-4289-8d0e-2bab988aa01e",
+      "date": "2024-12-12T17:05:56+00:00",
+      "message_type": "reasoning_message",
+      "reasoning": "User is curious about what I know about them. Time to keep it friendly and engaging!"
+    },
+    {
+      "id": "message-29d8d17e-7c50-4289-8d0e-2bab988aa01e",
+      "date": "2024-12-12T17:05:56+00:00",
+      "message_type": "assistant_message",
+      "content": "Hey there! I know your name is Bob the Builder. It's great to meet you! What would you like to share about yourself?"
+    }
+  ],
+  "usage": {
+    "completion_tokens": 56,
+    "prompt_tokens": 2030,
+    "total_tokens": 2086,
+    "step_count": 1
+  }
+}
+```
+You can read more about the response format from the message route [here](/guides/agents/overview#message-types).
+
+## Viewing the agent in the ADE
+We've created and messaged our first stateful agent. This agent exists in our Letta server, which means we can view it in the ADE (and continue the conversation there!).
+
+In Letta Desktop, we can view our agents by clicking on the alien icon <Icon icon="fa-sharp fa-solid fa-alien-8bit" /> on the left.
+Once we go to the agents tab, we should be able to open our agent in the ADE, and see the message we sent to it:
+<img className="w-300" src="/images/letta_desktop_postrequest.png" />
+
+## Next steps
+
+Congratulations! 🎉 You just created and messaged your first stateful agent with Letta, using both the Letta ADE, API, and Python/Typescript SDKs.
+
+Now that you've succesfully created a basic agent with Letta, you're ready to start building more complex agents and AI applications.
+
+<CardGroup cols={1}>
+  <Card title="Stateful Agents" icon="fa-sharp fa-solid fa-alien-8bit" iconPosition='left' href="/guides/agents/overview">
+Learn more about building Stateful Agents in Letta
+  </Card>
+  <Card title="ADE Guide" icon="fa-sharp fa-light fa-browser" iconPosition='left' href="/guides/ade/setup">
+Learn how to configure agents, tools, and memory in the ADE
+  </Card>
+  <Card title="Full API and SDK Reference" icon="fa-sharp fa-light fa-code" iconPosition='left' href="/api-reference/overview">
+View the Letta API and Python/TypeScript SDK reference
+  </Card>
+</CardGroup>

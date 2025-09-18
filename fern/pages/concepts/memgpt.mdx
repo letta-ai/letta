@@ -1,0 +1,37 @@
+---
+title: MemGPT
+subtitle: Learn about the key ideas behind MemGPT
+slug: concepts/memgpt
+---
+
+
+<Tip>The MemGPT open source framework / package was renamed to _Letta_. You can read about the difference between Letta and MemGPT [here](/concepts/letta), or read more about the change on our [blog post](https://www.letta.com/blog/memgpt-and-letta).</Tip>
+
+## MemGPT - the research paper
+
+<Frame caption="Figure 1 from the MemGPT paper showing the system architecture. Note that 'working context' from the paper is referred to as 'core memory' in the codebase. To read the paper, visit https://arxiv.org/abs/2310.08560.">
+  <img src="/images/memgpt-system-diagram.png" />
+</Frame>
+
+**MemGPT** is the name of a [**research paper**](https://arxiv.org/abs/2310.08560) that popularized several of the key concepts behind the "LLM Operating System (OS)":
+1. **Memory management**: In MemGPT, an LLM OS moves data in and out of the context window of the LLM to manage its memory.
+2. **Memory hierarchy**: The "LLM OS" divides the LLM's memory (aka its "virtual context", similar to "[virtual memory](https://en.wikipedia.org/wiki/Virtual_memory)" in computer systems) into two parts: the in-context memory, and out-of-context memory.
+3. **Self-editing memory via tool calling**: In MemGPT, the "OS" that manages memory is itself an LLM. The LLM moves data in and out of the context window using designated memory-editing tools.
+4. **Multi-step reasoning using heartbeats**: MemGPT supports multi-step reasoning (allowing the agent to take multiple steps in sequence) via the concept of "heartbeats". Whenever the LLM outputs a tool call, it has to option to request a heartbeat by setting the keyword argument `request_heartbeat` to `true`. If the LLM requests a heartbeat, the LLM OS continues execution in a loop, allowing the LLM to "think" again.
+
+You can read more about the MemGPT memory hierarchy and memory management system in our [memory concepts guide](/advanced/memory_management).
+
+## MemGPT - the agent architecture
+
+**MemGPT** also refers to a particular **agent architecture** that was popularized by the paper and adopted widely by other LLM chatbots:
+1. **Chat-focused core memory**: The core memory of a MemGPT agent is split into two parts - the agent's own persona, and the user information. Because the MemGPT agent has self-editing memory, it can update its own personality over time, as well as update the user information as it learns new facts about the user.
+2. **Vector database archival memory**: By default, the archival memory connected to a MemGPT agent is backed by a vector database, such as [Chroma](https://www.trychroma.com/) or [pgvector](https://github.com/pgvector/pgvector). Because in MemGPT all connections to memory are driven by tools, it's simple to exchange archival memory to be powered by a more traditional database (you can even make archival memory a flatfile if you want!).
+
+## Creating MemGPT agents in the Letta framework
+
+Because **Letta** was created out of the original MemGPT open source project, it's extremely easy to make MemGPT agents inside of Letta (the default Letta agent architecture is a MemGPT agent).
+See our [agents overview](/agents/overview) for a tutorial on how to create MemGPT agents with Letta.
+
+**The Letta framework also allow you to make agent architectures beyond MemGPT** that differ significantly from the architecture proposed in the research paper - for example, agents with multiple logical threads (e.g. a "concious" and a "subconcious"), or agents with more advanced memory types (e.g. task memory).
+
+Additionally, **the Letta framework also allows you to expose your agents as *services*** (over REST APIs) - so you can use the Letta framework to power your AI applications.

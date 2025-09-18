@@ -1,0 +1,38 @@
+{
+    "id": "msg_123",
+    "type": "message",
+    "role": "assistant",
+    "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "content": [
+        {
+            "type": "text",
+            "text": "I see the Firefox icon. Let me click on it and then navigate to a weather website."
+        },
+        {
+            "type": "tool_use",
+            "id": "toolu_123",
+            "name": "computer",
+            "input": {
+                "action": "mouse_move",
+                "coordinate": [
+                    708,
+                    736
+                ]
+            }
+        },
+        {
+            "type": "tool_use",
+            "id": "toolu_234",
+            "name": "computer",
+            "input": {
+                "action": "left_click"
+            }
+        }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+        "input_tokens": 3391,
+        "output_tokens": 132
+    }
+}

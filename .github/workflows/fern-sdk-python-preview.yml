@@ -1,0 +1,173 @@
+name: 🌿 Preview Python SDK
+
+on:
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
+  push:
+    branches:
+      - main
+    paths:
+      - 'fern/openapi.json'
+      - 'fern/openapi-overrides.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  changed-files:
+    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
+    runs-on: [self-hosted, small]
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            fern/openapi.json
+            fern/openapi-overrides.yml
+
+  preview-python-sdk:
+    needs: [changed-files]
+    name: preview-python-sdk
+    runs-on: [self-hosted, medium]
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+      - name: Try to restore SDK cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Inject env vars into environment
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+        working-directory: .
+        run: |
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Debug environment
+        shell: bash
+        run: |
+          echo "=== Environment Debug ==="
+          echo "PATH: $PATH"
+          echo "USER: $(whoami)"
+          echo "HOME: $HOME"
+          echo "Shell: $SHELL"
+          echo "Working directory: $(pwd)"
+          echo ""
+          echo "=== UV Debug ==="
+          which uv || echo "uv not found in PATH"
+          ls -la /usr/local/bin/uv || echo "/usr/local/bin/uv not found"
+          ls -la /home/ci-runner/.local/bin/uv || echo "ci-runner uv not found"
+          echo ""
+          echo "=== Test uv command ==="
+          uv --version || echo "uv --version failed"
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: .
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
+
+      - name: Migrate database
+        working-directory: .
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          uv run alembic upgrade head
+
+      - name: Run letta server
+        if: github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')
+        working-directory: .
+        env:
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+        run: |
+          # Run server in background
+          uv run letta server &
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
+
+      - name: Generate Python SDK Preview
+        if: (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'safe to test')) && steps.restore-cache.outputs.cache-hit != 'true'
+        working-directory: .
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          fern generate --group python-sdk --preview
+          cd fern/.preview/fern-python-sdk
+          poetry install
+          poetry build --format wheel
+          poetry run mypy .
+          poetry run pytest -rP tests/custom/test_client.py --env localhost
+          ls -lah
+
+      - name: Save SDK to cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}

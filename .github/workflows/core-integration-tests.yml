@@ -1,0 +1,52 @@
+name: 🐍🧪 [Core] Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+    types: [labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  integration-tests:
+    # Run on pull_request OR on pull_request_target only when labeled "safe to test"
+    if: github.event_name == 'pull_request' || (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'safe to test'))
+    uses: ./.github/workflows/reusable-test-workflow.yml
+    with:
+      test-type: 'integration'
+      use-redis: true
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
+      changed-files-pattern: |
+        **
+        .github/workflows/reusable-test-workflow.yml
+        .github/workflows/core-integration-tests.yml
+      install-args: '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox'
+      timeout-minutes: 15
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      matrix-strategy: |
+        {
+          "fail-fast": false,
+          "matrix": {
+            "test_suite": [
+              "integration_test_summarizer.py",
+              "integration_test_async_tool_sandbox.py",
+              "integration_test_sleeptime_agent.py",
+              "integration_test_agent_tool_graph.py",
+              "integration_test_composio.py",
+              "integration_test_chat_completions.py",
+              "integration_test_multi_agent.py",
+              "integration_test_batch_api_cron_jobs.py",
+              "integration_test_batch_sdk.py",
+              "integration_test_builtin_tools.py",
+              "integration_test_turbopuffer.py",
+              "integration_test_human_in_the_loop.py"
+            ]
+          }
+        }
+    secrets: inherit

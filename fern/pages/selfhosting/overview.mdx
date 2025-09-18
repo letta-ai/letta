@@ -1,0 +1,150 @@
+---
+title: Self-hosting Letta
+subtitle: Learn how to run your own Letta server
+slug: guides/selfhosting
+---
+
+<Note>
+The recommended way to use Letta locally is with Docker.
+To install Docker, see [Docker's installation guide](https://docs.docker.com/get-docker/).
+For issues with installing Docker, see [Docker's troubleshooting guide](https://docs.docker.com/desktop/troubleshoot-and-support/troubleshoot/).
+You can also install Letta using `pip`.
+</Note>
+
+## Running the Letta Server
+You can run a Letta server with Docker (recommended) or pip.
+<AccordionGroup>
+  <Accordion icon="docker" title="Running with Docker (recommended)" defaultOpen="true">
+  To run the server with Docker, run the command:
+```sh
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  letta/letta:latest
+```
+This will run the Letta server with the OpenAI provider enabled, and store all data in the folder `~/.letta/.persist/pgdata`.
+
+If you have many different LLM API keys, you can also set up a `.env` file instead and pass that to `docker run`:
+```sh
+# using a .env file instead of passing environment variables
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  letta/letta:latest
+```
+
+  </Accordion>
+  <Accordion icon="file-code" title="Running with pip">
+  You can install the Letta server via `pip` under the `letta` package:
+  ```sh
+  pip install -U letta
+  ```
+
+  To run the server once installed, simply run the `letta server` command:
+  To add LLM API providers, make sure that the environment variables are present in your environment.
+  ```sh
+  export OPENAI_API_KEY=...
+  letta server
+  ```
+
+  Note that the `letta` package only installs the server - if you would like to use the Python SDK (to create and interact with agents on the server in your Python code), then you will also need to install `letta-client` package (see the [quickstart](/quickstart) for an example).
+  </Accordion>
+</AccordionGroup>
+
+Once the Letta server is running, you can access it via port `8283` (e.g. sending REST API requests to `http://localhost:8283/v1`). You can also connect your server to the [Letta ADE](/guides/ade) to access and manage your agents in a web interface.
+
+## Enabling model providers
+The Letta server can be connected to various LLM API backends ([OpenAI](https://docs.letta.com/models/openai), [Anthropic](https://docs.letta.com/models/anthropic), [vLLM](https://docs.letta.com/models/vllm), [Ollama](https://docs.letta.com/models/ollama), etc.). To enable access to these LLM API providers, set the appropriate environment variables when you use `docker run`:
+```sh
+# replace `~/.letta/.persist/pgdata` with wherever you want to store your agent data
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  -e ANTHROPIC_API_KEY="your_anthropic_api_key" \
+  -e OLLAMA_BASE_URL="http://host.docker.internal:11434" \
+  letta/letta:latest
+```
+
+<Note>
+**Linux users:** Use `--network host` and `localhost` instead of `host.docker.internal`:
+```sh
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  --network host \
+  -e OPENAI_API_KEY="your_openai_api_key" \
+  -e ANTHROPIC_API_KEY="your_anthropic_api_key" \
+  -e OLLAMA_BASE_URL="http://localhost:11434" \
+  letta/letta:latest
+```
+</Note>
+
+The example above will make all compatible models running on OpenAI, Anthropic, and Ollama available to your Letta server.
+
+
+## Password protection
+
+<Warning>
+When running a self-hosted Letta server in a production environment (i.e. with untrusted users), make sure to enable both password protection (to prevent unauthorized access to your server over the network) and tool sandboxing (to prevent malicious tools from executing in a privledged environment).
+</Warning>
+
+To password protect your server, include `SECURE=true` and `LETTA_SERVER_PASSWORD=yourpassword` in your `docker run` command:
+```sh
+# If LETTA_SERVER_PASSWORD isn't set, the server will autogenerate a password
+docker run \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  --env-file .env \
+  -e SECURE=true \
+  -e LETTA_SERVER_PASSWORD=yourpassword \
+  letta/letta:latest
+```
+
+With password protection enabled, you will have to provide your password in the bearer token header in your API requests:
+<CodeGroup>
+```python title="python" maxLines=50
+# install letta_client with `pip install letta-client`
+from letta_client import Letta
+
+# create the client with the token set to your password
+client = Letta(
+  base_url="http://localhost:8283",
+  token="yourpassword"
+)
+```
+```typescript maxLines=50 title="node.js"
+// install letta-client with `npm install @letta-ai/letta-client`
+import { LettaClient } from '@letta-ai/letta-client'
+
+// create the client with the token set to your password
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283",
+    token: "yourpassword"
+});
+```
+```curl curl
+curl --request POST \
+  --url http://localhost:8283/v1/agents/$AGENT_ID/messages \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer yourpassword' \
+  --data '{
+  "messages": [
+    {
+      "role": "user",
+      "text": "hows it going????"
+    }
+  ]
+}'
+```
+</CodeGroup>
+
+
+## Tool sandboxing
+
+To enable tool sandboxing, set the `E2B_API_KEY` and `E2B_SANDBOX_TEMPLATE_ID` environment variables (via [E2B](https://e2b.dev/)) when you use `docker run`.
+When sandboxing is enabled, all custom tools (created by users from source code) will be executed in a sandboxed environment.
+
+This does not include MCP tools, which are executed outside of the Letta server (on the MCP server itself), or built-in tools (like `send_message`), whose code cannot be modified after server startup.

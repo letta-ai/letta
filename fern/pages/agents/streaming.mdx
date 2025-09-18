@@ -1,0 +1,331 @@
+---
+title: Streaming agent responses
+slug: guides/agents/streaming
+---
+
+Messages from the **Letta server** can be **streamed** to the client.
+If you're building a UI on the Letta API, enabling streaming allows your UI to update in real-time as the agent generates a response to an input message.
+
+<Warning>
+When working with agents that execute long-running operations (e.g., complex tool calls, extensive searches, or code execution), you may encounter timeouts with the message routes.
+See our [tips on handling long-running tasks](/guides/agents/long-running) for more info.
+</Warning>
+
+## Quick Start
+
+Letta supports two streaming modes: **step streaming** (default) and **token streaming**.
+
+To enable streaming, use the [`/v1/agents/{agent_id}/messages/stream`](/api-reference/agents/messages/stream) endpoint instead of `/messages`:
+
+<CodeGroup>
+```python title="python"
+# Step streaming (default) - returns complete messages
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+for chunk in stream:
+    print(chunk)  # Complete message objects
+
+# Token streaming - returns partial chunks for real-time UX
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream_tokens=True  # Enable token streaming
+)
+for chunk in stream:
+    print(chunk)  # Partial content chunks
+```
+
+```typescript title="typescript"
+import { LettaClient } from '@letta-ai/letta-client';
+
+const client = new LettaClient({ token: 'YOUR_API_KEY' });
+
+// Step streaming (default) - returns complete messages
+const stream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{role: "user", content: "Hello!"}]
+    }
+);
+for await (const chunk of stream) {
+    console.log(chunk);  // Complete message objects
+}
+
+// Token streaming - returns partial chunks for real-time UX
+const tokenStream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{role: "user", content: "Hello!"}],
+        streamTokens: true  // Enable token streaming
+    }
+);
+for await (const chunk of tokenStream) {
+    console.log(chunk);  // Partial content chunks
+}
+```
+</CodeGroup>
+
+## Streaming Modes Comparison
+
+| Aspect | Step Streaming (default) | Token Streaming |
+|--------|-------------------------|-----------------|
+| **What you get** | Complete messages after each step | Partial chunks as tokens generate |
+| **When to use** | Simple implementation | ChatGPT-like real-time UX |
+| **Reassembly needed** | No | Yes (by message ID) |
+| **Message IDs** | Unique per message | Same ID across chunks |
+| **Content format** | Full text in each message | Incremental text pieces |
+| **Enable with** | Default behavior | `stream_tokens: true` |
+
+## Understanding Message Flow
+
+### Message Types and Flow Patterns
+
+The messages you receive depend on your agent's configuration:
+
+**With reasoning enabled (default):**
+- Simple response: `reasoning_message` → `assistant_message`
+- With tool use: `reasoning_message` → `tool_call_message` → `tool_return_message` → `reasoning_message` → `assistant_message`
+
+**With reasoning disabled (`reasoning=false`):**
+- Simple response: `assistant_message`
+- With tool use: `tool_call_message` → `tool_return_message` → `assistant_message`
+
+### Message Type Reference
+
+- **`reasoning_message`**: Agent's internal thinking process (only when `reasoning=true`)
+- **`assistant_message`**: The actual response shown to the user
+- **`tool_call_message`**: Request to execute a tool
+- **`tool_return_message`**: Result from tool execution
+- **`stop_reason`**: Indicates end of response (`end_turn`)
+- **`usage_statistics`**: Token usage and step count metrics
+
+### Controlling Reasoning Messages
+
+```python
+# With reasoning (default) - includes reasoning_message events
+agent = client.agents.create(
+    model="openai/gpt-4o-mini",
+    # reasoning=True is the default
+)
+
+# Without reasoning - no reasoning_message events
+agent = client.agents.create(
+    model="openai/gpt-4o-mini",
+    reasoning=False  # Disable reasoning messages
+)
+```
+
+## Step Streaming (Default)
+
+Step streaming delivers **complete messages** after each agent step completes. This is the default behavior when you use the streaming endpoint.
+
+### How It Works
+
+1. Agent processes your request through steps (reasoning, tool calls, generating responses)
+2. After each step completes, you receive a complete `LettaMessage` via SSE
+3. Each message can be processed immediately without reassembly
+
+### Example
+
+<CodeGroup>
+```python title="python"
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "What's 2+2?"}]
+)
+
+for chunk in stream:
+    if hasattr(chunk, 'message_type'):
+        if chunk.message_type == 'reasoning_message':
+            print(f"Thinking: {chunk.reasoning}")
+        elif chunk.message_type == 'assistant_message':
+            print(f"Response: {chunk.content}")
+```
+
+```typescript title="typescript"
+import { LettaClient } from '@letta-ai/letta-client';
+import type { LettaMessage } from '@letta-ai/letta-client/api/types';
+
+const client = new LettaClient({ token: 'YOUR_API_KEY' });
+
+const stream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{role: "user", content: "What's 2+2?"}]
+    }
+);
+
+for await (const chunk of stream as AsyncIterable<LettaMessage>) {
+    if (chunk.messageType === 'reasoning_message') {
+        console.log(`Thinking: ${(chunk as any).reasoning}`);
+    } else if (chunk.messageType === 'assistant_message') {
+        console.log(`Response: ${(chunk as any).content}`);
+    }
+}
+```
+
+```bash title="curl"
+curl -N --request POST \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header "Authorization: Bearer $LETTA_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{"messages": [{"role": "user", "content": "What is 2+2?"}]}'
+
+# For self-hosted: Replace https://api.letta.com with http://localhost:8283
+```
+</CodeGroup>
+
+### Example Output
+
+```
+data: {"id":"msg-123","message_type":"reasoning_message","reasoning":"User is asking a simple math question."}
+data: {"id":"msg-456","message_type":"assistant_message","content":"2 + 2 equals 4!"}
+data: {"message_type":"stop_reason","stop_reason":"end_turn"}
+data: {"message_type":"usage_statistics","completion_tokens":50,"total_tokens":2821}
+data: [DONE]
+```
+
+## Token Streaming
+
+Token streaming provides **partial content chunks** as they're generated by the LLM, enabling a ChatGPT-like experience where text appears character by character.
+
+### How It Works
+
+1. Set `stream_tokens: true` in your request
+2. Receive multiple chunks with the **same message ID**
+3. Each chunk contains a piece of the content
+4. Client must accumulate chunks by ID to rebuild complete messages
+
+### Example with Reassembly
+
+<CodeGroup>
+```python title="python"
+# Token streaming with reassembly
+message_accumulators = {}
+
+stream = client.agents.messages.create_stream(
+    agent_id=agent.id,
+    messages=[{"role": "user", "content": "Tell me a joke"}],
+    stream_tokens=True
+)
+
+for chunk in stream:
+    if hasattr(chunk, 'id') and hasattr(chunk, 'message_type'):
+        msg_id = chunk.id
+        msg_type = chunk.message_type
+
+        # Initialize accumulator for new messages
+        if msg_id not in message_accumulators:
+            message_accumulators[msg_id] = {
+                'type': msg_type,
+                'content': ''
+            }
+
+        # Accumulate content
+        if msg_type == 'reasoning_message':
+            message_accumulators[msg_id]['content'] += chunk.reasoning
+        elif msg_type == 'assistant_message':
+            message_accumulators[msg_id]['content'] += chunk.content
+
+        # Display accumulated content in real-time
+        print(message_accumulators[msg_id]['content'], end='', flush=True)
+```
+
+```typescript title="typescript"
+import { LettaClient } from '@letta-ai/letta-client';
+import type { LettaMessage } from '@letta-ai/letta-client/api/types';
+
+const client = new LettaClient({ token: 'YOUR_API_KEY' });
+
+// Token streaming with reassembly
+interface MessageAccumulator {
+    type: string;
+    content: string;
+}
+
+const messageAccumulators = new Map<string, MessageAccumulator>();
+
+const stream = await client.agents.messages.createStream(
+    agent.id, {
+        messages: [{role: "user", content: "Tell me a joke"}],
+        streamTokens: true  // Note: camelCase
+    }
+);
+
+for await (const chunk of stream as AsyncIterable<LettaMessage>) {
+    if (chunk.id && chunk.messageType) {
+        const msgId = chunk.id;
+        const msgType = chunk.messageType;
+
+        // Initialize accumulator for new messages
+        if (!messageAccumulators.has(msgId)) {
+            messageAccumulators.set(msgId, {
+                type: msgType,
+                content: ''
+            });
+        }
+
+        // Accumulate content based on message type
+        const acc = messageAccumulators.get(msgId)!;
+
+        // Only accumulate if the type matches (in case types share IDs)
+        if (acc.type === msgType) {
+            if (msgType === 'reasoning_message') {
+                acc.content += (chunk as any).reasoning || '';
+            } else if (msgType === 'assistant_message') {
+                acc.content += (chunk as any).content || '';
+            }
+        }
+
+        // Update UI with accumulated content
+        process.stdout.write(acc.content);
+    }
+}
+```
+
+```bash title="curl"
+curl -N --request POST \
+  --url https://api.letta.com/v1/agents/$AGENT_ID/messages/stream \
+  --header "Authorization: Bearer $LETTA_API_KEY" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "messages": [{"role": "user", "content": "Tell me a joke"}],
+    "stream_tokens": true
+  }'
+```
+</CodeGroup>
+
+### Example Output
+
+```
+# Same ID across chunks of the same message
+data: {"id":"msg-abc","message_type":"assistant_message","content":"Why"}
+data: {"id":"msg-abc","message_type":"assistant_message","content":" did"}
+data: {"id":"msg-abc","message_type":"assistant_message","content":" the"}
+data: {"id":"msg-abc","message_type":"assistant_message","content":" scarecrow"}
+data: {"id":"msg-abc","message_type":"assistant_message","content":" win"}
+# ... more chunks with same ID
+data: [DONE]
+```
+
+## Implementation Tips
+
+### Universal Handling Pattern
+
+The accumulator pattern shown above works for **both** streaming modes:
+- **Step streaming**: Each message is complete (single chunk per ID)
+- **Token streaming**: Multiple chunks per ID need accumulation
+
+This means you can write your client code once to handle both cases.
+
+### SSE Format Notes
+
+All streaming responses follow the Server-Sent Events (SSE) format:
+- Each event starts with `data: ` followed by JSON
+- Stream ends with `data: [DONE]`
+- Empty lines separate events
+
+Learn more about SSE format [here](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events).
+
+### Handling Different LLM Providers
+
+If your Letta server connects to multiple LLM providers, some may not support token streaming. Your client code will still work - the server will fall back to step streaming automatically when token streaming isn't available.

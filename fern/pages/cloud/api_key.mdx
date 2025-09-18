@@ -1,0 +1,47 @@
+---
+title: Get a Letta Cloud API key
+subtitle: Create an API key on Letta Cloud to start building
+slug: guides/cloud/letta-api-key
+---
+
+## Access Letta Cloud
+
+Letta Cloud is accessible via [https://app.letta.com](https://app.letta.com).
+If you have access to Letta Cloud, you can use the web platform to create API keys, and create, deploy, and monitor agents.
+
+Even if you don't have access to Letta Cloud, you can still use the web platform to connect to your own self-hosted Letta deployments (found under the "Self-hosted" section in the left sidebar).
+
+## Create a Letta Cloud API key
+
+<Info>
+You do not need a Letta Cloud API key to run Letta locally (it is only required to access our hosted service, Letta Cloud).
+</Info>
+
+To create an API, navigate to the [API keys section](https://app.letta.com/api-keys) in the dashboard (you must be logged in to access it).
+Once on the page, you should be able to create new API keys, view existing keys, and delete old keys.
+API keys are sensitive and should be stored in a safe location.
+
+<img className="w-300" src="/images/letta_cloud_api_key_gen.png" />
+
+## Using your API key
+
+Once you've created an API key, you can use it with any of the Letta SDKs or framework integrations.
+For example, if you're using the Python or TypeScript (Node.js) SDK, you should set the `token` in the client to be your key (replace `LETTA_API_KEY` with your actual API key):
+<CodeGroup>
+```python title="python" maxLines=50
+from letta_client import Letta
+client = Letta(token="LETTA_API_KEY")
+```
+```typescript maxLines=50 title="node.js"
+import { LettaClient } from '@letta-ai/letta-client'
+const client = new LettaClient({ token: "LETTA_API_KEY" });
+```
+</CodeGroup>
+
+
+If you're using the REST API directly, you can pass the API key in the header as a bearer token, e.g.
+
+```bash
+curl https://api.letta.com/v1/agents/ \
+     -H "Authorization: Bearer <token>"
+```

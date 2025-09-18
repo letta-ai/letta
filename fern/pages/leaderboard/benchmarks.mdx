@@ -1,0 +1,28 @@
+---
+title: Benchmark Information
+subtitle: Understand how we benchmark the different models
+# layout: page
+# hide-feedback: true
+# no-image-zoom: true
+slug: leaderboard/benchmarks
+---
+
+## Understanding the Letta Memory Benchmark
+
+We measure two foundational aspects of context management: **core memory** and **archival memory**. Core memory is what is inside the agent’s [context window](https://www.letta.com/blog/memory-blocks) (aka "in-context memory") and archival memory is managing context external to the agent (aka "out-of-context memory", or "external memory"). This benchmark evaluates stateful agent's fundamental capabilities on _reading_, _writing_, and _updating_ memories.
+
+For all the tasks in Letta Memory Benchmark, we generate a fictional question-answering dataset with supporting facts to minimize prior knowledge from LLM training. To evaluate, we use a prompted GPT 4.1 to grade the agent-generated answer and the ground-truth answer, following [SimpleQA](https://openai.com/index/introducing-simpleqa/). We add a penalty for extraneous memory operations to penalize models for inefficient or incorrect archival memory accesses.
+
+To read about more details on the benchmark, refer to our [blog post](https://www.letta.com/blog/memory-benchmark).
+
+## Main Results and Recommendations
+
+For the **closed** model providers (OpenAI, Anthropic, Google):
+* Anthropic Claude Sonnet 4 and OpenAI GPT 4.1 are recommended models for most tasks
+* Normalized for cost, Gemini 2.5 Flash and GPT 4o-mini are top choices
+* Models that perform well on the archival memory task (e.g. Claude Haiku 3.5) might overuse memory operations when unnecessary, thus receiving a lower score on core memory due to the extraneous access penalty.
+* The o-series reasoner models from OpenAI perform worse than GPT 4.1
+
+For the **open weights** models (Llama, Qwen, Mistral, DeepSeek):
+* Llama 3.1 405B is the best performing (overall)
+* Llama 4 Scout 17B and Qwen 2.5 72B perform similarly to GPT 4.1 Mini

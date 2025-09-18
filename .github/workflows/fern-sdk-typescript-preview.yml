@@ -1,0 +1,117 @@
+name: 🌿 Preview TypeScript SDK
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'fern/openapi.json'
+      - 'fern/openapi-overrides.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  changed-files:
+    runs-on: [self-hosted, small]
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            fern/openapi.json
+            fern/openapi-overrides.yml
+  preview-typescript-sdk:
+    if: ${{ needs.changed-files.outputs.any_changed == 'true' }}
+    needs: [changed-files]
+    runs-on: [self-hosted, medium]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: .
+        run: uv sync --no-install-project ${{ inputs.install-args || '--extra postgres --extra external-tools --extra dev --extra cloud-tool-sandbox' }}
+
+      - name: Inject env vars into environment
+        working-directory: .
+        run: |
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Migrate database
+        working-directory: .
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          uv run alembic upgrade head
+
+      - name: Run letta server
+        working-directory: .
+        env:
+          LETTA_PG_DB: postgres
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_PG_PORT: 5432
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+        run: |
+          # Run server in background
+          uv run letta server &
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -s http://localhost:8283/health; do sleep 1; done'
+
+      - name: Generate TypeScript SDK Preview
+        working-directory: .
+        env:
+          LETTA_ENV: localhost
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+        run: |
+          fern generate --group ts-sdk --preview
+          cd fern/.preview/fern-typescript-node-sdk
+          yarn install
+          yarn build
+          yarn test tests/custom.test.ts

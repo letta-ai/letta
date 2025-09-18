@@ -1,0 +1,46 @@
+---
+title: Installing Letta from source
+slug: guides/server/source
+---
+
+<Note>
+This guide is intended for developers that want to modify and contribute to the Letta open source codebase.
+It assumes that you are on MacOS, Linux, or Windows WSL (not Powershell or cmd.exe).
+</Note>
+
+## Prerequisites
+First, install uv using the official instructions [here](https://docs.astral.sh/uv/getting-started/installation/).
+You'll also need to have [git](https://git-scm.com/downloads) installed.
+
+## Downloading the source code
+
+Navigate to [https://github.com/letta-ai/letta](https://github.com/letta-ai/letta) and click the "fork" button.
+Once you've created your fork, you can download the source code via the command line:
+```sh
+# replace YOUR-GITHUB-USERNAME with your real GitHub username
+git clone https://github.com/YOUR-GITHUB-USERNAME/letta.git
+```
+Creating a fork will allow you to easily open pull requests to contribute back to the main codebase.
+
+Alternatively, you can clone the original open source repository without a fork:
+```bash
+git clone https://github.com/letta-ai/letta.git
+```
+
+## Installing from source
+Navigate to the letta directory and install the `letta` package using uv:
+```sh
+cd letta
+uv sync --all-extras
+```
+
+## Running Letta Server from source
+<Warning>
+If you've also installed Letta with `pip`, you may have conflicting installs which can lead to bugs.
+To check where your current Letta install is located, you can run the command `which letta`.
+</Warning>
+
+Now when you want to use `letta server`, use `uv run` (which will activate the uv environment for the letta server command directly):
+```bash
+uv run letta server
+```

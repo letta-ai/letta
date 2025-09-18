@@ -1,0 +1,98 @@
+from typing import Optional
+from uuid import UUID
+
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from letta.orm.base import Base
+
+
+def is_valid_uuid4(uuid_string: str) -> bool:
+    """Check if a string is a valid UUID4."""
+    try:
+        uuid_obj = UUID(uuid_string)
+        return uuid_obj.version == 4
+    except ValueError:
+        return False
+
+
+class OrganizationMixin(Base):
+    """Mixin for models that belong to an organization."""
+
+    __abstract__ = True
+
+    organization_id: Mapped[str] = mapped_column(String, ForeignKey("organizations.id"))
+
+
+class UserMixin(Base):
+    """Mixin for models that belong to a user."""
+
+    __abstract__ = True
+
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"))
+
+
+class AgentMixin(Base):
+    """Mixin for models that belong to an agent."""
+
+    __abstract__ = True
+
+    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"))
+
+
+class FileMixin(Base):
+    """Mixin for models that belong to a file."""
+
+    __abstract__ = True
+
+    file_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("files.id", ondelete="CASCADE"))
+
+
+class SourceMixin(Base):
+    """Mixin for models (e.g. file) that belong to a source."""
+
+    __abstract__ = True
+
+    source_id: Mapped[str] = mapped_column(String, ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
+
+
+class SandboxConfigMixin(Base):
+    """Mixin for models that belong to a SandboxConfig."""
+
+    __abstract__ = True
+
+    sandbox_config_id: Mapped[str] = mapped_column(String, ForeignKey("sandbox_configs.id"))
+
+
+class ProjectMixin(Base):
+    """Mixin for models that belong to a project."""
+
+    __abstract__ = True
+
+    project_id: Mapped[str] = mapped_column(String, nullable=True, doc="The associated project id.")
+
+
+class ArchiveMixin(Base):
+    """Mixin for models that belong to an archive."""
+
+    __abstract__ = True
+
+    archive_id: Mapped[str] = mapped_column(String, ForeignKey("archives.id", ondelete="CASCADE"))
+
+
+class TemplateMixin(Base):
+    """TemplateMixin for models that belong to a template."""
+
+    __abstract__ = True
+
+    base_template_id: Mapped[str] = mapped_column(nullable=True, doc="The id of the base template.")
+    template_id: Mapped[str] = mapped_column(nullable=True, doc="The id of the template.")
+    deployment_id: Mapped[str] = mapped_column(nullable=True, doc="The id of the deployment.")
+
+
+class TemplateEntityMixin(Base):
+    """Mixin for models that belong to an entity (only used for templates)."""
+
+    __abstract__ = True
+
+    entity_id: Mapped[str] = mapped_column(nullable=True, doc="The id of the entity within the template.")

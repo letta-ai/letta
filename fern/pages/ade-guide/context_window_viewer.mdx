@@ -1,0 +1,99 @@
+---
+title: Context Window Viewer
+subtitle: Understand the context window of your agent
+slug: guides/ade/context-window-viewer
+---
+
+The context simualtor is a powerful feature in the ADE that allows you to observe and understand what your agent "sees" in real-time. It provides a transparent view into the agent's thought process by displaying all the information currently available to the LLM.
+
+## Components of the Context Window
+
+### System Instructions
+
+The system instructions contain the top-level system prompt that guides the behavior of your agent. This includes:
+
+- Base instructions about how the agent should behave
+- Formatting requirements for responses
+- Guidelines for tool usage
+
+While the default system instructions often work well for many use cases, you can customize them to better fit your specific application. Access and edit these instructions in the Settings tab.
+
+### Function (Tool) Definitions
+
+This section displays the JSON schema definitions of all tools available to your agent. Each definition includes:
+
+- The tool's name and description
+- Required and optional parameters
+- Parameter data types
+
+These definitions are what your agent uses to understand how to call the tools correctly. When you add or modify tools, this section automatically updates.
+
+### Core Memory Blocks
+
+Core memory blocks represent the agent's persistent, in-context memory. In many of the example starter kits, this includes:
+
+- **Human memory block**: Contains information about the user (preferences, past interactions, etc.)
+- **Persona memory block**: Defines the agent's personality, skills, and self-perception
+
+However, you can structure memory blocks however you want. For example, by deleting the human and persona blocks, and adding your own.
+
+Memory blocks in core memory are "read-write": the agent can read and update these blocks during conversations, making them ideal for storing important information that should always be accessible but also should be updated over time.
+
+### External Memory Statistics
+
+This section provides statistics about the agent's archival memory that exists outside the immediate context window, including:
+
+- Total number of stored memories
+- Most recent archival entries
+
+This helps you understand the scope of information your agent can access via retrieval tools.
+
+### Recursive Summary
+
+As conversations grow longer, Letta automatically creates and updates a recursive summary of the event history. This summary:
+
+- Condenses past conversations into key points
+- Updates when the context window needs to be truncated
+- Preserves important information when older messages get pushed out of context
+
+This mechanism ensures your agent maintains coherence and continuity across long interactions.
+
+### Message History
+
+The message or "event" queue displays the chronological list of all messages that the agent has processed, including:
+
+- User messages
+- Agent responses
+- System notifications
+- Tool calls and their results
+
+This provides a complete audit trail of the agent's interaction history. When the message history exceeds the maximum context window size, Letta intelligently manages content by recreating the summary, and evicting old messages. Old messages can still be retrieved via tools (similar to how you might use a search tool within a chat application).
+
+## Monitoring Token Usage
+
+The context window viewer also displays token usage metrics to help you optimize your agent:
+
+- Current token count vs. maximum context window size
+- Distribution of tokens across different context components
+- Warning indicators when approaching context limits
+
+## Configuring the Context Window
+
+### Adjusting Maximum Context Length
+
+<Tip>Letta allows you to artificially limit the maximum context window length of your agent's underlying LLM. Even though some LLM API providers support large context windows (e.g., 200k+), constraining the LLM context window can improve your agent's performance/stability and decrease overall cost/latency.</Tip>
+
+You can configure the maximum context window length in the Advanced section of your agent's settings. For example:
+
+- If you're using Claude 3.5 Sonnet but want to limit context to 16k tokens for performance or cost reasons, set the max context window to 16k instead of using the full 200k capacity.
+- When conversations reach this limit, Letta intelligently manages content by:
+  - Creating summaries of older content
+  - Moving older messages to archival memory
+  - Preserving critical information in core memory blocks
+
+### Best Practices
+
+- **Regular monitoring**: Check the context window viewer during testing to ensure your agent has access to necessary information
+- **Optimizing memory blocks**: Keep core memory blocks concise and relevant
+- **Managing context length**: Find the right balance between context size and performance for your use case
+- **Using persistent memory**: For information that must be retained, utilize core memory blocks rather than relying on conversation history

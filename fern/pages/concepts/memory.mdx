@@ -1,0 +1,101 @@
+---
+title: Understanding memory management
+subtitle: Understanding the concept of LLM memory management introduced in MemGPT
+slug: concepts/memory-management
+---
+
+
+Letta uses the MemGPT memory management technique to control the context window of the LLM.
+
+The behavior of an agent is determine by two things: the underlying LLM model, and the context window that is passed to that model.
+Letta provides a framework for "programming" how the context is compiled at each reasoning step, a process which we refer to as memory management for agents.
+
+Unlike existing RAG-based frameworks for long-running memory, MemGPT provides a more flexible, powerful framework for memory management by enabling the agent to self-manage memory via tool calls.
+Essentially, the agent itself gets to decide what information to place into its context at any given time. We reserve a section of the context, which we call the in-context memory, which is agent as the ability to directly write to.
+In addition, the agent is given tools to access external storage (i.e. database tables) to enable a larger memory store.
+Combining tools to write to both its in-context and external memory, as well as tools to search external memory and place results into the LLM context, is what allows MemGPT agents to perform memory management.
+
+## In-context memory
+
+The in-context memory is a section of the LLM context window that is reserved to be editable by the agent.
+You can think of this like a system prompt, except the system prompt it editable (MemGPT also has an actual system prompt which is not editable by the agent).
+
+In MemGPT, the in-context memory is defined by extending the BaseMemory class. The memory class consists of:
+* A self.memory dictionary that maps labeled sections of memory (e.g. "human", "persona") to a MemoryModuleobject, which contains the data for that section of memory as well as the character limit (default: 2k)
+* A set of class functions which can be used to edit the data in each MemoryModulecontained in self.memory
+
+We'll show each of these components in the default ChatMemory class described below.
+
+## ChatMemory Memory
+By default, agents have a ChatMemory memory class, which is designed for a 1:1 chat between a human and agent. The ChatMemory class consists of:
+* A "human" and "persona" memory sections each with a 2k character limit
+* Memory editing functions: memory_insert, memory_replace, memory_rethink, and memory_finish_edits
+* Legacy functions (deprecated): core_memory_replace and core_memory_append
+
+We show the implementation of ChatMemory below:
+```python
+from memgpt.memory import BaseMemory
+
+class ChatMemory(BaseMemory):
+
+    def __init__(self, persona: str, human: str, limit: int = 2000):
+        self.memory = {
+            "persona": MemoryModule(name="persona", value=persona, limit=limit),
+            "human": MemoryModule(name="human", value=human, limit=limit),
+        }
+
+    def core_memory_append(self, name: str, content: str) -> Optional[str]:
+        """
+        Append to the contents of core memory.
+
+        Args:
+            name (str): Section of the memory to be edited (persona or human).
+            content (str): Content to write to the memory. All unicode (including emojis) are supported.
+
+        Returns:
+            Optional[str]: None is always returned as this function does not produce a response.
+        """
+        self.memory[name].value += "\n" + content
+        return None
+
+    def core_memory_replace(self, name: str, old_content: str, new_content: str) -> Optional[str]:
+        """
+        Replace the contents of core memory. To delete memories, use an empty string for new_content.
+
+        Args:
+            name (str): Section of the memory to be edited (persona or human).
+            old_content (str): String to replace. Must be an exact match.
+            new_content (str): Content to write to the memory. All unicode (including emojis) are supported.
+
+        Returns:
+            Optional[str]: None is always returned as this function does not produce a response.
+        """
+        self.memory[name].value = self.memory[name].value.replace(old_content, new_content)
+        return None
+```
+
+To customize memory, you can implement extensions of the BaseMemory class that customize the memory dictionary and the memory editing functions.
+
+## External memory
+
+In-context memory is inherently limited in size, as all its state must be included in the context window.
+To allow additional memory in external storage, MemGPT by default stores two external tables: archival memory (for long running memories that do not fit into the context) and recall memory (for conversation history).
+
+### Archival memory
+Archival memory is a table in a vector DB that can be used to store long running memories of the agent, as well external data that the agent needs access too (referred to as a "Data Source"). The agent is by default provided with a read and write tool to archival memory:
+* archival_memory_search
+* archival_memory_insert
+
+### Recall memory
+Recall memory is a table which MemGPT logs all the conversational history with an agent. The agent is by default provided with date search and text search tools to retrieve conversational history.
+* conversation_search
+* conversation_search_date
+
+(Note: a tool to insert data is not provided since chat histories are automatically inserted.)
+
+## Orchestrating Tools for Memory Management
+
+We provide the agent with a list of default tools for interacting with both in-context and external memory.
+The way these tools are used to manage memory is controlled by the tool descriptions as well as the MemGPT system prompt.
+None of these tools are required for MemGPT to work, so you can remove or override tools to customize memory.
+We encourage developers to extend the BaseMemory class to customize the in-context memory management for their own applications.

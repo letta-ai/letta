@@ -1,0 +1,24 @@
+## New `include_relationships` Parameter for List Agents API
+
+You can now leverage a more customized, lightweight response from the list agents API by setting the `include_relationships` parameter to which fields you'd like to fetch in the response.
+
+<CodeBlocks>
+```python title="python"
+from letta_client import Letta
+client = Letta(
+    token="YOUR_API_KEY",
+)
+agents = client.agents.list(
+    include_relationships=["identities", "blocks", "tools"],
+)
+```
+```typescript title="node.js"
+import { LettaClient } from '@letta-ai/letta-client';
+const client = new LettaClient({
+  token: "YOUR_API_KEY",
+});
+const agents = await client.agents.list({
+  include_relationships: ["identities", "blocks", "tools"],
+});
+```
+</CodeBlocks>

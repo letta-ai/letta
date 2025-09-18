@@ -1,0 +1,477 @@
+name: Reusable Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      test-type:
+        description: 'Type of tests to run (unit, integration, docker, send-message, sqlite)'
+        required: true
+        type: string
+      core-directory:
+        description: 'Working directory for commands. Uses . (root) by default.'
+        required: false
+        type: string
+        default: '.'
+      install-args:
+        description: 'uv sync arguments'
+        required: true
+        type: string
+      test-command:
+        description: 'Command to run tests'
+        required: false
+        type: string
+        default: 'uv run --frozen pytest -svv'
+      test-path-prefix:
+        description: 'Prefix for test path (e.g., tests/)'
+        required: false
+        type: string
+        default: 'tests/'
+      timeout-minutes:
+        description: 'Timeout in minutes'
+        required: false
+        type: number
+        default: 15
+      runner:
+        description: 'Runner to use'
+        required: false
+        type: string
+        default: '["self-hosted", "small"]'
+      matrix-strategy:
+        description: 'JSON string for matrix strategy'
+        required: false
+        type: string
+        default: '{}'
+      changed-files-pattern:
+        description: 'Pattern for changed files detection'
+        required: false
+        type: string
+        default: |
+          **
+          .github/workflows/reusable-test-workflow.yml
+      skip-fern-generation:
+        description: 'Skip Fern SDK generation'
+        required: false
+        type: boolean
+        default: false
+      use-docker:
+        description: 'Use Docker for tests'
+        required: false
+        type: boolean
+        default: false
+      ref:
+        description: 'Git ref to wait for checks on'
+        required: false
+        type: string
+        default: ${{ github.sha }}
+      use-redis:
+        description: 'Use Redis for tests'
+        required: false
+        type: boolean
+        default: false
+      is-external-pr:
+        description: 'Whether this is an external PR that needs protection'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  changed-files:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    name: changed-files
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46.0.4
+        with:
+          files: ${{ inputs.changed-files-pattern }}
+
+  cache-check:
+    needs: [changed-files]
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    name: Check cache key
+    outputs:
+      cache_key: ${{ steps.cache-key.outputs.key }}
+      cache_hit: ${{ steps.cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Generate cache key
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+      - name: Restore SDK cache
+        # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
+          fail-on-cache-miss: false
+
+  block-until-sdk-preview-finishes:
+    needs: [changed-files, cache-check]
+    if: |
+      needs.cache-check.outputs.cache_hit != 'true'
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    name: block-until-sdk-preview-finishes
+    steps:
+      - name: Debug ref information
+        run: |
+          echo "Input ref: ${{ inputs.ref }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "PR head SHA: ${{ github.event.pull_request.head.sha }}"
+          echo "Event name: ${{ github.event_name }}"
+
+      - name: Wait for Preview SDK workflow
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Waiting for 'preview-python-sdk' check to complete on ref: ${{ inputs.ref }}"
+
+          # Wait for the check to complete with timeout
+          timeout_seconds=1800
+          interval_seconds=60
+          elapsed=0
+
+          while [ $elapsed -lt $timeout_seconds ]; do
+            echo "Checking status... (elapsed: ${elapsed}s)"
+
+            # Get check runs using pr checks syntax with branch name or PR number
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              pr_identifier="${{ github.event.pull_request.number }}"
+            else
+              pr_identifier="${{ github.ref_name }}"
+            fi
+
+            check_info=$(gh pr checks "$pr_identifier" -R ${{ github.repository }} --json name,state,startedAt \
+              | jq -r '.[] | select(.name == "preview-python-sdk") | [.startedAt, .state] | @tsv' | sort -r | head -1 | cut -f2)
+
+            if [ -n "$check_info" ]; then
+              echo "Check state: $check_info"
+
+              if [ "$check_info" = "SUCCESS" ] || [ "$check_info" = "SKIPPED" ]; then
+                echo "Check completed with state: $check_info"
+                exit 0
+              elif [ "$check_info" = "FAILURE" ] || [ "$check_info" = "CANCELLED" ]; then
+                echo "❌ Preview Python SDK build failed with state: $check_info"
+                echo "🚫 Blocking dependent test jobs to prevent extraneous failures"
+                echo "📋 To fix: Check the 'preview-python-sdk' job logs for build errors"
+                exit 1
+              fi
+            else
+              echo "Check 'preview-python-sdk' not found yet"
+            fi
+
+            sleep $interval_seconds
+            elapsed=$((elapsed + interval_seconds))
+          done
+
+          echo "Timeout waiting for check to complete"
+          exit 1
+
+  test-run:
+    needs: [changed-files, block-until-sdk-preview-finishes]
+    if: |
+      always() &&
+      needs.changed-files.outputs.any_changed == 'true' &&
+      (needs.block-until-sdk-preview-finishes.result == 'success' ||
+       needs.block-until-sdk-preview-finishes.result == 'skipped')
+
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    strategy: ${{ fromJSON(inputs.matrix-strategy) }}
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        ports:
+          # avoids conflict with docker postgres
+          - ${{ inputs.use-docker && '9999:5432' || '5432:5432' }}
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: ${{ inputs.use-redis && 'redis:8-alpine' || '' }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set core directory
+        id: detect-core-dir
+        run: |
+          echo "dir=${{ inputs.core-directory }}" >> $GITHUB_OUTPUT
+          echo "detected=manual" >> $GITHUB_OUTPUT
+          echo "Using core directory: $(cat $GITHUB_OUTPUT | grep '^dir=' | cut -d'=' -f2)"
+
+      - name: Generate cache key
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
+        id: cache-key
+        run: |
+          echo "key=sdk-${{ github.ref_name }}-${{ hashFiles('fern/*', 'pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+      - name: Restore SDK cache
+        # skip if "skip-fern-generation" is true or if the upstream workflow would've generated an sdk preview (changes to openapi files)
+        if: inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))
+        id: restore-sdk-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            fern/.preview/fern-python-sdk/
+          key: ${{ steps.cache-key.outputs.key }}
+          fail-on-cache-miss: false
+
+      - name: Check SDK cache availability
+        if: (inputs.skip-fern-generation != true || (!contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi.json') && !contains(needs.changed-files.outputs.all_changed_files, 'fern/openapi-overrides.yml'))) && steps.restore-sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "❌ Preview Python SDK cache expired or missing!"
+          echo "📦 Cache key: ${{ steps.cache-key.outputs.key }}"
+          echo "🔄 To fix: Re-run the 'preview-python-sdk' workflow job to regenerate the SDK"
+          echo "💡 This can happen when:"
+          echo "   - The cache entry has expired"
+          echo "   - Dependencies in fern/* or pyproject.toml have changed"
+          echo "   - The preview-python-sdk job hasn't run successfully for this branch/commit"
+          exit 1
+
+      - name: Install dependencies with retry
+        shell: bash
+        working-directory: .
+        run: |
+          uv sync --no-install-project ${{ inputs.install-args }}
+
+      - name: Install custom SDK
+        if: inputs.skip-fern-generation != true
+        working-directory: .
+        run: |
+          echo "Fixing Fern SDK pyproject.toml for uv compatibility..."
+          SDK_PYPROJECT="fern/.preview/fern-python-sdk/pyproject.toml"
+          VERSION=$(grep -A 10 '^\[tool\.poetry\]' "$SDK_PYPROJECT" | grep '^version' | head -1 | cut -d'"' -f2)
+          head -n 2 < fern/.preview/fern-python-sdk/pyproject.toml > fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          echo "version = \"$VERSION\"" >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          tail -n +3 fern/.preview/fern-python-sdk/pyproject.toml >> fern/.preview/fern-python-sdk/pyproject.toml.tmp
+          mv fern/.preview/fern-python-sdk/pyproject.toml.tmp fern/.preview/fern-python-sdk/pyproject.toml
+
+          uv pip install -e fern/.preview/fern-python-sdk/.
+      - name: Migrate database
+        if: inputs.use-docker != true && inputs.test-type != 'sqlite'
+        working-directory: .
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          uv run alembic upgrade head
+      - name: Inject env vars into environment
+        if: inputs.is-external-pr != true
+        working-directory: .
+        run: |
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Docker setup for Docker tests
+        if: inputs.use-docker
+        run: |
+          mkdir -p /home/ci-runner/.letta/logs
+          sudo chown -R $USER:$USER /home/ci-runner/.letta/logs
+          chmod -R 755 /home/ci-runner/.letta/logs
+
+      - name: Build and run docker dev server
+        if: inputs.use-docker && inputs.is-external-pr != true
+        env:
+          LETTA_PG_DB: letta
+          LETTA_PG_USER: letta
+          LETTA_PG_PASSWORD: letta
+          LETTA_PG_PORT: 5432
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+        run: |
+          cd libs/config-core-deploy
+          docker compose -f compose.yaml up --build -d
+
+      - name: Wait for Docker service
+        if: inputs.use-docker
+        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        run: |
+          bash scripts/wait_for_service.sh localhost:8083 -- echo "Service is ready"
+
+      - name: Run tests
+        if: inputs.is-external-pr != true
+        working-directory: ${{ steps.detect-core-dir.outputs.dir }}
+        env:
+          # Database configuration (shared, but values depend on Docker usage)
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: ${{ inputs.use-docker && 'letta' || 'postgres' }}
+          LETTA_PG_PASSWORD: ${{ inputs.use-docker && 'letta' || 'postgres' }}
+          LETTA_PG_DB: ${{ inputs.use-docker && 'letta' || 'postgres' }}
+          LETTA_PG_HOST: localhost
+
+          # Server configuration (conditional)
+          LETTA_SERVER_PASS: test_server_token
+
+          # LLM Provider API Keys (shared across all test types)
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
+          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY }}
+          LETTA_MISTRAL_API_KEY: ${{ secrets.LETTA_MISTRAL_API_KEY }}
+
+          # External service API Keys (shared across all test types)
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          E2B_API_KEY: ${{ env.E2B_API_KEY }}
+          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
+
+          # Turbopuffer flags
+          LETTA_USE_TPUF: true
+          LETTA_TPUF_API_KEY: ${{ env.LETTA_TPUF_API_KEY }}
+
+          # Encryption key
+          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
+
+          # Google Cloud (shared across all test types)
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+
+          # Feature flags (shared across all test types)
+          LETTA_ENABLE_BATCH_JOB_POLLING: true
+
+          # Gemini flags
+          GEMINI_FORCE_MINIMUM_THINKING_BUDGET: true
+          GEMINI_MAX_RETRIES: 10
+
+          # Pinecone flags
+          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
+          LETTA_ENABLE_PINECONE: true
+
+          EXA_API_KEY: ${{ env.EXA_API_KEY }}
+
+          # Docker-specific environment variables
+          PYTHONPATH: ${{ inputs.use-docker && format('{0}:{1}', github.workspace, env.PYTHONPATH) || '' }}
+
+          LETTA_REDIS_HOST: localhost
+        run: |
+          set -o xtrace
+
+          # Set LETTA_SERVER_URL only for Docker tests
+          if [[ "${{ inputs.use-docker }}" == "true" ]]; then
+            export LETTA_SERVER_URL="http://localhost:8083"
+          fi
+
+          # Set LLM_CONFIG_FILE only for send-message tests
+          if [[ "${{ inputs.test-type }}" == "send-message" ]]; then
+            export LLM_CONFIG_FILE="${{ matrix.config_file }}"
+          fi
+
+          # Set Ollama base URL only for Ollama tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"ollama"* ]]; then
+            export LLM_CONFIG_FILE="ollama.json"
+            export OLLAMA_BASE_URL="http://localhost:11434"
+          fi
+
+          # Set LMStudio base URL only for LMStudio tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"lmstudio"* ]]; then
+            export LLM_CONFIG_FILE="lmstudio.json"
+            export LMSTUDIO_BASE_URL="http://localhost:1234"
+          fi
+
+          # Set VLLM base URL only for VLLM tests
+          if [[ "${{ inputs.test-type }}" == "integration" && "${{ inputs.runner }}" == *"vllm"* ]]; then
+            export LLM_CONFIG_FILE="vllm.json"
+            export VLLM_BASE_URL="http://localhost:8000"
+          fi
+
+          uv pip install pytest-github-actions-annotate-failures
+
+          # Handle different matrix variable names and test commands based on test type
+          if [[ "${{ inputs.test-type }}" == "integration" ]]; then
+            uv pip install letta
+            uv pip show letta
+            uv pip show letta-client
+            uv run --frozen pytest -svv ${{ inputs.test-path-prefix }}${{ matrix.test_suite }}
+          elif [[ "${{ inputs.test-type }}" == "unit" ]]; then
+            uv pip show letta-client
+            uv run --frozen pytest -svv ${{ inputs.test-path-prefix }}${{ matrix.test_suite }}
+          elif [[ "${{ inputs.test-type }}" == "send-message" ]]; then
+            uv run --frozen  pytest -s -vv tests/integration_test_send_message.py --maxfail=1 --durations=10
+          elif [[ "${{ inputs.test-type }}" == "docker" ]]; then
+            uv run --frozen pytest -s tests/test_client.py
+          elif [[ "${{ inputs.test-type }}" == "sqlite" ]]; then
+            # force sqlite
+            unset LETTA_PG_USER
+            unset LETTA_PG_PASSWORD
+            unset LETTA_PG_DB
+            unset LETTA_PG_HOST
+            uv pip show letta-client
+            uv run alembic upgrade head
+            uv run --frozen pytest -svv ${{ inputs.test-path-prefix }}${{ matrix.test_suite }}
+          else
+            ${{ inputs.test-command }}
+          fi
+
+      - name: Remove sqlite db
+        if: ${{ always() && inputs.test-type == 'sqlite' }}
+        run: sudo rm -rf ~/.letta || true
+
+      - name: Print docker logs if tests fail
+        if: ${{ (failure() || cancelled()) && inputs.use-docker }}
+        working-directory: libs/config-core-deploy
+        run: |
+          echo "Printing Docker Logs..."
+          docker compose -f compose.yaml logs
+
+      - name: Stop docker
+        if: ${{ always() && inputs.use-docker }}
+        working-directory: libs/config-core-deploy
+        run: |
+          docker compose -f compose.yaml down --volumes
+          sudo rm -rf .persist

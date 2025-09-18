@@ -1,0 +1,26 @@
+---
+title: "Monitoring"
+subtitle: "Track your agent's performance and usage metrics"
+slug: "guides/observability/monitoring"
+---
+
+<img className="light" src="/images/observability_graph.png" />
+<img className="dark" src="/images/observability_graph_dark.png" />
+
+Monitor your agents across four key dashboards:
+
+## <Icon icon="fa-sharp fa-light fa-chart-simple"/> Overview
+
+Get a high-level view of your agent's health with essential metrics: total messages sent, API and tool error counts, plus LLM and tool latency averages. This dashboard gives you immediate visibility into system performance and reliability.
+
+## <Icon icon="fa-sharp fa-light fa-chart-line"/> Activity & Usage
+
+Track usage patterns including request frequency and peak traffic times. Monitor token consumption for cost optimization and see which features are used most. View breakdown by user/application to understand demand patterns.
+
+## <Icon icon="fa-sharp fa-light fa-tachometer-alt-fast"/> Performance
+
+Analyze response times with percentiles (average, median, 95th) broken down by model type. Monitor individual tool execution times, especially for external API calls. Track overall throughput (messages/second) and success rates to identify bottlenecks.
+
+## <Icon icon="fa-sharp fa-light fa-triangle-exclamation"/> Errors
+
+Categorize errors between API failures (LLM error, rate limits) and tool failures (timeouts, external APIs). View error frequency trends over time with detailed stack traces and request context for debugging. See how errors impact overall system performance.

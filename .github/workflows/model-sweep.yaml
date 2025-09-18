@@ -1,0 +1,144 @@
+name: Model Sweep
+on:
+  workflow_dispatch:
+    inputs:
+      branch-name:
+        required: true
+        type: string
+
+jobs:
+  model-sweep:
+    runs-on: [self-hosted, medium]
+    services:
+      qdrant:
+        image: qdrant/qdrant
+        ports:
+          - 6333:6333
+      postgres:
+        image: pgvector/pgvector:pg17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check if gh is installed
+        run: |
+          if ! command -v gh >/dev/null 2>&1
+          then
+            echo "gh could not be found, installing now..."
+            # install gh cli
+            (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+              && sudo mkdir -p -m 755 /etc/apt/keyrings \
+              && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+              && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+              && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+              && sudo apt update \
+              && sudo apt install gh -y
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject env vars into environment
+        run: |
+          # Get secrets and mask them before adding to environment
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -n "$line" ]]; then
+              value=$(echo "$line" | cut -d= -f2-)
+              echo "::add-mask::$value"
+              echo "$line" >> $GITHUB_ENV
+            fi
+          done < <(letta_secrets_helper --env dev --service ci)
+
+      - name: Install dependencies
+        shell: bash
+        run: uv sync --extra dev --extra postgres --extra external-tools --extra cloud-tool-sandbox --extra google
+      - name: Migrate database
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+        run: |
+          psql -h localhost -U postgres -d postgres -c 'CREATE EXTENSION vector'
+          uv run alembic upgrade head
+
+      - name: Run integration tests
+        # if any of the 1000+ test cases fail, pytest reports exit code 1 and won't procces/upload the results
+        continue-on-error: true
+        env:
+          LETTA_PG_PORT: 5432
+          LETTA_PG_USER: postgres
+          LETTA_PG_PASSWORD: postgres
+          LETTA_PG_DB: postgres
+          LETTA_PG_HOST: localhost
+          LETTA_SERVER_PASS: test_server_token
+          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          AZURE_API_KEY: ${{ env.AZURE_API_KEY }}
+          AZURE_BASE_URL: ${{ secrets.AZURE_BASE_URL }}
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
+          DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
+          LETTA_USE_EXPERIMENTAL: 1
+        run: |
+          uv run pytest \
+            -s -vv \
+            .github/scripts/model-sweep/model_sweep.py \
+            --json-report --json-report-file=.github/scripts/model-sweep/model_sweep_report.json --json-report-indent=4
+
+      - name: Convert report to markdown
+        continue-on-error: true
+        # file path args to generate_model_sweep_markdown.py are relative to the script
+        run: |
+          uv run python \
+            .github/scripts/model-sweep/generate_model_sweep_markdown.py \
+            .github/scripts/model-sweep/model_sweep_report.json \
+            .github/scripts/model-sweep/supported-models.mdx
+          echo "Model sweep report saved to .github/scripts/model-sweep/supported-models.mdx"
+
+      - id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: commit and open pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME=model-sweep/${{ inputs.branch-name || format('{0}', steps.date.outputs.date) }}
+          gh auth setup-git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b $BRANCH_NAME
+          git add .github/scripts/model-sweep/supported-models.mdx
+          git commit -m "Update model sweep report"
+          # only push if changes were made
+          if git diff main --quiet; then
+            echo "No changes detected, skipping push"
+            exit 0
+          else
+            git push origin $BRANCH_NAME
+            gh pr create \
+              --base main \
+              --head $BRANCH_NAME \
+              --title "chore: update model sweep report" \
+              --body "Automated PR to update model sweep report"
+          fi
+
+      - name: Upload model sweep report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-sweep-report
+          path: .github/scripts/model-sweep/model_sweep_report.json
