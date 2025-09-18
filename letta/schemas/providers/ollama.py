@@ -79,7 +79,21 @@ class OllamaProvider(OpenAIProvider):
                 # Only include models that declare tools support
                 continue
 
-            context_window = DEFAULT_CONTEXT_WINDOW
+            # Derive context window from /api/show model_info if available
+            context_window = None
+            model_info = details.get("model_info", {}) if isinstance(details, dict) else {}
+            architecture = model_info.get("general.architecture") if isinstance(model_info, dict) else None
+            if architecture:
+                ctx_len = model_info.get(f"{architecture}.context_length")
+                if ctx_len is not None:
+                    try:
+                        context_window = int(ctx_len)
+                    except Exception:
+                        context_window = None
+            if context_window is None:
+                logger.warning(f"Ollama model {model_name} has no context window in /api/show, using default {DEFAULT_CONTEXT_WINDOW}")
+                context_window = DEFAULT_CONTEXT_WINDOW
+
             configs.append(
                 # Legacy Ollama using raw generate
                 # LLMConfig(
