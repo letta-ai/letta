@@ -2,6 +2,7 @@ import json
 import uuid
 import xml.etree.ElementTree as ET
 from typing import List, Optional, Tuple
+from uuid import UUID, uuid4
 
 from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
@@ -232,8 +233,9 @@ def deserialize_message_history(xml_str: str) -> Tuple[List[str], str]:
     return messages, context
 
 
-def generate_step_id():
-    return f"step-{uuid.uuid4()}"
+def generate_step_id(uid: Optional[UUID] = None) -> str:
+    uid = uid or uuid4()
+    return f"step-{uid}"
 
 
 def _safe_load_tool_call_str(tool_call_args_str: str) -> dict:
