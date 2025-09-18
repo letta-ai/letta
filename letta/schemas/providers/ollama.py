@@ -3,8 +3,7 @@ from typing import Literal
 import aiohttp
 from pydantic import Field
 
-from letta.constants import DEFAULT_CONTEXT_WINDOW, DEFAULT_EMBEDDING_CHUNK_SIZE, DEFAULT_EMBEDDING_DIM, OLLAMA_API_PREFIX
-from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
+from letta.constants import DEFAULT_CONTEXT_WINDOW, DEFAULT_EMBEDDING_CHUNK_SIZE
 from letta.log import get_logger
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import ProviderCategory, ProviderType
