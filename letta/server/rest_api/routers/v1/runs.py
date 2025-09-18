@@ -52,6 +52,9 @@ def list_runs(
     statuses = None
     if active:
         statuses = [JobStatus.created, JobStatus.running]
+    if agent_id:
+        # NOTE: we are deprecating agent_ids so this will the primary path soon
+        agent_ids = [agent_id]
 
     runs = [
         Run.from_job(job)
@@ -65,7 +68,7 @@ def list_runs(
             ascending=False,
             stop_reason=stop_reason,
             # agent_id=agent_id,
-            agent_ids=agent_ids if agent_ids else [agent_id],
+            agent_ids=agent_ids,
             background=background,
         )
     ]
@@ -84,8 +87,13 @@ def list_active_runs(
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
 
+    if agent_id:
+        agent_ids = [agent_id]
+    else:
+        agent_ids = None
+
     active_runs = server.job_manager.list_jobs(
-        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=[agent_id], background=background
+        actor=actor, statuses=[JobStatus.created, JobStatus.running], job_type=JobType.RUN, agent_ids=agent_ids, background=background
     )
     active_runs = [Run.from_job(job) for job in active_runs]
 
