@@ -26,8 +26,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            apps/fern/openapi.json
-            apps/fern/openapi-overrides.yml
+            apps/core/fern/openapi.json
+            apps/core/fern/openapi-overrides.yml
 
   backwards-compatibility-test:
     if: ${{ needs.changed-files.outputs.any_changed == 'true' }}

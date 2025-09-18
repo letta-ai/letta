@@ -2104,6 +2104,30 @@ export const $BatchJob = {
       $ref: '#/components/schemas/JobType',
       default: 'batch',
     },
+    background: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Background',
+      description: 'Whether the job was created in background mode.',
+    },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The agent associated with this job/run.',
+    },
     callback_url: {
       anyOf: [
         {
@@ -9261,6 +9285,30 @@ export const $Job = {
       description: 'The type of the job.',
       default: 'job',
     },
+    background: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Background',
+      description: 'Whether the job was created in background mode.',
+    },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The agent associated with this job/run.',
+    },
     callback_url: {
       anyOf: [
         {
@@ -12765,6 +12813,30 @@ export const $Run = {
     job_type: {
       $ref: '#/components/schemas/JobType',
       default: 'run',
+    },
+    background: {
+      anyOf: [
+        {
+          type: 'boolean',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Background',
+      description: 'Whether the job was created in background mode.',
+    },
+    agent_id: {
+      anyOf: [
+        {
+          type: 'string',
+        },
+        {
+          type: 'null',
+        },
+      ],
+      title: 'Agent Id',
+      description: 'The agent associated with this job/run.',
     },
     callback_url: {
       anyOf: [

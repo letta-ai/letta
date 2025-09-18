@@ -752,6 +752,14 @@ export type BatchJob = {
   } | null;
   job_type?: JobType;
   /**
+   * Whether the job was created in background mode.
+   */
+  background?: boolean | null;
+  /**
+   * The agent associated with this job/run.
+   */
+  agent_id?: string | null;
+  /**
    * If set, POST to this URL when the job completes.
    */
   callback_url?: string | null;
@@ -3277,6 +3285,14 @@ export type Job = {
    */
   job_type?: JobType;
   /**
+   * Whether the job was created in background mode.
+   */
+  background?: boolean | null;
+  /**
+   * The agent associated with this job/run.
+   */
+  agent_id?: string | null;
+  /**
    * If set, POST to this URL when the job completes.
    */
   callback_url?: string | null;
@@ -4773,6 +4789,14 @@ export type Run = {
     [key: string]: unknown;
   } | null;
   job_type?: JobType;
+  /**
+   * Whether the job was created in background mode.
+   */
+  background?: boolean | null;
+  /**
+   * The agent associated with this job/run.
+   */
+  agent_id?: string | null;
   /**
    * If set, POST to this URL when the job completes.
    */
@@ -9088,6 +9112,10 @@ export type ListRunsData = {
   /**
    * The unique identifier of the agent associated with the run.
    */
+  agentId?: string | null;
+  /**
+   * (DEPRECATED) The unique identifiers of the agents associated with the run.
+   */
   agentIds?: Array<string> | null;
   /**
    * Whether to sort agents oldest to newest (True) or newest to oldest (False, default)
@@ -9120,7 +9148,7 @@ export type ListActiveRunsData = {
   /**
    * The unique identifier of the agent associated with the run.
    */
-  agentIds?: Array<string> | null;
+  agentId?: string | null;
   /**
    * If True, filters for runs that were created in background mode.
    */

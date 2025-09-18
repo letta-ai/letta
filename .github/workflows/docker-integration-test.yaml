@@ -30,8 +30,6 @@ jobs:
     runs-on: [self-hosted, medium]
     timeout-minutes: 15
     steps:
-    - run: echo "${{ needs.changed-files.outputs.all_changed_files }}"
-    - run: echo "${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}"
     - name: Checkout
       uses: actions/checkout@v4
 
@@ -75,7 +73,7 @@ jobs:
         timeout_minutes: 5
         command: |
           set -o xtrace
-          cd apps
+          cd apps/core
           fern generate --group python-sdk --preview
           cd fern/.preview/fern-python-sdk
           poetry install
@@ -88,7 +86,7 @@ jobs:
     - name: Use SDK with on branch changes
       if: ${{ contains(needs.changed-files.outputs.all_changed_files, 'apps/core/letta/') }}
       working-directory: apps/core
-      run: poetry run pip install -e ../fern/.preview/fern-python-sdk/.
+      run: poetry run pip install -e fern/.preview/fern-python-sdk/.
 
     - name: Wait for service
       working-directory: apps/core
