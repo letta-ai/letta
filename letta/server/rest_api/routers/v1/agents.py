@@ -14,6 +14,7 @@ from starlette.responses import Response, StreamingResponse
 
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v2 import LettaAgentV2
+from letta.agents.temporal_agent import TemporalAgent
 from letta.constants import AGENT_ID_PATTERN, DEFAULT_MAX_STEPS, DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REDIS_RUN_ID_PREFIX
 from letta.data_sources.redis_client import NoopAsyncRedisClient, get_redis_client
 from letta.errors import (
@@ -1647,7 +1648,6 @@ async def send_message_async(
     """
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
-
     # Create a new job
     run = Run(
         user_id=actor.id,
@@ -1670,15 +1670,19 @@ async def send_message_async(
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
     if settings.temporal_endpoint:
-        temporal_agent = TemporalAgent(agent_state=agent_state, actor=actor)
-        await temporal_agent.step(
-            input_messages=request.messages,
-            max_steps=request.max_steps,
-            run_id=run.id,
-            use_assistant_message=request.use_assistant_message,
-            include_return_message_types=request.include_return_message_types,
+        agent_state = await server.agent_manager.get_agent_by_id_async(
+            agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
-        return run
+        if agent_state.multi_agent_group is None:
+            temporal_agent = TemporalAgent(agent_state=agent_state, actor=actor)
+            await temporal_agent.step(
+                input_messages=request.messages,
+                max_steps=request.max_steps,
+                run_id=run.id,
+                use_assistant_message=request.use_assistant_message,
+                include_return_message_types=request.include_return_message_types,
+            )
+            return run
 
     # Create asyncio task for background processing (shielded to prevent cancellation)
     task = safe_create_shielded_task(
