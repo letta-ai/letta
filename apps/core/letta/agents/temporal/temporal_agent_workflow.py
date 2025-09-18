@@ -4,7 +4,7 @@ from temporalio import workflow
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
 from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
-from letta.agents.helpers import generate_step_id
+from letta.agents.helpers import _load_last_function_response, generate_step_id
 from letta.agents.temporal.constants import (
     LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
@@ -14,6 +14,7 @@ from letta.agents.temporal.constants import (
     REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT,
 )
 from letta.helpers import ToolRulesSolver
+from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.llm_api.llm_client import LLMClient
 from letta.schemas.agent import AgentState
 from letta.schemas.letta_message import MessageType
@@ -21,6 +22,7 @@ from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
+from letta.services.helpers.tool_parser_helper import runtime_override_tool_json_schema
 
 # Import activity, passing it through the sandbox without reloading the module
 with workflow.unsafe.imports_passed_through():
@@ -125,11 +127,10 @@ class TemporalAgentWorkflow:
         reasoning_content = None
         step_id = None
 
-        # TODO: load last function response from messages (pure)
-        last_function_response = None
-
-        # TODO: compute valid tools (pure): ToolRulesSolver + enable_strict_mode + runtime_override_tool_json_schema
-        allowed_tools: list[dict] = []
+        last_function_response = _load_last_function_response(messages)
+        allowed_tools = await self._get_valid_tools(
+            agent_state=agent_state, tool_rules_solver=tool_rules_solver, last_function_response=last_function_response
+        )
 
         # TODO: approval pair detection (pure)
         approval_request, approval_response = None, None
@@ -255,3 +256,20 @@ class TemporalAgentWorkflow:
         response_messages = []  # Placeholder - should be populated from handle_ai_response
 
         return InnerStepResult(stop_reason=stop_reason, usage=usage, should_continue=should_continue, response_messages=response_messages)
+
+    def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):
+        tools = agent_state.tools
+        valid_tool_names = tool_rules_solver.get_allowed_tool_names(
+            available_tools=set([t.name for t in tools]),
+            last_function_response=last_function_response,
+            error_on_empty=False,  # Return empty list instead of raising error
+        ) or list(set(t.name for t in tools))
+        allowed_tools = [enable_strict_mode(t.json_schema) for t in tools if t.name in set(valid_tool_names)]
+        terminal_tool_names = {rule.tool_name for rule in tool_rules_solver.terminal_tool_rules}
+        allowed_tools = runtime_override_tool_json_schema(
+            tool_list=allowed_tools,
+            response_format=agent_state.response_format,
+            request_heartbeat=True,
+            terminal_tools=terminal_tool_names,
+        )
+        return allowed_tools
