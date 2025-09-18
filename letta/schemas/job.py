@@ -8,15 +8,25 @@ from letta.helpers.datetime_helpers import get_utc_time
 from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.letta_base import OrmMetadataBase
 from letta.schemas.letta_message import MessageType
+from letta.schemas.letta_stop_reason import StopReasonType
 
 
 class JobBase(OrmMetadataBase):
     __id_prefix__ = "job"
     status: JobStatus = Field(default=JobStatus.created, description="The status of the job.")
     created_at: datetime = Field(default_factory=get_utc_time, description="The unix timestamp of when the job was created.")
+
+    # completion related
     completed_at: Optional[datetime] = Field(None, description="The unix timestamp of when the job was completed.")
+    stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the job was stopped.")
+
+    # metadata
     metadata: Optional[dict] = Field(None, validation_alias="metadata_", description="The metadata of the job.")
     job_type: JobType = Field(default=JobType.JOB, description="The type of the job.")
+
+    ## TODO: Run-specific fields
+    # background: Optional[bool] = Field(None, description="Whether the job was created in background mode.")
+    # agent_id: Optional[str] = Field(None, description="The agent associated with this job/run.")
 
     callback_url: Optional[str] = Field(None, description="If set, POST to this URL when the job completes.")
     callback_sent_at: Optional[datetime] = Field(None, description="Timestamp when the callback was last attempted.")

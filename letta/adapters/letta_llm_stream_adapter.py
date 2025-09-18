@@ -171,7 +171,6 @@ class LettaLLMStreamAdapter(LettaLLMAdapter):
                         },
                     },
                     step_id=step_id,  # Use original step_id for telemetry
-                    organization_id=actor.organization_id,
                 ),
             ),
             label="create_provider_trace",

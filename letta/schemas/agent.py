@@ -22,6 +22,8 @@ from letta.schemas.tool_rule import ToolRule
 from letta.utils import calculate_file_defaults_based_on_context_window, create_random_username
 
 
+# TODO: Remove this upon next OSS release, there's a duplicate AgentType in enums
+# TODO: This is done in the interest of time to avoid needing to update the sandbox template IDs on cloud/rebuild
 class AgentType(str, Enum):
     """
     Enum to represent the type of agent.
@@ -87,6 +89,11 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     sources: List[Source] = Field(..., description="The sources used by the agent.")
     tags: List[str] = Field(..., description="The tags associated with the agent.")
     tool_exec_environment_variables: List[AgentEnvironmentVariable] = Field(
+        default_factory=list,
+        description="Deprecated: use `secrets` field instead.",
+        deprecated=True,
+    )
+    secrets: List[AgentEnvironmentVariable] = Field(
         default_factory=list, description="The environment variables for tool execution specific to this agent."
     )
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
@@ -134,7 +141,7 @@ class AgentState(OrmMetadataBase, validate_assignment=True):
     def get_agent_env_vars_as_dict(self) -> Dict[str, str]:
         # Get environment variables for this agent specifically
         per_agent_env_vars = {}
-        for agent_env_var_obj in self.tool_exec_environment_variables:
+        for agent_env_var_obj in self.secrets:
             per_agent_env_vars[agent_env_var_obj.key] = agent_env_var_obj.value
         return per_agent_env_vars
 
@@ -223,9 +230,8 @@ class CreateAgent(BaseModel, validate_assignment=True):  #
         deprecated=True,
         description="Deprecated: Project should now be passed via the X-Project header instead of in the request body. If using the sdk, this can be done via the new x_project field below.",
     )
-    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
-        None, description="The environment variables for tool execution specific to this agent."
-    )
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(None, description="Deprecated: use `secrets` field instead.")
+    secrets: Optional[Dict[str, str]] = Field(None, description="The environment variables for tool execution specific to this agent.")
     memory_variables: Optional[Dict[str, str]] = Field(None, description="The variables that should be set for the agent.")
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
@@ -329,9 +335,8 @@ class UpdateAgent(BaseModel):
     message_ids: Optional[List[str]] = Field(None, description="The ids of the messages in the agent's in-context memory.")
     description: Optional[str] = Field(None, description="The description of the agent.")
     metadata: Optional[Dict] = Field(None, description="The metadata of the agent.")
-    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(
-        None, description="The environment variables for tool execution specific to this agent."
-    )
+    tool_exec_environment_variables: Optional[Dict[str, str]] = Field(None, description="Deprecated: use `secrets` field instead")
+    secrets: Optional[Dict[str, str]] = Field(None, description="The environment variables for tool execution specific to this agent.")
     project_id: Optional[str] = Field(None, description="The id of the project the agent belongs to.")
     template_id: Optional[str] = Field(None, description="The id of the template the agent belongs to.")
     base_template_id: Optional[str] = Field(None, description="The base template id of the agent.")
@@ -381,198 +386,5 @@ class AgentStepResponse(BaseModel):
 
 
 def get_prompt_template_for_agent_type(agent_type: Optional[AgentType] = None):
-    # Workflow agents and ReAct agents don't use memory blocks
-    # However, they still allow files to be injected into the context
-    # if agent_type == AgentType.react_agent or agent_type == AgentType.workflow_agent:
-    if agent_type == AgentType.workflow_agent:
-        return (
-            "{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\">\n"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
-
-    # Sleeptime agents use the MemGPT v2 memory tools (line numbers)
-    # MemGPT v2 tools use line-number, so core memory blocks should have line numbers
-    # elif agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
-    elif agent_type == AgentType.react_agent or agent_type == AgentType.sleeptime_agent or agent_type == AgentType.memgpt_v2_agent:
-        return (
-            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
-            "{% for block in blocks %}"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            f"{CORE_MEMORY_LINE_NUMBER_WARNING}\n"
-            "{% for line in block.value.split('\\n') %}"
-            "Line {{ loop.index }}: {{ line }}\n"
-            "{% endfor %}"
-            "</value>\n"
-            "</{{ block.label }}>\n"
-            "{% if not loop.last %}\n{% endif %}"
-            "{% endfor %}"
-            "\n</memory_blocks>"
-            "\n\n{% if tool_usage_rules %}"
-            "<tool_usage_rules>\n"
-            "{{ tool_usage_rules.description }}\n\n"
-            "{{ tool_usage_rules.value }}\n"
-            "</tool_usage_rules>"
-            "{% endif %}"
-            "\n\n{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
-            "{% if block.description %}"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "{% endif %}"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "{% if block.value %}"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "{% endif %}"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
-
-    # All other agent types use memory blocks
-    else:
-        return (
-            "<memory_blocks>\nThe following memory blocks are currently engaged in your core memory unit:\n\n"
-            "{% for block in blocks %}"
-            "<{{ block.label }}>\n"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "</{{ block.label }}>\n"
-            "{% if not loop.last %}\n{% endif %}"
-            "{% endfor %}"
-            "\n</memory_blocks>"
-            "\n\n{% if tool_usage_rules %}"
-            "<tool_usage_rules>\n"
-            "{{ tool_usage_rules.description }}\n\n"
-            "{{ tool_usage_rules.value }}\n"
-            "</tool_usage_rules>"
-            "{% endif %}"
-            "\n\n{% if sources %}"
-            "<directories>\n"
-            "{% if max_files_open %}"
-            "<file_limits>\n"
-            "- current_files_open={{ file_blocks|selectattr('value')|list|length }}\n"
-            "- max_files_open={{ max_files_open }}\n"
-            "</file_limits>\n"
-            "{% endif %}"
-            "{% for source in sources %}"
-            f'<directory name="{{{{ source.name }}}}">\n'
-            "{% if source.description %}"
-            "<description>{{ source.description }}</description>\n"
-            "{% endif %}"
-            "{% if source.instructions %}"
-            "<instructions>{{ source.instructions }}</instructions>\n"
-            "{% endif %}"
-            "{% if file_blocks %}"
-            "{% for block in file_blocks %}"
-            "{% if block.source_id and block.source_id == source.id %}"
-            f"<file status=\"{{{{ '{FileStatus.open.value}' if block.value else '{FileStatus.closed.value}' }}}}\" name=\"{{{{ block.label }}}}\">\n"
-            "{% if block.description %}"
-            "<description>\n"
-            "{{ block.description }}\n"
-            "</description>\n"
-            "{% endif %}"
-            "<metadata>"
-            "{% if block.read_only %}\n- read_only=true{% endif %}\n"
-            "- chars_current={{ block.value|length }}\n"
-            "- chars_limit={{ block.limit }}\n"
-            "</metadata>\n"
-            "{% if block.value %}"
-            "<value>\n"
-            "{{ block.value }}\n"
-            "</value>\n"
-            "{% endif %}"
-            "</file>\n"
-            "{% endif %}"
-            "{% endfor %}"
-            "{% endif %}"
-            "</directory>\n"
-            "{% endfor %}"
-            "</directories>"
-            "{% endif %}"
-        )
+    """Deprecated. Templates are not used anymore; fast renderer handles formatting."""
+    return ""

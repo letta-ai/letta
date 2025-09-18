@@ -64,7 +64,6 @@ class LLMClientBase:
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,
-                        organization_id=self.actor.organization_id,
                     ),
                 )
             log_event(name="llm_response_received", attributes=response_data)
@@ -98,7 +97,6 @@ class LLMClientBase:
                         request_json=request_data,
                         response_json=response_data,
                         step_id=step_id,
-                        organization_id=self.actor.organization_id,
                     ),
                 )
 

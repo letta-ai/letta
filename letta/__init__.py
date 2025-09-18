@@ -10,8 +10,16 @@ except PackageNotFoundError:
 if os.environ.get("LETTA_VERSION"):
     __version__ = os.environ["LETTA_VERSION"]
 
-# Import sqlite_functions early to ensure event handlers are registered
-from letta.orm import sqlite_functions
+# Import sqlite_functions early to ensure event handlers are registered (only for SQLite)
+# This is only needed for the server, not for client usage
+try:
+    from letta.settings import DatabaseChoice, settings
+
+    if settings.database_engine == DatabaseChoice.SQLITE:
+        from letta.orm import sqlite_functions
+except ImportError:
+    # If sqlite_vec is not installed, it's fine for client usage
+    pass
 
 # # imports for easier access
 from letta.schemas.agent import AgentState

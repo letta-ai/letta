@@ -923,6 +923,12 @@ paths:
         - steps
         - trace
       x-fern-sdk-method-name: retrieve
+  /v1/steps/{step_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - messages
+      x-fern-sdk-method-name: list
   /v1/identities/:
     get:
       x-fern-sdk-group-name:
@@ -963,12 +969,14 @@ paths:
       x-fern-sdk-method-name: upsert
   /v1/identities/{identity_id}/agents:
     get:
+      summary: List Agents For Identity
       x-fern-sdk-group-name:
         - identities
         - agents
       x-fern-sdk-method-name: list
   /v1/identities/{identity_id}/blocks:
     get:
+      summary: List Blocks For Identity
       x-fern-sdk-group-name:
         - identities
         - blocks

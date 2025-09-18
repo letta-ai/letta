@@ -359,9 +359,7 @@ def test_local_sandbox_per_agent_env(disable_e2b_api_key, get_env_tool, agent_st
 
     # Make a environment variable with a long random string and put into agent state
     correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
-    ]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)]
 
     # Create tool and args
     args = {}
@@ -569,9 +567,7 @@ def test_e2b_sandbox_per_agent_env(check_e2b_key_is_set, get_env_tool, agent_sta
 
     # Make a environment variable with a long random string and put into agent state
     correct_long_random_string = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-    agent_state.tool_exec_environment_variables = [
-        AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)
-    ]
+    agent_state.secrets = [AgentEnvironmentVariable(key=key, value=correct_long_random_string, agent_id=agent_state.id)]
 
     # Create tool and args
     args = {}

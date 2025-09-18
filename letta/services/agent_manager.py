@@ -50,15 +50,13 @@ from letta.otel.tracing import trace_method
 from letta.prompts.prompt_generator import PromptGenerator
 from letta.schemas.agent import (
     AgentState as PydanticAgentState,
-    AgentType,
     CreateAgent,
     InternalTemplateAgentCreate,
     UpdateAgent,
-    get_prompt_template_for_agent_type,
 )
 from letta.schemas.block import DEFAULT_BLOCKS, Block as PydanticBlock, BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
-from letta.schemas.enums import ProviderType, TagMatchMode, ToolType, VectorDBProvider
+from letta.schemas.enums import AgentType, ProviderType, TagMatchMode, ToolType, VectorDBProvider
 from letta.schemas.file import FileMetadata as PydanticFileMetadata
 from letta.schemas.group import Group as PydanticGroup, ManagerType
 from letta.schemas.llm_config import LLMConfig
@@ -464,7 +462,8 @@ class AgentManager:
                     [{"agent_id": aid, "identity_id": iid} for iid in identity_ids],
                 )
 
-                if agent_create.tool_exec_environment_variables:
+                agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
+                if agent_secrets:
                     env_rows = [
                         {
                             "agent_id": aid,
@@ -472,7 +471,7 @@ class AgentManager:
                             "value": val,
                             "organization_id": actor.organization_id,
                         }
-                        for key, val in agent_create.tool_exec_environment_variables.items()
+                        for key, val in agent_secrets.items()
                     ]
                     session.execute(insert(AgentEnvironmentVariable).values(env_rows))
 
@@ -692,7 +691,8 @@ class AgentManager:
                 )
 
                 env_rows = []
-                if agent_create.tool_exec_environment_variables:
+                agent_secrets = agent_create.secrets or agent_create.tool_exec_environment_variables
+                if agent_secrets:
                     env_rows = [
                         {
                             "agent_id": aid,
@@ -700,7 +700,7 @@ class AgentManager:
                             "value": val,
                             "organization_id": actor.organization_id,
                         }
-                        for key, val in agent_create.tool_exec_environment_variables.items()
+                        for key, val in agent_secrets.items()
                     ]
                     result = await session.execute(insert(AgentEnvironmentVariable).values(env_rows).returning(AgentEnvironmentVariable.id))
                     env_rows = [{**row, "id": env_var_id} for row, env_var_id in zip(env_rows, result.scalars().all())]
@@ -719,8 +719,9 @@ class AgentManager:
 
                 result = await new_agent.to_pydantic_async(include_relationships=include_relationships)
 
-                if agent_create.tool_exec_environment_variables and env_rows:
+                if agent_secrets and env_rows:
                     result.tool_exec_environment_variables = [AgentEnvironmentVariable(**row) for row in env_rows]
+                    result.secrets = [AgentEnvironmentVariable(**row) for row in env_rows]
 
                 # initial message sequence (skip if _init_with_no_messages is True)
                 if not _init_with_no_messages:
@@ -912,7 +913,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            if agent_update.tool_exec_environment_variables is not None:
+            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            if agent_secrets is not None:
                 session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
                 env_rows = [
                     {
@@ -921,7 +923,7 @@ class AgentManager:
                         "value": v,
                         "organization_id": agent.organization_id,
                     }
-                    for k, v in agent_update.tool_exec_environment_variables.items()
+                    for k, v in agent_secrets.items()
                 ]
                 if env_rows:
                     self._bulk_insert_pivot(session, AgentEnvironmentVariable.__table__, env_rows)
@@ -1037,7 +1039,8 @@ class AgentManager:
                 )
                 session.expire(agent, ["tags"])
 
-            if agent_update.tool_exec_environment_variables is not None:
+            agent_secrets = agent_update.secrets or agent_update.tool_exec_environment_variables
+            if agent_secrets is not None:
                 await session.execute(delete(AgentEnvironmentVariable).where(AgentEnvironmentVariable.agent_id == aid))
                 env_rows = [
                     {
@@ -1046,7 +1049,7 @@ class AgentManager:
                         "value": v,
                         "organization_id": agent.organization_id,
                     }
-                    for k, v in agent_update.tool_exec_environment_variables.items()
+                    for k, v in agent_secrets.items()
                 ]
                 if env_rows:
                     await self._bulk_insert_pivot_async(session, AgentEnvironmentVariable.__table__, env_rows)
@@ -1562,6 +1565,8 @@ class AgentManager:
             if env_vars:
                 for var in agent.tool_exec_environment_variables:
                     var.value = env_vars.get(var.key, "")
+                for var in agent.secrets:
+                    var.value = env_vars.get(var.key, "")
 
             agent = agent.create(session, actor=actor)
 
@@ -1645,6 +1650,7 @@ class AgentManager:
             # Remove stale variables
             stale_keys = set(existing_vars) - set(env_vars)
             agent.tool_exec_environment_variables = [var for var in updated_vars if var.key not in stale_keys]
+            agent.secrets = [var for var in updated_vars if var.key not in stale_keys]
 
             # Update the agent in the database
             agent.update(session, actor=actor)
@@ -1804,7 +1810,7 @@ class AgentManager:
 
         # note: we only update the system prompt if the core memory is changed
         # this means that the archival/recall memory statistics may be someout out of date
-        curr_memory_str = await agent_state.memory.compile_in_thread_async(
+        curr_memory_str = agent_state.memory.compile(
             sources=agent_state.sources,
             tool_usage_rules=tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -1994,7 +2000,7 @@ class AgentManager:
         agent_state = await self.get_agent_by_id_async(agent_id=agent_id, actor=actor, include_relationships=["memory", "sources"])
         system_message = await self.message_manager.get_message_by_id_async(message_id=agent_state.message_ids[0], actor=actor)
         temp_tool_rules_solver = ToolRulesSolver(agent_state.tool_rules)
-        new_memory_str = await new_memory.compile_in_thread_async(
+        new_memory_str = new_memory.compile(
             sources=agent_state.sources,
             tool_usage_rules=temp_tool_rules_solver.compile_tool_rule_prompts(),
             max_files_open=agent_state.max_files_open,
@@ -2018,7 +2024,7 @@ class AgentManager:
             agent_state.memory = Memory(
                 blocks=blocks,
                 file_blocks=agent_state.memory.file_blocks,
-                prompt_template=get_prompt_template_for_agent_type(agent_state.agent_type),
+                agent_type=agent_state.agent_type,
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step

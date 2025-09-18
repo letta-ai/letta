@@ -472,38 +472,41 @@ navigation:
           python: letta-client
         layout:
           - agents:
-              - GET /v1/agents
+              - GET /v1/agents/
               - GET /v1/agents/{agent_id}
-              - POST /v1/agents
+              - POST /v1/agents/
               - PATCH /v1/agents/{agent_id}
               - DELETE /v1/agents/{agent_id}
               - GET /v1/agents/count
               - POST /v1/agents/import
               - GET /v1/agents/{agent_id}/export
-              - GET /v1/agents/search
+              - POST /v1/agents/search
           - models:
-              - GET /v1/models
-              - GET /v1/models/embedding
+              - GET /v1/models/
+              - endpoint: GET /v1/models/embedding
+                slug: list-embedding-models
+              - endpoint: GET /v1/models/embeddings
+                hidden: true
           - blocks:
-              - GET /v1/blocks
+              - GET /v1/blocks/
               - GET /v1/blocks/{block_id}
-              - POST /v1/blocks
+              - POST /v1/blocks/
               - PATCH /v1/blocks/{block_id}
               - DELETE /v1/blocks/{block_id}
               - GET /v1/blocks/count
           - identities:
-              - GET /v1/identities
+              - GET /v1/identities/
               - GET /v1/identities/{identity_id}
-              - POST /v1/identities
-              - PUT /v1/identities
+              - POST /v1/identities/
+              - PUT /v1/identities/
               - PATCH /v1/identities/{identity_id}
               - DELETE /v1/identities/{identity_id}
               - GET /v1/identities/count
           - tools
           - folders:
-              - GET /v1/folders
+              - GET /v1/folders/
               - GET /v1/folders/{folder_id}
-              - POST /v1/folders
+              - POST /v1/folders/
               - PATCH /v1/folders/{folder_id}
               - DELETE /v1/folders/{folder_id}
               - GET /v1/folders/count
@@ -511,32 +514,54 @@ navigation:
           - runs
           - steps
           - groups:
-              - GET /v1/groups
+              - GET /v1/groups/
               - GET /v1/groups/{group_id}
-              - POST /v1/groups
+              - POST /v1/groups/
               - PATCH /v1/groups/{group_id}
               - DELETE /v1/groups/{group_id}
               - GET /v1/groups/count
           - providers:
-              - GET /v1/providers
+              - GET /v1/providers/
               - GET /v1/providers/{provider_id}
-              - POST /v1/providers
+              - POST /v1/providers/
               - PATCH /v1/providers/{provider_id}
               - DELETE /v1/providers/{provider_id}
               - POST /v1/providers/check
           - tags
           - batches:
-              - GET /v1/batches
-              - GET /v1/batches/{batch_id}
-              - POST /v1/batches
-              - PATCH /v1/batches/{batch_id}/cancel
+              - GET /v1/messages/batches
+              - GET /v1/messages/batches/{batch_id}
+              - POST /v1/messages/batches
+              - PATCH /v1/messages/batches/{batch_id}/cancel
+              - section: Messages
+                contents:
+                  - GET /v1/messages/batches/{batch_id}/messages
           - voice
           - health
           - projects
           - templates
           - client side access tokens
-          - telemetry
-          - sources
+          - section: telemetry
+            icon: ban
+            contents:
+              - GET /v1/telemetry/{step_id}
+          - section: sources
+            icon: ban
+            contents:
+              - GET /v1/sources/
+              - GET /v1/sources/{source_id}
+              - POST /v1/sources/
+              - PATCH /v1/sources/{source_id}
+              - DELETE /v1/sources/{source_id}
+              - GET /v1/sources/count
+              - GET /v1/sources/name/{source_name}
+              - GET /v1/sources/metadata
+              - GET /v1/sources/{source_id}/agents
+              - GET /v1/sources/{source_id}/files/{file_id}
+              - POST /v1/sources/{source_id}/upload
+              - GET /v1/sources/{source_id}/files
+              - DELETE /v1/sources/{source_id}/{file_id}
+              - GET /v1/sources/{source_id}/passages
 
   - tab: showcase
     layout:

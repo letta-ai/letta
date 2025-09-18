@@ -42,7 +42,7 @@ from letta.memory import summarize_messages
 from letta.orm import User
 from letta.otel.tracing import log_event, trace_method
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent, get_prompt_template_for_agent_type
+from letta.schemas.agent import AgentState, AgentStepResponse, UpdateAgent
 from letta.schemas.block import BlockUpdate
 from letta.schemas.embedding_config import EmbeddingConfig
 from letta.schemas.enums import MessageRole, ProviderType, StepStatus, ToolType
@@ -221,7 +221,7 @@ class Agent(BaseAgent):
             self.agent_state.memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
                 file_blocks=self.agent_state.memory.file_blocks,
-                prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
+                agent_type=self.agent_state.agent_type,
             )
 
             # NOTE: don't do this since re-buildin the memory is handled at the start of the step
@@ -880,7 +880,7 @@ class Agent(BaseAgent):
             current_persisted_memory = Memory(
                 blocks=[self.block_manager.get_block_by_id(block.id, actor=self.user) for block in self.agent_state.memory.get_blocks()],
                 file_blocks=self.agent_state.memory.file_blocks,
-                prompt_template=get_prompt_template_for_agent_type(self.agent_state.agent_type),
+                agent_type=self.agent_state.agent_type,
             )  # read blocks from DB
             self.update_memory_if_changed(current_persisted_memory)
 
@@ -1628,7 +1628,7 @@ class Agent(BaseAgent):
                 action_name = generate_composio_action_from_func_name(target_letta_tool.name)
                 # Get entity ID from the agent_state
                 entity_id = None
-                for env_var in self.agent_state.tool_exec_environment_variables:
+                for env_var in self.agent_state.secrets:
                     if env_var.key == COMPOSIO_ENTITY_ENV_VAR_KEY:
                         entity_id = env_var.value
                 # Get composio_api_key

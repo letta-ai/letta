@@ -45,8 +45,14 @@ from letta.schemas.tool_rule import (
 )
 from letta.settings import DatabaseChoice, settings
 
-if settings.database_engine == DatabaseChoice.SQLITE:
-    import sqlite_vec
+# Only import sqlite_vec if we're actually using SQLite database
+# This is a runtime dependency only needed for SQLite vector operations
+try:
+    if settings.database_engine == DatabaseChoice.SQLITE:
+        import sqlite_vec
+except ImportError:
+    # If sqlite_vec is not installed, it's fine for client usage
+    pass
 # --------------------------
 # LLMConfig Serialization
 # --------------------------

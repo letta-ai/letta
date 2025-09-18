@@ -38,6 +38,7 @@ from letta.schemas.job import JobStatus, JobUpdate, LettaRequestConfig
 from letta.schemas.letta_message import LettaMessageUnion, LettaMessageUpdateUnion, MessageType
 from letta.schemas.letta_request import LettaAsyncRequest, LettaRequest, LettaStreamingRequest
 from letta.schemas.letta_response import LettaResponse
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.memory import (
     ArchivalMemorySearchResponse,
     ArchivalMemorySearchResult,
@@ -1192,6 +1193,7 @@ async def send_message(
     await redis_client.set(f"{REDIS_RUN_ID_PREFIX}:{agent_id}", run.id if run else None)
 
     try:
+        result = None
         if agent_eligible and model_compatible:
             agent_loop = AgentLoop.load(agent_state=agent, actor=actor)
             result = await agent_loop.step(
@@ -1229,11 +1231,17 @@ async def send_message(
         raise
     finally:
         if settings.track_agent_run:
+            if result:
+                stop_reason = result.stop_reason.stop_reason
+            else:
+                # NOTE: we could also consider this an error?
+                stop_reason = None
             await server.job_manager.safe_update_job_status_async(
                 job_id=run.id,
                 new_status=job_status,
                 actor=actor,
                 metadata=job_update_metadata,
+                stop_reason=stop_reason,
             )
 
 
@@ -1440,10 +1448,7 @@ async def send_message_streaming(
     finally:
         if settings.track_agent_run:
             await server.job_manager.safe_update_job_status_async(
-                job_id=run.id,
-                new_status=job_status,
-                actor=actor,
-                metadata=job_update_metadata,
+                job_id=run.id, new_status=job_status, actor=actor, metadata=job_update_metadata
             )
 
 
