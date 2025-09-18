@@ -96,7 +96,7 @@ def list_active_runs(
 
 
 @router.get("/{run_id}", response_model=Run, operation_id="retrieve_run")
-def retrieve_run(
+async def retrieve_run(
     run_id: str,
     headers: HeaderParams = Depends(get_headers),
     server: "SyncServer" = Depends(get_letta_server),
@@ -104,10 +104,42 @@ def retrieve_run(
     """
     Get the status of a run.
     """
-    actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    actor = await server.user_manager.get_actor_or_default_async(user_id=headers.actor_id)
 
     try:
-        job = server.job_manager.get_job_by_id(job_id=run_id, actor=actor)
+        job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
+
+        if job.metadata.get("temporal") and settings.temporal_endpoint:
+            client = await Client.connect(
+                settings.temporal_endpoint,
+                namespace=settings.temporal_namespace,
+                api_key=settings.temporal_api_key,
+                tls=True,
+            )
+            handle = client.get_workflow_handle(workflow_id)
+
+            # Fetch the workflow description
+            desc = await handle.describe()
+
+            # Map the status to our enum
+            job_status = JobStatus.created
+            if desc.status.name == "RUNNING":
+                job_status = JobStatus.running
+            elif desc.status.name == "COMPLETED":
+                job_status = JobStatus.completed
+            elif desc.status.name == "FAILED":
+                job_status = JobStatus.failed
+            elif desc.status.name == "CANCELED":
+                job_status = JobStatus.canceled
+            # elif desc.status.name == "TERMINATED":
+            #     job_status = JobStatus.terminated
+            # elif desc.status.name == "TIMED_OUT":
+            #     job_status = JobStatus.timed_out
+            # elif desc.status.name == "CONTINUED_AS_NEW":
+            #     return WorkflowStatus.CONTINUED_AS_NEW
+            # else:
+            #     return WorkflowStatus.UNKNOWN
+            job.status = job_status
         return Run.from_job(job)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Run not found")
