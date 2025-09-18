@@ -3,7 +3,7 @@ import uuid
 from temporalio import workflow
 from temporalio.exceptions import ActivityError, ApplicationError
 
-from letta.agents.helpers import _load_last_function_response, generate_step_id
+from letta.agents.helpers import _load_last_function_response, _maybe_get_approval_messages, generate_step_id
 from letta.agents.temporal.constants import (
     CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
@@ -155,16 +155,12 @@ class TemporalAgentWorkflow:
             agent_state=agent_state, tool_rules_solver=tool_rules_solver, last_function_response=last_function_response
         )
 
-        # TODO: approval pair detection (pure)
-        approval_request, approval_response = None, None
-        # maybe_approval_request, maybe_approval_response = self._maybe_get_approval_messages(messages)
+        approval_request, approval_response = _maybe_get_approval_messages(messages)
 
         if approval_request and approval_response:
-            # TODO: extract tool_call and reasoning from approval_request
-            tool_call = None  # approval_request.tool_calls[0]
-            reasoning_content = None  # approval_request.content
-            step_id = None  # approval_request.step_id
-            # TODO: get step metrics from step_manager
+            tool_call = approval_request.tool_calls[0]
+            reasoning_content = approval_request.content
+            step_id = approval_request.step_id
         else:
             # TODO: check for run cancellation if run_id provided
 
