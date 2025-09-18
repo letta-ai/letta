@@ -1,4 +1,5 @@
 import type { ServerInferRequest, ServerInferResponses } from '@ts-rest/core';
+import * as Sentry from '@sentry/node';
 
 import type { cloudContracts } from '@letta-cloud/sdk-cloud-api';
 import {
@@ -6,12 +7,12 @@ import {
   deployedAgentMetadata,
   deployedAgentVariables,
   lettaTemplates,
+  agentTemplateBlockTemplates,
   projects,
 } from '@letta-cloud/service-database';
 import type { SDKContext } from '../types';
 import {
   getTemplateByName,
-  migrateEntities,
   saveTemplate,
   forkTemplate as forkTemplateFn,
   createTemplateFromAgentState,
@@ -19,18 +20,26 @@ import {
   createTemplate as createTemplateFromAgentFile,
   CREATE_TEMPLATE_ERRORS,
   GET_NEW_TEMPLATE_NAME_ERRORS,
+  CreateEntitiesFromTemplateErrors,
+  migrateDeploymentEntities,
+  setCurrentTemplateFromSnapshot,
+  SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS, migrateClassicTemplateEntities, migrateAllDeploymentsByBaseTemplateId
 } from '@letta-cloud/utils-server';
 import { getContextDataHack } from '../getContextDataHack/getContextDataHack';
 import { and, eq, ilike, count, not, desc } from 'drizzle-orm';
 import { validateVersionString } from '@letta-cloud/utils-shared';
 import { generateTemplateSnapshot } from '@letta-cloud/utils-shared';
 import { environment } from '@letta-cloud/config-environment-variables';
-import { startMigrateTemplateEntities } from '@letta-cloud/lettuce-client';
+import {
+  startMigrateTemplateEntities,
+  startMigrateDeploymentEntities, startMigrateAllDeploymentsByBaseTemplateId
+} from '@letta-cloud/lettuce-client';
 import {
   type AgentFileSchema,
   AgentsService,
   BlocksService,
-  isAPIError
+  InternalTemplatesService,
+  isAPIError,
 } from '@letta-cloud/sdk-core';
 
 type CreateAgentsFromTemplateRequest = ServerInferRequest<
@@ -109,47 +118,97 @@ async function createAgentsFromTemplate(
     };
   }
 
-  const [response] = await createEntitiesFromTemplate({
-    projectId: project.id,
-    lettaAgentsId: lettaAgentsUserId,
-    template,
-    overrides: {
-      memoryVariables: memory_variables || {},
-      initialMessageSequence: initial_message_sequence || [],
-      identityIds: identity_ids || [],
-      toolVariables: tool_variables || {},
-      name: agent_name,
-      tags: tags || [],
-    },
-  });
+  try {
+    const response = await createEntitiesFromTemplate({
+      projectId: project.id,
+      lettaAgentsId: lettaAgentsUserId,
+      organizationId,
+      template,
+      overrides: {
+        memoryVariables: memory_variables || {},
+        initialMessageSequence: initial_message_sequence || [],
+        identityIds: identity_ids || [],
+        toolVariables: tool_variables || {},
+        name: agent_name,
+        tags: tags || [],
+      },
+    });
 
-  if (!response?.id) {
+    try {
+      await db.transaction(async (tx) => {
+        // Insert deployed agent metadata for each created agent
+        await Promise.all(
+          response.agents.map(async (agent) => {
+            if (!agent.id || !agent.project_id) {
+              throw new Error('Failed to create agent from template');
+            }
+            await tx.insert(deployedAgentMetadata).values({
+              deploymentId: response.deploymentId,
+              agentId: agent.id,
+              projectId: agent.project_id,
+              organizationId,
+            });
+
+            await tx.insert(deployedAgentVariables).values({
+              deployedAgentId: agent.id,
+              deploymentId: response.deploymentId,
+              value: memory_variables || {},
+              organizationId,
+            });
+          }),
+        );
+      });
+    } catch (e) {
+      Sentry.captureException(e);
+      // delete
+      await InternalTemplatesService.deleteDeployment(
+        {
+          deploymentId: response.deploymentId,
+        },
+        {
+          user_id: lettaAgentsUserId,
+        },
+      );
+
+      return {
+        status: 500,
+        body: {
+          message:
+            'Failed to save deployed agent metadata, creation rolled back (agents may be partially created but may be broken)',
+        },
+      };
+    }
+
+    return {
+      status: 201,
+      body: {
+        agents: response.agents,
+        group: response.group,
+        deployment_id: response.deploymentId,
+      },
+    };
+  } catch (e) {
+    console.log(e)
+    if (e instanceof Error) {
+      const messages = Object.values(CreateEntitiesFromTemplateErrors);
+      if (messages.includes(e.message)) {
+        return {
+          status: 500,
+          body: {
+            message: e.message,
+          },
+        };
+      }
+    }
+
+    Sentry.captureException(e);
     return {
       status: 500,
       body: {
-        message: 'Failed to create agent from template',
+        message: 'Failed to create agents from template',
       },
     };
   }
-
-  await db.insert(deployedAgentMetadata).values({
-    agentId: response.id,
-    organizationId,
-    projectId: project.id,
-  });
-
-  await db.insert(deployedAgentVariables).values({
-    deployedAgentId: response.id,
-    value: memory_variables || {},
-    organizationId,
-  });
-
-  return {
-    status: 201,
-    body: {
-      agents: [response],
-    },
-  };
 }
 
 type ListTemplatesRequest = ServerInferRequest<
@@ -313,9 +372,20 @@ async function getTemplateSnapshot(
     };
   }
 
+  // Fetch agent-block relationships separately
+  const relationships = await db.query.agentTemplateBlockTemplates.findMany({
+    where: eq(agentTemplateBlockTemplates.lettaTemplateId, template.id),
+  });
+
+  // Create template object with relationships for snapshot generation
+  const templateWithRelationships = {
+    ...template,
+    agentTemplateBlockTemplates: relationships,
+  };
+
   return {
     status: 200,
-    body: generateTemplateSnapshot(template),
+    body: generateTemplateSnapshot(templateWithRelationships),
   };
 }
 
@@ -390,24 +460,58 @@ async function saveTemplateVersion(
     };
   }
 
+
   if (migrate_agents) {
-    if (environment.TEMPORAL_LETTUCE_API_HOST) {
-      await startMigrateTemplateEntities({
-        preserveToolVariables: preserve_environment_variables_on_migration,
-        versionString,
-        preserveCoreMemories: preserve_core_memories_on_migration,
-        organizationId,
-        lettaAgentsId: lettaAgentsUserId,
-      });
+    if (newVersion.type === 'classic') {
+      if (environment.TEMPORAL_LETTUCE_API_HOST) {
+        await startMigrateTemplateEntities({
+          preserveToolVariables: preserve_environment_variables_on_migration,
+          versionString,
+          preserveCoreMemories: preserve_core_memories_on_migration,
+          organizationId,
+          lettaAgentsId: lettaAgentsUserId,
+        });
+      } else {
+        await migrateClassicTemplateEntities({
+          preserveToolVariables: preserve_environment_variables_on_migration,
+          versionString,
+          preserveCoreMemories: preserve_core_memories_on_migration,
+          organizationId,
+          lettaAgentsId: lettaAgentsUserId,
+        });
+      }
     } else {
-      await migrateEntities({
-        preserveToolVariables: preserve_environment_variables_on_migration,
-        versionString,
-        preserveCoreMemories: preserve_core_memories_on_migration,
-        organizationId,
+
+      const baseTemplate = await getTemplateByName({
         lettaAgentsId: lettaAgentsUserId,
-      });
+        organizationId,
+        versionString: `${project}/${template_name}:current`,
+      })
+
+      if (!baseTemplate) {
+        throw new Error('Base template not found for migration');
+      }
+
+      if (environment.TEMPORAL_LETTUCE_API_HOST) {
+        await startMigrateAllDeploymentsByBaseTemplateId({
+          preserveToolVariables: preserve_environment_variables_on_migration,
+          baseTemplateId: baseTemplate.id,
+          preserveCoreMemories: preserve_core_memories_on_migration,
+          organizationId,
+          lettaAgentsId: lettaAgentsUserId,
+        })
+      } else {
+        await migrateAllDeploymentsByBaseTemplateId({
+          preserveToolVariables: preserve_environment_variables_on_migration,
+          baseTemplateId: baseTemplate.id,
+          preserveCoreMemories: preserve_core_memories_on_migration,
+          organizationId,
+          lettaAgentsUserId: lettaAgentsUserId,
+        })
+      }
     }
+
+
   }
 
   return {
@@ -1059,6 +1163,218 @@ async function updateTemplateDescription(
   }
 }
 
+type MigrateDeploymentRequest = ServerInferRequest<
+  typeof cloudContracts.templates.migrateDeployment
+>;
+type MigrateDeploymentResponse = ServerInferResponses<
+  typeof cloudContracts.templates.migrateDeployment
+>;
+
+async function migrateDeployment(
+  req: MigrateDeploymentRequest,
+  context: SDKContext,
+): Promise<MigrateDeploymentResponse> {
+  const { organizationId, lettaAgentsUserId } = getContextDataHack(
+    req,
+    context,
+  );
+  const { project, template_name, deployment_id } = req.params;
+  const {
+    version,
+    preserve_tool_variables = false,
+    preserve_core_memories = false,
+    memory_variables,
+  } = req.body;
+
+  // Get the project by slug
+  const projectData = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.slug, project),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!projectData) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  // Find the target template version
+  const targetTemplate = await db.query.lettaTemplates.findFirst({
+    where: and(
+      eq(lettaTemplates.organizationId, organizationId),
+      eq(lettaTemplates.projectId, projectData.id),
+      eq(lettaTemplates.name, template_name),
+      eq(lettaTemplates.version, version),
+    ),
+  });
+
+  if (!targetTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: `Template '${template_name}' version '${version}' not found in project '${project}'`,
+      },
+    };
+  }
+
+  // Find the base template (current version)
+  const baseTemplate = await db.query.lettaTemplates.findFirst({
+    where: and(
+      eq(lettaTemplates.organizationId, organizationId),
+      eq(lettaTemplates.name, template_name),
+      eq(lettaTemplates.projectId, projectData.id),
+      eq(lettaTemplates.version, 'current'),
+    ),
+  });
+
+  if (!baseTemplate) {
+    return {
+      status: 404,
+      body: {
+        message: `Base template 'current' version for '${template_name}' not found in project '${project}'`,
+      },
+    };
+  }
+
+  try {
+    // Check if temporal is available for background processing
+    if (environment.TEMPORAL_LETTUCE_API_HOST) {
+      await startMigrateDeploymentEntities({
+        deploymentId: deployment_id,
+        templateId: targetTemplate.id,
+        preserveToolVariables: preserve_tool_variables,
+        preserveCoreMemories: preserve_core_memories,
+        organizationId,
+        lettaAgentsId: lettaAgentsUserId,
+        baseTemplateId: baseTemplate.id,
+        memoryVariables: memory_variables || {},
+      });
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Deployment migration started successfully',
+        },
+      };
+    } else {
+      // Fall back to direct execution
+      await migrateDeploymentEntities({
+        deploymentId: deployment_id,
+        templateId: targetTemplate.id,
+        preserveToolVariables: preserve_tool_variables,
+        preserveCoreMemories: preserve_core_memories,
+        organizationId,
+        lettaAgentsUserId,
+        baseTemplateId: baseTemplate.id,
+        memoryVariables: memory_variables || {},
+      });
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Deployment migration completed successfully',
+        },
+      };
+    }
+  } catch (error) {
+    console.error('Error migrating deployment:', error);
+    return {
+      status: 500,
+      body: {
+        message: error instanceof Error ? error.message : 'Failed to migrate deployment',
+      },
+    };
+  }
+}
+
+type SetCurrentTemplateFromSnapshotRequest = ServerInferRequest<
+  typeof cloudContracts.templates.setCurrentTemplateFromSnapshot
+>;
+type SetCurrentTemplateFromSnapshotResponse = ServerInferResponses<
+  typeof cloudContracts.templates.setCurrentTemplateFromSnapshot
+>;
+
+async function setCurrentTemplateFromSnapshotHandler(
+  req: SetCurrentTemplateFromSnapshotRequest,
+  context: SDKContext,
+): Promise<SetCurrentTemplateFromSnapshotResponse> {
+  const { organizationId } = getContextDataHack(req, context);
+  const { project, template_version } = req.params;
+  const snapshot = req.body;
+
+  // Validate template_version format (must be template_name:current)
+  if (!template_version.endsWith(':current')) {
+    return {
+      status: 400,
+      body: {
+        message: 'Only :current versions can be updated from snapshot',
+      },
+    };
+  }
+
+  const templateName = template_version.replace(':current', '');
+
+  // Get the project by slug
+  const projectData = await db.query.projects.findFirst({
+    where: and(
+      eq(projects.slug, project),
+      eq(projects.organizationId, organizationId),
+    ),
+  });
+
+  if (!projectData) {
+    return {
+      status: 404,
+      body: {
+        message: 'Project not found',
+      },
+    };
+  }
+
+  try {
+    const result = await setCurrentTemplateFromSnapshot({
+      projectId: projectData.id,
+      templateName,
+      organizationId,
+      snapshot,
+    });
+
+    return {
+      status: 200,
+      body: result,
+    };
+  } catch (error) {
+    console.error('Error setting current template from snapshot:', error);
+
+    // Handle known errors
+    if (error instanceof Error) {
+      const knownErrors = Object.values(SET_CURRENT_TEMPLATE_FROM_SNAPSHOT_ERRORS);
+      if (knownErrors.includes(error.message)) {
+        return {
+          status: 400,
+          body: {
+            message: error.message,
+          },
+        };
+      }
+    }
+
+    return {
+      status: 500,
+      body: {
+        message: 'Failed to set current template from snapshot',
+      },
+    };
+  }
+}
+
 export const templatesRouter = {
   createAgentsFromTemplate,
   listTemplates,
@@ -1070,4 +1386,6 @@ export const templatesRouter = {
   renameTemplate,
   updateTemplateDescription,
   listTemplateVersions,
+  migrateDeployment,
+  setCurrentTemplateFromSnapshot: setCurrentTemplateFromSnapshotHandler,
 };

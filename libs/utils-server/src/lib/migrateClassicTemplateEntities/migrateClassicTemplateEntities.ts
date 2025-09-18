@@ -46,7 +46,7 @@ async function getAgentsFromTemplate(
   }));
 }
 
-export async function migrateEntities(options: MigrateEntitiesOptions) {
+export async function migrateClassicTemplateEntities(options: MigrateEntitiesOptions) {
   const { preserveToolVariables, versionString, preserveCoreMemories, organizationId, lettaAgentsId } = options;
 
   const template = await getTemplateByName({

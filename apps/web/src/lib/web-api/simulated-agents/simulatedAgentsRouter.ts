@@ -11,9 +11,8 @@ import { and, eq } from 'drizzle-orm';
 import { getUserWithActiveOrganizationIdOrThrow } from '$web/server/auth';
 import type { contracts } from '@letta-cloud/sdk-web';
 import {
-  createSimulatedAgent as createSimulatedAgentUtil,
+  createSimulatedEntities,
   updateAgentFromAgentTemplateId,
-  createEntitiesFromTemplate,
 } from '@letta-cloud/utils-server';
 import * as Sentry from '@sentry/nextjs';
 import { syncAgentTemplateWithState } from './sync/syncAgentTemplateWithState';
@@ -21,6 +20,9 @@ import {
   convertMemoryVariablesV1ToRecordMemoryVariables,
   convertRecordMemoryVariablesToMemoryVariablesV1,
 } from '@letta-cloud/utils-shared';
+import {
+  flushSimulatedEntities
+} from '@letta-cloud/utils-server';
 
 type GetDefaultSimulatedAgentRequest = ServerInferRequest<
   typeof contracts.simulatedAgents.getDefaultSimulatedAgent
@@ -96,6 +98,7 @@ async function getDefaultSimulatedAgent(
         const [res] = await db
           .insert(simulatedAgent)
           .values({
+            lettaTemplateId: agentTemplate.lettaTemplateId,
             agentId: existingSimulatedAgent.agentId,
             projectId: agentTemplate.projectId,
             organizationId: activeOrganizationId,
@@ -126,42 +129,40 @@ async function getDefaultSimulatedAgent(
           },
         };
       } else {
-        const response = await createSimulatedAgentUtil({
+        await createSimulatedEntities({
           projectId: agentTemplate.projectId,
           lettaTemplateId: agentTemplate.lettaTemplateId,
-          agentTemplateId: agentTemplate.id,
           organizationId: activeOrganizationId,
           lettaAgentsId,
-          memoryVariables: {},
           isDefault: true,
         });
 
-        if (!response.simulatedAgentRecord) {
-          const record = await db.query.simulatedAgent.findFirst({
-            where: and(
-              eq(simulatedAgent.agentTemplateId, agentTemplateId),
-              eq(simulatedAgent.isDefault, true),
-              eq(simulatedAgent.organizationId, activeOrganizationId),
-            ),
-          });
+        const record = await db.query.simulatedAgent.findFirst({
+          where: and(
+            eq(simulatedAgent.agentTemplateId, agentTemplateId),
+            eq(simulatedAgent.isDefault, true),
+            eq(simulatedAgent.organizationId, activeOrganizationId),
+          ),
+          columns: {
+            id: true,
+            agentId: true,
+          },
+        });
 
-          if (record) {
-            response.simulatedAgentRecord = record;
-          }
-
-          if (!response.simulatedAgentRecord) {
-            return {
-              status: 500,
-              body: {
-                message: 'Failed to create default simulated agent',
-              },
-            };
-          }
+        if (!record) {
+          return {
+            status: 500,
+            body: {
+              code: 'sar-1',
+              message: 'Failed to create default simulated agent',
+            },
+          };
         }
 
+
         simulatedAgentResponse = {
-          id: response.simulatedAgentRecord.id,
-          agentId: response.agent.id,
+          id: record.id,
+          agentId: record.agentId,
           agentTemplate: {
             id: agentTemplate.id,
             name: agentTemplate.name,
@@ -170,10 +171,11 @@ async function getDefaultSimulatedAgent(
         };
       }
     } catch (error) {
-      console.error('Failed to create default simulated agent:', error);
+      console.log(error)
       return {
         status: 500,
         body: {
+          code: 'sar-2',
           message: 'Failed to create default simulated agent',
         },
       };
@@ -252,6 +254,7 @@ async function flushSimulatedAgent(
       agentId: true,
       projectId: true,
       organizationId: true,
+      deploymentId: true,
       isDefault: true,
       agentTemplateId: true,
       memoryVariables: true,
@@ -288,52 +291,44 @@ async function flushSimulatedAgent(
   }
 
   try {
-    // Delete the existing agent from Letta service
-    void AgentsService.deleteAgent({
-      agentId: simulatedAgentId,
-    }).catch((e) => {
-      Sentry.captureException(e);
-      // Continue even if delete fails - we'll create a new one
+    await flushSimulatedEntities({
+      projectId: simulatedAgentRecord.projectId,
+      organizationId: activeOrganizationId,
+      deploymentId: simulatedAgentRecord.deploymentId ?? '',
+      lettaTemplateId:
+        simulatedAgentRecord.agentTemplate.lettaTemplate.id,
+      lettaAgentsId,
+      isDefault: simulatedAgentRecord.isDefault,
     });
 
-    // Create a new agent directly using copyAgentById
-    const [agent] = await createEntitiesFromTemplate({
-      template: simulatedAgentRecord.agentTemplate.lettaTemplate,
-      projectId: simulatedAgentRecord.projectId,
-      lettaAgentsId,
-      overrides: {
-        hidden: true,
-        memoryVariables: simulatedAgentRecord.memoryVariables
-          ? convertMemoryVariablesV1ToRecordMemoryVariables(
-              simulatedAgentRecord.memoryVariables,
-            )
-          : {},
-        name: simulatedAgentRecord.agentTemplate.name,
+    const record = await db.query.simulatedAgent.findFirst({
+      where: and(
+        eq(simulatedAgent.agentTemplateId, simulatedAgentRecord.agentTemplateId),
+        eq(simulatedAgent.isDefault, true),
+        eq(simulatedAgent.organizationId, activeOrganizationId),
+      ),
+      columns: {
+        id: true,
+        agentId: true,
       },
     });
 
-    if (!agent?.id || !agent?.project_id) {
+    if (!record) {
       return {
         status: 500,
         body: {
-          message: 'Failed to create new simulated agent',
+          code: 'sar-3',
+          message: 'Failed to recreate simulated agent after flush',
         },
       };
     }
-    // Insert new record with the new agent ID
-    await db
-      .update(simulatedAgent)
-      .set({
-        agentId: agent.id,
-      })
-      .where(eq(simulatedAgent.id, simulatedAgentId));
 
     return {
       status: 200,
       body: {
-        name: agent.name || 'Unknown Agent',
+        name: 'Flushed Agent',
         id: simulatedAgentId,
-        agentId: agent.id,
+        agentId: record.agentId,
         agentTemplateId: simulatedAgentRecord.agentTemplateId,
         isCorrupted: null,
       },

@@ -82,6 +82,7 @@ export async function createBlockTemplate(
     status: 201,
     body: {
       id: output.id,
+      entityId: output.entityId,
       label: output.label,
       value: output.value,
       limit: output.limit,
@@ -171,6 +172,7 @@ export async function updateBlockTemplate(
       value: updatedBlockTemplate.value,
       limit: updatedBlockTemplate.limit,
       description: updatedBlockTemplate.description,
+      entityId: updatedBlockTemplate.entityId,
       preserveOnMigration: updatedBlockTemplate.preserveOnMigration,
       readOnly: updatedBlockTemplate.readOnly,
       createdAt: updatedBlockTemplate.createdAt.toISOString(),
@@ -230,6 +232,7 @@ export async function getBlockTemplates(
           label: blockTemplate.label,
           value: blockTemplate.value,
           limit: blockTemplate.limit,
+          entityId: blockTemplate.entityId,
           description: blockTemplate.description,
           preserveOnMigration: blockTemplate.preserveOnMigration,
           readOnly: blockTemplate.readOnly,
@@ -287,6 +290,7 @@ export async function getBlockTemplate(
       value: output.value,
       limit: output.limit,
       description: output.description,
+      entityId: output.entityId,
       preserveOnMigration: output.preserveOnMigration,
       readOnly: output.readOnly,
       createdAt: output.createdAt.toISOString(),
@@ -584,6 +588,7 @@ export async function getAgentTemplateBlockTemplates(
       readOnly: blockTemplate.readOnly,
       createdAt: blockTemplate.createdAt,
       updatedAt: blockTemplate.updatedAt,
+      entityId: blockTemplate.entityId,
     })
     .from(agentTemplateBlockTemplates)
     .innerJoin(
@@ -606,6 +611,7 @@ export async function getAgentTemplateBlockTemplates(
         label: blockTemplate.label,
         value: blockTemplate.value,
         limit: blockTemplate.limit,
+        entityId: blockTemplate.entityId,
         description: blockTemplate.description,
         preserveOnMigration: blockTemplate.preserveOnMigration,
         readOnly: blockTemplate.readOnly,
@@ -744,6 +750,7 @@ export async function createAndAttachBlockToAgentTemplate(
         value: result.value,
         limit: result.limit,
         description: result.description,
+        entityId: result.entityId,
         preserveOnMigration: result.preserveOnMigration,
         readOnly: result.readOnly,
         createdAt: result.createdAt.toISOString(),

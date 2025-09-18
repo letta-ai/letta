@@ -315,6 +315,7 @@ function useCreateTemplateMemoryBlock(
               if (simulatedAgent) {
                 handleCreateSimulatedAgentMemoryBlock({
                   id: createdBlock.id,
+                  entityId: createdBlock.entityId,
                   createdAt: createdBlock.createdAt,
                   updatedAt: createdBlock.updatedAt,
                   label: createdBlock.label,

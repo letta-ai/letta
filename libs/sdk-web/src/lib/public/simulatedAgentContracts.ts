@@ -38,9 +38,6 @@ const flushSimulatedAgentContract = c.mutation({
     404: z.object({
       message: z.string(),
     }),
-    500: z.object({
-      message: z.string(),
-    }),
   },
 });
 

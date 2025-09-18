@@ -74,6 +74,11 @@ const createAgentsFromTemplate = c.mutation({
   responses: {
     201: z.object({
       agents: zodTypes.AgentState.array(),
+      group: zodTypes.Group.optional().nullable(),
+      deployment_id: z.string().openapi({
+        description:
+          'The deployment ID of the created agents, group and blocks, can be used to identify from a specific invokation'
+      }),
     }),
     402: z.object({
       message: z.string(),
@@ -462,6 +467,82 @@ const updateTemplateDescription = c.mutation({
   },
 });
 
+const migrateDeployment = c.mutation({
+  path: '/v1/templates/:project/:template_name/deployments/:deployment_id/migrate',
+  method: 'POST',
+  description: 'Migrates a deployment to a specific template version',
+  summary: 'Migrate deployment to template version (Cloud-only)',
+  pathParams: z.object({
+    project: z.string().openapi({ description: 'The project slug' }),
+    template_name: z.string().openapi({
+      description: 'The template name (without version)',
+    }),
+    deployment_id: z.string().openapi({
+      description: 'The deployment ID to migrate',
+    }),
+  }),
+  body: z.object({
+    version: z.string().openapi({
+      description: 'The target template version to migrate to',
+    }),
+    preserve_tool_variables: z.boolean().optional().openapi({
+      description: 'Whether to preserve existing tool variables during migration',
+    }),
+    preserve_core_memories: z.boolean().optional().openapi({
+      description: 'Whether to preserve existing core memories during migration',
+    }),
+    memory_variables: z.record(z.string()).optional().openapi({
+      description: 'Additional memory variables to apply during migration',
+    }),
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
+const setCurrentTemplateFromSnapshot = c.mutation({
+  path: '/v1/templates/:project/:template_version/snapshot',
+  method: 'PUT',
+  description: 'Updates the current working version of a template from a snapshot',
+  summary: 'Set current template from snapshot (Cloud-only)',
+  pathParams: z.object({
+    project: z.string().openapi({ description: 'The project slug' }),
+    template_version: z.string().openapi({
+      description: 'The template name with :current version (e.g., my-template:current)',
+    }),
+  }),
+  body: z.any().openapi({
+    description: 'The template snapshot to set as the current version',
+  }),
+  responses: {
+    200: z.object({
+      success: z.boolean(),
+      message: z.string().optional(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+    500: z.object({
+      message: z.string(),
+    }),
+  },
+});
+
 export const templatesContract = c.router({
   createAgentsFromTemplate,
   listTemplates,
@@ -473,6 +554,8 @@ export const templatesContract = c.router({
   renameTemplate,
   updateTemplateDescription,
   listTemplateVersions,
+  migrateDeployment,
+  setCurrentTemplateFromSnapshot,
 });
 
 export const templateQueryKeys = {

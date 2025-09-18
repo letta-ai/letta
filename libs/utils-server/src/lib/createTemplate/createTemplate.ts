@@ -23,6 +23,7 @@ import { createTemplateEntitiesFromAgentFileAgentSchema } from '../createTemplat
 import { nanoid } from 'nanoid';
 import { saveTemplate } from '@letta-cloud/utils-server';
 import { mapToolsFromAgentFile } from '../mapToolsFromAgentFile/mapToolsFromAgentFile';
+import { get } from 'lodash';
 
 interface CreateTemplateOptions {
   tx?: TxType;
@@ -69,6 +70,10 @@ export function determineTemplateType(
   // Single agent with no groups = classic
   if (agentCount === 1 && groupCount === 0) {
     return 'classic';
+  }
+
+  if (agentCount > 1 && groupCount === 0) {
+    return 'cluster';
   }
 
   // Has groups - check first group type
@@ -135,7 +140,7 @@ export function setGroupConfiguration(
       }
 
       return {
-        managerAgentEntityId: managerConfig.manager_agent_id,
+        managerAgentEntityId: managerEntityId,
         sleeptimeAgentFrequency: managerConfig.sleeptime_agent_frequency || 15,
       };
     }
@@ -149,7 +154,7 @@ export function setGroupConfiguration(
       }
 
       return {
-        managerAgentEntityId: managerConfig.manager_agent_id,
+        managerAgentEntityId: managerEntityId,
         maxMessageBufferLength: managerConfig.max_message_buffer_length || 15,
         minMessageBufferLength: managerConfig.min_message_buffer_length || 15,
       };
@@ -160,7 +165,7 @@ export function setGroupConfiguration(
       }
 
       return {
-        managerAgentEntityId: managerConfig.manager_agent_id,
+        managerAgentEntityId: managerEntityId,
       };
     }
     case 'dynamic': {
@@ -169,7 +174,7 @@ export function setGroupConfiguration(
       }
 
       return {
-        managerAgentEntityId: managerConfig.manager_agent_id,
+        managerAgentEntityId: managerEntityId,
         terminationToken: managerConfig.termination_token || 'END',
         maxTurns: managerConfig.max_turns || 15,
       };
@@ -222,7 +227,7 @@ export async function processBlocks(
     const [createdBlock] = await tx
       .insert(blockTemplate)
       .values({
-        entityId: nanoid(8),
+        entityId: block.id || nanoid(8),
         organizationId,
         value: block.value,
         lettaTemplateId,
@@ -320,7 +325,11 @@ export async function createTemplate(options: CreateTemplateOptions) {
       tx,
     });
 
-    const mainAgentEntityId = nanoid(8);
+    let mainAgentEntityId = nanoid(8);
+
+    if (base?.groups?.[0]?.manager_config && 'manager_agent_id' in base.groups[0].manager_config) {
+      mainAgentEntityId = base.groups[0].manager_config.manager_agent_id;
+    }
 
 
     // Create tool mapping from agent file tools to server tool IDs
@@ -374,7 +383,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
       switch (templateType) {
         case 'sleeptime':
         case 'voice_sleeptime': {
-          const sleeptimeAgentEntityId = nanoid(8);
+          let sleeptimeAgentEntityId = nanoid(8);
 
           // Handle sleeptime template with specific agent types
           const mainAgent = base.agents.find(
@@ -388,6 +397,10 @@ export async function createTemplate(options: CreateTemplateOptions) {
               agent.agent_type === 'sleeptime_agent' ||
               agent.agent_type === 'voice_sleeptime_agent',
           );
+
+          if (sleeptimeAgent?.id) {
+            sleeptimeAgentEntityId = sleeptimeAgent.id;
+          }
 
           // Create agent templates
           const [mainAgentTemplate, sleeptimeAgentTemplate] = await Promise.all(
@@ -455,6 +468,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
           const agentTemplate =
             await createTemplateEntitiesFromAgentFileAgentSchema({
               agentSchema: mainAgent,
+              entityId: mainAgent?.id,
               organizationId,
               lettaTemplateId: lettaTemplateResult.id,
               projectId,
@@ -475,11 +489,12 @@ export async function createTemplate(options: CreateTemplateOptions) {
           }
           break;
         }
+        case 'cluster':
         case 'dynamic':
         case 'round_robin':
         case 'supervisor': {
           // there should only be one managing entity
-          if (templateType !== 'round_robin') {
+          if (templateType !== 'round_robin' && templateType !== 'cluster') {
             const agentsThatManage = base.agents.filter(
               (v) => (v.group_ids || [])?.length > 0,
             );
@@ -493,6 +508,10 @@ export async function createTemplate(options: CreateTemplateOptions) {
             }
           }
 
+          const mainAgentId = get(base.groups, '[0].manager_config.manager_agent_id', null) as string | null;
+          const hasMainAgentId = !!(mainAgentId && base.agents.find((a) => a.id === mainAgentId));
+
+          let index = 0;
           // Handle multi-agent templates - create templates for all agents (unlimited agents allowed)
           for (const agent of base.agents) {
             const agentTemplate =
@@ -503,10 +522,7 @@ export async function createTemplate(options: CreateTemplateOptions) {
                 projectId,
                 tx,
                 toolMapping,
-                entityId:
-                  (agent.group_ids || []).length === 1
-                    ? mainAgentEntityId
-                    : undefined,
+                entityId: (hasMainAgentId && agent.id === mainAgentId) || (!hasMainAgentId && index === 0) ? mainAgentEntityId : agent.id,
               });
 
             // Create block associations for each agent
@@ -520,6 +536,8 @@ export async function createTemplate(options: CreateTemplateOptions) {
                 base.blocks || [],
               );
             }
+
+            index++;
           }
           break;
         }
