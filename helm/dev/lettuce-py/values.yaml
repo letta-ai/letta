@@ -47,14 +47,14 @@ env:
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   PORT: "8080"
-  TEMPORAL_NAMESPACE: "lettuce-py.tmhou"
-  TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
-  TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
+  LETTA_TEMPORAL_NAMESPACE: "lettuce-py.tmhou"
+  LETTA_TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
+  LETTA_TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
 
 secretsProvider:
   secrets:
     - DATABASE_URL
-    - TEMPORAL_API_KEY
+    - LETTA_TEMPORAL_API_KEY
 
 resources:
   limits:
