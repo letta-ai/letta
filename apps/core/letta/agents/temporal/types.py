@@ -163,26 +163,13 @@ class ExecuteToolResult:
 class CreateMessagesParams:
     """Input to create_messages_activity.
 
-    Creates Letta messages from LLM responses and tool execution results.
+    Persists messages to the database.
     """
 
-    agent_id: str
-    model: str
-    tool_name: str
-    tool_args: Dict
-    tool_execution_result: ToolExecutionResult
-    tool_call_id: str
-    function_response_string: str
-    timezone: str
+    messages: List[Message]
     actor: User
-    continue_stepping: bool
-    heartbeat_reason: Optional[str]
-    reasoning_content: Optional[List[TextContent | ReasoningContent | RedactedReasoningContent | OmittedReasoningContent]]
-    pre_computed_assistant_message_id: Optional[str]
-    step_id: Optional[str]
-    is_approval: bool
-    is_denial: bool
-    initial_messages: Optional[List[Message]]
+    project_id: Optional[str]
+    template_id: Optional[str]
 
 
 @dataclass
