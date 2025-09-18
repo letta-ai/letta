@@ -13,6 +13,7 @@ from letta.agents.ephemeral_summary_agent import EphemeralSummaryAgent
 from letta.agents.helpers import (
     _build_rule_violation_result,
     _load_last_function_response,
+    _maybe_get_approval_messages,
     _pop_heartbeat,
     _prepare_in_context_messages_no_persist_async,
     _safe_load_tool_call_str,
@@ -379,7 +380,7 @@ class LettaAgentV2(BaseAgentV2):
         try:
             self.last_function_response = _load_last_function_response(messages)
             valid_tools = await self._get_valid_tools()
-            approval_request, approval_response = await self._maybe_get_approval_messages(messages)
+            approval_request, approval_response = _maybe_get_approval_messages(messages)
             if approval_request and approval_response:
                 tool_call = approval_request.tool_calls[0]
                 reasoning_content = approval_request.content
@@ -600,13 +601,6 @@ class LettaAgentV2(BaseAgentV2):
         self.job_update_metadata = None
         self.last_function_response = None
         self.response_messages = []
-
-    async def _maybe_get_approval_messages(self, messages: list[Message]) -> Tuple[Message | None, Message | None]:
-        if len(messages) >= 2:
-            maybe_approval_request, maybe_approval_response = messages[-2], messages[-1]
-            if maybe_approval_request.role == "approval" and maybe_approval_response.role == "approval":
-                return maybe_approval_request, maybe_approval_response
-        return None, None
 
     @trace_method
     async def _check_run_cancellation(self, run_id) -> bool:
