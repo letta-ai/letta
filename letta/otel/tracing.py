@@ -1,6 +1,8 @@
+import asyncio
 import inspect
 import re
 import time
+import traceback
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
@@ -236,9 +238,31 @@ def trace_method(func):
         with tracer.start_as_current_span(_get_span_name(func, args)) as span:
             _add_parameters_to_span(span, func, args, kwargs)
 
-            result = await func(*args, **kwargs)
-            span.set_status(Status(StatusCode.OK))
-            return result
+            try:
+                result = await func(*args, **kwargs)
+                span.set_status(Status(StatusCode.OK))
+                return result
+            except asyncio.CancelledError as e:
+                # Get current task info
+                current_task = asyncio.current_task()
+                task_name = current_task.get_name() if current_task else "unknown"
+
+                # Log detailed information
+                logger.error(f"Task {task_name} cancelled in {func.__module__}.{func.__name__}")
+
+                # Add to span
+                span.set_status(Status(StatusCode.ERROR))
+                span.record_exception(
+                    e,
+                    attributes={
+                        "exception.type": "asyncio.CancelledError",
+                        "task.name": task_name,
+                        "function.name": func.__name__,
+                        "function.module": func.__module__,
+                        "cancellation.timestamp": time.time_ns(),
+                    },
+                )
+                raise
 
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
