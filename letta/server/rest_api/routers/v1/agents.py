@@ -28,7 +28,7 @@ from letta.log import get_logger
 from letta.orm.errors import NoResultFound
 from letta.otel.context import get_ctx_attributes
 from letta.otel.metric_registry import MetricRegistry
-from letta.schemas.agent import AgentState, CreateAgent, UpdateAgent
+from letta.schemas.agent import AgentState, AgentType, CreateAgent, UpdateAgent
 from letta.schemas.agent_file import AgentFileSchema
 from letta.schemas.block import Block, BlockUpdate
 from letta.schemas.enums import JobType
@@ -436,6 +436,8 @@ async def create_agent(
     """
     Create an agent.
     """
+    # TODO remove
+    agent.agent_type = AgentType.react_agent
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.create_agent_async(agent, actor=actor)
