@@ -1,3 +1,4 @@
+import asyncio
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from e2b.sandbox.commands.command_handle import CommandExitException
@@ -65,14 +66,24 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
         code = await self.generate_execution_script(agent_state=agent_state)
 
         try:
+            logger.info(f"E2B execution started for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
             log_event(
                 "e2b_execution_started",
                 {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id, "code": code, "env_vars": envs},
             )
-            execution = await e2b_sandbox.run_code(code, envs=envs)
+            try:
+                execution = await e2b_sandbox.run_code(code, envs=envs)
+            except asyncio.CancelledError:
+                logger.info(f"E2B execution cancelled for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
+                log_event(
+                    "e2b_execution_cancelled",
+                    {"tool": self.tool_name, "sandbox_id": e2b_sandbox.sandbox_id},
+                )
+                raise Exception("Execution cancelled. Transient failure, please retry.")
 
             if execution.results:
                 func_return, agent_state = parse_stdout_best_effort(execution.results[0].text)
+                logger.info(f"E2B execution succeeded for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
                 log_event(
                     "e2b_execution_succeeded",
                     {
@@ -90,6 +101,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                     function_name=self.tool_name, exception_name=execution.error.name, exception_message=execution.error.value
                 )
                 execution.logs.stderr.append(execution.error.traceback)
+                logger.info(f"E2B execution failed for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
                 log_event(
                     "e2b_execution_failed",
                     {
@@ -101,6 +113,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                     },
                 )
             else:
+                logger.info(f"E2B execution empty for ID {e2b_sandbox.sandbox_id}: {self.tool_name}")
                 log_event(
                     "e2b_execution_empty",
                     {
@@ -120,6 +133,7 @@ class AsyncToolSandboxE2B(AsyncToolSandboxBase):
                 sandbox_config_fingerprint=sbx_config.fingerprint(),
             )
         finally:
+            logger.info(f"E2B sandbox {e2b_sandbox.sandbox_id} killed")
             await e2b_sandbox.kill()
 
     @staticmethod
