@@ -169,7 +169,6 @@ describe-web:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
     # Single command that handles both cases
     # For when we move to self-hosted: docker buildx create --name ci-builder --driver docker-container --use 2>/dev/null || docker buildx use ci-builder
-    docker buildx create --use
     docker buildx build \
     --platform linux/{{ BUILD_ARCH }} \
     --cache-from type=registry,ref={{DOCKER_REGISTRY}}/memgpt-server:latest \
@@ -602,9 +601,12 @@ build-lettuce:
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
     docker buildx build --platform linux/{{ BUILD_ARCH }} --target lettuce -t {{DOCKER_REGISTRY}}/lettuce:{{TAG}} . --load --file apps/lettuce/Dockerfile
 
-build-lettuce-py:
+build-lettuce-py: build-core
     @echo "🚧 Building cloud API Docker image with tag: {{TAG}}..."
-    docker buildx build --platform linux/{{ BUILD_ARCH }} -t {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}} --load --file apps/lettuce-py/Dockerfile apps/lettuce-py
+    # Tag the memgpt-server image locally to work around registry cache issues
+    docker tag {{DOCKER_REGISTRY}}/memgpt-server:{{TAG}} memgpt-server-local:latest
+    # Use DOCKER_DEFAULT_PLATFORM to build for the target architecture
+    DOCKER_DEFAULT_PLATFORM=linux/{{ BUILD_ARCH }} docker build -t {{DOCKER_REGISTRY}}/lettuce-py:{{TAG}} --file apps/lettuce-py/Dockerfile apps/lettuce-py
 
 
 push-lettuce:
