@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from letta.helpers import ToolRulesSolver
 from letta.schemas.agent import AgentState
+from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
     ReasoningContent,
@@ -22,6 +23,8 @@ class WorkflowInputParams:
     messages: list[MessageCreate]
     actor: User
     max_steps: int = 50
+    use_assistant_message: bool = (True,)
+    include_return_message_types: list[MessageType] | None = (None,)
 
 
 @dataclass
@@ -34,6 +37,16 @@ class PreparedMessages:
 class FinalResult:
     stop_reason: StopReasonType
     usage: LettaUsageStatistics
+
+
+@dataclass
+class InnerStepResult:
+    """Result from a single inner_step execution."""
+
+    stop_reason: StopReasonType
+    usage: LettaUsageStatistics
+    should_continue: bool
+    response_messages: List[Message]  # Messages generated during this step
 
 
 # ===== Additional types for activities up to _handle_ai_response =====
