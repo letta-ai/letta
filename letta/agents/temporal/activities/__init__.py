@@ -1,8 +1,11 @@
 from letta.agents.temporal.activities.example_activity import example_activity
 from letta.agents.temporal.activities.llm_request import llm_request
+from letta.agents.temporal.activities.message_creation_activities import create_messages_activity
+from letta.agents.temporal.activities.persistence_activities import persist_messages_activity
 from letta.agents.temporal.activities.prepare_messages import prepare_messages
 from letta.agents.temporal.activities.refresh_context import refresh_context_and_system_message
 from letta.agents.temporal.activities.summarize_conversation_history import summarize_conversation_history
+from letta.agents.temporal.activities.tool_execution_activities import execute_tool_activity
 
 __all__ = [
     "prepare_messages",
@@ -10,4 +13,7 @@ __all__ = [
     "llm_request",
     "summarize_conversation_history",
     "example_activity",
+    "execute_tool_activity",
+    "create_messages_activity",
+    "persist_messages_activity",
 ]

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from letta.helpers import ToolRulesSolver
 from letta.schemas.agent import AgentState
@@ -13,6 +13,7 @@ from letta.schemas.letta_message_content import (
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
 
@@ -123,3 +124,86 @@ class SummarizeParams:
     new_letta_messages: List[Message]
     actor: User
     force: bool = True
+
+
+# ===== Tool execution and message handling types =====
+
+
+@dataclass
+class ExecuteToolParams:
+    """Input to execute_tool_activity.
+
+    - tool_name: Name of the tool to execute
+    - tool_args: Arguments to pass to the tool
+    - agent_state: Current agent state containing tools and configuration
+    - actor: Requesting user for access control
+    - step_id: Current step ID for tracing
+    """
+
+    tool_name: str
+    tool_args: Dict
+    agent_state: AgentState
+    actor: User
+    step_id: Optional[str]
+
+
+@dataclass
+class ExecuteToolResult:
+    """Output from execute_tool_activity."""
+
+    tool_execution_result: ToolExecutionResult
+    execution_time_ns: int
+
+
+@dataclass
+class CreateMessagesParams:
+    """Input to create_messages_activity.
+
+    Creates Letta messages from LLM responses and tool execution results.
+    """
+
+    agent_id: str
+    model: str
+    tool_name: str
+    tool_args: Dict
+    tool_execution_result: ToolExecutionResult
+    tool_call_id: str
+    function_response_string: str
+    timezone: str
+    actor: User
+    continue_stepping: bool
+    heartbeat_reason: Optional[str]
+    reasoning_content: Optional[List[TextContent | ReasoningContent | RedactedReasoningContent | OmittedReasoningContent]]
+    pre_computed_assistant_message_id: Optional[str]
+    step_id: Optional[str]
+    is_approval: bool
+    is_denial: bool
+    initial_messages: Optional[List[Message]]
+
+
+@dataclass
+class CreateMessagesResult:
+    """Output from create_messages_activity."""
+
+    messages: List[Message]
+
+
+@dataclass
+class PersistMessagesParams:
+    """Input to persist_messages_activity.
+
+    Persists messages to database and optionally updates job messages.
+    """
+
+    messages: List[Message]
+    actor: User
+    project_id: Optional[str]
+    template_id: Optional[str]
+    run_id: Optional[str]
+
+
+@dataclass
+class PersistMessagesResult:
+    """Output from persist_messages_activity."""
+
+    persisted_messages: List[Message]
