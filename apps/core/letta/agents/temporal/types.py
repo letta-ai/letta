@@ -197,4 +197,24 @@ class PersistMessagesParams:
 class PersistMessagesResult:
     """Output from persist_messages_activity."""
 
+
+@dataclass
+class UpdateMessageIdsParams:
+    """Input to update_message_ids_activity.
+
+    Updates the agent's message IDs in the database.
+    Used for immediate approval persistence to prevent bad state.
+    """
+
+    agent_id: str
+    message_ids: List[str]
+    actor: User
+
+
+@dataclass
+class UpdateMessageIdsResult:
+    """Output from update_message_ids_activity."""
+
+    success: bool
+
     persisted_messages: List[Message]
