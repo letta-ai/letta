@@ -82,7 +82,6 @@ class TemporalAgentWorkflow:
         # Initialize tracking variables
         usage = LettaUsageStatistics()
         stop_reason = StopReasonType.end_turn
-        should_continue = True
 
         # 1) Prepare messages (context + new input), no persistence
         prepared: PreparedMessages = await workflow.execute_activity(
@@ -117,15 +116,19 @@ class TemporalAgentWorkflow:
 
             # Update stop reason from step result
             stop_reason = step_result.stop_reason
-
-            # TODO: update combined_messages with response messages
-            # combined_messages.extend(step_result.response_messages)
+            combined_messages.extend(step_result.response_messages)
 
             # Check if we should continue
             if not step_result.should_continue:
                 break
 
-        return FinalResult(stop_reason=stop_reason, usage=usage)
+        # convert to letta messages from Message objs
+        letta_messages = Message.to_letta_messages_from_list(
+            combined_messages,
+            use_assistant_message=params.use_assistant_message,
+            reverse=False,
+        )
+        return FinalResult(stop_reason=stop_reason, usage=usage, messages=letta_messages)
 
     async def inner_step(
         self,
@@ -184,9 +187,8 @@ class TemporalAgentWorkflow:
 
             # LLM request with Temporal native retries; on context window overflow,
             # perform workflow-level summarization before retrying with updated input.
-            max_sum_retries = getattr(summarizer_settings, "max_summarizer_retries", 0) or 0
             call_result: LLMCallResult | None = None
-            for summarize_attempt in range(max_sum_retries + 1):
+            for summarize_attempt in range(summarizer_settings.max_summarizer_retries + 1):
                 try:
                     # TODO: step checkpoint for LLM request start
 
@@ -214,7 +216,11 @@ class TemporalAgentWorkflow:
                     error_type = e.type
 
                     # If context window exceeded, summarize then retry (up to max)
-                    if error_type and "ContextWindowExceededError" in error_type and summarize_attempt < max_sum_retries:
+                    if (
+                        error_type
+                        and "ContextWindowExceededError" in error_type
+                        and summarize_attempt < summarizer_settings.max_summarizer_retries
+                    ):
                         refreshed_messages = await workflow.execute_activity(
                             summarize_conversation_history,
                             SummarizeParams(
@@ -258,10 +264,16 @@ class TemporalAgentWorkflow:
 
             # Validate tool call exists
             tool_call = call_result.tool_call
-            if tool_call is None:
-                stop_reason = StopReasonType.no_tool_call
-                # TODO: proper error handling
-                raise ValueError("No tool calls found in response")
+            if tool_call is None and tool_call is None:
+                stop_reason = StopReasonType.no_tool_call.value
+                should_continue = False
+                response_messages = []
+                return InnerStepResult(
+                    stop_reason=stop_reason,
+                    usage=usage,
+                    should_continue=should_continue,
+                    response_messages=response_messages,
+                )
 
             # Handle the AI response (execute tool, create messages, determine continuation)
             persisted_messages, should_continue, stop_reason, last_function_response = await self._handle_ai_response(
@@ -282,7 +294,6 @@ class TemporalAgentWorkflow:
             )
 
             # TODO: process response messages for streaming/non-streaming
-            # - extend response_messages with persisted_messages
             # - yield appropriate messages based on include_return_message_types
             # - handle approval persistence if needed
 
