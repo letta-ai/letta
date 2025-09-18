@@ -23,7 +23,8 @@ class WorkflowInputParams:
     agent_state: AgentState
     messages: list[MessageCreate]
     actor: User
-    max_steps: int = 50
+    max_steps: int
+    run_id: str
     use_assistant_message: bool = (True,)
     include_return_message_types: list[MessageType] | None = (None,)
 
@@ -36,6 +37,7 @@ class PreparedMessages:
 
 @dataclass
 class FinalResult:
+    messages: List[LettaMessageUnion]
     stop_reason: StopReasonType
     usage: LettaUsageStatistics
 
