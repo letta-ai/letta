@@ -8,7 +8,9 @@ from letta.errors import PendingApprovalError
 from letta.helpers import ToolRulesSolver
 from letta.log import get_logger
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import MessageRole
 from letta.schemas.letta_message import MessageType
+from letta.schemas.letta_message_content import TextContent
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate, MessageCreateBase
@@ -266,3 +268,17 @@ def _build_rule_violation_result(tool_name: str, valid: list[str], solver: ToolR
     hint_txt = ("\n** Hint: Possible rules that were violated:\n" + "\n".join(f"\t- {h}" for h in hint_lines)) if hint_lines else ""
     msg = f"[ToolConstraintError] Cannot call {tool_name}, valid tools include: {valid}.{hint_txt}"
     return ToolExecutionResult(status="error", func_return=msg)
+
+
+def _load_last_function_response(in_context_messages: list[Message]):
+    """Load the last function response from message history"""
+    for msg in reversed(in_context_messages):
+        if msg.role == MessageRole.tool and msg.content and len(msg.content) == 1 and isinstance(msg.content[0], TextContent):
+            text_content = msg.content[0].text
+            try:
+                response_json = json.loads(text_content)
+                if response_json.get("message"):
+                    return response_json["message"]
+            except (json.JSONDecodeError, KeyError):
+                raise ValueError(f"Invalid JSON format in message: {text_content}")
+    return None
