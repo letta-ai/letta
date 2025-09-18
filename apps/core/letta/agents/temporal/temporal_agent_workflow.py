@@ -73,13 +73,6 @@ class TemporalAgentWorkflow:
     async def run(self, params: WorkflowInputParams) -> FinalResult:
         # Initialize workflow state
         tool_rules_solver = ToolRulesSolver(tool_rules=params.agent_state.tool_rules)
-        llm_client = LLMClient.create(
-            provider_type=params.agent_state.llm_config.model_endpoint_type,
-            put_inner_thoughts_first=True,
-            actor=params.actor,
-        )
-        llm_adapter = LettaLLMRequestAdapter(llm_client=llm_client, llm_config=params.agent_state.llm_config)
-
         # Initialize tracking variables
         usage = LettaUsageStatistics()
         stop_reason = StopReasonType.end_turn
@@ -104,7 +97,6 @@ class TemporalAgentWorkflow:
                 tool_rules_solver=tool_rules_solver,
                 messages=combined_messages,
                 input_messages_to_persist=prepared.input_messages_to_persist,
-                llm_adapter=llm_adapter,
                 use_assistant_message=params.use_assistant_message,
                 include_return_message_types=params.include_return_message_types,
                 actor=params.actor,
@@ -134,7 +126,6 @@ class TemporalAgentWorkflow:
         agent_state: AgentState,
         tool_rules_solver: ToolRulesSolver,
         messages: list[Message],
-        llm_adapter: LettaLLMAdapter,
         actor: User,
         input_messages_to_persist: list[Message] | None = None,
         use_assistant_message: bool = True,
@@ -210,6 +201,7 @@ class TemporalAgentWorkflow:
                             requires_approval_tools=requires_approval_tools,
                             actor=actor,
                             step_id=step_id,
+                            use_assistant_message=use_assistant_message,
                         ),
                         start_to_close_timeout=LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
                         schedule_to_close_timeout=LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
