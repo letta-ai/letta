@@ -94,6 +94,16 @@ class OllamaProvider(OpenAIProvider):
                 logger.warning(f"Ollama model {model_name} has no context window in /api/show, using default {DEFAULT_CONTEXT_WINDOW}")
                 context_window = DEFAULT_CONTEXT_WINDOW
 
+            # === Capability stubs ===
+            # Compute support flags from /api/show capabilities. These are not
+            # yet plumbed through LLMConfig, but are captured here for later use.
+            caps_lower = [str(c).lower() for c in caps]
+            supports_tools = "tools" in caps_lower
+            supports_thinking = "thinking" in caps_lower
+            supports_vision = "vision" in caps_lower
+            supports_completion = "completion" in caps_lower
+            _ = (supports_tools, supports_thinking, supports_vision, supports_completion)
+
             configs.append(
                 # Legacy Ollama using raw generate
                 # LLMConfig(
