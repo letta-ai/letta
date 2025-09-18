@@ -42,7 +42,7 @@ from letta.services.helpers.tool_parser_helper import runtime_override_tool_json
 
 # Import activity, passing it through the sandbox without reloading the module
 with workflow.unsafe.imports_passed_through():
-    from letta.agents.helpers import _build_rule_violation_result, _pop_heartbeat, _safe_load_tool_call_str
+    from letta.agents.helpers import _build_rule_violation_result, _load_last_function_response, _pop_heartbeat, _safe_load_tool_call_str
     from letta.agents.temporal.activities import (
         create_messages_activity,
         execute_tool_activity,
@@ -69,7 +69,7 @@ with workflow.unsafe.imports_passed_through():
     from letta.constants import NON_USER_MSG_PREFIX
     from letta.local_llm.constants import INNER_THOUGHTS_KWARG
     from letta.log import get_logger
-    from letta.server.rest_api.utils import create_approval_request_message_from_llm_response, load_last_function_response_from_messages
+    from letta.server.rest_api.utils import create_approval_request_message_from_llm_response
     from letta.settings import summarizer_settings
     from letta.system import package_function_response
     from letta.utils import validate_function_response

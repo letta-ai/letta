@@ -16,19 +16,21 @@ from letta.agents.temporal.activities import (
     execute_tool_activity,
 )
 
-TEMPORAL_ADDRESS = os.environ.get("TEMPORAL_ADDRESS", "localhost:7233")
-TEMPORAL_NAMESPACE = os.environ.get("TEMPORAL_NAMESPACE", "default")
-TEMPORAL_TASK_QUEUE = os.environ.get("TEMPORAL_TASK_QUEUE", "test-task-queue")
-TEMPORAL_API_KEY = os.environ.get("TEMPORAL_API_KEY", "your-api-key")
+TEMPORAL_ENDPOINT = os.environ.get("LETTA_TEMPORAL_ENDPOINT", "localhost:7233")
+TEMPORAL_NAMESPACE = os.environ.get("LETTA_TEMPORAL_NAMESPACE", "default")
+TEMPORAL_TASK_QUEUE = os.environ.get(
+    "LETTA_TEMPORAL_TASK_QUEUE", "agent_loop_async_task_queue"
+)
+TEMPORAL_API_KEY = os.environ.get("LETTA_TEMPORAL_API_KEY", "your-api-key")
 
 
 async def main():
     client = await Client.connect(
-        TEMPORAL_ADDRESS,
+        TEMPORAL_ENDPOINT,
         namespace=TEMPORAL_NAMESPACE,
         rpc_metadata={"temporal-namespace": TEMPORAL_NAMESPACE},
         api_key=TEMPORAL_API_KEY,
-        tls=True,
+        tls=False,  # This should be false for local runs
     )
 
     print("Initializing worker...")
