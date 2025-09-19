@@ -152,6 +152,9 @@ jobs:
           LETTA_TURBOBUFFER_API_KEY: ${{ env.LETTA_TURBOBUFFER_API_KEY }}
           LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
           LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
+          LETTA_TEMPORAL_ENDPOINT: ${{ secrets.LETTA_TEMPORAL_ENDPOINT }}
+          LETTA_TEMPORAL_NAMESPACE: ${{ secrets.LETTA_TEMPORAL_NAMESPACE }}
+          LETTA_TEMPORAL_API_KEY: ${{ secrets.LETTA_TEMPORAL_API_KEY }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
 
       - name: Wait for deployment rollout to complete
