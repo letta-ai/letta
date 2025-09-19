@@ -112,48 +112,6 @@ jobs:
         env:
           TAG: ${{ github.event.inputs.git_hash || github.sha }}
           DEPLOY_MESSAGE: ${{ github.event.inputs.deploy_message || github.event.head_commit.message }}
-          MEMGPT_SERVER_PASS: ${{ secrets.MEMGPT_SERVER_PASS }}
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
-          TOGETHER_API_KEY: ${{ env.TOGETHER_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
-          COMPOSIO_API_KEY: ${{ env.COMPOSIO_API_KEY }}
-          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
-          GROK_API_KEY: ${{ env.GROK_API_KEY }}
-          LETTA_PG_PASSWORD: ${{ secrets.LETTA_PG_PASSWORD }}
-          LETTA_PG_USER: ${{ secrets.LETTA_PG_USER }}
-          LETTA_PG_DB: ${{ secrets.LETTA_PG_DB }}
-          LETTA_PG_HOST: 10.119.0.3
-          LETTA_PG_PORT: ${{ vars.LETTA_PG_PORT }}
-          LETTA_DISABLE_SQLALCHEMY_POOLING: true
-          LETTA_SQLALCHEMY_TRACING: ${{ vars.LETTA_SQLALCHEMY_TRACING }}
-          E2B_API_KEY: ${{ env.E2B_API_KEY }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          E2B_SANDBOX_TEMPLATE_ID: ${{ env.E2B_SANDBOX_TEMPLATE_ID }}
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-          LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: 'True'
-          LETTA_OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4317
-          LETTA_ENVIRONMENT: dev
-          CLICKHOUSE_ENDPOINT: https://qbcxouckj0.us-central1.gcp.clickhouse.cloud:8443
-          CLICKHOUSE_DATABASE: otel
-          CLICKHOUSE_USERNAME: default
-          CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD_DEV }}
-          ENV_NAME: dev
-          LETTA_UVICORN_WORKERS: 3 # number of CPU cores * 2 + 1
-          LETTA_DEFAULT_LLM_HANDLE: ${{ secrets.LETTA_DEFAULT_LLM_HANDLE }}
-          LETTA_DEFAULT_EMBEDDING_HANDLE: ${{ secrets.LETTA_DEFAULT_EMBEDDING_HANDLE }}
-          MCP_READ_FROM_CONFIG: false # disable MCP config
-          MCP_DISABLE_STDIO: true
-          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
-          LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
-          LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
-          LETTA_TURBOBUFFER_API_KEY: ${{ env.LETTA_TURBOBUFFER_API_KEY }}
-          LETTA_USE_TPUF: ${{ vars.LETTA_USE_TPUF }}
-          LETTA_ENCRYPTION_KEY: ${{ env.LETTA_ENCRYPTION_KEY }}
-          LETTA_TEMPORAL_ENDPOINT: ${{ secrets.LETTA_TEMPORAL_ENDPOINT }}
-          LETTA_TEMPORAL_NAMESPACE: ${{ secrets.LETTA_TEMPORAL_NAMESPACE }}
-          LETTA_TEMPORAL_API_KEY: ${{ secrets.LETTA_TEMPORAL_API_KEY }}
         run: just build-core deploy-core "${DEPLOY_MESSAGE}"
 
       - name: Wait for deployment rollout to complete
