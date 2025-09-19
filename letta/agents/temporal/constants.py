@@ -43,7 +43,7 @@ SUMMARIZE_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=60)
 SUMMARIZE_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=10)
 
 # tool execution (used later during _handle_ai_response)
-TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
+TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=600)
 TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
 
 # create_messages (saves messages to agent state)
