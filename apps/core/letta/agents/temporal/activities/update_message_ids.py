@@ -16,4 +16,10 @@ async def update_message_ids(params: UpdateMessageIdsParams) -> UpdateMessageIds
         actor=params.actor,
     )
 
-    return UpdateMessageIdsResult(success=True)
+    # get the updated agent state
+    updated_agent_state = await agent_manager.get_agent_async(
+        agent_id=params.agent_id,
+        actor=params.actor,
+    )
+
+    return UpdateMessageIdsResult(success=True, agent_state=updated_agent_state, persisted_messages=[])

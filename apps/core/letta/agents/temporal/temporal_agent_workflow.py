@@ -60,6 +60,7 @@ with workflow.unsafe.imports_passed_through():
         LLMRequestParams,
         PreparedMessages,
         RefreshContextParams,
+        RefreshContextResult,
         SummarizeParams,
         UpdateMessageIdsParams,
         UpdateMessageIdsResult,
@@ -81,7 +82,8 @@ class TemporalAgentWorkflow:
     @workflow.run
     async def run(self, params: WorkflowInputParams) -> FinalResult:
         # Initialize workflow state
-        tool_rules_solver = ToolRulesSolver(tool_rules=params.agent_state.tool_rules)
+        agent_state = params.agent_state  # track mutable agent state throughout workflow
+        tool_rules_solver = ToolRulesSolver(tool_rules=agent_state.tool_rules)
         # Initialize tracking variables
         usage = LettaUsageStatistics()
         stop_reason = StopReasonType.end_turn
@@ -99,17 +101,26 @@ class TemporalAgentWorkflow:
         for step_index in range(params.max_steps):
             remaining_turns = params.max_steps - step_index - 1
 
+            # TODO: @jin destroy this with fire and figure out how to prevent dupe user messages
+            if step_index == 0:
+                persist = prepared.input_messages_to_persist
+            else:
+                persist = []
+
             # Execute single step
             step_result = await self.inner_step(
-                agent_state=params.agent_state,
+                agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
                 messages=combined_messages,
-                input_messages_to_persist=prepared.input_messages_to_persist,
+                input_messages_to_persist=persist,
                 use_assistant_message=params.use_assistant_message,
                 include_return_message_types=params.include_return_message_types,
                 actor=params.actor,
                 remaining_turns=remaining_turns,
             )
+
+            # Update agent state from the step result
+            agent_state = step_result.agent_state
 
             # Update aggregate usage
             usage.step_count += step_result.usage.step_count
@@ -171,7 +182,7 @@ class TemporalAgentWorkflow:
 
             # TODO: step checkpoint start (logging/telemetry)
 
-            refreshed_messages = await workflow.execute_activity(
+            refresh_result: RefreshContextResult = await workflow.execute_activity(
                 refresh_context_and_system_message,
                 RefreshContextParams(
                     agent_state=agent_state,
@@ -182,6 +193,8 @@ class TemporalAgentWorkflow:
                 start_to_close_timeout=REFRESH_CONTEXT_ACTIVITY_START_TO_CLOSE_TIMEOUT,
                 schedule_to_close_timeout=REFRESH_CONTEXT_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
             )
+            refreshed_messages = refresh_result.messages
+            agent_state = refresh_result.agent_state
 
             force_tool_call = allowed_tools[0]["name"] if len(allowed_tools) == 1 else None
             requires_approval_tools = (
@@ -255,6 +268,7 @@ class TemporalAgentWorkflow:
                     usage=usage,
                     should_continue=should_continue,
                     response_messages=response_messages,
+                    agent_state=agent_state,
                 )
 
             # TODO: step checkpoint for LLM request finish
@@ -276,6 +290,7 @@ class TemporalAgentWorkflow:
                     usage=usage,
                     should_continue=should_continue,
                     response_messages=response_messages,
+                    agent_state=agent_state,
                 )
 
             # Handle the AI response (execute tool, create messages, determine continuation)
@@ -311,7 +326,7 @@ class TemporalAgentWorkflow:
                 message_ids = agent_state.message_ids + [m.id for m in persisted_messages[:2]]
 
                 # call activity to persist the updated message ids
-                await workflow.execute_activity(
+                update_result: UpdateMessageIdsResult = await workflow.execute_activity(
                     update_message_ids,
                     UpdateMessageIdsParams(
                         agent_id=agent_state.id,
@@ -322,8 +337,8 @@ class TemporalAgentWorkflow:
                     schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
                 )
 
-                # update local agent state
-                agent_state.message_ids = message_ids
+                # update agent state from the activity result
+                agent_state = update_result.agent_state
 
             # TODO: process response messages for streaming/non-streaming
             # - yield appropriate messages based on include_return_message_types
@@ -333,7 +348,13 @@ class TemporalAgentWorkflow:
             # Update response messages with the persisted messages
             response_messages = persisted_messages
 
-        return InnerStepResult(stop_reason=stop_reason, usage=usage, should_continue=should_continue, response_messages=response_messages)
+        return InnerStepResult(
+            stop_reason=stop_reason,
+            usage=usage,
+            should_continue=should_continue,
+            response_messages=response_messages,
+            agent_state=agent_state,
+        )
 
     async def _handle_ai_response(
         self,
@@ -387,7 +408,6 @@ class TemporalAgentWorkflow:
                 heartbeat_reason=f"{NON_USER_MSG_PREFIX}Continuing: user denied request to call tool.",
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                step_id=step_id,
                 is_approval_response=True,
             )
             messages_to_persist = initial_messages + tool_call_messages
@@ -405,7 +425,6 @@ class TemporalAgentWorkflow:
                 continue_stepping=request_heartbeat,
                 reasoning_content=reasoning_content,
                 pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-                step_id=step_id,
             )
             messages_to_persist = initial_messages + [approval_message]
             continue_stepping = False
@@ -499,7 +518,6 @@ class TemporalAgentWorkflow:
             heartbeat_reason=heartbeat_reason,
             reasoning_content=reasoning_content,
             pre_computed_assistant_message_id=pre_computed_assistant_message_id,
-            step_id=step_id,
             is_approval_response=is_approval or is_denial,
         )
 
