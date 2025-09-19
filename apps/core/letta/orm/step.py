@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from sqlalchemy import JSON, ForeignKey, String
+from sqlalchemy import JSON, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from letta.orm.mixins import ProjectMixin
@@ -22,6 +22,7 @@ class Step(SqlalchemyBase, ProjectMixin):
 
     __tablename__ = "steps"
     __pydantic_model__ = PydanticStep
+    __table_args__ = (Index("ix_steps_job_id", "job_id"),)
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"step-{uuid.uuid4()}")
     origin: Mapped[Optional[str]] = mapped_column(nullable=True, doc="The surface that this agent step was initiated from.")
