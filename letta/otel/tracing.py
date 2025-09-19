@@ -86,6 +86,7 @@ async def _update_trace_attributes(request: Request):
         "x-agent-id": "agent.id",
         "x-template-id": "template.id",
         "x-base-template-id": "base_template.id",
+        "user-agent": "client",
     }
     for header_key, span_key in header_attributes.items():
         header_value = request.headers.get(header_key)
