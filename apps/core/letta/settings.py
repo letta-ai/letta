@@ -276,7 +276,6 @@ class Settings(BaseSettings):
     event_loop_threadpool_max_workers: int = 43
 
     # experimental toggle
-    use_experimental: bool = False
     use_vertex_structured_outputs_experimental: bool = False
     use_asyncio_shield: bool = True
 
