@@ -4,6 +4,7 @@ from temporalio import workflow
 from temporalio.exceptions import ActivityError, ApplicationError
 
 from letta.agents.helpers import _load_last_function_response, _maybe_get_approval_messages, generate_step_id
+from letta.agents.temporal.activities.execute_tool import deserialize_func_return, is_serialized_exception
 from letta.agents.temporal.constants import (
     CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
@@ -451,6 +452,10 @@ class TemporalAgentWorkflow:
                 start_to_close_timeout=TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
                 schedule_to_close_timeout=TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
             )
+
+            # Deserialize any serialized exceptions for post processing
+            if is_serialized_exception(execution.tool_execution_result.func_return):
+                execution.tool_execution_result.func_return = deserialize_func_return(execution.tool_execution_result.func_return)
             tool_result = execution.tool_execution_result
 
         # Prepare the function-response payload
