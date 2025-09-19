@@ -1353,8 +1353,9 @@ class Message(BaseMessage):
                         }
                     )
             else:
-                assert text_content is not None
-                parts.append({"text": text_content})
+                if not native_content:
+                    assert text_content is not None
+                    parts.append({"text": text_content})
             google_ai_message["parts"] = parts
 
         elif self.role == "tool":
@@ -1405,10 +1406,12 @@ class Message(BaseMessage):
     def to_google_dicts_from_list(
         messages: List[Message],
         put_inner_thoughts_in_kwargs: bool = True,
+        native_content: bool = False,
     ):
         result = [
             m.to_google_dict(
                 put_inner_thoughts_in_kwargs=put_inner_thoughts_in_kwargs,
+                native_content=native_content,
             )
             for m in messages
         ]

@@ -4,7 +4,7 @@ from typing import AsyncGenerator, Optional
 from opentelemetry.trace import Span
 
 from letta.adapters.letta_llm_adapter import LettaLLMAdapter
-from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter
+from letta.adapters.letta_llm_request_adapter import LettaLLMRequestAdapter, SimpleLettaLLMRequestAdapter
 from letta.adapters.letta_llm_stream_adapter import SimpleLettaLLMStreamAdapter
 from letta.agents.helpers import (
     _build_rule_violation_result,
@@ -165,8 +165,7 @@ class LettaAgentV3(LettaAgentV2):
                 llm_config=self.agent_state.llm_config,
             )
         else:
-            raise NotImplementedError("Non-streaming not yet support / tested for v3")
-            llm_adapter = LettaLLMRequestAdapter(
+            llm_adapter = SimpleLettaLLMRequestAdapter(
                 llm_client=self.llm_client,
                 llm_config=self.agent_state.llm_config,
             )

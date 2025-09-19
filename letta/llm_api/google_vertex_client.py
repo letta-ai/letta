@@ -34,6 +34,7 @@ from letta.local_llm.json_parser import clean_json_string_extra_backslash
 from letta.local_llm.utils import count_tokens
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool
@@ -274,6 +275,7 @@ class GoogleVertexClient(LLMClientBase):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,  # if react, use native content + strip heartbeats
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: List[dict],
@@ -282,6 +284,9 @@ class GoogleVertexClient(LLMClientBase):
         """
         Constructs a request object in the expected data format for this client.
         """
+        # NOTE: forcing inner thoughts in kwargs off
+        if agent_type == AgentType.react_agent:
+            llm_config.put_inner_thoughts_in_kwargs = False
 
         if tools:
             tool_objs = [Tool(type="function", function=t) for t in tools]
@@ -293,7 +298,11 @@ class GoogleVertexClient(LLMClientBase):
             tool_names = []
 
         contents = self.add_dummy_model_messages(
-            PydanticMessage.to_google_dicts_from_list(messages),
+            PydanticMessage.to_google_dicts_from_list(
+                messages,
+                put_inner_thoughts_in_kwargs=False if agent_type == AgentType.react_agent else True,
+                native_content=True if agent_type == AgentType.react_agent else False,
+            ),
         )
 
         request_data = {
@@ -312,15 +321,41 @@ class GoogleVertexClient(LLMClientBase):
             request_data["config"]["response_schema"] = self.get_function_call_response_schema(tools[0])
             del request_data["config"]["tools"]
         elif tools:
-            tool_config = ToolConfig(
-                function_calling_config=FunctionCallingConfig(
-                    # ANY mode forces the model to predict only function calls
-                    mode=FunctionCallingConfigMode.ANY,
-                    # Provide the list of tools (though empty should also work, it seems not to)
-                    allowed_function_names=tool_names,
+            if agent_type == AgentType.react_agent:
+                # don't require tools
+                tool_call_mode = FunctionCallingConfigMode.AUTO
+                tool_config = ToolConfig(
+                    function_calling_config=FunctionCallingConfig(
+                        mode=tool_call_mode,
+                    )
                 )
-            )
+            else:
+                # require tools
+                tool_call_mode = FunctionCallingConfigMode.ANY
+                tool_config = ToolConfig(
+                    function_calling_config=FunctionCallingConfig(
+                        mode=tool_call_mode,
+                        # Provide the list of tools (though empty should also work, it seems not to)
+                        allowed_function_names=tool_names,
+                    )
+                )
+
             request_data["config"]["tool_config"] = tool_config.model_dump()
+
+        # https://ai.google.dev/gemini-api/docs/thinking#set-budget
+        # 2.5 Pro
+        #   - Default: dynamic thinking
+        #   - Dynamic thinking that cannot be disabled
+        #   - Range: -1 (for dynamic), or 128-32768
+        # 2.5 Flash
+        #   - Default: dynamic thinking
+        #   - Dynamic thinking that *can* be disabled
+        #   - Range: -1, 0, or 0-24576
+        # 2.5 Flash Lite
+        #   - Default: no thinking
+        #   - Dynamic thinking that *can* be disabled
+        #   - Range: -1, 0, or 512-24576
+        # TODO when using v3 agent loop, properly support the native thinking in Gemini
 
         # Add thinking_config for flash
         # If enable_reasoner is False, set thinking_budget to 0
@@ -410,8 +445,10 @@ class GoogleVertexClient(LLMClientBase):
                         function_args = function_call.args
                         assert isinstance(function_args, dict), function_args
 
-                        # NOTE: this also involves stripping the inner monologue out of the function
+                        # TODO this is kind of funky - really, we should be passing 'native_content' as a kwarg to fork behavior
+                        inner_thoughts = response_message.text
                         if llm_config.put_inner_thoughts_in_kwargs:
+                            # NOTE: this also involves stripping the inner monologue out of the function
                             from letta.local_llm.constants import INNER_THOUGHTS_KWARG_VERTEX
 
                             assert INNER_THOUGHTS_KWARG_VERTEX in function_args, (
@@ -420,7 +457,9 @@ class GoogleVertexClient(LLMClientBase):
                             inner_thoughts = function_args.pop(INNER_THOUGHTS_KWARG_VERTEX)
                             assert inner_thoughts is not None, f"Expected non-null inner thoughts function arg:\n{function_call}"
                         else:
-                            inner_thoughts = None
+                            pass
+                            # inner_thoughts = None
+                            # inner_thoughts = response_message.text
 
                         # Google AI API doesn't generate tool call IDs
                         openai_response_message = Message(
