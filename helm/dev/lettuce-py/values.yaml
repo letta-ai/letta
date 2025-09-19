@@ -58,11 +58,11 @@ secretsProvider:
 
 resources:
   limits:
+    cpu: "1"
+    memory: "1024Mi"
+  requests:
     cpu: "0.5"
     memory: "512Mi"
-  requests:
-    cpu: "0.2"
-    memory: "256Mi"
 
 # Additional volumes on the output Deployment definition.
 volumes: []
