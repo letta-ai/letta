@@ -213,7 +213,6 @@ jobs:
 
           # Feature flags
           LETTA_ENABLE_BATCH_JOB_POLLING: true
-          LETTA_USE_EXPERIMENTAL: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
         run: |
@@ -262,7 +261,6 @@ jobs:
             project_id: ${{ env.PROJECT_ID }}
             registry: ${{ env.REGISTRY_NAME }}
             image_tag: ${{ needs.stage-core-deploy.outputs.deployment_tag }}
-            experimental: ${{ secrets.LETTA_USE_EXPERIMENTAL }}
             pinecone_enabled: ${{ secrets.LETTA_ENABLE_PINECONE }}
             batch_job_polling: true
             uvicorn_workers: ${{ vars.LETTA_UVICORN_WORKERS }}
