@@ -169,6 +169,7 @@ describe-web:
     echo "🚧 Building multi-architecture Docker images with tag: {{TAG}}..."
     # Single command that handles both cases
     # For when we move to self-hosted: docker buildx create --name ci-builder --driver docker-container --use 2>/dev/null || docker buildx use ci-builder
+    docker buildx create --use
     docker buildx build \
     --platform linux/{{ BUILD_ARCH }} \
     --cache-from type=registry,ref={{DOCKER_REGISTRY}}/memgpt-server:latest \
