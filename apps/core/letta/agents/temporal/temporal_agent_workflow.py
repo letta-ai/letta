@@ -76,7 +76,7 @@ with workflow.unsafe.imports_passed_through():
 logger = get_logger(__name__)
 
 
-@workflow.defn
+@workflow.defn(sandboxed=False)
 class TemporalAgentWorkflow:
     @workflow.run
     async def run(self, params: WorkflowInputParams) -> FinalResult:
