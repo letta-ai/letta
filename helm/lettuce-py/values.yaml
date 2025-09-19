@@ -3,10 +3,10 @@
 # Declare variables to be passed into your templates.
 
 project_id: &project_id memgpt-428419
-lettaEnv: &lettaEnv dev
+lettaEnv: &lettaEnv prod
 
 image:
-  repository: us-central1-docker.pkg.dev/memgpt-428419/letta-dev-us-central1/lettuce-py
+  repository: us-central1-docker.pkg.dev/memgpt-428419/letta/lettuce-py
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -22,7 +22,7 @@ serviceAccount:
   automount: true
   # Annotations to add to the service account
   annotations:
-    iam.gke.io/gcp-service-account: "lettuce-py-dev-sa@memgpt-428419.iam.gserviceaccount.com"
+    iam.gke.io/gcp-service-account: "lettuce-py-prod-sa@memgpt-428419.iam.gserviceaccount.com"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: "lettuce-py"
@@ -47,7 +47,7 @@ env:
   REDIS_HOST: "10.167.199.148"
   REDIS_PORT: "6379"
   PORT: "8080"
-  LETTA_TEMPORAL_NAMESPACE: "lettuce-py-staging.tmhou"
+  LETTA_TEMPORAL_NAMESPACE: "lettuce-py.tmhou"
   LETTA_TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
   LETTA_TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
   LETTA_LOAD_DEFAULT_EXTERNAL_TOOLS: "true"
