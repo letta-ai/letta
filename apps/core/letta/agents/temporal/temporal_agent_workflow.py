@@ -87,6 +87,7 @@ class TemporalAgentWorkflow:
         # Initialize tracking variables
         usage = LettaUsageStatistics()
         stop_reason = StopReasonType.end_turn
+        response_messages = []
 
         # 1) Prepare messages (context + new input), no persistence
         prepared: PreparedMessages = await workflow.execute_activity(
@@ -129,7 +130,9 @@ class TemporalAgentWorkflow:
             usage.total_tokens += step_result.usage.total_tokens
 
             # Update stop reason from step result
-            stop_reason = step_result.stop_reason
+            if step_result.stop_reason is not None:
+                stop_reason = step_result.stop_reason
+            response_messages.extend(step_result.response_messages)
             combined_messages.extend(step_result.response_messages)
 
             # Check if we should continue
@@ -138,11 +141,15 @@ class TemporalAgentWorkflow:
 
         # convert to letta messages from Message objs
         letta_messages = Message.to_letta_messages_from_list(
-            combined_messages,
+            response_messages,
             use_assistant_message=params.use_assistant_message,
             reverse=False,
         )
-        return FinalResult(stop_reason=stop_reason, usage=usage, messages=letta_messages)
+        return FinalResult(
+            stop_reason=stop_reason.value if isinstance(stop_reason, StopReasonType) else str(stop_reason),
+            usage=usage,
+            messages=letta_messages,
+        )
 
     async def inner_step(
         self,

@@ -38,7 +38,7 @@ class PreparedMessages:
 @dataclass
 class FinalResult:
     messages: List[LettaMessageUnion]
-    stop_reason: StopReasonType
+    stop_reason: str
     usage: LettaUsageStatistics
 
 
