@@ -22,6 +22,7 @@ async function serve() {
 
   const client = new Client({
     connectionString: CORE_DATABASE_URL,
+    ssl: CORE_DATABASE_URL.includes('psdb')
   });
 
   console.log('[Undertaker] Connected to core database');
