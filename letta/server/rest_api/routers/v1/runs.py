@@ -114,7 +114,7 @@ async def retrieve_run(
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
 
-        if job.metadata.get("temporal") and settings.temporal_endpoint:
+        if job.metadata.get("lettuce") and settings.temporal_endpoint:
             client = await Client.connect(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
