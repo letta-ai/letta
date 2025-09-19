@@ -137,6 +137,9 @@ jobs:
           LETTA_PINECONE_API_KEY: ${{ secrets.LETTA_PINECONE_API_KEY }}
           LETTA_ENABLE_PINECONE: ${{ secrets.LETTA_ENABLE_PINECONE }}
           LETTA_SQLALCHEMY_TRACING: ${{ vars.LETTA_SQLALCHEMY_TRACING }}
+          LETTA_TEMPORAL_ENDPOINT: ${{ secrets.LETTA_TEMPORAL_ENDPOINT }}
+          LETTA_TEMPORAL_NAMESPACE: ${{ secrets.LETTA_TEMPORAL_NAMESPACE }}
+          LETTA_TEMPORAL_API_KEY: ${{ secrets.LETTA_TEMPORAL_API_KEY }}
         run: |
           just build-core deploy-core "${DEPLOY_MESSAGE}"
 
