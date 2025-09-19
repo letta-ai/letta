@@ -101,6 +101,9 @@ locals {
     # lettuce-py secrets
     "dev_lettuce-py_LETTA_PG_URI" = var.dev_lettuce_py_LETTA_PG_URI
     "dev_lettuce-py_LETTA_TEMPORAL_API_KEY" = var.dev_lettuce_py_LETTA_TEMPORAL_API_KEY
+    "dev_lettuce-py_OPENAI_API_KEY" = var.dev_lettuce_py_OPENAI_API_KEY
+    "dev_lettuce-py_ANTHROPIC_API_KEY" = var.dev_lettuce_py_ANTHROPIC_API_KEY
+    "dev_lettuce-py_E2B_API_KEY" = var.dev_lettuce_py_E2B_API_KEY
 
     # memgpt-server secrets
     "dev_memgpt-server_LETTA_SERVER_PASS" = var.dev_memgpt_server_LETTA_SERVER_PASS

@@ -355,6 +355,21 @@ variable "dev_lettuce_py_LETTA_TEMPORAL_API_KEY" {
    type        = string
    sensitive   = true
  }
+variable "dev_lettuce_py_OPENAI_API_KEY" {
+   description = "OpenAI API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "dev_lettuce_py_ANTHROPIC_API_KEY" {
+   description = "Anthropic API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "dev_lettuce_py_E2B_API_KEY" {
+   description = "E2B API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
 
 # lettuce secrets
 variable "dev_lettuce_DATABASE_URL" {
