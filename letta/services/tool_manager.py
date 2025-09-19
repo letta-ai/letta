@@ -20,22 +20,108 @@ from letta.constants import (
 )
 from letta.errors import LettaToolNameConflictError, LettaToolNameSchemaMismatchError
 from letta.functions.functions import derive_openai_json_schema, load_function_set
+from letta.helpers.tool_helpers import compute_tool_hash
 from letta.log import get_logger
 
 # TODO: Remove this once we translate all of these to the ORM
 from letta.orm.errors import NoResultFound
 from letta.orm.tool import Tool as ToolModel
 from letta.otel.tracing import trace_method
-from letta.schemas.enums import ToolType
+from letta.schemas.agent import AgentState
+from letta.schemas.enums import SandboxType, ToolType
 from letta.schemas.tool import Tool as PydanticTool, ToolCreate, ToolUpdate
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
 from letta.services.helpers.agent_manager_helper import calculate_multi_agent_tools
 from letta.services.mcp.types import SSEServerConfig, StdioServerConfig
-from letta.settings import settings
+from letta.settings import settings, tool_settings
 from letta.utils import enforce_types, printd
 
 logger = get_logger(__name__)
+
+
+def create_modal_tool_wrapper(tool: PydanticTool, actor: PydanticUser):
+    """Create a Modal function wrapper for a tool"""
+    import contextlib
+    import io
+    import os
+    from typing import Optional
+
+    import modal
+    from letta_client import Letta
+
+    packages = [str(req) for req in tool.pip_requirements] if tool.pip_requirements else []
+    packages.append("letta_client")
+    packages.append("letta[sqlite]")
+
+    function_name = f"{tool.name}_{actor.organization_id}"
+    modal_app = modal.App(function_name)
+    logger.info(f"Creating Modal app {tool.id} with name {function_name}")
+
+    @modal_app.function(
+        image=modal.Image.debian_slim(python_version="3.13").pip_install(packages),
+        restrict_modal_access=True,
+        timeout=10,
+        # secrets=[modal.Secret.from_dict({"LETTA_API_KEY": None, "LETTA_PG_URI": "fake_pg_uri"})],
+        secrets=[modal.Secret.from_dict({"LETTA_API_KEY": None})],
+        serialized=True,
+    )
+    def modal_tool_wrapper(
+        tool_name: str, agent_state: AgentState, agent_id: Optional[str], env_vars: dict, letta_api_key: Optional[str] = None, **kwargs
+    ):
+        """Wrapper function for running untrusted code in a Modal function"""
+
+        # TODO: deprecate passing in agent_state
+
+        # Set environment variables
+        if env_vars:
+            for key, value in env_vars.items():
+                os.environ[key] = str(value)
+
+        # Initialize the Letta client
+        if letta_api_key:
+            letta_client = Letta(token=letta_api_key)
+        else:
+            letta_client = None
+
+        tool_namespace = {
+            "__builtins__": __builtins__,  # Include built-in functions
+            "letta_client": letta_client,  # Make letta_client available
+            "os": os,  # Include os module for env vars access
+            "agent_id": agent_id,
+            # Add any other modules/variables the tool might need
+        }
+
+        # Initialize the tool code
+        # Create a namespace for the tool
+        # tool_namespace = {}
+        exec(tool.source_code, tool_namespace)
+
+        # Get the tool function
+        if tool_name not in tool_namespace:
+            raise Exception(f"Tool function {tool_name} not found in {tool.source_code}, globals: {tool_namespace}")
+        tool_func = tool_namespace[tool_name]
+
+        # Capture stdout and stderr during tool execution
+        stdout_capture = io.StringIO()
+        stderr_capture = io.StringIO()
+
+        with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
+            result = tool_func(**kwargs)
+
+        # Get captured output
+        stdout = stdout_capture.getvalue()
+        stderr = stderr_capture.getvalue()
+
+        return {
+            "result": result,
+            "stdout": stdout,
+            "stderr": stderr,
+            "agent_state": agent_state,  # TODO: deprecate (use letta_client instead)
+            "error": True if stderr else False,
+        }
+
+    return modal_app
 
 
 class ToolManager:
@@ -172,13 +258,26 @@ class ToolManager:
             # Auto-generate description if not provided
             if pydantic_tool.description is None:
                 pydantic_tool.description = pydantic_tool.json_schema.get("description", None)
+
+            # Add tool hash to metadata for Modal deployment tracking
+            tool_hash = compute_tool_hash(pydantic_tool)
+            if pydantic_tool.metadata_ is None:
+                pydantic_tool.metadata_ = {}
+            pydantic_tool.metadata_["tool_hash"] = tool_hash
+
             tool_data = pydantic_tool.model_dump(to_orm=True)
             # Set the organization id at the ORM layer
             tool_data["organization_id"] = actor.organization_id
 
             tool = ToolModel(**tool_data)
             await tool.create_async(session, actor=actor)  # Re-raise other database-related errors
-            return tool.to_pydantic()
+            created_tool = tool.to_pydantic()
+
+            # Deploy Modal app for the new tool
+            if created_tool.tool_type == ToolType.CUSTOM and tool_settings.sandbox_type == SandboxType.MODAL:
+                await self.create_or_update_modal_app(created_tool, actor)
+
+            return created_tool
 
     @enforce_types
     @trace_method
@@ -424,6 +523,16 @@ class ToolManager:
             if return_only_letta_tools:
                 query = query.where(ToolModel.tool_type.like("letta_%"))
 
+            # Apply pagination if specified
+            if after is not None:
+                after_tool = await session.get(ToolModel, after)
+                if after_tool:
+                    query = query.where(
+                        or_(
+                            ToolModel.created_at < after_tool.created_at,
+                            and_(ToolModel.created_at == after_tool.created_at, ToolModel.id < after_tool.id),
+                        )
+                    )
             # Handle pagination cursors
             if after is not None:
                 after_tool = await session.get(ToolModel, after)
@@ -745,7 +854,27 @@ class ToolManager:
 
             # Save the updated tool to the database
             tool = await tool.update_async(db_session=session, actor=actor)
-            return tool.to_pydantic()
+            updated_tool = tool.to_pydantic()
+
+            # Check if we need to redeploy the Modal app due to changes
+            if updated_tool.tool_type == ToolType.CUSTOM and tool_settings.sandbox_type == SandboxType.MODAL:
+                new_hash = compute_tool_hash(updated_tool)
+                old_hash = current_tool.metadata_.get("tool_hash") if current_tool.metadata_ else None
+
+                if new_hash != old_hash:
+                    # Update the hash in metadata
+                    if updated_tool.metadata_ is None:
+                        updated_tool.metadata_ = {}
+                    updated_tool.metadata_["tool_hash"] = new_hash
+
+                    # Update the metadata in the database
+                    tool.metadata_ = updated_tool.metadata_
+                    await tool.update_async(db_session=session, actor=actor)
+
+                    # Deploy new Modal app
+                    await self.create_or_update_modal_app(updated_tool, actor)
+
+            return updated_tool
 
     @enforce_types
     @trace_method
@@ -1015,3 +1144,20 @@ class ToolManager:
                     created_tool = await self.create_tool_async(tool, actor=actor)
                     tools.append(created_tool)
         return tools
+
+    # MODAL RELATED METHODS
+    @trace_method
+    async def create_or_update_modal_app(self, tool: PydanticTool, actor: PydanticUser):
+        """Create a Modal app with the tool function registered"""
+        import modal
+
+        # Create the Modal app using the global function
+        modal_app = create_modal_tool_wrapper(tool, actor)
+
+        print("MODAL APP")
+
+        # Deploy the app
+        # return await modal_app.deploy.aio()
+
+        with modal.enable_output():
+            return modal_app.deploy()
