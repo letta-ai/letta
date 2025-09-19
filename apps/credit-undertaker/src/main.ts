@@ -127,6 +127,7 @@ async function testClientDatabase() {
   console.log('[Undertaker] Testing client database connection');
   const client = new pg.Client({
     connectionString: CORE_DATABASE_URL,
+    ssl: CORE_DATABASE_URL.includes('psdb')
   });
 
   await client.connect();
