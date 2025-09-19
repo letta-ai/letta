@@ -57,6 +57,9 @@ secretsProvider:
   secrets:
     - LETTA_PG_URI
     - LETTA_TEMPORAL_API_KEY
+    - OPENAI_API_KEY
+    - ANTHROPIC_API_KEY
+    - E2B_API_KEY
 
 resources:
   limits:
