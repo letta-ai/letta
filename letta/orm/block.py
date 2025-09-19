@@ -25,6 +25,11 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
         UniqueConstraint("id", "label", name="unique_block_id_label"),
         Index("created_at_label_idx", "created_at", "label"),
         Index("ix_block_label", "label"),
+        Index("ix_block_organization_id", "organization_id"),
+        Index("ix_block_project_id", "project_id"),
+        Index("ix_block_is_template", "is_template"),
+        Index("ix_block_hidden", "hidden"),
+        Index("ix_block_org_project_template", "organization_id", "project_id", "is_template"),
     )
 
     template_name: Mapped[Optional[str]] = mapped_column(
