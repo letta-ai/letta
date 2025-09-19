@@ -1494,7 +1494,7 @@ async def cancel_agent_run(
     results = {}
     for run_id in run_ids:
         run = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
-        if run.metadata.get("temporal") and settings.temporal_endpoint:
+        if run.metadata.get("lettuce") and settings.temporal_endpoint:
             client = await Client.connect(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
@@ -1650,6 +1650,7 @@ async def send_message_async(
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     # Create a new job
+    use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint
     run = Run(
         user_id=actor.id,
         status=JobStatus.created,
@@ -1659,7 +1660,7 @@ async def send_message_async(
         metadata={
             "job_type": "send_message_async",
             "agent_id": agent_id,
-            "temporal": settings.temporal_endpoint != None,
+            "lettuce": use_lettuce,
         },
         request_config=LettaRequestConfig(
             use_assistant_message=request.use_assistant_message,
@@ -1670,7 +1671,7 @@ async def send_message_async(
     )
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
-    if headers.experimental_params.message_async and settings.temporal_endpoint:
+    if use_lettuce:
         agent_state = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
