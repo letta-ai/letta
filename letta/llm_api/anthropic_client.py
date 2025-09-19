@@ -10,7 +10,7 @@ from anthropic.types.beta.message_create_params import MessageCreateParamsNonStr
 from anthropic.types.beta.messages import BetaMessageBatch
 from anthropic.types.beta.messages.batch_create_params import Request
 
-from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE
+from letta.constants import FUNC_FAILED_HEARTBEAT_MESSAGE, REQ_HEARTBEAT_MESSAGE, REQUEST_HEARTBEAT_PARAM
 from letta.errors import (
     ContextWindowExceededError,
     ErrorCode,
@@ -31,6 +31,7 @@ from letta.llm_api.llm_client_base import LLMClientBase
 from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_DESCRIPTION
 from letta.log import get_logger
 from letta.otel.tracing import trace_method
+from letta.schemas.agent import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.message import Message as PydanticMessage
 from letta.schemas.openai.chat_completion_request import Tool as OpenAITool
@@ -175,6 +176,7 @@ class AnthropicClient(LLMClientBase):
     @trace_method
     def build_request_data(
         self,
+        agent_type: AgentType,  # if react, use native content + strip heartbeats
         messages: List[PydanticMessage],
         llm_config: LLMConfig,
         tools: Optional[List[dict]] = None,
@@ -222,8 +224,9 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
-        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner:
+        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner or agent_type == AgentType.letta_v1_agent:
             # NOTE: reasoning models currently do not allow for `any`
+            # NOTE: react agents should always have auto on, since the precense/absense of tool calls controls chaining
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
             tools_for_request = [OpenAITool(function=f) for f in tools]
         elif force_tool_call is not None:
@@ -270,6 +273,9 @@ class AnthropicClient(LLMClientBase):
             messages=messages[1:],
             inner_thoughts_xml_tag=inner_thoughts_xml_tag,
             put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
+            # if react, use native content + strip heartbeats
+            native_content=agent_type == AgentType.letta_v1_agent,
+            strip_request_heartbeat=agent_type == AgentType.letta_v1_agent,
         )
 
         # Ensure first message is user
@@ -279,9 +285,21 @@ class AnthropicClient(LLMClientBase):
         # Handle alternating messages
         data["messages"] = merge_tool_results_into_user_messages(data["messages"])
 
-        # Strip heartbeat pings if extended thinking
-        if llm_config.enable_reasoner:
-            data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
+        if agent_type == AgentType.letta_v1_agent:
+            # Both drop heartbeats in the payload
+            data["messages"] = drop_heartbeats(data["messages"])
+            # And drop heartbeats in the tools
+            for tool in data["tools"]:
+                tool["input_schema"]["properties"].pop(REQUEST_HEARTBEAT_PARAM, None)
+                if REQUEST_HEARTBEAT_PARAM in tool["input_schema"]["required"]:
+                    tool["input_schema"]["required"].remove(REQUEST_HEARTBEAT_PARAM)
+
+            print(data)
+
+        else:
+            # Strip heartbeat pings if extended thinking
+            if llm_config.enable_reasoner:
+                data["messages"] = merge_heartbeats_into_tool_responses(data["messages"])
 
         # Prefix fill
         # https://docs.anthropic.com/en/api/messages#body-messages
@@ -714,6 +732,44 @@ def is_heartbeat(message: dict, is_ping: bool = False) -> bool:
             return True
         else:
             return False
+
+
+def drop_heartbeats(messages: List[dict]):
+    cleaned_messages = []
+
+    # Loop through messages
+    # For messages with role 'user' and len(content) > 1,
+    #   Check if content[0].type == 'tool_result'
+    #   If so, iterate over content[1:] and while content.type == 'text' and is_heartbeat(content.text),
+    #     merge into content[0].content
+
+    for message in messages:
+        if "role" in message and "content" in message and message["role"] == "user":
+            content_parts = message["content"]
+
+            if isinstance(content_parts, str):
+                if is_heartbeat({"role": "user", "content": content_parts}):
+                    continue
+            elif isinstance(content_parts, list) and len(content_parts) == 1 and "text" in content_parts[0]:
+                if is_heartbeat({"role": "user", "content": content_parts[0]["text"]}):
+                    continue  # skip
+            else:
+                cleaned_parts = []
+                # Drop all the parts
+                for content_part in content_parts:
+                    if "text" in content_part and is_heartbeat({"role": "user", "content": content_part["text"]}):
+                        continue  # skip
+                    else:
+                        cleaned_parts.append(content_part)
+
+                if len(cleaned_parts) == 0:
+                    continue
+                else:
+                    message["content"] = cleaned_parts
+
+        cleaned_messages.append(message)
+
+    return cleaned_messages
 
 
 def merge_heartbeats_into_tool_responses(messages: List[dict]):

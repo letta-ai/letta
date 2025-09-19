@@ -332,6 +332,15 @@ class AgentManager:
                 tool_names |= calculate_base_tools(is_v2=True)
             elif agent_create.agent_type == AgentType.react_agent:
                 pass  # no default tools
+            elif agent_create.agent_type == AgentType.letta_v1_agent:
+                tool_names |= calculate_base_tools(is_v2=True)
+                # Remove `send_message` if it exists
+                tool_names.discard("send_message")
+                # NOTE: also overwriting inner_thoughts_in_kwargs to force False
+                agent_create.llm_config.put_inner_thoughts_in_kwargs = False
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.agent_type == AgentType.workflow_agent:
                 pass  # no default tools
             else:
@@ -531,6 +540,15 @@ class AgentManager:
                 tool_names |= calculate_base_tools(is_v2=True)
             elif agent_create.agent_type == AgentType.react_agent:
                 pass  # no default tools
+            elif agent_create.agent_type == AgentType.letta_v1_agent:
+                tool_names |= calculate_base_tools(is_v2=True)
+                # Remove `send_message` if it exists
+                tool_names.discard("send_message")
+                # NOTE: also overwriting inner_thoughts_in_kwargs to force False
+                agent_create.llm_config.put_inner_thoughts_in_kwargs = False
+                # NOTE: also overwrite initial message sequence to empty by default
+                if agent_create.initial_message_sequence is None:
+                    agent_create.initial_message_sequence = []
             elif agent_create.agent_type == AgentType.workflow_agent:
                 pass  # no default tools
             else:
