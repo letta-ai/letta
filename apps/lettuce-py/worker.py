@@ -30,7 +30,7 @@ async def main():
         namespace=TEMPORAL_NAMESPACE,
         rpc_metadata={"temporal-namespace": TEMPORAL_NAMESPACE},
         api_key=TEMPORAL_API_KEY,
-        tls=False,  # This should be false for local runs
+        tls=True,  # This should be false for local runs
     )
 
     print("Initializing worker...")
