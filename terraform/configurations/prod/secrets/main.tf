@@ -80,6 +80,13 @@ locals {
     # "prod_lettuce_TEMPORAL_LETTUCE_CA_KEY" = var.prod_lettuce_TEMPORAL_LETTUCE_CA_KEY
     # "prod_lettuce_RESEND_API_KEY" = var.prod_lettuce_RESEND_API_KEY
 
+    # lettuce-py secrets
+    "prod_lettuce-py_LETTA_PG_URI" = var.prod_lettuce_py_LETTA_PG_URI
+    "prod_lettuce-py_LETTA_TEMPORAL_API_KEY" = var.prod_lettuce_py_LETTA_TEMPORAL_API_KEY
+    "prod_lettuce-py_OPENAI_API_KEY" = var.prod_lettuce_py_OPENAI_API_KEY
+    "prod_lettuce-py_ANTHROPIC_API_KEY" = var.prod_lettuce_py_ANTHROPIC_API_KEY
+    "prod_lettuce-py_E2B_API_KEY" = var.prod_lettuce_py_E2B_API_KEY
+
     # memgpt-server secrets
     "prod_memgpt-server-voice_LETTA_SERVER_PASS" = var.prod_memgpt_server_voice_LETTA_SERVER_PASS
     "prod_memgpt-server-voice_LETTA_PG_PASSWORD" = var.prod_memgpt_server_voice_LETTA_PG_PASSWORD

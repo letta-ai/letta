@@ -240,3 +240,31 @@ variable "prod_memgpt_server_LETTA_ENCRYPTION_KEY" {
   type        = string
   sensitive   = true
 }
+
+# lettuce-py secrets
+variable "prod_lettuce_py_LETTA_PG_URI" {
+  description = "Database URI for lettuce-py service"
+  type        = string
+  sensitive   = true
+}
+
+variable "prod_lettuce_py_LETTA_TEMPORAL_API_KEY" {
+   description = "Temporal API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "prod_lettuce_py_OPENAI_API_KEY" {
+   description = "OpenAI API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "prod_lettuce_py_ANTHROPIC_API_KEY" {
+   description = "Anthropic API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
+variable "prod_lettuce_py_E2B_API_KEY" {
+   description = "E2B API key for lettuce-py service"
+   type        = string
+   sensitive   = true
+ }
