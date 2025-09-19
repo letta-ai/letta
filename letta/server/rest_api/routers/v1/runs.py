@@ -119,7 +119,7 @@ async def retrieve_run(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
                 api_key=settings.temporal_api_key,
-                tls=True,  # This should be false for local runs
+                tls=False,  # This should be false for local runs
             )
             handle = client.get_workflow_handle(run_id)
 
