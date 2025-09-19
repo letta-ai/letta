@@ -3,6 +3,10 @@ import os
 
 from temporalio.worker import Worker
 from temporalio.client import Client
+from temporalio.worker.workflow_sandbox import (
+    SandboxedWorkflowRunner,
+    SandboxRestrictions,
+)
 
 from letta.agents.temporal.temporal_agent_workflow import TemporalAgentWorkflow
 from letta.agents.temporal.activities import (
@@ -50,6 +54,33 @@ async def main():
             create_messages,
             update_message_ids,
         ],
+        workflow_runner=SandboxedWorkflowRunner(
+            restrictions=SandboxRestrictions.default.with_passthrough_modules(
+                # TODO: actively looking into solutions for pass through, leaving these here just for reference - not an exhaustive list of modules
+                # "letta.schemas.block",
+                # "letta.schemas.agent",
+                # "letta.schemas.file",
+                # "letta.settings",
+                # "letta.log",
+                # "letta.orm",
+                # "letta.agents.helpers",
+                # "letta.otel.tracing",
+                # "tiktoken",
+                # "letta.schemas.organization",
+                # "letta.schemas.tool",
+                # "letta.server.rest_api.utils",
+                # "letta.schemas.user",
+                # "letta.llm_api.openai_client",
+                # "letta.functions.interface",
+                # "sniffio",
+                # "anyio",
+                # "urllib3",
+                # "sentry_sdk",
+                # "composio",
+                # "starlette",
+                "letta",  # bypass everything to enable local dev
+            )
+        ),
     )
 
     print("Starting worker... Waiting for tasks.")
