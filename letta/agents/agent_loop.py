@@ -18,7 +18,7 @@ class AgentLoop:
     def load(agent_state: AgentState, actor: "User") -> BaseAgentV2:
         if agent_state.enable_sleeptime and agent_state.agent_type != AgentType.voice_convo_agent:
             return SleeptimeMultiAgentV3(agent_state=agent_state, actor=actor, group=agent_state.multi_agent_group)
-        elif agent_state.agent_type == AgentType.react_agent:
+        elif agent_state.agent_type == AgentType.letta_v1_agent:
             return LettaAgentV3(
                 agent_state=agent_state,
                 actor=actor,

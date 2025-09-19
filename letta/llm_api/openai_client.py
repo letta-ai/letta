@@ -204,7 +204,7 @@ class OpenAIClient(LLMClientBase):
 
             # Strip request heartbeat
             # TODO relax this?
-            if agent_type == AgentType.react_agent:
+            if agent_type == AgentType.letta_v1_agent:
                 new_tools = []
                 for tool in typed_tools:
                     # Remove request_heartbeat from the properties if it exists
@@ -329,7 +329,7 @@ class OpenAIClient(LLMClientBase):
                 force_tool_call=force_tool_call,
             )
 
-        if agent_type == AgentType.react_agent:
+        if agent_type == AgentType.letta_v1_agent:
             # Safety hard override in case it got set somewhere by accident
             llm_config.put_inner_thoughts_in_kwargs = False
 
@@ -370,7 +370,7 @@ class OpenAIClient(LLMClientBase):
         # TODO: This vllm checking is very brittle and is a patch at most
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
-            if self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.react_agent:
+            if self.requires_auto_tool_choice(llm_config) or agent_type == AgentType.letta_v1_agent:
                 tool_choice = "auto"
             else:
                 # only set if tools is non-Null
@@ -419,7 +419,7 @@ class OpenAIClient(LLMClientBase):
 
         # For some reason, request heartbeats are still leaking into here...
         # So strip them manually for v3
-        if agent_type == AgentType.react_agent:
+        if agent_type == AgentType.letta_v1_agent:
             new_tools = []
             for tool in data.tools:
                 # Remove request_heartbeat from the properties if it exists

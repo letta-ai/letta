@@ -224,7 +224,7 @@ class AnthropicClient(LLMClientBase):
             # Special case for summarization path
             tools_for_request = None
             tool_choice = None
-        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner or agent_type == AgentType.react_agent:
+        elif self.is_reasoning_model(llm_config) and llm_config.enable_reasoner or agent_type == AgentType.letta_v1_agent:
             # NOTE: reasoning models currently do not allow for `any`
             # NOTE: react agents should always have auto on, since the precense/absense of tool calls controls chaining
             tool_choice = {"type": "auto", "disable_parallel_tool_use": True}
@@ -274,8 +274,8 @@ class AnthropicClient(LLMClientBase):
             inner_thoughts_xml_tag=inner_thoughts_xml_tag,
             put_inner_thoughts_in_kwargs=bool(llm_config.put_inner_thoughts_in_kwargs),
             # if react, use native content + strip heartbeats
-            native_content=agent_type == AgentType.react_agent,
-            strip_request_heartbeat=agent_type == AgentType.react_agent,
+            native_content=agent_type == AgentType.letta_v1_agent,
+            strip_request_heartbeat=agent_type == AgentType.letta_v1_agent,
         )
 
         # Ensure first message is user
@@ -285,7 +285,7 @@ class AnthropicClient(LLMClientBase):
         # Handle alternating messages
         data["messages"] = merge_tool_results_into_user_messages(data["messages"])
 
-        if agent_type == AgentType.react_agent:
+        if agent_type == AgentType.letta_v1_agent:
             # Both drop heartbeats in the payload
             data["messages"] = drop_heartbeats(data["messages"])
             # And drop heartbeats in the tools

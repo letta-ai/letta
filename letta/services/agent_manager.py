@@ -330,9 +330,9 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= calculate_base_tools(is_v2=True)
-            # elif agent_create.agent_type == AgentType.react_agent:
-            #    pass  # no default tools
             elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.letta_v1_agent:
                 tool_names |= calculate_base_tools(is_v2=True)
                 # Remove `send_message` if it exists
                 tool_names.discard("send_message")
@@ -538,9 +538,9 @@ class AgentManager:
                 tool_names |= set(BASE_SLEEPTIME_CHAT_TOOLS)
             elif agent_create.agent_type == AgentType.memgpt_v2_agent:
                 tool_names |= calculate_base_tools(is_v2=True)
-            # elif agent_create.agent_type == AgentType.react_agent:
-            #    pass  # no default tools
             elif agent_create.agent_type == AgentType.react_agent:
+                pass  # no default tools
+            elif agent_create.agent_type == AgentType.letta_v1_agent:
                 tool_names |= calculate_base_tools(is_v2=True)
                 # Remove `send_message` if it exists
                 tool_names.discard("send_message")

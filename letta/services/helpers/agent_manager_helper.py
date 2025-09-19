@@ -203,9 +203,11 @@ def derive_system_message(agent_type: AgentType, enable_sleeptime: Optional[bool
             system = gpt_system.get_system_text("sleeptime_v2")
 
         # ReAct
-        # elif agent_type == AgentType.react_agent:
-        #    system = gpt_system.get_system_text("react")
         elif agent_type == AgentType.react_agent:
+            system = gpt_system.get_system_text("react")
+
+        # Letta v1
+        elif agent_type == AgentType.letta_v1_agent:
             system = gpt_system.get_system_text("react_v2")
 
         # Workflow

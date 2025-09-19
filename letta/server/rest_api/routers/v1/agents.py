@@ -437,7 +437,7 @@ async def create_agent(
     Create an agent.
     """
     # TODO remove
-    agent.agent_type = AgentType.react_agent
+    agent.agent_type = AgentType.letta_v1_agent
     try:
         actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
         return await server.create_agent_async(agent, actor=actor)

@@ -285,7 +285,7 @@ class GoogleVertexClient(LLMClientBase):
         Constructs a request object in the expected data format for this client.
         """
         # NOTE: forcing inner thoughts in kwargs off
-        if agent_type == AgentType.react_agent:
+        if agent_type == AgentType.letta_v1_agent:
             llm_config.put_inner_thoughts_in_kwargs = False
 
         if tools:
@@ -300,8 +300,8 @@ class GoogleVertexClient(LLMClientBase):
         contents = self.add_dummy_model_messages(
             PydanticMessage.to_google_dicts_from_list(
                 messages,
-                put_inner_thoughts_in_kwargs=False if agent_type == AgentType.react_agent else True,
-                native_content=True if agent_type == AgentType.react_agent else False,
+                put_inner_thoughts_in_kwargs=False if agent_type == AgentType.letta_v1_agent else True,
+                native_content=True if agent_type == AgentType.letta_v1_agent else False,
             ),
         )
 
@@ -321,7 +321,7 @@ class GoogleVertexClient(LLMClientBase):
             request_data["config"]["response_schema"] = self.get_function_call_response_schema(tools[0])
             del request_data["config"]["tools"]
         elif tools:
-            if agent_type == AgentType.react_agent:
+            if agent_type == AgentType.letta_v1_agent:
                 # don't require tools
                 tool_call_mode = FunctionCallingConfigMode.AUTO
                 tool_config = ToolConfig(
