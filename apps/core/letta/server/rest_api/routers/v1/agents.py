@@ -1669,7 +1669,7 @@ async def send_message_async(
     )
     run = await server.job_manager.create_job_async(pydantic_job=run, actor=actor)
 
-    if settings.temporal_endpoint:
+    if headers.experimental_params.message_async and settings.temporal_endpoint:
         agent_state = await server.agent_manager.get_agent_by_id_async(
             agent_id, actor, include_relationships=["memory", "multi_agent_group", "sources", "tool_exec_environment_variables", "tools"]
         )
