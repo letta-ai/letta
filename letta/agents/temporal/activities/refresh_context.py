@@ -2,7 +2,7 @@ from typing import List
 
 from temporalio import activity
 
-from letta.agents.temporal.types import RefreshContextParams
+from letta.agents.temporal.types import RefreshContextParams, RefreshContextResult
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_utc_time
 from letta.helpers.reasoning_helper import scrub_inner_thoughts_from_messages
@@ -38,7 +38,7 @@ async def _rebuild_memory(
     agent_manager: AgentManager,
     archive_manager: ArchiveManager,
     tool_rules_solver: ToolRulesSolver,
-):
+) -> tuple[list[Message], AgentState]:
     agent_state = await agent_manager.refresh_memory_async(agent_state=agent_state, actor=actor)
 
     tool_constraint_block = None
@@ -85,7 +85,7 @@ async def _rebuild_memory(
 
     # compare just the dynamic sections (memory blocks, tool rules, directories)
     if curr_dynamic_section == new_dynamic_section:
-        return in_context_messages
+        return in_context_messages, agent_state
 
     memory_edit_timestamp = get_utc_time()
 
@@ -113,14 +113,14 @@ async def _rebuild_memory(
         new_system_message = await message_manager.update_message_by_id_async(
             curr_system_message.id, message_update=MessageUpdate(content=new_system_message_str), actor=actor
         )
-        return [new_system_message] + in_context_messages[1:]
+        return [new_system_message] + in_context_messages[1:], agent_state
 
     else:
-        return in_context_messages
+        return in_context_messages, agent_state
 
 
 @activity.defn(name="refresh_context_and_system_message")
-async def refresh_context_and_system_message(params: RefreshContextParams) -> List[Message]:
+async def refresh_context_and_system_message(params: RefreshContextParams) -> RefreshContextResult:
     agent_state = params.agent_state
     in_context_messages = list(params.in_context_messages)
     tool_rules_solver = params.tool_rules_solver
@@ -140,8 +140,9 @@ async def refresh_context_and_system_message(params: RefreshContextParams) -> Li
         agent_id=agent_state.id,
         actor=actor,
     )
-    in_context_messages = await _rebuild_memory(
-        in_context_messages,
+    in_context_messages, agent_state = await _rebuild_memory(
+        agent_state=agent_state,
+        in_context_messages=in_context_messages,
         num_messages=num_messages,
         num_archival_memories=num_archival_memories,
         actor=actor,
@@ -153,4 +154,4 @@ async def refresh_context_and_system_message(params: RefreshContextParams) -> Li
     )
 
     in_context_messages = scrub_inner_thoughts_from_messages(in_context_messages, agent_state.llm_config)
-    return in_context_messages
+    return RefreshContextResult(messages=in_context_messages, agent_state=agent_state)

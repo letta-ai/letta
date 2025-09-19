@@ -49,7 +49,8 @@ class InnerStepResult:
     stop_reason: StopReasonType
     usage: LettaUsageStatistics
     should_continue: bool
-    response_messages: List[Message]  # Messages generated during this step
+    response_messages: List[Message]
+    agent_state: AgentState
 
 
 # ===== Additional types for activities up to _handle_ai_response =====
@@ -68,6 +69,18 @@ class RefreshContextParams:
     in_context_messages: List[Message]
     tool_rules_solver: ToolRulesSolver
     actor: User
+
+
+@dataclass
+class RefreshContextResult:
+    """Output from refresh_context_and_system_message activity.
+
+    - messages: Updated in-context messages with refreshed system message
+    - agent_state: Updated agent state with refreshed memory
+    """
+
+    messages: List[Message]
+    agent_state: AgentState
 
 
 @dataclass
@@ -216,5 +229,5 @@ class UpdateMessageIdsResult:
     """Output from update_message_ids_activity."""
 
     success: bool
-
+    agent_state: AgentState
     persisted_messages: List[Message]

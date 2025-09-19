@@ -14,6 +14,10 @@ async def create_messages(params: CreateMessagesParams) -> CreateMessagesResult:
     """
     message_manager = MessageManager()
 
+    # TODO: Hackiest code of all time please destroy with fire
+    for message in params.messages:
+        message.step_id = None
+
     # Persist messages to database
     persisted_messages = await message_manager.create_many_messages_async(
         params.messages,
