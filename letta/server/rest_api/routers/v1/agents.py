@@ -1650,7 +1650,7 @@ async def send_message_async(
     MetricRegistry().user_message_counter.add(1, get_ctx_attributes())
     actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
     # Create a new job
-    use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint
+    use_lettuce = headers.experimental_params.message_async and settings.temporal_endpoint is not None
     run = Run(
         user_id=actor.id,
         status=JobStatus.created,
