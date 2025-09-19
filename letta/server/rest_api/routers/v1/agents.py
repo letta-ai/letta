@@ -11,6 +11,7 @@ from orjson import orjson
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.responses import Response, StreamingResponse
+from temporalio.client import Client
 
 from letta.agents.agent_loop import AgentLoop
 from letta.agents.letta_agent_v2 import LettaAgentV2
