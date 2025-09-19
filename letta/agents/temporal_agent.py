@@ -47,7 +47,7 @@ class TemporalAgent(BaseAgentV2):
             settings.temporal_endpoint,
             namespace=settings.temporal_namespace,
             api_key=settings.temporal_api_key,
-            tls=False,  # This should be false for local runs
+            tls=True,  # This should be false for local runs
         )
 
         workflow_input = WorkflowInputParams(
