@@ -92,7 +92,6 @@ jobs:
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT}}
           GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION}}
           DEEPSEEK_API_KEY: ${{ env.DEEPSEEK_API_KEY}}
-          LETTA_USE_EXPERIMENTAL: 1
         run: |
           uv run pytest \
             -s -vv \
