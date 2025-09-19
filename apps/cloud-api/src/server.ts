@@ -27,6 +27,7 @@ import { trackingMiddleware } from './libs/trackingMiddleware/trackingMiddleware
 import { datasourceMiddleware } from './libs/datasourceMiddleware/datasourceMiddleware';
 import { listMiddleware } from './libs/listMiddleware/listMiddleware';
 import { agentFileUploadMiddleware } from './libs/agentFileUploadMiddleware/agentFileUploadMiddleware';
+import { messageAsyncMiddleware } from './libs/messageAsyncMiddleware/messageAsyncMiddleware';
 
 interface ExpressMeta {
   req: {
@@ -154,6 +155,7 @@ export function startServer() {
   app.use(trackingMiddleware);
   app.use(datasourceMiddleware);
   app.use(listMiddleware);
+  app.use(messageAsyncMiddleware);
 
   /* tsRestMiddleware needs to be last */
   const s = initServer();

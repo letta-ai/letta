@@ -396,6 +396,7 @@ export class ArchivesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Archive Successful Response
    * @throws ApiError
    */
@@ -428,6 +429,7 @@ export class ArchivesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Archive Successful Response
    * @throws ApiError
    */
@@ -462,6 +464,7 @@ export class ArchivesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Archive Successful Response
    * @throws ApiError
    */
@@ -494,6 +497,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -522,6 +526,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -551,6 +556,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -588,6 +594,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -634,6 +641,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -673,6 +681,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -700,6 +709,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -726,6 +736,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -751,6 +762,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ToolReturnMessage Successful Response
    * @throws ApiError
    */
@@ -777,6 +789,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AppModel Successful Response
    * @throws ApiError
    */
@@ -802,6 +815,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ActionModel Successful Response
    * @throws ApiError
    */
@@ -830,6 +844,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -857,6 +872,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -882,6 +898,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -909,6 +926,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns MCPTool Successful Response
    * @throws ApiError
    */
@@ -944,6 +962,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -976,6 +995,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -1006,6 +1026,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1036,6 +1057,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1065,6 +1087,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1093,6 +1116,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -1121,6 +1145,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1151,6 +1176,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1217,6 +1243,7 @@ export class ToolsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns GenerateToolOutput Successful Response
    * @throws ApiError
    */
@@ -1246,6 +1273,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -1272,6 +1300,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1302,6 +1331,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1333,6 +1363,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1362,6 +1393,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1397,6 +1429,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
@@ -1426,6 +1459,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1452,6 +1486,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -1483,6 +1518,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1518,6 +1554,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1550,6 +1587,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -1588,6 +1626,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1625,6 +1664,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1659,6 +1699,7 @@ export class SourcesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -1689,6 +1730,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -1714,6 +1756,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1743,6 +1786,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1773,6 +1817,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -1805,6 +1850,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -1839,6 +1885,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns OrganizationSourcesStats Successful Response
    * @throws ApiError
    */
@@ -1873,6 +1920,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1906,6 +1954,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Folder Successful Response
    * @throws ApiError
    */
@@ -1936,6 +1985,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -1975,6 +2025,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -2015,6 +2066,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -2056,6 +2108,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns FileMetadata Successful Response
    * @throws ApiError
    */
@@ -2093,6 +2146,7 @@ export class FoldersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -2140,6 +2194,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2185,6 +2240,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2211,6 +2267,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -2242,6 +2299,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @param data.requestBody
    * @returns string Successful Response
    * @throws ApiError
@@ -2279,6 +2337,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ImportedAgentsResponse Successful Response
    * @throws ApiError
    */
@@ -2306,6 +2365,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ContextWindowOverview Successful Response
    * @throws ApiError
    */
@@ -2335,6 +2395,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2366,6 +2427,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2397,6 +2459,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2425,6 +2488,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Tool Successful Response
    * @throws ApiError
    */
@@ -2454,6 +2518,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2484,6 +2549,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2515,6 +2581,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2548,6 +2615,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2578,6 +2646,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2608,6 +2677,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2638,6 +2708,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -2670,6 +2741,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -2703,6 +2775,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -2736,6 +2809,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -2765,6 +2839,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -2793,6 +2868,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Source Successful Response
    * @throws ApiError
    */
@@ -2824,6 +2900,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns PaginatedAgentFiles Successful Response
    * @throws ApiError
    */
@@ -2858,6 +2935,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Memory Successful Response
    * @throws ApiError
    */
@@ -2887,6 +2965,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2918,6 +2997,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2949,6 +3029,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -2978,6 +3059,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -3008,6 +3090,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -3042,6 +3125,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -3078,6 +3162,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Passage Successful Response
    * @throws ApiError
    */
@@ -3118,6 +3203,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ArchivalMemorySearchResponse Successful Response
    * @throws ApiError
    */
@@ -3155,6 +3241,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3192,6 +3279,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -3232,6 +3320,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
@@ -3264,6 +3353,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3298,6 +3388,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -3330,6 +3421,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @param data.requestBody
    * @returns unknown Successful Response
    * @throws ApiError
@@ -3363,6 +3455,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns MessageSearchResult Successful Response
    * @throws ApiError
    */
@@ -3395,6 +3488,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -3426,6 +3520,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -3458,6 +3553,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3494,6 +3590,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3528,6 +3625,7 @@ export class AgentsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -3567,6 +3665,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3602,6 +3701,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3628,6 +3728,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -3653,6 +3754,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3683,6 +3785,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -3713,6 +3816,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3743,6 +3847,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaResponse Successful Response
    * @throws ApiError
    */
@@ -3781,6 +3886,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -3822,6 +3928,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -3854,6 +3961,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3885,6 +3993,7 @@ export class GroupsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -3923,6 +4032,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3959,6 +4069,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -3986,6 +4097,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -4012,6 +4124,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -4036,6 +4149,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -4064,6 +4178,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Identity Successful Response
    * @throws ApiError
    */
@@ -4094,6 +4209,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -4122,6 +4238,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -4157,6 +4274,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -4197,6 +4315,7 @@ export class IdentitiesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4234,6 +4353,7 @@ export class InternalTemplatesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Group Successful Response
    * @throws ApiError
    */
@@ -4261,6 +4381,7 @@ export class InternalTemplatesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -4288,6 +4409,7 @@ export class InternalTemplatesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4317,6 +4439,7 @@ export class InternalTemplatesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns ListDeploymentEntitiesResponse Successful Response
    * @throws ApiError
    */
@@ -4349,6 +4472,7 @@ export class InternalTemplatesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns DeleteDeploymentResponse Successful Response
    * @throws ApiError
    */
@@ -4381,6 +4505,7 @@ export class ModelsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -4410,6 +4535,7 @@ export class ModelsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -4439,6 +4565,7 @@ export class LlmsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LLMConfig Successful Response
    * @throws ApiError
    */
@@ -4468,6 +4595,7 @@ export class LlmsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns EmbeddingConfig Successful Response
    * @throws ApiError
    */
@@ -4510,6 +4638,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4553,6 +4682,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4579,6 +4709,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */
@@ -4604,6 +4735,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4633,6 +4765,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -4660,6 +4793,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Block Successful Response
    * @throws ApiError
    */
@@ -4695,6 +4829,7 @@ export class BlocksService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns AgentState Successful Response
    * @throws ApiError
    */
@@ -4738,6 +4873,7 @@ export class JobsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4776,6 +4912,7 @@ export class JobsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4808,6 +4945,7 @@ export class JobsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4836,6 +4974,7 @@ export class JobsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4867,6 +5006,7 @@ export class JobsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Job Successful Response
    * @throws ApiError
    */
@@ -4913,6 +5053,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4941,6 +5082,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4969,6 +5111,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -4992,6 +5135,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -5017,6 +5161,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -5044,6 +5189,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -5073,6 +5219,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -5101,6 +5248,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxConfig Successful Response
    * @throws ApiError
    */
@@ -5126,6 +5274,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -5157,6 +5306,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -5189,6 +5339,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns SandboxEnvironmentVariable Successful Response
    * @throws ApiError
    */
@@ -5218,6 +5369,7 @@ export class SandboxConfigService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns void Successful Response
    * @throws ApiError
    */
@@ -5254,6 +5406,7 @@ export class ProvidersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -5288,6 +5441,7 @@ export class ProvidersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -5315,6 +5469,7 @@ export class ProvidersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -5344,6 +5499,7 @@ export class ProvidersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Provider Successful Response
    * @throws ApiError
    */
@@ -5374,6 +5530,7 @@ export class ProvidersService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -5436,6 +5593,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -5474,6 +5632,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -5503,6 +5662,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -5531,6 +5691,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Run Successful Response
    * @throws ApiError
    */
@@ -5563,6 +5724,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaMessageUnion Successful Response
    * @throws ApiError
    */
@@ -5597,6 +5759,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns UsageStatistics Successful Response
    * @throws ApiError
    */
@@ -5639,6 +5802,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5672,6 +5836,7 @@ export class RunsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @param data.requestBody
    * @returns unknown Successful response
    * @throws ApiError
@@ -5719,6 +5884,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5760,6 +5926,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5788,6 +5955,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns StepMetrics Successful Response
    * @throws ApiError
    */
@@ -5815,6 +5983,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -5844,6 +6013,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5879,6 +6049,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -5915,6 +6086,7 @@ export class StepsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns Step Successful Response
    * @throws ApiError
    */
@@ -5952,6 +6124,7 @@ export class TagService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -5994,6 +6167,7 @@ export class AdminService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns string Successful Response
    * @throws ApiError
    */
@@ -6234,6 +6408,7 @@ export class TelemetryService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -6267,6 +6442,7 @@ export class MessagesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -6298,6 +6474,7 @@ export class MessagesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -6330,6 +6507,7 @@ export class MessagesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns BatchJob Successful Response
    * @throws ApiError
    */
@@ -6364,6 +6542,7 @@ export class MessagesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns LettaBatchMessages Successful Response
    * @throws ApiError
    */
@@ -6400,6 +6579,7 @@ export class MessagesService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful Response
    * @throws ApiError
    */
@@ -6430,6 +6610,7 @@ export class VoiceService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns unknown Successful response
    * @throws ApiError
    */
@@ -6462,6 +6643,7 @@ export class EmbeddingsService {
    * @param data.userId
    * @param data.userAgent
    * @param data.xProjectId
+   * @param data.xExperimentalMessageAsync
    * @returns number Successful Response
    * @throws ApiError
    */

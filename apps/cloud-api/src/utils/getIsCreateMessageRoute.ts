@@ -4,12 +4,18 @@ const baseMessagesRoute = pathToRegexp('/v1/agents/:agent_id/messages');
 const advancedMessagesRoute = pathToRegexp(
   '/v1/agents/:agent_id/messages/:type(stream|async)',
 );
+const asyncMessagesRoute = pathToRegexp('/v1/agents/:agent_id/messages/async');
+
 
 export function getIsCreateMessageRoute(pathname: string): boolean {
   const isBaseRoute = baseMessagesRoute.exec(pathname);
   const isAdvancedRoute = advancedMessagesRoute.exec(pathname);
 
   return isBaseRoute !== null || isAdvancedRoute !== null;
+}
+
+export function getIsCreateMessageAsyncRoute(pathname: string): boolean {
+  return asyncMessagesRoute.exec(pathname) !== null;
 }
 
 export function getAgentIdFromMessageRoute(pathname: string): string | null {

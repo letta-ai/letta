@@ -6839,6 +6839,7 @@ export type CreateArchiveData = {
   requestBody: ArchiveCreateRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6871,6 +6872,7 @@ export type ListArchivesData = {
   order?: 'asc' | 'desc';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6881,6 +6883,7 @@ export type ModifyArchiveData = {
   requestBody: ArchiveUpdateRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6890,6 +6893,7 @@ export type DeleteToolData = {
   toolId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6899,6 +6903,7 @@ export type RetrieveToolData = {
   toolId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6909,6 +6914,7 @@ export type ModifyToolData = {
   toolId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -6946,6 +6952,7 @@ export type CountToolsData = {
   toolTypes?: Array<string> | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7002,6 +7009,7 @@ export type ListToolsData = {
   toolTypes?: Array<string> | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7011,6 +7019,7 @@ export type CreateToolData = {
   requestBody: ToolCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7020,6 +7029,7 @@ export type UpsertToolData = {
   requestBody: ToolCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7028,6 +7038,7 @@ export type UpsertToolResponse = Tool;
 export type AddBaseToolsData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7037,6 +7048,7 @@ export type RunToolFromSourceData = {
   requestBody: ToolRunFromSource;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7045,6 +7057,7 @@ export type RunToolFromSourceResponse = ToolReturnMessage;
 export type ListComposioAppsData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7054,6 +7067,7 @@ export type ListComposioActionsByAppData = {
   composioAppName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7063,6 +7077,7 @@ export type AddComposioToolData = {
   composioActionName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7071,6 +7086,7 @@ export type AddComposioToolResponse = Tool;
 export type ListMcpServersData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7085,6 +7101,7 @@ export type AddMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7096,6 +7113,7 @@ export type ListMcpToolsByServerData = {
   mcpServerName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7106,6 +7124,7 @@ export type ResyncMcpServerToolsData = {
   mcpServerName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7116,6 +7135,7 @@ export type AddMcpToolData = {
   mcpToolName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7129,6 +7149,7 @@ export type UpdateMcpServerData = {
     | UpdateStreamableHTTPMCPServer;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7141,6 +7162,7 @@ export type DeleteMcpServerData = {
   mcpServerName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7152,6 +7174,7 @@ export type TestMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7161,6 +7184,7 @@ export type ConnectMcpServerData = {
   requestBody: StdioServerConfig | SSEServerConfig | StreamableHTTPServerConfig;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7170,6 +7194,7 @@ export type GenerateJsonSchemaData = {
   requestBody: CodeInput;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7183,6 +7208,7 @@ export type ExecuteMcpToolData = {
   toolName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7214,6 +7240,7 @@ export type GenerateToolData = {
   requestBody: GenerateToolInput;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7222,6 +7249,7 @@ export type GenerateToolResponse = GenerateToolOutput;
 export type CountSourcesData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7231,6 +7259,7 @@ export type RetrieveSourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7241,6 +7270,7 @@ export type ModifySourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7250,6 +7280,7 @@ export type DeleteSourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7259,6 +7290,7 @@ export type GetSourceIdByNameData = {
   sourceName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7268,6 +7300,7 @@ export type GetSourcesMetadataData = {
   includeDetailedPerSourceMetadata?: boolean;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7276,6 +7309,7 @@ export type GetSourcesMetadataResponse = OrganizationSourcesStats;
 export type ListSourcesData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7285,6 +7319,7 @@ export type CreateSourceData = {
   requestBody: SourceCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7303,6 +7338,7 @@ export type UploadFileToSourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7312,6 +7348,7 @@ export type GetAgentsForSourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7333,6 +7370,7 @@ export type ListSourcePassagesData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7358,6 +7396,7 @@ export type ListSourceFilesData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7372,6 +7411,7 @@ export type GetFileMetadataData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7382,6 +7422,7 @@ export type DeleteFileFromSourceData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7390,6 +7431,7 @@ export type DeleteFileFromSourceResponse = void;
 export type CountFoldersData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7399,6 +7441,7 @@ export type RetrieveFolderData = {
   folderId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7409,6 +7452,7 @@ export type ModifyFolderData = {
   requestBody: SourceUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7418,6 +7462,7 @@ export type DeleteFolderData = {
   folderId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7427,6 +7472,7 @@ export type GetFolderByNameData = {
   folderName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7436,6 +7482,7 @@ export type RetrieveMetadataData = {
   includeDetailedPerSourceMetadata?: boolean;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7468,6 +7515,7 @@ export type ListFoldersData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7477,6 +7525,7 @@ export type CreateFolderData = {
   requestBody: SourceCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7495,6 +7544,7 @@ export type UploadFileToFolderData = {
   name?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7524,6 +7574,7 @@ export type ListAgentsForFolderData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7553,6 +7604,7 @@ export type ListFolderPassagesData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7586,6 +7638,7 @@ export type ListFolderFilesData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7596,6 +7649,7 @@ export type DeleteFileFromFolderData = {
   folderId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7674,6 +7728,7 @@ export type ListAgentsData = {
   templateId?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7683,6 +7738,7 @@ export type CreateAgentData = {
   requestBody: CreateAgentRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * The project slug to associate with the agent (cloud only).
    */
@@ -7695,6 +7751,7 @@ export type CreateAgentResponse = AgentState;
 export type CountAgentsData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7710,6 +7767,7 @@ export type ExportAgentData = {
   useLegacyFormat?: boolean;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7719,6 +7777,7 @@ export type ImportAgentData = {
   formData: Body_import_agent;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xOverrideEmbeddingModel?: string | null;
   xProjectId?: string | null;
 };
@@ -7729,6 +7788,7 @@ export type RetrieveAgentContextWindowData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7739,6 +7799,7 @@ export type ModifyAgentData = {
   requestBody: UpdateAgent;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7752,6 +7813,7 @@ export type RetrieveAgentData = {
   includeRelationships?: Array<string> | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7761,6 +7823,7 @@ export type DeleteAgentData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7770,6 +7833,7 @@ export type ListAgentToolsData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7780,6 +7844,7 @@ export type AttachToolData = {
   toolId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7790,6 +7855,7 @@ export type DetachToolData = {
   toolId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7801,6 +7867,7 @@ export type ModifyApprovalData = {
   toolName: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7811,6 +7878,7 @@ export type AttachSourceToAgentData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7821,6 +7889,7 @@ export type AttachFolderToAgentData = {
   folderId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7831,6 +7900,7 @@ export type DetachSourceFromAgentData = {
   sourceId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7841,6 +7911,7 @@ export type DetachFolderFromAgentData = {
   folderId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7850,6 +7921,7 @@ export type CloseAllOpenFilesData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7860,6 +7932,7 @@ export type OpenFileData = {
   fileId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7870,6 +7943,7 @@ export type CloseFileData = {
   fileId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7879,6 +7953,7 @@ export type ListAgentSourcesData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7888,6 +7963,7 @@ export type ListAgentFoldersData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7909,6 +7985,7 @@ export type ListAgentFilesData = {
   limit?: number;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7918,6 +7995,7 @@ export type RetrieveAgentMemoryData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7928,6 +8006,7 @@ export type RetrieveCoreMemoryBlockData = {
   blockLabel: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7939,6 +8018,7 @@ export type ModifyCoreMemoryBlockData = {
   requestBody: BlockUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7948,6 +8028,7 @@ export type ListCoreMemoryBlocksData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7958,6 +8039,7 @@ export type AttachCoreMemoryBlockData = {
   blockId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7968,6 +8050,7 @@ export type DetachCoreMemoryBlockData = {
   blockId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -7997,6 +8080,7 @@ export type ListPassagesData = {
   search?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8007,6 +8091,7 @@ export type CreatePassageData = {
   requestBody: CreateArchivalMemory;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8040,6 +8125,7 @@ export type SearchArchivalMemoryData = {
   topK?: number | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8050,6 +8136,7 @@ export type DeletePassageData = {
   memoryId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8091,6 +8178,7 @@ export type ListMessagesData = {
   useAssistantMessage?: boolean;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8101,6 +8189,7 @@ export type SendMessageData = {
   requestBody: LettaRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8116,6 +8205,7 @@ export type ModifyMessageData = {
     | UpdateAssistantMessage;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8135,6 +8225,7 @@ export type CreateAgentMessageStreamData = {
   requestBody: LettaStreamingRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8145,6 +8236,7 @@ export type CancelAgentRunData = {
   requestBody?: CancelAgentRunRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8156,6 +8248,7 @@ export type SearchMessagesData = {
   requestBody: MessageSearchRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8166,6 +8259,7 @@ export type CreateAgentMessageAsyncData = {
   requestBody: LettaAsyncRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8179,6 +8273,7 @@ export type ResetMessagesData = {
   agentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8192,6 +8287,7 @@ export type ListAgentGroupsData = {
   managerType?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8202,6 +8298,7 @@ export type PreviewRawPayloadData = {
   requestBody: LettaRequest | LettaStreamingRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8217,6 +8314,7 @@ export type SummarizeAgentConversationData = {
   maxMessageLength: number;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8253,6 +8351,7 @@ export type ListGroupsData = {
   projectId?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8262,6 +8361,7 @@ export type CreateGroupData = {
   requestBody: GroupCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * The project slug to associate with the group (cloud only).
    */
@@ -8274,6 +8374,7 @@ export type CreateGroupResponse = Group;
 export type CountGroupsData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8283,6 +8384,7 @@ export type RetrieveGroupData = {
   groupId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8293,6 +8395,7 @@ export type ModifyGroupData = {
   requestBody: GroupUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * The project slug to associate with the group (cloud only).
    */
@@ -8306,6 +8409,7 @@ export type DeleteGroupData = {
   groupId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8316,6 +8420,7 @@ export type SendGroupMessageData = {
   requestBody: LettaRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8357,6 +8462,7 @@ export type ListGroupMessagesData = {
   useAssistantMessage?: boolean;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8367,6 +8473,7 @@ export type SendGroupMessageStreamingData = {
   requestBody: LettaStreamingRequest;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8382,6 +8489,7 @@ export type ModifyGroupMessageData = {
     | UpdateAssistantMessage;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8400,6 +8508,7 @@ export type ResetGroupMessagesData = {
   groupId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8432,6 +8541,7 @@ export type ListIdentitiesData = {
   projectId?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8441,6 +8551,7 @@ export type CreateIdentityData = {
   requestBody: IdentityCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * The project slug to associate with the identity (cloud only).
    */
@@ -8454,6 +8565,7 @@ export type UpsertIdentityData = {
   requestBody: IdentityUpsert;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * The project slug to associate with the identity (cloud only).
    */
@@ -8466,6 +8578,7 @@ export type UpsertIdentityResponse = Identity;
 export type CountIdentitiesData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8475,6 +8588,7 @@ export type RetrieveIdentityData = {
   identityId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8485,6 +8599,7 @@ export type UpdateIdentityData = {
   requestBody: IdentityUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8494,6 +8609,7 @@ export type DeleteIdentityData = {
   identityId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8504,6 +8620,7 @@ export type UpsertIdentityPropertiesData = {
   requestBody: Array<IdentityProperty>;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8533,6 +8650,7 @@ export type ListAgentsForIdentityData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8562,6 +8680,7 @@ export type ListBlocksForIdentityData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8571,6 +8690,7 @@ export type CreateInternalTemplateGroupData = {
   requestBody: InternalTemplateGroupCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8580,6 +8700,7 @@ export type CreateInternalTemplateAgentData = {
   requestBody: InternalTemplateAgentCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8589,6 +8710,7 @@ export type CreateInternalTemplateBlockData = {
   requestBody: InternalTemplateBlockCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8602,6 +8724,7 @@ export type ListDeploymentEntitiesData = {
   entityTypes?: Array<string> | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8611,6 +8734,7 @@ export type DeleteDeploymentData = {
   deploymentId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8622,6 +8746,7 @@ export type ListModelsData = {
   providerType?: ProviderType | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8630,6 +8755,7 @@ export type ListModelsResponse = Array<LLMConfig>;
 export type ListEmbeddingModelsData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8706,6 +8832,7 @@ export type ListBlocksData = {
    * Search blocks by value. If provided, returns blocks that match this value.
    */
   valueSearch?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8715,6 +8842,7 @@ export type CreateBlockData = {
   requestBody: CreateBlock;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8723,6 +8851,7 @@ export type CreateBlockResponse = Block;
 export type CountBlocksData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8733,6 +8862,7 @@ export type ModifyBlockData = {
   requestBody: BlockUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8742,6 +8872,7 @@ export type DeleteBlockData = {
   blockId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8751,6 +8882,7 @@ export type RetrieveBlockData = {
   blockId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8784,6 +8916,7 @@ export type ListAgentsForBlockData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8816,6 +8949,7 @@ export type ListJobsData = {
   sourceId?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8844,6 +8978,7 @@ export type ListActiveJobsData = {
   sourceId?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8853,6 +8988,7 @@ export type RetrieveJobData = {
   jobId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8862,6 +8998,7 @@ export type DeleteJobData = {
   jobId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8871,6 +9008,7 @@ export type CancelJobData = {
   jobId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8882,6 +9020,7 @@ export type CreateSandboxConfigV1SandboxConfigPostData = {
   requestBody: SandboxConfigCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8902,6 +9041,7 @@ export type ListSandboxConfigsV1SandboxConfigGetData = {
   sandboxType?: SandboxType | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8910,6 +9050,7 @@ export type ListSandboxConfigsV1SandboxConfigGetResponse = Array<SandboxConfig>;
 export type CreateDefaultE2bSandboxConfigV1SandboxConfigE2bDefaultPostData = {
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8920,6 +9061,7 @@ export type CreateDefaultLocalSandboxConfigV1SandboxConfigLocalDefaultPostData =
   {
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -8930,6 +9072,7 @@ export type CreateCustomLocalSandboxConfigV1SandboxConfigLocalPostData = {
   requestBody: LocalSandboxConfig;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8941,6 +9084,7 @@ export type UpdateSandboxConfigV1SandboxConfigSandboxConfigIdPatchData = {
   sandboxConfigId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8951,6 +9095,7 @@ export type DeleteSandboxConfigV1SandboxConfigSandboxConfigIdDeleteData = {
   sandboxConfigId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -8961,6 +9106,7 @@ export type ForceRecreateLocalSandboxVenvV1SandboxConfigLocalRecreateVenvPostDat
   {
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -8973,6 +9119,7 @@ export type CreateSandboxEnvVarV1SandboxConfigSandboxConfigIdEnvironmentVariable
     sandboxConfigId: string;
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -8992,6 +9139,7 @@ export type ListSandboxEnvVarsV1SandboxConfigSandboxConfigIdEnvironmentVariableG
     sandboxConfigId: string;
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -9004,6 +9152,7 @@ export type UpdateSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdPatchDa
     requestBody: SandboxEnvironmentVariableUpdate;
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -9015,6 +9164,7 @@ export type DeleteSandboxEnvVarV1SandboxConfigEnvironmentVariableEnvVarIdDeleteD
     envVarId: string;
     userAgent?: string | null;
     userId?: string | null;
+    xExperimentalMessageAsync?: string | null;
     xProjectId?: string | null;
   };
 
@@ -9052,6 +9202,7 @@ export type ListProvidersData = {
   providerType?: ProviderType | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9061,6 +9212,7 @@ export type CreateProviderData = {
   requestBody: ProviderCreate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9070,6 +9222,7 @@ export type RetrieveProviderData = {
   providerId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9080,6 +9233,7 @@ export type ModifyProviderData = {
   requestBody: ProviderUpdate;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9089,6 +9243,7 @@ export type DeleteProviderData = {
   providerId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9139,6 +9294,7 @@ export type ListRunsData = {
   stopReason?: StopReasonType | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9155,6 +9311,7 @@ export type ListActiveRunsData = {
   background?: boolean | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9164,6 +9321,7 @@ export type RetrieveRunData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9173,6 +9331,7 @@ export type DeleteRunData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9198,6 +9357,7 @@ export type ListRunMessagesData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9207,6 +9367,7 @@ export type RetrieveRunUsageData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9232,6 +9393,7 @@ export type ListRunStepsData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9242,6 +9404,7 @@ export type RetrieveStreamData = {
   runId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9306,6 +9469,7 @@ export type ListStepsData = {
   traceIds?: Array<string> | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   /**
    * Filter by project slug to associate with the group (cloud only).
    */
@@ -9319,6 +9483,7 @@ export type RetrieveStepData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9328,6 +9493,7 @@ export type RetrieveMetricsForStepData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9337,6 +9503,7 @@ export type RetrieveTraceForStepData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9347,6 +9514,7 @@ export type ModifyFeedbackForStepData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9376,6 +9544,7 @@ export type ListMessagesForStepData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9396,6 +9565,7 @@ export type UpdateStepTransactionIdData = {
   transactionId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9433,6 +9603,7 @@ export type ListTagsData = {
   queryText?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9502,6 +9673,7 @@ export type RetrieveProviderTraceData = {
   stepId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9511,6 +9683,7 @@ export type CreateBatchData = {
   requestBody: CreateBatch;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9539,6 +9712,7 @@ export type ListBatchesData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9548,6 +9722,7 @@ export type RetrieveBatchData = {
   batchId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9581,6 +9756,7 @@ export type ListMessagesForBatchData = {
   orderBy?: 'created_at';
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9590,6 +9766,7 @@ export type CancelBatchData = {
   batchId: string;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9602,6 +9779,7 @@ export type CreateVoiceChatCompletionsData = {
   };
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
@@ -9611,6 +9789,7 @@ export type GetTotalStorageSizeData = {
   storageUnit?: string | null;
   userAgent?: string | null;
   userId?: string | null;
+  xExperimentalMessageAsync?: string | null;
   xProjectId?: string | null;
 };
 
