@@ -44,7 +44,7 @@ securityContext: {}
 # Environment variables for the worker
 env:
   LETTA_AGENTS_ENDPOINT: "http://memgpt-server:8083"
-  REDIS_HOST: "10.167.199.148"
+  REDIS_HOST: "10.219.146.68"
   REDIS_PORT: "6379"
   PORT: "8080"
   LETTA_TEMPORAL_NAMESPACE: "lettuce-py-staging.tmhou"
@@ -64,10 +64,10 @@ secretsProvider:
 resources:
   limits:
     cpu: "1"
-    memory: "1024Mi"
+    memory: "2048Mi"
   requests:
     cpu: "0.5"
-    memory: "512Mi"
+    memory: "1024Mi"
 
 # Additional volumes on the output Deployment definition.
 volumes: []
