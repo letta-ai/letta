@@ -25,8 +25,8 @@ class WorkflowInputParams:
     actor: User
     max_steps: int
     run_id: str
-    use_assistant_message: bool = (True,)
-    include_return_message_types: list[MessageType] | None = (None,)
+    use_assistant_message: bool = True
+    include_return_message_types: list[MessageType] | None = None
 
 
 @dataclass
