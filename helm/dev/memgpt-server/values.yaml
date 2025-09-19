@@ -144,6 +144,9 @@ env:
   MCP_READ_FROM_CONFIG: false
   PINECONE_NAMESPACE: __default__
   PINECONE_INDEX_HOST: https://test-index-p6kwg4z.svc.aped-4627-b74a.pinecone.io
+  LETTA_TEMPORAL_NAMESPACE: "lettuce-py-staging.tmhou"
+  LETTA_TEMPORAL_ENDPOINT: "us-central1.gcp.api.temporal.io:7233"
+  LETTA_TEMPORAL_TASK_QUEUE: "agent_loop_async_task_queue"
 
 secretsProvider:
   secrets:
@@ -164,3 +167,4 @@ secretsProvider:
     - LETTA_TPUF_API_KEY
     - LETTA_ENCRYPTION_KEY
     - COMPOSIO_API_KEY
+    - LETTA_TEMPORAL_API_KEY
