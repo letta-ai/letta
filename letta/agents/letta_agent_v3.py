@@ -385,7 +385,11 @@ class LettaAgentV3(LettaAgentV2):
             self.response_messages.extend(persisted_messages[new_message_idx:])
 
             if llm_adapter.supports_token_streaming():
-                if persisted_messages[-1].role != "approval" and tool_call is not None:
+                # Stream the tool return if a tool was actually executed.
+                # In the normal streaming path, the tool call is surfaced via the streaming interface
+                # (llm_adapter.tool_call), so don't rely solely on the local `tool_call` variable.
+                has_tool_return = any(m.role == "tool" for m in persisted_messages)
+                if persisted_messages[-1].role != "approval" and has_tool_return:
                     tool_return = [msg for msg in persisted_messages if msg.role == "tool"][-1].to_letta_messages()[0]
                     if include_return_message_types is None or tool_return.message_type in include_return_message_types:
                         yield tool_return

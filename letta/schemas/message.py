@@ -389,19 +389,20 @@ class Message(BaseMessage):
             elif isinstance(content_part, SummarizedReasoningContent):
                 # TODO remove the cast and just return the native type
                 casted_content_part = content_part.to_reasoning_content()
-                messages.append(
-                    ReasoningMessage(
-                        id=self.id,
-                        date=self.created_at,
-                        reasoning=casted_content_part.reasoning,
-                        source="reasoner_model",  # TODO do we want to tag like this?
-                        signature=casted_content_part.signature,
-                        name=self.name,
-                        otid=otid,
-                        step_id=self.step_id,
-                        is_err=self.is_err,
+                if casted_content_part is not None:
+                    messages.append(
+                        ReasoningMessage(
+                            id=self.id,
+                            date=self.created_at,
+                            reasoning=casted_content_part.reasoning,
+                            source="reasoner_model",  # TODO do we want to tag like this?
+                            signature=casted_content_part.signature,
+                            name=self.name,
+                            otid=otid,
+                            step_id=self.step_id,
+                            is_err=self.is_err,
+                        )
                     )
-                )
 
             elif isinstance(content_part, RedactedReasoningContent):
                 # "native" redacted/hidden COT

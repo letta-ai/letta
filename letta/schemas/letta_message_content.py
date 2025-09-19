@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Annotated, List, Literal, Optional, Union
 
+from openai.types import Reasoning
 from pydantic import BaseModel, Field
 
 
@@ -274,14 +275,18 @@ class SummarizedReasoningContent(MessageContent):
     encrypted_content: str = Field(default=None, description="The encrypted reasoning content.")
 
     # Temporary stop-gap until the SDKs are updated
-    def to_reasoning_content(self):
+    def to_reasoning_content(self) -> Optional[ReasoningContent]:
         # Merge the summary parts with a '\n' join
-        combined_summary = "\n\n".join([s.text for s in self.summary])
-        return ReasoningContent(
-            is_native=True,
-            reasoning=combined_summary,
-            signature=self.encrypted_content,
-        )
+        parts = [s.text for s in self.summary if s.text != ""]
+        if not parts or len(parts) == 0:
+            return None
+        else:
+            combined_summary = "\n\n".join(parts)
+            return ReasoningContent(
+                is_native=True,
+                reasoning=combined_summary,
+                signature=self.encrypted_content,
+            )
 
 
 LettaMessageContentUnion = Annotated[
