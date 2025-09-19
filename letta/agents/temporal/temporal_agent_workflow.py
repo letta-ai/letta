@@ -97,23 +97,17 @@ class TemporalAgentWorkflow:
             schedule_to_close_timeout=PREPARE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
         )
         combined_messages = prepared.in_context_messages + prepared.input_messages_to_persist
-
+        input_messages = prepared.input_messages_to_persist
         # Main agent loop - execute steps until max_steps or stop condition
         for step_index in range(params.max_steps):
             remaining_turns = params.max_steps - step_index - 1
-
-            # TODO: @jin destroy this with fire and figure out how to prevent dupe user messages
-            if step_index == 0:
-                persist = prepared.input_messages_to_persist
-            else:
-                persist = []
 
             # Execute single step
             step_result = await self.inner_step(
                 agent_state=agent_state,
                 tool_rules_solver=tool_rules_solver,
                 messages=combined_messages,
-                input_messages_to_persist=persist,
+                input_messages_to_persist=input_messages,
                 use_assistant_message=params.use_assistant_message,
                 include_return_message_types=params.include_return_message_types,
                 actor=params.actor,
@@ -138,6 +132,8 @@ class TemporalAgentWorkflow:
             # Check if we should continue
             if not step_result.should_continue:
                 break
+
+            input_messages = []  # Only need to persist the input messages for the first step
 
         # convert to letta messages from Message objs
         letta_messages = Message.to_letta_messages_from_list(
