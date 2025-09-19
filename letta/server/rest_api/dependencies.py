@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class ExperimentalParams(BaseModel):
     """Experimental parameters used across REST API endpoints."""
 
-    message_async: Optional[str] = None
+    message_async: Optional[bool] = None
 
 
 class HeaderParams(BaseModel):
@@ -34,7 +34,7 @@ def get_headers(
         user_agent=user_agent,
         project_id=project_id,
         experimental_params=ExperimentalParams(
-            message_async=message_async,
+            message_async=(message_async == "true") if message_async else None,
         ),
     )
 
