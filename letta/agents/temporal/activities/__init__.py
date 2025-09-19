@@ -1,4 +1,5 @@
 from letta.agents.temporal.activities.create_messages import create_messages
+from letta.agents.temporal.activities.create_step import create_step
 from letta.agents.temporal.activities.example_activity import example_activity
 from letta.agents.temporal.activities.execute_tool import execute_tool
 from letta.agents.temporal.activities.llm_request import llm_request
@@ -15,6 +16,7 @@ __all__ = [
     "example_activity",
     "execute_tool",
     "create_messages",
+    "create_step",
     "prepare_messages",
     "refresh_context_and_system_message",
     "update_message_ids",

@@ -13,6 +13,7 @@ from letta.schemas.letta_message_content import (
 from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
+from letta.schemas.step import Step
 from letta.schemas.tool_execution_result import ToolExecutionResult
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User
@@ -170,6 +171,25 @@ class ExecuteToolResult:
 
     tool_execution_result: ToolExecutionResult
     execution_time_ns: int
+
+
+@dataclass
+class CreateStepParams:
+    """Input to create_step_activity."""
+
+    agent_state: AgentState
+    messages: List[Message]
+    actor: User
+    run_id: str
+    step_id: Optional[str]
+    usage: UsageStatistics
+
+
+@dataclass
+class CreateStepResult:
+    """Output from create_step_activity."""
+
+    step: Step
 
 
 @dataclass
