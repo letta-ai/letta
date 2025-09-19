@@ -46,6 +46,10 @@ SUMMARIZE_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=10)
 TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=600)
 TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
 
+# create_step (saves step to agent state)
+CREATE_STEP_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
+CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
+
 # create_messages (saves messages to agent state)
 CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
 CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)

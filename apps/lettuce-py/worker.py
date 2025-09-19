@@ -13,6 +13,7 @@ from letta.agents.temporal.activities import (
     example_activity,
     llm_request,
     create_messages,
+    create_step,
     prepare_messages,
     refresh_context_and_system_message,
     summarize_conversation_history,
@@ -52,6 +53,7 @@ async def main():
             example_activity,
             execute_tool,
             create_messages,
+            create_step,
             update_message_ids,
         ],
         workflow_runner=SandboxedWorkflowRunner(

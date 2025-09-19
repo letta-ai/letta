@@ -8,6 +8,8 @@ from letta.agents.temporal.activities.execute_tool import deserialize_func_retur
 from letta.agents.temporal.constants import (
     CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+    CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+    CREATE_STEP_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     LLM_ACTIVITY_RETRY_POLICY,
     LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     LLM_ACTIVITY_START_TO_CLOSE_TIMEOUT,
@@ -44,6 +46,7 @@ with workflow.unsafe.imports_passed_through():
     from letta.agents.helpers import _build_rule_violation_result, _load_last_function_response, _pop_heartbeat, _safe_load_tool_call_str
     from letta.agents.temporal.activities import (
         create_messages,
+        create_step,
         execute_tool,
         llm_request,
         prepare_messages,
@@ -53,6 +56,9 @@ with workflow.unsafe.imports_passed_through():
     )
     from letta.agents.temporal.types import (
         CreateMessagesParams,
+        CreateMessagesResult,
+        CreateStepParams,
+        CreateStepResult,
         ExecuteToolParams,
         ExecuteToolResult,
         FinalResult,
@@ -113,6 +119,7 @@ class TemporalAgentWorkflow:
                 include_return_message_types=params.include_return_message_types,
                 actor=params.actor,
                 remaining_turns=remaining_turns,
+                run_id=params.run_id,
             )
 
             # Update agent state from the step result
@@ -159,6 +166,7 @@ class TemporalAgentWorkflow:
         include_return_message_types: list[MessageType] | None = None,
         request_start_timestamp_ns: int | None = None,
         remaining_turns: int = -1,
+        run_id: str | None = None,
     ) -> InnerStepResult:
         # Initialize step state
         usage = LettaUsageStatistics()
@@ -312,7 +320,9 @@ class TemporalAgentWorkflow:
                 is_denial=(approval_response.approve == False) if approval_response is not None else False,
                 denial_reason=approval_response.denial_reason if approval_response is not None else None,
                 is_final_step=(remaining_turns == 0),
-                # TODO: skipping these args for now: usage, agent_step_span, run_id, step_metrics
+                usage=usage,
+                run_id=run_id,
+                # TODO: skipping these args for now: agent_step_span, step_metrics
             )
 
             if recent_last_function_response:
@@ -375,6 +385,8 @@ class TemporalAgentWorkflow:
         is_denial: bool = False,
         denial_reason: str | None = None,
         is_final_step: bool = False,
+        usage: UsageStatistics | None = None,
+        run_id: str | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None, str | None]:
         """
         Handle the AI response by executing the tool call, creating messages,
@@ -529,7 +541,21 @@ class TemporalAgentWorkflow:
             is_approval_response=is_approval or is_denial,
         )
 
-        # Combine with initial messages
+        # Log step
+        persisted_step_result = await workflow.execute_activity(
+            create_step,
+            CreateStepParams(
+                agent_state=agent_state,
+                messages=tool_call_messages,
+                actor=actor,
+                run_id=run_id,
+                step_id=step_id,
+                usage=usage,
+            ),
+            start_to_close_timeout=CREATE_STEP_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+            schedule_to_close_timeout=CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+        )
+
         messages_to_persist = initial_messages + tool_call_messages
 
         # Persist messages to database
