@@ -21,7 +21,7 @@ export async function messageAsyncMiddleware(
     return;
   }
 
-  const flag = await getSingleFlag('USE_TEMPORAL_MESSAGE_ASYNC');
+  const flag = await getSingleFlag('USE_TEMPORAL_MESSAGE_ASYNC', req.actor.cloudOrganizationId);
 
   if (flag) {
     req.headers['X-Experimental-Message-Async'] = 'true';
