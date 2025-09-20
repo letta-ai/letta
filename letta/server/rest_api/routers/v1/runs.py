@@ -114,7 +114,8 @@ async def retrieve_run(
     try:
         job = await server.job_manager.get_job_by_id_async(job_id=run_id, actor=actor)
 
-        if job.metadata.get("lettuce") and settings.temporal_endpoint:
+        use_lettuce = job.metadata.get("lettuce") and settings.temporal_endpoint
+        if use_lettuce and job_status not in [JobStatus.completed, JobStatus.failed, JobStatus.cancelled]:
             client = await Client.connect(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
