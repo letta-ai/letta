@@ -1,0 +1,2431 @@
+[
+  {
+    "id": "tool-f41cd07e-8714-4001-884c-47a7e7c901c1",
+    "tool_type": "letta_core",
+    "description": "Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "archival_memory_insert",
+    "tags": [
+      "letta_core"
+    ],
+    "source_code": "def archival_memory_insert(self: \"Agent\", content: str) -> Optional[str]:\n    \"\"\"\n    Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.\n\n    Args:\n        content (str): Content to write to the memory. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    self.passage_manager.insert_passage(\n        agent_state=self.agent_state,\n        text=content,\n        actor=self.user,\n    )\n    return None\n",
+    "json_schema": {
+      "name": "archival_memory_insert",
+      "description": "Add to archival memory. Make sure to phrase the memory contents such that it can be easily queried later.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Content to write to the memory. All unicode (including emojis) are supported."
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-3ca4a7de-e595-46ad-af1f-feebb2f6e404",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-d0e4c2f1-7f3f-4ad4-9062-7aa30c0cd04b",
+    "tool_type": "letta_core",
+    "description": "Search archival memory using semantic (embedding-based) search.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "archival_memory_search",
+    "tags": [
+      "letta_core"
+    ],
+    "source_code": "def archival_memory_search(self: \"Agent\", query: str, page: Optional[int] = 0, start: Optional[int] = 0) -> Optional[str]:\n    \"\"\"\n    Search archival memory using semantic (embedding-based) search.\n\n    Args:\n        query (str): String to search for.\n        page (Optional[int]): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).\n        start (Optional[int]): Starting index for the search results. Defaults to 0.\n\n    Returns:\n        str: Query result string\n    \"\"\"\n\n    from letta.constants import RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n\n    if page is None or (isinstance(page, str) and page.lower().strip() == \"none\"):\n        page = 0\n    try:\n        page = int(page)\n    except:\n        raise ValueError(f\"'page' argument must be an integer\")\n    count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n\n    try:\n        # Get results using passage manager\n        all_results = self.agent_manager.list_passages(\n            actor=self.user,\n            agent_id=self.agent_state.id,\n            query_text=query,\n            limit=count + start,  # Request enough results to handle offset\n            embedding_config=self.agent_state.embedding_config,\n            embed_query=True,\n        )\n\n        # Apply pagination\n        end = min(count + start, len(all_results))\n        paged_results = all_results[start:end]\n\n        # Format results to match previous implementation\n        formatted_results = [{\"timestamp\": str(result.created_at), \"content\": result.text} for result in paged_results]\n\n        return formatted_results, len(formatted_results)\n\n    except Exception as e:\n        raise e\n",
+    "json_schema": {
+      "name": "archival_memory_search",
+      "description": "Search archival memory using semantic (embedding-based) search.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "String to search for."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+          },
+          "start": {
+            "type": "integer",
+            "description": "Starting index for the search results. Defaults to 0."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-3ca4a7de-e595-46ad-af1f-feebb2f6e404",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-33b57fbe-83ec-4b90-82f4-9d59f345912e",
+    "tool_type": "letta_core",
+    "description": "Search prior conversation history using case-insensitive string matching.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "conversation_search",
+    "tags": [
+      "letta_core"
+    ],
+    "source_code": "def conversation_search(self: \"Agent\", query: str, page: Optional[int] = 0) -> Optional[str]:\n    \"\"\"\n    Search prior conversation history using case-insensitive string matching.\n\n    Args:\n        query (str): String to search for.\n        page (int): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).\n\n    Returns:\n        str: Query result string\n    \"\"\"\n\n    import math\n\n    from letta.constants import RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n    from letta.utils import json_dumps\n\n    if page is None or (isinstance(page, str) and page.lower().strip() == \"none\"):\n        page = 0\n    try:\n        page = int(page)\n    except:\n        raise ValueError(f\"'page' argument must be an integer\")\n    count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n    # TODO: add paging by page number. currently cursor only works with strings.\n    # original: start=page * count\n    messages = self.message_manager.list_user_messages_for_agent(\n        agent_id=self.agent_state.id,\n        actor=self.user,\n        query_text=query,\n        limit=count,\n    )\n    total = len(messages)\n    num_pages = math.ceil(total / count) - 1  # 0 index\n    if len(messages) == 0:\n        results_str = f\"No results found.\"\n    else:\n        results_pref = f\"Showing {len(messages)} of {total} results (page {page}/{num_pages}):\"\n        results_formatted = [message.text for message in messages]\n        results_str = f\"{results_pref} {json_dumps(results_formatted)}\"\n    return results_str\n",
+    "json_schema": {
+      "name": "conversation_search",
+      "description": "Search prior conversation history using case-insensitive string matching.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "String to search for."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-3ca4a7de-e595-46ad-af1f-feebb2f6e404",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-a762a3e7-062a-45b4-8d12-fbdc3937e478",
+    "tool_type": "custom",
+    "description": "Search prior conversation history using a date range.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "conversation_search_date",
+    "tags": [
+      "base",
+      "letta-base"
+    ],
+    "source_code": "def conversation_search_date(self: \"Agent\", start_date: str, end_date: str, page: Optional[int] = 0) -> Optional[str]:\n    \"\"\"\n    Search prior conversation history using a dte range.\n\n    Args:\n        start_date (str): The start of the date range to search, in the format 'YYYY-MM-DD'.\n        end_date (str): The end of the date range to search, in the format 'YYYY-MM-DD'.\n        page (int): Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page).\n\n    Returns:\n        str: Query result string\n    \"\"\"\n    import math\n    from datetime import datetime\n\n    from letta.constants import RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n    from letta.utils import json_dumps\n\n    if page is None or (isinstance(page, str) and page.lower().strip() == \"none\"):\n        page = 0\n    try:\n        page = int(page)\n        if page < 0:\n            raise ValueError\n    except:\n        raise ValueError(f\"'page' argument must be an integer\")\n\n    # Convert date strings to datetime objects\n    try:\n        start_datetime = datetime.strptime(start_date, \"%Y-%m-%d\").replace(hour=0, minute=0, second=0, microsecond=0)\n        end_datetime = datetime.strptime(end_date, \"%Y-%m-%d\").replace(hour=23, minute=59, second=59, microsecond=999999)\n    except ValueError:\n        raise ValueError(\"Dates must be in the format 'YYYY-MM-DD'\")\n\n    count = RETRIEVAL_QUERY_DEFAULT_PAGE_SIZE\n    results = self.message_manager.list_user_messages_for_agent(\n        # TODO: add paging by page number. currently cursor only works with strings.\n        agent_id=self.agent_state.id,\n        actor=self.user,\n        start_date=start_datetime,\n        end_date=end_datetime,\n        limit=count,\n    )\n    total = len(results)\n    num_pages = math.ceil(total / count) - 1  # 0 index\n    if len(results) == 0:\n        results_str = f\"No results found.\"\n    else:\n        results_pref = f\"Showing {len(results)} of {total} results (page {page}/{num_pages}):\"\n        results_formatted = [f\"timestamp: {d['timestamp']}, {d['message']['role']} - {d['message']['content']}\" for d in results]\n        results_str = f\"{results_pref} {json_dumps(results_formatted)}\"\n    return results_str\n",
+    "json_schema": {
+      "name": "conversation_search_date",
+      "description": "Search prior conversation history using a dte range.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "description": "The start of the date range to search, in the format 'YYYY-MM-DD'."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "The end of the date range to search, in the format 'YYYY-MM-DD'."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Allows you to page through results. Only use on a follow-up query. Defaults to 0 (first page)."
+          }
+        },
+        "required": [
+          "start_date",
+          "end_date"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-3ca4a7de-e595-46ad-af1f-feebb2f6e404",
+    "last_updated_by_id": "user-88cbf1ea-8099-48d4-8298-ecc0992dc64d",
+    "metadata_": null
+  },
+  {
+    "id": "tool-b07048bf-1a42-46b8-ab3a-988a718b6172",
+    "tool_type": "letta_core",
+    "description": "Sends a message to the human user.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "send_message",
+    "tags": [
+      "letta_core"
+    ],
+    "source_code": "def send_message(self: \"Agent\", message: str) -> Optional[str]:\n    \"\"\"\n    Sends a message to the human user.\n\n    Args:\n        message (str): Message contents. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    # FIXME passing of msg_obj here is a hack, unclear if guaranteed to be the correct reference\n    self.interface.assistant_message(message)  # , msg_obj=self._messages[-1])\n    return None\n",
+    "json_schema": {
+      "name": "send_message",
+      "description": "Sends a message to the human user.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message contents. All unicode (including emojis) are supported."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-3ca4a7de-e595-46ad-af1f-feebb2f6e404",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-e6125956-b7fb-48ae-a405-8b1b4e45dabc",
+    "tool_type": "letta_memory_core",
+    "description": "Append to the contents of core memory.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "core_memory_append",
+    "tags": [
+      "letta_memory_core"
+    ],
+    "source_code": "def core_memory_append(agent_state: \"AgentState\", label: str, content: str) -> Optional[str]:  # type: ignore\n    \"\"\"\n    Append to the contents of core memory.\n\n    Args:\n        label (str): Section of the memory to be edited (persona or human).\n        content (str): Content to write to the memory. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    current_value = str(agent_state.memory.get_block(label).value)\n    new_value = current_value + \"\\n\" + str(content)\n    agent_state.memory.update_block_value(label=label, value=new_value)\n    return None\n",
+    "json_schema": {
+      "name": "core_memory_append",
+      "description": "Append to the contents of core memory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Section of the memory to be edited (persona or human)."
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write to the memory. All unicode (including emojis) are supported."
+          }
+        },
+        "required": [
+          "label",
+          "content"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-c9d62880-5451-4495-8484-ec13d7222fb6",
+    "tool_type": "letta_memory_core",
+    "description": "Replace the contents of core memory. To delete memories, use an empty string for new_content.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "core_memory_replace",
+    "tags": [
+      "letta_memory_core"
+    ],
+    "source_code": "def core_memory_replace(agent_state: \"AgentState\", label: str, old_content: str, new_content: str) -> Optional[str]:  # type: ignore\n    \"\"\"\n    Replace the contents of core memory. To delete memories, use an empty string for new_content.\n\n    Args:\n        label (str): Section of the memory to be edited (persona or human).\n        old_content (str): String to replace. Must be an exact match.\n        new_content (str): Content to write to the memory. All unicode (including emojis) are supported.\n\n    Returns:\n        Optional[str]: None is always returned as this function does not produce a response.\n    \"\"\"\n    current_value = str(agent_state.memory.get_block(label).value)\n    if old_content not in current_value:\n        raise ValueError(f\"Old content '{old_content}' not found in memory block '{label}'\")\n    new_value = current_value.replace(str(old_content), str(new_content))\n    agent_state.memory.update_block_value(label=label, value=new_value)\n    return None\n",
+    "json_schema": {
+      "name": "core_memory_replace",
+      "description": "Replace the contents of core memory. To delete memories, use an empty string for new_content.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Section of the memory to be edited (persona or human)."
+          },
+          "old_content": {
+            "type": "string",
+            "description": "String to replace. Must be an exact match."
+          },
+          "new_content": {
+            "type": "string",
+            "description": "Content to write to the memory. All unicode (including emojis) are supported."
+          }
+        },
+        "required": [
+          "label",
+          "old_content",
+          "new_content"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 1000000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-e38ca27a-cc79-46e6-b3ee-8ad84944f822",
+    "metadata_": null
+  },
+  {
+    "id": "tool-fc0d234b-f400-4353-97c6-c841ebb05460",
+    "tool_type": "custom",
+    "description": "Source leads based on user-provided criteria.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "fetch_leads",
+    "tags": [],
+    "source_code": "def fetch_leads(industry: str, location: str, job_title: str) -> str:\n    \"\"\"\n    Source leads based on user-provided criteria.\n\n    Args:\n        industry (str): Industry to target.\n        location (str): Location to target.\n        job_title (str): Job title to target.\n\n    Returns:\n        str: A concatenated list of the top leads results.\n    \"\"\"\n    import random\n    leads = [\n        {\"name\": \"John Doe\", \"company\": \"FinTech Corp\", \"location\": \"San Francisco\", \"job_title\": \"Sales Leader\"},\n        {\"name\": \"Jane Smith\", \"company\": \"InnovatePay\", \"location\": \"San Francisco\", \"job_title\": \"VP of Sales\"},\n        {\"name\": \"Robert Johnson\", \"company\": \"Blockchain Finance\", \"location\": \"San Francisco\", \"job_title\": \"Director of Sales\"}\n    ]\n    selected_leads = random.sample(leads, random.randint(1, len(leads)))\n    return \"; \".join([f\"{lead['name']} ({lead['job_title']}, {lead['company']})\" for lead in selected_leads])\n",
+    "json_schema": {
+      "name": "fetch_leads",
+      "description": "Source leads based on user-provided criteria.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "industry": {
+            "type": "string",
+            "description": "Industry to target."
+          },
+          "location": {
+            "type": "string",
+            "description": "Location to target."
+          },
+          "job_title": {
+            "type": "string",
+            "description": "Job title to target."
+          }
+        },
+        "required": [
+          "industry",
+          "location",
+          "job_title"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-a5ffeb63-12dc-460a-8b18-26b1c9ed68f9",
+    "tool_type": "custom",
+    "description": "Retrieve detailed account information.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "enrich_account",
+    "tags": [],
+    "source_code": "def enrich_account(company_name: str) -> str:\n    \"\"\"\n    Retrieve detailed account information.\n\n    Args:\n        company_name (str): Name of the company.\n\n    Returns:\n        str: Enriched account details.\n    \"\"\"\n    details = {\n        \"Plaid\": {\"ARR\": \"$150M\", \"growth\": \"25%\", \"employees\": \"8,000+\"},\n        \"Stripe\": {\"ARR\": \"$500M\", \"growth\": \"35%\", \"employees\": \"15,000+\"},\n        \"Coinbase\": {\"ARR\": \"$300M\", \"growth\": \"20%\", \"employees\": \"10,000+\"}\n    }\n    company_data = details.get(company_name, {\"ARR\": \"$Unknown\", \"growth\": \"Unknown\", \"employees\": \"Unknown\"})\n    return f\"Company: {company_name}, ARR: {company_data['ARR']}, Growth: {company_data['growth']}, Employees: {company_data['employees']}\"\n",
+    "json_schema": {
+      "name": "enrich_account",
+      "description": "Retrieve detailed account information.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "Name of the company."
+          }
+        },
+        "required": [
+          "company_name"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-3f3dedc0-ff37-4656-8f1d-db277b1b35ea",
+    "tool_type": "custom",
+    "description": "Check if the lead matches the Ideal Customer Profile (ICP).",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "qualify_lead",
+    "tags": [],
+    "source_code": "def qualify_lead(name: str, company: str, job_title: str) -> str:\n    \"\"\"\n    Check if the lead matches the Ideal Customer Profile (ICP).\n\n    Args:\n        name (str): Lead's name.\n        company (str): Lead's company.\n        job_title (str): Lead's job title.\n\n    Returns:\n        str: Qualification result.\n    \"\"\"\n    import random\n    matches_icp = random.choice([True, False])\n    return f\"Lead {name} {'matches' if matches_icp else 'does not match'} the ICP.\"\n",
+    "json_schema": {
+      "name": "qualify_lead",
+      "description": "Check if the lead matches the Ideal Customer Profile (ICP).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Lead's name."
+          },
+          "company": {
+            "type": "string",
+            "description": "Lead's company."
+          },
+          "job_title": {
+            "type": "string",
+            "description": "Lead's job title."
+          }
+        },
+        "required": [
+          "name",
+          "company",
+          "job_title"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-ee4c2339-78e0-445a-bf6a-86f291725264",
+    "tool_type": "custom",
+    "description": "Gather research signals about a lead.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "fetch_research_signals",
+    "tags": [],
+    "source_code": "def fetch_research_signals(lead_name: str) -> str:\n    \"\"\"\n    Gather research signals about a lead.\n\n    Args:\n        lead_name (str): Name of the lead.\n\n    Returns:\n        str: A summary of research signals.\n    \"\"\"\n    import random\n    signal_data = [\n        \"new job openings for sales\",\n        \"expanding to MENA region\",\n        \"visited website 3 times in the past month\",\n        \"recently featured in a podcast\",\n        \"announced a new product launch\"\n    ]\n    retrieved_signals = random.sample(signal_data, random.randint(1, len(signal_data)))\n    return f\"Signals for {lead_name}: {', '.join(retrieved_signals)}.\"\n",
+    "json_schema": {
+      "name": "fetch_research_signals",
+      "description": "Gather research signals about a lead.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lead_name": {
+            "type": "string",
+            "description": "Name of the lead."
+          }
+        },
+        "required": [
+          "lead_name"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-a7674d19-dc3f-4ee3-bd45-ab0d7bdae594",
+    "tool_type": "custom",
+    "description": "Create a personalized email for outreach.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "generate_email",
+    "tags": [],
+    "source_code": "def generate_email(template: str, lead_name: str, company: str, context: str, case_study: str) -> str:\n    \"\"\"\n    Create a personalized email for outreach.\n\n    Args:\n        template (str): Email template.\n        lead_name (str): Name of the lead.\n        company (str): Company of the lead.\n        context (str): Relevant context for personalization.\n        case_study (str): Case study to include in the email.\n\n    Returns:\n        str: A personalized email draft.\n    \"\"\"\n    email_body = (\n        f\"Subject: Why FinTech Leaders Love Our Product\\n\\n\"\n        f\"Hi {lead_name},\\n\"\n        f\"We noticed your company's expansion to {context}. \"\n        f\"Here's how we've helped other FinTech leaders like you: {case_study}.\"\n    )\n    return email_body",
+    "json_schema": {
+      "name": "generate_email",
+      "description": "Create a personalized email for outreach.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "Email template."
+          },
+          "lead_name": {
+            "type": "string",
+            "description": "Name of the lead."
+          },
+          "company": {
+            "type": "string",
+            "description": "Company of the lead."
+          },
+          "context": {
+            "type": "string",
+            "description": "Relevant context for personalization."
+          },
+          "case_study": {
+            "type": "string",
+            "description": "Case study to include in the email."
+          }
+        },
+        "required": [
+          "template",
+          "lead_name",
+          "company",
+          "context",
+          "case_study"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-367c759f-ecec-4347-b936-96222442bc2a",
+    "tool_type": "custom",
+    "description": "Track lead engagement and activity.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "track_engagement",
+    "tags": [],
+    "source_code": "def track_engagement(lead_name: str) -> str:\n    \"\"\"\n    Track lead engagement and activity.\n\n    Args:\n        lead_name (str): Name of the lead.\n\n    Returns:\n        str: Engagement summary.\n    \"\"\"\n    import random\n    activity_data = [\n        {\"type\": \"website_visit\", \"pages_viewed\": random.randint(1, 10)},\n        {\"type\": \"email_open\", \"time\": f\"{random.randint(1, 48)} hours ago\"},\n        {\"type\": \"callback_request\", \"time\": f\"{random.randint(1, 48)} hours ago\"}\n    ]\n    retrieved_activities = random.sample(activity_data, random.randint(1, len(activity_data)))\n    return f\"Engagement Summary for {lead_name}: \" + \", \".join(\n        [f\"{activity['type']} ({activity.get('pages_viewed', 'N/A')} pages viewed)\" if 'pages_viewed' in activity else f\"{activity['type']} at {activity['time']}\" for activity in retrieved_activities]\n    )",
+    "json_schema": {
+      "name": "track_engagement",
+      "description": "Track lead engagement and activity.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lead_name": {
+            "type": "string",
+            "description": "Name of the lead."
+          }
+        },
+        "required": [
+          "lead_name"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-f5b80b08-5a45-4a0a-b2cd-dd8a0177b7ef",
+    "tool_type": "custom",
+    "description": "Evaluate campaign performance metrics.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "analyze_campaign",
+    "tags": [],
+    "source_code": "def analyze_campaign(campaign_name: str, time_range: str) -> str:\n    \"\"\"\n    Evaluate campaign performance metrics.\n\n    Args:\n        campaign_name (str): Name of the campaign.\n        time_range (str): Time range for analysis (e.g., 'last_week').\n\n    Returns:\n        str: Campaign performance summary.\n    \"\"\"\n    import random\n    performance_data = {\n        \"meeting_requests\": random.randint(5, 20),\n        \"meetings_booked\": random.randint(10, 30),\n        \"pipeline_generated\": f\"${random.randint(100000, 500000):,}\",\n        \"closed_won\": f\"${random.randint(50000, 300000):,}\"\n    }\n    return f\"Campaign: {campaign_name} | Meeting Requests: {performance_data['meeting_requests']}, Meetings Booked: {performance_data['meetings_booked']}, Pipeline Generated: {performance_data['pipeline_generated']}, Closed Won: {performance_data['closed_won']} in {time_range}.\"",
+    "json_schema": {
+      "name": "analyze_campaign",
+      "description": "Evaluate campaign performance metrics.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "campaign_name": {
+            "type": "string",
+            "description": "Name of the campaign."
+          },
+          "time_range": {
+            "type": "string",
+            "description": "Time range for analysis (e.g., 'last_week')."
+          }
+        },
+        "required": [
+          "campaign_name",
+          "time_range"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-0f41190d-9006-4e9e-a41e-2b966951de6c",
+    "tool_type": "custom",
+    "description": "This tool acts as a proxy to the People Data Labs(PDL) API.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "composioPDL",
+    "tags": [],
+    "source_code": "def composioPDL():\n    \"\"\"\n    This tool acts as a proxy to the People Data Labs(PDL) API.\n    This tool takes a natural language input string and returns a list of leads.\n    \"\"\"\n    import os\n    return(os.environ['COMPOSE_IO_KEY'])\n",
+    "json_schema": {
+      "name": "composioPDL",
+      "description": "This tool takes a natural language input string and returns a list of leads.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-77c951e3-8de5-4db8-bd3e-e118193cee79",
+    "tool_type": "external_composio",
+    "description": "Search Person Data Is A Tool That Searches For Person Data Based On A Given Sql Query.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "peopledatalabs_search_person_data",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef peopledatalabs_search_person_data(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['PEOPLEDATALABS_SEARCH_PERSON_DATA'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "peopledatalabs_search_person_data",
+      "description": "Search Person Data Is A Tool That Searches For Person Data Based On A Given Sql Query.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "\n   # PDL Schema Documentation\n    A SQL query for People Data Labs (PDL) person profiles using Elasticsearch SQL syntax.\n\n    ## FUNDAMENTAL STRUCTURE & LIMITATIONS\n    0. All queries MUST be formatted in Elasticsearch SQL syntax.\n\n    0. **Limited Clauses**:\n    - No `LIMIT` clause (use `size` parameter instead)\n    - No `GROUP BY`, `HAVING`, or subqueries\n    - Must always use `SELECT * FROM person`\n\n    1. **Pattern Matching**:\n    - Uses `LIKE` and `NOT LIKE` with `%` wildcards\n    - Use `WHERE field_name LIKE 'pattern1%' OR field_name LIKE 'pattern2%' OR field_name LIKE 'pattern3%'` for multiple patterns\n    - Maximum 20 wildcards per query\n\n    2. **Nested Fields**:\n    - Uses dot notation (e.g., `experience.company.name`)\n    - Cannot compare array elements with each other\n\n    3. **Pattern Matching**:\n    - Uses `LIKE` with `%` wildcards\n    - `LIKE ANY` for multiple patterns (similar to SQL's `IN`)\n    - Maximum 20 wildcards per query\n\n    4. **Current Employment**:\n    - Must include `experience.is_primary = true` when querying current job details\n\n    5. **No Aggregations**:\n    - Cannot use `COUNT`, `SUM`, `AVG`, etc.\n    - No array element counting or comparison\n\n    1. Query Format MUST be: SELECT * FROM person WHERE <conditions>\n    2. NO column selections, JOINs, UNNEST, LIMIT clauses, or subqueries\n    3. Maximum 20 wildcard terms (LIKE with %) per request\n    4. Must use subfield notation for nested fields\n    5. All field names use snake_case\n    6. NO aggregate functions (COUNT, SUM, AVG, etc.)\n    7. NO GROUP BY or HAVING clauses\n    8. NO self-joins or array element comparisons\n    9. MUST include experience.is_primary = true when querying current employment\n    10. Correct field usage is critical (education.majors vs education.degrees)\n\n    ## TOP-LEVEL QUERYABLE FIELDS\n    ### Identity:\n    - id: Unique identifier\n    - first_name, last_name, full_name, last_initial: Name variations\n    - name_aliases: Array of name variations\n    - birth_date (YYYY-MM-DD), birth_year (integer)\n    - sex: male/female\n    - languages: Array[object]\n    Object fields:\n        - languages.language (canonical format)\n\n    ### Current Status:\n    - job_title: Current position\n    - location_name: Current location\n    - inferred_years_experience: Career duration (integer)\n\n    ### Social Profiles (Direct Access):\n    - linkedin_url, linkedin_username, linkedin_connections (integer)\n    - github_url, github_username\n    - facebook_url, facebook_username\n    - twitter_url, twitter_username\n\n    ### Current Company Information:\n    - job_company_12mo_employee_growth_rate: float\n    - job_company_founded: integer\n    - job_company_employee_count: integer\n    - job_company_location_continent: canonical continent name\n    - job_company_location_country: canonical country name\n    - job_company_location_metro: canonical metro name\n    - job_company_name: string\n    - job_company_total_funding_raised: integer > 0\n    - job_company_website: string   \n    - job_last_changed: string (Date)\n    - job_summary: string\n\n    ### Contact Information:\n    - emails: Array[Object]\n    Object fields:\n        - emails.address: Email address\n        - emails.type: Email type\n    - phones: Array[Object]\n    Object fields:\n        - phones.number: Phone number\n    - work_email: Current work email\n    - mobile_phone\n    - phone_numbers: Array[string]\n\n    ## NESTED STRUCTURES & ARRAYS\n    ### Experience Fields:\n    - experience.company.name: Company name\n    - experience.company.industry: canonical Industry classification\n    - experience.company.founded: integer\n    - experience.company.size: canonical Company size category\n    - experience.company.type: canonical Company type\n    - experience.company.location.continent: canonical Continent name\n    - experience.company.location.country: canonical Country name\n    - experience.company.location.region: canonical State/Province\n    - experience.company.location.locality: canonical City name\n    - experience.title.name: Job title (string)\n    - experience.title.role: canonical Job role\n    - experience.title.levels: canonical Job levels (Array [Enum (String)])\n    - experience.start_date, experience.end_date: Employment dates\n    - experience.is_primary: Boolean for current job\n\n    ### Education Fields:\n    - education.school.name: Institution name (string)\n    - education.school.type: canonical Institution type\n    - education.degrees: Degree types (e.g., 'BS', 'MS', 'PhD')\n    - education.majors: Fields of study (e.g., 'computer science', 'physics')\n    - education.gpa: Grade point average (float)\n    - education.start_date, education.end_date: Study dates\n\n    ## CRITICAL FIELD USAGE\n    1. Current Employment Queries:\n    - MUST include experience.is_primary = true\n    - Example: WHERE experience.company.name = 'Google' AND experience.is_primary = true\n\n    2. Education Field Usage:\n    - education.majors: For fields of study (e.g., 'computer science', 'physics')\n    - education.degrees: For degree types (e.g., 'BS', 'MS', 'PhD')\n    - education.school.name: For institution names\n\n    3. Array Field Access:\n    - Cannot compare array elements with each other\n    - Cannot use subqueries on arrays\n    - Cannot count array elements\n    3. Job Title Field Usage:\n    - job_title: For current position/role queries (e.g., 'VP of Engineering', 'Software Engineer')\n    - experience.title.levels: Only for job level classifications ('entry', 'senior', 'vp', 'director', 'cxo')\n    Example: \n    USE: WHERE job_title LIKE '%vp of engineering%'\n    NOT: WHERE experience.title.levels LIKE '%vp of engineering%'\n\n    ## CANONICAL VALUES (Standard Field Values)\n    ### Professional Information:\n    1. Title Levels (job_title_levels, experience.title.levels) (canonical formats):\n    ONLY SUPPORTED VALUES:\n    - cxo \n    - vp\n    - director\n    - manager\n    - senior\n    - entry\n    - owner\n    - partner\n    - training\n    - unpaid\n    2. Role (job_title_role, experience.title.role) (canonical formats):\n    - customer_service\n    - design\n    - education\n    - engineering\n    - finance\n    - health\n    - human_resources\n    - legal\n    - marketing\n    - media\n    - operations\n    - public_relations\n    - real_estate\n    - sales\n    - trades\n\n    2. Title Classes (job_title_class, experience.title.class):\n    - 'general_and_administrative'\n    - 'research_and_development'\n    - 'sales_and_marketing'\n    - 'services'\n    - 'unemployed'\n\n    3. Inferred Salary Ranges (canonical formats) (inferred_salary):\n    - '<20,000', '20,000-25,000', '25,000-35,000'\n    - '35,000-45,000', '45,000-55,000', '55,000-70,000'\n    - '70,000-85,000', '85,000-100,000', '100,000-150,000'\n    - '150,000-250,000', '> 250,000'\n\n    ### Company Information:\n    1. Industries (canonical formats) (job_company_industry, experience.company.industry):\n    MAJOR SUPPORTED INDUSTRIES, TRY TO USE THESE AS MUCH AS POSSIBLE:\n    - accounting\n    - airlines/aviation\n    - apparel & fashion\n    - automotive\n    - architecture & planning\n    - banking\n    - biotechnology\n    - computer software\n    - construction\n    - consumer goods\n    - consulting\n    - defense & space\n    - education management\n    - entertainment\n    - events services\n    - financial services\n    - food & beverage\n    - gambling & casinos\n    - health, wellness and fitness\n    - hospital & health care\n    - hospitality\n    - human resources\n    - information technology and services\n    - legal services\n    - luxury goods & jewelry\n    - logistics and supply chain\n    - mechanical or industrial engineering\n    - military\n    - machinery\n    - media production\n    - pharmaceuticals\n    - package/freight delivery\n    - real estate\n    - recreational facilities and services\n    - retail\n    - telecommunications\n    - textiles\n    - transportation/trucking/railroad\n    - utilities\n    - venture capital & private equity\n    - warehousing\n    - wholesale\n\n    2. Company Types (canonical formats) (job_company_type, experience.company.type):\n    ONLY SUPPORTED VALUES FOR COMPANY TYPE:\n    - public\n    - private\n    - public_subsidiary\n    - educational\n    - government\n    - nonprofit\n\n    3. Company Sizes (canonical formats) (job_company_size, experience.company.size):\n    ONLY SUPPORTED VALUES FOR COMPANY SIZE, DO NOT USE ANYTHING ELSE LIKE '1-100' OR '200-300', ONLY USE THE VALUES BELOW:\n    - '1-10', '11-50', '51-200', '201-500'\n    - '501-1000', '1001-5000', '5001-10000', '10001+'\n\n\n    4. Inferred Revenue Ranges (canonical formats) (job_company_inferred_revenue):\n    ONLY SUPPORTED VALUES FOR INFERRED REVENUE RANGES:\n    - '$0-$1M', '$1M-$10M', '$10M-$25M', '$25M-$50M'\n    - '$50M-$100M', '$100M-$250M', '$250M-$500M'\n    - '$500M-$1B', '$1B-$10B', '$10B+'\n\n    ### Education Information:\n    1. School Types (canonical formats):\n    ONLY SUPPORTED VALUES BELOW:\n    - 'post-secondary institution'\n    - 'primary school'\n    - 'secondary school'\n\n    2. Degree Types (canonical formats): \n    - Bachelor's: 'bachelor of arts', 'bachelor of science'\n    - Master's: 'master of science', 'master of arts'\n    - Other: 'associate of arts', 'phd'\n\n    3. Major Fields (canonical formats):\n    - Tech: 'computer science', 'software engineering'\n    - Business: 'accounting', 'business administration'\n\n    ### Contact & Communication:\n    1. Email Types (emails.type) (canonical formats):\n    - 'current_professional'\n    - 'personal'\n    - 'professional'\n    - 'disposable'\n\n    ### Location Information:\n    1. Metro Areas (canonical formats) (job_company_location_metro, location_metro, experience.company.location.metro):\n    - 'san francisco, california'\n    - 'new york, new york'\n    - 'london, england'\n    - 'los angeles, california'\n    [Follow standard format: city, region]\n    2. Countries (canonical formats): \n    - 'united states'\n    - 'united kingdom'\n    - 'canada'\n    - 'australia'\n    3. Continent is also supported: \n\n    2. Confidence Levels (canonical formats): \n    - 'very high', 'high'\n    - 'moderate'\n    - 'low', 'very low'  \n\n    ## VALID QUERY PATTERNS\n    1. Simple Field Query:\n    ```sql\n    SELECT * FROM person \n    WHERE job_title LIKE '%engineer%'\n    AND location_name LIKE '%san francisco%'\n    ```\n\n    2. Nested Field Query:\n    ```sql\n    SELECT * FROM person \n    WHERE experience.company.name LIKE '%google%'\n    AND experience.company.size IN ('1001-5000', '5001-10000')\n    AND experience.is_primary = true\n    ```\n\n    3. Multiple Location Query:\n    ```sql\n    SELECT * FROM person \n    WHERE experience.company.location.locality LIKE '%new york%'\n    AND experience.company.location.country = 'united states'\n    AND experience.is_primary = true\n    ```\n\n    4. Date and Social Profile Query:\n    ```sql\n    SELECT * FROM person \n    WHERE experience.start_date >= '2020-01-01'\n    AND linkedin_url IS NOT NULL\n    AND github_url IS NOT NULL\n    ```\n\n    5. Education Query Pattern:\n    ```sql\n    SELECT * FROM person \n    WHERE education.majors LIKE '%computer science%'  -- Field of study\n    AND education.degrees LIKE '%BS%'                 -- Degree type\n    AND education.school.name LIKE '%stanford%'       -- Institution\n    ```\n\n    6. Current Employment with Education:\n    ```sql\n    SELECT * FROM person \n    WHERE job_title LIKE '%software engineer%'\n    AND experience.company.name LIKE '%google%'\n    AND experience.is_primary = true                  -- Required for current job\n    AND education.majors LIKE '%computer science%'    -- Field of study\n    ```\n\n    ## COMMON MISTAKES (DO NOT USE)\n    ❌ Counting or aggregating:\n    WHERE COUNT(experience) > 2\n\n    ❌ Comparing array elements:\n    WHERE experience.location != experience.previous_location\n\n    ❌ Using subqueries:\n    WHERE field IN (SELECT...)\n\n    ❌ Direct array access:\n    WHERE experience[0].company.name\n\n    ❌ Non-existent fields:\n    email (use emails.address)\n    city (use locality)\n    verified_emails\n    phone_numbers.location\n\n    ❌ Missing experience.is_primary = true when querying current employment\n\n    ❌ Using education.degrees for fields of study (use education.majors instead)\n\n    ❌ Using education.majors for degree types (use education.degrees instead)\n    ❌ Using experience.title.levels for full job titles (use job_title instead)\n\n    ## QUERY BEST PRACTICES\n    1. Always use dot notation for nested fields\n    2. Keep wildcards under 20 per query\n    3. Use LIKE for pattern matching\n    4. Use experience.is_primary = true for current job\n    5. Use correct date format: 'YYYY-MM-DD'\n    6. Use IN clauses for multiple exact matches\n    7. Use IS NOT NULL for existence checks\n    8. Use AND, OR, NOT for boolean conditions\n    9. ALWAYS INCLUDE experience.is_primary = true when querying current employment\n    10. Use education.majors for fields of study and education.degrees for degree types\n    11. For complex queries, validate field paths against the schema documentation\n    12. For canonical values, they are enums and have specific values - You can use LIKE but try to use equals as much as possible.\n    13. For company size, or any size related fields, only use the canonical values.\n    ## Example Complex Valid Query:\n    ```sql\n    SELECT * FROM person \n    WHERE job_title LIKE '%engineering manager%'\n    AND experience.company.industry = 'computer software'\n    AND experience.company.size IN ('1001-5000', '5001-10000')\n    AND education.school.name LIKE ('%stanford%', '%mit%')\n    AND location_name LIKE '%california%'\n    AND linkedin_connections > 500\n    AND github_url IS NOT NULL\n    AND experience.is_primary = true\n    AND experience.start_date >= '2020-01-01'\n    ```\n    . Please provide a value of type string."
+          },
+          "size": {
+            "type": "integer",
+            "description": "The number of matched records to return for this query if they exist*. Must be between 1 and 100. Please provide a value of type integer."
+          },
+          "scroll_token": {
+            "type": "string",
+            "description": "Each search API response returns a scroll_token. Include it in the next request to fetch the next size matching records. Please provide a value of type string."
+          },
+          "dataset": {
+            "type": "string",
+            "description": "Specifies which dataset category the API should search against. Valid dataset categories are ONLY 'resume', 'email', 'phone', 'mobile_phone', 'street_address', 'consumer_social', 'developer', 'all'. Please provide a value of type string."
+          },
+          "titlecase": {
+            "type": "boolean",
+            "description": "Setting titlecase to true will titlecase any records returned. Please provide a value of type boolean."
+          },
+          "pretty": {
+            "type": "boolean",
+            "description": "Whether the output should have human-readable indentation. Please provide a value of type boolean."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-6cb65c68-349f-4573-8a5b-74ef506f1f0b",
+    "tool_type": "external_composio",
+    "description": "Enrich Person Data Is A Comprehensive Tool Designed To Enhance And Augment Person Related Data By Providing Additional Context And Details, Thereby Enabling A More Complete And Informative Dataset.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "peopledatalabs_enrich_person_data",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef peopledatalabs_enrich_person_data(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['PEOPLEDATALABS_ENRICH_PERSON_DATA'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "peopledatalabs_enrich_person_data",
+      "description": "Enrich Person Data Is A Comprehensive Tool Designed To Enhance And Augment Person Related Data By Providing Additional Context And Details, Thereby Enabling A More Complete And Informative Dataset.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "description": "A social profile URL the person has used. Please provide a value of type string."
+          },
+          "email": {
+            "type": "string",
+            "description": "An email the person has used. Please provide a value of type string."
+          },
+          "phone": {
+            "type": "string",
+            "description": "A phone number the person has used. Please provide a value of type string."
+          },
+          "email_hash": {
+            "type": "string",
+            "description": "A SHA-256 or MD5 hash of the person's email. Please provide a value of type string."
+          },
+          "lid": {
+            "type": "string",
+            "description": "The person's LinkedIn ID. Please provide a value of type string."
+          },
+          "pdl_id": {
+            "type": "string",
+            "description": "Persistent ID for a record in PDL's dataset. Please provide a value of type string."
+          },
+          "name": {
+            "type": "string",
+            "description": "The person's full name. Please provide a value of type string."
+          },
+          "first_name": {
+            "type": "string",
+            "description": "The person's first name. Please provide a value of type string."
+          },
+          "last_name": {
+            "type": "string",
+            "description": "The person's last name. Please provide a value of type string."
+          },
+          "location": {
+            "type": "string",
+            "description": "The location where the person lives. Please provide a value of type string."
+          },
+          "street_address": {
+            "type": "string",
+            "description": "The street address of the person. Please provide a value of type string."
+          },
+          "locality": {
+            "type": "string",
+            "description": "The locality where the person resides. Please provide a value of type string."
+          },
+          "region": {
+            "type": "string",
+            "description": "The state or region where the person resides. Please provide a value of type string."
+          },
+          "country": {
+            "type": "string",
+            "description": "The country where the person resides. Please provide a value of type string."
+          },
+          "postal_code": {
+            "type": "string",
+            "description": "The postal code where the person resides. Please provide a value of type string."
+          },
+          "company": {
+            "type": "string",
+            "description": "The company where the person has worked. Please provide a value of type string."
+          },
+          "school": {
+            "type": "string",
+            "description": "The school the person attended. Please provide a value of type string."
+          },
+          "birth_date": {
+            "type": "string",
+            "description": "The person's birth date in the format YYYY-MM-DD. Please provide a value of type string."
+          },
+          "data_include": {
+            "type": "string",
+            "description": "Fields to include/exclude in the response. Please provide a value of type string."
+          },
+          "pretty": {
+            "type": "boolean",
+            "description": "Whether the response should be formatted with indentation. Please provide a value of type boolean."
+          },
+          "min_likelihood": {
+            "type": "integer",
+            "description": "Minimum confidence score for a match. Please provide a value of type integer."
+          },
+          "include_if_matched": {
+            "type": "boolean",
+            "description": "Returns matched input fields in the response if true. Please provide a value of type boolean."
+          },
+          "required": {
+            "type": "string",
+            "description": "Fields that must be included in the response. Please provide a value of type string."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-322c672e-6859-496c-ae69-3d6dee1e51ae",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "google_search",
+    "tags": [],
+    "source_code": "def google_search(query: str):\n    \"\"\"\n    Search Google using a query.\n\n    Args:\n        query (str): The search query.\n\n    Returns:\n        str: A concatenated list of the top search results.\n    \"\"\"\n    # TODO replace this with a real query to Google, e.g. by using serpapi (https://serpapi.com/integrations/python)\n    dummy_message = \"The search tool is currently offline for regularly scheduled maintenance.\"\n    return dummy_message",
+    "json_schema": {
+      "name": "google_search",
+      "description": "Search Google using a query.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-60c6dd11-2dc5-4b27-8004-121e68b7ff54",
+    "tool_type": "external_composio",
+    "description": "Retrieve Information About An Existing Google Sheet.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_get_spreadsheet_info",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_get_spreadsheet_info(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_GET_SPREADSHEET_INFO'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_get_spreadsheet_info",
+      "description": "Retrieve Information About An Existing Google Sheet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string",
+            "description": "ID of the Google Sheet to retrieve. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "spreadsheet_id",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-06e865ab-f00c-476f-858d-3e6cfba75c9b",
+    "tool_type": "external_composio",
+    "description": "Perform A Batch Get On A Specific Spreadsheet.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_batch_get",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_batch_get(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_BATCH_GET'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_batch_get",
+      "description": "Perform A Batch Get On A Specific Spreadsheet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string",
+            "description": "The ID of the spreadsheet. Please provide a value of type string. This parameter is required."
+          },
+          "ranges": {
+            "type": "List",
+            "description": "List of ranges to retrieve in A1 notation, e.g. 'Sheet1!A1:B2'. If not specified, the filled part of the sheet will be returned if it is less than 100 rows and columns."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "spreadsheet_id",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-6f19d21d-d58e-4327-a48f-3d29adfba224",
+    "tool_type": "external_composio",
+    "description": "Clear Values From A Specified Range In A Spreadsheet.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_clear_values",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_clear_values(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_CLEAR_VALUES'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_clear_values",
+      "description": "Clear Values From A Specified Range In A Spreadsheet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string",
+            "description": "The ID of the spreadsheet. Please provide a value of type string. This parameter is required."
+          },
+          "range": {
+            "type": "string",
+            "description": "The A1 notation range to clear in the spreadsheet. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "spreadsheet_id",
+          "range",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-1c22fef2-4eb9-42b4-a852-daac5788e5ce",
+    "tool_type": "external_composio",
+    "description": "Perform A Batch Update Operation On A Specified Google Sheets Spreadsheet.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_batch_update",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_batch_update(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_BATCH_UPDATE'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_batch_update",
+      "description": "Perform A Batch Update Operation On A Specified Google Sheets Spreadsheet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string",
+            "description": "The unique identifier of the Google Sheets spreadsheet to be updated. Please provide a value of type string. This parameter is required."
+          },
+          "sheet_name": {
+            "type": "string",
+            "description": "The name of the specific sheet within the spreadsheet to update. Please provide a value of type string. This parameter is required."
+          },
+          "first_cell_location": {
+            "type": "string",
+            "description": "The starting cell for the update range, specified in A1 notation (e.g., 'A1', 'B2'). The update will extend from this cell to the right and down, based on the provided values. Please provide a value of type string."
+          },
+          "values": {
+            "type": "List",
+            "description": "A 2D list representing the values to update. Each inner list corresponds to a row in the spreadsheet. This parameter is required."
+          },
+          "includeValuesInResponse": {
+            "type": "boolean",
+            "description": "If set to True, the response will include the updated values from the spreadsheet. Please provide a value of type boolean."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "spreadsheet_id",
+          "sheet_name",
+          "values",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-2f6f1b4d-4074-416f-8fc2-54474b605dcb",
+    "tool_type": "external_composio",
+    "description": "Create A New Google Sheet.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_create_google_sheet1",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_create_google_sheet1(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_CREATE_GOOGLE_SHEET1'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_create_google_sheet1",
+      "description": "Create A New Google Sheet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the Google Sheet. Please ensure the title is mentioned. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "title",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-8145b6b5-89ec-4fb6-b0e9-d75b9c8daa7f",
+    "tool_type": "external_composio",
+    "description": "Lookup A Row In A Specific Spreadsheet By A Column And Value.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "googlesheets_lookup_spreadsheet_row",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef googlesheets_lookup_spreadsheet_row(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "googlesheets_lookup_spreadsheet_row",
+      "description": "Lookup A Row In A Specific Spreadsheet By A Column And Value.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string",
+            "description": "The ID of the spreadsheet. Please provide a value of type string. This parameter is required."
+          },
+          "range": {
+            "type": "string",
+            "description": "The A1 notation of the range to search.If not specified, it will return the non-empty part of the first sheet in the spreadsheet.Example: Sheet1!A1:D5.\nPlease specify the range for large spreadsheets. Please provide a value of type string."
+          },
+          "query": {
+            "type": "string",
+            "description": "The search query to use for matching the row. This field is required. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "spreadsheet_id",
+          "query",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-6a59acb4-d71a-4fb6-ae0d-9881f2b3d720",
+    "tool_type": "external_composio",
+    "description": "Fetches A Week Max List Of User Events, Both Internal And External (If Conflict Check Set), In Ascending Order Without Keyset Pagination Support.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "calendly_list_user_busy_times",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef calendly_list_user_busy_times(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['CALENDLY_LIST_USER_BUSY_TIMES'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "calendly_list_user_busy_times",
+      "description": "Fetches A Week Max List Of User Events, Both Internal And External (If Conflict Check Set), In Ascending Order Without Keyset Pagination Support.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "The uri associated with the user. Please provide a value of type string. This parameter is required."
+          },
+          "start_time": {
+            "type": "string",
+            "description": "Start time of the requested availability range. Please provide a value of type string. This parameter is required."
+          },
+          "end_time": {
+            "type": "string",
+            "description": "End time of the requested availability range. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "user",
+          "start_time",
+          "end_time",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-ae7e6253-7960-4fe4-803a-f4aed75bb2d4",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "role_d20",
+    "tags": [],
+    "source_code": "def roll_d20():\n    \"\"\"\n    Simulate the roll of a 20-sided die (d20).\n\n    This function generates a random integer between 1 and 20, inclusive,\n    which represents the outcome of a single roll of a d20.\n\n    Returns:\n        str: The result of the die roll.\n    \"\"\"\n    import random\n    dice_role_outcome = random.randint(1, 20)\n    output_string = f\"You rolled a {dice_role_outcome}\"\n    return output_string",
+    "json_schema": {
+      "name": "roll_d20",
+      "description": "This function generates a random integer between 1 and 20, inclusive,\nwhich represents the outcome of a single roll of a d20.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-7675e2a2-23b0-4c5c-a880-e2fb677d237a",
+    "tool_type": "external_composio",
+    "description": "Retrieves A List Of Available Time Slots For Scheduling Within The Cal System. This Endpoint Is Used To Check Availability For Booking Events Or Meetings. It Returns A Collection Of Free Time Slots Within The Specified Date Range, Considering Existing Bookings And Configured Availability. Use This Endpoint When You Need To Display Available Times To Users For Scheduling Purposes Or To Check If Specific Time Slots Are Free. The Response Will Include The Start And End Times Of Each Available Slot, But Won't Provide Details About Existing Bookings Or Blocked Times.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "cal_get_available_slots_info",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef cal_get_available_slots_info(**kwargs):\n    from composio_langchain import ComposioToolSet\n    import os\n\n    entity_id = os.getenv('COMPOSIO_ENTITY', 'default')\n    composio_toolset = ComposioToolSet(entity_id=entity_id)\n    response = composio_toolset.execute_action(action='CAL_GET_AVAILABLE_SLOTS_INFO', params=kwargs)\n\n    if response[\"error\"]:\n        raise RuntimeError(response[\"error\"])\n    return response[\"data\"]\n    ",
+    "json_schema": {
+      "name": "cal_get_available_slots_info",
+      "description": "Retrieves A List Of Available Time Slots For Scheduling Within The Cal System. This Endpoint Is Used To Check Availability For Booking Events Or Meetings. It Returns A Collection Of Free Time Slots Within The Specified Date Range, Considering Existing Bookings And Configured Availability. Use This Endpoint When You Need To Display Available Times To Users For Scheduling Purposes Or To Check If Specific Time Slots Are Free. The Response Will Include The Start And End Times Of Each Available Slot, But Won't Provide Details About Existing Bookings Or Blocked Times.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "description": "Start date string starting from which to fetch slots in UTC timezone. Please provide a value of type string. This parameter is required."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "End date string until which to fetch slots in UTC timezone. Please provide a value of type string. This parameter is required."
+          },
+          "eventTypeId": {
+            "type": "integer",
+            "description": "Event Type ID for which slots are being fetched. Please provide a value of type integer. This parameter is required."
+          },
+          "eventTypeSlug": {
+            "type": "string",
+            "description": "Slug of the event type for which slots are being fetched. Please provide a value of type string."
+          },
+          "usernameList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Only for dynamic events - list of usernames for which slots are being fetched. "
+          },
+          "debug": {
+            "type": "boolean",
+            "description": "Debug. Please provide a value of type boolean."
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Only for dynamic events - length of returned slots. Please provide a value of type integer."
+          },
+          "rescheduleUid": {
+            "type": "string",
+            "description": "Rescheduleuid. Please provide a value of type string."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "Timezone. Please provide a value of type string."
+          },
+          "orgSlug": {
+            "type": "string",
+            "description": "Organization slug. Please provide a value of type string."
+          },
+          "slotFormat": {
+            "type": "string",
+            "description": "Format of slot times in response. Use \"range\" to get start and end times. . Please provide a value of type string."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "startTime",
+          "endTime",
+          "eventTypeId",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-501b4e9b-59ca-49c3-908d-81ae230c5f80",
+    "tool_type": "external_composio",
+    "description": "This Action Is Used To Query The People And Company Data Using Natural Language.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "peopledatalabs_natural_language_query_action",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef peopledatalabs_natural_language_query_action(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['PEOPLEDATALABS_NATURAL_LANGUAGE_QUERY_ACTION'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "peopledatalabs_natural_language_query_action",
+      "description": "This Action Is Used To Query The People And Company Data Using Natural Language.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The natural language query to be executed. Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "query",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-36230570-014e-442f-b737-4d8b4cdae59c",
+    "tool_type": "external_composio",
+    "description": "Search For People In Apollo's Database. Consumes Credits And Not Available For Free Plans. Limited To 50,000 Records (100 Per Page, Up To 500 Pages). Note: Does Not Return New Email/Phone Data   Use People Enrichment Endpoints For That.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "apollo_people_search",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef apollo_people_search(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['APOLLO_PEOPLE_SEARCH'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "apollo_people_search",
+      "description": "Search For People In Apollo's Database. Consumes Credits And Not Available For Free Plans. Limited To 50,000 Records (100 Per Page, Up To 500 Pages). Note: Does Not Return New Email/Phone Data   Use People Enrichment Endpoints For That.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "person_titles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Job titles to search for. Results include similar titles. Only needs to match one title."
+          },
+          "person_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Locations where people live. Can include cities, states, countries."
+          },
+          "person_seniorities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Job seniority levels to search for. Only searches current positions."
+          },
+          "organization_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Company headquarters locations. Searches based on HQ location only."
+          },
+          "q_organization_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Company domain names to search across. Don't include www. or @."
+          },
+          "contact_email_status": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Email statuses to search for: verified, unverified, likely to engage, unavailable"
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Apollo IDs for specific companies to search within. Retrieved via Organization Search endpoint."
+          },
+          "organization_num_employees_ranges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Employee count ranges to filter by. Format: 'min,max'"
+          },
+          "q_keywords": {
+            "type": "string",
+            "description": "Keywords to filter results. Please provide a value of type string."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination. Used with per_page parameter. Please provide a value of type integer."
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Number of results per page. Used for pagination. Please provide a value of type integer."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-62c9a73b-a05f-42a5-ba04-239c39e1a363",
+    "tool_type": "external_composio",
+    "description": "Search For Companies In Apollo's Database. Consumes Credits And Not Available For Free Plans. Limited To 50,000 Records (100 Per Page, Up To 500 Pages).",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "apollo_organization_search",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef apollo_organization_search(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['APOLLO_ORGANIZATION_SEARCH'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "apollo_organization_search",
+      "description": "Search For Companies In Apollo's Database. Consumes Credits And Not Available For Free Plans. Limited To 50,000 Records (100 Per Page, Up To 500 Pages).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "organization_num_employees_ranges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Employee count ranges to filter by. Format: 'min,max'"
+          },
+          "organization_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Company headquarters locations to include. Searches based on HQ location only."
+          },
+          "organization_not_locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Company headquarters locations to exclude. Useful for territory management."
+          },
+          "q_organization_keyword_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keywords associated with companies' industry or focus."
+          },
+          "q_organization_name": {
+            "type": "string",
+            "description": "Filter by company name. Accepts partial matches. Please provide a value of type string."
+          },
+          "organization_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Apollo IDs for specific companies to include in search."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination. Used with per_page parameter. Please provide a value of type integer."
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Number of results per page. Used for pagination. Please provide a value of type integer."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-d41f0537-f700-41dd-ac72-db4e11c18d48",
+    "tool_type": "external_composio",
+    "description": "Enriches Data For One Person In Apollo.Io. Requires A Master Api Key.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "apollo_people_enrichment",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef apollo_people_enrichment(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['APOLLO_PEOPLE_ENRICHMENT'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "apollo_people_enrichment",
+      "description": "Enriches Data For One Person In Apollo.Io. Requires A Master Api Key.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "description": "The first name of the person. Please provide a value of type string."
+          },
+          "last_name": {
+            "type": "string",
+            "description": "The last name of the person. Please provide a value of type string."
+          },
+          "name": {
+            "type": "string",
+            "description": "The full name of the person (first name and last name separated by a space). Please provide a value of type string."
+          },
+          "email": {
+            "type": "string",
+            "description": "The email address of the person. Please provide a value of type string."
+          },
+          "hashed_email": {
+            "type": "string",
+            "description": "The hashed email of the person (MD5 or SHA-256 format). Please provide a value of type string."
+          },
+          "organization_name": {
+            "type": "string",
+            "description": "The name of the person's employer (current or previous). Please provide a value of type string."
+          },
+          "domain": {
+            "type": "string",
+            "description": "The domain name for the person's employer without www. Please provide a value of type string."
+          },
+          "id": {
+            "type": "string",
+            "description": "The Apollo ID for the person. Retrieved via People Search endpoint. Please provide a value of type string."
+          },
+          "linkedin_url": {
+            "type": "string",
+            "description": "The URL for the person's LinkedIn profile. Please provide a value of type string."
+          },
+          "reveal_personal_emails": {
+            "type": "boolean",
+            "description": "Set to true to enrich with personal emails (consumes credits). Please provide a value of type boolean."
+          },
+          "reveal_phone_number": {
+            "type": "boolean",
+            "description": "Set to true to enrich with phone numbers (consumes credits). Please provide a value of type boolean."
+          },
+          "webhook_url": {
+            "type": "string",
+            "description": "Required if reveal_phone_number is true. URL where Apollo should send phone number data. Please provide a value of type string."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-a5e40f05-f969-459e-a37b-690f08caa271",
+    "tool_type": "external_composio",
+    "description": "Enriches Data For One Company In Apollo.Io. Requires A Master Api Key. Enriched Data Includes Industry Information, Revenue, Employee Counts, Funding Details, And More.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "apollo_organization_enrichment",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef apollo_organization_enrichment(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['APOLLO_ORGANIZATION_ENRICHMENT'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "apollo_organization_enrichment",
+      "description": "Enriches Data For One Company In Apollo.Io. Requires A Master Api Key. Enriched Data Includes Industry Information, Revenue, Employee Counts, Funding Details, And More.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain of the company to enrich (without www. or @ symbol). Please provide a value of type string. This parameter is required."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "domain",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-b71deaad-d304-47a1-8c46-7b89997b924f",
+    "tool_type": "external_composio",
+    "description": "The Search Action Executes Queries Against The Exa Search Service, Returning A Curated List Of Results Based On The Provided Search Criteria. It Allows For Detailed Query Refinement, Including Result Count, Domain Filtering, Date Range Specification, And Content Categorization. Optional Content Retrieval Includes Text Snippets With Control Over Length And Html Tag Inclusion. It Requires A Search Request Object With The Query Parameters And Authorization Details To Initiate The Search Process.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "exa_search",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef exa_search(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['EXA_SEARCH'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "exa_search",
+      "description": "The Search Action Executes Queries Against The Exa Search Service, Returning A Curated List Of Results Based On The Provided Search Criteria. It Allows For Detailed Query Refinement, Including Result Count, Domain Filtering, Date Range Specification, And Content Categorization. Optional Content Retrieval Includes Text Snippets With Control Over Length And Html Tag Inclusion. It Requires A Search Request Object With The Query Parameters And Authorization Details To Initiate The Search Process.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query string. This is the primary text that will be used for searching. Please provide a value of type string. This parameter is required."
+          },
+          "useAutoprompt": {
+            "type": "boolean",
+            "description": "Determines whether the query string should be automatically transformed into an Exa-specific query format. When set to true, additional processing may be applied to interpret the query in the context of Exa's search capabilities. Please provide a value of type boolean."
+          },
+          "type": {
+            "type": "string",
+            "description": "Specifies the type of search to be performed. Options include 'keyword' for traditional keyword-based searches, 'neural' for searches powered by neural network models, and 'magic' for an advanced, possibly AI-driven search. Please provide a value of type string."
+          },
+          "numResults": {
+            "type": "integer",
+            "description": "The maximum number of search results to return. This controls the size of the result set. Please provide a value of type integer."
+          },
+          "includeDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of domain names that should be included in the search results. Only results from these domains will be considered if the list is not empty."
+          },
+          "excludeDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of domain names that should be excluded from the search results. Results from these domains will not be included in the output."
+          },
+          "startCrawlDate": {
+            "type": "string",
+            "description": "The earliest date when Exa started crawling the data. Results will include links discovered after this date. The date must be in ISO 8601 format. Please provide a value of type string."
+          },
+          "endCrawlDate": {
+            "type": "string",
+            "description": "The latest date when Exa finished crawling the data. Results will include links discovered before this date. The date must be in ISO 8601 format. Please provide a value of type string."
+          },
+          "startPublishedDate": {
+            "type": "string",
+            "description": "The start date for filtering links based on their published date. Only links published after this date will be included. The date must be in ISO 8601 format. Please provide a value of type string."
+          },
+          "endPublishedDate": {
+            "type": "string",
+            "description": "The end date for filtering links based on their published date. Only links published before this date will be included. The date must be in ISO 8601 format. Please provide a value of type string."
+          },
+          "category": {
+            "type": "string",
+            "description": "A specific category to focus the search on. This can be used to narrow down results to a particular type of content. Available categories may include 'company', 'research paper', 'news', 'pdf', 'github', 'tweet', 'movie', 'song', 'personal site', etc. Please provide a value of type string."
+          },
+          "textMaxCharacters": {
+            "type": "integer",
+            "description": "The maximum number of characters that should be returned in the text of the search results. This limits the length of the text snippet included with each result. Please provide a value of type integer."
+          },
+          "textIncludeHtmlTags": {
+            "type": "boolean",
+            "description": "Indicates whether HTML tags should be included in the text of the search results. This can be useful for understanding the structure of the text when processing the results. Please provide a value of type boolean."
+          },
+          "highlightsNumSentences": {
+            "type": "integer",
+            "description": "The number of sentences to include in the highlighted snippet of each search result. This determines the length of the summary for each result. Please provide a value of type integer."
+          },
+          "highlightsPerUrl": {
+            "type": "integer",
+            "description": "The number of highlighted snippets to return for each URL in the search results. This allows multiple sections of a page to be included if they are relevant to the query. Please provide a value of type integer."
+          },
+          "highlightsQuery": {
+            "type": "string",
+            "description": "An optional query used to target the highlighted snippets within the search results. If specified, the highlights will be more focused on this query rather than the main search query. Please provide a value of type string."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "query",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-e8c087b4-9559-4036-9408-9a5a581624cc",
+    "tool_type": "external_composio",
+    "description": "Perform A Search With Exa To Find Similar Links And Retrieve A List Of Relevant Results. The Search Can Optionally Return Contents.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "exa_similarlink",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "\ndef exa_similarlink(**kwargs):\n    from composio import Action, App, Tag\n    from composio_langchain import ComposioToolSet\n\n    composio_toolset = ComposioToolSet()\n    tool = composio_toolset.get_tools(actions=['EXA_SIMILARLINK'])[0]\n    return tool.func(**kwargs)['data']\n    ",
+    "json_schema": {
+      "name": "exa_similarlink",
+      "description": "Perform A Search With Exa To Find Similar Links And Retrieve A List Of Relevant Results. The Search Can Optionally Return Contents.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The url for which you would like to find similar links. For e.g. 'https://slatestarcodex.com/2014/07/30/meditations-on-moloch/', 'https://ww.google.com/'. Please provide a value of type string. This parameter is required."
+          },
+          "useAutoprompt": {
+            "type": "boolean",
+            "description": "If true, your query will be converted to an Exa query. For e.g. True, False, True. Please provide a value of type boolean."
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of search: 'keyword', 'neural', or 'magic'. For e.g. 'neural', 'keyword', 'magic'. Please provide a value of type string."
+          },
+          "numResults": {
+            "type": "integer",
+            "description": "Number of search results to return. For e.g. 10, 20, 30. Please provide a value of type integer."
+          },
+          "includeDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of domains to include in the search. For e.g. ['example.com'], ['news.com'], ['blog.com']."
+          },
+          "excludeDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of domains to exclude in the search. For e.g. ['example.com'], ['news.com'], ['blog.com']."
+          },
+          "startCrawlDate": {
+            "type": "string",
+            "description": "Results will include links crawled after this date. For e.g. '2023-01-01T00:00:00Z', '2023-01-15T00:00:00Z', '2023-02-01T00:00:00Z'. Please provide a value of type string."
+          },
+          "endCrawlDate": {
+            "type": "string",
+            "description": "Results will include links crawled before this date. For e.g. '2023-01-01T00:00:00Z', '2023-01-15T00:00:00Z', '2023-02-01T00:00:00Z'. Please provide a value of type string."
+          },
+          "startPublishedDate": {
+            "type": "string",
+            "description": "Only links published after this date will be returned. For e.g. '2023-01-01', '2023-01-15', '2023-02-01'. Please provide a value of type string."
+          },
+          "endPublishedDate": {
+            "type": "string",
+            "description": "Only links published before this date will be returned. For e.g. '2023-01-01', '2023-01-15', '2023-02-01'. Please provide a value of type string."
+          },
+          "category": {
+            "type": "string",
+            "description": " A data category to focus on, with higher comprehensivity and data cleanliness. Categories right now include company, research paper, news, github, tweet, movie, song, personal site, and pdf. Please provide a value of type string."
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "url",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-c99669d6-8039-4d1b-8beb-b48b63e3f8e1",
+    "tool_type": "custom",
+    "description": "Get the composio entity.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "get_composio_entity",
+    "tags": [],
+    "source_code": "def get_composio_entity():\n    \"\"\"\n    Get the composio entity.\n\n    Returns:\n        str: The composio entity.\n    \"\"\"\n    import os\n\n    entity_id = os.getenv('COMPOSIO_ENTITY', 'default')\n    return entity_id\n",
+    "json_schema": {
+      "name": "get_composio_entity",
+      "description": "Get the composio entity.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "last_updated_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-1943f24c-81c5-4918-8378-a7b6f2d9cf9a",
+    "tool_type": "custom",
+    "description": "Fetches all available 30-minute time slots for a calendar application.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "list_all_30_minute_slots_for_cal_app",
+    "tags": [],
+    "source_code": "def list_all_30_minute_slots_for_cal_app(startTime: str, endTime: str) -> str:\n    \"\"\"\n    Fetches all available 30-minute time slots for a calendar application.\n\n    This function interacts with the Composio toolset to retrieve all \n    available 30-minute slots within a specified date range for a specific event type.\n\n    Args:\n        startTime (str): Start date and time in ISO 8601 format \n            (e.g., \"2025-01-01T00:00:00Z\"), representing the beginning of the range.\n        endTime (str): End date and time in ISO 8601 format \n            (e.g., \"2025-01-02T00:00:00Z\"), representing the end of the range.\n\n    Returns:\n        str: A JSON-formatted string containing the available 30-minute slots.\n\n    Raises:\n        ValueError: If an error occurs in the Composio toolset response.\n    \"\"\"\n    from composio_langchain import ComposioToolSet\n    \n    entity_id = os.getenv('COMPOSIO_ENTITY', 'default')\n    event_type_id = os.getenv('CAL_EVENT_TYPE_ID', None)\n    composio_toolset = ComposioToolSet(entity_id=entity_id)\n    response = composio_toolset.execute_action(action='CAL_GET_AVAILABLE_SLOTS_INFO', params={\"startTime\": startTime, \"endTime\": endTime, \"eventTypeId\": event_type_id})\n\n    if response[\"error\"]:\n        print(\"Error: \", response[\"error\"])\n    return response[\"data\"]\n",
+    "json_schema": {
+      "name": "list_all_30_minute_slots_for_cal_app",
+      "description": "This function interacts with the Composio toolset to retrieve all \navailable 30-minute slots within a specified date range for a specific event type.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "description": "Start date and time in ISO 8601 format \n(e.g., \"2025-01-01T00:00:00Z\"), representing the beginning of the range."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "End date and time in ISO 8601 format \n(e.g., \"2025-01-02T00:00:00Z\"), representing the end of the range."
+          }
+        },
+        "required": [
+          "startTime",
+          "endTime"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "last_updated_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-958a0bb4-0cad-4c4c-9011-b2403eb456fc",
+    "tool_type": "custom",
+    "description": "This function interacts with the Composio toolset to retrieve all \navailable slots within a specified date range for a specific event type.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "list_time_slots_for_cal_app",
+    "tags": [],
+    "source_code": "import os\ndef list_time_slots_for_cal_app(startTime: str, endTime: str) -> str:\n    \"\"\"\n    Fetches all available time slots for a calendar application.\n\n    This function interacts with the Composio toolset to retrieve all \n    available slots within a specified date range for a specific event type.\n\n    Args:\n        startTime (str): Start date and time in ISO 8601 format \n            (e.g., \"2025-01-01T00:00:00Z\"), representing the beginning of the range.\n        endTime (str): End date and time in ISO 8601 format \n            (e.g., \"2025-01-02T00:00:00Z\"), representing the end of the range.\n\n    Returns:\n        str: A JSON-formatted string containing the available slots.\n\n    Raises:\n        ValueError: If an error occurs in the Composio toolset response.\n    \"\"\"\n    from composio import ComposioToolSet\n\n\n    entity_id = os.getenv('COMPOSIO_ENTITY', 'default')\n    event_type_id = os.getenv('CAL_EVENT_TYPE_ID', None)\n    composio_toolset = ComposioToolSet(entity_id=entity_id)\n    response = composio_toolset.execute_action(action='CAL_GET_AVAILABLE_SLOTS_INFO', params={\"startTime\": startTime, \"endTime\": endTime, \"eventTypeId\": event_type_id})\n\n    if response[\"error\"]:\n        print(\"Error: \", response[\"error\"])\n    return response[\"data\"]",
+    "json_schema": {
+      "name": "list_time_slots_for_cal_app",
+      "description": "This function interacts with the Composio toolset to retrieve all \navailable slots within a specified date range for a specific event type.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "description": "Start date and time in ISO 8601 format \n(e.g., \"2025-01-01T00:00:00Z\"), representing the beginning of the range."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "End date and time in ISO 8601 format \n(e.g., \"2025-01-02T00:00:00Z\"), representing the end of the range."
+          }
+        },
+        "required": [
+          "startTime",
+          "endTime"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-474c06ef-e1ed-4131-922a-1d99fb3063f2",
+    "last_updated_by_id": "user-23d80534-82de-45cb-893f-4ff842a8e697",
+    "metadata_": null
+  },
+  {
+    "id": "tool-9b7b03f6-ca76-40c5-a843-e19e2d9030d5",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "roll_d20",
+    "tags": [],
+    "source_code": "def roll_d20():\n    \"\"\"\n    Simulate the roll of a 20-sided die (d20).\n\n    This function generates a random integer between 1 and 20, inclusive,\n    which represents the outcome of a single roll of a d20.\n\n    Returns:\n        str: The result of the die roll.\n    \"\"\"\n    import random\n    dice_role_outcome = random.randint(1, 20)\n    output_string = f\"You rolled a {dice_role_outcome}\"\n    return output_string",
+    "json_schema": {
+      "name": "roll_d20",
+      "description": "This function generates a random integer between 1 and 20, inclusive,\nwhich represents the outcome of a single roll of a d20.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-02b2402b-5588-45d0-9626-42dc861565e1",
+    "last_updated_by_id": "user-02b2402b-5588-45d0-9626-42dc861565e1",
+    "metadata_": null
+  },
+  {
+    "id": "tool-91782c62-f5f5-4094-8223-8f6a0bc574a1",
+    "tool_type": "external_composio",
+    "description": "Perplexity Ai Search Interfaces With Perplexity Ai To Perform Search Queries And Return Responses From A Range Of Models. This Action Manages The Request To Perplexity Ai And Processes The Resulting Completions, Which May Include Text, Citations, And Images Based On Selected Models And Settings.\n Key Features Include:   Autoprompting To Enhance And Refine Queries.   Choice Of Ai Models For Various Content And Performance Requirements.   Temperature Settings To Manage Response Randomness.   Top K And Top P Filters To Fine Tune Response Generation.   Beta Features: Citations And Images In Results.   Response Streaming For Dynamic Interaction.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "perplexityai_perplexity_ai_search",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "def perplexityai_perplexity_ai_search(**kwargs):\n    raise RuntimeError(\"Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team\")",
+    "json_schema": {
+      "name": "perplexityai_perplexity_ai_search",
+      "description": "Perplexity Ai Search Interfaces With Perplexity Ai To Perform Search Queries And Return Responses From A Range Of Models. This Action Manages The Request To Perplexity Ai And Processes The Resulting Completions, Which May Include Text, Citations, And Images Based On Selected Models And Settings.\n Key Features Include:   Autoprompting To Enhance And Refine Queries.   Choice Of Ai Models For Various Content And Performance Requirements.   Temperature Settings To Manage Response Randomness.   Top K And Top P Filters To Fine Tune Response Generation.   Beta Features: Citations And Images In Results.   Response Streaming For Dynamic Interaction.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The name of the model to use for generating completions. Choose a model based on the desired balance between performance and resource usage. For more infromation check https://docs.perplexity.ai/guides/model-cards. Please provide a value of type string.",
+            "default": "sonar",
+            "enum": [
+              "sonar",
+              "sonar-reasoning-pro",
+              "sonar-reasoning",
+              "sonar-pro"
+            ]
+          },
+          "systemContent": {
+            "type": "string",
+            "description": "The system's Content for specifying instructions. For e.g Be precise and concise., Be elaborate and descriptive. Please provide a value of type string. This parameter is required."
+          },
+          "userContent": {
+            "type": "string",
+            "description": "The user's Content for asking questions or providing input. For e.g How many stars are there in our galaxy?. Please provide a value of type string. This parameter is required."
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "The maximum number of tokens to generate. Sum of max_tokens and prompt tokens should not exceed the model's context window limit. Unspecified leads to generation until stop token or context window end. For e.g 100, 150, 200. Please provide a value of type integer.",
+            "default": null
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Controls generation randomness, with 0 being deterministic and values approaching 2 being more random. For e.g 0.0, 0.7, 1.5. Please provide a value of type number.",
+            "default": null
+          },
+          "top_p": {
+            "type": "number",
+            "description": "Nucleus sampling threshold, controlling the token selection pool based on cumulative probability.  For e.g 0.1, 0.9, 1.0. Please provide a value of type number.",
+            "default": null
+          },
+          "return_citations": {
+            "type": "boolean",
+            "description": "Whether to include citations in the model's response. Citations feature is in closed beta.  For e.g True, False. Please provide a value of type boolean.",
+            "default": null
+          },
+          "return_images": {
+            "type": "boolean",
+            "description": "Whether to include images in the model's response. Image generation feature is in closed beta.  For e.g True, False. Please provide a value of type boolean.",
+            "default": null
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Limits the number of high-probability tokens to consider for generation. Set to 0 to disable.  For e.g 0, 40, 80. Please provide a value of type integer.",
+            "default": null
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "Whether to stream the response incrementally using server-sent events.  For e.g True, False. Please provide a value of type boolean.",
+            "default": null
+          },
+          "presence_penalty": {
+            "type": "number",
+            "description": "Penalty for new tokens based on their current presence in the text, encouraging topic variety. For e.g -2.0, 0.0, 2.0. Please provide a value of type number.",
+            "default": null
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "description": "Multiplicative penalty for new tokens based on their frequency in the text to avoid repetition. For e.g 0.5, 1.0, 1.5. Please provide a value of type number.",
+            "default": null
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "systemContent",
+          "userContent",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-02b2402b-5588-45d0-9626-42dc861565e1",
+    "last_updated_by_id": "user-02b2402b-5588-45d0-9626-42dc861565e1",
+    "metadata_": null
+  },
+  {
+    "id": "tool-af3d8b21-affb-4137-8856-1a08cc5b05a6",
+    "tool_type": "custom",
+    "description": "Search Pinecone vector database records with a text query.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "search_pinecone_records",
+    "tags": [],
+    "source_code": "def search_pinecone_records(query_text: str, top_k: int = 3):\n    \"\"\"\n    Search Pinecone vector database records with a text query.\n\n    Args:\n        query_text (str): The text to search the database for (vector-based similarity search).\n        top_k (int): Number of top results to retrieve, defaults to 0 (do not change unless the user requests it).\n\n    Returns:\n        dict: The JSON response from the Pinecone API.\n    \"\"\"\n    import os\n    import requests\n\n    # Get environment variables\n    namespace = os.getenv(\"PINECONE_NAMESPACE\", None)\n    api_key = os.getenv(\"PINECONE_API_KEY\", None)\n    index_host = os.getenv(\"PINECONE_HOST\", None)\n\n    if index_host is None:\n        raise ValueError(\n            \"Missing PINECONE_HOST env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    if api_key is None:\n        raise ValueError(\n            \"Missing PINECONE_API_KEY env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    # Set up the URL and headers\n    url = f\"{index_host}/records/namespaces/{namespace}/search\"\n    headers = {\"Accept\": \"application/json\", \"Content-Type\": \"application/json\", \"Api-Key\": api_key, \"X-Pinecone-API-Version\": \"unstable\"}\n\n    # Prepare the payload\n    payload = {\n        \"query\": {\"inputs\": {\"text\": query_text}, \"top_k\": top_k},\n        \"fields\": [\"text\"],\n    }\n\n    # Make the request\n    response = requests.post(url, headers=headers, json=payload)\n\n    # Return the JSON response\n    return response.json()",
+    "json_schema": {
+      "name": "search_pinecone_records",
+      "description": "Search Pinecone vector database records with a text query.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query_text": {
+            "type": "string",
+            "description": "The text to search the database for (vector-based similarity search)."
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Number of top results to retrieve, defaults to 0 (do not change unless the user requests it)."
+          }
+        },
+        "required": [
+          "query_text"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-6cdf481f-0f21-4ce8-b33a-590c3622feeb",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "escalate",
+    "tags": [],
+    "source_code": "def escalate(reason: str):\n    \"\"\"\n    Escalates the current chat session to a human support agent.\n\n    Args:\n        reason (str): The reason for the escalation.\n\n    Returns:\n        str: The status of escalation request.\n    \"\"\"\n    # TODO replace this with a real REST API call / trigger\n    dummy_message = f\"A human operator will be on the line shortly. The estimated wait time is NULL_ERROR minutes.\"\n    return dummy_message",
+    "json_schema": {
+      "name": "escalate",
+      "description": "Escalates the current chat session to a human support agent.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "The reason for the escalation."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-3790f59f-0c73-4341-8138-633af0adf967",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "check_order_status",
+    "tags": [],
+    "source_code": "def check_order_status(order_number: int):\n    \"\"\"\n    Check the status for an order number (integeter value).\n\n    Args:\n        order_number (int): The order number to check on.\n\n    Returns:\n        str: The status of the order (e.g. cancelled, refunded, processed, processing, shipping).\n    \"\"\"\n    # TODO replace this with a real query to a database\n    dummy_message = f\"Order {order_number} is currently processing.\"\n    return dummy_message",
+    "json_schema": {
+      "name": "check_order_status",
+      "description": "Check the status for an order number (integeter value).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_number": {
+            "type": "integer",
+            "description": "The order number to check on."
+          }
+        },
+        "required": [
+          "order_number"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-3f07453f-73d3-4196-bb47-819d1225480d",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "terminate_chat",
+    "tags": [],
+    "source_code": "def terminate_chat(reason: str):\n    \"\"\"\n    Terminate the current chat session. Only use in cases of emergencies with extremely rude customers.\n\n    Args:\n        reason (str): The reason for the termination.\n\n    Returns:\n        str: The status of termination request.\n    \"\"\"\n    # TODO replace this with a real REST API call / trigger\n    dummy_message = f\"ERROR\"\n    return dummy_message",
+    "json_schema": {
+      "name": "terminate_chat",
+      "description": "Terminate the current chat session. Only use in cases of emergencies with extremely rude customers.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "The reason for the termination."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-bc67a5e6-7e5f-4e0f-9d80-ef99f5ed437f",
+    "tool_type": "custom",
+    "description": "A custom tool",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "cancel_order",
+    "tags": [],
+    "source_code": "def cancel_order(order_number: int, reason: str):\n    \"\"\"\n    Cancels an order.\n\n    Args:\n        order_number (int): The order number to cancel.\n        reason (str): The cancellation reason.\n\n    Returns:\n        str: The status of order cancellation request.\n    \"\"\"\n    # TODO replace this with a real write to a database\n    dummy_message = f\"The order {order_number} could not be cancelled.\"\n    return dummy_message",
+    "json_schema": {
+      "name": "cancel_order",
+      "description": "Cancels an order.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order_number": {
+            "type": "integer",
+            "description": "The order number to cancel."
+          },
+          "reason": {
+            "type": "string",
+            "description": "The cancellation reason."
+          }
+        },
+        "required": [
+          "order_number",
+          "reason"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-6917865b-9bb3-40d1-91b8-bef7d5a673d4",
+    "tool_type": "external_composio",
+    "description": "The tavilysearch class provides an interface to the tavily search api, enabling users to conduct searches across a wide array of content with various filtering options. it supports complex queries, including keyword and phrase searches, with additional parameters to refine the search results. this class allows for customization of the search experience by specifying the depth of the search, inclusion of images and direct answers, domain-specific filtering, and control over the number of results returned. it is designed to handle diverse search needs, from quick lookups to comprehensive research.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "tavily_tavily_search",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "def tavily_tavily_search(**kwargs):\n    raise RuntimeError(\"Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team\")",
+    "json_schema": {
+      "name": "tavily_tavily_search",
+      "description": "The tavilysearch class provides an interface to the tavily search api, enabling users to conduct searches across a wide array of content with various filtering options. it supports complex queries, including keyword and phrase searches, with additional parameters to refine the search results. this class allows for customization of the search experience by specifying the depth of the search, inclusion of images and direct answers, domain-specific filtering, and control over the number of results returned. it is designed to handle diverse search needs, from quick lookups to comprehensive research.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The primary text used to perform the search. This is the key term or phrase that the search functionality will use to retrieve results. Please provide a value of type string. This parameter is required."
+          },
+          "search_depth": {
+            "type": "string",
+            "description": "The depth of the search. A 'basic' search costs 1 API Credit, while an 'advanced' search costs 2 API Credits. Please provide a value of type string.",
+            "default": "basic"
+          },
+          "include_images": {
+            "type": "boolean",
+            "description": "A flag indicating whether to include images in the search results. When set to true, the response will contain image links related to the query. Please provide a value of type boolean.",
+            "default": false
+          },
+          "include_answer": {
+            "type": "boolean",
+            "description": "Specifies whether to include direct answers to the query in the search results. Useful for queries that expect a factual answer. Please provide a value of type boolean.",
+            "default": false
+          },
+          "include_raw_content": {
+            "type": "boolean",
+            "description": "If set to true, the search results will include the raw content from the search index, which may contain unprocessed HTML or text. Please provide a value of type boolean.",
+            "default": false
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "The maximum number of search results that the API should return. This limits the size of the result set for the query. Please provide a value of type integer.",
+            "default": 5
+          },
+          "include_domains": {
+            "type": "array",
+            "description": "A list of domain names to include in the search results. Only results from these specified domains will be returned, allowing for targeted searches.",
+            "default": null,
+            "items": {}
+          },
+          "exclude_domains": {
+            "type": "array",
+            "description": "A list of domain names to exclude from the search results. Results from these domains will not be included, which can help to filter out unwanted content.",
+            "default": null,
+            "items": {}
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "query",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 10000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": null
+  },
+  {
+    "id": "tool-3c8c15d3-82c5-4101-870b-3f20ebf46622",
+    "tool_type": "external_composio",
+    "description": "Extract structured data from web pages using firecrawl's api, then poll until the job completes or fails.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "firecrawl_extract",
+    "tags": [
+      "composio"
+    ],
+    "source_code": "def firecrawl_extract(**kwargs):\n    raise RuntimeError(\"Something went wrong - we should never be using the persisted source code for Composio. Please reach out to Letta team\")",
+    "json_schema": {
+      "name": "firecrawl_extract",
+      "description": "Extract structured data from web pages using firecrawl's api, then poll until the job completes or fails.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "type": "array",
+            "description": "List of URLs to extract data from. Supports wildcards (/*) for broader crawling. This parameter is required.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Natural language prompt describing the data to extract. Required if schema is not provided. Please provide a value of type string.",
+            "default": null
+          },
+          "schema": {
+            "type": "object",
+            "description": "JSON schema defining the structure of data to extract. Required if prompt is not provided.",
+            "default": null
+          },
+          "enable_web_search": {
+            "type": "boolean",
+            "description": "When true, extraction can follow links outside the specified domain. Please provide a value of type boolean.",
+            "default": false
+          },
+          "request_heartbeat": {
+            "type": "boolean",
+            "description": "Request an immediate heartbeat after function execution. Set to `True` if you want to send a follow-up message or run a follow-up function."
+          }
+        },
+        "required": [
+          "urls",
+          "request_heartbeat"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-26ac50f3-8d0e-4240-9856-fe1e493cf324",
+    "metadata_": null
+  },
+  {
+    "id": "tool-d268f52c-fde0-4e54-ae8b-b76b191d24df",
+    "tool_type": "custom",
+    "description": "The final tool to call once you're done with your report and want to submit it to the user.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "create_research_report",
+    "tags": [],
+    "source_code": "def create_research_report(top_level_summary: str, findings: str):\n    \"\"\"\n    The final tool to call once you're done with your report and want to submit it to the user.\n\n    Args:\n        top_level_summary (str): Your top-level findings.\n        findings (str): Your in-depth findings.\n    \"\"\"\n    return None\n",
+    "json_schema": {
+      "name": "create_research_report",
+      "description": "The final tool to call once you're done with your report and want to submit it to the user.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "top_level_summary": {
+            "type": "string",
+            "description": "Your top-level findings."
+          },
+          "findings": {
+            "type": "string",
+            "description": "Your in-depth findings."
+          }
+        },
+        "required": [
+          "top_level_summary",
+          "findings"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": null
+  },
+  {
+    "id": "tool-7908e2c4-5b92-4a95-838b-561318e6aede",
+    "tool_type": "custom",
+    "description": "Create a response in a sequence of strategic outbound emails that form a cohesive narrative to achieve the user's goals. Use the fields personization, coherence, and tone to explain how you are going to draft your response to follow the guideslines. Use the response_body arg to craft the response contents.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "draft_email_response",
+    "tags": [],
+    "source_code": "def draft_email_response(personalization: str, coherence: str, tone: str, response_body: str):\n    \"\"\"\n    Create a response in a sequence of strategic outbound emails that form a cohesive narrative to achieve the user's goals. Use the fields personization, coherence, and tone to explain how you are going to draft your response to follow the guideslines. Use the response_body arg to craft the response contents.\n    \n    Args:\n        personalization (str): Is it personalized to the recipient directly? Does each email avoid being overly repetitive unless explicitly stated?\n        coherence (str): Does it build naturally on previous emails (if any)? Is there progression of asks/topics?\n        tone (str): Does it maintain a consistent tone and style across all emails? Is the email concise and focused on a single clear objective?\n        response_body (str): The email reply itself.\n    \"\"\"\n    email_string = f\"{response_body}\"\n    return email_string\n",
+    "json_schema": {
+      "name": "draft_email_response",
+      "description": "Create a response in a sequence of strategic outbound emails that form a cohesive narrative to achieve the user's goals. Use the fields personization, coherence, and tone to explain how you are going to draft your response to follow the guideslines. Use the response_body arg to craft the response contents.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "personalization": {
+            "type": "string",
+            "description": "Is it personalized to the recipient directly? Does each email avoid being overly repetitive unless explicitly stated?"
+          },
+          "coherence": {
+            "type": "string",
+            "description": "Does it build naturally on previous emails (if any)? Is there progression of asks/topics?"
+          },
+          "tone": {
+            "type": "string",
+            "description": "Does it maintain a consistent tone and style across all emails? Is the email concise and focused on a single clear objective?"
+          },
+          "response_body": {
+            "type": "string",
+            "description": "The email reply itself."
+          }
+        },
+        "required": [
+          "personalization",
+          "coherence",
+          "tone",
+          "response_body"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "last_updated_by_id": "user-2bd32df4-3b81-44c8-a4d5-ce87a56f0906",
+    "metadata_": {}
+  },
+  {
+    "id": "tool-eaece85b-a41f-4d35-a5b2-fd49e94f21e0",
+    "tool_type": "custom",
+    "description": "Search Pinecone vector database records with a text query.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "search_pinecone_records_sdk",
+    "tags": [],
+    "source_code": "def search_pinecone_records_sdk(query_text: str, top_k: int = 3):\n    \"\"\"\n    Search Pinecone vector database records with a text query.\n\n    Args:\n        query_text (str): The text to search the database for (vector-based similarity search).\n        top_k (int): Number of top results to retrieve, defaults to 0 (do not change unless the user requests it).\n\n    Returns:\n        dict: The JSON response from the Pinecone API.\n    \"\"\"\n    import os\n    import requests\n    from pinecone import Pinecone\n    \n    # Get environment variables\n    namespace = os.getenv(\"PINECONE_NAMESPACE\", None)\n    api_key = os.getenv(\"PINECONE_API_KEY\", None)\n    index_host = os.getenv(\"PINECONE_INDEX\", None)\n    \n    pc = Pinecone(api_key)\n\n    if index_host is None:\n        raise ValueError(\n            \"Missing PINECONE_HOST env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    if api_key is None:\n        raise ValueError(\n            \"Missing PINECONE_API_KEY env var. Please inform the user that they need to set the tool environment variable in the ADE.\"\n        )\n\n    # Set up the URL and headers\n    url = f\"{index_host}/records/namespaces/{namespace}/search\"\n    headers = {\"Accept\": \"application/json\", \"Content-Type\": \"application/json\", \"Api-Key\": api_key, \"X-Pinecone-API-Version\": \"unstable\"}\n\n    # Prepare the payload\n    payload = {\n        \"query\": {\"inputs\": {\"text\": query_text}, \"top_k\": top_k},\n        \"fields\": [\"text\"],\n    }\n\n    # Make the request\n    response = requests.post(url, headers=headers, json=payload)\n\n    # Return the JSON response\n    return response.json()",
+    "json_schema": {
+      "name": "search_pinecone_records_sdk",
+      "description": "Search Pinecone vector database records with a text query.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query_text": {
+            "type": "string",
+            "description": "The text to search the database for (vector-based similarity search)."
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Number of top results to retrieve, defaults to 0 (do not change unless the user requests it)."
+          }
+        },
+        "required": [
+          "query_text"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": {}
+  },
+  {
+    "id": "tool-145e1d4d-e3b9-40a8-9334-32fed84733fe",
+    "tool_type": "custom",
+    "description": "A tool for organizing the results of the prior tool calls to search_pinecone_records and returning the results and the subsequent analysis.",
+    "source_type": "python",
+    "organization_id": "org-4ab3f6e8-9a44-4bee-aeb6-c681cbbc7bf6",
+    "name": "send_pinecone_results",
+    "tags": [],
+    "source_code": "def send_pinecone_results(pinecone_query_results: dict, summary: str) -> str:\n    \"\"\"\n    A tool for organizing the results of the prior tool calls to search_pinecone_records and returning the results and the subsequent analysis.\n    \n    Args:\n        pinecone_query_results (dict[str,str]): A map of pinecone query and the stringified response object from calling the search_pinecone_records tool.\n        summary (str): Final summary of the queries and the results that you found.\n\n    Returns:\n        str: The stringified JSON response containing the summary and the results in the format {pinecone_results: dict, summary:str}\n    \"\"\"\n    import json\n    ret = {\"pinecone_results\": pinecone_query_results, \"summary\": summary}\n    return json.dumps(ret, ensure_ascii=False)\n",
+    "json_schema": {
+      "name": "send_pinecone_results",
+      "description": "A tool for organizing the results of the prior tool calls to search_pinecone_records and returning the results and the subsequent analysis.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pinecone_query_results": {
+            "type": "object",
+            "description": "A map of pinecone query and the stringified response object from calling the search_pinecone_records tool."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Final summary of the queries and the results that you found."
+          }
+        },
+        "required": [
+          "pinecone_query_results",
+          "summary"
+        ]
+      }
+    },
+    "args_json_schema": null,
+    "return_char_limit": 6000,
+    "pip_requirements": null,
+    "created_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "last_updated_by_id": "user-831b2b05-7955-4669-9db7-27e4cb6496b2",
+    "metadata_": {}
+  }
+]
