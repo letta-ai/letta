@@ -149,7 +149,16 @@ class StepManager:
         status: Optional[StepStatus] = None,
         error_type: Optional[str] = None,
         error_data: Optional[Dict] = None,
+        allow_partial: Optional[bool] = False,
     ) -> PydanticStep:
+        if allow_partial:
+            try:
+                new_step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
+            except NoResultFound:
+                new_step = None
+            if new_step:
+                return new_step.to_pydantic()
+
         step_data = {
             "origin": None,
             "organization_id": actor.organization_id,
