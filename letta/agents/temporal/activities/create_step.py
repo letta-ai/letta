@@ -51,6 +51,7 @@ async def create_step(params: CreateStepParams) -> CreateStepResult:
         project_id=params.agent_state.project_id,
         template_id=params.agent_state.template_id,
         base_template_id=params.agent_state.base_template_id,
+        allow_partial=True,
     )
 
     return CreateStepResult(step=persisted_step)
