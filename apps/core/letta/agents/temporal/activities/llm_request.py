@@ -106,6 +106,8 @@ async def llm_request(params: LLMRequestParams) -> LLMCallResult:
             # Default conservatively: do not retry unknown LLMError types
             non_retryable = True
         raise ApplicationError(str(e), type=type(e).__name__, non_retryable=non_retryable)
+    except TimeoutError as e:
+        raise ApplicationError(str(e), type=type(e).__name__, non_retryable=False)
     except Exception as e:
         # Any unexpected error — do not retry at activity layer
         raise ApplicationError(str(e), type=type(e).__name__, non_retryable=True)
