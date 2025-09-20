@@ -17,6 +17,7 @@ from letta.errors import (
     LLMTimeoutError,
     LLMUnprocessableEntityError,
 )
+from letta.helpers.datetime_helpers import get_utc_timestamp_ns
 from letta.llm_api.llm_client import LLMClient
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 
@@ -44,6 +45,9 @@ async def llm_request(params: LLMRequestParams) -> LLMCallResult:
     )
 
     try:
+        # Track LLM request timing
+        llm_request_start_ns = get_utc_timestamp_ns()
+
         # execute the llm request
         invocation = llm_adapter.invoke_llm(
             request_data=request_data,
@@ -59,6 +63,10 @@ async def llm_request(params: LLMRequestParams) -> LLMCallResult:
         async for _ in invocation:
             pass
 
+        # Calculate LLM request duration
+        llm_request_end_ns = get_utc_timestamp_ns()
+        llm_request_ns = llm_request_end_ns - llm_request_start_ns
+
         # extract results from the adapter after invocation completes
         usage = llm_adapter.chat_completions_response.usage if llm_adapter.chat_completions_response else UsageStatistics()
         return LLMCallResult(
@@ -67,6 +75,8 @@ async def llm_request(params: LLMRequestParams) -> LLMCallResult:
             assistant_message_id=llm_adapter.message_id,
             usage=usage,
             request_finish_ns=llm_adapter.llm_request_finish_timestamp_ns,
+            llm_request_start_ns=llm_request_start_ns,
+            llm_request_ns=llm_request_ns,
         )
     except (ValueError, LLMJSONParsingError) as e:
         # Invalid or unparseable LLM response — non-retryable at activity layer
