@@ -36,6 +36,7 @@ async def create_step(params: CreateStepParams) -> CreateStepResult:
         step_id=params.step_id,
         project_id=params.agent_state.project_id,
         status=status,
+        allow_partial=True,
     )
 
     # Record step metrics
