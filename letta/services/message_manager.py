@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 from sqlalchemy import delete, exists, func, select, text
 
@@ -309,6 +309,51 @@ class MessageManager:
 
     @enforce_types
     @trace_method
+    async def check_existing_message_ids(self, message_ids: List[str], actor: PydanticUser) -> Set[str]:
+        """Check which message IDs already exist in the database.
+
+        Args:
+            message_ids: List of message IDs to check
+            actor: User performing the action
+
+        Returns:
+            Set of message IDs that already exist in the database
+        """
+        if not message_ids:
+            return set()
+
+        async with db_registry.async_session() as session:
+            query = select(MessageModel.id).where(MessageModel.id.in_(message_ids), MessageModel.organization_id == actor.organization_id)
+            result = await session.execute(query)
+            return set(result.scalars().all())
+
+    @enforce_types
+    @trace_method
+    async def filter_existing_messages(
+        self, messages: List[PydanticMessage], actor: PydanticUser
+    ) -> Tuple[List[PydanticMessage], List[PydanticMessage]]:
+        """Filter messages into new and existing based on their IDs.
+
+        Args:
+            messages: List of messages to filter
+            actor: User performing the action
+
+        Returns:
+            Tuple of (new_messages, existing_messages)
+        """
+        message_ids = [msg.id for msg in messages if msg.id]
+        if not message_ids:
+            return messages, []
+
+        existing_ids = await self.check_existing_message_ids(message_ids, actor)
+
+        new_messages = [msg for msg in messages if msg.id not in existing_ids]
+        existing_messages = [msg for msg in messages if msg.id in existing_ids]
+
+        return new_messages, existing_messages
+
+    @enforce_types
+    @trace_method
     async def create_many_messages_async(
         self,
         pydantic_msgs: List[PydanticMessage],
@@ -316,6 +361,7 @@ class MessageManager:
         strict_mode: bool = False,
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
+        allow_partial: bool = False,
     ) -> List[PydanticMessage]:
         """
         Create multiple messages in a single database transaction asynchronously.
@@ -326,14 +372,33 @@ class MessageManager:
             strict_mode: If True, wait for embedding to complete; if False, run in background
             project_id: Optional project ID for the messages (for Turbopuffer indexing)
             template_id: Optional template ID for the messages (for Turbopuffer indexing)
+            allow_partial: If True, skip messages that already exist; if False, fail on duplicates
 
         Returns:
-            List of created Pydantic message models
+            List of created Pydantic message models (and existing ones if allow_partial=True)
         """
         if not pydantic_msgs:
             return []
 
-        for message in pydantic_msgs:
+        messages_to_create = pydantic_msgs
+        existing_messages = []
+
+        if allow_partial:
+            # filter out messages that already exist
+            new_messages, existing_messages = await self.filter_existing_messages(pydantic_msgs, actor)
+            messages_to_create = new_messages
+
+            if not messages_to_create:
+                # all messages already exist, fetch and return them
+                async with db_registry.async_session() as session:
+                    existing_ids = [msg.id for msg in existing_messages if msg.id]
+                    query = select(MessageModel).where(
+                        MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id
+                    )
+                    result = await session.execute(query)
+                    return [msg.to_pydantic() for msg in result.scalars()]
+
+        for message in messages_to_create:
             if isinstance(message.content, list):
                 for content in message.content:
                     if content.type == MessageContentType.image and content.source.type == ImageSourceType.base64:
@@ -358,7 +423,7 @@ class MessageManager:
                             media_type=content.source.media_type,
                             detail=content.source.detail,
                         )
-        orm_messages = self._create_many_preprocess(pydantic_msgs, actor)
+        orm_messages = self._create_many_preprocess(messages_to_create, actor)
         async with db_registry.async_session() as session:
             created_messages = await MessageModel.batch_create_async(orm_messages, session, actor=actor, no_commit=True, no_refresh=True)
             result = [msg.to_pydantic() for msg in created_messages]
@@ -380,6 +445,18 @@ class MessageManager:
                             self._embed_messages_background(result, actor, agent_id, project_id, template_id),
                             task_name=f"embed_messages_for_agent_{agent_id}",
                         )
+
+            # if allow_partial, combine newly created with existing
+            if allow_partial and existing_messages:
+                # fetch the existing messages to return complete data
+                async with db_registry.async_session() as session:
+                    existing_ids = [msg.id for msg in existing_messages if msg.id]
+                    query = select(MessageModel).where(
+                        MessageModel.id.in_(existing_ids), MessageModel.organization_id == actor.organization_id
+                    )
+                    existing_result = await session.execute(query)
+                    existing_fetched = [msg.to_pydantic() for msg in existing_result.scalars()]
+                    result.extend(existing_fetched)
 
             return result
 
