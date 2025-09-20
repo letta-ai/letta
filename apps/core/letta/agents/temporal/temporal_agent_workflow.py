@@ -27,6 +27,7 @@ from letta.agents.temporal.constants import (
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import JobStatus
 from letta.schemas.letta_message import MessageType
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
@@ -97,7 +98,20 @@ class TemporalAgentWorkflow:
         stop_reason = StopReasonType.end_turn
         response_messages = []
 
-        # 1) Prepare messages (context + new input), no persistence
+        await workflow.execute_activity(
+            update_run,
+            UpdateRunParams(
+                run_id=params.run_id,
+                actor=params.actor,
+                job_status=JobStatus.pending,
+                stop_reason=None,
+                persisted_messages=[],
+            ),
+            start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+            schedule_to_close_timeout=UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+        )
+
+        # Prepare messages (context + new input), no persistence
         prepared: PreparedMessages = await workflow.execute_activity(
             prepare_messages,
             params,
@@ -577,7 +591,8 @@ class TemporalAgentWorkflow:
             UpdateRunParams(
                 run_id=run_id,
                 actor=actor,
-                stop_reason=stop_reason,
+                job_status=JobStatus.completed,
+                stop_reason=stop_reason if stop_reason else LettaStopReason(stop_reason=StopReasonType.end_turn),
                 persisted_messages=persisted_messages_result.messages,
             ),
             start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,

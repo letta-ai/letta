@@ -16,15 +16,16 @@ async def update_run(params: UpdateRunParams) -> None:
     # Update job status
     await job_manager.safe_update_job_status_async(
         job_id=params.run_id,
-        new_status=JobStatus.completed,
+        new_status=params.job_status,
         actor=params.actor,
-        stop_reason=params.stop_reason.stop_reason if params.stop_reason else StopReasonType.end_turn,
+        stop_reason=params.stop_reason.stop_reason if params.stop_reason else None,
     )
 
     # Add messages to job
-    await job_manager.add_messages_to_job_async(
-        job_id=params.run_id,
-        message_ids=[m.id for m in params.persisted_messages if m.role != "user"],
-        actor=params.actor,
-    )
+    if params.persisted_messages:
+        await job_manager.add_messages_to_job_async(
+            job_id=params.run_id,
+            message_ids=[m.id for m in params.persisted_messages if m.role != "user"],
+            actor=params.actor,
+        )
     return
