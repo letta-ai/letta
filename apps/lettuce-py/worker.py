@@ -19,6 +19,7 @@ from letta.agents.temporal.activities import (
     summarize_conversation_history,
     execute_tool,
     update_message_ids,
+    update_run,
 )
 
 TEMPORAL_ENDPOINT = os.environ.get("LETTA_TEMPORAL_ENDPOINT", "localhost:7233")
@@ -55,6 +56,7 @@ async def main():
             create_messages,
             create_step,
             update_message_ids,
+            update_run,
         ],
         workflow_runner=SandboxedWorkflowRunner(
             restrictions=SandboxRestrictions.default.with_passthrough_modules(

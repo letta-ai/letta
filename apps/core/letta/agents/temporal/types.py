@@ -10,7 +10,7 @@ from letta.schemas.letta_message_content import (
     RedactedReasoningContent,
     TextContent,
 )
-from letta.schemas.letta_stop_reason import StopReasonType
+from letta.schemas.letta_stop_reason import LettaStopReason, StopReasonType
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_response import ToolCall, UsageStatistics
 from letta.schemas.step import Step
@@ -229,6 +229,16 @@ class PersistMessagesParams:
 @dataclass
 class PersistMessagesResult:
     """Output from persist_messages_activity."""
+
+
+@dataclass
+class UpdateRunParams:
+    """Input to update_run_activity."""
+
+    run_id: str
+    actor: User
+    stop_reason: LettaStopReason | None
+    persisted_messages: List[Message]
 
 
 @dataclass
