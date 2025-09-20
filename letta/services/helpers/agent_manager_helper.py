@@ -19,6 +19,7 @@ from letta.constants import (
     MULTI_AGENT_TOOLS,
     STRUCTURED_OUTPUT_MODELS,
 )
+from letta.errors import LettaAgentNotFoundError
 from letta.helpers import ToolRulesSolver
 from letta.helpers.datetime_helpers import get_local_time
 from letta.llm_api.llm_client import LLMClient
@@ -1238,4 +1239,4 @@ async def validate_agent_exists_async(session, agent_id: str, actor: User) -> No
     result = await session.execute(agent_exists_query)
 
     if not result.scalar():
-        raise NoResultFound(f"Agent with ID {agent_id} not found")
+        raise LettaAgentNotFoundError(f"Agent with ID {agent_id} not found")
