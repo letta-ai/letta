@@ -53,3 +53,7 @@ CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
 # create_messages (saves messages to agent state)
 CREATE_MESSAGES_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
 CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
+
+# update run metadata (saves status to run)
+UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT = timedelta(seconds=30)
+UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT = timedelta(minutes=30)
