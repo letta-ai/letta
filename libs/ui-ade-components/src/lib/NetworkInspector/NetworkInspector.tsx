@@ -320,8 +320,9 @@ export function NetworkInspector() {
         }
       }}
       /* Network inspector should be above everything */
-      className="network-inspector pointer-events-auto"
+      className="network-inspector z-networkInspector pointer-events-auto"
       name={t('title')}
+      __exclusive_isNetworkInspector
       windowConfiguration={{
         defaultHeight: 600,
         defaultWidth: 400,

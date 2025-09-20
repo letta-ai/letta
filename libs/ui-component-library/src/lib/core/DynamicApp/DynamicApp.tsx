@@ -15,7 +15,13 @@ import { DialogTitle } from '@radix-ui/react-dialog';
 import { HStack } from '../../framing/HStack/HStack';
 import { Typography } from '../Typography/Typography';
 import { useTranslations } from '@letta-cloud/translations';
-import { CloseIcon, FullscreenIcon, WindowedIcon } from '../../icons';
+import {
+  CloseIcon,
+  DragIndicatorIcon,
+  FullscreenIcon,
+  ResizeAppIcon,
+  WindowedIcon,
+} from '../../icons';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { Slot } from '@radix-ui/react-slot';
 import './DynamicApp.scss';
@@ -330,6 +336,7 @@ interface DynamicAppProps {
   name: string;
   trigger?: React.ReactNode;
   className?: string;
+  __exclusive_isNetworkInspector?: boolean;
   defaultView?: DynamicAppViewVariant;
   windowConfiguration: WindowConfiguration;
   fullscreenConfiguration?: FullscreenConfiguration;
@@ -376,15 +383,22 @@ function DynamicHeader(props: DynamicHeaderProps) {
       ref={ref}
       fullWidth
       color="background-grey2"
-      className="min-h-[36px] h-[36px] px-4 cursor-move"
+      className={cn(
+        'min-h-[36px] h-[36px] pr-4  cursor-move',
+        view === 'fullscreen' ? 'pl-4' : 'pl-2',
+      )}
       align="center"
       borderBottom
       justify="spaceBetween"
     >
       <DialogTitle>
-        <Typography bold variant="body3">
-          {title}
-        </Typography>
+        <HStack gap="small" align="center">
+          {view !== 'fullscreen' && <DragIndicatorIcon color="muted" />}
+
+          <Typography bold variant="body3">
+            {title}
+          </Typography>
+        </HStack>
       </DialogTitle>
       <HStack gap>
         {!forceMobileView && (
@@ -427,6 +441,7 @@ export function DynamicApp(props: DynamicAppProps) {
     fullscreenConfiguration = {},
     children,
     className,
+    __exclusive_isNetworkInspector,
     name,
     isOpen: parentIsOpen,
     onOpenChange: parentOnOpenChange,
@@ -443,8 +458,6 @@ export function DynamicApp(props: DynamicAppProps) {
     }
     return localIsOpen;
   }, [parentIsOpen, localIsOpen]);
-
-
 
   const onOpenChange = useMemo(() => {
     if (parentOnOpenChange) {
@@ -499,8 +512,14 @@ export function DynamicApp(props: DynamicAppProps) {
       return undefined;
     }
 
+    let zIndex = focusedAppId === id ? 11 : 10;
+
+    if (__exclusive_isNetworkInspector) {
+      zIndex = 12;
+    }
+
     return {
-      zIndex: focusedAppId === id ? 11 : 10,
+      zIndex: zIndex,
       top: `${top}px`,
       left: `${left}px`,
       width: `${width}px`,
@@ -512,6 +531,7 @@ export function DynamicApp(props: DynamicAppProps) {
     focusedAppId,
     height,
     isWindowed,
+    __exclusive_isNetworkInspector,
     left,
     id,
     top,
@@ -602,7 +622,6 @@ export function DynamicApp(props: DynamicAppProps) {
     };
   }, [initializeWindowedMode, isWindowed]);
 
-
   return (
     <DialogRoot modal={false} open={isOpen} onOpenChange={onOpenChange}>
       <DialogContext.Provider
@@ -616,8 +635,9 @@ export function DynamicApp(props: DynamicAppProps) {
         <DialogPortal>
           <div
             className={cn(
+              className,
               !isFullscreen ? 'pointer-events-none opacity-0' : ' ',
-              'fixed inset-0 z-miniappShadow bg-black/30  transition-opacity data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+              'fixed inset-0 z-miniappShadow bg-black/30   transition-opacity data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             )}
           />
           <DialogPrimitive.Content
@@ -626,9 +646,7 @@ export function DynamicApp(props: DynamicAppProps) {
               initializeWindowedMode?.();
             }}
             onInteractOutside={(e) => {
-
               e.preventDefault();
-
             }}
           >
             <div id="dynamicapp-dropdown-content" className="z-dropdown" />
@@ -661,10 +679,18 @@ export function DynamicApp(props: DynamicAppProps) {
                 ref={heightResizeRef}
                 className="h-2 w-full cursor-row-resize  z-10 absolute bottom-0 left-0"
               />
-              <div
-                ref={bottomRightCornerResizeRef}
-                className="w-2 h-2 cursor-nwse-resize z-10  absolute right-0 bottom-0"
-              />
+              {!isFullscreen && (
+                <div
+                  style={{
+                    bottom: 10,
+                    right: 3,
+                  }}
+                  ref={bottomRightCornerResizeRef}
+                  className="w-2 h-2 cursor-nwse-resize z-10 dynamic-app-resize  absolute right-0 bottom-0"
+                >
+                  <ResizeAppIcon size="xsmall" color="muted" />
+                </div>
+              )}
             </div>
           </DialogPrimitive.Content>
         </DialogPortal>
