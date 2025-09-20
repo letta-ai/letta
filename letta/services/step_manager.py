@@ -433,6 +433,7 @@ class StepManager:
         project_id: Optional[str] = None,
         template_id: Optional[str] = None,
         base_template_id: Optional[str] = None,
+        allow_partial: Optional[bool] = False,
     ) -> PydanticStepMetrics:
         """Record performance metrics for a step.
 
@@ -460,6 +461,13 @@ class StepManager:
                 raise NoResultFound(f"Step with id {step_id} does not exist")
             if step.organization_id != actor.organization_id:
                 raise Exception("Unauthorized")
+
+            if allow_partial:
+                try:
+                    metrics = await StepMetricsModel.read_async(db_session=session, identifier=step_id, actor=actor)
+                    return metrics.to_pydantic()
+                except NoResultFound:
+                    pass
 
             metrics_data = {
                 "id": step_id,
