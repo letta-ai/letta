@@ -197,6 +197,7 @@ class TemporalAgentWorkflow:
 
         approval_request, approval_response = _maybe_get_approval_messages(messages)
 
+        # TODO: Need to check approval functionality
         if approval_request and approval_response:
             tool_call = approval_request.tool_calls[0]
             reasoning_content = approval_request.content
