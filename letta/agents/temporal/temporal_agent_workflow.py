@@ -72,6 +72,7 @@ with workflow.unsafe.imports_passed_through():
         RefreshContextResult,
         SummarizeParams,
         UpdateMessageIdsParams,
+        UpdateMessageIdsResult,
         UpdateRunParams,
         WorkflowInputParams,
     )
@@ -190,6 +191,9 @@ class TemporalAgentWorkflow:
         reasoning_content = None
         step_id = None
 
+        # Track step start time using workflow.now() for deterministic time
+        step_start_time = workflow.now()
+
         last_function_response = _load_last_function_response(messages)
         allowed_tools = await self._get_valid_tools(
             agent_state=agent_state, tool_rules_solver=tool_rules_solver, last_function_response=last_function_response
@@ -252,6 +256,9 @@ class TemporalAgentWorkflow:
                         schedule_to_close_timeout=LLM_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
                         retry_policy=LLM_ACTIVITY_RETRY_POLICY,
                     )
+
+                    # Capture LLM timing from the result
+                    llm_request_ns = call_result.llm_request_ns
 
                     # If successful, break out of summarization retry loop
                     break
@@ -338,7 +345,8 @@ class TemporalAgentWorkflow:
                 is_final_step=(remaining_turns == 0),
                 usage=usage,
                 run_id=run_id,
-                # TODO: skipping these args for now: agent_step_span, step_metrics
+                step_start_time=step_start_time,
+                llm_request_ns=llm_request_ns,
             )
 
             if recent_last_function_response:
@@ -403,6 +411,8 @@ class TemporalAgentWorkflow:
         is_final_step: bool = False,
         usage: UsageStatistics | None = None,
         run_id: str | None = None,
+        step_start_time: float | None = None,
+        llm_request_ns: int | None = None,
     ) -> tuple[list[Message], bool, LettaStopReason | None, str | None]:
         """
         Handle the AI response by executing the tool call, creating messages,
@@ -464,6 +474,7 @@ class TemporalAgentWorkflow:
             return messages_to_persist, continue_stepping, stop_reason, None
 
         # Execute tool if tool rules allow
+        tool_execution_ns = None
         tool_rule_violated = tool_call_name not in valid_tool_names and not is_approval
         if tool_rule_violated:
             tool_result = _build_rule_violation_result(tool_call_name, valid_tool_names, tool_rules_solver)
@@ -480,6 +491,9 @@ class TemporalAgentWorkflow:
                 start_to_close_timeout=TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
                 schedule_to_close_timeout=TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
             )
+
+            # Capture tool execution timing
+            tool_execution_ns = execution.execution_time_ns
 
             # Deserialize any serialized exceptions for post processing
             if is_serialized_exception(execution.tool_execution_result.func_return):
@@ -558,7 +572,8 @@ class TemporalAgentWorkflow:
         )
 
         # Log step
-        persisted_step_result = await workflow.execute_activity(
+        step_ns = int((workflow.now() - step_start_time).total_seconds() * 1e9)
+        await workflow.execute_activity(
             create_step,
             CreateStepParams(
                 agent_state=agent_state,
@@ -567,6 +582,10 @@ class TemporalAgentWorkflow:
                 run_id=run_id,
                 step_id=step_id,
                 usage=usage,
+                step_ns=step_ns,
+                llm_request_ns=llm_request_ns,
+                tool_execution_ns=tool_execution_ns,
+                stop_reason=stop_reason.value if stop_reason else None,
             ),
             start_to_close_timeout=CREATE_STEP_ACTIVITY_START_TO_CLOSE_TIMEOUT,
             schedule_to_close_timeout=CREATE_STEP_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,

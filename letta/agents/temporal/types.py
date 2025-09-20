@@ -118,6 +118,8 @@ class LLMCallResult:
     - assistant_message_id: Optional precomputed assistant message id (if adapter sets)
     - usage: Provider usage statistics for this call
     - request_finish_ns: Provider request finish time (ns) for metrics, if available
+    - llm_request_start_ns: Start time of LLM request in nanoseconds
+    - llm_request_ns: Duration of LLM request in nanoseconds
     """
 
     tool_call: Optional[ToolCall]
@@ -125,6 +127,8 @@ class LLMCallResult:
     assistant_message_id: Optional[str]
     usage: UsageStatistics
     request_finish_ns: Optional[int]
+    llm_request_start_ns: Optional[int] = None
+    llm_request_ns: Optional[int] = None
 
 
 @dataclass
@@ -184,6 +188,10 @@ class CreateStepParams:
     run_id: str
     step_id: Optional[str]
     usage: UsageStatistics
+    step_ns: Optional[int] = None
+    llm_request_ns: Optional[int] = None
+    tool_execution_ns: Optional[int] = None
+    stop_reason: Optional[str] = None
 
 
 @dataclass
