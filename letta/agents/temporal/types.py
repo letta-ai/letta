@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from letta.helpers import ToolRulesSolver
 from letta.schemas.agent import AgentState
+from letta.schemas.enums import JobStatus
 from letta.schemas.letta_message import LettaMessageUnion, MessageType
 from letta.schemas.letta_message_content import (
     OmittedReasoningContent,
@@ -237,6 +238,7 @@ class UpdateRunParams:
 
     run_id: str
     actor: User
+    job_status: JobStatus
     stop_reason: LettaStopReason | None
     persisted_messages: List[Message]
 
