@@ -25,6 +25,7 @@ from letta.schemas.step import Step as PydanticStep
 from letta.schemas.usage import LettaUsageStatistics
 from letta.schemas.user import User as PydanticUser
 from letta.server.db import db_registry
+from letta.services.helpers.agent_manager_helper import validate_agent_exists_async
 from letta.utils import enforce_types
 
 logger = get_logger(__name__)
@@ -47,6 +48,9 @@ class JobManager:
 
             # Get agent_id if present
             agent_id = getattr(pydantic_job, "agent_id", None)
+
+            # Verify agent exists before creating the job
+            await validate_agent_exists_async(session, agent_id, actor)
 
             job_data = pydantic_job.model_dump(to_orm=True)
             # Remove agent_id from job_data as it's not a field in the Job ORM model
@@ -78,6 +82,9 @@ class JobManager:
 
             # Get agent_id if present
             agent_id = getattr(pydantic_job, "agent_id", None)
+
+            # Verify agent exists before creating the job
+            await validate_agent_exists_async(session, agent_id, actor)
 
             job_data = pydantic_job.model_dump(to_orm=True)
             # Remove agent_id from job_data as it's not a field in the Job ORM model
