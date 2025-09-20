@@ -171,6 +171,43 @@ export async function getSingleFlag<SingleFlag extends Flag>(
   );
 }
 
+
+export async function getSingleFlagForAgent<SingleFlag extends Flag>(
+  flag: SingleFlag,
+  agentId?: string,
+): Promise<FlagValue<SingleFlag> | undefined> {
+  if (!environment.LAUNCH_DARKLY_SDK_KEY) {
+    return undefined;
+  }
+
+  const ldClient = await getLaunchDarklyClient();
+
+  if (!ldClient) {
+    return undefined;
+  }
+
+  if (!agentId) {
+    return ldClient.variation(
+      flag,
+      {
+        key: 'default',
+        anonymous: true,
+      },
+      false,
+    );
+  }
+
+  return ldClient.variation(
+    flag,
+    {
+      key: agentId,
+      kind: 'agent',
+    },
+    false,
+  );
+}
+
+
 export async function getDefaultFlags(): Promise<Partial<FlagMap>> {
   try {
     const ldClient = await getLaunchDarklyClient();
