@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { getIsCreateMessageAsyncRoute } from '../../utils/getIsCreateMessageRoute'
-import { getSingleFlag } from '@letta-cloud/service-feature-flags';
+import { getAgentIdFromMessageRoute, getIsCreateMessageAsyncRoute } from '../../utils/getIsCreateMessageRoute'
+import { getSingleFlag, getSingleFlagForAgent } from '@letta-cloud/service-feature-flags';
 
 
 
@@ -21,9 +21,17 @@ export async function messageAsyncMiddleware(
     return;
   }
 
-  const flag = await getSingleFlag('USE_TEMPORAL_MESSAGE_ASYNC', req.actor.cloudOrganizationId);
+  const agentId = getAgentIdFromMessageRoute(req.path);
 
-  if (flag) {
+  if (!agentId) {
+    next();
+    return;
+  }
+
+  const orgFlag = await getSingleFlag('USE_TEMPORAL_MESSAGE_ASYNC', req.actor.cloudOrganizationId);
+  const agentFlag = await getSingleFlagForAgent('USE_TEMPORAL_MESSAGE_ASYNC', agentId);
+
+  if (orgFlag || agentFlag) {
     req.headers['X-Experimental-Message-Async'] = 'true';
   }
 
