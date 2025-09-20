@@ -21,6 +21,8 @@ from letta.agents.temporal.constants import (
     SUMMARIZE_ACTIVITY_START_TO_CLOSE_TIMEOUT,
     TOOL_EXECUTION_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
     TOOL_EXECUTION_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+    UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+    UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
 )
 from letta.helpers import ToolRulesSolver
 from letta.helpers.tool_execution_helper import enable_strict_mode
@@ -53,12 +55,11 @@ with workflow.unsafe.imports_passed_through():
         refresh_context_and_system_message,
         summarize_conversation_history,
         update_message_ids,
+        update_run,
     )
     from letta.agents.temporal.types import (
         CreateMessagesParams,
-        CreateMessagesResult,
         CreateStepParams,
-        CreateStepResult,
         ExecuteToolParams,
         ExecuteToolResult,
         FinalResult,
@@ -70,7 +71,7 @@ with workflow.unsafe.imports_passed_through():
         RefreshContextResult,
         SummarizeParams,
         UpdateMessageIdsParams,
-        UpdateMessageIdsResult,
+        UpdateRunParams,
         WorkflowInputParams,
     )
     from letta.constants import NON_USER_MSG_PREFIX
@@ -571,8 +572,17 @@ class TemporalAgentWorkflow:
             schedule_to_close_timeout=CREATE_MESSAGES_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
         )
 
-        # TODO: save messages to job? e.g. add_messages_to_job_async
-
+        await workflow.execute_activity(
+            update_run,
+            UpdateRunParams(
+                run_id=run_id,
+                actor=actor,
+                stop_reason=stop_reason,
+                persisted_messages=persisted_messages_result.messages,
+            ),
+            start_to_close_timeout=UPDATE_RUN_ACTIVITY_START_TO_CLOSE_TIMEOUT,
+            schedule_to_close_timeout=UPDATE_RUN_ACTIVITY_SCHEDULE_TO_CLOSE_TIMEOUT,
+        )
         return persisted_messages_result.messages, continue_stepping, stop_reason, last_function_response
 
     async def _get_valid_tools(self, agent_state: AgentState, tool_rules_solver: ToolRulesSolver, last_function_response: str):
