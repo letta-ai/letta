@@ -5845,6 +5845,248 @@ def test_message_listing_text_search(server: SyncServer, hello_world_message_fix
     assert len(search_results) == 0
 
 
+@pytest.mark.asyncio
+async def test_create_many_messages_async_basic(server: SyncServer, sarah_agent, default_user):
+    """Test basic batch creation of messages"""
+    message_manager = server.message_manager
+
+    messages = []
+    for i in range(5):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Test message {i}")],
+            name=None,
+            tool_calls=None,
+            tool_call_id=None,
+        )
+        messages.append(msg)
+
+    created_messages = await message_manager.create_many_messages_async(pydantic_msgs=messages, actor=default_user)
+
+    assert len(created_messages) == 5
+    for i, msg in enumerate(created_messages):
+        assert msg.id is not None
+        assert msg.content[0].text == f"Test message {i}"
+        assert msg.agent_id == sarah_agent.id
+
+
+@pytest.mark.asyncio
+async def test_create_many_messages_async_allow_partial_false(server: SyncServer, sarah_agent, default_user):
+    """Test that allow_partial=False (default) fails on duplicate IDs"""
+    message_manager = server.message_manager
+
+    initial_msg = PydanticMessage(
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Initial message")],
+    )
+
+    created = await message_manager.create_many_messages_async(pydantic_msgs=[initial_msg], actor=default_user)
+    assert len(created) == 1
+    created_msg = created[0]
+
+    duplicate_msg = PydanticMessage(
+        id=created_msg.id,
+        agent_id=sarah_agent.id,
+        role=MessageRole.user,
+        content=[TextContent(text="Duplicate message")],
+    )
+
+    with pytest.raises(UniqueConstraintViolationError):
+        await message_manager.create_many_messages_async(pydantic_msgs=[duplicate_msg], actor=default_user, allow_partial=False)
+
+
+@pytest.mark.asyncio
+async def test_create_many_messages_async_allow_partial_true_some_duplicates(server: SyncServer, sarah_agent, default_user):
+    """Test that allow_partial=True handles partial duplicates correctly"""
+    message_manager = server.message_manager
+
+    initial_messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Existing message {i}")],
+        )
+        initial_messages.append(msg)
+
+    created_initial = await message_manager.create_many_messages_async(pydantic_msgs=initial_messages, actor=default_user)
+    assert len(created_initial) == 3
+    existing_ids = [msg.id for msg in created_initial]
+
+    mixed_messages = []
+    for created_msg in created_initial:
+        duplicate_msg = PydanticMessage(
+            id=created_msg.id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=created_msg.content,
+        )
+        mixed_messages.append(duplicate_msg)
+    for i in range(3, 6):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"New message {i}")],
+        )
+        mixed_messages.append(msg)
+
+    result = await message_manager.create_many_messages_async(pydantic_msgs=mixed_messages, actor=default_user, allow_partial=True)
+
+    assert len(result) == 6
+
+    result_ids = {msg.id for msg in result}
+    for existing_id in existing_ids:
+        assert existing_id in result_ids
+
+
+@pytest.mark.asyncio
+async def test_create_many_messages_async_allow_partial_true_all_duplicates(server: SyncServer, sarah_agent, default_user):
+    """Test that allow_partial=True handles all duplicates correctly"""
+    message_manager = server.message_manager
+
+    initial_messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Message {i}")],
+        )
+        initial_messages.append(msg)
+
+    created_initial = await message_manager.create_many_messages_async(pydantic_msgs=initial_messages, actor=default_user)
+    assert len(created_initial) == 3
+
+    duplicate_messages = []
+    for created_msg in created_initial:
+        duplicate_msg = PydanticMessage(
+            id=created_msg.id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=created_msg.content,
+        )
+        duplicate_messages.append(duplicate_msg)
+
+    result = await message_manager.create_many_messages_async(pydantic_msgs=duplicate_messages, actor=default_user, allow_partial=True)
+
+    assert len(result) == 3
+    for i, msg in enumerate(result):
+        assert msg.id == created_initial[i].id
+        assert msg.content[0].text == f"Message {i}"
+
+
+@pytest.mark.asyncio
+async def test_create_many_messages_async_empty_list(server: SyncServer, default_user):
+    """Test that empty list returns empty list"""
+    message_manager = server.message_manager
+
+    result = await message_manager.create_many_messages_async(pydantic_msgs=[], actor=default_user)
+
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_check_existing_message_ids(server: SyncServer, sarah_agent, default_user):
+    """Test the check_existing_message_ids convenience function"""
+    message_manager = server.message_manager
+
+    messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Message {i}")],
+        )
+        messages.append(msg)
+
+    created_messages = await message_manager.create_many_messages_async(pydantic_msgs=messages, actor=default_user)
+    existing_ids = [msg.id for msg in created_messages]
+
+    non_existent_ids = [f"message-{uuid.uuid4().hex[:8]}" for _ in range(3)]
+    all_ids = existing_ids + non_existent_ids
+
+    existing = await message_manager.check_existing_message_ids(message_ids=all_ids, actor=default_user)
+
+    assert existing == set(existing_ids)
+    for non_existent_id in non_existent_ids:
+        assert non_existent_id not in existing
+
+
+@pytest.mark.asyncio
+async def test_filter_existing_messages(server: SyncServer, sarah_agent, default_user):
+    """Test the filter_existing_messages helper function"""
+    message_manager = server.message_manager
+
+    initial_messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Existing {i}")],
+        )
+        initial_messages.append(msg)
+
+    created_existing = await message_manager.create_many_messages_async(pydantic_msgs=initial_messages, actor=default_user)
+
+    existing_messages = []
+    for created_msg in created_existing:
+        msg = PydanticMessage(
+            id=created_msg.id,
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=created_msg.content,
+        )
+        existing_messages.append(msg)
+
+    new_messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"New {i}")],
+        )
+        new_messages.append(msg)
+
+    all_messages = existing_messages + new_messages
+
+    new_filtered, existing_filtered = await message_manager.filter_existing_messages(messages=all_messages, actor=default_user)
+
+    assert len(new_filtered) == 3
+    assert len(existing_filtered) == 3
+
+    existing_filtered_ids = {msg.id for msg in existing_filtered}
+    for created_msg in created_existing:
+        assert created_msg.id in existing_filtered_ids
+
+    for msg in new_filtered:
+        assert msg.id not in existing_filtered_ids
+
+
+@pytest.mark.asyncio
+async def test_create_many_messages_async_with_turbopuffer(server: SyncServer, sarah_agent, default_user):
+    """Test batch creation with turbopuffer embedding (if enabled)"""
+    message_manager = server.message_manager
+
+    messages = []
+    for i in range(3):
+        msg = PydanticMessage(
+            agent_id=sarah_agent.id,
+            role=MessageRole.user,
+            content=[TextContent(text=f"Important information about topic {i}")],
+        )
+        messages.append(msg)
+
+    created_messages = await message_manager.create_many_messages_async(
+        pydantic_msgs=messages, actor=default_user, strict_mode=True, project_id="test_project", template_id="test_template"
+    )
+
+    assert len(created_messages) == 3
+    for msg in created_messages:
+        assert msg.id is not None
+        assert msg.agent_id == sarah_agent.id
+
+
 # ======================================================================================================================
 # Block Manager Tests - Basic
 # ======================================================================================================================
