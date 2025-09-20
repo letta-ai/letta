@@ -20,6 +20,7 @@ async def create_messages(params: CreateMessagesParams) -> CreateMessagesResult:
         actor=params.actor,
         project_id=params.project_id,
         template_id=params.template_id,
+        allow_partial=True,  # always allow partial to handle retries gracefully
     )
 
     return CreateMessagesResult(messages=persisted_messages)
