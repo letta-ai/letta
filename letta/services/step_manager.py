@@ -151,14 +151,6 @@ class StepManager:
         error_data: Optional[Dict] = None,
         allow_partial: Optional[bool] = False,
     ) -> PydanticStep:
-        if allow_partial:
-            try:
-                new_step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
-            except NoResultFound:
-                new_step = None
-            if new_step:
-                return new_step.to_pydantic()
-
         step_data = {
             "origin": None,
             "organization_id": actor.organization_id,
@@ -185,7 +177,15 @@ class StepManager:
             step_data["id"] = step_id
         if stop_reason:
             step_data["stop_reason"] = stop_reason.stop_reason
+
         async with db_registry.async_session() as session:
+            if allow_partial:
+                try:
+                    new_step = await StepModel.read_async(db_session=session, identifier=step_id, actor=actor)
+                    return new_step.to_pydantic()
+                except NoResultFound:
+                    pass
+
             new_step = StepModel(**step_data)
             await new_step.create_async(session, no_commit=True, no_refresh=True)
             pydantic_step = new_step.to_pydantic()
