@@ -18,7 +18,7 @@ async def update_run(params: UpdateRunParams) -> None:
         job_id=params.run_id,
         new_status=JobStatus.completed,
         actor=params.actor,
-        stop_reason=params.stop_reason.stop_reason if params.stop_reason else StopReasonType.error,
+        stop_reason=params.stop_reason.stop_reason if params.stop_reason else StopReasonType.end_turn,
     )
 
     # Add messages to job
