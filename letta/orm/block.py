@@ -30,6 +30,7 @@ class Block(OrganizationMixin, SqlalchemyBase, ProjectMixin, TemplateEntityMixin
         Index("ix_block_is_template", "is_template"),
         Index("ix_block_hidden", "hidden"),
         Index("ix_block_org_project_template", "organization_id", "project_id", "is_template"),
+        Index("ix_block_organization_id_deployment_id", "organization_id", "deployment_id"),
     )
 
     template_name: Mapped[Optional[str]] = mapped_column(
