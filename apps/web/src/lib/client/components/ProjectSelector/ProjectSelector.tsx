@@ -117,7 +117,7 @@ export function ProjectSelector(props: ProjectSelectorProps) {
             size="small"
             fullWidth
             preIcon={<SettingsApplicationsIcon />}
-            href="/projects"
+            href="/settings/organization/projects"
             label={t('seeMore')}
           />
         )}

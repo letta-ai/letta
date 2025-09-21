@@ -392,40 +392,25 @@ function NavigationFooter() {
 function SettingsMenu() {
   const t = useTranslations('DashboardNavigation.SettingsMenu');
   const baseUrl = '/settings';
-  const lastActiveProject = useLastActiveProject();
-  const developmentServer = useCurrentDevelopmentServerConfig();
 
   return (
     <NavigationSection>
-      <div
-        className={cn(
-          lastActiveProject || developmentServer ? 'h-[36px]' : 'h-0',
-          'transition-all duration-500 overflow-hidden',
-        )}
-      >
-        {lastActiveProject && (
-          <DashboardNavigationButton
-            href={`/projects/${lastActiveProject.slug}`}
-            id="project-dashboard"
-            label={lastActiveProject.name}
-            icon={<SpaceDashboardIcon />}
-          />
-        )}
-      </div>
-
-      <Divider />
       <SectionHeader title={t('user')} />
       <DashboardNavigationButton
         href={`${baseUrl}/profile`}
         id="settings-profile"
         label={t('profile')}
       />
-
       <SectionHeader title={t('organization')} />
       <DashboardNavigationButton
         href={`${baseUrl}/organization/account`}
         id="settings-organization"
         label={t('account')}
+      />
+      <DashboardNavigationButton
+        href={`${baseUrl}/organization/projects`}
+        id="settings-projects"
+        label={t('projects')}
       />
       <DashboardNavigationButton
         href={`${baseUrl}/organization/members`}
