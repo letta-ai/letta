@@ -191,7 +191,8 @@ describe('credit usage', () => {
       timeout: 50000,
     }).should('include.text', '0.16', { timeout: 50000 });
 
-    cy.visit('/');
+    // Navigate to projects list explicitly
+    cy.visit('/projects');
 
     cy.get('h1').contains(/Projects/);
 
@@ -258,6 +259,9 @@ describe('credit usage', () => {
     cy.location('pathname').should('eq', '/login');
 
     cy.googleLogin();
+
+    // Navigate to projects list explicitly
+    cy.visit('/projects');
 
     cy.get('h1').contains(/Projects/);
 
