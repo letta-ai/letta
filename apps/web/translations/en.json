@@ -52,6 +52,7 @@
       "organization": "Organization",
       "allProjects": "All projects",
       "account": "Account",
+      "projects": "Projects",
       "general": "General",
       "models": "Models",
       "audit-logs": "Usage History",
