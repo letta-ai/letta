@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {
   Breadcrumb,
   BetaTag,
+  Button,
+  ChevronDownIcon,
 } from '@letta-cloud/ui-component-library';
 import {
   Frame,
@@ -15,6 +17,7 @@ import { useCurrentProject } from '../../../../hooks/useCurrentProject/useCurren
 import { NavigationOverlay } from '../NavigationOverlay/NavigationOverlay';
 import { DashboardHeaderNavigation } from '../DashboardHeaderNavigation/DashboardHeaderNavigation';
 import { ProfilePopover } from '../ProfilePopover/ProfilePopover';
+import { ProjectSelector } from '../../../ProjectSelector/ProjectSelector';
 
 export function DashboardHeader() {
   const currentProject = useCurrentProject();
@@ -70,7 +73,18 @@ export function DashboardHeader() {
                       ? [
                           {
                             label: currentProject.name,
-                            href: currentProject.path,
+                            contentOverride: (
+                              <ProjectSelector
+                                trigger={
+                                  <Button
+                                    size="xsmall"
+                                    color="tertiary"
+                                    postIcon={<ChevronDownIcon />}
+                                    label={currentProject.name}
+                                  />
+                                }
+                              />
+                            ),
                           },
                         ]
                       : []),

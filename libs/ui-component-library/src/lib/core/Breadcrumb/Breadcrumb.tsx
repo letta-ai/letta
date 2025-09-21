@@ -83,7 +83,7 @@ function BreadcrumbSeparator({
     <li
       role="presentation"
       aria-hidden="true"
-      className={cn('text-sm text-text-lighter', className)}
+      className={cn('text-sm text-text-lighter px-1', className)}
       {...props}
     >
       {children ?? '/'}

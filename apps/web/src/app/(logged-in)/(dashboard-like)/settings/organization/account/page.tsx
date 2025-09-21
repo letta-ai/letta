@@ -114,9 +114,6 @@ function EditOrganizationSettings(props: EditOrganizationSettingsProps) {
             size="large"
             autoComplete="false"
             disabled
-            description={t(
-              'EditOrganizationSettings.organizationId.description',
-            )}
             label={t('EditOrganizationSettings.organizationId.label')}
             value={organizationId}
           />

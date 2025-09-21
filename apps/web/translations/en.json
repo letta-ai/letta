@@ -68,7 +68,7 @@
       "apiKeys": "API keys",
       "mcp": "MCP servers",
       "models": "Models",
-      "all": "Global"
+      "all": "Org"
     },
     "ToolsNavigationItems": {
       "tools": "Tools",
@@ -1462,7 +1462,7 @@
   "components/ProjectSelector": {
     "selectAProject": "Select a Project",
     "noProject": "No project",
-    "seeMore": "See all projects",
+    "seeMore": "Manage projects",
     "projects": "Projects",
     "search": {
       "placeholder": "Search projects",

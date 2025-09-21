@@ -3,7 +3,6 @@ import {
   FolderIcon,
   HR,
   KeyIcon,
-  ProjectsIcon,
   ToolsIcon,
   Typography,
   VStack,
@@ -113,14 +112,14 @@ function ProjectSpecificNavigation() {
     return null;
   }
 
-  const { slug, name } = lastActiveProject;
+  const { slug } = lastActiveProject;
 
   const baseUrl = `/projects/${slug}`;
 
   return (
     <NavigationSection>
       <Divider />
-      <SectionHeader title={name} />
+      <SectionHeader title="Project" />
       <DashboardNavigationButton
         href={`${baseUrl}`}
         id="project-dashboard"
@@ -398,12 +397,6 @@ function SettingsMenu() {
 
   return (
     <NavigationSection>
-      <DashboardNavigationButton
-        href="/projects"
-        id="projects"
-        label={t('allProjects')}
-        icon={<ProjectsIcon />}
-      />
       <div
         className={cn(
           lastActiveProject || developmentServer ? 'h-[36px]' : 'h-0',
@@ -474,7 +467,6 @@ interface NavigationMenuProps {
 
 export function NavigationMenu(props: NavigationMenuProps) {
   const { isMobile } = props;
-  const t = useTranslations('DashboardNavigation');
   const lastActiveProject = useLastActiveProject();
   const developmentServer = useCurrentDevelopmentServerConfig();
 
@@ -505,12 +497,6 @@ export function NavigationMenu(props: NavigationMenuProps) {
         <SettingsMenu />
       </div>
       <VStack gap={false}>
-        <DashboardNavigationButton
-          href={`/projects?view-mode=${developmentServerExists ? 'selfHosted' : 'cloud'}`}
-          id="projects"
-          label={t('allProjects')}
-          icon={<ProjectsIcon />}
-        />
         <div
           style={{
             height: lastActiveProject ? '290px' : '0',
