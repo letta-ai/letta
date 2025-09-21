@@ -1,6 +1,6 @@
 import { useTranslations } from '@letta-cloud/translations';
 import { useCurrentUser } from '$web/client/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 type TimeOfDayPeriod = 'lateNight' | 'earlyMorning' | 'morning' | 'afternoon' | 'evening';
 
@@ -16,6 +16,7 @@ export function useWelcomeText() {
   const t = useTranslations('client/hooks/useWelcomeText');
   const user = useCurrentUser();
   const [welcomeText, setWelcomeText] = useState<string | null>(null);
+  const messageNumberRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -42,8 +43,11 @@ export function useWelcomeText() {
       messageCount = 1;
     }
 
-    // Pick a random message number
-    const messageNumber = Math.floor(Math.random() * messageCount) + 1;
+    // Pick a random message number only if we haven't already
+    if (messageNumberRef.current === null) {
+      messageNumberRef.current = Math.floor(Math.random() * messageCount) + 1;
+    }
+    const messageNumber = messageNumberRef.current;
 
     // Get the message
     try {

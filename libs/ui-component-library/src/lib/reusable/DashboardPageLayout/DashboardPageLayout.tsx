@@ -13,16 +13,18 @@ import { HiddenOnMobile } from '../../framing/HiddenOnMobile/HiddenOnMobile';
 import { VisibleOnMobile } from '../../framing/VisibleOnMobile/VisibleOnMobile';
 interface TitleProps {
   title?: BreadcrumbProps['items'] | React.ReactNode | string;
+  className?: string;
 }
 
-function Title({ title }: TitleProps) {
+function Title({ title, className }: TitleProps) {
   if (!title) {
     return null;
   }
 
   if (typeof title === 'string') {
     return (
-      <Typography align="left" variant="heading3" overrideEl="h1">
+      <Typography align="left" variant="heading3" overrideEl="h1" className={className}
+      >
         {title}
       </Typography>
     );
@@ -43,6 +45,13 @@ interface DashboardPageLayoutProps {
   fullHeight?: boolean;
   headerBottomPadding?: 'default' | 'large';
   title?: TitleProps['title'];
+  /**
+   * Additional classes to apply to the default title Typography when `title` is a string.
+   * Ignored if `title` is a React node or breadcrumb items.
+   */
+  titleClassName?: string;
+  /** Additional classes for the built-in subtitle Typography wrapper. */
+  subtitleClassName?: string;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
@@ -56,8 +65,10 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
   const {
     icon,
     title,
+    titleClassName,
     returnButton,
     subtitle,
+    subtitleClassName,
     headerBottomPadding = 'default',
     fullHeight,
     encapsulatedFullHeight,
@@ -107,9 +118,9 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
               justify="spaceBetween"
               fullWidth
             >
-              <HStack align="center" paddingLeft="large">
+              <HStack align="center">
                 {icon}
-                <Title title={title} />
+                <Title title={title} className={titleClassName} />
               </HStack>
               <HiddenOnMobile>
                 <HStack align="center">{actions}</HStack>
@@ -117,8 +128,10 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
             </HStack>
           </VStack>
           {subtitle && (
-            <VStack width="largeContained" paddingLeft="large">
-              <Typography variant="heading6">{subtitle}</Typography>
+            <VStack width="largeContained">
+              <Typography variant="heading6" className={subtitleClassName}>
+                {subtitle}
+              </Typography>
             </VStack>
           )}
           <VisibleOnMobile>
