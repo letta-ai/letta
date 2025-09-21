@@ -107,7 +107,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
               justify="spaceBetween"
               fullWidth
             >
-              <HStack align="center">
+              <HStack align="center" paddingLeft="large">
                 {icon}
                 <Title title={title} />
               </HStack>
@@ -117,7 +117,7 @@ export function DashboardPageLayout(props: DashboardPageLayoutProps) {
             </HStack>
           </VStack>
           {subtitle && (
-            <VStack width="largeContained">
+            <VStack width="largeContained" paddingLeft="large">
               <Typography variant="heading6">{subtitle}</Typography>
             </VStack>
           )}

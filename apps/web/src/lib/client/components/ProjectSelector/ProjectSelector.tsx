@@ -5,6 +5,7 @@ import {
   Button,
   Popover,
   ProgressBar,
+  SettingsApplicationsIcon,
   Typography,
   VStack,
 } from '@letta-cloud/ui-component-library';
@@ -38,6 +39,7 @@ function ProjectItem(props: ProjectItemProps) {
       fullWidth
       href={href}
       label={name}
+      _use_rarely_className="text-text-default"
     />
   );
 }
@@ -88,7 +90,7 @@ export function ProjectSelector(props: ProjectSelectorProps) {
       trigger={trigger}
     >
       <VStack padding="small">
-        <Typography bold variant="body2">
+        <Typography variant="body4" uppercase color="muted">
           {t('projects')}
         </Typography>
         <ProjectItem
@@ -108,11 +110,13 @@ export function ProjectSelector(props: ProjectSelectorProps) {
             slug={project.slug}
           />
         ))}
-        {!isLoading && projectsList.length >= LIMIT - 1 && (
+        {!isLoading && (
           <Button
-            color="secondary"
+            align="left"
+            color="tertiary"
             size="small"
             fullWidth
+            preIcon={<SettingsApplicationsIcon />}
             href="/projects"
             label={t('seeMore')}
           />
