@@ -1182,7 +1182,9 @@ function ProjectPage() {
     <DashboardPageLayout
       headerBottomPadding="large"
       title={welcomeText || ''}
+      titleClassName="pl-4"
       subtitle={t('subtitle', { name })}
+      subtitleClassName="pl-4"
     >
       <DashboardPageSection>
         <VStack gap="large" fullWidth fullHeight>
