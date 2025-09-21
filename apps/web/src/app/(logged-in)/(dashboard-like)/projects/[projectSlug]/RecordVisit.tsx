@@ -1,12 +1,21 @@
 'use client';
-
 import { useEffect } from 'react';
 import { recordProjectVisit } from './actions';
+import { useCurrentUser } from '$web/client/hooks';
+import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 
-export function RecordVisit({ organizationId, projectSlug }: { organizationId: string; projectSlug: string }) {
+export function RecordVisit() {
+  const user = useCurrentUser();
+  const { slug } = useCurrentProject();
+
+
   useEffect(() => {
-    recordProjectVisit(organizationId, projectSlug);
-  }, [organizationId, projectSlug]);
+    if (!user?.activeOrganizationId) {
+      return;
+    }
+
+    void recordProjectVisit(user.activeOrganizationId, slug);
+  }, [user?.activeOrganizationId, slug]);
 
   return null;
 }
