@@ -9,6 +9,8 @@ import { getProjectByIdOrSlug } from '$web/web-api/router';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { getADEConfigConstants } from '@letta-cloud/utils-shared';
+import { getUserOrRedirect } from '$web/server/auth';
+import { RecordVisit } from './RecordVisit';
 
 interface ProjectPageWrapperProps {
   params: Promise<{
@@ -23,6 +25,7 @@ const { ADELayoutCookieName, ADELayoutQueryKey, deserializeADELayoutConfig } =
 async function ProjectPageLayout(props: ProjectPageWrapperProps) {
   const { projectSlug } = await props.params;
   const queryClient = new QueryClient();
+  const user = await getUserOrRedirect();
 
   const project = await getProjectByIdOrSlug({
     params: { projectId: projectSlug },
@@ -58,6 +61,9 @@ async function ProjectPageLayout(props: ProjectPageWrapperProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
+      {user?.activeOrganizationId && (
+        <RecordVisit organizationId={user.activeOrganizationId} projectSlug={projectSlug} />
+      )}
       {props.children}
     </HydrationBoundary>
   );

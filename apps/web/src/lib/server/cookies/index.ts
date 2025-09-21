@@ -47,6 +47,11 @@ const cookieConfiguration: Record<
     httpOnly: true,
     path: '/',
   },
+  [CookieNames.LAST_VISITED_PROJECT]: {
+    httpOnly: true,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+  },
 };
 
 export async function setCookie<CookieName extends CookieNames>(
