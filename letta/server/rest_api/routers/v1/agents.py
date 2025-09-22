@@ -1499,7 +1499,7 @@ async def cancel_agent_run(
                 settings.temporal_endpoint,
                 namespace=settings.temporal_namespace,
                 api_key=settings.temporal_api_key,
-                tls=True,  # This should be false for local runs
+                tls=settings.temporal_tls,  # This should be false for local runs
             )
             await client.cancel_workflow(run_id)
         success = await server.job_manager.safe_update_job_status_async(
