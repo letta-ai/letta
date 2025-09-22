@@ -4,7 +4,6 @@ import { useContext, useMemo } from 'react';
 import { OpenAPI } from '@letta-cloud/sdk-core';
 import { createContext, useEffect } from 'react';
 import { useResetAllLettaAgentsQueryKeys } from '@letta-cloud/sdk-core';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
 OpenAPI.BASE = '';
 OpenAPI.HEADERS = {
@@ -26,7 +25,7 @@ interface LettaAgentsAPIContextData {
 }
 
 const LettaAgentsAPIContext = createContext<LettaAgentsAPIContextData>({
-  baseUrl: CURRENT_RUNTIME === 'letta-desktop' ? 'http://localhost:8283' : '',
+  baseUrl: '',
 });
 
 export function useLettaAgentsAPI() {
@@ -40,10 +39,6 @@ export function LettaAgentsAPIWrapper({
 }: LettaAgentsAPIWrapperProps) {
   const { resetAllLettaAgentsQueryKeys } = useResetAllLettaAgentsQueryKeys();
   const baseUrl = useMemo(() => {
-    if (CURRENT_RUNTIME === 'letta-desktop') {
-      return 'http://localhost:8283';
-    }
-
     return _baseUrl;
   }, [_baseUrl]);
 

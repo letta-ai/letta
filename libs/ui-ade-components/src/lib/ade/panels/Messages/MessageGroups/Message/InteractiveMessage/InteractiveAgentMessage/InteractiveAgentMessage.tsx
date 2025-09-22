@@ -2,10 +2,10 @@
 import type { LettaMessageUnion } from '@letta-cloud/sdk-core';
 import React, { useCallback, useMemo } from 'react';
 import { HStack, Markdown, Typography, VStack } from '@letta-cloud/ui-component-library';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useTranslations } from '@letta-cloud/translations';
 import { EditMessageButton } from '../../EditMessageButton/EditMessageButton';
 import { parseMessageFromPartialJson } from '@letta-cloud/utils-client';
+import { getIsLocalPlatform } from '@letta-cloud/utils-shared';
 
 interface InteractiveAgentMessageProps { message: LettaMessageUnion }
 
@@ -16,7 +16,7 @@ export function InteractiveAgentMessage(props: InteractiveAgentMessageProps) {
 
   const agentIdWrapper = useCallback(
     (str: string) => {
-      if (CURRENT_RUNTIME === 'letta-desktop') {
+      if (getIsLocalPlatform()) {
         return str;
       }
 

@@ -17,6 +17,10 @@ declare global {
 }
 
 function getPlatformType() {
+  if (CURRENT_RUNTIME === 'letta-docker-enterprise') {
+    return 'letta-docker-enterprise';
+  }
+
   if (CURRENT_RUNTIME === 'letta-desktop') {
     return 'letta-desktop';
   }

@@ -21,6 +21,11 @@ export function useSharedAgents(blockId: string) {
         return;
       }
 
+      if (CURRENT_RUNTIME === 'letta-docker-enterprise') {
+        push(`/agents/${agentId}`);
+        return;
+      }
+
       if (projectSlug) {
         if (!isLocal) {
           window.open(

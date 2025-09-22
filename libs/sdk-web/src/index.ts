@@ -1,6 +1,6 @@
 import { contracts, queryClientKeys } from './lib/web-api-contracts';
 import { initTsrReactQuery } from '@ts-rest/react-query/v5';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
+import { getIsLocalPlatform } from '@letta-cloud/utils-shared';
 
 export * from './lib/hooks/useFeatureFlag/useFeatureFlag';
 export * from './lib/hooks/useSetOnboardingStep/useSetOnboardingStep';
@@ -17,7 +17,7 @@ function getExternalUrl() {
 }
 
 const baseUrl = (() => {
-  if (CURRENT_RUNTIME === 'letta-desktop') {
+  if (getIsLocalPlatform()) {
     return getExternalUrl();
   }
 

@@ -9,6 +9,7 @@ import {
 import type { Dispatch, SetStateAction } from 'react';
 import type { ToolManagerPaths } from '../../toolManagerRoutes';
 import { useParams, usePathname, useRouter } from 'next/navigation';
+import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 
 interface ToolManagerState {
   requireConfirmation: boolean;
@@ -130,6 +131,12 @@ export function useToolManagerState() {
 
           // mcp has its own route
           router.push(`${basePath}${path}`);
+          return;
+        }
+
+        if (CURRENT_RUNTIME === 'letta-docker-enterprise') {
+          window.location.reload();
+
           return;
         }
 
