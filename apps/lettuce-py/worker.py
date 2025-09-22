@@ -28,6 +28,7 @@ TEMPORAL_TASK_QUEUE = os.environ.get(
     "LETTA_TEMPORAL_TASK_QUEUE", "agent_loop_async_task_queue"
 )
 TEMPORAL_API_KEY = os.environ.get("LETTA_TEMPORAL_API_KEY", "your-api-key")
+TEMPORAL_TLS = os.environ.get("LETTA_TEMPORAL_TLS", "true").lower() == "true"
 
 
 async def main():
@@ -36,7 +37,7 @@ async def main():
         namespace=TEMPORAL_NAMESPACE,
         rpc_metadata={"temporal-namespace": TEMPORAL_NAMESPACE},
         api_key=TEMPORAL_API_KEY,
-        tls=True,  # This should be false for local runs
+        tls=TEMPORAL_TLS,  # This should be false for local runs
     )
 
     print("Initializing worker...")
