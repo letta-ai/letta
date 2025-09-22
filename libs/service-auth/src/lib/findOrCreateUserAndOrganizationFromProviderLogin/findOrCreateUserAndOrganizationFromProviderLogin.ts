@@ -179,7 +179,7 @@ async function createUserAndOrganization(
       imageUrl: userData.imageUrl,
       verifiedAt: userData.isVerified ? new Date() : null,
       email: userData.email,
-      submittedOnboardingAt: userData.skipOnboarding ? new Date() : null,
+      submittedOnboardingAt: new Date(),
       providerId: userData.uniqueId,
       signupMethod: userData.provider,
     })
