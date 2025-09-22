@@ -38,7 +38,7 @@ function Navigation() {
         size="small"
         label={t('Navigation.apiReference')}
         color="tertiary"
-        href="https://docs.letta.com/api-reference/agents/list"
+        href="https://docs.letta.com/api-reference"
         target="_blank"
       />
       <Button
@@ -154,7 +154,7 @@ export function AppHeader() {
             <Link className="contents " to="/">
               <Logo size="small" />
               <Typography variant="body2" bold>
-                Letta Docker - Enterprise
+                Letta Enterprise
               </Typography>
             </Link>
             <AgentNavigation />
