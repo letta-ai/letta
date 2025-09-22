@@ -6,21 +6,15 @@ import {
   BoxList,
   Button,
   ChevronRightIcon,
-  CopyButton,
   DashboardPageLayout,
   DashboardPageSection,
-  EyeClosedIcon,
-  EyeOpenIcon,
   HiddenOnMobile,
   HStack,
   LettaInvaderIcon,
   PlusIcon,
   ResponsesIcon,
   Skeleton,
-  StarIcon,
-  StarFilledIcon,
   TemplateIcon,
-  Tooltip,
   Typography,
   VisibleOnMobile,
   VStack,
@@ -29,10 +23,9 @@ import { Slot } from '@radix-ui/react-slot';
 import React, { useMemo, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
 import { useTranslations } from '@letta-cloud/translations';
-import { Tutorials } from '$web/client/components';
+import { Tutorials, CopyableValueRow } from '$web/client/components';
 import { useWelcomeText } from '$web/client/hooks/useWelcomeText/useWelcomeText';
 import { CreateNewTemplateDialog } from './_components/CreateNewTemplateDialog/CreateNewTemplateDialog';
 import { DeployAgentDialog } from './agents/DeployAgentDialog/DeployAgentDialog';
@@ -40,15 +33,11 @@ import { useUserHasPermission, useCurrentOrganization } from '$web/client/hooks'
 import { ApplicationServices } from '@letta-cloud/service-rbac';
 import { useAgentsServiceListAgents, useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
 import { useFormatters } from '@letta-cloud/utils-client';
-import { useCopyToClipboard } from '@letta-cloud/ui-component-library';
 import { cloudAPI, cloudQueryKeys, type cloudContracts, type PublicTemplateDetailsType } from '@letta-cloud/sdk-cloud-api';
 import type { ServerInferResponses } from '@ts-rest/core';
 import { useFeatureFlag } from '@letta-cloud/sdk-web';
 import type { AgentState } from '@letta-cloud/sdk-core';
-import {
-  Messages,
-  DeleteAgentDialog,
-} from '@letta-cloud/ui-ade-components';
+import { Messages, DeleteAgentDialog } from '@letta-cloud/ui-ade-components';
 import {
   CloseIcon,
   DotsVerticalIcon,
@@ -218,17 +207,12 @@ function DeployedAgentView(props: DeployedAgentViewProps) {
 const AgentCard = ({
   agent,
   slug,
-  onPreviewClick,
 }: {
   agent: AgentState;
   slug: string;
-  onPreviewClick: (agent: AgentState) => void;
 }) => {
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
-  const { formatDate } = useFormatters();
-  const { copyToClipboard } = useCopyToClipboard({
-    textToCopy: agent.id || '',
-  });
+  const { formatRelativeDate } = useFormatters();
   const { id: currentProjectId } = useCurrentProject();
 
   const { data: templateData } = cloudAPI.templates.listTemplates.useQuery({
@@ -248,15 +232,9 @@ const AgentCard = ({
 
   const templateName = templateData?.body.templates[0]?.name;
 
-  const handlePreviewClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onPreviewClick(agent);
-  }, [agent, onPreviewClick]);
-
   return (
     <VStack
-      className="bg-list-item-background border border-background-grey3-border min-h-[125px] hover:bg-background-grey2 transition-colors cursor-pointer"
+      className="bg-list-item-background border border-background-grey3-border min-h-[100px] hover:bg-background-grey3 transition-colors cursor-pointer"
       paddingX="large"
       paddingY="small"
       justify="spaceBetween"
@@ -264,11 +242,17 @@ const AgentCard = ({
     >
       <Link href={`/projects/${slug}/agents/${agent.id}`}>
         <VStack gap="small">
-          <Tooltip asChild content={t('goToAgent', { name: agent.name })}>
             <VStack gap="small">
-              <HStack gap="small" align="center">
+              <HStack gap="small" align="center" className="min-w-0">
                 <LettaInvaderIcon />
-                <Typography className="font-bold text-body">{agent.name}</Typography>
+                <Typography
+                  className="font-bold text-body"
+                  overflow="ellipsis"
+                  noWrap
+                  fullWidth
+                >
+                  {agent.name}
+                </Typography>
                 {agent.tags && agent.tags.length > 0 && (
                   <Badge
                     size="small"
@@ -281,56 +265,43 @@ const AgentCard = ({
               </HStack>
               <Typography className="text-sm" color="lighter" variant="body3">
                 {t('createdAt', {
-                  date: formatDate(agent.updated_at || ''),
+                  date: formatRelativeDate(agent.updated_at || ''),
                 })}
               </Typography>
             </VStack>
-          </Tooltip>
-          <HStack gap="small" align="center" className="min-w-0">
-            <ArrowCurveIcon size="xsmall" />
-            <TemplateIcon size="xsmall" />
-            {agent.template_id ? (
-              <Tooltip asChild content={t('goToTemplate', { templateName: templateName || agent.template_id })}>
-                <Link
-                  href={`/projects/${slug}/templates/${templateName || agent.template_id}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Typography
-                    className="text-xs"
-                    color="lighter"
-                    variant="body3"
-                    overflow="ellipsis"
-                    noWrap
-                    fullWidth
-                  >
-                    {templateName || agent.template_id}
-                  </Typography>
-                </Link>
-              </Tooltip>
-            ) : (
-              <Typography
-                className="text-xs"
-                color="lighter"
-                variant="body3"
-                overflow="ellipsis"
-                noWrap
-                fullWidth
+          {agent.template_id && (
+            <HStack gap="small" align="center" className="min-w-0">
+              <ArrowCurveIcon size="xsmall" />
+              <TemplateIcon size="xsmall" />
+              <Link
+                href={`/projects/${slug}/templates/${templateName || agent.template_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="min-w-0 flex-1"
               >
-                {t('starterKitTemplate')}
-              </Typography>
-            )}
-          </HStack>
+                <Typography
+                  className="text-xs"
+                  color="lighter"
+                  variant="body3"
+                  overflow="ellipsis"
+                  noWrap
+                  fullWidth
+                >
+                  {templateName || agent.template_id}
+                </Typography>
+              </Link>
+            </HStack>
+          )}
         </VStack>
       </Link>
       <HStack align="center" fullWidth gap="small">
-          <Button
+          {/* <Button
             color="secondary"
             label={t('preview')}
             size="small"
             preIcon={<EyeOpenIcon />}
             onClick={handlePreviewClick}
-          />
-          <HStack
+          /> */}
+          {/* <HStack
             align="center"
             color="background-grey2"
             border
@@ -351,8 +322,8 @@ const AgentCard = ({
             >
               {agent.id || ''}
             </Typography>
-          </HStack>
-        <div onClick={(e) => e.stopPropagation()}>
+          </HStack> */}
+        {/* <div onClick={(e) => e.stopPropagation()}>
           <CopyButton
             textToCopy={agent.id || ''}
             size="small"
@@ -360,7 +331,7 @@ const AgentCard = ({
             color="tertiary"
             iconColor="muted"
           />
-        </div>
+        </div> */}
       </HStack>
     </VStack>
   );
@@ -386,9 +357,7 @@ function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps)
     setSelectedAgent(undefined);
   }, []);
 
-  const handlePreviewClick = useCallback((agent: AgentState) => {
-    setSelectedAgent(agent);
-  }, []);
+  // Preview flow currently disabled on dashboard cards
 
   const EmptyState = () => (
     <VStack
@@ -469,7 +438,7 @@ function AgentGrid({ data, canCreateAgents, slug, useGridView }: AgentGridProps)
         ) : (
           <div className="grid grid-cols-1 gap-4 w-full">
             {agentsList.map((agent: AgentState) => (
-              <AgentCard key={agent.id} agent={agent} slug={slug} onPreviewClick={handlePreviewClick} />
+              <AgentCard key={agent.id} agent={agent} slug={slug} />
             ))}
           </div>
         )}
@@ -495,7 +464,7 @@ interface RecentAgentsBoxListProps {
 }
 
 function RecentAgentsBoxList({ data, canCreateAgents, slug }: RecentAgentsBoxListProps) {
-  const { formatDate } = useFormatters();
+  const { formatRelativeDate } = useFormatters();
   const t = useTranslations('projects/(projectSlug)/page/RecentAgentsSection');
 
   return (
@@ -519,7 +488,7 @@ function RecentAgentsBoxList({ data, canCreateAgents, slug }: RecentAgentsBoxLis
       items={(data || []).map((agent) => ({
         title: agent.name,
         description: t('createdAt', {
-          date: formatDate(agent.updated_at || ''),
+          date: formatRelativeDate(agent.updated_at || ''),
         }),
         action: (
           <Button
@@ -679,10 +648,8 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
 }) => {
   const router = useRouter();
   const t = useTranslations('projects/(projectSlug)/page');
-  const { formatDate } = useFormatters();
-  const { copyToClipboard } = useCopyToClipboard({
-    textToCopy: template.id || '',
-  });
+  const { formatRelativeDate } = useFormatters();
+  // Removed copy-to-clipboard for template ID on dashboard card
 
   const responsesUrl = useMemo(() => {
     const query = {
@@ -708,27 +675,63 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
     return `/projects/${slug}/responses?query=${encodeURIComponent(JSON.stringify(query))}`;
   }, [template.id, template.name, slug]);
 
+  const agentsUrl = useMemo(() => {
+    const query = {
+      root: {
+        combinator: 'AND',
+        items: [
+          {
+            field: 'templateName',
+            queryData: {
+              operator: {
+                label: 'equals',
+                value: 'eq',
+              },
+              value: {
+                label: template.name,
+                value: `${slug}/${template.name}`,
+              },
+            },
+          },
+        ],
+      },
+    };
+    return `/projects/${slug}/agents?query=${encodeURIComponent(JSON.stringify(query))}`;
+  }, [template.name, slug]);
+
   const handleResponsesClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     router.push(responsesUrl);
   }, [router, responsesUrl]);
 
+  const handleAgentsClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(agentsUrl);
+  }, [router, agentsUrl]);
+
   return (
     <VStack
-      className="bg-list-item-background border border-background-grey3-border min-h-[125px] hover:bg-background-grey2 transition-colors cursor-pointer"
+      className="bg-list-item-background border border-background-grey3-border min-h-[110px] hover:bg-background-grey3 transition-colors cursor-pointer"
       paddingX="large"
       paddingY="small"
       justify="spaceBetween"
       fullWidth
     >
-      <Tooltip asChild content={t('RecentTemplatesSection.goToTemplate', { templateName: template.name })}>
         <Link href={`/projects/${slug}/templates/${template.name}`}>
           <VStack gap="small">
             <HStack justify="spaceBetween" align="center" fullWidth>
-              <HStack gap="small" align="center">
+              <HStack gap="small" align="center" className="min-w-0">
                 <TemplateIcon />
-                <Typography className="font-bold text-body">{template.name}</Typography>
+                <Typography
+                  className="font-bold text-body"
+                  overflow="ellipsis"
+                  noWrap
+                  fullWidth
+                >
+                  {template.name}
+                </Typography>
               </HStack>
               <Badge
                 content={t('RecentTemplatesSection.version', { version: template.latest_version })}
@@ -740,67 +743,27 @@ function RecentTemplatesBoxList({ data, canCRDTemplates, slug }: RecentTemplates
             </HStack>
             <Typography className="text-sm" color="lighter" variant="body3">
               {t('RecentTemplatesSection.createdAt', {
-                date: formatDate(template.updated_at || ''),
+                date: formatRelativeDate(template.updated_at || ''),
               })}
             </Typography>
-            <HStack
-              align="start"
-              border
-              paddingY="xxsmall"
-              paddingX="small"
-              fullWidth
-              className="bg-gray-100 dark:bg-gray-700 border-background-grey3-border dark:border-background-grey4-border"
-            >
-              <Typography
-                className="line-clamp-2 text-sm leading-relaxed"
-                color="lighter"
-                variant="body3"
-              >
-                {template.description || t('RecentTemplatesSection.noDescription')}
-              </Typography>
-            </HStack>
+            {/* Description intentionally removed */}
           </VStack>
         </Link>
-      </Tooltip>
       <HStack align="center" fullWidth gap="small">
-          <Button
-            color="secondary"
-            label={t('RecentTemplatesSection.responses')}
-            size="small"
-            preIcon={<ResponsesIcon />}
-            onClick={handleResponsesClick}
-          />
-          <HStack
-            align="center"
-            color="background-grey2"
-            border
-            paddingLeft="xsmall"
-            paddingY="xxsmall"
-            className="border-background-grey2-border dark:border-background-grey3-border flex-1 min-w-0 cursor-pointer hover:bg-background-grey3 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              copyToClipboard();
-            }}
-          >
-            <Typography
-              className="font-mono text-xs truncate"
-              color="lighter"
-              variant="body3"
-              overrideEl="span"
-              fullWidth
-            >
-              {template.id || ''}
-            </Typography>
-          </HStack>
-          <div onClick={(e) => e.stopPropagation()}>
-            <CopyButton
-              textToCopy={template.id || ''}
-              size="small"
-              hideLabel
-              color="tertiary"
-              iconColor="muted"
-            />
-          </div>
+        <Button
+          color="secondary"
+          label={t('RecentTemplatesSection.responses')}
+          size="small"
+          preIcon={<ResponsesIcon />}
+          onClick={handleResponsesClick}
+        />
+        <Button
+          color="secondary"
+          label={t('RecentTemplatesSection.viewAgents')}
+          size="small"
+          preIcon={<LettaInvaderIcon />}
+          onClick={handleAgentsClick}
+        />
       </HStack>
     </VStack>
   );
@@ -922,14 +885,13 @@ function TemplateGrid({ data, canCRDTemplates, slug }: TemplateGridProps) {
 }
 
 function ProjectWelcomeCard() {
-  const { id: projectId, name: projectName, isFavorited, slug: projectSlug, updatedAt } = useCurrentProject();
-  const queryClient = useQueryClient();
+  const { id: projectId, name: projectName, updatedAt } = useCurrentProject();
   const currentOrganization = useCurrentOrganization();
   const t = useTranslations('projects/(projectSlug)/page');
   const { formatDateAndTime } = useFormatters();
 
   const [canReadKeys] = useUserHasPermission(ApplicationServices.READ_API_KEYS);
-  const [showApiKey, setShowApiKey] = useState(false);
+  // API key visibility handled within CopyableValueRow
 
   const { data: apiKeyData } = webApi.apiKeys.getAPIKey.useQuery({
     queryKey: webApiQueryKeys.apiKeys.getApiKey('first'),
@@ -943,66 +905,16 @@ function ProjectWelcomeCard() {
 
   const mostRecentApiKey = apiKeyData?.body;
 
-  const { copyToClipboard: copyApiKey } = useCopyToClipboard({
-    textToCopy: mostRecentApiKey?.apiKey || '',
-  });
+  // Copy handled by CopyableValueRow component
 
-  const { mutate: toggleFavorite } = webApi.projects.toggleFavoriteProject.useMutation({
-    onMutate: async ({ body }) => {
-      await queryClient.cancelQueries({
-        queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug,
-      });
-
-      const previousProject = queryClient.getQueryData(
-        webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
-      );
-
-      queryClient.setQueryData(
-        webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
-        (old: unknown) => {
-          if (!old || typeof old !== 'object' || !('body' in old)) return old;
-          const typedOld = old as { body?: { isFavorited?: boolean } };
-          if (!typedOld.body) return old;
-          return {
-            body: {
-              ...typedOld.body,
-              isFavorited: body.isFavorited,
-            },
-          };
-        },
-      );
-
-      return { previousProject };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousProject) {
-        queryClient.setQueryData(
-          webApiQueryKeys.projects.getProjectByIdOrSlug(projectSlug),
-          context.previousProject,
-        );
-      }
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({
-        queryKey: webApiQueryKeys.projects.getProjectByIdOrSlug,
-      });
-    },
-  });
-
-  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (projectId) {
-      toggleFavorite({
-        params: { projectId },
-        body: { isFavorited: !isFavorited },
-      });
-    }
-  }, [projectId, isFavorited, toggleFavorite]);
 
   const formatApiKeyForDisplay = (apiKey: string) => {
-    if (!apiKey || apiKey.length < 6) return apiKey;
-    return `${apiKey.slice(0, 6)}...${apiKey.slice(-12)}`;
+    if (!apiKey) return '';
+    const prefix = apiKey.startsWith('sk-let-') ? 'sk-let-' : '';
+    const maskedLen = Math.max(apiKey.length - prefix.length, 0);
+    // Use unicode bullet for standard censoring, preserve exact length
+    const bullets = '•'.repeat(maskedLen);
+    return `${prefix}${bullets}`;
   };
 
   return (
@@ -1023,16 +935,6 @@ function ProjectWelcomeCard() {
               <Typography variant="heading3" bold align="left">
                 {projectName || '--'}
               </Typography>
-              <Button
-              color="tertiary"
-              size="default"
-              hideLabel
-              onClick={handleFavoriteClick}
-              preIcon={
-                isFavorited ? <StarFilledIcon color="warning" /> : <StarIcon />
-              }
-              label={isFavorited ? t('ProjectWelcomeCard.removeFromFavorites') : t('ProjectWelcomeCard.addToFavorites')}
-              />
             </HStack>
             {updatedAt && (
               <Typography variant="body3" align="left">
@@ -1043,84 +945,20 @@ function ProjectWelcomeCard() {
         </HStack>
       </VStack>
 
-      <VStack gap="small" fullWidth>
-        <VStack gap="small" fullWidth>
-          <Typography variant="body2" color="muted" align="left">
-            Project ID
-          </Typography>
-          <HStack
-            color="background-grey2"
-            border
-            paddingLeft="xsmall"
-            paddingY="xxsmall"
-            paddingRight="xsmall"
-            className="border-background-grey2-border dark:border-background-grey3-border"
-            fullWidth
-          >
-            <div className="flex-1 overflow-x-auto whitespace-nowrap">
-              <Typography
-                className="font-mono text-xs"
-                color="lighter"
-                variant="body3"
-                overrideEl="span"
-              >
-                {projectId || '--'}
-              </Typography>
-            </div>
-            <CopyButton
-              textToCopy={projectId || ''}
-              size="small"
-              hideLabel
-              color="tertiary"
-              iconColor="muted"
-            />
-          </HStack>
-        </VStack>
+      <VStack gap="medium" fullWidth>
 
         <VStack gap="small" fullWidth>
           <Typography variant="body2" color="muted" align="left">
             {t('ProjectWelcomeCard.apiKey')}
           </Typography>
           {mostRecentApiKey ? (
-            <Tooltip asChild content={t('ProjectWelcomeCard.clickToCopy')} placement="top">
-              <HStack
-                color="background-grey2"
-                border
-                paddingLeft="xsmall"
-                paddingY="xxsmall"
-                paddingRight="xsmall"
-                className="border-background-grey2-border dark:border-background-grey3-border hover:bg-background-grey3 transition-colors cursor-pointer"
-                fullWidth
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyApiKey();
-                }}
-              >
-                <div className="flex-1 overflow-x-auto whitespace-nowrap">
-                  <Typography
-                    className="font-mono text-xs"
-                    color="lighter"
-                    variant="body3"
-                    overrideEl="span"
-                  >
-                    {showApiKey
-                      ? (mostRecentApiKey.apiKey || '')
-                      : formatApiKeyForDisplay(mostRecentApiKey.apiKey || '')}
-                  </Typography>
-                </div>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    color="tertiary"
-                    size="small"
-                    hideLabel
-                    _use_rarely_disableTooltip
-                    _use_rarely_className="hover:bg-transparent hover:text-current"
-                    preIcon={showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-                    onClick={() => setShowApiKey((prev) => !prev)}
-                  />
-                </div>
-              </HStack>
-            </Tooltip>
+            <CopyableValueRow
+              value={mostRecentApiKey.apiKey || ''}
+              tooltip={t('ProjectWelcomeCard.clickToCopy')}
+              showVisibilityToggle
+              maskedDisplay={(v) => formatApiKeyForDisplay(v)}
+              testId="api-key-copy"
+            />
           ) : (
             <Typography
               className="font-mono text-xs"
@@ -1131,6 +969,18 @@ function ProjectWelcomeCard() {
             </Typography>
           )}
         </VStack>
+
+        <VStack gap="small" fullWidth>
+          <Typography variant="body2" color="muted" align="left">
+            {t('ProjectWelcomeCard.projectId')}
+          </Typography>
+          <CopyableValueRow
+            value={projectId || ''}
+            tooltip={t('ProjectWelcomeCard.clickToCopy')}
+            testId="project-id-copy"
+          />
+        </VStack>
+
       </VStack>
     </VStack>
   );
