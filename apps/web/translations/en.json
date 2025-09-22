@@ -1586,7 +1586,7 @@
       "description": "You have not deployed any agents in this project yet, create one from a template"
     },
     "noAgents": "No agents yet",
-    "createdAt": "Updated at {date}",
+    "createdAt": "Last active {date}",
     "viewAllAgents": "View all",
     "starterKitTemplate": "Starter kit",
     "goToTemplate": "Go to {templateName}",
@@ -1600,27 +1600,28 @@
       "noDescription": "No description has been provided for this template",
       "createTemplate": "New template",
       "viewTemplate": "View",
-      "responses": "Responses",
+      "responses": "View logs",
+      "viewAgents": "View agents",
       "version": "Version {version}",
       "emptyState": {
         "title": "No templates",
         "description": "You have not created any templates in this project yet, create one below",
         "noCrdDescription": "Your team has yet to create a template for this project, create one below"
       },
-      "createdAt": "Updated at {date}",
+      "createdAt": "Last updated {date}",
       "viewAllTemplates": "View all",
       "goToTemplate": "Go to {templateName}"
     },
     "subtitle": "Create, manage, and monitor your agents",
     "ProjectWelcomeCard": {
-      "apiKey": "API Key",
+      "apiKey": "API key",
       "projectId": "Project ID",
       "clickToCopy": "Click to copy",
       "noApiKeysFound": "No API keys found",
       "accessRestricted": "Access restricted",
       "addToFavorites": "Add to favorites",
       "removeFromFavorites": "Remove from favorites",
-      "updatedAt": "Updated at {datetime}"
+      "updatedAt": "Last updated {datetime}"
     },
     "MiniObservabilityDashboard": {
       "title": "Monitoring",
@@ -2154,6 +2155,7 @@
       "observability": "Observability",
       "monitoring": "Monitoring",
       "responses": "Responses",
+      "viewAgents": "View agents",
       "datasets": "Datasets",
       "evals": "Evals",
       "ab": "A/B Tests",

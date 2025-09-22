@@ -118,7 +118,6 @@ function ProjectSpecificNavigation() {
 
   return (
     <NavigationSection>
-      <Divider />
       <SectionHeader title="Project" />
       <DashboardNavigationButton
         href={`${baseUrl}`}

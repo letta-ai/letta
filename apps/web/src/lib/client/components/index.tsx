@@ -6,5 +6,6 @@ export * from './ProjectSelector/ProjectSelector';
 export * from './Tutorials/Tutorials';
 export * from './ConnectToLocalServerCommand/ConnectToLocalServerCommand';
 export * from './DashboardCard/DashboardCard';
+export * from './CopyableValueRow/CopyableValueRow';
 export * from './CreditCardSlot/CreditCardSlot';
 export * from './CompareTemplateVersionsDialog/CompareTemplateVersions';

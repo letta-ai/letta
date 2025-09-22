@@ -165,6 +165,55 @@ export function useFormatters() {
     }
   }
 
+  // Relative/friendly date formatting
+  function formatRelative(date: Date | string): string {
+    try {
+      const d = new Date(date);
+      const now = new Date();
+      const diffMs = d.getTime() - now.getTime();
+      const rtf = new Intl.RelativeTimeFormat(defaultLocal, { numeric: 'auto' });
+
+      const seconds = Math.round(diffMs / 1000);
+      const minutes = Math.round(seconds / 60);
+      const hours = Math.round(minutes / 60);
+      const days = Math.round(hours / 24);
+      const weeks = Math.round(days / 7);
+      const months = Math.round(days / 30);
+      const years = Math.round(days / 365);
+
+      if (Math.abs(seconds) < 60) return rtf.format(seconds, 'second');
+      if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
+      if (Math.abs(hours) < 24) return rtf.format(hours, 'hour');
+      // Use weeks beyond 14 days instead of large day counts
+      if (Math.abs(days) < 14) return rtf.format(days, 'day');
+      if (Math.abs(days) < 30) return rtf.format(weeks, 'week');
+      if (Math.abs(months) < 18) return rtf.format(months, 'month');
+      return rtf.format(years, 'year');
+    } catch (e) {
+      console.error('Error formatting relative date:', e);
+      return '';
+    }
+  }
+
+  // Friendly relative date: relative for recent, else short date (no year if same year)
+  function formatRelativeDate(date: Date | string): string {
+    const d = new Date(date);
+    const now = new Date();
+    const diffDays = Math.abs((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 45) {
+      // show relative for anything within ~1.5 months
+      return formatRelative(date);
+    }
+
+    const sameYear = d.getFullYear() === now.getFullYear();
+    return new Intl.DateTimeFormat(defaultLocal, {
+      month: 'short',
+      day: 'numeric',
+      ...(sameYear ? {} : { year: 'numeric' }),
+    }).format(d);
+  }
+
   function formatShorthandNumber(val: number, decimals = 0) {
     if (val >= 1_000_000_000) {
       return `${(val / 1_000_000_000).toFixed(decimals)}B`;
@@ -248,5 +297,7 @@ export function useFormatters() {
     formatTokenSize,
     formatDateAndTime,
     formatDate,
+    formatRelative,
+    formatRelativeDate,
   };
 }
