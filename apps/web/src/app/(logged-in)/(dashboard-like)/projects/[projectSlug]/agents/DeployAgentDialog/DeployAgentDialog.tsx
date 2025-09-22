@@ -541,7 +541,6 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
 
   return (
     <VStack paddingTop="xsmall" paddingBottom>
-      <DeployFromTemplate onSelectTemplate={setSelectedTemplate} />
       <FromStarterKit
         onError={(error) => {
           setIsCreating(false);
@@ -549,6 +548,7 @@ function DeployAgentViewContents(props: DeployAgentViewContentsProps) {
         }}
         onIsCreating={handleCreating}
       />
+      <DeployFromTemplate onSelectTemplate={setSelectedTemplate} />
     </VStack>
   );
 }
