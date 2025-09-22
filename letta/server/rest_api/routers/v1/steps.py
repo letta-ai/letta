@@ -5,6 +5,8 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from letta.orm.errors import NoResultFound
+from letta.schemas.letta_message import LettaMessageUnion
+from letta.schemas.message import Message
 from letta.schemas.provider_trace import ProviderTrace
 from letta.schemas.step import Step
 from letta.schemas.step_metrics import StepMetrics
@@ -136,6 +138,33 @@ async def modify_feedback_for_step(
         return await server.step_manager.add_feedback_async(step_id=step_id, feedback=request.feedback, tags=request.tags, actor=actor)
     except NoResultFound:
         raise HTTPException(status_code=404, detail="Step not found")
+
+
+@router.get("/{step_id}/messages", response_model=List[LettaMessageUnion], operation_id="list_messages_for_step")
+async def list_messages_for_step(
+    step_id: str,
+    headers: HeaderParams = Depends(get_headers),
+    server: SyncServer = Depends(get_letta_server),
+    before: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come before this message ID in the specified sort order"
+    ),
+    after: Optional[str] = Query(
+        None, description="Message ID cursor for pagination. Returns messages that come after this message ID in the specified sort order"
+    ),
+    limit: Optional[int] = Query(100, description="Maximum number of messages to return"),
+    order: Literal["asc", "desc"] = Query(
+        "asc", description="Sort order for messages by creation time. 'asc' for oldest first, 'desc' for newest first"
+    ),
+    order_by: Literal["created_at"] = Query("created_at", description="Sort by field"),
+):
+    """
+    List messages for a given step.
+    """
+    actor = await server.user_manager.get_actor_or_default_async(actor_id=headers.actor_id)
+    messages = await server.step_manager.list_step_messages_async(
+        step_id=step_id, actor=actor, before=before, after=after, limit=limit, ascending=(order == "asc")
+    )
+    return Message.to_letta_messages_from_list(messages)
 
 
 @router.patch("/{step_id}/transaction/{transaction_id}", response_model=Step, operation_id="update_step_transaction_id")

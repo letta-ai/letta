@@ -21,6 +21,21 @@ class ProviderType(str, Enum):
     xai = "xai"
 
 
+class AgentType(str, Enum):
+    """
+    Enum to represent the type of agent.
+    """
+
+    memgpt_agent = "memgpt_agent"  # the OG set of memgpt tools
+    memgpt_v2_agent = "memgpt_v2_agent"  # memgpt style tools, but refreshed
+    react_agent = "react_agent"  # basic react agent, no memory tools
+    workflow_agent = "workflow_agent"  # workflow with auto-clearing message buffer
+    split_thread_agent = "split_thread_agent"
+    sleeptime_agent = "sleeptime_agent"
+    voice_convo_agent = "voice_convo_agent"
+    voice_sleeptime_agent = "voice_sleeptime_agent"
+
+
 class ProviderCategory(str, Enum):
     base = "base"
     byok = "byok"

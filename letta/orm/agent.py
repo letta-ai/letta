@@ -13,8 +13,9 @@ from letta.orm.identity import Identity
 from letta.orm.mixins import OrganizationMixin, ProjectMixin, TemplateEntityMixin, TemplateMixin
 from letta.orm.organization import Organization
 from letta.orm.sqlalchemy_base import SqlalchemyBase
-from letta.schemas.agent import AgentState as PydanticAgentState, AgentType, get_prompt_template_for_agent_type
+from letta.schemas.agent import AgentState as PydanticAgentState
 from letta.schemas.embedding_config import EmbeddingConfig
+from letta.schemas.enums import AgentType
 from letta.schemas.llm_config import LLMConfig
 from letta.schemas.memory import Memory
 from letta.schemas.response_format import ResponseFormatUnion
@@ -233,6 +234,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
+            "secrets": [],
         }
 
         # Optional fields: only included if requested
@@ -248,11 +250,12 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                     if (block := b.to_pydantic_block(per_file_view_window_char_limit=self._get_per_file_view_window_char_limit()))
                     is not None
                 ],
-                prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+                agent_type=self.agent_type,
             ),
             "identity_ids": lambda: [i.id for i in self.identities],
             "multi_agent_group": lambda: self.multi_agent_group,
             "tool_exec_environment_variables": lambda: self.tool_exec_environment_variables,
+            "secrets": lambda: self.tool_exec_environment_variables,
         }
 
         include_relationships = set(optional_fields.keys() if include_relationships is None else include_relationships)
@@ -324,6 +327,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
             "identity_ids": [],
             "multi_agent_group": None,
             "tool_exec_environment_variables": [],
+            "secrets": [],
         }
 
         # Initialize include_relationships to an empty set if it's None
@@ -344,7 +348,7 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
         multi_agent_group = self.awaitable_attrs.multi_agent_group if "multi_agent_group" in include_relationships else none_async()
         tool_exec_environment_variables = (
             self.awaitable_attrs.tool_exec_environment_variables
-            if "tool_exec_environment_variables" in include_relationships
+            if "tool_exec_environment_variables" in include_relationships or "secrets" in include_relationships
             else empty_list_async()
         )
         file_agents = self.awaitable_attrs.file_agents if "memory" in include_relationships else empty_list_async()
@@ -363,10 +367,11 @@ class Agent(SqlalchemyBase, OrganizationMixin, ProjectMixin, TemplateEntityMixin
                 for b in file_agents
                 if (block := b.to_pydantic_block(per_file_view_window_char_limit=self._get_per_file_view_window_char_limit())) is not None
             ],
-            prompt_template=get_prompt_template_for_agent_type(self.agent_type),
+            agent_type=self.agent_type,
         )
         state["identity_ids"] = [i.id for i in identities]
         state["multi_agent_group"] = multi_agent_group
         state["tool_exec_environment_variables"] = tool_exec_environment_variables
+        state["secrets"] = tool_exec_environment_variables
 
         return self.__pydantic_model__(**state)

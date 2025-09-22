@@ -2,7 +2,6 @@ import json
 import logging
 from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 
-from jinja2 import Template
 from pydantic import Field, field_validator
 
 from letta.schemas.enums import ToolRuleType
@@ -17,7 +16,7 @@ class BaseToolRule(LettaBase):
     type: ToolRuleType = Field(..., description="The type of the message.")
     prompt_template: Optional[str] = Field(
         None,
-        description="Optional Jinja2 template for generating agent prompt about this tool rule. Template can use variables like 'tool_name' and rule-specific attributes.",
+        description="Optional template string (ignored). Rendering uses fast built-in formatting for performance.",
     )
 
     def __hash__(self):
@@ -34,22 +33,8 @@ class BaseToolRule(LettaBase):
         raise NotImplementedError
 
     def render_prompt(self) -> str | None:
-        """Render the prompt template with this rule's attributes."""
-        if not self.prompt_template:
-            return None
-
-        try:
-            template = Template(self.prompt_template)
-            return template.render(**self.model_dump())
-        except Exception as e:
-            logger.warning(
-                "Failed to render prompt template for tool rule '%s' (type: %s). Template: '%s'. Error: %s",
-                self.tool_name,
-                self.type,
-                self.prompt_template,
-                e,
-            )
-            return None
+        """Default implementation returns None. Subclasses provide optimized strings."""
+        return None
 
 
 class ChildToolRule(BaseToolRule):
@@ -60,8 +45,8 @@ class ChildToolRule(BaseToolRule):
     type: Literal[ToolRuleType.constrain_child_tools] = ToolRuleType.constrain_child_tools
     children: List[str] = Field(..., description="The children tools that can be invoked.")
     prompt_template: Optional[str] = Field(
-        default="<tool_rule>\nAfter using {{ tool_name }}, you must use one of these tools: {{ children | join(', ') }}\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
+        default=None,
+        description="Optional template string (ignored).",
     )
 
     def __hash__(self):
@@ -78,6 +63,10 @@ class ChildToolRule(BaseToolRule):
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools
 
+    def render_prompt(self) -> str | None:
+        children_str = ", ".join(self.children)
+        return f"<tool_rule>\nAfter using {self.tool_name}, you must use one of these tools: {children_str}\n</tool_rule>"
+
 
 class ParentToolRule(BaseToolRule):
     """
@@ -86,10 +75,7 @@ class ParentToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.parent_last_tool] = ToolRuleType.parent_last_tool
     children: List[str] = Field(..., description="The children tools that can be invoked.")
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ children | join(', ') }} can only be used after {{ tool_name }}\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
 
     def __hash__(self):
         """Hash including children list (sorted for consistency)."""
@@ -105,6 +91,10 @@ class ParentToolRule(BaseToolRule):
         last_tool = tool_call_history[-1] if tool_call_history else None
         return set(self.children) if last_tool == self.tool_name else available_tools - set(self.children)
 
+    def render_prompt(self) -> str | None:
+        children_str = ", ".join(self.children)
+        return f"<tool_rule>\n{children_str} can only be used after {self.tool_name}\n</tool_rule>"
+
 
 class ConditionalToolRule(BaseToolRule):
     """
@@ -115,10 +105,7 @@ class ConditionalToolRule(BaseToolRule):
     default_child: Optional[str] = Field(None, description="The default child tool to be called. If None, any tool can be called.")
     child_output_mapping: Dict[Any, str] = Field(..., description="The output case to check for mapping")
     require_output_mapping: bool = Field(default=False, description="Whether to throw an error when output doesn't match any case")
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ tool_name }} will determine which tool to use next based on its output\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
 
     def __hash__(self):
         """Hash including all configuration fields."""
@@ -165,6 +152,9 @@ class ConditionalToolRule(BaseToolRule):
 
         return {self.default_child} if self.default_child else available_tools
 
+    def render_prompt(self) -> str | None:
+        return f"<tool_rule>\n{self.tool_name} will determine which tool to use next based on its output\n</tool_rule>"
+
     @field_validator("child_output_mapping")
     @classmethod
     def validate_child_output_mapping(cls, v):
@@ -205,10 +195,10 @@ class TerminalToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.exit_loop] = ToolRuleType.exit_loop
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ tool_name }} ends your response (yields control) when called\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+
+    def render_prompt(self) -> str | None:
+        return f"<tool_rule>\n{self.tool_name} ends your response (yields control) when called\n</tool_rule>"
 
 
 class ContinueToolRule(BaseToolRule):
@@ -217,10 +207,10 @@ class ContinueToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.continue_loop] = ToolRuleType.continue_loop
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ tool_name }} requires continuing your response when called\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
+
+    def render_prompt(self) -> str | None:
+        return f"<tool_rule>\n{self.tool_name} requires continuing your response when called\n</tool_rule>"
 
 
 class RequiredBeforeExitToolRule(BaseToolRule):
@@ -229,14 +219,14 @@ class RequiredBeforeExitToolRule(BaseToolRule):
     """
 
     type: Literal[ToolRuleType.required_before_exit] = ToolRuleType.required_before_exit
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>{{ tool_name }} must be called before ending the conversation</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
 
     def get_valid_tools(self, tool_call_history: List[str], available_tools: Set[str], last_function_response: Optional[str]) -> Set[str]:
         """Returns all available tools - the logic for preventing exit is handled elsewhere."""
         return available_tools
+
+    def render_prompt(self) -> str | None:
+        return f"<tool_rule>{self.tool_name} must be called before ending the conversation</tool_rule>"
 
 
 class MaxCountPerStepToolRule(BaseToolRule):
@@ -246,10 +236,7 @@ class MaxCountPerStepToolRule(BaseToolRule):
 
     type: Literal[ToolRuleType.max_count_per_step] = ToolRuleType.max_count_per_step
     max_count_limit: int = Field(..., description="The max limit for the total number of times this tool can be invoked in a single step.")
-    prompt_template: Optional[str] = Field(
-        default="<tool_rule>\n{{ tool_name }}: at most {{ max_count_limit }} use(s) per response\n</tool_rule>",
-        description="Optional Jinja2 template for generating agent prompt about this tool rule.",
-    )
+    prompt_template: Optional[str] = Field(default=None, description="Optional template string (ignored).")
 
     def __hash__(self):
         """Hash including max_count_limit."""
@@ -270,6 +257,9 @@ class MaxCountPerStepToolRule(BaseToolRule):
             return available_tools - {self.tool_name}
 
         return available_tools
+
+    def render_prompt(self) -> str | None:
+        return f"<tool_rule>\n{self.tool_name}: at most {self.max_count_limit} use(s) per response\n</tool_rule>"
 
 
 class RequiresApprovalToolRule(BaseToolRule):

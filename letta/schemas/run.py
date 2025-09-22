@@ -4,6 +4,7 @@ from pydantic import Field
 
 from letta.schemas.enums import JobType
 from letta.schemas.job import Job, JobBase, LettaRequestConfig
+from letta.schemas.letta_stop_reason import StopReasonType
 
 
 class RunBase(JobBase):
@@ -29,6 +30,7 @@ class Run(RunBase):
     id: str = RunBase.generate_id_field()
     user_id: Optional[str] = Field(None, description="The unique identifier of the user associated with the run.")
     request_config: Optional[LettaRequestConfig] = Field(None, description="The request configuration for the run.")
+    stop_reason: Optional[StopReasonType] = Field(None, description="The reason why the run was stopped.")
 
     @classmethod
     def from_job(cls, job: Job) -> "Run":

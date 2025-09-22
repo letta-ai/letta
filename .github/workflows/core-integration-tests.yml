@@ -21,6 +21,7 @@ jobs:
     with:
       test-type: 'integration'
       use-redis: true
+      is-external-pr: ${{ github.event_name == 'pull_request_target' && !contains(github.event.pull_request.labels.*.name, 'safe to test') }}
       changed-files-pattern: |
         **
         .github/workflows/reusable-test-workflow.yml

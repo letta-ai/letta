@@ -14,8 +14,8 @@ from letta.helpers.tool_execution_helper import add_pre_execution_message, enabl
 from letta.interfaces.openai_chat_completions_streaming_interface import OpenAIChatCompletionsStreamingInterface
 from letta.log import get_logger
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState, AgentType
-from letta.schemas.enums import MessageRole, ToolType
+from letta.schemas.agent import AgentState
+from letta.schemas.enums import AgentType, MessageRole, ToolType
 from letta.schemas.letta_response import LettaResponse
 from letta.schemas.message import Message, MessageCreate
 from letta.schemas.openai.chat_completion_request import (
@@ -441,7 +441,7 @@ class VoiceAgent(BaseAgent):
             )
 
         # Use ToolExecutionManager for modern tool execution
-        sandbox_env_vars = {var.key: var.value for var in agent_state.tool_exec_environment_variables}
+        sandbox_env_vars = {var.key: var.value for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,

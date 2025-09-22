@@ -10,6 +10,7 @@ from letta.orm.errors import NoResultFound
 from letta.schemas.enums import JobStatus, JobType
 from letta.schemas.letta_message import LettaMessageUnion
 from letta.schemas.letta_request import RetrieveStreamRequest
+from letta.schemas.letta_stop_reason import StopReasonType
 from letta.schemas.openai.chat_completion_response import UsageStatistics
 from letta.schemas.run import Run
 from letta.schemas.step import Step
@@ -31,9 +32,11 @@ def list_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),
     background: Optional[bool] = Query(None, description="If True, filters for runs that were created in background mode."),
+    stop_reason: Optional[StopReasonType] = Query(None, description="Filter runs by stop reason."),
     after: Optional[str] = Query(None, description="Cursor for pagination"),
     before: Optional[str] = Query(None, description="Cursor for pagination"),
     limit: Optional[int] = Query(50, description="Maximum number of runs to return"),
+    active: bool = Query(False, description="Filter for active runs."),
     ascending: bool = Query(
         False,
         description="Whether to sort agents oldest to newest (True) or newest to oldest (False, default)",
@@ -44,16 +47,21 @@ def list_runs(
     List all runs.
     """
     actor = server.user_manager.get_user_or_default(user_id=headers.actor_id)
+    statuses = None
+    if active:
+        statuses = [JobStatus.created, JobStatus.running]
 
     runs = [
         Run.from_job(job)
         for job in server.job_manager.list_jobs(
             actor=actor,
+            statuses=statuses,
             job_type=JobType.RUN,
             limit=limit,
             before=before,
             after=after,
             ascending=False,
+            stop_reason=stop_reason,
         )
     ]
     if agent_ids:
@@ -63,7 +71,7 @@ def list_runs(
     return runs
 
 
-@router.get("/active", response_model=List[Run], operation_id="list_active_runs")
+@router.get("/active", response_model=List[Run], operation_id="list_active_runs", deprecated=True)
 def list_active_runs(
     server: "SyncServer" = Depends(get_letta_server),
     agent_ids: Optional[List[str]] = Query(None, description="The unique identifier of the agent associated with the run."),

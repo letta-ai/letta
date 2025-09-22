@@ -19,7 +19,6 @@ from letta.services.agent_manager import AgentManager
 from letta.services.message_manager import MessageManager
 from letta.services.summarizer.enums import SummarizationMode
 from letta.system import package_summarize_message_no_counts
-from letta.templates.template_helper import render_template
 from letta.utils import safe_create_task
 
 logger = get_logger(__name__)
@@ -280,8 +279,7 @@ class Summarizer:
             formatted_evicted_messages = [f"{i}. {msg}" for (i, msg) in enumerate(formatted_evicted_messages)]
             formatted_in_context_messages = [f"{i + offset}. {msg}" for (i, msg) in enumerate(formatted_in_context_messages)]
 
-            summary_request_text = render_template(
-                "summary_request_text.j2",
+            summary_request_text = build_summary_request_text(
                 retain_count=retain_count,
                 evicted_messages=formatted_evicted_messages,
                 in_context_messages=formatted_in_context_messages,
@@ -302,6 +300,30 @@ def simple_formatter(messages: List[Message], include_system: bool = False) -> s
         [message for message in messages if message.role != MessageRole.system or include_system]
     )
     return "\n".join(json.dumps(msg) for msg in parsed_messages)
+
+
+def build_summary_request_text(retain_count: int, evicted_messages: List[str], in_context_messages: List[str]) -> str:
+    parts: List[str] = []
+    if retain_count == 0:
+        parts.append(
+            "You’re a memory-recall helper for an AI that is about to forget all prior messages. Scan the conversation history and write crisp notes that capture any important facts or insights about the conversation history."
+        )
+    else:
+        parts.append(
+            f"You’re a memory-recall helper for an AI that can only keep the last {retain_count} messages. Scan the conversation history, focusing on messages about to drop out of that window, and write crisp notes that capture any important facts or insights about the human so they aren’t lost."
+        )
+
+    if evicted_messages:
+        parts.append("\n(Older) Evicted Messages:")
+        for item in evicted_messages:
+            parts.append(f"    {item}")
+
+    if retain_count > 0 and in_context_messages:
+        parts.append("\n(Newer) In-Context Messages:")
+        for item in in_context_messages:
+            parts.append(f"    {item}")
+
+    return "\n".join(parts) + "\n"
 
 
 def simple_message_wrapper(openai_msg: dict) -> Message:

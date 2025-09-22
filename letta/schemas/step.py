@@ -35,7 +35,11 @@ class Step(StepBase):
     tags: List[str] = Field([], description="Metadata tags.")
     tid: Optional[str] = Field(None, description="The unique identifier of the transaction that processed this step.")
     trace_id: Optional[str] = Field(None, description="The trace id of the agent step.")
-    messages: List[Message] = Field([], description="The messages generated during this step.")
+    messages: List[Message] = Field(
+        [],
+        description="The messages generated during this step. Deprecated: use `GET /v1/steps/{step_id}/messages` endpoint instead",
+        deprecated=True,
+    )
     feedback: Optional[Literal["positive", "negative"]] = Field(
         None, description="The feedback for this step. Must be either 'positive' or 'negative'."
     )

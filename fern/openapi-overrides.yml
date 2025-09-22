@@ -923,6 +923,12 @@ paths:
         - steps
         - trace
       x-fern-sdk-method-name: retrieve
+  /v1/steps/{step_id}/messages:
+    get:
+      x-fern-sdk-group-name:
+        - steps
+        - messages
+      x-fern-sdk-method-name: list
   /v1/identities/:
     get:
       x-fern-sdk-group-name:

@@ -29,8 +29,8 @@ from letta.local_llm.constants import INNER_THOUGHTS_KWARG
 from letta.log import get_logger
 from letta.otel.tracing import log_event, trace_method, tracer
 from letta.prompts.prompt_generator import PromptGenerator
-from letta.schemas.agent import AgentState, AgentType, UpdateAgent
-from letta.schemas.enums import JobStatus, MessageRole, MessageStreamStatus, StepStatus
+from letta.schemas.agent import AgentState, UpdateAgent
+from letta.schemas.enums import AgentType, JobStatus, MessageRole, MessageStreamStatus, StepStatus
 from letta.schemas.letta_message import LettaMessage, MessageType
 from letta.schemas.letta_message_content import OmittedReasoningContent, ReasoningContent, RedactedReasoningContent, TextContent
 from letta.schemas.letta_response import LettaResponse
@@ -679,7 +679,7 @@ class LettaAgentV2(BaseAgentV2):
         curr_dynamic_section = extract_dynamic_section(curr_system_message_text)
 
         # generate just the memory string with current state for comparison
-        curr_memory_str = await agent_state.memory.compile_in_thread_async(
+        curr_memory_str = agent_state.memory.compile(
             tool_usage_rules=tool_constraint_block, sources=agent_state.sources, max_files_open=agent_state.max_files_open
         )
         new_dynamic_section = extract_dynamic_section(curr_memory_str)
@@ -1106,7 +1106,7 @@ class LettaAgentV2(BaseAgentV2):
             start_time = get_utc_timestamp_ns()
             agent_step_span.add_event(name="tool_execution_started")
 
-        sandbox_env_vars = {var.key: var.value for var in agent_state.tool_exec_environment_variables}
+        sandbox_env_vars = {var.key: var.value for var in agent_state.secrets}
         tool_execution_manager = ToolExecutionManager(
             agent_state=agent_state,
             message_manager=self.message_manager,
@@ -1226,6 +1226,7 @@ class LettaAgentV2(BaseAgentV2):
                     new_status=JobStatus.failed if is_error else JobStatus.completed,
                     actor=self.actor,
                     metadata=job_update_metadata,
+                    stop_reason=self.stop_reason.stop_reason if self.stop_reason else StopReasonType.error,
                 )
         if request_span:
             request_span.end()

@@ -26,6 +26,7 @@ class TelemetryManager:
     async def create_provider_trace_async(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         async with db_registry.async_session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
+            provider_trace.organization_id = actor.organization_id
             if provider_trace_create.request_json:
                 request_json_str = json_dumps(provider_trace_create.request_json)
                 provider_trace.request_json = json_loads(request_json_str)
@@ -43,6 +44,7 @@ class TelemetryManager:
     def create_provider_trace(self, actor: PydanticUser, provider_trace_create: ProviderTraceCreate) -> PydanticProviderTrace:
         with db_registry.session() as session:
             provider_trace = ProviderTraceModel(**provider_trace_create.model_dump())
+            provider_trace.organization_id = actor.organization_id
             if provider_trace_create.request_json:
                 request_json_str = json_dumps(provider_trace_create.request_json)
                 provider_trace.request_json = json_loads(request_json_str)

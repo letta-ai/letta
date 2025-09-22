@@ -108,10 +108,15 @@ def comprehensive_agent_checks(agent: AgentState, request: Union[CreateAgent, Up
     assert agent.metadata == request.metadata, f"Metadata mismatch: {agent.metadata} != {request.metadata}"
 
     # Assert agent env vars
-    if hasattr(request, "tool_exec_environment_variables"):
+    if hasattr(request, "tool_exec_environment_variables") and request.tool_exec_environment_variables:
         for agent_env_var in agent.tool_exec_environment_variables:
             assert agent_env_var.key in request.tool_exec_environment_variables
             assert request.tool_exec_environment_variables[agent_env_var.key] == agent_env_var.value
+            assert agent_env_var.organization_id == actor.organization_id
+    if hasattr(request, "secrets") and request.secrets:
+        for agent_env_var in agent.secrets:
+            assert agent_env_var.key in request.secrets
+            assert request.secrets[agent_env_var.key] == agent_env_var.value
             assert agent_env_var.organization_id == actor.organization_id
 
     # Assert agent type

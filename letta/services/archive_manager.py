@@ -89,6 +89,79 @@ class ArchiveManager:
 
     @enforce_types
     @trace_method
+    async def update_archive_async(
+        self,
+        archive_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actor: PydanticUser = None,
+    ) -> PydanticArchive:
+        """Update archive name and/or description."""
+        async with db_registry.async_session() as session:
+            archive = await ArchiveModel.read_async(
+                db_session=session,
+                identifier=archive_id,
+                actor=actor,
+                check_is_deleted=True,
+            )
+
+            if name is not None:
+                archive.name = name
+            if description is not None:
+                archive.description = description
+
+            await archive.update_async(session, actor=actor)
+            return archive.to_pydantic()
+
+    @enforce_types
+    @trace_method
+    async def list_archives_async(
+        self,
+        *,
+        actor: PydanticUser,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        limit: Optional[int] = 50,
+        ascending: bool = False,
+        name: Optional[str] = None,
+        agent_id: Optional[str] = None,
+    ) -> List[PydanticArchive]:
+        """List archives with pagination and optional filters.
+
+        Filters:
+        - name: exact match on name
+        - agent_id: only archives attached to given agent
+        """
+        filter_kwargs = {}
+        if name is not None:
+            filter_kwargs["name"] = name
+
+        join_model = None
+        join_conditions = None
+        if agent_id is not None:
+            join_model = ArchivesAgents
+            join_conditions = [
+                ArchivesAgents.archive_id == ArchiveModel.id,
+                ArchivesAgents.agent_id == agent_id,
+            ]
+
+        async with db_registry.async_session() as session:
+            archives = await ArchiveModel.list_async(
+                db_session=session,
+                before=before,
+                after=after,
+                limit=limit,
+                ascending=ascending,
+                actor=actor,
+                check_is_deleted=True,
+                join_model=join_model,
+                join_conditions=join_conditions,
+                **filter_kwargs,
+            )
+            return [a.to_pydantic() for a in archives]
+
+    @enforce_types
+    @trace_method
     def attach_agent_to_archive(
         self,
         agent_id: str,
