@@ -61,6 +61,7 @@ function Sidebar() {
           preIcon={<ToolsIcon />}
           color="tertiary"
           label={t('Sidebar.globalTools')}
+          tooltipPlacement="right"
         ></Button>
       </Link>
       <Link to="/identities">
