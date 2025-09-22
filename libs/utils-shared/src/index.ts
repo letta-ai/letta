@@ -23,3 +23,4 @@ export * from './types';
 export * from './lib/validateVersionString/validateVersionString'
 export * from './lib/generateTemplateSnapshot/generateTemplateSnapshot'
 export * from './lib/removeFileNamePrefix/removeFileNamePrefix';
+export * from './lib/getIsLocalPlatform/getIsLocalPlatform';

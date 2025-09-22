@@ -914,3 +914,12 @@ sync-submodules:
     # Add the change to the staging area
     git add apps/core
     echo "✅ apps/core submodule synced to commit $TARGET_COMMIT from origin/main"
+
+
+docker-ui:
+  npm run docker-ui:dev
+
+
+enterprise-dockerfile:
+  @echo "🚧 Building enterprise Dockerfile..."
+  ./scripts/generate-enterprise-docker-build.sh

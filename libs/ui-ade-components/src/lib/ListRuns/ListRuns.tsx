@@ -26,7 +26,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/query-core';
 import { useFormatters } from '@letta-cloud/utils-client';
 import { get } from 'lodash-es';
-import { useCurrentProject } from '$web/client/hooks/useCurrentProject/useCurrentProject';
+import { useADEAppContext } from '../AppContext/AppContext';
 
 const UseInfiniteRunsQueryFn = (params: Partial<ListRunsData>) => [
   'listRuns',
@@ -169,7 +169,7 @@ interface ViewAgentButtonProps {
 }
 
 function ViewAgentButton(props: ViewAgentButtonProps) {
-  const { slug } = useCurrentProject();
+  const { projectSlug } = useADEAppContext();
   const { run } = props;
   const t = useTranslations('ListRuns');
 
@@ -184,7 +184,7 @@ function ViewAgentButton(props: ViewAgentButtonProps) {
       size="small"
       color="secondary"
       label={t('viewAgent')}
-      href={`/projects/${slug}/agents/${agentId}`}
+      href={`/projects/${projectSlug}/agents/${agentId}`}
     />
   );
 }

@@ -1,0 +1,286 @@
+{
+  "Integrations": {
+    "title": "Integrations",
+    "loading": "Loading...",
+    "learnMore": "Learn more",
+    "subtitle": "Update the different environment variables on your Letta server",
+    "label": "Environment Variables",
+    "save": "Update environment",
+    "configure": "Configure",
+    "saveSuccess": "Environment variables updated successfully, restarting the ADE server",
+    "notAvailable": "This page is only available when using the embedded Letta server (you are configured to use {serverType})",
+    "goToSettings": "Modify server settings",
+    "IntegrationConfigurationDialog": {
+      "title": "Update connection with {integrationName}",
+      "alertTitle": "Learn more",
+      "description": "Learn about how to connect and more about this integration <link>here</link>"
+    },
+    "integrations": {
+      "openAI": {
+        "keyLabel": "OpenAI API Key",
+        "description": "Add your OpenAI API key to use OpenAI models in the ADE"
+      },
+      "anthropic": {
+        "keyLabel": "Anthropic API Key",
+        "description": "Add your Anthropic API key to use Anthropic models in the ADE"
+      },
+      "ollama": {
+        "urlLabel": "Ollama Base URL",
+        "description": "Add your Ollama URL to use Ollama models in the ADE"
+      },
+      "azure": {
+        "keyLabel": "Azure API Key",
+        "urlLabel": "Azure Base URL",
+        "description": "Add your Azure API key and base URL to use Azure models in the ADE"
+      },
+      "composio": {
+        "keyLabel": "Composio API Key",
+        "description": "Add your Composio API key to use Composio tools in the ADE"
+      },
+      "lmstudio": {
+        "keyLabel": "LM Studio Base URL",
+        "description": "Add your LM Studio base URL to use LM Studio models in the ADE"
+      },
+      "gemini": {
+        "keyLabel": "Gemini API Key",
+        "description": "Add your Gemini API key to use Gemini models in the ADE"
+      },
+      "togetherai": {
+        "keyLabel": "Together API Key",
+        "description": "Add your Together API key to use Together models in the ADE"
+      },
+      "xai": {
+        "keyLabel": "xAI API Key",
+        "description": "Add your xAI API key to use Grok models in the ADE"
+      },
+      "deepseek": {
+        "keyLabel": "DeepSeek API Key",
+        "description": "Add your DeepSeek API key to use DeepSeek models in the ADE"
+      },
+      "other": {
+        "name": "Don't see an integration here that's supported in the Letta docs?",
+        "description": "You can directly edit the environment variables in `[your-root-directory]/.letta/env` to set up other integrations"
+      }
+    }
+  },
+  "Homepage": {
+    "booting": "Booting..."
+  },
+  "ConnectToLetta": {
+    "title": "Turn on your server",
+    "description": "Run the command below in your terminal to start your server. Once your server is running, the ADE will be available",
+    "status": {
+      "connecting": "Connecting...",
+      "connected": "Connected"
+    }
+  },
+  "Agents": {
+    "title": "Agents",
+    "subtitle": "View and manage your agents below",
+    "importAgent": "Import Agent",
+    "createAgent": "Create Agent",
+    "table": {
+      "loading": "Loading...",
+      "columns": {
+        "name": "Name",
+        "id": "id",
+        "createdAt": "Last Seen"
+      },
+      "openInADE": "Open in ADE",
+      "noResults": "No agents found"
+    }
+  },
+  "NotConnectedOverlay": {
+    "connecting": "Booting up your Letta server...",
+    "connectingSelfHosted": "Establishing connection...",
+    "details": "This should only take 10-30 seconds. Once the server is running, you will be able to access the ADE.",
+    "detailsSelfHosted": "Attempting to connect to your Letta server. Make sure the server is running and accessible at {serverUrl}.",
+    "action": "View server logs",
+    "actionSelfHosted": "View server settings"
+  },
+  "CreateLocalAgentDialog": {
+    "serverOffline": "Your server is offline, please start it to create a new agent.",
+    "serverOfflineConnect": "Turn on your server with the command below:",
+    "isFetchingStatus": "Sorry, we are still attempting to connect to your server. Please wait a moment.",
+    "title": "Create a new agent",
+    "alert": {
+      "local": "your local server (localhost)",
+      "title": "You are creating an agent on {serverName}",
+      "descriptionLocal": "This will create an agent locally on your machine. This will not deploy the agent to Letta Cloud.",
+      "descriptionRemote": "This will create an agent on the remote server. This will not deploy the agent to Letta Cloud."
+    },
+    "error": "There was an error creating the agent, below is the error message, please try again or contact support.",
+    "creating": "Creating agent...",
+    "loading": "Booting up...",
+    "starterKits": {
+      "title": "Starter kits",
+      "description": "Choose from a starter pack and customize it in the ADE, or start from scratch"
+    },
+    "back": "All agents"
+  },
+  "ServerStatus": {
+    "restart": "Restart",
+    "title": "Letta server logs",
+    "subtitle": "View the status of your server",
+    "noLogsAvailable": "Logs viewer only available when using the embedded Letta server (you are configured to use {serverType})",
+    "goToSettings": "Modify server settings"
+  },
+  "Settings": {
+    "title": "Letta Desktop settings",
+    "subtitle": "Update your settings below",
+    "DatabaseSettings": {
+      "edit": "Configure",
+      "title": "Server settings",
+      "type": "Letta server type",
+      "types": {
+        "external": "Embedded server (external Postgres)",
+        "embedded": "Embedded server",
+        "local": "Self-hosted server",
+        "cloud": "Letta Cloud"
+      },
+      "connectionString": "Connection String",
+      "url": "Server URL"
+    },
+    "EditDatabaseSettingsDialog": {
+      "title": "Update server connection",
+      "description": "Choose how Letta Desktop connects to a Letta server. The embedded server runs locally inside Letta Desktop, and self-hosted allows you to connect to a separate Letta deployment (running locally or remotely).",
+      "externalOnly": "External data",
+      "connectionString": {
+        "label": "Connection String",
+        "error": {
+          "missing": "Connection string is required",
+          "invalid": "Invalid connection string"
+        },
+        "placeholder": "postgresql://username:password@host:port/database",
+        "placeholderNone": "N/A",
+        "description": "Enter the connection string for your external database",
+        "descriptionNone": "Embedded database does not have a connection string"
+      },
+      "url": {
+        "label": "Server URL",
+        "error": {
+          "missing": "Server URL is required"
+        },
+        "description": "URL of your remote Letta server"
+      },
+      "token": {
+        "label": "Authentication Token (optional)",
+        "placeholder": "Enter token if required",
+        "description": "Token for authenticating with your Letta server",
+        "labelCloud": "Letta Cloud API Key",
+        "placeholderCloud": "sk-...",
+        "descriptionCloud": "Your API key from app.letta.com",
+        "error": {
+          "missingCloud": "API key is required for Letta Cloud"
+        }
+      }
+    },
+    "TestConnectionButton": {
+      "label": "Test Connection",
+      "pending": "Testing...",
+      "unconnected": "Not tested",
+      "success": {
+        "label": "Connected",
+        "tooltip": "Successfully connected to the server"
+      },
+      "authFailed": {
+        "label": "Auth Failed",
+        "tooltip": "Authentication failed. Please check your token."
+      },
+      "failed": {
+        "label": "Failed",
+        "tooltip": "Could not connect to the server. Please check the URL and ensure the server is running."
+      }
+    }
+  },
+  "SetupProvider": {
+    "title": "Setup Provider",
+    "welcome": "Welcome to Letta Desktop",
+    "description": "Before we begin, please select how you want your agents to be stored.",
+    "configureDatabase": "Setup Letta Desktop",
+    "ConfigureExternalDatabaseStep": {
+      "back": "Back",
+      "next": "Save Configuration",
+      "step": {
+        "databaseName": {
+          "label": "Database Name",
+          "placeholder": "letta"
+        },
+        "host": {
+          "label": "Host",
+          "placeholder": "localhost"
+        },
+        "port": {
+          "label": "Port",
+          "placeholder": "5432"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "postgres"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": ""
+        }
+      },
+      "title": "Configure your external database",
+      "description": "Please enter the connection details for your external database. We use postgres as the database type. If you have a value that isn't required, you can leave it blank."
+    },
+    "ConfigureDatabaseTypeStep": {
+      "description": "Select the database type you would like to use to store your agents:",
+      "bringYourOwn": {
+        "label": "Bring your own Letta server",
+        "description": "Connect Letta Desktop to a self-hosted instance of Letta. Note: this requires running a Letta server separately from Letta Desktop.",
+        "badge": "Recommended"
+      },
+      "embedded": {
+        "noSetup": "No setup required",
+        "label": "Use an embedded Letta server",
+        "description": "This is the easiest option to get started with, all your data is stored on an embedded Letta server instance powered by SQLite.",
+        "badge": "Experimental"
+      }
+    }
+  },
+  "AppHeader": {
+    "Navigation": {
+      "cloud": "Cloud ADE",
+      "documentation": "Documentation",
+      "apiReference": "API Reference"
+    },
+    "ServerStatus": {
+      "connected": "Connected",
+      "connecting": "Connecting..."
+    },
+    "AgentMenu": {
+      "trigger": "Options",
+      "delete": "Delete",
+      "export": "Export"
+    }
+  },
+  "App": {
+    "Sidebar": {
+      "settings": "Settings",
+      "agents": "Agents",
+      "identities": "Identities",
+      "dataSources": "Filesystem",
+      "integrations": "Integrations",
+      "serverStatus": "Server logs",
+      "globalTools": "Tools"
+    }
+  },
+  "GlobalTools": {
+    "title": "Tools",
+    "subtitle": "View and manage all available tools in your system.",
+    "loading": "Loading tools...",
+    "error": "Failed to load tools"
+  },
+  "tools/layout": {
+    "createTool": "Create custom tool",
+    "addMCPServer": "Add MCP server",
+    "nav": {
+      "return": "Back",
+      "allTools": "Hosted tools",
+      "mcpServers": "MCP servers"
+    }
+  }
+}

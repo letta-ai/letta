@@ -1,7 +1,7 @@
 'use client'
 import { useParams, usePathname } from 'next/navigation';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useMemo } from 'react';
+import { getIsLocalPlatform } from '@letta-cloud/utils-shared';
 type ADEType = 'agent' | 'template';
 
 interface ADEState {
@@ -22,10 +22,7 @@ export function useADEState(): ADEState {
   const pathname = usePathname();
 
   const isLocal = useMemo(() => {
-    return (
-      pathname.startsWith('/development-servers') ||
-      CURRENT_RUNTIME === 'letta-desktop'
-    );
+    return (pathname.startsWith('/development-servers') || getIsLocalPlatform());
   }, [pathname]);
 
   return {

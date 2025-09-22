@@ -1,0 +1,33 @@
+{
+  "name": "docker-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/docker-ui/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/docker-ui/tsconfig.json"
+      }
+    }
+  },
+  "build": {
+    "executor": "@nx/vite:build",
+    "outputs": ["{options.outputPath}"],
+    "defaultConfiguration": "production",
+    "options": {
+      "outputPath": "release/build/renderer"
+    },
+    "configurations": {
+      "development": {
+        "mode": "development",
+        "baseHref": "/"
+      },
+      "production": {
+        "mode": "production",
+        "baseHref": "./"
+      }
+    }
+  }
+}

@@ -3,10 +3,10 @@ import { useMemo } from 'react';
 import { cloudAPI, cloudQueryKeys } from '@letta-cloud/sdk-cloud-api';
 import { useParams, usePathname } from 'next/navigation';
 import { useAgentsServiceRetrieveAgent } from '@letta-cloud/sdk-core';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { webApi, webApiQueryKeys } from '@letta-cloud/sdk-web';
 import { useCurrentTemplate } from '../useCurrentTemplate/useCurrentTemplate';
 import { useCurrentAgentTemplate } from '../useCurrentAgentTemplate/useCurrentAgentTemplate';
+import { getIsLocalPlatform } from '@letta-cloud/utils-shared';
 
 interface UseCurrentAgentMetaDataResponse {
   agentId: string;
@@ -27,7 +27,7 @@ function usePageContext() {
   const isChatPage = pathname.startsWith('/chat');
   const isLocal =
     pathname.startsWith('/development-servers') ||
-    CURRENT_RUNTIME === 'letta-desktop';
+    getIsLocalPlatform();
 
   return { isChatPage, isLocal };
 }
@@ -128,7 +128,7 @@ export function useCurrentAgentMetaData(): UseCurrentAgentMetaDataResponse {
   const { isChatPage, isLocal } = usePageContext();
 
   // Always call all hooks but conditionally enable them
-  const localAgentData = useLocalAgentData(preAgentId, isLocal && !isChatPage);
+  const localAgentData = useLocalAgentData(preAgentId, (isLocal && !isChatPage));
   const templateData = useTemplateAgentData();
   const deployedData = useDeployedAgentData(
     preAgentId,

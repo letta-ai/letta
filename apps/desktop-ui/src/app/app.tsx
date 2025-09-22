@@ -218,7 +218,6 @@ export function App() {
               </NotConnectedOverlay>
             }
           />
-
           <Route path="/dashboard/integrations" element={<Integrations />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route

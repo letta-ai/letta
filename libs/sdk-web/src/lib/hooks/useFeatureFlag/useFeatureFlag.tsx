@@ -2,8 +2,8 @@
 
 import type { Flag, FlagValue } from '@letta-cloud/service-feature-flags';
 import { webApi, webApiQueryKeys } from '../../../index';
-import { CURRENT_RUNTIME } from '@letta-cloud/config-runtime';
 import { useMemo } from 'react';
+import { getIsLocalPlatform } from '@letta-cloud/utils-shared';
 
 interface UseFeatureFlagPayload<SingleFlag extends Flag> {
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
@@ -16,7 +16,7 @@ export function useFeatureFlag<SingleFlag extends Flag>(
 ): UseFeatureFlagPayload<SingleFlag> {
   const { data } = webApi.featureFlags.getFeatureFlags.useQuery({
     queryKey: webApiQueryKeys.featureFlags.getFeatureFlags,
-    enabled: CURRENT_RUNTIME !== 'letta-desktop',
+    enabled: !getIsLocalPlatform(),
   });
 
   const flagData = useMemo(() => {
