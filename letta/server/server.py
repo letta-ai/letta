@@ -67,6 +67,7 @@ from letta.schemas.providers import (
     LMStudioOpenAIProvider,
     OllamaProvider,
     OpenAIProvider,
+    OpenRouterProvider,
     Provider,
     TogetherProvider,
     VLLMProvider,
@@ -413,6 +414,13 @@ class SyncServer(Server):
             self._enabled_providers.append(DeepSeekProvider(name="deepseek", api_key=model_settings.deepseek_api_key))
         if model_settings.xai_api_key:
             self._enabled_providers.append(XAIProvider(name="xai", api_key=model_settings.xai_api_key))
+        if model_settings.openrouter_api_key:
+            self._enabled_providers.append(
+                OpenRouterProvider(
+                    name="openrouter",
+                    api_key=model_settings.openrouter_api_key,
+                )
+            )
 
     async def init_mcp_clients(self):
         # TODO: remove this

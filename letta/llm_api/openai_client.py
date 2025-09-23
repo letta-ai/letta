@@ -121,11 +121,31 @@ class OpenAIClient(LLMClientBase):
     def _prepare_client_kwargs(self, llm_config: LLMConfig) -> dict:
         api_key, _, _ = self.get_byok_overrides(llm_config)
 
+        # Default to global OpenAI key when no BYOK override
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
-        # supposedly the openai python client requires a dummy API key
-        api_key = api_key or "DUMMY_API_KEY"
+
         kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
+
+        # OpenRouter-specific overrides: use OpenRouter key and optional headers
+        is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
+            llm_config.provider_name == "openrouter"
+        )
+        if is_openrouter:
+            or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
+            if or_key:
+                kwargs["api_key"] = or_key
+            # Attach optional headers if provided
+            headers = {}
+            if model_settings.openrouter_referer:
+                headers["HTTP-Referer"] = model_settings.openrouter_referer
+            if model_settings.openrouter_title:
+                headers["X-Title"] = model_settings.openrouter_title
+            if headers:
+                kwargs["default_headers"] = headers
+
+        # The OpenAI client requires some API key value
+        kwargs["api_key"] = kwargs.get("api_key") or "DUMMY_API_KEY"
 
         return kwargs
 
@@ -141,9 +161,24 @@ class OpenAIClient(LLMClientBase):
 
         if not api_key:
             api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
-        # supposedly the openai python client requires a dummy API key
-        api_key = api_key or "DUMMY_API_KEY"
         kwargs = {"api_key": api_key, "base_url": llm_config.model_endpoint}
+
+        is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
+            llm_config.provider_name == "openrouter"
+        )
+        if is_openrouter:
+            or_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
+            if or_key:
+                kwargs["api_key"] = or_key
+            headers = {}
+            if model_settings.openrouter_referer:
+                headers["HTTP-Referer"] = model_settings.openrouter_referer
+            if model_settings.openrouter_title:
+                headers["X-Title"] = model_settings.openrouter_title
+            if headers:
+                kwargs["default_headers"] = headers
+
+        kwargs["api_key"] = kwargs.get("api_key") or "DUMMY_API_KEY"
 
         return kwargs
 
